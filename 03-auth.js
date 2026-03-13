@@ -2,6 +2,26 @@
    03-auth.js — Authentication & role activation
 ═══════════════════════════════════════════════ */
 
+async function refreshSession() {
+  const refreshToken = localStorage.getItem('sb_refresh_token');
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('sb_access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
+      return data.access_token;
+    }
+  } catch (_) {}
+  return null;
+}
+
 function showLoginOverlay() {
   document.getElementById('login-overlay').classList.remove('hidden');
   backToEmail();
@@ -55,26 +75,27 @@ async function handleMagicLinkToken(accessToken) {
   document.getElementById('login-verify-step').classList.add('active');
 
   try {
-    console.log('[GBL Auth] Fetching user from Supabase...');
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
     });
-    const user = await userRes.json();
-    localStorage.setItem("sb_access_token", accessToken);
-    console.log('[GBL Auth] User response:', user);
 
+    if (!userRes.ok) {
+      const newToken = await refreshSession();
+      if (newToken) { handleMagicLinkToken(newToken); return; }
+      throw new Error('Session expired — please sign in again');
+    }
+
+    const user = await userRes.json();
+    localStorage.setItem('sb_access_token', accessToken);
     const email = (user.email || '').toLowerCase().trim();
     if (!email) throw new Error('No email returned from Supabase auth');
-    console.log('[GBL Auth] Email detected:', email);
 
-    console.log('[GBL Auth] Querying user_roles table...');
     let roles = null;
     let roleRes = await fetch(
       `${SUPABASE_URL}/rest/v1/user_roles?select=role,email&limit=10`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` } }
     );
     let roleData = await roleRes.json();
-    console.log('[GBL Auth] All user_roles rows visible to this user:', roleData);
 
     if (Array.isArray(roleData) && roleData.length > 0) {
       const match = roleData.find(r => (r.email||'').toLowerCase().trim() === email);
@@ -82,21 +103,16 @@ async function handleMagicLinkToken(accessToken) {
     }
 
     if (!roles || !roles.length) {
-      console.log('[GBL Auth] No match yet — trying direct email filter with anon key...');
       const fallbackRes = await fetch(
         `${SUPABASE_URL}/rest/v1/user_roles?email=ilike.${encodeURIComponent(email)}&select=role&limit=1`,
         { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
       );
       const fallbackData = await fallbackRes.json();
-      console.log('[GBL Auth] Fallback query result:', fallbackData);
       if (Array.isArray(fallbackData) && fallbackData.length > 0) roles = fallbackData;
     }
 
     const role = roles?.[0]?.role;
-    console.log('[GBL Auth] Final role resolved:', role);
-
     if (!role) {
-      console.warn('[GBL Auth] No role found for email:', email);
       document.getElementById('login-verify-step').innerHTML =
         `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
            No role assigned for <strong>${email}</strong>.<br>
@@ -112,11 +128,9 @@ async function handleMagicLinkToken(accessToken) {
     localStorage.setItem('gbl_token', accessToken);
     document.getElementById('login-overlay').classList.add('hidden');
     history.replaceState(null, '', window.location.pathname + window.location.search);
-    console.log('[GBL Auth] Activating role:', role);
     activateRole(role);
 
   } catch (err) {
-    console.error('[GBL Auth] Error during login:', err);
     document.getElementById('login-verify-step').innerHTML =
       `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
          Sign-in failed: ${err.message}<br><br>
@@ -129,6 +143,8 @@ function logout() {
   localStorage.removeItem('gbl_role');
   localStorage.removeItem('gbl_email');
   localStorage.removeItem('gbl_token');
+  localStorage.removeItem('sb_access_token');
+  localStorage.removeItem('sb_refresh_token');
   stopRealtime();
   document.getElementById('dashboard-view').classList.remove('active');
   document.getElementById('client-view').classList.remove('active');
@@ -171,10 +187,4 @@ function updateActionButton() {
   btn.textContent = currentRole === 'Client' ? '+ New Request' : '+ New Post';
 }
 
-function handleActionButton() {
-  if (currentRole === 'Client') {
-    scrollToNewRequest();
-  } else {
-    openNewPostModal();
-  }
-}
+function handle​​​​​​​​​​​​​​​​
