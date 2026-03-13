@@ -532,25 +532,50 @@ function renderUpcoming() {
   const today = new Date(); today.setHours(0,0,0,0);
   const w7    = new Date(today); w7.setDate(w7.getDate()+7);
   const tbody = document.getElementById('upcoming-tbody');
-  if (!tbody) return;
-  if (!posts.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming posts scheduled.</p></div></td></tr>`; return; }
+  const wrap  = tbody ? tbody.closest('.table-wrap') : null;
+  if (!wrap) return;
+
+  if (!posts.length) {
+    wrap.outerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming posts scheduled.</p></div>`;
+    return;
+  }
+
   const groups = {};
-  posts.forEach(p => { const d = parseDate(p.targetDate); const key = d ? d.toISOString().split('T')[0] : 'undated'; if (!groups[key]) groups[key] = []; groups[key].push(p); });
-  const rows = Object.keys(groups).sort().map(dateKey => {
+  posts.forEach(p => {
+    const d = parseDate(p.targetDate);
+    const key = d ? d.toISOString().split('T')[0] : 'undated';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+
+  const html = Object.keys(groups).sort().map(dateKey => {
     const d       = new Date(dateKey + 'T00:00:00');
     const isToday = d.getTime() === today.getTime();
     const isSoon  = d <= w7;
-    const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
     const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
-    const postRows = groups[dateKey].map(p => {
-      const {hex, label: stgLabel} = stageStyle(p.stage);
-      const id   = getPostId(p);
-      const link = `${window.location.origin}/p/${id}`;
-      return `<tr><td>${esc(getTitle(p))}</td><td><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span></td><td>${esc(p.owner||'—')}</td><td class="mono">${esc(id)}</td><td><button class="copy-link-btn" onclick="copyApprovalLink('${link}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Link</button></td></tr>`;
+
+    const cards = groups[dateKey].map(p => {
+      const id = getPostId(p);
+      const { hex, label: stgLabel } = stageStyle(p.stage);
+      return `
+        <div class="upcoming-card" onclick="openPostCard('${esc(id)}')">
+          <div class="upcoming-card-title">${esc(getTitle(p))}</div>
+          <div class="upcoming-card-meta">
+            <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span>
+            ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
+          </div>
+        </div>`;
     }).join('');
-    return `<tr><td colspan="5" style="padding:0"><div class="schedule-date-header ${hdrCls}">${esc(label)}</div></td></tr>${postRows}`;
+
+    return `
+      <div class="schedule-group">
+        <div class="schedule-date-header ${hdrCls}">${label}</div>
+        ${cards}
+      </div>`;
   }).join('');
-  tbody.innerHTML = rows;
+
+  wrap.outerHTML = `<div id="upcoming-card-list">${html}</div>`;
 }
 
 function populateFilterDropdowns() {
@@ -582,10 +607,29 @@ function renderLibrary() {
 }
 
 function renderLibraryRows(posts) {
-  const tbody = document.getElementById('library-tbody');
-  if (!tbody) return;
-  if (!posts.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match your search.</p></div></td></tr>`; return; }
-  tbody.innerHTML = posts.map(p => { const {hex,label} = stageStyle(p.stage); const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td>${esc(p.contentPillar||'—')}</td><td><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(label)}</span></td><td>${esc(p.owner||'—')}</td><td>${esc(p.location||'—')}</td><td class="mono">${formatDate(p.targetDate)||'—'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td></tr>`; }).join('');
+  const listView = document.getElementById('library-list-view');
+  if (!listView) return;
+  if (!posts.length) {
+    listView.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match your search.</p></div>`;
+    return;
+  }
+  listView.innerHTML = posts.map(p => {
+    const id = getPostId(p);
+    const { hex, label } = stageStyle(p.stage);
+    const link = p.postLink || p.post_link || '';
+    const relDate = getRelativeDate(p.targetDate);
+    return `
+      <div class="library-card" onclick="openPostCard('${esc(id)}')">
+        <div class="library-card-title">${esc(getTitle(p))}</div>
+        <div class="library-card-meta">
+          <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(label)}</span>
+          ${p.contentPillar ? `<span class="tag tag-pillar">${esc(p.contentPillar)}</span>` : ''}
+          ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
+          ${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}
+        </div>
+        ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="library-card-link" onclick="event.stopPropagation()">↗ Open in Canva</a>` : ''}
+      </div>`;
+  }).join('');
 }
 
 function renderClientView() {
