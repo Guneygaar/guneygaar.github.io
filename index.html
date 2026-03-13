@@ -2945,13 +2945,20 @@ const APP_URL               = 'https://guneygaar.github.io';
 const READY_TO_SEND_TARGET  = 30;
 const CLIENT_REQUEST_FORM_URL = ''; // unused — form is built-in now
 
-const ACCESS_CODES = {
-  'Admin':     '4321',
-  'Servicing': '2222',
-  'Creative':  '1111',
-  'Client':    '9999',
-};
+async function getUserRole(email) {
+  const { data, error } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('email', email)
+    .single();
 
+  if (error || !data) {
+    alert("No role assigned to this email.");
+    return null;
+  }
+
+  return data.role;
+} 
 const STAGE_COLORS = {
   'published':            { hex: '#22c55e', label: 'Published' },
   'sent for approval':    { hex: '#3b82f6', label: 'Sent for Approval' },
