@@ -457,45 +457,173 @@ function renderTasks() {
   const buckets = ROLE_BUCKETS[currentRole];
   if (!buckets) {
     const posts = getMyTasks();
-    container.innerHTML = posts.length ? renderFlatCards(posts) : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
+    container.innerHTML = posts.length
+      ? `<div class="pstages">${posts.map(p => buildPcard(p)).join('')}</div>`
+      : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
     return;
   }
-  const canUpdate = ['Admin','Servicing'].includes(currentRole);
-  const bucketHtml = buckets.map(bucket => {
-    const posts    = allPosts.filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim())).filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+
+  const stagesHtml = buckets.map(bucket => {
+    const posts    = allPosts.filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
+                             .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
     const count    = posts.length;
     const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
-    const isRevBucket  = bucket.key === 'revisions';
-    const isWaitBucket = bucket.key === 'waiting' || bucket.stages.some(s => ['awaiting brand input','awaiting approval','sent for approval'].includes(s));
-    const BUCKET_LIMIT = 8;
-    const items = posts.map((p, idx) => {
-      const id       = getPostId(p);
-      const title    = getTitle(p);
-      const pillar   = p.contentPillar || '';
-      const postLink = p.postLink || p.post_link || '';
-      const { hex, label: stLabel2 } = stageStyle(p.stage);
-      const days     = daysInStage(p);
-      const sl       = staleLabel(days, p.stage);
-      const sc       = staleClass(days);
-      const comments = p.comments || '';
-      const CLIENT_WAIT_STAGES = ['awaiting brand input','awaiting approval','sent for approval'];
-      const isClientWait = CLIENT_WAIT_STAGES.includes((p.stage||'').toLowerCase().trim());
-      const staleBadgeText = isClientWait && days >= 3 ? `⏳ Waiting on client · ${days}d` : (sl || '');
-      const staleBadgeHtml = (isWaitBucket || currentRole==='Admin') && staleBadgeText ? `<span class="stale-badge ${sc}">${staleBadgeText}</span>` : '';
-      const revisionHtml   = isRevBucket && comments ? `<div class="bucket-item-revision">↺ ${esc(comments.substring(0,80))}</div>` : '';
-      const stagePill      = canUpdate ? `<span class="bucket-item-stage" style="background:${hex}22;color:${hex};border-color:${hex}40" onclick="event.stopPropagation();openPostModal('${esc(id)}')" title="Update stage">${esc(stLabel2)}</span>` : '';
-      const nudgeHtml      = currentRole === 'Servicing' && isClientWait && days >= 3 ? `<button class="btn-nudge" onclick="event.stopPropagation();nudgeClient('${esc(id)}','${esc(title)}','${esc(p.targetDate||'')}')">💬 Nudge</button>` : '';
-      const payloadHtml    = bucket.key === 'ready' && (currentRole === 'Servicing' || currentRole === 'Admin') ? `<div class="payload-row">${comments ? `<button class="btn-payload" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="btn-payload" style="text-align:center;text-decoration:none">↗ Open Design</a>` : ''}</div>` : '';
-      const snoozeHtml     = currentRole === 'Servicing' ? `<button class="btn-snooze" onclick="event.stopPropagation();openSnooze('${esc(id)}')">😴</button>` : '';
-      const itemClick = `onclick="openPostCard('${esc(id)}')"`;
-      const hiddenCls      = idx >= BUCKET_LIMIT ? ' overflow-hidden' : '';
-      return `<div class="bucket-item${hiddenCls}" ${itemClick} ${currentRole==='Creative' && bucket.key==='production' ? `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleBucketDrop(event,'${esc(id)}')"` : ''}><div class="bucket-item-left"><span class="bucket-item-title">${esc(title)}</span>${pillar ? `<span class="bucket-item-pillar">${esc(pillar)}</span>` : ''}${revisionHtml}${payloadHtml}${nudgeHtml}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${stagePill}${staleBadgeHtml}<button class="btn-timeline" onclick="event.stopPropagation();openTimeline('${esc(id)}','${esc(title)}')" title="View activity">⏱</button>${snoozeHtml}</div></div>`;
-    }).join('');
-    const overflow       = posts.length > BUCKET_LIMIT ? `<button class="bucket-overflow-btn" onclick="toggleBucketOverflow(this)">+${posts.length - BUCKET_LIMIT} more</button>` : '';
-    const urgencyHeader  = bucket.key === 'requests' && count >= 3 && currentRole === 'Creative' ? 'style="background:var(--c-amber-dim)"' : '';
-    return `<div class="bucket-card"><div class="bucket-header" ${urgencyHeader}><span class="bucket-name">${esc(bucket.label)}</span><span class="bucket-badge${badgeCls}">${count}</span></div><div class="bucket-items">${count ? items + overflow : `<div class="bucket-empty">All clear ✓</div>`}</div></div>`;
+    const LIMIT    = 8;
+    const cards    = posts.map((p, idx) => buildPcard(p, bucket, idx >= LIMIT)).join('');
+    const overflow = posts.length > LIMIT
+      ? `<button class="pstage-overflow" onclick="toggleStageOverflow(this)">+${posts.length - LIMIT} more</button>` : '';
+
+    return `
+      <div class="pstage" id="pstage-${esc(bucket.key)}">
+        <div class="pstage-header">
+          <span class="pstage-name">${esc(bucket.label)}</span>
+          <span class="pstage-badge${badgeCls}">${count}</span>
+        </div>
+        <div class="pstage-cards"
+             data-stage="${esc(bucket.stages[0])}"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="onStageDrop(event,this)">
+          ${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}
+        </div>
+      </div>`;
   }).join('');
-  container.innerHTML = `<div class="bucket-grid">${bucketHtml}</div>`;
+
+  container.innerHTML = `<div class="pstages">${stagesHtml}</div>`;
+}
+
+function buildPcard(p, bucket, hidden) {
+  const id        = getPostId(p);
+  const title     = getTitle(p);
+  const stage     = p.stage || '';
+  const stageLC   = stage.toLowerCase().trim();
+  const { hex, label: stageLabel } = stageStyle(stage);
+  const pillar    = p.contentPillar || '';
+  const location  = p.location  || '';
+  const owner     = p.owner     || '';
+  const postLink  = p.postLink  || p.post_link || '';
+  const comments  = p.comments  || '';
+  const days      = daysInStage(p);
+  const stCls     = staleClass(days);
+  const updatedAt = p.updated_at || p.updatedAt || p.created_at || '';
+  const lastAct   = updatedAt ? timeAgo(updatedAt) : '';
+  const hiddenCls = hidden ? ' pcard-hidden' : '';
+  const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
+  const canAct    = ['Admin','Servicing'].includes(currentRole);
+
+  // Meta string
+  const metaParts = [pillar, location ? `📍 ${location}` : '', owner].filter(Boolean);
+  const metaStr   = metaParts.join(' · ');
+
+  // Timer badge
+  const timerBadge = days >= 3
+    ? `<span class="pcard-timer ${stCls}">⏳ ${days}d</span>` : '';
+
+  // Canva button
+  const canvaBtn = postLink
+    ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcard-canva" onclick="event.stopPropagation()">✏ Open in Canva ↗</a>`
+    : (currentRole !== 'Creative' ? `<div class="pcard-no-canva">No Canva link attached</div>` : '');
+
+  // Ops buttons (Admin + Servicing)
+  let opsHtml = '';
+  if (canAct) {
+    const editBtn   = `<button class="pcard-op" onclick="event.stopPropagation();togglePcard(this.closest('.pcard'),false);openAdminEdit('${esc(id)}')">✏ Edit</button>`;
+    const stageBtn  = `<button class="pcard-op" onclick="event.stopPropagation();togglePcard(this.closest('.pcard'),false);openPostModal('${esc(id)}')">↕ Move Stage</button>`;
+    const schedBtn  = !['scheduled','published'].includes(stageLC)
+      ? `<button class="pcard-op" onclick="event.stopPropagation();quickStage('${esc(id)}','Scheduled')">📅 Schedule</button>` : '';
+    const nudgeBtn  = isClientWait && days >= 3
+      ? `<button class="pcard-op pcard-op-accent" onclick="event.stopPropagation();nudgeClient('${esc(id)}','${esc(title)}','${esc(p.targetDate||'')}')">💬 Nudge</button>` : '';
+    const capBtn    = comments
+      ? `<button class="pcard-op" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Caption</button>` : '';
+    const linkBtn   = `<button class="pcard-op" onclick="event.stopPropagation();copyApprovalLink('${window.location.origin}/p/${esc(id)}')">🔗 Link</button>`;
+    const delBtn    = `<button class="pcard-op pcard-op-danger" onclick="event.stopPropagation();deletePost('${esc(id)}')">🗑 Delete</button>`;
+    opsHtml = `<div class="pcard-ops">${editBtn}${stageBtn}${schedBtn}${nudgeBtn}${capBtn}${linkBtn}${delBtn}</div>`;
+  }
+
+  // Revision note
+  const revNote = bucket && bucket.key === 'revisions' && comments
+    ? `<div class="pcard-revision">↺ ${esc(comments.substring(0,100))}</div>` : '';
+
+  return `
+    <div class="pcard${hiddenCls}"
+         id="pcard-${esc(id)}"
+         data-post-id="${esc(id)}"
+         data-stage="${esc(stageLC)}"
+         draggable="true"
+         ondragstart="onPcardDragStart(event,'${esc(id)}','${esc(stageLC)}')"
+         ondragend="onPcardDragEnd(event)"
+         ontouchstart="onPcardTouchStart(event,'${esc(id)}')"
+         ontouchmove="onPcardTouchMove(event)"
+         ontouchend="onPcardTouchEnd(event)">
+
+      <div class="pcard-top" onclick="togglePcard(this.parentElement)">
+        <div class="pcard-top-left">
+          <span class="pcard-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
+          <span class="pcard-title">${esc(title)}</span>
+          ${metaStr ? `<span class="pcard-meta">${esc(metaStr)}</span>` : ''}
+        </div>
+        <div class="pcard-top-right">
+          ${timerBadge}
+          <span class="pcard-chevron">›</span>
+        </div>
+      </div>
+
+      <div class="pcard-body">
+        ${revNote}
+        ${canvaBtn}
+        ${opsHtml}
+        <button class="pcard-activity-toggle" onclick="event.stopPropagation();togglePcardActivity(this,'${esc(id)}')">
+          Activity Timeline <span class="pcard-activity-chevron">›</span>
+        </button>
+        <div class="pcard-activity-body"></div>
+        <div class="pcard-footer">
+          <span class="pcard-footer-id">${esc(id)}</span>
+          ${lastAct ? `<span class="pcard-footer-time">${lastAct}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function togglePcard(el, forceOpen) {
+  if (!el) return;
+  const isOpen = forceOpen !== undefined ? forceOpen : !el.classList.contains('open');
+  el.classList.toggle('open', isOpen);
+  const chevron = el.querySelector('.pcard-chevron');
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
+}
+
+function toggleStageOverflow(btn) {
+  const stage = btn.closest('.pstage-cards');
+  if (!stage) return;
+  const hidden = stage.querySelectorAll('.pcard-hidden');
+  const isShowing = btn.dataset.showing === '1';
+  hidden.forEach(c => c.classList.toggle('pcard-hidden', isShowing));
+  btn.dataset.showing = isShowing ? '' : '1';
+  btn.textContent = isShowing ? `+${hidden.length} more` : '↑ Show less';
+}
+
+function togglePcardActivity(btn, postId) {
+  const body = btn.nextElementSibling;
+  const chevron = btn.querySelector('.pcard-activity-chevron');
+  const isOpen = body.classList.toggle('open');
+  if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
+  if (!isOpen || body.dataset.loaded) return;
+  body.dataset.loaded = '1';
+  body.innerHTML = `<div class="pcard-activity-loading">Loading…</div>`;
+  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.asc&limit=20`)
+    .then(rows => {
+      if (!rows.length) { body.innerHTML = `<div class="pcard-activity-empty">No activity yet.</div>`; return; }
+      body.innerHTML = rows.map(r => `
+        <div class="pcard-activity-item">
+          <span class="pcard-activity-dot"></span>
+          <div class="pcard-activity-content">
+            <span class="pcard-activity-actor">${esc(r.actor||'System')}</span>
+            <span class="pcard-activity-action">${esc(r.action||'')}</span>
+          </div>
+          <span class="pcard-activity-time">${r.created_at ? timeAgo(r.created_at) : ''}</span>
+        </div>`).join('');
+    })
+    .catch(() => { body.innerHTML = `<div class="pcard-activity-empty">Could not load.</div>`; });
 }
 
 function toggleBucketOverflow(btn) {
@@ -505,10 +633,7 @@ function toggleBucketOverflow(btn) {
   const hiddenCount = card.querySelectorAll('.bucket-item.overflow-hidden').length;
   btn.textContent = isExpanded ? '↑ Show less' : `+${hiddenCount} more`;
 }
-
-function renderFlatCards(posts) {
-  return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${posts.map(p=>{ const {hex,label} = stageStyle(p.stage); return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-4)"><div style="font-weight:600;margin-bottom:var(--sp-2)">${esc(getTitle(p))}</div><span class="tag" style="background:${hex}22;color:${hex}">${esc(label)}</span></div>`; }).join('')}</div>`;
-}
+      const pillar   = p.contentPillar || '';
 
 function renderPipeline() {
   const grouped = {};
