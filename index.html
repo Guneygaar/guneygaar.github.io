@@ -606,6 +606,7 @@
     </div>
 
     <div class="modal-footer">
+      <button class="btn-modal-ghost" style="color:var(--c-red);border-color:var(--c-red-dim)" id="ae-delete-btn" onclick="deletePost(document.getElementById('ae-save-btn').dataset.postId)">Delete</button>
       <button class="btn-modal-ghost" onclick="closeAdminEdit()">Cancel</button>
       <button class="btn-modal-primary" id="ae-save-btn" onclick="saveAdminEdit()">Save Changes</button>
     </div>
