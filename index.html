@@ -3231,7 +3231,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
 if (savedToken && !window.location.hash.includes("access_token")) {
   handleMagicLinkToken(savedToken);
-  return;
 }
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {
