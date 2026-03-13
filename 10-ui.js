@@ -98,6 +98,29 @@ function goToLibraryFiltered(stage) {
 
 function goToPipelineStage(stage) { goToTab('pipeline'); }
 
+function scrollToBucket(bucketKey) {
+  // Give the tab render a tick to finish, then scroll
+  setTimeout(() => {
+    const grid = document.getElementById('tasks-container');
+    if (!grid) return;
+    const buckets = grid.querySelectorAll('.bucket-card');
+    // Find the bucket whose header text matches the key loosely
+    for (const card of buckets) {
+      const name = card.querySelector('.bucket-name')?.textContent?.toLowerCase() || '';
+      const keyMap = { production:'in production', revisions:'revision', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
+      const match = keyMap[bucketKey] || bucketKey;
+      if (name.includes(match)) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Brief highlight flash
+        card.style.outline = '2px solid var(--accent)';
+        card.style.outlineOffset = '2px';
+        setTimeout(() => { card.style.outline = ''; card.style.outlineOffset = ''; }, 1200);
+        break;
+      }
+    }
+  }, 80);
+}
+
 function switchTab(btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
