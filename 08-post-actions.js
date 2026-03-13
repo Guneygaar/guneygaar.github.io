@@ -441,3 +441,92 @@ function closePostCard() {
   document.getElementById('post-card-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
 }
+
+// ── Drag & Drop (desktop + mobile) ───────────
+let _dragPostId   = null;
+let _dragStage    = null;
+let _isDragging   = false;
+let _touchTimer   = null;
+let _touchGhost   = null;
+let _touchStartY  = 0;
+
+function onPcardDragStart(event, postId, stage) {
+  _dragPostId = postId;
+  _dragStage  = stage;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', postId);
+  event.currentTarget.classList.add('pcard-dragging');
+}
+
+function onPcardDragEnd(event) {
+  event.currentTarget.classList.remove('pcard-dragging');
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  _dragPostId = null;
+  _dragStage  = null;
+}
+
+function onStageDrop(event, dropZone) {
+  event.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const targetStage = dropZone.dataset.stage;
+  const postId = _dragPostId || event.dataTransfer.getData('text/plain');
+  if (!postId || !targetStage || targetStage === _dragStage) return;
+  // Capitalise to match DB values
+  const stageMap = {};
+  (window.PIPELINE_ORDER || []).forEach(s => { stageMap[s.toLowerCase()] = s; });
+  const newStage = stageMap[targetStage] || targetStage;
+  quickStage(postId, newStage);
+}
+
+// Mobile long-press drag
+function onPcardTouchStart(event, postId) {
+  _touchStartY = event.touches[0].clientY;
+  _isDragging  = false;
+  _touchTimer  = setTimeout(() => {
+    _isDragging = true;
+    _dragPostId = postId;
+    const card = event.currentTarget;
+    const rect = card.getBoundingClientRect();
+    _touchGhost = card.cloneNode(true);
+    _touchGhost.style.cssText = `
+      position:fixed; left:${rect.left}px; top:${rect.top}px;
+      width:${rect.width}px; opacity:0.75; pointer-events:none;
+      z-index:9999; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
+      transform:scale(1.02);`;
+    document.body.appendChild(_touchGhost);
+    card.style.opacity = '0.3';
+    if (navigator.vibrate) navigator.vibrate(40);
+  }, 500);
+}
+
+function onPcardTouchMove(event) {
+  const dy = Math.abs(event.touches[0].clientY - _touchStartY);
+  if (dy > 8 && !_isDragging) { clearTimeout(_touchTimer); return; }
+  if (!_isDragging) return;
+  event.preventDefault();
+  const touch = event.touches[0];
+  if (_touchGhost) {
+    _touchGhost.style.top = (touch.clientY - 40) + 'px';
+  }
+  // Highlight drop zone under finger
+  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const zone = el?.closest('.pstage-cards');
+  if (zone) zone.classList.add('drag-over');
+}
+
+function onPcardTouchEnd(event) {
+  clearTimeout(_touchTimer);
+  if (!_isDragging) return;
+  _isDragging = false;
+  const touch = event.changedTouches[0];
+  if (_touchGhost) { _touchGhost.remove(); _touchGhost = null; }
+  // Restore card opacity
+  const card = document.getElementById(`pcard-${_dragPostId}`);
+  if (card) card.style.opacity = '';
+  // Find drop zone
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const zone = el?.closest('.pstage-cards');
+  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
+  if (zone) onStageDrop(event, zone);
+}
