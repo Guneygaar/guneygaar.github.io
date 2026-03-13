@@ -218,9 +218,14 @@
     <div style="padding:var(--sp-4)">
       <div class="section-header">
         <span class="section-title">Content Library</span>
+        <div class="library-view-toggle">
+          <button class="lib-view-btn active" data-view="list" onclick="switchLibraryView(this)">≡ List</button>
+          <button class="lib-view-btn" data-view="pillar" onclick="switchLibraryView(this)">◫ Pillar</button>
+          <button class="lib-view-btn" data-view="calendar" onclick="switchLibraryView(this)">⊟ Calendar</button>
+        </div>
         <span class="section-count" id="library-label"></span>
       </div>
-      <div class="library-controls">
+      <div class="library-controls" id="library-search-controls">
         <input type="text" id="search-input" class="search-input" placeholder="Search posts…" oninput="filterLibrary()">
         <select id="filter-stage" class="filter-select" onchange="filterLibrary()">
           <option value="">All Stages</option>
@@ -229,21 +234,25 @@
           <option value="">All Owners</option>
         </select>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Post</th>
-              <th>Pillar</th>
-              <th>Stage</th>
-              <th>Owner</th>
-              <th>Location</th>
-              <th>Date</th>
-              <th>Link</th>
-            </tr>
-          </thead>
-          <tbody id="library-tbody"></tbody>
-        </table>
+      <div id="library-view-container">
+        <div class="table-wrap" id="library-list-view">
+          <table>
+            <thead>
+              <tr>
+                <th>Post</th>
+                <th>Pillar</th>
+                <th>Stage</th>
+                <th>Owner</th>
+                <th>Location</th>
+                <th>Date</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="library-tbody"></tbody>
+          </table>
+        </div>
+        <div id="library-pillar-view" style="display:none"></div>
+        <div id="library-calendar-view" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -664,6 +673,29 @@
     <div class="timeline-body" id="timeline-body">
       <div class="timeline-empty">Loading…</div>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     POST CARD OVERLAY  (fix 15+16)
+══════════════════════════════════════════ -->
+<div id="post-card-overlay" onclick="if(event.target===this)closePostCard()">
+  <div id="post-card">
+    <div class="modal-handle"></div>
+    <div id="post-card-content"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN INSIGHTS POPUP  (fix 19)
+══════════════════════════════════════════ -->
+<div id="insights-overlay" onclick="if(event.target===this)closeInsights()">
+  <div id="insights-panel">
+    <div class="insights-head">
+      <span class="insights-title">Pipeline Intelligence</span>
+      <button onclick="closeInsights()">✕</button>
+    </div>
+    <div id="insights-body"></div>
   </div>
 </div>
 
