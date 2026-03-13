@@ -1,5 +1,6 @@
 /* ═══════════════════════════════════════════════
    03-auth.js — Authentication & role activation
+   Uses 6-digit OTP code (no magic links)
 ═══════════════════════════════════════════════ */
 
 async function refreshSession() {
@@ -29,8 +30,9 @@ function showLoginOverlay() {
 
 function backToEmail() {
   document.getElementById('login-email-step').classList.add('active');
-  document.getElementById('login-sent-step').classList.remove('active');
-  document.getElementById('login-verify-step').classList.remove('active');
+  document.getElementById('login-code-step')?.classList.remove('active');
+  document.getElementById('login-sent-step')?.classList.remove('active');
+  document.getElementById('login-verify-step')?.classList.remove('active');
   document.getElementById('login-error').textContent = '';
 }
 
@@ -48,60 +50,77 @@ window.sendMagicLink = async function sendMagicLink() {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({
-        email,
-        create_user: false,
-        options: { emailRedirectTo: APP_URL }
-      }),
+      body: JSON.stringify({ email, create_user: false }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error_description || err.msg || 'Send failed');
+      throw new Error(err.error_description || err.msg || 'Could not send code');
     }
-    document.getElementById('login-sent-email').textContent = email;
+    // Store email for verification step
+    localStorage.setItem('gbl_pending_email', email);
+    // Show code entry step
     document.getElementById('login-email-step').classList.remove('active');
-    document.getElementById('login-sent-step').classList.add('active');
+    const codeStep = document.getElementById('login-code-step');
+    if (codeStep) {
+      codeStep.classList.add('active');
+      document.getElementById('login-code-email-display').textContent = email;
+      setTimeout(() => document.getElementById('login-code-input')?.focus(), 100);
+    }
   } catch (err) {
-    document.getElementById('login-error').textContent = err.message || 'Could not send link. Try again.';
+    document.getElementById('login-error').textContent = err.message || 'Could not send code. Try again.';
     btn.disabled = false;
-    btn.textContent = 'Send Login Link →';
+    btn.textContent = 'Send Code →';
   }
 };
 
-async function handleMagicLinkToken(accessToken) {
-  document.getElementById('login-overlay').classList.remove('hidden');
-  ['login-email-step','login-sent-step'].forEach(id =>
-    document.getElementById(id).classList.remove('active'));
-  document.getElementById('login-verify-step').classList.add('active');
-
+window.verifyOTPCode = async function verifyOTPCode() {
+  const email = localStorage.getItem('gbl_pending_email') || '';
+  const code  = (document.getElementById('login-code-input')?.value || '').trim();
+  if (!code || code.length < 6) {
+    document.getElementById('login-code-error').textContent = 'Please enter the 6-digit code.';
+    return;
+  }
+  const btn = document.getElementById('login-verify-code-btn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  document.getElementById('login-code-error').textContent = '';
   try {
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email, token: code, type: 'email' }),
     });
-
-    if (!userRes.ok) {
-      const newToken = await refreshSession();
-      if (newToken) { handleMagicLinkToken(newToken); return; }
-      throw new Error('Session expired — please sign in again');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error_description || err.msg || 'Invalid code');
     }
-
-    const user = await userRes.json();
+    const data = await res.json();
+    const accessToken  = data.access_token;
+    const refreshToken = data.refresh_token;
+    if (!accessToken) throw new Error('No token returned');
     localStorage.setItem('sb_access_token', accessToken);
-    const email = (user.email || '').toLowerCase().trim();
-    if (!email) throw new Error('No email returned from Supabase auth');
+    if (refreshToken) localStorage.setItem('sb_refresh_token', refreshToken);
+    localStorage.removeItem('gbl_pending_email');
+    await resolveRoleFromToken(accessToken, email);
+  } catch (err) {
+    document.getElementById('login-code-error').textContent = err.message || 'Incorrect code — try again.';
+    btn.disabled = false;
+    btn.textContent = 'Verify →';
+  }
+};
 
+async function resolveRoleFromToken(accessToken, email) {
+  try {
     let roles = null;
-    let roleRes = await fetch(
+    const roleRes = await fetch(
       `${SUPABASE_URL}/rest/v1/user_roles?select=role,email&limit=10`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` } }
     );
-    let roleData = await roleRes.json();
-
+    const roleData = await roleRes.json();
     if (Array.isArray(roleData) && roleData.length > 0) {
       const match = roleData.find(r => (r.email||'').toLowerCase().trim() === email);
       if (match) roles = [match];
     }
-
     if (!roles || !roles.length) {
       const fallbackRes = await fetch(
         `${SUPABASE_URL}/rest/v1/user_roles?email=ilike.${encodeURIComponent(email)}&select=role&limit=1`,
@@ -110,32 +129,38 @@ async function handleMagicLinkToken(accessToken) {
       const fallbackData = await fallbackRes.json();
       if (Array.isArray(fallbackData) && fallbackData.length > 0) roles = fallbackData;
     }
-
     const role = roles?.[0]?.role;
     if (!role) {
-      document.getElementById('login-verify-step').innerHTML =
-        `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
-           No role assigned for <strong>${email}</strong>.<br>
-           <span style="font-size:13px;color:var(--text3)">Ask your admin to add you to user_roles.</span>
-           <br><br>
-           <button class="btn-modal-ghost" onclick="backToEmail()">← Try again</button>
-         </div>`;
+      document.getElementById('login-code-error').textContent =
+        `No role found for ${email}. Ask your admin.`;
       return;
     }
-
     localStorage.setItem('gbl_role', role);
     localStorage.setItem('gbl_email', email);
-    localStorage.setItem('gbl_token', accessToken);
     document.getElementById('login-overlay').classList.add('hidden');
-    history.replaceState(null, '', window.location.pathname + window.location.search);
     activateRole(role);
-
   } catch (err) {
-    document.getElementById('login-verify-step').innerHTML =
-      `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
-         Sign-in failed: ${err.message}<br><br>
-         <button class="btn-modal-ghost" onclick="backToEmail()">← Try again</button>
-       </div>`;
+    document.getElementById('login-code-error').textContent = 'Login failed — try again.';
+  }
+}
+
+async function handleMagicLinkToken(accessToken) {
+  // Legacy support — if someone still has an old magic link
+  try {
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
+    });
+    if (!userRes.ok) {
+      const newToken = await refreshSession();
+      if (newToken) { handleMagicLinkToken(newToken); return; }
+      showLoginOverlay(); return;
+    }
+    const user  = await userRes.json();
+    const email = (user.email || '').toLowerCase().trim();
+    localStorage.setItem('sb_access_token', accessToken);
+    await resolveRoleFromToken(accessToken, email);
+  } catch (err) {
+    showLoginOverlay();
   }
 }
 
@@ -145,9 +170,10 @@ function logout() {
   localStorage.removeItem('gbl_token');
   localStorage.removeItem('sb_access_token');
   localStorage.removeItem('sb_refresh_token');
+  localStorage.removeItem('gbl_pending_email');
   stopRealtime();
-  document.getElementById('dashboard-view').classList.remove('active');
-  document.getElementById('client-view').classList.remove('active');
+  document.getElementById('dashboard-view')?.classList.remove('active');
+  document.getElementById('client-view')?.classList.remove('active');
   showLoginOverlay();
 }
 
@@ -187,4 +213,10 @@ function updateActionButton() {
   btn.textContent = currentRole === 'Client' ? '+ New Request' : '+ New Post';
 }
 
-function handle​​​​​​​​​​​​​​​​
+function handleActionButton() {
+  if (currentRole === 'Client') {
+    scrollToNewRequest();
+  } else {
+    openNewPostModal();
+  }
+}
