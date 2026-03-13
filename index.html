@@ -3227,6 +3227,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Check for Supabase magic link token in URL hash
+  const savedToken = localStorage.getItem("sb_access_token");
+
+if (savedToken && !window.location.hash.includes("access_token")) {
+  handleMagicLinkToken(savedToken);
+  return;
+}
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {
     const hashParams = new URLSearchParams(hash.slice(1));
@@ -3307,6 +3313,7 @@ async function handleMagicLinkToken(accessToken) {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
     });
     const user = await userRes.json();
+    localStorage.setItem("sb_access_token", accessToken);
     console.log('[GBL Auth] User response:', user);
 
     const email = (user.email || '').toLowerCase().trim();
