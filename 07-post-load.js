@@ -633,7 +633,6 @@ function toggleBucketOverflow(btn) {
   const hiddenCount = card.querySelectorAll('.bucket-item.overflow-hidden').length;
   btn.textContent = isExpanded ? '↑ Show less' : `+${hiddenCount} more`;
 }
-      const pillar   = p.contentPillar || '';
 
 function renderPipeline() {
   const grouped = {};
