@@ -132,20 +132,21 @@ async function deleteTask(id) {
 }
 
 function renderAll() {
-  updateStats();
-  renderPipelineStrip();
-  renderProductionMeter();
-  renderAdminInsight();
-  renderTaskBanner();
-  renderAdminTaskPanel();
-  renderCreativeTracker();
-  renderNextPost();
-  renderTasks();
-  renderPipeline();
-  renderUpcoming();
-  renderLibrary();
-  populateFilterDropdowns();
-  applyRoleVisibility();
+  const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
+  run('updateStats',        updateStats);
+  run('pipelineStrip',      renderPipelineStrip);
+  run('productionMeter',    renderProductionMeter);
+  run('adminInsight',       renderAdminInsight);
+  run('taskBanner',         renderTaskBanner);
+  run('adminTaskPanel',     renderAdminTaskPanel);
+  run('creativeTracker',    renderCreativeTracker);
+  run('nextPost',           renderNextPost);
+  run('tasks',              renderTasks);
+  run('pipeline',           renderPipeline);
+  run('upcoming',           renderUpcoming);
+  run('library',            renderLibrary);
+  run('filterDropdowns',    populateFilterDropdowns);
+  run('roleVisibility',     applyRoleVisibility);
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
