@@ -134,8 +134,9 @@ async function fetchAndRenderNotifications() {
     }
     list.innerHTML = data.map(n => `
       <div class="notif-item ${n.read ? '' : 'unread'}">
-        <div class="notif-item-action">${esc(n.action||'')}</div>
-        <div class="notif-item-meta">${esc(n.actor||'')} · ${timeAgo(n.created_at)}</div>
+        <div class="notif-actor">${esc(n.actor||'System')}</div>
+        <div class="notif-msg">${esc(n.action||'')}</div>
+        <div class="notif-time">${timeAgo(n.created_at)}</div>
       </div>`).join('');
   } catch {
     list.innerHTML = '<div style="padding:16px;color:var(--c-red);text-align:center">Could not load.</div>';
