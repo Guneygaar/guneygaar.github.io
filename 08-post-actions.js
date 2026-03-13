@@ -405,17 +405,13 @@ function onPcardTouchEnd(event) {
 // ═══════════════════════════════════════════════
 
 const _pcs = {
-  postId:   null,
-  listKey:  null,
-  list:     [],
-  idx:      0,
-  touchX0:  0,
-  touchY0:  0,
-  dragging: false,
+  postId:  null,
+  listKey: null,
+  list:    [],
+  idx:     0,
 };
 
 function openPCS(postId, listKey) {
-  // Build the list for swipe navigation
   const list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
     : allPosts;
@@ -428,12 +424,133 @@ function openPCS(postId, listKey) {
   document.getElementById('pcs-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   _renderPCS(postId);
+  _pcsAttachSwipe();
 }
 
 function closePCS() {
   document.getElementById('pcs-overlay').classList.remove('open');
   document.body.style.overflow = '';
   _pcs.postId = null;
+}
+
+// ── Swipe attachment ──────────────────────────
+function _pcsAttachSwipe() {
+  const screen = document.getElementById('pcs-screen');
+  // Remove any existing listeners to avoid doubles
+  screen.removeEventListener('touchstart', _pcsTouchStart);
+  screen.removeEventListener('touchmove',  _pcsTouchMove);
+  screen.removeEventListener('touchend',   _pcsTouchEnd);
+  screen.addEventListener('touchstart', _pcsTouchStart, { passive: true });
+  screen.addEventListener('touchmove',  _pcsTouchMove,  { passive: false }); // must be non-passive to preventDefault
+  screen.addEventListener('touchend',   _pcsTouchEnd,   { passive: true });
+}
+
+const _swipe = { x0: 0, y0: 0, lock: null }; // lock: null | 'h' | 'v'
+
+function _pcsTouchStart(e) {
+  if (e.touches.length !== 1) return;
+  _swipe.x0   = e.touches[0].clientX;
+  _swipe.y0   = e.touches[0].clientY;
+  _swipe.lock = null;
+  const screen = document.getElementById('pcs-screen');
+  screen.style.transition = 'none';
+}
+
+function _pcsTouchMove(e) {
+  if (e.touches.length !== 1 || _swipe.lock === 'v') return;
+  const dx = e.touches[0].clientX - _swipe.x0;
+  const dy = e.touches[0].clientY - _swipe.y0;
+  const adx = Math.abs(dx), ady = Math.abs(dy);
+
+  // Lock gesture direction once we know which way it's going
+  if (!_swipe.lock && (adx > 8 || ady > 8)) {
+    _swipe.lock = adx > ady ? 'h' : 'v';
+  }
+  if (_swipe.lock !== 'h') return;
+
+  // Prevent vertical scroll during horizontal swipe
+  e.preventDefault();
+
+  // Only track leftward drag (right swipe does nothing)
+  if (dx < 0) {
+    const resist = Math.max(dx, -window.innerWidth * 0.6); // cap drag at 60vw
+    document.getElementById('pcs-screen').style.transform = `translateX(${resist}px)`;
+  }
+}
+
+function _pcsTouchEnd(e) {
+  if (_swipe.lock !== 'h') return;
+  const dx  = e.changedTouches[0].clientX - _swipe.x0;
+  const screen = document.getElementById('pcs-screen');
+
+  if (dx < -80) {
+    // Committed — animate out then load next
+    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+    screen.style.transform  = 'translateX(-100%)';
+    screen.style.opacity    = '0';
+    setTimeout(() => {
+      screen.style.transition = '';
+      screen.style.transform  = '';
+      screen.style.opacity    = '';
+      _pcsNext();
+    }, 220);
+  } else {
+    // Spring back
+    screen.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    screen.style.transform  = 'translateX(0)';
+    setTimeout(() => { screen.style.transition = ''; }, 260);
+  }
+}
+
+function _pcsNext() {
+  const nextIdx = _pcs.idx + 1;
+
+  if (nextIdx >= _pcs.list.length) {
+    // End of list — show completion screen then close
+    const scroll = document.getElementById('pcs-scroll');
+    document.getElementById('pcs-context-bar').innerHTML =
+      `<span class="pcs-context-list">${esc(_pcsListLabel(_pcs.listKey))}</span>` +
+      `<span class="pcs-context-remaining">0 remaining</span>`;
+    document.getElementById('pcs-footer').innerHTML = '';
+    scroll.innerHTML = `
+      <div class="pcs-end-screen">
+        <div class="pcs-end-icon">✓</div>
+        <div>No posts left.</div>
+      </div>`;
+    // Slide in the end screen
+    const screen = document.getElementById('pcs-screen');
+    screen.style.transform = 'translateX(40px)';
+    screen.style.opacity   = '0';
+    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+    requestAnimationFrame(() => {
+      screen.style.transform = 'translateX(0)';
+      screen.style.opacity   = '1';
+    });
+    setTimeout(closePCS, 1800);
+    return;
+  }
+
+  // Slide in next post
+  _pcs.idx    = nextIdx;
+  _pcs.postId = getPostId(_pcs.list[nextIdx]);
+
+  // Reset scroll position
+  const scrollEl = document.getElementById('pcs-scroll');
+  if (scrollEl) scrollEl.scrollTop = 0;
+
+  _renderPCS(_pcs.postId);
+
+  // Animate in from right
+  const screen = document.getElementById('pcs-screen');
+  screen.style.transform  = 'translateX(40px)';
+  screen.style.opacity    = '0';
+  screen.style.transition = 'none';
+  requestAnimationFrame(() => {
+    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+    screen.style.transform  = 'translateX(0)';
+    screen.style.opacity    = '1';
+    setTimeout(() => { screen.style.transition = ''; }, 230);
+  });
 }
 
 function _renderPCS(postId) {
@@ -479,6 +596,16 @@ function _renderPCS(postId) {
 
   // Footer
   _renderPCSFooter(post, isPublished, canEdit);
+
+  // Preload next post's preview so swipe feels instant
+  const nextPost = _pcs.list[_pcs.idx + 1];
+  if (nextPost) {
+    const nextLink = nextPost.postLink || nextPost.post_link || '';
+    if (nextLink && nextLink.startsWith('http')) {
+      const img = new Image();
+      img.src = nextLink;
+    }
+  }
 }
 
 function _pcsListLabel(listKey) {
@@ -697,63 +824,3 @@ function togglePCSActivity() {
 }
 
 // ── Swipe navigation ──────────────────────────
-
-function pcsSwipeStart(e) {
-  if (e.touches.length !== 1) return;
-  _pcs.touchX0  = e.touches[0].clientX;
-  _pcs.touchY0  = e.touches[0].clientY;
-  _pcs.dragging = false;
-}
-
-function pcsSwipeMove(e) {
-  if (!e.touches.length) return;
-  const dx = e.touches[0].clientX - _pcs.touchX0;
-  const dy = e.touches[0].clientY - _pcs.touchY0;
-  // Only activate for clear horizontal swipes (left)
-  if (!_pcs.dragging && Math.abs(dx) > 10 && Math.abs(dy) < 50 && dx < 0) {
-    _pcs.dragging = true;
-  }
-  if (_pcs.dragging) e.preventDefault();
-}
-
-function pcsSwipeEnd(e) {
-  if (!_pcs.dragging) return;
-  _pcs.dragging = false;
-  const dx = e.changedTouches[0].clientX - _pcs.touchX0;
-  if (dx < -60) _pcsNext();   // swipe left → next post
-}
-
-function _pcsNext() {
-  const nextIdx = _pcs.idx + 1;
-  if (nextIdx >= _pcs.list.length) {
-    // End of list
-    const screen = document.getElementById('pcs-screen');
-    screen.classList.add('pcs-swipe-out');
-    setTimeout(() => {
-      screen.classList.remove('pcs-swipe-out');
-      document.getElementById('pcs-context-bar').innerHTML =
-        `<span class="pcs-context-list">${esc(_pcsListLabel(_pcs.listKey))}</span><span class="pcs-context-remaining">0 remaining</span>`;
-      document.getElementById('pcs-preview-wrap').innerHTML = '';
-      document.getElementById('pcs-fields').innerHTML = '';
-      document.getElementById('pcs-footer').innerHTML = '';
-      document.getElementById('pcs-scroll').innerHTML = `
-        <div class="pcs-end-screen">
-          <div class="pcs-end-icon">✓</div>
-          <div>No posts left.</div>
-        </div>`;
-      setTimeout(closePCS, 1800);
-    }, 220);
-    return;
-  }
-
-  const screen = document.getElementById('pcs-screen');
-  screen.classList.add('pcs-swipe-out');
-  setTimeout(() => {
-    screen.classList.remove('pcs-swipe-out');
-    _pcs.idx    = nextIdx;
-    _pcs.postId = getPostId(_pcs.list[nextIdx]);
-    _renderPCS(_pcs.postId);
-    screen.classList.add('pcs-swipe-in');
-    setTimeout(() => screen.classList.remove('pcs-swipe-in'), 220);
-  }, 220);
-}
