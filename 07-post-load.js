@@ -461,81 +461,19 @@ function toggleHeroComments(id, btn) {
 const _postLists = {};
 
 function buildPostCard(p, listKey) {
-  const id       = getPostId(p);
-  const title    = getTitle(p);
-  const stage    = p.stage || '';
+  const id    = getPostId(p);
+  const title = getTitle(p);
+  const stage = p.stage || '';
   const { hex, label: stageLabel } = stageStyle(stage);
-  const pillar   = p.contentPillar || '';
-  const location = p.location || '';
-  const owner    = p.owner || '';
   const postLink = p.postLink || p.post_link || '';
-  const comments = p.comments || '';
-  const days     = daysInStage(p);
-  const stCls    = staleClass(days);
-
-  // Preview area
-  const previewHtml = buildPreview(postLink, title, pillar, hex, id);
-
-  // Meta lines
-  const meta1 = [pillar, location].filter(Boolean).join(' · ');
-  const meta2  = [owner, p.targetDate ? formatDate(p.targetDate) : ''].filter(Boolean).join(' · ');
-
-  // Timer
-  const timerHtml = days >= 3
-    ? `<span class="upc-timer ${stCls}">⏳ ${days}d</span>` : '';
 
   return `
     <div class="upc" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
          onclick="openPCS('${esc(id)}','${esc(listKey||'')}')">
-      <div class="upc-preview" onclick="event.stopPropagation();openCanva('${esc(postLink)}','${esc(id)}')">
-        ${previewHtml}
-        <span class="upc-open-icon">↗</span>
-      </div>
-      <div class="upc-body">
-        <div class="upc-row-top">
-          <span class="upc-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
-          ${timerHtml}
-          <button class="upc-menu-btn" onclick="event.stopPropagation();openUpcMenu('${esc(id)}','${esc(postLink)}',event)">⋯</button>
-        </div>
-        <div class="upc-title">${esc(title)}</div>
-        ${meta1 ? `<div class="upc-meta">${esc(meta1)}</div>` : ''}
-        ${meta2 ? `<div class="upc-meta">${esc(meta2)}</div>` : ''}
-      </div>
+      <span class="upc-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
+      <span class="upc-title">${esc(title)}</span>
+      <button class="upc-menu-btn" onclick="event.stopPropagation();openUpcMenu('${esc(id)}','${esc(postLink)}',event)">⋯</button>
     </div>`;
-}
-
-function buildPreview(postLink, title, pillar, hex, id) {
-  if (postLink && postLink.includes('canva.com')) {
-    return `
-      <div class="upc-preview-canva">
-        <div class="upc-preview-canva-logo">
-          <svg width="16" height="16" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7D2AE8"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif" font-weight="bold">C</text></svg>
-          Canva Design
-        </div>
-        <div class="upc-preview-canva-title">${esc(title)}</div>
-      </div>`;
-  }
-  if (postLink) {
-    return `
-      <div class="upc-preview-link">
-        <div class="upc-preview-link-domain">${esc(new URL(postLink.startsWith('http') ? postLink : 'https://'+postLink).hostname.replace('www.',''))}</div>
-        <div class="upc-preview-link-title">${esc(title)}</div>
-      </div>`;
-  }
-  // Text fallback
-  const snippet = (pillar || title).substring(0, 60);
-  return `
-    <div class="upc-preview-text" style="border-left:3px solid ${hex}">
-      <div class="upc-preview-text-label">${esc(pillar||'Post')}</div>
-      <div class="upc-preview-text-title">${esc(title)}</div>
-    </div>`;
-}
-
-function openCanva(link, postId) {
-  if (link && link.startsWith('http')) { window.open(link, '_blank', 'noopener'); return; }
-  // No link — open control screen instead
-  const listKey = document.getElementById(`upc-${postId}`)?.dataset.list || '';
-  openPCS(postId, listKey);
 }
 
 // Overflow menu
