@@ -2973,20 +2973,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 700;
 }
 
-/* Swipe animation */
-#pcs-screen.pcs-swipe-out {
-  animation: pcsSlideOut 0.22s ease forwards;
-}
-#pcs-screen.pcs-swipe-in {
-  animation: pcsSlideIn 0.22s ease forwards;
-}
-@keyframes pcsSlideOut {
-  from { transform: translateX(0); opacity: 1; }
-  to   { transform: translateX(-60px); opacity: 0; }
-}
-@keyframes pcsSlideIn {
-  from { transform: translateX(40px); opacity: 0; }
-  to   { transform: translateX(0); opacity: 1; }
+/* PCS screen — overflow hidden so drag doesn't show edges */
+#pcs-screen {
+  overflow: hidden;
+  will-change: transform, opacity;
 }
 
 /* No posts left screen */
