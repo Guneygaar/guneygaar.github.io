@@ -310,3 +310,13 @@ function esc(str) {
     .replace(/"/g,'&quot;')
     .replace(/'/g,'&#39;');
 }
+
+// ── Admin Insights Popup (fix 19) ─────────────
+function openInsights() {
+  document.getElementById('insights-overlay')?.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeInsights() {
+  document.getElementById('insights-overlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
