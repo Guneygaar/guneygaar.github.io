@@ -207,8 +207,7 @@ function renderPipelineStrip() {
     let cClass = '';
     if (group.target) cClass = count < READY_TO_SEND_TARGET ? ' warn' : ' ok';
     return `
-      <div class="ps-stage" onclick="goToTab('${group.tab}')">
-        <span class="ps-dot" style="background:${group.color}"></span>
+      <div class="ps-stage" onclick="${group.tab === 'library' ? `goToLibraryFiltered('${group.stages[0]}')` : group.bucket ? `goToTab('tasks');scrollToBucket('${group.bucket}')` : `goToTab('${group.tab}')`}">\n        <span class="ps-dot" style="background:${group.color}"></span>
         <span class="ps-label">${group.label}</span>
         <span class="ps-count${cClass}">${count}</span>
       </div>`;
