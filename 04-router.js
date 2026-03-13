@@ -2,7 +2,7 @@
    04-router.js — App entry point (loads LAST)
 ═══════════════════════════════════════════════ */
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   const pathMatch = window.location.pathname.match(/^\/p\/(.+)/);
   if (pathMatch) { showApprovalView(decodeURIComponent(pathMatch[1])); return; }
 
@@ -28,12 +28,24 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  const savedToken = localStorage.getItem('sb_access_token');
-  const savedRole  = localStorage.getItem('gbl_role');
+  const savedToken   = localStorage.getItem('sb_access_token');
+  const savedRole    = localStorage.getItem('gbl_role');
+  const refreshToken = localStorage.getItem('sb_refresh_token');
 
-  if (savedToken && savedRole) {
-    activateRole(savedRole);
-  } else {
-    showLoginOverlay();
+  if (savedRole && (savedToken || refreshToken)) {
+    // Try to refresh the session silently first
+    if (refreshToken) {
+      const newToken = await refreshSession();
+      if (newToken) {
+        activateRole(savedRole);
+        return;
+      }
+    }
+    if (savedToken) {
+      activateRole(savedRole);
+      return;
+    }
   }
+
+  showLoginOverlay();
 });
