@@ -138,6 +138,7 @@ function renderAll() {
   renderAdminInsight();
   renderTaskBanner();
   renderAdminTaskPanel();
+  renderCreativeTracker();
   renderNextPost();
   renderTasks();
   renderPipeline();
@@ -251,29 +252,52 @@ function renderAdminInsight() {
     if (!t) return 0;
     return Math.floor((now - new Date(t).getTime()) / DAY);
   }
-  const stuckProduction = allPosts.filter(p =>
-    (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
-  const stuckClient = allPosts.filter(p =>
-    ['awaiting approval','sent for approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim())
-    && daysSince(p) >= 3);
-  const stuckReview = allPosts.filter(p =>
-    (p.stage||'').toLowerCase().trim() === 'revisions needed' && daysSince(p) >= 2);
+  const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
+  const stuckClient     = allPosts.filter(p => ['awaiting approval','sent for approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
+  const stuckReview     = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'revisions needed' && daysSince(p) >= 2);
+  const weekAgo  = now - 7 * DAY;
+  function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
+  const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready to send').length;
+  const parkedPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() !== 'published' && daysSince(p) >= 7);
+  window._parkedPosts = parkedPosts;
+
+  // Build pills for summary bar
+  const blockers = stuckProduction.length + stuckClient.length + stuckReview.length;
+  const blockPillClass = blockers === 0 ? 'green' : blockers >= 5 ? 'red' : 'amber';
+  const readyPillClass = readyCount >= READY_TO_SEND_TARGET ? 'green' : readyCount >= READY_TO_SEND_TARGET * 0.5 ? 'amber' : 'red';
+
+  section.innerHTML = `
+    <div class="insight-summary-bar" onclick="openInsights()">
+      <span class="insight-summary-pill ${blockPillClass}">⚡ ${blockers === 0 ? 'No blockers' : `${blockers} blocked`}</span>
+      <span class="insight-summary-pill ${readyPillClass}">✓ ${readyCount}/${READY_TO_SEND_TARGET} ready</span>
+      <span class="insight-summary-pill blue">📅 ${published} published this week</span>
+      ${parkedPosts.length ? `<span class="insight-summary-pill amber">🅿 ${parkedPosts.length} parked</span>` : ''}
+      <span class="insight-summary-expand">Details →</span>
+    </div>`;
+
+  // Populate insights popup body
   const bottleneckRows = [
     stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow — ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
     stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting — ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
     stuckReview.length ? `<div class="insight-flag"><span class="insight-flag-dot amber"></span>Revisions sitting — ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days</div>` : '',
   ].filter(Boolean).join('');
-  const bottleneckPanel = `<div class="insight-panel"><div class="insight-panel-label">Bottlenecks</div>${bottleneckRows || '<div class="insight-flag"><span class="insight-flag-dot" style="background:var(--c-green)"></span>No blockers — pipeline clear</div>'}</div>`;
-  const weekAgo = now - 7 * DAY;
-  function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
-  const written   = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
-  const approved  = allPosts.filter(p => ['sent for approval','awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const flowPanel = `<div class="insight-panel"><div class="insight-panel-label">This Week</div><div class="insight-rows"><div class="insight-row"><span class="insight-row-label">Written</span><span class="insight-row-val ${written===0?'warn':''}">${written}</span></div><div class="insight-row"><span class="insight-row-label">Approved</span><span class="insight-row-val ${approved===0?'warn':''}">${approved}</span></div><div class="insight-row"><span class="insight-row-label">Published</span><span class="insight-row-val ${published===0?'warn':'ok'}">${published}</span></div></div></div>`;
-  const parkedPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() !== 'published' && daysSince(p) >= 7);
-  const parkedPanel = parkedPosts.length ? `<div class="insight-panel"><div class="insight-panel-label">Parked</div><div class="insight-row"><span class="insight-row-label">No movement in 7+ days</span><span class="insight-row-val warn" style="display:flex;align-items:center;gap:var(--sp-2)">${parkedPosts.length}<span class="insight-parked-link" onclick="openParked()">View →</span></span></div></div>` : '';
-  section.innerHTML = `<div class="insight-wrap">${bottleneckPanel}${flowPanel}${parkedPanel}</div>`;
-  window._parkedPosts = parkedPosts;
+  const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
+  const approved = allPosts.filter(p => ['sent for approval','awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+
+  const body = document.getElementById('insights-body');
+  if (body) {
+    body.innerHTML = `
+      <div class="insight-wrap">
+        <div class="insight-panel"><div class="insight-panel-label">Bottlenecks</div>${bottleneckRows || '<div class="insight-flag"><span class="insight-flag-dot" style="background:var(--c-green)"></span>No blockers — pipeline clear</div>'}</div>
+        <div class="insight-panel"><div class="insight-panel-label">This Week</div><div class="insight-rows">
+          <div class="insight-row"><span class="insight-row-label">Written</span><span class="insight-row-val ${written===0?'warn':''}">${written}</span></div>
+          <div class="insight-row"><span class="insight-row-label">Approved</span><span class="insight-row-val ${approved===0?'warn':''}">${approved}</span></div>
+          <div class="insight-row"><span class="insight-row-label">Published</span><span class="insight-row-val ${published===0?'warn':'ok'}">${published}</span></div>
+        </div></div>
+        ${parkedPosts.length ? `<div class="insight-panel"><div class="insight-panel-label">Parked</div><div class="insight-row"><span class="insight-row-label">No movement in 7+ days</span><span class="insight-row-val warn" style="display:flex;align-items:center;gap:var(--sp-2)">${parkedPosts.length}<span class="insight-parked-link" onclick="closeInsights();openParked()">View →</span></span></div></div>` : ''}
+      </div>`;
+  }
 }
 
 function openParked() {
@@ -462,7 +486,7 @@ function renderTasks() {
       const nudgeHtml      = currentRole === 'Servicing' && isClientWait && days >= 3 ? `<button class="btn-nudge" onclick="event.stopPropagation();nudgeClient('${esc(id)}','${esc(title)}','${esc(p.targetDate||'')}')">💬 Nudge</button>` : '';
       const payloadHtml    = bucket.key === 'ready' && (currentRole === 'Servicing' || currentRole === 'Admin') ? `<div class="payload-row">${comments ? `<button class="btn-payload" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="btn-payload" style="text-align:center;text-decoration:none">↗ Open Design</a>` : ''}</div>` : '';
       const snoozeHtml     = currentRole === 'Servicing' ? `<button class="btn-snooze" onclick="event.stopPropagation();openSnooze('${esc(id)}')">😴</button>` : '';
-      const itemClick      = currentRole === 'Admin' ? `onclick="openAdminEdit('${esc(id)}')"` : canUpdate ? `onclick="openPostModal('${esc(id)}')"` : '';
+      const itemClick = `onclick="openPostCard('${esc(id)}')"`;
       const hiddenCls      = idx >= BUCKET_LIMIT ? ' overflow-hidden' : '';
       return `<div class="bucket-item${hiddenCls}" ${itemClick} ${currentRole==='Creative' && bucket.key==='production' ? `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleBucketDrop(event,'${esc(id)}')"` : ''}><div class="bucket-item-left"><span class="bucket-item-title">${esc(title)}</span>${pillar ? `<span class="bucket-item-pillar">${esc(pillar)}</span>` : ''}${revisionHtml}${payloadHtml}${nudgeHtml}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${stagePill}${staleBadgeHtml}<button class="btn-timeline" onclick="event.stopPropagation();openTimeline('${esc(id)}','${esc(title)}')" title="View activity">⏱</button>${snoozeHtml}</div></div>`;
     }).join('');
@@ -611,4 +635,134 @@ function renderClientApproved() {
   if (!tbody) return;
   if (!published.length) { tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>No published posts yet.</p></div></td></tr>`; return; }
   tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${formatDate(p.targetDate)||'—'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td></tr>`; }).join('');
+}
+
+// ── Fix 20: Creative Target Tracker ──────────
+function renderCreativeTracker() {
+  const section = document.getElementById('admin-insight-section');
+  if (!section || currentRole !== 'Creative') return;
+  const now  = Date.now();
+  const DAY  = 86400000;
+  const weekAgo = now - 7 * DAY;
+  const monthAgo = now - 30 * DAY;
+  const myPosts = allPosts.filter(p => {
+    const o = (p.owner||'').toLowerCase();
+    return o.includes('pranav') || o.includes('creative');
+  });
+  const doneThisWeek = myPosts.filter(p => {
+    const stage = (p.stage||'').toLowerCase().trim();
+    const t = new Date(p.updated_at || p.created_at).getTime();
+    return ['ready to send','sent for approval','scheduled','published'].includes(stage) && t >= weekAgo;
+  }).length;
+  const doneThisMonth = myPosts.filter(p => {
+    const stage = (p.stage||'').toLowerCase().trim();
+    const t = new Date(p.updated_at || p.created_at).getTime();
+    return ['ready to send','sent for approval','scheduled','published'].includes(stage) && t >= monthAgo;
+  }).length;
+  const inProgress = myPosts.filter(p => ['in production','revisions needed','awaiting brand input'].includes((p.stage||'').toLowerCase().trim())).length;
+  const WEEKLY_TARGET  = 5;
+  const MONTHLY_TARGET = 20;
+  const weekPct  = Math.min(100, Math.round((doneThisWeek / WEEKLY_TARGET) * 100));
+  const weekCls  = doneThisWeek >= WEEKLY_TARGET ? 'ok' : doneThisWeek >= WEEKLY_TARGET * 0.6 ? '' : 'warn';
+
+  section.innerHTML = `
+    <div class="creative-tracker">
+      <div class="creative-tracker-head">
+        <span class="creative-tracker-label">Your Production</span>
+        <span class="creative-tracker-period">This week · target ${WEEKLY_TARGET}</span>
+      </div>
+      <div class="creative-tracker-stats">
+        <div class="ct-stat"><div class="ct-stat-num ${weekCls}">${doneThisWeek}</div><div class="ct-stat-label">This Week</div></div>
+        <div class="ct-stat"><div class="ct-stat-num">${doneThisMonth}</div><div class="ct-stat-label">This Month</div></div>
+        <div class="ct-stat"><div class="ct-stat-num">${inProgress}</div><div class="ct-stat-label">In Progress</div></div>
+      </div>
+      <div class="creative-tracker-bar">
+        <div class="creative-tracker-fill" style="width:${weekPct}%"></div>
+      </div>
+    </div>`;
+}
+
+// ── Fix 17: Library view switch ───────────────
+let _currentLibraryView = 'list';
+
+function switchLibraryView(btn) {
+  document.querySelectorAll('.lib-view-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _currentLibraryView = btn.dataset.view;
+  const searchControls = document.getElementById('library-search-controls');
+  if (searchControls) searchControls.style.display = _currentLibraryView === 'list' ? '' : 'none';
+  document.getElementById('library-list-view').style.display    = _currentLibraryView === 'list'     ? '' : 'none';
+  document.getElementById('library-pillar-view').style.display  = _currentLibraryView === 'pillar'   ? '' : 'none';
+  document.getElementById('library-calendar-view').style.display= _currentLibraryView === 'calendar' ? '' : 'none';
+  if (_currentLibraryView === 'pillar')   renderLibraryPillar();
+  if (_currentLibraryView === 'calendar') renderLibraryCalendar();
+}
+
+function renderLibraryPillar() {
+  const container = document.getElementById('library-pillar-view');
+  if (!container) return;
+  const pillars = {};
+  allPosts.forEach(p => {
+    const key = p.contentPillar || 'Unassigned';
+    if (!pillars[key]) pillars[key] = [];
+    pillars[key].push(p);
+  });
+  const sorted = Object.keys(pillars).sort((a,b) => pillars[b].length - pillars[a].length);
+  container.innerHTML = `<div class="pillar-grid">${sorted.map(pillar => {
+    const posts = pillars[pillar];
+    const cards = posts.map(p => {
+      const id = getPostId(p);
+      const { hex, label: stgLabel } = stageStyle(p.stage);
+      return `<div class="pillar-card" onclick="openPostCard('${esc(id)}')">
+        <span class="pillar-card-title">${esc(getTitle(p))}</span>
+        <div class="pillar-card-meta">
+          <span class="tag tag-stage" style="background:${hex}22;color:${hex};font-size:10px">${esc(stgLabel)}</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="pillar-section"><div class="pillar-section-head"><span class="pillar-section-name">${esc(pillar)}</span><span class="pillar-section-count">${posts.length}</span></div><div class="pillar-cards">${cards}</div></div>`;
+  }).join('')}</div>`;
+}
+
+function renderLibraryCalendar() {
+  const container = document.getElementById('library-calendar-view');
+  if (!container) return;
+  const withDates  = allPosts.filter(p => p.targetDate).sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
+  const noDates    = allPosts.filter(p => !p.targetDate);
+  const months     = {};
+  const today      = new Date(); today.setHours(0,0,0,0);
+  withDates.forEach(p => {
+    const d   = new Date(p.targetDate);
+    const key = d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    if (!months[key]) months[key] = [];
+    months[key].push(p);
+  });
+  let html = Object.entries(months).map(([month, posts]) => {
+    const items = posts.map(p => {
+      const id  = getPostId(p);
+      const d   = new Date(p.targetDate);
+      const isToday = d.toDateString() === today.toDateString();
+      const dayStr  = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      const { hex } = stageStyle(p.stage);
+      return `<div class="calendar-item" onclick="openPostCard('${esc(id)}')">
+        <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
+        <span class="calendar-item-title">${esc(getTitle(p))}</span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
+      </div>`;
+    }).join('');
+    return `<div class="calendar-month"><div class="calendar-month-head">${esc(month)}</div><div class="calendar-week-strip">${items}</div></div>`;
+  }).join('');
+  if (noDates.length) {
+    const items = noDates.map(p => {
+      const id = getPostId(p);
+      const { hex } = stageStyle(p.stage);
+      return `<div class="calendar-item" onclick="openPostCard('${esc(id)}')">
+        <span class="calendar-date-badge" style="color:var(--text3)">—</span>
+        <span class="calendar-item-title">${esc(getTitle(p))}</span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
+      </div>`;
+    }).join('');
+    html += `<div class="calendar-month"><div class="calendar-month-head">No Date Set</div><div class="calendar-week-strip">${items}</div></div>`;
+  }
+  container.innerHTML = html || `<div class="empty-state"><div class="empty-icon">📅</div><p>No posts with dates yet.</p></div>`;
 }
