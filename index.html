@@ -3241,7 +3241,7 @@ if (savedToken && !window.location.hash.includes("access_token")) {
 
   // Check saved session
   const savedRole  = localStorage.getItem('gbl_role');
-  const savedToken = localStorage.getItem('gbl_token');
+  const gblToken = localStorage.getItem('gbl_token');
   if (savedRole && savedToken) {
     activateRole(savedRole);
   } else {
