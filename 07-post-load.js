@@ -443,7 +443,8 @@ function renderTasks() {
     const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
     const isRevBucket  = bucket.key === 'revisions';
     const isWaitBucket = bucket.key === 'waiting' || bucket.stages.some(s => ['awaiting brand input','awaiting approval','sent for approval'].includes(s));
-    const items = posts.slice(0,8).map(p => {
+    const BUCKET_LIMIT = 8;
+    const items = posts.map((p, idx) => {
       const id       = getPostId(p);
       const title    = getTitle(p);
       const pillar   = p.contentPillar || '';
@@ -463,13 +464,22 @@ function renderTasks() {
       const payloadHtml    = bucket.key === 'ready' && (currentRole === 'Servicing' || currentRole === 'Admin') ? `<div class="payload-row">${comments ? `<button class="btn-payload" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="btn-payload" style="text-align:center;text-decoration:none">↗ Open Design</a>` : ''}</div>` : '';
       const snoozeHtml     = currentRole === 'Servicing' ? `<button class="btn-snooze" onclick="event.stopPropagation();openSnooze('${esc(id)}')">😴</button>` : '';
       const itemClick      = currentRole === 'Admin' ? `onclick="openAdminEdit('${esc(id)}')"` : canUpdate ? `onclick="openPostModal('${esc(id)}')"` : '';
-      return `<div class="bucket-item" ${itemClick} ${currentRole==='Creative' && bucket.key==='production' ? `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleBucketDrop(event,'${esc(id)}')"` : ''}><div class="bucket-item-left"><span class="bucket-item-title">${esc(title)}</span>${pillar ? `<span class="bucket-item-pillar">${esc(pillar)}</span>` : ''}${revisionHtml}${payloadHtml}${nudgeHtml}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${stagePill}${staleBadgeHtml}<button class="btn-timeline" onclick="event.stopPropagation();openTimeline('${esc(id)}','${esc(title)}')" title="View activity">⏱</button>${snoozeHtml}</div></div>`;
+      const hiddenCls      = idx >= BUCKET_LIMIT ? ' overflow-hidden' : '';
+      return `<div class="bucket-item${hiddenCls}" ${itemClick} ${currentRole==='Creative' && bucket.key==='production' ? `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleBucketDrop(event,'${esc(id)}')"` : ''}><div class="bucket-item-left"><span class="bucket-item-title">${esc(title)}</span>${pillar ? `<span class="bucket-item-pillar">${esc(pillar)}</span>` : ''}${revisionHtml}${payloadHtml}${nudgeHtml}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">${stagePill}${staleBadgeHtml}<button class="btn-timeline" onclick="event.stopPropagation();openTimeline('${esc(id)}','${esc(title)}')" title="View activity">⏱</button>${snoozeHtml}</div></div>`;
     }).join('');
-    const overflow       = posts.length > 8 ? `<div class="bucket-overflow">+${posts.length-8} more</div>` : '';
+    const overflow       = posts.length > BUCKET_LIMIT ? `<button class="bucket-overflow-btn" onclick="toggleBucketOverflow(this)">+${posts.length - BUCKET_LIMIT} more</button>` : '';
     const urgencyHeader  = bucket.key === 'requests' && count >= 3 && currentRole === 'Creative' ? 'style="background:var(--c-amber-dim)"' : '';
     return `<div class="bucket-card"><div class="bucket-header" ${urgencyHeader}><span class="bucket-name">${esc(bucket.label)}</span><span class="bucket-badge${badgeCls}">${count}</span></div><div class="bucket-items">${count ? items + overflow : `<div class="bucket-empty">All clear ✓</div>`}</div></div>`;
   }).join('');
   container.innerHTML = `<div class="bucket-grid">${bucketHtml}</div>`;
+}
+
+function toggleBucketOverflow(btn) {
+  const card = btn.closest('.bucket-card');
+  if (!card) return;
+  const isExpanded = card.classList.toggle('expanded');
+  const hiddenCount = card.querySelectorAll('.bucket-item.overflow-hidden').length;
+  btn.textContent = isExpanded ? '↑ Show less' : `+${hiddenCount} more`;
 }
 
 function renderFlatCards(posts) {
