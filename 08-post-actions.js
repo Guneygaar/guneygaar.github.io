@@ -508,9 +508,6 @@ function _pcsNext() {
   if (nextIdx >= _pcs.list.length) {
     // End of list — show completion screen then close
     const scroll = document.getElementById('pcs-scroll');
-    document.getElementById('pcs-context-bar').innerHTML =
-      `<span class="pcs-context-list">${esc(_pcsListLabel(_pcs.listKey))}</span>` +
-      `<span class="pcs-context-remaining">0 remaining</span>`;
     document.getElementById('pcs-footer').innerHTML = '';
     scroll.innerHTML = `
       <div class="pcs-end-screen">
@@ -557,55 +554,79 @@ function _renderPCS(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) { closePCS(); return; }
 
-  const id         = getPostId(post);
-  const title      = getTitle(post);
-  const stage      = post.stage || '';
-  const stageLC    = stage.toLowerCase().trim();
+  const id          = getPostId(post);
+  const title       = getTitle(post);
+  const stage       = post.stage || '';
+  const stageLC     = stage.toLowerCase().trim();
   const isPublished = stageLC === 'published';
-  const postLink   = post.postLink || post.post_link || '';
-  const pillar     = post.contentPillar || '';
-  const location   = post.location || '';
-  const owner      = post.owner || '';
-  const targetDate = post.targetDate || '';
-  const comments   = post.comments || '';
+  const postLink    = post.postLink || post.post_link || '';
 
-  // Context bar
-  const listLabel  = _pcsListLabel(_pcs.listKey);
-  const remaining  = Math.max(0, _pcs.list.length - _pcs.idx - 1);
-  const ctxBar = document.getElementById('pcs-context-bar');
-  ctxBar.innerHTML = `
-    <span class="pcs-context-list">${esc(listLabel)}</span>
-    <span class="pcs-context-remaining">${remaining} remaining</span>`;
+  // Header title
+  document.getElementById('pcs-topbar-title').textContent = title;
 
-  // Preview
-  const previewWrap = document.getElementById('pcs-preview-wrap');
-  previewWrap.innerHTML = _buildPCSPreview(postLink, title, pillar, post);
-  previewWrap.onclick = () => { if (postLink) window.open(postLink, '_blank', 'noopener'); };
+  // Action button — Open Canva / View on LinkedIn
+  const actionWrap = document.getElementById('pcs-action-btn-wrap');
+  if (postLink) {
+    const btnLabel = isPublished ? 'View on LinkedIn ↗' : 'Open Canva ↗';
+    actionWrap.innerHTML =
+      `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-link">${btnLabel}</a>`;
+  } else {
+    actionWrap.innerHTML = '';
+  }
 
-  // Fields
+  // Next Action — display only
+  const nextActionWrap = document.getElementById('pcs-next-action-wrap');
+  const nextActionText = _pcsNextAction(stageLC);
+  nextActionWrap.innerHTML = nextActionText
+    ? `<div class="pcs-next-action">
+         <div class="pcs-next-action-label">Next Action</div>
+         <div class="pcs-next-action-text">${esc(nextActionText)}</div>
+       </div>` : '';
+
+  // Metadata grid
   const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
-  const fieldsEl = document.getElementById('pcs-fields');
-  fieldsEl.innerHTML = _buildPCSFields(post, canEdit, id);
+  document.getElementById('pcs-fields').innerHTML = _buildPCSGrid(post, canEdit, id);
 
-  // Activity
+  // Activity — load immediately
   const actBody = document.getElementById('pcs-activity-body');
-  actBody.classList.remove('open');
-  actBody.innerHTML = '';
-  actBody.dataset.loaded = '';
-  document.getElementById('pcs-activity-chevron').textContent = '▼';
+  actBody.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
+  _loadPCSActivity(id, actBody);
 
   // Footer
   _renderPCSFooter(post, isPublished, canEdit);
+}
 
-  // Preload next post's preview so swipe feels instant
-  const nextPost = _pcs.list[_pcs.idx + 1];
-  if (nextPost) {
-    const nextLink = nextPost.postLink || nextPost.post_link || '';
-    if (nextLink && nextLink.startsWith('http')) {
-      const img = new Image();
-      img.src = nextLink;
-    }
-  }
+function _pcsNextAction(stageLC) {
+  const map = {
+    'awaiting brand input':  'Waiting for brand to provide assets',
+    'in production':         'Creative is working on the design',
+    'revisions needed':      'Creative to action revision notes',
+    'ready to send':         'Send design for client approval',
+    'sent for approval':     'Waiting for brand approval',
+    'awaiting approval':     'Waiting for brand approval',
+    'scheduled':             'Post is scheduled — no action needed',
+    'published':             'Post is live',
+  };
+  return map[stageLC] || '';
+}
+
+function _loadPCSActivity(postId, bodyEl) {
+  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=25`)
+    .then(rows => {
+      if (!rows || !rows.length) {
+        bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
+        return;
+      }
+      bodyEl.innerHTML = rows.map(r => {
+        const ago = r.created_at ? timeAgo(r.created_at) : '';
+        return `<div class="pcs-activity-row">
+          <span class="pcs-activity-who">${esc(r.actor || 'System')}</span>
+          <span class="pcs-activity-what">${esc(r.action || '')}</span>
+          <span class="pcs-activity-when">${esc(ago)}</span>
+        </div>`;
+      }).join('');
+    })
+    .catch(() => { bodyEl.innerHTML = '<div class="pcs-activity-empty">Could not load.</div>'; });
 }
 
 function _pcsListLabel(listKey) {
@@ -622,82 +643,70 @@ function _pcsListLabel(listKey) {
   return 'Posts';
 }
 
-function _buildPCSPreview(postLink, title, pillar, post) {
-  const { hex } = stageStyle(post.stage);
-  let inner;
-  if (postLink && postLink.includes('canva.com')) {
-    inner = `
-      <div class="upc-preview-canva" style="height:100%">
-        <div class="upc-preview-canva-logo">
-          <svg width="16" height="16" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7D2AE8"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif" font-weight="bold">C</text></svg>
-          Canva Design
-        </div>
-        <div class="upc-preview-canva-title">${esc(title)}</div>
-        <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5)">Tap to open ↗</div>
-      </div>`;
-  } else if (postLink) {
-    let domain = '';
-    try { domain = new URL(postLink.startsWith('http') ? postLink : 'https://'+postLink).hostname.replace('www.',''); } catch(e){}
-    inner = `
-      <div class="upc-preview-link" style="height:100%">
-        <div class="upc-preview-link-domain">${esc(domain)}</div>
-        <div class="upc-preview-link-title">${esc(title)}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">Tap to open ↗</div>
-      </div>`;
-  } else {
-    inner = `
-      <div class="upc-preview-text" style="border-left:3px solid ${hex};height:100%">
-        <div class="upc-preview-text-label">${esc(pillar||'Post')}</div>
-        <div class="upc-preview-text-title">${esc(title)}</div>
-        ${post.comments ? `<div style="font-size:12px;color:var(--text3);margin-top:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(post.comments)}</div>` : ''}
-      </div>`;
-  }
-  return `${inner}<span class="upc-open-icon" style="${postLink?'':'opacity:0.3'}">↗</span>`;
-}
-
-function _buildPCSFields(post, canEdit, id) {
+function _buildPCSGrid(post, canEdit, id) {
+  const STAGES   = ['Draft','Awaiting Input','In Production','Ready to Send','Awaiting Approval','Scheduled','Published'];
   const PILLARS  = ['Leadership','Sustainability by Design','Inclusivity & Discipline','Education','Events','Announcement','Social Media'];
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   const OWNERS   = ['Chitra','Pranav','Admin'];
-  const STAGES   = ['Draft','Awaiting Input','In Production','Ready to Send','Awaiting Approval','Scheduled','Published'];
+  const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
 
-  const f = (label, content) => `
-    <div class="pcs-field">
-      <span class="pcs-field-label">${label}</span>
-      ${content}
-    </div>`;
+  const stageLC     = (post.stage || '').toLowerCase().trim();
+  const isPublished = stageLC === 'published';
+  const dateLabel   = isPublished ? 'Published Date' : 'Target Date';
+  const dateValue   = isPublished
+    ? (post.published_date || post.publishedDate || post.targetDate || '')
+    : (post.targetDate || '');
 
-  const sel = (elId, opts, val) => `
-    <select id="${elId}" ${canEdit?'':'disabled'}>
-      ${opts.map(o=>`<option value="${esc(o)}" ${o===val?'selected':''}>${esc(o)}</option>`).join('')}
-    </select>`;
+  const sel = (elId, opts, val) =>
+    `<select id="${elId}" ${canEdit ? '' : 'disabled'} class="pcs-grid-input">
+       ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+     </select>`;
 
-  const ro = (val) => `<div class="pcs-field-readonly">${esc(val||'—')}</div>`;
+  const ro = val =>
+    `<div class="pcs-grid-ro">${esc(val || '—')}</div>`;
 
-  const pillarSel   = canEdit ? sel(`pcs-pillar`,  PILLARS, post.contentPillar||'') : ro(post.contentPillar);
-  const locationSel = canEdit ? sel(`pcs-location`, LOCS,    post.location||'')     : ro(post.location);
-  const ownerSel    = canEdit ? sel(`pcs-owner`,    OWNERS,  post.owner||'')        : ro(post.owner);
-  const stageSel    = canEdit ? sel(`pcs-stage`,    STAGES,  post.stage||'')        : ro(post.stage);
-  const dateFld     = canEdit
-    ? `<input type="date" id="pcs-date" value="${esc(post.targetDate||'')}">`
-    : ro(formatDate(post.targetDate));
-  const canvaFld    = canEdit
-    ? `<input type="url" id="pcs-canva-link" placeholder="https://canva.com/design/…" value="${esc(post.postLink||post.post_link||'')}" oninput="updatePCSPreview(this.value)">`
-    : ro(post.postLink || post.post_link || 'No Canva link');
-  const commentsFld = canEdit
-    ? `<textarea id="pcs-comments" placeholder="Brief or caption…" rows="3">${esc(post.comments||'')}</textarea>`
-    : ro(post.comments);
+  const dateInput = canEdit
+    ? `<input type="date" id="pcs-date" class="pcs-grid-input" value="${esc(dateValue)}">`
+    : ro(formatDate(dateValue));
 
-  return [
-    f('Content Pillar', pillarSel),
-    f('Location',       locationSel),
-    f('Owner',          ownerSel),
-    f('Stage',          stageSel),
-    f('Target Date',    dateFld),
-    f('Canva Link',     canvaFld),
-    f('Notes / Brief',  commentsFld),
-    `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`,
-  ].join('');
+  const stageEl  = canEdit ? sel('pcs-stage',    STAGES,  post.stage || '')          : ro(post.stage);
+  const pillarEl = canEdit ? sel('pcs-pillar',   PILLARS, post.contentPillar || '')  : ro(post.contentPillar);
+  const ownerEl  = canEdit ? sel('pcs-owner',    OWNERS,  post.owner || '')          : ro(post.owner);
+  const locEl    = canEdit ? sel('pcs-location', LOCS,    post.location || '')       : ro(post.location);
+  const fmtEl    = canEdit ? sel('pcs-format',   FORMATS, post.format || '')         : ro(post.format);
+
+  const cell = (label, content) =>
+    `<div class="pcs-grid-cell">
+       <div class="pcs-grid-label">${label}</div>
+       ${content}
+     </div>`;
+
+  // Notes/brief — full width below grid
+  const notesFld = canEdit
+    ? `<textarea id="pcs-comments" class="pcs-notes-input" placeholder="Brief or caption…" rows="3">${esc(post.comments || '')}</textarea>`
+    : (post.comments ? `<div class="pcs-notes-ro">${esc(post.comments)}</div>` : '');
+
+  // Canva link field — full width, editable only
+  const canvaFld = canEdit
+    ? `<div class="pcs-canva-field">
+         <div class="pcs-grid-label">Canva Link</div>
+         <input type="url" id="pcs-canva-link" class="pcs-grid-input" placeholder="https://canva.com/design/…"
+                value="${esc(post.postLink || post.post_link || '')}"
+                oninput="updatePCSPreview(this.value)">
+       </div>` : '';
+
+  return `
+    <div class="pcs-meta-grid">
+      ${cell('Stage',      stageEl)}
+      ${cell(dateLabel,    dateInput)}
+      ${cell('Handled By', ownerEl)}
+      ${cell('Pillar',     pillarEl)}
+      ${cell('Location',   locEl)}
+      ${cell('Format',     fmtEl)}
+    </div>
+    ${canvaFld}
+    ${notesFld ? `<div class="pcs-notes-wrap">${notesFld}</div>` : ''}
+    <input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 }
 
 function _renderPCSFooter(post, isPublished, canEdit) {
@@ -705,8 +714,8 @@ function _renderPCSFooter(post, isPublished, canEdit) {
   const postLink = post.postLink || post.post_link || '';
   if (isPublished) {
     footer.innerHTML = postLink
-      ? `<button class="pcs-btn-linkedin" onclick="window.open('${esc(postLink)}','_blank','noopener')">Open LinkedIn ↗</button>`
-      : `<span style="font-size:13px;color:var(--text3)">Published</span>`;
+      ? `<button class="pcs-btn-linkedin" onclick="window.open('${esc(postLink)}','_blank','noopener')">View on LinkedIn ↗</button>`
+      : `<span class="pcs-footer-published">Published</span>`;
   } else if (canEdit) {
     footer.innerHTML = `
       <button class="pcs-btn-delete" onclick="pcsConfirmDelete()">Delete</button>
@@ -717,13 +726,12 @@ function _renderPCSFooter(post, isPublished, canEdit) {
 }
 
 function updatePCSPreview(link) {
-  const post = allPosts.find(p => getPostId(p) === _pcs.postId);
-  if (!post) return;
-  const title  = getTitle(post);
-  const pillar = post.contentPillar || '';
-  const wrap   = document.getElementById('pcs-preview-wrap');
-  wrap.innerHTML = _buildPCSPreview(link, title, pillar, post);
-  wrap.onclick   = () => { if (link) window.open(link,'_blank','noopener'); };
+  const actionWrap = document.getElementById('pcs-action-btn-wrap');
+  if (!actionWrap) return;
+  if (!link) { actionWrap.innerHTML = ''; return; }
+  const isPublished = (allPosts.find(p => getPostId(p) === _pcs.postId)?.stage || '').toLowerCase() === 'published';
+  const btnLabel = isPublished ? 'View on LinkedIn ↗' : 'Open Canva ↗';
+  actionWrap.innerHTML = `<a href="${esc(link)}" target="_blank" rel="noopener" class="pcs-action-link">${btnLabel}</a>`;
 }
 
 async function savePCS() {
@@ -735,6 +743,7 @@ async function savePCS() {
   const date     = document.getElementById('pcs-date')?.value;
   const canva    = document.getElementById('pcs-canva-link')?.value;
   const comments = document.getElementById('pcs-comments')?.value;
+  const format   = document.getElementById('pcs-format')?.value;
 
   if (!id) return;
   const btn = document.querySelector('.pcs-btn-save');
@@ -751,6 +760,7 @@ async function savePCS() {
         targetDate:    date || null,
         postLink:      canva || null,
         comments:      comments || null,
+        format:        format || null,
         updated_at:    new Date().toISOString(),
       }),
     });
@@ -787,40 +797,6 @@ async function pcsDoDelete() {
     closePCS();
     await loadPosts();
   } catch(e) { showToast('Delete failed', 'error'); }
-}
-
-function togglePCSActivity() {
-  const body    = document.getElementById('pcs-activity-body');
-  const chevron = document.getElementById('pcs-activity-chevron');
-  const isOpen  = body.classList.toggle('open');
-  chevron.textContent = isOpen ? '▲' : '▼';
-
-  if (!isOpen || body.dataset.loaded) return;
-  body.dataset.loaded = '1';
-  body.innerHTML = `<div class="pcs-activity-empty">Loading…</div>`;
-
-  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(_pcs.postId)}&order=created_at.desc&limit=25`)
-    .then(rows => {
-      if (!rows || !rows.length) {
-        body.innerHTML = `<div class="pcs-activity-empty">No activity yet.</div>`;
-        return;
-      }
-      body.innerHTML = rows.map(r => {
-        const ts = r.created_at
-          ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
-          : '';
-        return `
-          <div class="pcs-activity-entry">
-            <span class="pcs-activity-dot"></span>
-            <span class="pcs-activity-text">
-              <span class="pcs-activity-actor">${esc(r.actor||'System')}</span>
-              ${esc(r.action||'')}
-            </span>
-            <span class="pcs-activity-time">${esc(ts)}</span>
-          </div>`;
-      }).join('');
-    })
-    .catch(() => { body.innerHTML = `<div class="pcs-activity-empty">Could not load activity.</div>`; });
 }
 
 // ── Swipe navigation ──────────────────────────
