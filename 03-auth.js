@@ -179,6 +179,7 @@ function logout() {
 
 function activateRole(role) {
   currentRole = role;
+       document.getElementById('login-overlay').classList.add('hidden');
   updateActionButton();
   if (role === 'Client') {
     document.getElementById('client-view').classList.add('active');
