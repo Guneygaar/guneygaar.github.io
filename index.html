@@ -28,32 +28,27 @@
           onkeydown="if(event.key==='Enter')sendMagicLink()">
       </div>
       <button class="btn-modal-primary" style="width:100%;margin-top:var(--sp-2)" onclick="sendMagicLink()">
-        Send Login Link →
+        Send Code →
       </button>
       <div class="login-error" id="login-error" style="margin-top:var(--sp-3)"></div>
     </div>
 
     <!-- Step 2: Check email -->
-    <div id="login-sent-step" class="login-step">
-      <div style="font-size:40px;text-align:center;margin-bottom:var(--sp-4)">📬</div>
-      <div class="login-label" style="text-align:center;margin-bottom:var(--sp-2)">Check your inbox</div>
-      <div style="font-size:14px;color:var(--text3);text-align:center;line-height:1.6">
-        We sent a login link to<br>
-        <strong id="login-sent-email" style="color:var(--text1)"></strong><br><br>
-        Tap the link in the email to sign in.<br>It expires in 1 hour.
-      </div>
-      <button class="btn-modal-ghost" style="width:100%;margin-top:var(--sp-5)" onclick="backToEmail()">
-        ← Use a different email
-      </button>
-    </div>
-
-    <!-- Step 3: Verifying token (auto, no UI needed) -->
-    <div id="login-verify-step" class="login-step">
-      <div style="text-align:center;padding:var(--sp-6) 0;color:var(--text3)">
-        Signing you in…
-      </div>
-    </div>
+    <div id="login-code-step" class="login-step">
+  <div style="font-size:40px;text-align:center;margin-bottom:var(--sp-4)">📩</div>
+  <div class="login-label" style="text-align:center;margin-bottom:var(--sp-2)">Check your email</div>
+  <div style="font-size:14px;color:var(--text3);text-align:center;margin-bottom:var(--sp-4)">
+    We sent a 6-digit code to<br>
+    <strong id="login-code-email-display" style="color:var(--text1)"></strong>
   </div>
+  <input type="number" id="login-code-input" placeholder="Enter 6-digit code"
+    style="width:100%;padding:var(--sp-3);font-size:20px;text-align:center;letter-spacing:8px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface2);color:var(--text1);margin-bottom:var(--sp-3)"
+    onkeydown="if(event.key==='Enter')verifyOTPCode()">
+  <div class="login-error" id="login-code-error" style="margin-bottom:var(--sp-2)"></div>
+  <button id="login-verify-code-btn" class="btn-modal-primary" style="width:100%" onclick="verifyOTPCode()">Verify →</button>
+  <button class="btn-modal-ghost" style="width:100%;margin-top:var(--sp-3)" onclick="backToEmail()">← Use a different email</button>
+</div>
+ </div>
 </div>
 
 <!-- ══════════════════════════════════════════
