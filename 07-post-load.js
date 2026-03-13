@@ -308,9 +308,15 @@ function openParked() {
     const id    = getPostId(p);
     const title = getTitle(p);
     const stage = p.stage || '—';
-    const { hex: h } = stageStyle(stage);
+    const { hex } = stageStyle(stage);
     const days  = Math.floor((Date.now() - new Date(p.updated_at || p.updatedAt || p.created_at).getTime()) / 86400000);
-    return `<div class="bucket-item" onclick="openPostModal('${esc(id)}');closeParked()" style="cursor:pointer"><div class="bucket-item-left"><span class="bucket-item-title">${esc(title)}</span><span class="bucket-item-pillar">Last moved ${days}d ago</span></div><span class="bucket-item-stage" style="background:${h}22;color:${h};border-color:${h}40;opacity:0.85">${esc(stage)}</span></div>`;
+    return `<div class="upc-list-row" onclick="openPCS('${esc(id)}','');closeParked()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title)}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Last moved ${days}d ago</div>
+      </div>
+      <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${hex}22;color:${hex};flex-shrink:0">${esc(stage)}</span>
+    </div>`;
   }).join('') || '<div style="color:var(--text3);padding:var(--sp-4) 0;font-size:14px">No parked posts.</div>';
   document.getElementById('parked-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -451,200 +457,197 @@ function toggleHeroComments(id, btn) {
   btn.textContent = expanded ? 'Show less' : 'Read more';
 }
 
+// ── Unified post list registry ─────────────────
+const _postLists = {};
+
+function buildPostCard(p, listKey) {
+  const id       = getPostId(p);
+  const title    = getTitle(p);
+  const stage    = p.stage || '';
+  const { hex, label: stageLabel } = stageStyle(stage);
+  const pillar   = p.contentPillar || '';
+  const location = p.location || '';
+  const owner    = p.owner || '';
+  const postLink = p.postLink || p.post_link || '';
+  const comments = p.comments || '';
+  const days     = daysInStage(p);
+  const stCls    = staleClass(days);
+
+  // Preview area
+  const previewHtml = buildPreview(postLink, title, pillar, hex, id);
+
+  // Meta lines
+  const meta1 = [pillar, location].filter(Boolean).join(' · ');
+  const meta2  = [owner, p.targetDate ? formatDate(p.targetDate) : ''].filter(Boolean).join(' · ');
+
+  // Timer
+  const timerHtml = days >= 3
+    ? `<span class="upc-timer ${stCls}">⏳ ${days}d</span>` : '';
+
+  return `
+    <div class="upc" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
+         onclick="openPCS('${esc(id)}','${esc(listKey||'')}')">
+      <div class="upc-preview" onclick="event.stopPropagation();openCanva('${esc(postLink)}','${esc(id)}')">
+        ${previewHtml}
+        <span class="upc-open-icon">↗</span>
+      </div>
+      <div class="upc-body">
+        <div class="upc-row-top">
+          <span class="upc-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
+          ${timerHtml}
+          <button class="upc-menu-btn" onclick="event.stopPropagation();openUpcMenu('${esc(id)}','${esc(postLink)}',event)">⋯</button>
+        </div>
+        <div class="upc-title">${esc(title)}</div>
+        ${meta1 ? `<div class="upc-meta">${esc(meta1)}</div>` : ''}
+        ${meta2 ? `<div class="upc-meta">${esc(meta2)}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function buildPreview(postLink, title, pillar, hex, id) {
+  if (postLink && postLink.includes('canva.com')) {
+    return `
+      <div class="upc-preview-canva">
+        <div class="upc-preview-canva-logo">
+          <svg width="16" height="16" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7D2AE8"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif" font-weight="bold">C</text></svg>
+          Canva Design
+        </div>
+        <div class="upc-preview-canva-title">${esc(title)}</div>
+      </div>`;
+  }
+  if (postLink) {
+    return `
+      <div class="upc-preview-link">
+        <div class="upc-preview-link-domain">${esc(new URL(postLink.startsWith('http') ? postLink : 'https://'+postLink).hostname.replace('www.',''))}</div>
+        <div class="upc-preview-link-title">${esc(title)}</div>
+      </div>`;
+  }
+  // Text fallback
+  const snippet = (pillar || title).substring(0, 60);
+  return `
+    <div class="upc-preview-text" style="border-left:3px solid ${hex}">
+      <div class="upc-preview-text-label">${esc(pillar||'Post')}</div>
+      <div class="upc-preview-text-title">${esc(title)}</div>
+    </div>`;
+}
+
+function openCanva(link, postId) {
+  if (link && link.startsWith('http')) { window.open(link, '_blank', 'noopener'); return; }
+  // No link — open control screen instead
+  const listKey = document.getElementById(`upc-${postId}`)?.dataset.list || '';
+  openPCS(postId, listKey);
+}
+
+// Overflow menu
+let _upcMenuOpen = null;
+function openUpcMenu(postId, postLink, event) {
+  closeUpcMenu();
+  const post  = allPosts.find(p => getPostId(p) === postId);
+  const title = post ? getTitle(post) : postId;
+  const menu  = document.createElement('div');
+  menu.className = 'upc-menu';
+  menu.id = 'upc-menu-active';
+  menu.innerHTML = `
+    <button onclick="closeUpcMenu();openPCS('${esc(postId)}','')">Open Post</button>
+    ${postLink ? `<button onclick="closeUpcMenu();window.open('${esc(postLink)}','_blank','noopener')">Open in Canva</button>` : ''}
+    <button class="danger" onclick="closeUpcMenu();deletePost('${esc(postId)}')">Delete</button>`;
+  const rect = event.currentTarget.getBoundingClientRect();
+  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;right:${window.innerWidth-rect.right}px`;
+  document.body.appendChild(menu);
+  _upcMenuOpen = menu;
+  setTimeout(() => document.addEventListener('click', closeUpcMenu, {once:true}), 0);
+}
+function closeUpcMenu() {
+  if (_upcMenuOpen) { _upcMenuOpen.remove(); _upcMenuOpen = null; }
+}
+
 function renderTasks() {
   const container = document.getElementById('tasks-container');
   if (!container) return;
   const buckets = ROLE_BUCKETS[currentRole];
   if (!buckets) {
     const posts = getMyTasks();
+    _postLists['tasks'] = posts;
     container.innerHTML = posts.length
-      ? `<div class="pstages">${posts.map(p => buildPcard(p)).join('')}</div>`
+      ? `<div class="upc-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
       : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
     return;
   }
-
   const stagesHtml = buckets.map(bucket => {
-    const posts    = allPosts.filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
-                             .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+    const posts = allPosts
+      .filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
+      .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+    const listKey = `tasks-${bucket.key}`;
+    _postLists[listKey] = posts;
     const count    = posts.length;
     const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
     const LIMIT    = 8;
-    const cards    = posts.map((p, idx) => buildPcard(p, bucket, idx >= LIMIT)).join('');
-    const overflow = posts.length > LIMIT
-      ? `<button class="pstage-overflow" onclick="toggleStageOverflow(this)">+${posts.length - LIMIT} more</button>` : '';
-
+    const visible  = posts.slice(0, LIMIT);
+    const hidden   = posts.slice(LIMIT);
+    const cards    = visible.map(p => buildPostCard(p, listKey)).join('');
+    const overflow = hidden.length
+      ? `<button class="pstage-overflow" onclick="toggleStageOverflow(this,${hidden.length})"
+           data-hidden-ids="${esc(hidden.map(p=>getPostId(p)).join(','))}">+${hidden.length} more</button>` : '';
     return `
-      <div class="pstage" id="pstage-${esc(bucket.key)}">
+      <div class="pstage">
         <div class="pstage-header">
           <span class="pstage-name">${esc(bucket.label)}</span>
           <span class="pstage-badge${badgeCls}">${count}</span>
         </div>
-        <div class="pstage-cards"
-             data-stage="${esc(bucket.stages[0])}"
-             ondragover="event.preventDefault();this.classList.add('drag-over')"
-             ondragleave="this.classList.remove('drag-over')"
-             ondrop="onStageDrop(event,this)">
-          ${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}
-        </div>
+        <div class="upc-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>
       </div>`;
   }).join('');
-
   container.innerHTML = `<div class="pstages">${stagesHtml}</div>`;
 }
 
-function buildPcard(p, bucket, hidden) {
-  const id        = getPostId(p);
-  const title     = getTitle(p);
-  const stage     = p.stage || '';
-  const stageLC   = stage.toLowerCase().trim();
-  const { hex, label: stageLabel } = stageStyle(stage);
-  const pillar    = p.contentPillar || '';
-  const location  = p.location  || '';
-  const owner     = p.owner     || '';
-  const postLink  = p.postLink  || p.post_link || '';
-  const comments  = p.comments  || '';
-  const days      = daysInStage(p);
-  const stCls     = staleClass(days);
-  const updatedAt = p.updated_at || p.updatedAt || p.created_at || '';
-  const lastAct   = updatedAt ? timeAgo(updatedAt) : '';
-  const hiddenCls = hidden ? ' pcard-hidden' : '';
-  const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
-  const canAct    = ['Admin','Servicing'].includes(currentRole);
-
-  // Meta string
-  const metaParts = [pillar, location ? `📍 ${location}` : '', owner].filter(Boolean);
-  const metaStr   = metaParts.join(' · ');
-
-  // Timer badge
-  const timerBadge = days >= 3
-    ? `<span class="pcard-timer ${stCls}">⏳ ${days}d</span>` : '';
-
-  // Canva button
-  const canvaBtn = postLink
-    ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcard-canva" onclick="event.stopPropagation()">✏ Open in Canva ↗</a>`
-    : (currentRole !== 'Creative' ? `<div class="pcard-no-canva">No Canva link attached</div>` : '');
-
-  // Ops buttons (Admin + Servicing)
-  let opsHtml = '';
-  if (canAct) {
-    const editBtn   = `<button class="pcard-op" onclick="event.stopPropagation();togglePcard(this.closest('.pcard'),false);openAdminEdit('${esc(id)}')">✏ Edit</button>`;
-    const stageBtn  = `<button class="pcard-op" onclick="event.stopPropagation();togglePcard(this.closest('.pcard'),false);openPostModal('${esc(id)}')">↕ Move Stage</button>`;
-    const schedBtn  = !['scheduled','published'].includes(stageLC)
-      ? `<button class="pcard-op" onclick="event.stopPropagation();quickStage('${esc(id)}','Scheduled')">📅 Schedule</button>` : '';
-    const nudgeBtn  = isClientWait && days >= 3
-      ? `<button class="pcard-op pcard-op-accent" onclick="event.stopPropagation();nudgeClient('${esc(id)}','${esc(title)}','${esc(p.targetDate||'')}')">💬 Nudge</button>` : '';
-    const capBtn    = comments
-      ? `<button class="pcard-op" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Caption</button>` : '';
-    const linkBtn   = `<button class="pcard-op" onclick="event.stopPropagation();copyApprovalLink('${window.location.origin}/p/${esc(id)}')">🔗 Link</button>`;
-    const delBtn    = `<button class="pcard-op pcard-op-danger" onclick="event.stopPropagation();deletePost('${esc(id)}')">🗑 Delete</button>`;
-    opsHtml = `<div class="pcard-ops">${editBtn}${stageBtn}${schedBtn}${nudgeBtn}${capBtn}${linkBtn}${delBtn}</div>`;
-  }
-
-  // Revision note
-  const revNote = bucket && bucket.key === 'revisions' && comments
-    ? `<div class="pcard-revision">↺ ${esc(comments.substring(0,100))}</div>` : '';
-
-  return `
-    <div class="pcard${hiddenCls}"
-         id="pcard-${esc(id)}"
-         data-post-id="${esc(id)}"
-         data-stage="${esc(stageLC)}"
-         draggable="true"
-         ondragstart="onPcardDragStart(event,'${esc(id)}','${esc(stageLC)}')"
-         ondragend="onPcardDragEnd(event)"
-         ontouchstart="onPcardTouchStart(event,'${esc(id)}')"
-         ontouchmove="onPcardTouchMove(event)"
-         ontouchend="onPcardTouchEnd(event)">
-
-      <div class="pcard-top" onclick="togglePcard(this.parentElement)">
-        <div class="pcard-top-left">
-          <span class="pcard-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
-          <span class="pcard-title">${esc(title)}</span>
-          ${metaStr ? `<span class="pcard-meta">${esc(metaStr)}</span>` : ''}
-        </div>
-        <div class="pcard-top-right">
-          ${timerBadge}
-          <span class="pcard-chevron">›</span>
-        </div>
-      </div>
-
-      <div class="pcard-body">
-        ${revNote}
-        ${canvaBtn}
-        ${opsHtml}
-        <button class="pcard-activity-toggle" onclick="event.stopPropagation();togglePcardActivity(this,'${esc(id)}')">
-          Activity Timeline <span class="pcard-activity-chevron">›</span>
-        </button>
-        <div class="pcard-activity-body"></div>
-        <div class="pcard-footer">
-          <span class="pcard-footer-id">${esc(id)}</span>
-          ${lastAct ? `<span class="pcard-footer-time">${lastAct}</span>` : ''}
-        </div>
-      </div>
-    </div>`;
-}
-
-function togglePcard(el, forceOpen) {
-  if (!el) return;
-  const isOpen = forceOpen !== undefined ? forceOpen : !el.classList.contains('open');
-  el.classList.toggle('open', isOpen);
-  const chevron = el.querySelector('.pcard-chevron');
-  if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
-}
-
-function toggleStageOverflow(btn) {
-  const stage = btn.closest('.pstage-cards');
-  if (!stage) return;
-  const hidden = stage.querySelectorAll('.pcard-hidden');
+function toggleStageOverflow(btn, totalHidden) {
+  const list = btn.closest('.upc-list');
   const isShowing = btn.dataset.showing === '1';
-  hidden.forEach(c => c.classList.toggle('pcard-hidden', isShowing));
-  btn.dataset.showing = isShowing ? '' : '1';
-  btn.textContent = isShowing ? `+${hidden.length} more` : '↑ Show less';
-}
-
-function togglePcardActivity(btn, postId) {
-  const body = btn.nextElementSibling;
-  const chevron = btn.querySelector('.pcard-activity-chevron');
-  const isOpen = body.classList.toggle('open');
-  if (chevron) chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
-  if (!isOpen || body.dataset.loaded) return;
-  body.dataset.loaded = '1';
-  body.innerHTML = `<div class="pcard-activity-loading">Loading…</div>`;
-  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.asc&limit=20`)
-    .then(rows => {
-      if (!rows.length) { body.innerHTML = `<div class="pcard-activity-empty">No activity yet.</div>`; return; }
-      body.innerHTML = rows.map(r => `
-        <div class="pcard-activity-item">
-          <span class="pcard-activity-dot"></span>
-          <div class="pcard-activity-content">
-            <span class="pcard-activity-actor">${esc(r.actor||'System')}</span>
-            <span class="pcard-activity-action">${esc(r.action||'')}</span>
-          </div>
-          <span class="pcard-activity-time">${r.created_at ? timeAgo(r.created_at) : ''}</span>
-        </div>`).join('');
-    })
-    .catch(() => { body.innerHTML = `<div class="pcard-activity-empty">Could not load.</div>`; });
-}
-
-function toggleBucketOverflow(btn) {
-  const card = btn.closest('.bucket-card');
-  if (!card) return;
-  const isExpanded = card.classList.toggle('expanded');
-  const hiddenCount = card.querySelectorAll('.bucket-item.overflow-hidden').length;
-  btn.textContent = isExpanded ? '↑ Show less' : `+${hiddenCount} more`;
+  if (!isShowing) {
+    const ids = btn.dataset.hiddenIds.split(',').filter(Boolean);
+    const listKey = ids.length ? (document.querySelector(`#upc-${ids[0]}`)?.dataset.list || '') : '';
+    const posts = ids.map(id => allPosts.find(p => getPostId(p) === id)).filter(Boolean);
+    const html = posts.map(p => buildPostCard(p, listKey)).join('');
+    btn.insertAdjacentHTML('beforebegin', html);
+    btn.dataset.showing = '1';
+    btn.textContent = '↑ Show less';
+  } else {
+    // Remove dynamically added cards
+    const ids = btn.dataset.hiddenIds.split(',').filter(Boolean);
+    ids.forEach(id => document.getElementById(`upc-${id}`)?.remove());
+    btn.dataset.showing = '';
+    btn.textContent = `+${totalHidden} more`;
+  }
 }
 
 function renderPipeline() {
   const grouped = {};
   allPosts.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
-  const stages = Object.keys(grouped).sort((a,b) => { const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b); if (ia===-1 && ib===-1) return a.localeCompare(b); if (ia===-1) return 1; if (ib===-1) return -1; return ia - ib; });
+  const stages = Object.keys(grouped).sort((a,b) => {
+    const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b);
+    if (ia===-1 && ib===-1) return a.localeCompare(b);
+    if (ia===-1) return 1; if (ib===-1) return -1;
+    return ia - ib;
+  });
   const html = stages.map(stage => {
-    const posts = grouped[stage];
-    const {hex, label} = stageStyle(stage);
-    const cards = posts.map(p => `<div class="pipeline-card"><div class="pipeline-card-title">${esc(getTitle(p))}</div><div class="pipeline-card-meta"><span>${esc(p.owner||'—')}</span><span>${formatDate(p.targetDate)||'—'}</span></div></div>`).join('');
-    return `<div class="pipeline-col"><div class="pipeline-col-header" style="border-top-color:${hex}"><span class="pipeline-col-label" style="color:${hex}">${esc(label)}</span><span class="pipeline-col-count">${posts.length}</span></div><div class="pipeline-cards">${cards || '<div style="padding:8px;color:var(--text3);font-size:12px;text-align:center">Empty</div>'}</div></div>`;
+    const posts   = grouped[stage];
+    const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
+    _postLists[listKey] = posts;
+    const { hex, label } = stageStyle(stage);
+    const cards = posts.map(p => buildPostCard(p, listKey)).join('');
+    return `
+      <div class="pstage">
+        <div class="pstage-header">
+          <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
+          <span class="pstage-badge">${posts.length}</span>
+        </div>
+        <div class="upc-list">
+          ${cards || `<div class="pstage-empty">Empty</div>`}
+        </div>
+      </div>`;
   }).join('');
-  document.getElementById('pipeline-container').innerHTML = html;
+  document.getElementById('pipeline-container').innerHTML =
+    `<div class="pstages">${html}</div>`;
 }
 
 function getUpcoming() {
@@ -656,6 +659,7 @@ function renderUpcoming() {
   const container = document.getElementById('upcoming-wrap');
   if (!container) return;
   const posts = getUpcoming();
+  _postLists['upcoming'] = posts;
   const today = new Date(); today.setHours(0,0,0,0);
   const w7    = new Date(today); w7.setDate(w7.getDate()+7);
 
@@ -678,18 +682,8 @@ function renderUpcoming() {
     const isSoon  = d <= w7;
     const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
     const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
-    const cards   = groups[dateKey].map(p => {
-      const id = getPostId(p);
-      const { hex, label: stgLabel } = stageStyle(p.stage);
-      return `<div class="upcoming-card" onclick="openPostCard('${esc(id)}')">
-        <div class="upcoming-card-title">${esc(getTitle(p))}</div>
-        <div class="upcoming-card-meta">
-          <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span>
-          ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div>${cards}</div>`;
+    const cards   = groups[dateKey].map(p => buildPostCard(p, 'upcoming')).join('');
+    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div><div class="upc-list" style="gap:10px;padding-top:6px">${cards}</div></div>`;
   }).join('');
 }
 
@@ -727,27 +721,12 @@ function renderLibrary() {
 function renderLibraryRows(posts) {
   const listView = document.getElementById('library-list-view');
   if (!listView) return;
+  _postLists['library'] = posts;
   if (!posts.length) {
     listView.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match your search.</p></div>`;
     return;
   }
-  listView.innerHTML = posts.map(p => {
-    const id = getPostId(p);
-    const { hex, label } = stageStyle(p.stage);
-    const link = p.postLink || p.post_link || '';
-    const relDate = getRelativeDate(p.targetDate);
-    return `
-      <div class="library-card" onclick="openPostCard('${esc(id)}')">
-        <div class="library-card-title">${esc(getTitle(p))}</div>
-        <div class="library-card-meta">
-          <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(label)}</span>
-          ${p.contentPillar ? `<span class="tag tag-pillar">${esc(p.contentPillar)}</span>` : ''}
-          ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
-          ${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}
-        </div>
-        ${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="library-card-link" onclick="event.stopPropagation()">↗ Open in Canva</a>` : ''}
-      </div>`;
-  }).join('');
+  listView.innerHTML = `<div class="upc-list">${posts.map(p => buildPostCard(p, 'library')).join('')}</div>`;
 }
 
 function renderClientView() {
@@ -875,7 +854,7 @@ function renderLibraryPillar() {
     const cards = posts.map(p => {
       const id = getPostId(p);
       const { hex, label: stgLabel } = stageStyle(p.stage);
-      return `<div class="pillar-card" onclick="openPostCard('${esc(id)}')">
+      return `<div class="pillar-card" onclick="openPCS('${esc(id)}','library')">
         <span class="pillar-card-title">${esc(getTitle(p))}</span>
         <div class="pillar-card-meta">
           <span class="tag tag-stage" style="background:${hex}22;color:${hex};font-size:10px">${esc(stgLabel)}</span>
@@ -906,7 +885,7 @@ function renderLibraryCalendar() {
       const isToday = d.toDateString() === today.toDateString();
       const dayStr  = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPostCard('${esc(id)}')">
+      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
         <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
@@ -918,7 +897,7 @@ function renderLibraryCalendar() {
     const items = noDates.map(p => {
       const id = getPostId(p);
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPostCard('${esc(id)}')">
+      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
         <span class="calendar-date-badge" style="color:var(--text3)">—</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
