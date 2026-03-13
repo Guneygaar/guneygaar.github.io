@@ -528,55 +528,48 @@ function getUpcoming() {
 }
 
 function renderUpcoming() {
+  const container = document.getElementById('upcoming-wrap');
+  if (!container) return;
   const posts = getUpcoming();
   const today = new Date(); today.setHours(0,0,0,0);
   const w7    = new Date(today); w7.setDate(w7.getDate()+7);
-  const tbody = document.getElementById('upcoming-tbody');
-  const wrap  = tbody ? tbody.closest('.table-wrap') : null;
-  if (!wrap) return;
 
   if (!posts.length) {
-    wrap.outerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming posts scheduled.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming posts scheduled.</p></div>`;
     return;
   }
 
   const groups = {};
   posts.forEach(p => {
-    const d = parseDate(p.targetDate);
+    const d   = parseDate(p.targetDate);
     const key = d ? d.toISOString().split('T')[0] : 'undated';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
 
-  const html = Object.keys(groups).sort().map(dateKey => {
+  container.innerHTML = Object.keys(groups).sort().map(dateKey => {
     const d       = new Date(dateKey + 'T00:00:00');
     const isToday = d.getTime() === today.getTime();
     const isSoon  = d <= w7;
     const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
     const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
-
-    const cards = groups[dateKey].map(p => {
+    const cards   = groups[dateKey].map(p => {
       const id = getPostId(p);
       const { hex, label: stgLabel } = stageStyle(p.stage);
-      return `
-        <div class="upcoming-card" onclick="openPostCard('${esc(id)}')">
-          <div class="upcoming-card-title">${esc(getTitle(p))}</div>
-          <div class="upcoming-card-meta">
-            <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span>
-            ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
-          </div>
-        </div>`;
-    }).join('');
-
-    return `
-      <div class="schedule-group">
-        <div class="schedule-date-header ${hdrCls}">${label}</div>
-        ${cards}
+      return `<div class="upcoming-card" onclick="openPostCard('${esc(id)}')">
+        <div class="upcoming-card-title">${esc(getTitle(p))}</div>
+        <div class="upcoming-card-meta">
+          <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span>
+          ${p.owner ? `<span class="tag tag-owner">${esc(p.owner)}</span>` : ''}
+        </div>
       </div>`;
+    }).join('');
+    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div>${cards}</div>`;
   }).join('');
-
-  wrap.outerHTML = `<div id="upcoming-card-list">${html}</div>`;
 }
+
+
+
 
 function populateFilterDropdowns() {
   const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
