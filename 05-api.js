@@ -4,7 +4,7 @@
 
 const SB_HEADERS = {
   'apikey':        SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Authorization': `Bearer ${localStorage.getItem('sb_access_token') || SUPABASE_KEY}`,
   'Content-Type':  'application/json',
   'Prefer':        'return=representation',
   'Accept':        'application/json'
@@ -50,7 +50,7 @@ async function uploadPostAsset(file, postId) {
     method: 'POST',
     headers: {
       'apikey':        SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Authorization': `Bearer ${localStorage.getItem('sb_access_token') || SUPABASE_KEY}`,
       'Content-Type':  file.type,
       'Cache-Control': '3600',
     },
