@@ -16,21 +16,22 @@ window.addEventListener('DOMContentLoaded', () => {
     showApprovalView(ref.replace(/-gbl$/i, '')); return;
   }
 
-  const savedToken = localStorage.getItem("sb_access_token");
-
-  if (savedToken && !window.location.hash.includes("access_token")) {
-    handleMagicLinkToken(savedToken);
-  }
-
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {
     const hashParams = new URLSearchParams(hash.slice(1));
     const token = hashParams.get('access_token');
-    if (token) { handleMagicLinkToken(token); return; }
+    const refresh = hashParams.get('refresh_token');
+    if (token) {
+      if (refresh) localStorage.setItem('sb_refresh_token', refresh);
+      handleMagicLinkToken(token);
+      return;
+    }
   }
 
-  const savedRole = localStorage.getItem('gbl_role');
-  if (savedRole && savedToken) {
+  const savedToken = localStorage.getItem('sb_access_token');
+  const savedRole  = localStorage.getItem('gbl_role');
+
+  if (savedToken && savedRole) {
     activateRole(savedRole);
   } else {
     showLoginOverlay();
