@@ -340,34 +340,18 @@ a:hover { text-decoration: underline; }
 }
 .topbar-brand span { color: var(--accent); }
 
-.topbar-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border2);
-  flex-shrink: 0;
-}
+.topbar-divider { display: none; }
 
-.role-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 7px;
-  background: var(--accent-dim);
-  border: 1px solid var(--accent);
-  border-radius: var(--r-pill);
+.role-badge { display: none; }
+
+#topbar-role-label {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  white-space: nowrap;
-  letter-spacing: 0.03em;
+  font-weight: 500;
+  color: var(--text3);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-}
-.role-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
+  white-space: nowrap;
+  margin-left: 4px;
 }
 
 .topbar-spacer { flex: 1; }
@@ -473,8 +457,10 @@ a:hover { text-decoration: underline; }
 }
 
 .notif-item {
-  display: flex;
-  gap: var(--sp-3);
+  display: grid;
+  grid-template-columns: 72px 1fr 52px;
+  align-items: center;
+  gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--border);
   transition: background var(--transition-fast);
@@ -483,19 +469,20 @@ a:hover { text-decoration: underline; }
 .notif-item.unread { background: var(--accent-dim); }
 .notif-item.unread:hover { background: var(--accent-hover); }
 
-.notif-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-  margin-top: 5px;
+.notif-dot { display: none; }
+
+.notif-actor {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.notif-item:not(.unread) .notif-dot { background: transparent; }
 
 .notif-item-body { flex: 1; min-width: 0; }
 .notif-msg  { font-size: 12px; color: var(--text); line-height: 1.4; }
-.notif-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+.notif-time { font-size: 11px; color: var(--text3); text-align: right; font-family: var(--font-mono); white-space: nowrap; }
 
 .notif-empty {
   padding: var(--sp-6) var(--sp-4);
@@ -1307,6 +1294,8 @@ a:hover { text-decoration: underline; }
   font-family: var(--font-mono);
 }
 .btn-nudge:hover { border-color: var(--c-green); color: var(--c-green); }
+
+.bucket-item-overdue {
   font-size: 10px;
   color: var(--c-red);
   margin-top: 2px;
@@ -1388,9 +1377,30 @@ a:hover { text-decoration: underline; }
   padding: var(--sp-3);
   margin-bottom: var(--sp-2);
   box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+.pipeline-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--accent);
+}
+.pipeline-card:active { transform: scale(0.98); }
 .pipeline-card-title { font-size: 12px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
 .pipeline-card-meta  { font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; }
+
+/* Pipeline vertical on mobile */
+@media (max-width: 600px) {
+  .pipeline-board {
+    flex-direction: column;
+    overflow-x: unset;
+  }
+  .pipeline-col {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+}
 
 /* ═══════════════════════════════════════════════
    UPCOMING TABLE
@@ -2246,3 +2256,103 @@ tr:hover td { background: var(--surface2); }
 ═══════════════════════════════════════════════ */
 .stat-pill { display: none !important; }
 #pipeline-label, #library-label { display: none; }
+
+/* ═══════════════════════════════════════════════
+   V2 — MICRO-INTERACTIONS
+═══════════════════════════════════════════════ */
+
+/* Bucket items — subtle slide on hover */
+.bucket-item[onclick]:hover {
+  background: var(--surface2);
+  transform: translateX(2px);
+}
+.bucket-item[onclick]:active {
+  background: var(--surface3);
+  transform: scale(0.99);
+}
+
+/* Tab buttons */
+.tab-btn:active { transform: scale(0.96); }
+
+/* ═══════════════════════════════════════════════
+   V2 — DATE PICKER CALENDAR ICON
+═══════════════════════════════════════════════ */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 36px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════
+   V2 — EXPANDABLE "+X MORE" IN BUCKETS
+═══════════════════════════════════════════════ */
+.bucket-overflow-btn {
+  display: block;
+  width: 100%;
+  padding: var(--sp-2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-top: 1px solid var(--border);
+  transition: background var(--transition-fast);
+}
+.bucket-overflow-btn:hover { background: var(--accent-dim); }
+.bucket-overflow-btn:active { transform: none; }
+.bucket-item.overflow-hidden { display: none; }
+.bucket-card.expanded .bucket-item.overflow-hidden { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   V2 — TOPBAR REFRESH SPIN ANIMATION
+═══════════════════════════════════════════════ */
+#btn-refresh {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+#btn-refresh:hover { opacity: 1; }
+@keyframes spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+#btn-refresh.spinning svg {
+  animation: spin-once 0.5s ease;
+}
+
+/* ═══════════════════════════════════════════════
+   V2 — PIPELINE VERTICAL ON MOBILE
+═══════════════════════════════════════════════ */
+@media (max-width: 600px) {
+  .pipeline-board {
+    flex-direction: column;
+    overflow-x: unset;
+  }
+  .pipeline-col {
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   V2 — NOTIFICATION 3-BLOCK LAYOUT
+═══════════════════════════════════════════════ */
+.notif-actor {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
