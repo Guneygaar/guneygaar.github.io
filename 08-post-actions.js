@@ -268,3 +268,23 @@ async function copyCaption(postId) {
 // Legacy stubs kept for HTML compatibility
 function submitPostRequest() { submitClientRequest(); }
 function renderClientApprovedLegacy() { renderClientApproved(); }
+
+// ── Delete post (Admin only) ──────────────────
+async function deletePost(postId) {
+  const post = allPosts.find(p => getPostId(p) === postId);
+  const title = post ? getTitle(post) : postId;
+  if (!confirm(`Delete "${title}"?\n\nThis cannot be undone.`)) return;
+  const btn = document.getElementById('ae-delete-btn');
+  if (btn) btn.disabled = true;
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
+    await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
+    closeAdminEdit();
+    allPosts = allPosts.filter(p => getPostId(p) !== postId);
+    scheduleRender();
+    showToast('Post deleted', 'info');
+  } catch {
+    showToast('Delete failed — try again', 'error');
+    if (btn) btn.disabled = false;
+  }
+}
