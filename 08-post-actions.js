@@ -303,143 +303,12 @@ async function deletePost(postId) {
   }
 }
 
-// ── Post Card — mobile control panel ──────────
-function openPostCard(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
-  if (!post) return;
-  const id        = getPostId(post);
-  const title     = getTitle(post);
-  const stage     = post.stage || '';
-  const stageLC   = stage.toLowerCase().trim();
-  const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = post.owner || '—';
-  const pillar    = post.contentPillar || '';
-  const location  = post.location || '';
-  const comments  = post.comments || '';
-  const postLink  = post.postLink || post.post_link || '';
-  const relDate   = getRelativeDate(post.targetDate);
-  const days      = daysInStage(post);
-  const stCls     = staleClass(days);
-  const updatedAt = post.updated_at || post.updatedAt || post.created_at || '';
-  const lastActivity = updatedAt ? timeAgo(updatedAt) : '';
-  const approvalLink = `${window.location.origin}/p/${id}`;
-
-  // 1 — Status Row
-  const statusRow = `
-    <div class="pc2-status-row">
-      <span class="pc2-stage-badge" style="background:${hex}22;color:${hex};border:1px solid ${hex}44">${esc(stageLabel)}</span>
-      <div class="pc2-status-right">
-        ${relDate ? `<span class="pc2-deadline ${relDate.cls}">${relDate.text}</span>` : ''}
-        ${days >= 3 ? `<span class="pc2-stale ${stCls}">⏳ ${days}d</span>` : ''}
-        <button class="pc2-close" onclick="closePostCard()">✕</button>
-      </div>
-    </div>`;
-
-  // 2 — Title
-  const titleRow = `<div class="pc2-title">${esc(title)}</div>`;
-
-  // 3 — Metadata
-  const metaParts = [
-    pillar   ? esc(pillar)           : '',
-    location ? `📍 ${esc(location)}` : '',
-    owner !== '—' ? esc(owner)       : '',
-  ].filter(Boolean);
-  const metaRow = metaParts.length
-    ? `<div class="pc2-meta">${metaParts.join('<span class="pc2-meta-sep"> · </span>')}</div>` : '';
-
-  // 4+5 — Actions (role-based)
-  let primaryBtn = '';
-  let opsButtons = '';
-  const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
-  const canNudge     = isClientWait && days >= 3;
-
-  if (currentRole === 'Creative') {
-    primaryBtn = postLink
-      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc2-btn-canva">✏ Open in Canva ↗</a>`
-      : `<div class="pc2-no-canva">No Canva link attached yet</div>`;
-
-  } else if (currentRole === 'Admin' || currentRole === 'Servicing') {
-    primaryBtn = postLink
-      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc2-btn-canva">✏ Open in Canva ↗</a>`
-      : '';
-
-    const editBtn     = `<button class="pc2-op-btn" onclick="closePostCard();openAdminEdit('${esc(id)}')">✏ Edit</button>`;
-    const stageBtn    = `<button class="pc2-op-btn" onclick="closePostCard();openPostModal('${esc(id)}')">↕ Move Stage</button>`;
-    const schedBtn    = !['scheduled','published'].includes(stageLC)
-      ? `<button class="pc2-op-btn" onclick="closePostCard();quickStage('${esc(id)}','Scheduled')">📅 Schedule</button>` : '';
-    const nudgeBtn    = canNudge
-      ? `<button class="pc2-op-btn pc2-op-accent" onclick="closePostCard();nudgeClient('${esc(id)}','${esc(title)}','${esc(post.targetDate||'')}')">💬 Nudge</button>` : '';
-    const captionBtn  = comments
-      ? `<button class="pc2-op-btn" onclick="copyCaption('${esc(id)}')">📋 Caption</button>` : '';
-    const linkBtn     = `<button class="pc2-op-btn" onclick="copyApprovalLink('${esc(approvalLink)}')">🔗 Share Link</button>`;
-    const deleteBtn   = `<button class="pc2-op-btn pc2-op-danger" onclick="closePostCard();deletePost('${esc(id)}')">🗑 Delete</button>`;
-    opsButtons = `<div class="pc2-ops-grid">${editBtn}${stageBtn}${schedBtn}${nudgeBtn}${captionBtn}${linkBtn}${deleteBtn}</div>`;
-  }
-
-  // Brief
-  const briefBlock = comments
-    ? `<div class="pc2-brief">${esc(comments)}</div>` : '';
-
-  // 6 — Activity (expandable)
-  const activityRow = `
-    <button class="pc2-activity-toggle" onclick="togglePcActivity(this)">
-      <span>Activity Timeline</span>
-      <span class="pc2-chevron">›</span>
-    </button>
-    <div class="pc2-activity-body" id="pc-activity-${esc(id)}"></div>`;
-
-  // 7 — Footer
-  const footer = `
-    <div class="pc2-footer">
-      <span class="pc2-footer-id">${esc(id)}</span>
-      ${lastActivity ? `<span class="pc2-footer-time">${lastActivity}</span>` : ''}
-    </div>`;
-
-  document.getElementById('post-card-content').innerHTML =
-    statusRow + titleRow + metaRow + briefBlock +
-    (primaryBtn ? `<div class="pc2-canva-wrap">${primaryBtn}</div>` : '') +
-    opsButtons + activityRow + footer;
-
-  document.getElementById('post-card-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function togglePcActivity(btn) {
-  const body = btn.nextElementSibling;
-  const chevron = btn.querySelector('.pc2-chevron');
-  const isOpen = body.classList.toggle('open');
-  chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
-  if (!isOpen || body.dataset.loaded) return;
-  body.dataset.loaded = '1';
-  const postId = body.id.replace('pc-activity-', '');
-  body.innerHTML = `<div class="pc2-activity-loading">Loading…</div>`;
-  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.asc&limit=20`)
-    .then(rows => {
-      if (!rows.length) { body.innerHTML = `<div class="pc2-activity-empty">No activity recorded yet.</div>`; return; }
-      body.innerHTML = rows.map(r => `
-        <div class="pc2-activity-item">
-          <span class="pc2-activity-dot"></span>
-          <div class="pc2-activity-content">
-            <span class="pc2-activity-actor">${esc(r.actor||'System')}</span>
-            <span class="pc2-activity-action">${esc(r.action||'')}</span>
-          </div>
-          <span class="pc2-activity-time">${r.created_at ? timeAgo(r.created_at) : ''}</span>
-        </div>`).join('');
-    })
-    .catch(() => { body.innerHTML = `<div class="pc2-activity-empty">Could not load activity.</div>`; });
-}
-
 function timeAgo(iso) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (diff < 60)    return 'just now';
   if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
-}
-
-function closePostCard() {
-  document.getElementById('post-card-overlay')?.classList.remove('open');
-  document.body.style.overflow = '';
 }
 
 // ── Drag & Drop (desktop + mobile) ───────────
@@ -529,4 +398,362 @@ function onPcardTouchEnd(event) {
   const zone = el?.closest('.pstage-cards');
   document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
   if (zone) onStageDrop(event, zone);
+}
+
+// ═══════════════════════════════════════════════
+// PCS — Post Control Screen
+// ═══════════════════════════════════════════════
+
+const _pcs = {
+  postId:   null,
+  listKey:  null,
+  list:     [],
+  idx:      0,
+  touchX0:  0,
+  touchY0:  0,
+  dragging: false,
+};
+
+function openPCS(postId, listKey) {
+  // Build the list for swipe navigation
+  const list = (listKey && window._postLists && _postLists[listKey])
+    ? _postLists[listKey]
+    : allPosts;
+  const idx = list.findIndex(p => getPostId(p) === postId);
+  _pcs.listKey = listKey || '';
+  _pcs.list    = list;
+  _pcs.idx     = idx >= 0 ? idx : 0;
+  _pcs.postId  = postId;
+
+  document.getElementById('pcs-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  _renderPCS(postId);
+}
+
+function closePCS() {
+  document.getElementById('pcs-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  _pcs.postId = null;
+}
+
+function _renderPCS(postId) {
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (!post) { closePCS(); return; }
+
+  const id         = getPostId(post);
+  const title      = getTitle(post);
+  const stage      = post.stage || '';
+  const stageLC    = stage.toLowerCase().trim();
+  const isPublished = stageLC === 'published';
+  const postLink   = post.postLink || post.post_link || '';
+  const pillar     = post.contentPillar || '';
+  const location   = post.location || '';
+  const owner      = post.owner || '';
+  const targetDate = post.targetDate || '';
+  const comments   = post.comments || '';
+
+  // Context bar
+  const listLabel  = _pcsListLabel(_pcs.listKey);
+  const remaining  = Math.max(0, _pcs.list.length - _pcs.idx - 1);
+  const ctxBar = document.getElementById('pcs-context-bar');
+  ctxBar.innerHTML = `
+    <span class="pcs-context-list">${esc(listLabel)}</span>
+    <span class="pcs-context-remaining">${remaining} remaining</span>`;
+
+  // Preview
+  const previewWrap = document.getElementById('pcs-preview-wrap');
+  previewWrap.innerHTML = _buildPCSPreview(postLink, title, pillar, post);
+  previewWrap.onclick = () => { if (postLink) window.open(postLink, '_blank', 'noopener'); };
+
+  // Fields
+  const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const fieldsEl = document.getElementById('pcs-fields');
+  fieldsEl.innerHTML = _buildPCSFields(post, canEdit, id);
+
+  // Activity
+  const actBody = document.getElementById('pcs-activity-body');
+  actBody.classList.remove('open');
+  actBody.innerHTML = '';
+  actBody.dataset.loaded = '';
+  document.getElementById('pcs-activity-chevron').textContent = '▼';
+
+  // Footer
+  _renderPCSFooter(post, isPublished, canEdit);
+}
+
+function _pcsListLabel(listKey) {
+  if (!listKey) return 'Posts';
+  if (listKey === 'tasks') return 'My Tasks';
+  if (listKey === 'upcoming') return 'Upcoming';
+  if (listKey === 'library') return 'Content Library';
+  if (listKey === 'pipeline') return 'Pipeline';
+  if (listKey.startsWith('tasks-')) {
+    const key = listKey.replace('tasks-','');
+    const bucket = (window.ROLE_BUCKETS?.[currentRole]||[]).find(b=>b.key===key);
+    return bucket ? bucket.label : key;
+  }
+  return 'Posts';
+}
+
+function _buildPCSPreview(postLink, title, pillar, post) {
+  const { hex } = stageStyle(post.stage);
+  let inner;
+  if (postLink && postLink.includes('canva.com')) {
+    inner = `
+      <div class="upc-preview-canva" style="height:100%">
+        <div class="upc-preview-canva-logo">
+          <svg width="16" height="16" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#7D2AE8"/><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="white" font-size="18" font-family="sans-serif" font-weight="bold">C</text></svg>
+          Canva Design
+        </div>
+        <div class="upc-preview-canva-title">${esc(title)}</div>
+        <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,0.5)">Tap to open ↗</div>
+      </div>`;
+  } else if (postLink) {
+    let domain = '';
+    try { domain = new URL(postLink.startsWith('http') ? postLink : 'https://'+postLink).hostname.replace('www.',''); } catch(e){}
+    inner = `
+      <div class="upc-preview-link" style="height:100%">
+        <div class="upc-preview-link-domain">${esc(domain)}</div>
+        <div class="upc-preview-link-title">${esc(title)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Tap to open ↗</div>
+      </div>`;
+  } else {
+    inner = `
+      <div class="upc-preview-text" style="border-left:3px solid ${hex};height:100%">
+        <div class="upc-preview-text-label">${esc(pillar||'Post')}</div>
+        <div class="upc-preview-text-title">${esc(title)}</div>
+        ${post.comments ? `<div style="font-size:12px;color:var(--text3);margin-top:6px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${esc(post.comments)}</div>` : ''}
+      </div>`;
+  }
+  return `${inner}<span class="upc-open-icon" style="${postLink?'':'opacity:0.3'}">↗</span>`;
+}
+
+function _buildPCSFields(post, canEdit, id) {
+  const PILLARS  = ['Leadership','Sustainability by Design','Inclusivity & Discipline','Education','Events','Announcement','Social Media'];
+  const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
+  const OWNERS   = ['Chitra','Pranav','Admin'];
+  const STAGES   = ['Draft','Awaiting Input','In Production','Ready to Send','Awaiting Approval','Scheduled','Published'];
+
+  const f = (label, content) => `
+    <div class="pcs-field">
+      <span class="pcs-field-label">${label}</span>
+      ${content}
+    </div>`;
+
+  const sel = (elId, opts, val) => `
+    <select id="${elId}" ${canEdit?'':'disabled'}>
+      ${opts.map(o=>`<option value="${esc(o)}" ${o===val?'selected':''}>${esc(o)}</option>`).join('')}
+    </select>`;
+
+  const ro = (val) => `<div class="pcs-field-readonly">${esc(val||'—')}</div>`;
+
+  const pillarSel   = canEdit ? sel(`pcs-pillar`,  PILLARS, post.contentPillar||'') : ro(post.contentPillar);
+  const locationSel = canEdit ? sel(`pcs-location`, LOCS,    post.location||'')     : ro(post.location);
+  const ownerSel    = canEdit ? sel(`pcs-owner`,    OWNERS,  post.owner||'')        : ro(post.owner);
+  const stageSel    = canEdit ? sel(`pcs-stage`,    STAGES,  post.stage||'')        : ro(post.stage);
+  const dateFld     = canEdit
+    ? `<input type="date" id="pcs-date" value="${esc(post.targetDate||'')}">`
+    : ro(formatDate(post.targetDate));
+  const canvaFld    = canEdit
+    ? `<input type="url" id="pcs-canva-link" placeholder="https://canva.com/design/…" value="${esc(post.postLink||post.post_link||'')}" oninput="updatePCSPreview(this.value)">`
+    : ro(post.postLink || post.post_link || 'No Canva link');
+  const commentsFld = canEdit
+    ? `<textarea id="pcs-comments" placeholder="Brief or caption…" rows="3">${esc(post.comments||'')}</textarea>`
+    : ro(post.comments);
+
+  return [
+    f('Content Pillar', pillarSel),
+    f('Location',       locationSel),
+    f('Owner',          ownerSel),
+    f('Stage',          stageSel),
+    f('Target Date',    dateFld),
+    f('Canva Link',     canvaFld),
+    f('Notes / Brief',  commentsFld),
+    `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`,
+  ].join('');
+}
+
+function _renderPCSFooter(post, isPublished, canEdit) {
+  const footer = document.getElementById('pcs-footer');
+  const postLink = post.postLink || post.post_link || '';
+  if (isPublished) {
+    footer.innerHTML = postLink
+      ? `<button class="pcs-btn-linkedin" onclick="window.open('${esc(postLink)}','_blank','noopener')">Open LinkedIn ↗</button>`
+      : `<span style="font-size:13px;color:var(--text3)">Published</span>`;
+  } else if (canEdit) {
+    footer.innerHTML = `
+      <button class="pcs-btn-delete" onclick="pcsConfirmDelete()">Delete</button>
+      <button class="pcs-btn-save"   onclick="savePCS()">Save</button>`;
+  } else {
+    footer.innerHTML = '';
+  }
+}
+
+function updatePCSPreview(link) {
+  const post = allPosts.find(p => getPostId(p) === _pcs.postId);
+  if (!post) return;
+  const title  = getTitle(post);
+  const pillar = post.contentPillar || '';
+  const wrap   = document.getElementById('pcs-preview-wrap');
+  wrap.innerHTML = _buildPCSPreview(link, title, pillar, post);
+  wrap.onclick   = () => { if (link) window.open(link,'_blank','noopener'); };
+}
+
+async function savePCS() {
+  const id       = document.getElementById('pcs-post-id')?.value;
+  const pillar   = document.getElementById('pcs-pillar')?.value;
+  const location = document.getElementById('pcs-location')?.value;
+  const owner    = document.getElementById('pcs-owner')?.value;
+  const stage    = document.getElementById('pcs-stage')?.value;
+  const date     = document.getElementById('pcs-date')?.value;
+  const canva    = document.getElementById('pcs-canva-link')?.value;
+  const comments = document.getElementById('pcs-comments')?.value;
+
+  if (!id) return;
+  const btn = document.querySelector('.pcs-btn-save');
+  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
+
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        contentPillar: pillar,
+        location:      location,
+        owner:         owner,
+        stage:         stage,
+        targetDate:    date || null,
+        postLink:      canva || null,
+        comments:      comments || null,
+        updated_at:    new Date().toISOString(),
+      }),
+    });
+    showToast('Saved ✓');
+    await loadPosts();
+    closePCS();
+  } catch(e) {
+    showToast('Save failed — try again', 'error');
+    if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+  }
+}
+
+function pcsConfirmDelete() {
+  const overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.innerHTML = `
+    <div class="pcs-confirm-sheet">
+      <div class="pcs-confirm-msg">Are you sure you want to delete this post?</div>
+      <div class="pcs-confirm-btns">
+        <button class="pcs-confirm-cancel" onclick="this.closest('.pcs-confirm-overlay').remove()">Cancel</button>
+        <button class="pcs-confirm-delete" onclick="pcsDoDelete()">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function pcsDoDelete() {
+  document.querySelector('.pcs-confirm-overlay')?.remove();
+  const id = _pcs.postId;
+  if (!id) return;
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    showToast('Post deleted');
+    closePCS();
+    await loadPosts();
+  } catch(e) { showToast('Delete failed', 'error'); }
+}
+
+function togglePCSActivity() {
+  const body    = document.getElementById('pcs-activity-body');
+  const chevron = document.getElementById('pcs-activity-chevron');
+  const isOpen  = body.classList.toggle('open');
+  chevron.textContent = isOpen ? '▲' : '▼';
+
+  if (!isOpen || body.dataset.loaded) return;
+  body.dataset.loaded = '1';
+  body.innerHTML = `<div class="pcs-activity-empty">Loading…</div>`;
+
+  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(_pcs.postId)}&order=created_at.desc&limit=25`)
+    .then(rows => {
+      if (!rows || !rows.length) {
+        body.innerHTML = `<div class="pcs-activity-empty">No activity yet.</div>`;
+        return;
+      }
+      body.innerHTML = rows.map(r => {
+        const ts = r.created_at
+          ? new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})
+          : '';
+        return `
+          <div class="pcs-activity-entry">
+            <span class="pcs-activity-dot"></span>
+            <span class="pcs-activity-text">
+              <span class="pcs-activity-actor">${esc(r.actor||'System')}</span>
+              ${esc(r.action||'')}
+            </span>
+            <span class="pcs-activity-time">${esc(ts)}</span>
+          </div>`;
+      }).join('');
+    })
+    .catch(() => { body.innerHTML = `<div class="pcs-activity-empty">Could not load activity.</div>`; });
+}
+
+// ── Swipe navigation ──────────────────────────
+
+function pcsSwipeStart(e) {
+  if (e.touches.length !== 1) return;
+  _pcs.touchX0  = e.touches[0].clientX;
+  _pcs.touchY0  = e.touches[0].clientY;
+  _pcs.dragging = false;
+}
+
+function pcsSwipeMove(e) {
+  if (!e.touches.length) return;
+  const dx = e.touches[0].clientX - _pcs.touchX0;
+  const dy = e.touches[0].clientY - _pcs.touchY0;
+  // Only activate for clear horizontal swipes (left)
+  if (!_pcs.dragging && Math.abs(dx) > 10 && Math.abs(dy) < 50 && dx < 0) {
+    _pcs.dragging = true;
+  }
+  if (_pcs.dragging) e.preventDefault();
+}
+
+function pcsSwipeEnd(e) {
+  if (!_pcs.dragging) return;
+  _pcs.dragging = false;
+  const dx = e.changedTouches[0].clientX - _pcs.touchX0;
+  if (dx < -60) _pcsNext();   // swipe left → next post
+}
+
+function _pcsNext() {
+  const nextIdx = _pcs.idx + 1;
+  if (nextIdx >= _pcs.list.length) {
+    // End of list
+    const screen = document.getElementById('pcs-screen');
+    screen.classList.add('pcs-swipe-out');
+    setTimeout(() => {
+      screen.classList.remove('pcs-swipe-out');
+      document.getElementById('pcs-context-bar').innerHTML =
+        `<span class="pcs-context-list">${esc(_pcsListLabel(_pcs.listKey))}</span><span class="pcs-context-remaining">0 remaining</span>`;
+      document.getElementById('pcs-preview-wrap').innerHTML = '';
+      document.getElementById('pcs-fields').innerHTML = '';
+      document.getElementById('pcs-footer').innerHTML = '';
+      document.getElementById('pcs-scroll').innerHTML = `
+        <div class="pcs-end-screen">
+          <div class="pcs-end-icon">✓</div>
+          <div>No posts left.</div>
+        </div>`;
+      setTimeout(closePCS, 1800);
+    }, 220);
+    return;
+  }
+
+  const screen = document.getElementById('pcs-screen');
+  screen.classList.add('pcs-swipe-out');
+  setTimeout(() => {
+    screen.classList.remove('pcs-swipe-out');
+    _pcs.idx    = nextIdx;
+    _pcs.postId = getPostId(_pcs.list[nextIdx]);
+    _renderPCS(_pcs.postId);
+    screen.classList.add('pcs-swipe-in');
+    setTimeout(() => screen.classList.remove('pcs-swipe-in'), 220);
+  }, 220);
 }
