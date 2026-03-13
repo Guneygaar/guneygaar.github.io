@@ -3264,7 +3264,7 @@ function backToEmail() {
   document.getElementById('login-error').textContent = '';
 }
 
-async function sendMagicLink() {
+window.sendMagicLink = async function sendMagicLink() {
   const email = (document.getElementById('login-email-input').value || '').trim().toLowerCase();
   if (!email || !email.includes('@')) {
     document.getElementById('login-error').textContent = 'Please enter a valid email.';
