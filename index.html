@@ -3529,7 +3529,7 @@ function showLoadingSkeleton(containerId) {
 async function loadPosts() {
   showLoadingSkeleton('tasks-container');
   try {
-    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    const data = await apiFetch('/posts?select=*&order=id.desc');
     allPosts    = normalise(data);
     cachedPosts = allPosts;
     hideErrorBanner();
