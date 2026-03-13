@@ -2770,3 +2770,67 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--accent);
   transition: width 0.6s ease;
 }
+
+/* ═══════════════════════════════════════════════
+   LIBRARY CARDS (replaces table)
+═══════════════════════════════════════════════ */
+.library-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.library-card:hover { border-color: var(--border2); background: var(--surface2); }
+.library-card:active { transform: scale(0.99); }
+.library-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+  line-height: 1.4;
+}
+.library-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  margin-bottom: var(--sp-1);
+}
+.library-card-link {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-top: var(--sp-1);
+  text-decoration: none;
+}
+.library-card-link:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════
+   UPCOMING CARDS (replaces table)
+═══════════════════════════════════════════════ */
+.upcoming-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.upcoming-card:hover  { border-color: var(--border2); background: var(--surface2); }
+.upcoming-card:active { transform: scale(0.99); }
+.upcoming-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+  line-height: 1.4;
+}
+.upcoming-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
