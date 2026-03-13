@@ -288,3 +288,81 @@ async function deletePost(postId) {
     if (btn) btn.disabled = false;
   }
 }
+
+// ── Post Card (fix 15+16) ─────────────────────
+function openPostCard(postId) {
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (!post) return;
+  const id        = getPostId(post);
+  const title     = getTitle(post);
+  const stage     = post.stage || '';
+  const stageLC   = stage.toLowerCase().trim();
+  const { hex, label: stageLabel } = stageStyle(stage);
+  const owner     = post.owner || '—';
+  const pillar    = post.contentPillar || '';
+  const location  = post.location || '';
+  const comments  = post.comments || '';
+  const postLink  = post.postLink || post.post_link || '';
+  const relDate   = getRelativeDate(post.targetDate);
+  const days      = daysInStage(post);
+  const stLabel   = staleLabel(days, stage);
+  const stCls     = staleClass(days);
+
+  // Role-based action buttons
+  let actionsHtml = '';
+  if (currentRole === 'Admin') {
+    actionsHtml = `
+      <button class="pc-btn-primary" onclick="closePostCard();openAdminEdit('${esc(id)}')">✏ Edit Post</button>
+      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ Activity Timeline</button>`;
+  } else if (currentRole === 'Servicing') {
+    const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
+    const canNudge = isClientWait && days >= 3;
+    actionsHtml = `
+      <button class="pc-btn-primary" onclick="closePostCard();openPostModal('${esc(id)}')">Update Stage</button>
+      ${canNudge ? `<button class="pc-btn-secondary" onclick="closePostCard();nudgeClient('${esc(id)}','${esc(title)}','${esc(post.targetDate||'')}')">💬 Nudge Client</button>` : ''}
+      ${comments ? `<button class="pc-btn-secondary" onclick="closePostCard();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}
+      ${postLink ? `<button class="pc-btn-secondary" onclick="copyApprovalLink('${window.location.origin}/p/${esc(id)}')">🔗 Copy Approval Link</button>` : ''}
+      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ Activity Timeline</button>`;
+  } else if (currentRole === 'Creative') {
+    const inProd = ['in production','awaiting brand input','revisions needed'].includes(stageLC);
+    actionsHtml = `
+      ${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc-design-link">✏ Open in Canva ↗</a>` : ''}
+      ${inProd ? `<button class="pc-btn-primary" onclick="closePostCard();quickStage('${esc(id)}','Ready to Send')">Mark Ready to Send</button>` : ''}
+      ${inProd ? `<button class="pc-btn-secondary" onclick="closePostCard();flagIssue('${esc(id)}')">⚑ Flag Issue</button>` : ''}
+      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ View Brief History</button>`;
+  }
+
+  const content = `
+    <div class="pc-stage-bar">
+      <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
+      ${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}
+      ${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}
+      <button class="pc-close" onclick="closePostCard()">✕</button>
+    </div>
+    <div class="pc-title">${esc(title)}</div>
+    <div class="pc-meta-row">
+      ${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}
+      ${owner !== '—' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}
+      ${location ? `<span class="tag" style="background:var(--surface2);color:var(--text2)">📍 ${esc(location)}</span>` : ''}
+    </div>
+    ${comments ? `<div class="pc-brief">${esc(comments)}</div>` : ''}
+    ${!comments && postLink && currentRole !== 'Creative' ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc-design-link">✏ Open in Canva ↗</a>` : ''}
+    <div class="pc-actions">${actionsHtml}</div>
+    <div class="pc-divider"></div>
+    <div class="pc-meta-grid">
+      <div><div class="pc-meta-key">Post ID</div><div class="pc-meta-val" style="font-family:var(--font-mono);font-size:11px">${esc(id)}</div></div>
+      <div><div class="pc-meta-key">Owner</div><div class="pc-meta-val">${esc(owner)}</div></div>
+      ${post.targetDate ? `<div><div class="pc-meta-key">Target Date</div><div class="pc-meta-val">${formatDate(post.targetDate)||'—'}</div></div>` : ''}
+      ${pillar ? `<div><div class="pc-meta-key">Pillar</div><div class="pc-meta-val">${esc(pillar)}</div></div>` : ''}
+    </div>
+  `;
+
+  document.getElementById('post-card-content').innerHTML = content;
+  document.getElementById('post-card-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePostCard() {
+  document.getElementById('post-card-overlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
