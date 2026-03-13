@@ -25,13 +25,21 @@ async function quickStage(postId, newStage) {
 function openPostModal(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
-  document.getElementById('pm-title').textContent  = getTitle(post);
-  document.getElementById('pm-postid').textContent = postId;
-  const sel = document.getElementById('pm-stage-select');
+  document.getElementById('pmd-title').textContent  = getTitle(post);
+  document.getElementById('pmd-id').textContent     = postId;
+  const sel = document.getElementById('pmd-stage-select');
   sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
-  document.getElementById('pm-comments').value = post.comments || '';
-  document.getElementById('pm-postlink').value  = post.postLink || post.post_link || '';
-  document.getElementById('pm-save-btn').dataset.postId = postId;
+  document.getElementById('pmd-comments').value    = post.comments || '';
+  document.getElementById('pmd-postlink').value    = post.postLink || post.post_link || '';
+  const adminFields = document.getElementById('pmd-admin-fields');
+  if (adminFields) {
+    adminFields.style.display = currentRole === 'Admin' ? '' : 'none';
+    if (currentRole === 'Admin') {
+      document.getElementById('pmd-owner-select').value = post.owner || '';
+      document.getElementById('pmd-date-input').value   = post.targetDate || '';
+    }
+  }
+  document.getElementById('pmd-save-btn').dataset.postId = postId;
   document.getElementById('post-modal-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -42,19 +50,25 @@ function closePostModal() {
 }
 
 async function saveStageUpdate() {
-  const postId   = document.getElementById('pm-save-btn').dataset.postId;
-  const newStage = document.getElementById('pm-stage-select').value;
-  const comments = document.getElementById('pm-comments').value.trim();
-  const postLink = document.getElementById('pm-postlink').value.trim();
-  const btn      = document.getElementById('pm-save-btn');
+  const postId   = document.getElementById('pmd-save-btn').dataset.postId;
+  const newStage = document.getElementById('pmd-stage-select').value;
+  const comments = document.getElementById('pmd-comments').value.trim();
+  const postLink = document.getElementById('pmd-postlink').value.trim();
+  const btn      = document.getElementById('pmd-save-btn');
   btn.disabled   = true;
+  const ownerEl  = document.getElementById('pmd-owner-select');
+  const dateEl   = document.getElementById('pmd-date-input');
+  const payload  = { stage: newStage, comments: comments || null, post_link: postLink || null, updated_at: new Date().toISOString() };
+  if (ownerEl && currentRole === 'Admin') payload.owner = ownerEl.value || null;
+  if (dateEl  && currentRole === 'Admin') payload.target_date = dateEl.value || null;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, comments: comments || null, post_link: postLink || null, updated_at: new Date().toISOString() }),
+      body: JSON.stringify(payload),
     });
     await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
-    closePostModal();
+    document.getElementById('post-modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
     await loadPosts();
     showToast('Post updated ✓', 'success');
   } catch (err) {
