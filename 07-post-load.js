@@ -461,43 +461,28 @@ function toggleHeroComments(id, btn) {
 const _postLists = {};
 
 function buildPostCard(p, listKey) {
-  const id    = getPostId(p);
-  const title = getTitle(p);
-  const stage = p.stage || '';
-  const { hex, label: stageLabel } = stageStyle(stage);
-  const postLink = p.postLink || p.post_link || '';
+  const id     = getPostId(p);
+  const title  = getTitle(p);
+  const stage  = p.stage || '';
+  const pillar = p.contentPillar || '';
+  const { hex } = stageStyle(stage);
+
+  const d = parseDate(p.targetDate);
+  const dateStr = d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+  const isToday = d && d.toDateString() === new Date().toDateString();
 
   return `
-    <div class="upc" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
+    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
          onclick="openPCS('${esc(id)}','${esc(listKey||'')}')">
-      <span class="upc-stage-badge" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
-      <span class="upc-title">${esc(title)}</span>
-      <button class="upc-menu-btn" onclick="event.stopPropagation();openUpcMenu('${esc(id)}','${esc(postLink)}',event)">⋯</button>
+      <span class="row-date${isToday ? ' today' : ''}">${esc(dateStr)}</span>
+      <span class="row-body">
+        <span class="row-title">${esc(title)}</span>
+        ${pillar ? `<span class="row-pillar">${esc(pillar)}</span>` : ''}
+      </span>
+      <span class="row-dot" style="background:${hex}" title="${esc(stage)}"></span>
     </div>`;
 }
 
-// Overflow menu
-let _upcMenuOpen = null;
-function openUpcMenu(postId, postLink, event) {
-  closeUpcMenu();
-  const post  = allPosts.find(p => getPostId(p) === postId);
-  const title = post ? getTitle(post) : postId;
-  const menu  = document.createElement('div');
-  menu.className = 'upc-menu';
-  menu.id = 'upc-menu-active';
-  menu.innerHTML = `
-    <button onclick="closeUpcMenu();openPCS('${esc(postId)}','')">Open Post</button>
-    ${postLink ? `<button onclick="closeUpcMenu();window.open('${esc(postLink)}','_blank','noopener')">Open in Canva</button>` : ''}
-    <button class="danger" onclick="closeUpcMenu();deletePost('${esc(postId)}')">Delete</button>`;
-  const rect = event.currentTarget.getBoundingClientRect();
-  menu.style.cssText = `position:fixed;top:${rect.bottom+4}px;right:${window.innerWidth-rect.right}px`;
-  document.body.appendChild(menu);
-  _upcMenuOpen = menu;
-  setTimeout(() => document.addEventListener('click', closeUpcMenu, {once:true}), 0);
-}
-function closeUpcMenu() {
-  if (_upcMenuOpen) { _upcMenuOpen.remove(); _upcMenuOpen = null; }
-}
 
 function renderTasks() {
   const container = document.getElementById('tasks-container');
@@ -507,7 +492,7 @@ function renderTasks() {
     const posts = getMyTasks();
     _postLists['tasks'] = posts;
     container.innerHTML = posts.length
-      ? `<div class="upc-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
+      ? `<div class="row-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
       : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
     return;
   }
@@ -532,14 +517,14 @@ function renderTasks() {
           <span class="pstage-name">${esc(bucket.label)}</span>
           <span class="pstage-badge${badgeCls}">${count}</span>
         </div>
-        <div class="upc-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>
+        <div class="row-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>
       </div>`;
   }).join('');
   container.innerHTML = `<div class="pstages">${stagesHtml}</div>`;
 }
 
 function toggleStageOverflow(btn, totalHidden) {
-  const list = btn.closest('.upc-list');
+  const list = btn.closest('.row-list');
   const isShowing = btn.dataset.showing === '1';
   if (!isShowing) {
     const ids = btn.dataset.hiddenIds.split(',').filter(Boolean);
@@ -579,7 +564,7 @@ function renderPipeline() {
           <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
           <span class="pstage-badge">${posts.length}</span>
         </div>
-        <div class="upc-list">
+        <div class="row-list">
           ${cards || `<div class="pstage-empty">Empty</div>`}
         </div>
       </div>`;
@@ -621,7 +606,7 @@ function renderUpcoming() {
     const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
     const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
     const cards   = groups[dateKey].map(p => buildPostCard(p, 'upcoming')).join('');
-    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div><div class="upc-list" style="gap:10px;padding-top:6px">${cards}</div></div>`;
+    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div><div class="row-list" style="gap:10px;padding-top:6px">${cards}</div></div>`;
   }).join('');
 }
 
@@ -664,7 +649,7 @@ function renderLibraryRows(posts) {
     listView.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match your search.</p></div>`;
     return;
   }
-  listView.innerHTML = `<div class="upc-list">${posts.map(p => buildPostCard(p, 'library')).join('')}</div>`;
+  listView.innerHTML = `<div class="row-list">${posts.map(p => buildPostCard(p, 'library')).join('')}</div>`;
 }
 
 function renderClientView() {
