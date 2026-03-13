@@ -303,7 +303,7 @@ async function deletePost(postId) {
   }
 }
 
-// ── Post Card (fix 15+16) ─────────────────────
+// ── Post Card — mobile control panel ──────────
 function openPostCard(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
@@ -319,61 +319,122 @@ function openPostCard(postId) {
   const postLink  = post.postLink || post.post_link || '';
   const relDate   = getRelativeDate(post.targetDate);
   const days      = daysInStage(post);
-  const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
+  const updatedAt = post.updated_at || post.updatedAt || post.created_at || '';
+  const lastActivity = updatedAt ? timeAgo(updatedAt) : '';
+  const approvalLink = `${window.location.origin}/p/${id}`;
 
-  // Role-based action buttons
-  let actionsHtml = '';
-  if (currentRole === 'Admin') {
-    actionsHtml = `
-      <button class="pc-btn-primary" onclick="closePostCard();openAdminEdit('${esc(id)}')">✏ Edit Post</button>
-      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ Activity Timeline</button>`;
-  } else if (currentRole === 'Servicing') {
-    const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
-    const canNudge = isClientWait && days >= 3;
-    actionsHtml = `
-      <button class="pc-btn-primary" onclick="closePostCard();openPostModal('${esc(id)}')">Update Stage</button>
-      ${canNudge ? `<button class="pc-btn-secondary" onclick="closePostCard();nudgeClient('${esc(id)}','${esc(title)}','${esc(post.targetDate||'')}')">💬 Nudge Client</button>` : ''}
-      ${comments ? `<button class="pc-btn-secondary" onclick="closePostCard();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}
-      ${postLink ? `<button class="pc-btn-secondary" onclick="copyApprovalLink('${window.location.origin}/p/${esc(id)}')">🔗 Copy Approval Link</button>` : ''}
-      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ Activity Timeline</button>`;
-  } else if (currentRole === 'Creative') {
-    const inProd = ['in production','awaiting brand input','revisions needed'].includes(stageLC);
-    actionsHtml = `
-      ${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc-design-link">✏ Open in Canva ↗</a>` : ''}
-      ${inProd ? `<button class="pc-btn-primary" onclick="closePostCard();quickStage('${esc(id)}','Ready to Send')">Mark Ready to Send</button>` : ''}
-      ${inProd ? `<button class="pc-btn-secondary" onclick="closePostCard();flagIssue('${esc(id)}')">⚑ Flag Issue</button>` : ''}
-      <button class="pc-btn-secondary" onclick="closePostCard();openTimeline('${esc(id)}','${esc(title)}')">⏱ View Brief History</button>`;
+  // 1 — Status Row
+  const statusRow = `
+    <div class="pc2-status-row">
+      <span class="pc2-stage-badge" style="background:${hex}22;color:${hex};border:1px solid ${hex}44">${esc(stageLabel)}</span>
+      <div class="pc2-status-right">
+        ${relDate ? `<span class="pc2-deadline ${relDate.cls}">${relDate.text}</span>` : ''}
+        ${days >= 3 ? `<span class="pc2-stale ${stCls}">⏳ ${days}d</span>` : ''}
+        <button class="pc2-close" onclick="closePostCard()">✕</button>
+      </div>
+    </div>`;
+
+  // 2 — Title
+  const titleRow = `<div class="pc2-title">${esc(title)}</div>`;
+
+  // 3 — Metadata
+  const metaParts = [
+    pillar   ? esc(pillar)           : '',
+    location ? `📍 ${esc(location)}` : '',
+    owner !== '—' ? esc(owner)       : '',
+  ].filter(Boolean);
+  const metaRow = metaParts.length
+    ? `<div class="pc2-meta">${metaParts.join('<span class="pc2-meta-sep"> · </span>')}</div>` : '';
+
+  // 4+5 — Actions (role-based)
+  let primaryBtn = '';
+  let opsButtons = '';
+  const isClientWait = ['awaiting brand input','awaiting approval','sent for approval'].includes(stageLC);
+  const canNudge     = isClientWait && days >= 3;
+
+  if (currentRole === 'Creative') {
+    primaryBtn = postLink
+      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc2-btn-canva">✏ Open in Canva ↗</a>`
+      : `<div class="pc2-no-canva">No Canva link attached yet</div>`;
+
+  } else if (currentRole === 'Admin' || currentRole === 'Servicing') {
+    primaryBtn = postLink
+      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc2-btn-canva">✏ Open in Canva ↗</a>`
+      : '';
+
+    const editBtn     = `<button class="pc2-op-btn" onclick="closePostCard();openAdminEdit('${esc(id)}')">✏ Edit</button>`;
+    const stageBtn    = `<button class="pc2-op-btn" onclick="closePostCard();openPostModal('${esc(id)}')">↕ Move Stage</button>`;
+    const schedBtn    = !['scheduled','published'].includes(stageLC)
+      ? `<button class="pc2-op-btn" onclick="closePostCard();quickStage('${esc(id)}','Scheduled')">📅 Schedule</button>` : '';
+    const nudgeBtn    = canNudge
+      ? `<button class="pc2-op-btn pc2-op-accent" onclick="closePostCard();nudgeClient('${esc(id)}','${esc(title)}','${esc(post.targetDate||'')}')">💬 Nudge</button>` : '';
+    const captionBtn  = comments
+      ? `<button class="pc2-op-btn" onclick="copyCaption('${esc(id)}')">📋 Caption</button>` : '';
+    const linkBtn     = `<button class="pc2-op-btn" onclick="copyApprovalLink('${esc(approvalLink)}')">🔗 Share Link</button>`;
+    const deleteBtn   = `<button class="pc2-op-btn pc2-op-danger" onclick="closePostCard();deletePost('${esc(id)}')">🗑 Delete</button>`;
+    opsButtons = `<div class="pc2-ops-grid">${editBtn}${stageBtn}${schedBtn}${nudgeBtn}${captionBtn}${linkBtn}${deleteBtn}</div>`;
   }
 
-  const content = `
-    <div class="pc-stage-bar">
-      <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
-      ${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}
-      ${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}
-      <button class="pc-close" onclick="closePostCard()">✕</button>
-    </div>
-    <div class="pc-title">${esc(title)}</div>
-    <div class="pc-meta-row">
-      ${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}
-      ${owner !== '—' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}
-      ${location ? `<span class="tag" style="background:var(--surface2);color:var(--text2)">📍 ${esc(location)}</span>` : ''}
-    </div>
-    ${comments ? `<div class="pc-brief">${esc(comments)}</div>` : ''}
-    ${!comments && postLink && currentRole !== 'Creative' ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pc-design-link">✏ Open in Canva ↗</a>` : ''}
-    <div class="pc-actions">${actionsHtml}</div>
-    <div class="pc-divider"></div>
-    <div class="pc-meta-grid">
-      <div><div class="pc-meta-key">Post ID</div><div class="pc-meta-val" style="font-family:var(--font-mono);font-size:11px">${esc(id)}</div></div>
-      <div><div class="pc-meta-key">Owner</div><div class="pc-meta-val">${esc(owner)}</div></div>
-      ${post.targetDate ? `<div><div class="pc-meta-key">Target Date</div><div class="pc-meta-val">${formatDate(post.targetDate)||'—'}</div></div>` : ''}
-      ${pillar ? `<div><div class="pc-meta-key">Pillar</div><div class="pc-meta-val">${esc(pillar)}</div></div>` : ''}
-    </div>
-  `;
+  // Brief
+  const briefBlock = comments
+    ? `<div class="pc2-brief">${esc(comments)}</div>` : '';
 
-  document.getElementById('post-card-content').innerHTML = content;
+  // 6 — Activity (expandable)
+  const activityRow = `
+    <button class="pc2-activity-toggle" onclick="togglePcActivity(this)">
+      <span>Activity Timeline</span>
+      <span class="pc2-chevron">›</span>
+    </button>
+    <div class="pc2-activity-body" id="pc-activity-${esc(id)}"></div>`;
+
+  // 7 — Footer
+  const footer = `
+    <div class="pc2-footer">
+      <span class="pc2-footer-id">${esc(id)}</span>
+      ${lastActivity ? `<span class="pc2-footer-time">${lastActivity}</span>` : ''}
+    </div>`;
+
+  document.getElementById('post-card-content').innerHTML =
+    statusRow + titleRow + metaRow + briefBlock +
+    (primaryBtn ? `<div class="pc2-canva-wrap">${primaryBtn}</div>` : '') +
+    opsButtons + activityRow + footer;
+
   document.getElementById('post-card-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+}
+
+function togglePcActivity(btn) {
+  const body = btn.nextElementSibling;
+  const chevron = btn.querySelector('.pc2-chevron');
+  const isOpen = body.classList.toggle('open');
+  chevron.style.transform = isOpen ? 'rotate(90deg)' : '';
+  if (!isOpen || body.dataset.loaded) return;
+  body.dataset.loaded = '1';
+  const postId = body.id.replace('pc-activity-', '');
+  body.innerHTML = `<div class="pc2-activity-loading">Loading…</div>`;
+  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.asc&limit=20`)
+    .then(rows => {
+      if (!rows.length) { body.innerHTML = `<div class="pc2-activity-empty">No activity recorded yet.</div>`; return; }
+      body.innerHTML = rows.map(r => `
+        <div class="pc2-activity-item">
+          <span class="pc2-activity-dot"></span>
+          <div class="pc2-activity-content">
+            <span class="pc2-activity-actor">${esc(r.actor||'System')}</span>
+            <span class="pc2-activity-action">${esc(r.action||'')}</span>
+          </div>
+          <span class="pc2-activity-time">${r.created_at ? timeAgo(r.created_at) : ''}</span>
+        </div>`).join('');
+    })
+    .catch(() => { body.innerHTML = `<div class="pc2-activity-empty">Could not load activity.</div>`; });
+}
+
+function timeAgo(iso) {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
 }
 
 function closePostCard() {
