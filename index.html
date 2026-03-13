@@ -3012,10 +3012,11 @@ let _retryTimer  = null;
    SUPABASE API LAYER
 ═══════════════════════════════════════════════ */
 const SB_HEADERS = {
-  'apikey':        SUPABASE_KEY,
-  'Authorization': `Bearer ${SUPABASE_KEY}`,
-  'Content-Type':  'application/json',
-  'Prefer':        'return=representation',
+'apikey': SUPABASE_KEY,
+'Authorization': `Bearer ${SUPABASE_KEY}`,
+'Content-Type': 'application/json',
+'Prefer': 'return=representation',
+'Accept': 'application/json'
 };
 
 async function apiFetch(path, options = {}) {
