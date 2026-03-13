@@ -1,0 +1,5429 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>GBL · Content Ops</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
+
+  --sp-1:  4px;  --sp-2:  8px;  --sp-3: 12px;
+  --sp-4: 16px;  --sp-5: 24px;  --sp-6: 32px;  --sp-7: 48px;
+
+  --r-sm:  8px;
+  --r-md:  12px;
+  --r-lg:  18px;
+  --r-xl:  24px;
+  --r-pill: 999px;
+
+  --transition: 180ms ease;
+  --transition-fast: 100ms ease;
+  --transition-slow: 300ms ease;
+
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lift: 0 2px 8px rgba(0,0,0,0.16), 0 8px 32px rgba(0,0,0,0.12);
+  --shadow-modal:0 8px 32px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.24);
+
+  --topbar-h: 56px;
+  --tab-h:    44px;
+  --strip-h:  44px;
+}
+
+[data-theme="dark"] {
+  --bg:         #0c0d11;
+  --surface:    #161820;
+  --surface2:   #1e2130;
+  --surface3:   #252840;
+  --border:     rgba(255,255,255,0.07);
+  --border2:    rgba(255,255,255,0.14);
+  --text:       #eaecf4;
+  --text2:      #8892aa;
+  --text3:      #50597a;
+  --accent:     #e8c37a;
+  --accent-dim: rgba(232,195,122,0.12);
+  --accent-hover: rgba(232,195,122,0.18);
+  --accent-glow:  rgba(232,195,122,0.07);
+
+  --c-amber:  #f59e0b;  --c-amber-dim:  rgba(245,158,11,0.14);
+  --c-blue:   #3b82f6;  --c-blue-dim:   rgba(59,130,246,0.14);
+  --c-green:  #10b981;  --c-green-dim:  rgba(16,185,129,0.14);
+  --c-cyan:   #06b6d4;  --c-cyan-dim:   rgba(6,182,212,0.14);
+  --c-purple: #8b5cf6;  --c-purple-dim: rgba(139,92,246,0.14);
+  --c-red:    #ef4444;  --c-red-dim:    rgba(239,68,68,0.14);
+  --c-pub:    #22c55e;  --c-pub-dim:    rgba(34,197,94,0.14);
+  --c-muted:  #64748b;  --c-muted-dim:  rgba(100,116,139,0.14);
+}
+
+[data-theme="light"] {
+  --bg:         #f2f1ed;
+  --surface:    #ffffff;
+  --surface2:   #eeecea;
+  --surface3:   #e4e2de;
+  --border:     rgba(0,0,0,0.07);
+  --border2:    rgba(0,0,0,0.14);
+  --text:       #18191f;
+  --text2:      #545c72;
+  --text3:      #9299ae;
+  --accent:     #b5831a;
+  --accent-dim: rgba(181,131,26,0.10);
+  --accent-hover: rgba(181,131,26,0.16);
+  --accent-glow:  rgba(181,131,26,0.06);
+
+  --c-amber:  #d97706;  --c-amber-dim:  rgba(217,119,6,0.10);
+  --c-blue:   #2563eb;  --c-blue-dim:   rgba(37,99,235,0.10);
+  --c-green:  #059669;  --c-green-dim:  rgba(5,150,105,0.10);
+  --c-cyan:   #0891b2;  --c-cyan-dim:   rgba(8,145,178,0.10);
+  --c-purple: #7c3aed;  --c-purple-dim: rgba(124,58,237,0.10);
+  --c-red:    #dc2626;  --c-red-dim:    rgba(220,38,38,0.10);
+  --c-pub:    #16a34a;  --c-pub-dim:    rgba(22,163,74,0.10);
+  --c-muted:  #64748b;  --c-muted-dim:  rgba(100,116,139,0.10);
+}
+
+/* ═══════════════════════════════════════════════
+   RESET + BASE
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: var(--font-body);
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  transition: var(--transition);
+}
+button:active { transform: scale(0.97); }
+
+input, select, textarea {
+  font-family: var(--font-body);
+  font-size: 16px; /* prevent iOS zoom */
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+}
+
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════
+   VIEWS — show/hide
+═══════════════════════════════════════════════ */
+#login-overlay,
+#approval-view,
+#dashboard-view,
+#client-view {
+  display: none;
+}
+#login-overlay:not(.hidden) { display: flex; }
+#approval-view.active       { display: flex; }
+#dashboard-view.active      { display: flex; }
+#client-view.active         { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   LOGIN OVERLAY
+═══════════════════════════════════════════════ */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+}
+#login-overlay.hidden { display: none !important; }
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-xl);
+  padding: var(--sp-7) var(--sp-6);
+  box-shadow: var(--shadow-lift);
+}
+
+.login-logo {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  margin-bottom: var(--sp-1);
+}
+.login-logo span { color: var(--accent); }
+
+.login-tagline {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: var(--sp-6);
+}
+
+.login-step { display: none; }
+.login-step.active { display: block; }
+#login-role-step { display: block; }
+
+.login-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--sp-3);
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+
+.role-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  min-height: 72px;
+  transition: var(--transition);
+}
+.role-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.role-btn:active { transform: scale(0.97); }
+
+.role-btn-icon {
+  font-size: 20px;
+  margin-bottom: var(--sp-2);
+  line-height: 1;
+}
+.role-btn-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.role-btn-desc {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* PIN step */
+.pin-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.pin-back {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.pin-back:hover { background: var(--surface3); color: var(--text); }
+
+.pin-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pin-subtitle {
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.pin-dots {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: var(--sp-5) 0;
+}
+.pin-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--border2);
+  transition: var(--transition-fast);
+}
+.pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+.pin-dot.error  { background: var(--c-red); border-color: var(--c-red); animation: shake 0.3s ease; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60%  { transform: translateX(-4px); }
+  40%,80%  { transform: translateX(4px); }
+}
+
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  max-width: 260px;
+  margin: 0 auto;
+}
+.pin-key {
+  height: 56px;
+  border-radius: var(--r-md);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-size: 18px;
+  font-weight: 500;
+  transition: var(--transition-fast);
+}
+.pin-key:hover  { background: var(--surface3); }
+.pin-key:active { background: var(--accent-dim); color: var(--accent); transform: scale(0.95); }
+.pin-key.del    { font-size: 14px; color: var(--text2); }
+
+.login-error {
+  text-align: center;
+  font-size: 13px;
+  color: var(--c-red);
+  min-height: 20px;
+  margin-top: var(--sp-3);
+}
+
+/* ═══════════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════════ */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.topbar-brand {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.topbar-brand span { color: var(--accent); }
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border2);
+  flex-shrink: 0;
+}
+
+.role-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 7px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.role-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.topbar-spacer { flex: 1; }
+
+/* Action button */
+.btn-primary-action {
+  height: 34px;
+  padding: 0 var(--sp-4);
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-primary-action:hover { opacity: 0.88; }
+.btn-primary-action:active { transform: scale(0.96); }
+
+/* Icon buttons */
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text2);
+  flex-shrink: 0;
+  position: relative;
+  font-size: 15px;
+}
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn:active { transform: scale(0.93); }
+
+/* Notification bell */
+.notif-wrap { position: relative; }
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--c-red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: var(--r-pill);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  pointer-events: none;
+  font-family: var(--font-mono);
+}
+
+.notif-panel {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  max-height: 400px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-modal);
+  z-index: 200;
+  overflow: hidden;
+  flex-direction: column;
+}
+.notif-panel.open { display: flex; }
+
+.notif-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.notif-panel-head span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.notif-mark-read {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.notif-mark-read:hover { background: var(--accent-dim); }
+
+.notif-list {
+  overflow-y: auto;
+  flex: 1;
+  overscroll-behavior: contain;
+}
+
+.notif-item {
+  display: flex;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition-fast);
+}
+.notif-item:hover { background: var(--surface2); }
+.notif-item.unread { background: var(--accent-dim); }
+.notif-item.unread:hover { background: var(--accent-hover); }
+
+.notif-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.notif-item:not(.unread) .notif-dot { background: transparent; }
+
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-msg  { font-size: 12px; color: var(--text); line-height: 1.4; }
+.notif-time { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+
+.notif-empty {
+  padding: var(--sp-6) var(--sp-4);
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+/* User menu */
+.user-menu-wrap { position: relative; }
+.user-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lift);
+  z-index: 200;
+  overflow: hidden;
+  padding: var(--sp-1) 0;
+}
+.user-menu.open { display: block; }
+
+.user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  width: 100%;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+.user-menu-item:hover { background: var(--surface2); }
+.user-menu-item.danger { color: var(--c-red); }
+
+/* ═══════════════════════════════════════════════
+   PIPELINE STRIP
+═══════════════════════════════════════════════ */
+.pipeline-strip-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pipeline-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-4);
+  gap: var(--sp-2);
+  min-height: var(--strip-h);
+  overflow: hidden;
+}
+
+/* ── Mobile typography ── */
+@media (max-width: 539px) {
+  .bucket-item-title { font-size: 18px !important; }
+  .bucket-item-pillar, .stale-badge, .bucket-item-revision { font-size: 13px !important; }
+  .bucket-item-stage { font-size: 14px !important; padding: 0 10px !important; }
+  .hero-title { font-size: 22px !important; }
+  .hero-comments, .hero-design-link, .hero-meta .tag { font-size: 15px !important; }
+  .ps-stage { padding: 4px 10px; min-height: 32px; font-size: 12px; }
+}
+
+.ps-stage {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  min-height: 36px;
+  background: var(--surface2);
+  border: 1px solid var(--border1);
+}
+.ps-stage:hover { background: var(--surface3); }
+.ps-stage:active { transform: scale(0.97); }
+.ps-stage.active { border-color: var(--accent); background: var(--accent-dim,rgba(232,195,122,0.12)); }
+
+.ps-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ps-label { font-size: 12px; color: var(--text2); font-weight: 600; }
+.ps-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  min-width: 16px;
+  text-align: center;
+}
+}
+.ps-count.warn { background: var(--c-red-dim); color: var(--c-red); }
+.ps-count.warn { color: var(--c-red); }
+.ps-count.ok   { color: var(--c-green); }
+
+/* ═══════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════ */
+.tabs-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  flex-shrink: 0;
+}
+.tabs-wrap::-webkit-scrollbar { display: none; }
+
+.tabs {
+  display: flex;
+  align-items: center;
+  height: var(--tab-h);
+  padding: 0 var(--sp-4);
+  gap: 0;
+  min-width: max-content;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 var(--sp-4);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: color var(--transition), border-color var(--transition);
+  position: relative;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--c-red);
+  color: white;
+  border-radius: var(--r-pill);
+  padding: 1px 5px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ═══════════════════════════════════════════════
+   DASHBOARD VIEW LAYOUT
+═══════════════════════════════════════════════ */
+#dashboard-view {
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.dash-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .dash-body { padding: var(--sp-5); }
+}
+
+/* ═══════════════════════════════════════════════
+   HERO CARD — Zone 1
+═══════════════════════════════════════════════ */
+.hero-section { margin-bottom: var(--sp-4); }
+
+.hero-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-lg);
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-lift);
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+.hero-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--sp-3);
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  margin-bottom: var(--sp-3);
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  align-items: center;
+}
+
+.hero-comments {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--accent);
+  margin-bottom: var(--sp-4);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hero-comments.expanded { -webkit-line-clamp: unset; }
+
+.hero-read-more {
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: var(--sp-4);
+  padding: 0;
+  font-weight: 500;
+}
+
+.hero-design-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: var(--sp-4);
+  width: fit-content;
+}
+.hero-design-link:hover { background: var(--accent-hover); text-decoration: none; }
+
+.hero-no-design {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--c-amber-dim);
+  border-radius: var(--r-sm);
+  color: var(--c-amber);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: var(--sp-4);
+}
+
+.hero-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-hero-primary {
+  flex: 1;
+  min-width: 140px;
+  height: 48px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+.btn-hero-primary:hover { opacity: 0.88; }
+.btn-hero-primary:active { transform: scale(0.97); }
+.btn-hero-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-hero-ghost {
+  height: 48px;
+  padding: 0 var(--sp-4);
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.btn-hero-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+.btn-hero-more {
+  width: 48px;
+  height: 48px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 20px;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-hero-more:hover { background: var(--surface3); color: var(--text); }
+
+/* ═══════════════════════════════════════════════
+   COMPACT METER
+═══════════════════════════════════════════════ */
+.meter-section { margin-bottom: var(--sp-4); }
+
+.compact-meter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+.compact-meter-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.compact-meter-label {
+  font-size: 12px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.compact-meter-count {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+.compact-meter-gap {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+}
+.compact-meter-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.compact-meter-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width 0.6s ease;
+}
+.compact-meter-fill.ok   { background: var(--c-green); }
+.compact-meter-fill.warn { background: var(--c-red); }
+
+/* ═══════════════════════════════════════════════
+   BUCKET GRID — Zone 2
+═══════════════════════════════════════════════ */
+.bucket-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+@media (min-width: 540px) {
+  .bucket-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .bucket-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.bucket-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.bucket-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.bucket-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+.bucket-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface3);
+  color: var(--text3);
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  min-width: 22px;
+  text-align: center;
+}
+.bucket-badge.warn { background: var(--c-red-dim); color: var(--c-red); }
+
+.bucket-items { padding: var(--sp-2); }
+
+.bucket-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-2);
+  border-radius: var(--r-sm);
+  min-height: 48px;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--border);
+}
+.bucket-item:last-child { border-bottom: none; }
+.bucket-item[onclick] { cursor: pointer; }
+.bucket-item[onclick]:hover { background: var(--surface2); }
+.bucket-item[onclick]:active { background: var(--surface3); }
+
+.bucket-item-left { flex: 1; min-width: 0; }
+
+.bucket-item-title {
+  font-size: 13px;
+  color: var(--text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+.bucket-item-pillar {
+  font-size: 10px;
+  color: var(--text3);
+  margin-top: 2px;
+  display: block;
+}
+
+/* Stage pill as tap target */
+.bucket-item-stage {
+  flex-shrink: 0;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+  border: 1px solid transparent;
+  opacity: 0.85;
+}
+.bucket-item-stage:hover { opacity: 1; transform: scale(1.04); }
+
+/* ── Mobile typography upgrades ── */
+@media (max-width: 539px) {
+  .bucket-item-title    { font-size: 15px; }
+  .bucket-item-pillar   { font-size: 12px; }
+  .bucket-item-stage    { font-size: 14px; min-height: 32px; padding: 0 10px; }
+  .stale-badge          { font-size: 11px; }
+  .hero-title           { font-size: 22px !important; }
+  .hero-comments        { font-size: 15px; line-height: 1.65; }
+  .tag                  { font-size: 13px; }
+}
+
+/* Stale badges */
+.stale-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.stale-badge.amber { background: var(--c-amber-dim); color: var(--c-amber); }
+.stale-badge.red   { background: var(--c-red-dim);   color: var(--c-red); }
+
+/* ── Activity Timeline Modal ── */
+#timeline-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+}
+#timeline-overlay.open { display: flex; }
+#timeline-panel {
+  background: var(--surface1); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  width: 100%; max-width: 600px; max-height: 78vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.timeline-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border1);
+  flex-shrink: 0;
+}
+.timeline-title { font-size: 15px; font-weight: 700; color: var(--text1); flex: 1; padding-right: var(--sp-3); }
+.timeline-close {
+  background: none; border: none; color: var(--text3);
+  font-size: 18px; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+}
+.timeline-body { overflow-y: auto; padding: var(--sp-4) var(--sp-5); flex: 1; }
+.timeline-empty { text-align: center; color: var(--text3); font-size: 14px; padding: var(--sp-6) 0; }
+.tl-item {
+  display: flex; gap: var(--sp-3); padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--border1);
+}
+.tl-item:last-child { border-bottom: none; }
+.tl-icon {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface2); display: flex; align-items: center;
+  justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px;
+}
+.tl-content { flex: 1; min-width: 0; }
+.tl-action { font-size: 13px; color: var(--text1); font-weight: 500; line-height: 1.4; }
+.tl-meta { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+.btn-timeline {
+  background: none; border: 1px solid var(--border1); color: var(--text3);
+  font-size: 11px; padding: 2px 7px; border-radius: 20px; cursor: pointer;
+  font-family: var(--font-mono); flex-shrink: 0;
+}
+.btn-timeline:hover { color: var(--text1); border-color: var(--text3); }
+
+/* ── Approval design preview ── */
+.apv-design-btn {
+  display: block; width: 100%; padding: var(--sp-3) var(--sp-4);
+  background: var(--surface2); border: 1px solid var(--border1);
+  border-radius: var(--r-sm); color: var(--accent); font-size: 14px;
+  font-weight: 600; text-align: center; text-decoration: none;
+  margin-bottom: var(--sp-4); box-sizing: border-box;
+}
+
+/* ── Schedule date grouping ── */
+.schedule-group { margin-bottom: var(--sp-5); }
+.schedule-date-header {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: var(--sp-2) 0 var(--sp-1); border-bottom: 1px solid var(--border1);
+  margin-bottom: var(--sp-2);
+}
+.schedule-date-header.soon { color: var(--c-amber); }
+.schedule-date-header.today-hdr { color: var(--accent); }
+
+/* ── Admin Quick-Edit bottom sheet ── */
+#admin-edit-overlay {
+  display: none; position: fixed; inset: 0; z-index: 8500;
+  background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+}
+#admin-edit-overlay.open { display: flex; }
+#admin-edit-sheet {
+  background: var(--surface1); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  width: 100%; max-width: 540px;
+  max-height: 92vh; overflow-y: auto; overscroll-behavior: contain;
+  padding: var(--sp-5);
+}
+.admin-edit-title {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  color: var(--text1); margin-bottom: var(--sp-4);
+}
+.admin-edit-id { font-size: 11px; color: var(--text3); margin-top: -12px; margin-bottom: var(--sp-4); }
+/* ── Admin Insight Panels ── */
+.insight-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.insight-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+}
+.insight-panel-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--sp-3);
+}
+.insight-rows { display: flex; flex-direction: column; gap: var(--sp-2); }
+.insight-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.insight-row-label { color: var(--text2); }
+.insight-row-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text1); }
+.insight-row-val.warn  { color: var(--c-amber); }
+.insight-row-val.alert { color: var(--c-red); }
+.insight-row-val.ok    { color: var(--c-green); }
+.insight-flag {
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: 13px; color: var(--text2); padding: var(--sp-1) 0;
+}
+.insight-flag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.insight-flag-dot.amber { background: var(--c-amber); }
+.insight-flag-dot.red   { background: var(--c-red); }
+.insight-parked-link {
+  font-size: 11px; color: var(--accent); cursor: pointer;
+  text-decoration: underline; margin-left: auto; flex-shrink: 0;
+}
+/* ── Task Banner (Creative / Servicing) ── */
+.task-banner {
+  background: var(--accent-dim, rgba(232,195,122,0.12));
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.task-banner-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: var(--sp-2);
+}
+.task-banner-item {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-3); padding: var(--sp-2) 0;
+  border-bottom: 1px solid rgba(232,195,122,0.15);
+}
+.task-banner-item:last-child { border-bottom: none; }
+.task-banner-msg { font-size: 14px; color: var(--text1); line-height: 1.5; flex: 1; }
+.task-banner-due { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.btn-task-done {
+  background: none; border: 1px solid var(--accent); color: var(--accent);
+  border-radius: var(--r-pill); font-size: 11px; font-weight: 700;
+  padding: 3px 10px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  min-height: 28px;
+}
+.btn-task-done:hover { background: var(--accent); color: var(--surface); }
+
+/* ── Admin Task Panel ── */
+.admin-task-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.admin-task-form { display: flex; flex-direction: column; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.admin-task-row { display: flex; gap: var(--sp-2); }
+@media (max-width: 539px) { .admin-task-row { flex-direction: column; } }
+.admin-task-list { display: flex; flex-direction: column; gap: 0; }
+.admin-task-item {
+  display: flex; align-items: flex-start; gap: var(--sp-3);
+  padding: var(--sp-3) 0; border-bottom: 1px solid var(--border);
+}
+.admin-task-item:last-child { border-bottom: none; }
+.admin-task-item-body { flex: 1; min-width: 0; }
+.admin-task-item-msg { font-size: 13px; color: var(--text1); line-height: 1.5; }
+.admin-task-item-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.admin-task-item-done { text-decoration: line-through; opacity: 0.5; }
+.btn-task-delete {
+  background: none; border: none; color: var(--text3); font-size: 14px;
+  cursor: pointer; padding: 2px 6px; flex-shrink: 0;
+}
+.btn-task-delete:hover { color: var(--c-red); }
+.admin-task-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text3);
+  margin: var(--sp-3) 0 var(--sp-2);
+}
+
+.parked-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9300;
+  background: rgba(0,0,0,0.6); align-items: flex-end; justify-content: center;
+}
+.parked-overlay.open { display: flex; }
+.parked-sheet {
+  background: var(--surface1); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  width: 100%; max-width: 520px; max-height: 70vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.parked-sheet-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border1); flex-shrink: 0;
+}
+.parked-sheet-title { font-weight: 700; font-size: 16px; color: var(--text1); }
+.parked-sheet-close { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; }
+.parked-sheet-list { overflow-y: auto; padding: var(--sp-3) var(--sp-5) var(--sp-5); }
+
+#zen-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9100;
+  background: rgba(0,0,0,0.75); align-items: center; justify-content: center;
+  padding: var(--sp-5);
+}
+#zen-overlay.open { display: flex; }
+#zen-card {
+  background: var(--surface1); border-radius: var(--r-xl);
+  width: 100%; max-width: 560px; max-height: 85vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.zen-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border1);
+  flex-shrink: 0;
+}
+.zen-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--text1); }
+.zen-close { background: none; border: none; color: var(--text3); font-size: 20px; cursor: pointer; padding: 4px 8px; }
+.zen-body { overflow-y: auto; padding: var(--sp-6); flex: 1; }
+.zen-brief { font-size: 17px; line-height: 1.75; color: var(--text1); white-space: pre-wrap; }
+.btn-zen {
+  background: none; border: none; color: var(--accent); font-size: 12px;
+  font-weight: 600; cursor: pointer; padding: 2px 0; margin-top: var(--sp-1);
+  display: block;
+}
+
+/* ── Snooze UI ── */
+#snooze-overlay {
+  display: none; position: fixed; inset: 0; z-index: 9200;
+  background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
+}
+#snooze-overlay.open { display: flex; }
+#snooze-panel {
+  background: var(--surface1); border-radius: var(--r-lg) var(--r-lg) 0 0;
+  width: 100%; max-width: 480px; padding: var(--sp-5);
+}
+.snooze-title { font-size: 16px; font-weight: 700; color: var(--text1); margin-bottom: var(--sp-4); }
+.snooze-options { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.snooze-opt {
+  padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md);
+  background: var(--surface2); border: 1px solid var(--border1);
+  color: var(--text1); font-size: 15px; font-weight: 500;
+  cursor: pointer; text-align: left; min-height: 48px;
+}
+.snooze-opt:hover { background: var(--surface3); }
+.snooze-cancel { width: 100%; padding: var(--sp-3); background: none; border: none; color: var(--text3); font-size: 14px; cursor: pointer; }
+.btn-snooze {
+  background: none; border: 1px solid var(--border1); color: var(--text3);
+  font-size: 11px; padding: 2px 7px; border-radius: 20px; cursor: pointer;
+  font-family: var(--font-mono); white-space: nowrap;
+}
+.btn-snooze:hover { color: var(--c-amber); border-color: var(--c-amber); }
+
+/* ── Drag-drop upload on production cards ── */
+.bucket-item.drag-over { outline: 2px solid var(--accent); background: var(--accent-dim, rgba(232,195,122,0.1)); }
+.bucket-item-upload-hint { font-size: 10px; color: var(--text3); margin-top: 2px; display: block; }
+
+/* ── Payload buttons (Ready to Send) ── */
+.payload-row {
+  display: flex; gap: var(--sp-2); margin-top: var(--sp-2);
+}
+.btn-payload {
+  flex: 1; font-size: 11px; padding: 5px 8px; border-radius: var(--r-sm);
+  background: var(--surface2); border: 1px solid var(--border1);
+  color: var(--text2); cursor: pointer; font-weight: 600; min-height: 32px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.btn-payload:hover { background: var(--surface3); color: var(--text1); }
+
+/* ── Flag Issue button ── */
+.btn-flag {
+  background: none; border: 1px solid var(--c-amber); color: var(--c-amber);
+  border-radius: var(--r-sm); font-size: 12px; font-weight: 600;
+  padding: 6px 12px; cursor: pointer; min-height: 36px; white-space: nowrap;
+}
+.btn-flag:hover { background: var(--c-amber-dim); }
+
+/* Nudge client button */
+.btn-nudge {
+  background: none; border: 1px solid var(--border1); color: var(--text2);
+  border-radius: var(--r-pill); font-size: 11px; font-weight: 600;
+  padding: 2px 8px; cursor: pointer; white-space: nowrap;
+  font-family: var(--font-mono);
+}
+.btn-nudge:hover { border-color: var(--c-green); color: var(--c-green); }
+  font-size: 10px;
+  color: var(--c-red);
+  margin-top: 2px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bucket-empty {
+  padding: var(--sp-4) var(--sp-2);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text3);
+}
+.bucket-overflow {
+  padding: var(--sp-2) var(--sp-2) var(--sp-1);
+  font-size: 11px;
+  color: var(--text3);
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════════
+   TAGS / CHIPS
+═══════════════════════════════════════════════ */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag-stage { }
+.tag-pillar { background: var(--surface2); color: var(--text2); }
+.tag-owner  { background: var(--surface2); color: var(--text2); }
+.tag-date   { font-family: var(--font-mono); background: var(--surface2); color: var(--text2); }
+.tag-date.overdue { background: var(--c-red-dim); color: var(--c-red); }
+.tag-date.today   { background: var(--c-amber-dim); color: var(--c-amber); }
+.tag-date.soon    { background: var(--c-green-dim); color: var(--c-green); }
+
+/* ═══════════════════════════════════════════════
+   PIPELINE VIEW (kanban)
+═══════════════════════════════════════════════ */
+.pipeline-board {
+  display: flex;
+  gap: var(--sp-3);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding-bottom: var(--sp-3);
+}
+.pipeline-board::-webkit-scrollbar { height: 4px; }
+.pipeline-board::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.pipeline-col {
+  min-width: 200px;
+  max-width: 220px;
+  flex-shrink: 0;
+}
+.pipeline-col-header {
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border-top: 2px solid;
+  margin-bottom: var(--sp-2);
+}
+.pipeline-col-label { font-size: 12px; font-weight: 700; }
+.pipeline-col-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-left: var(--sp-2);
+}
+.pipeline-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  margin-bottom: var(--sp-2);
+  box-shadow: var(--shadow-card);
+}
+.pipeline-card-title { font-size: 12px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+.pipeline-card-meta  { font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; }
+
+/* ═══════════════════════════════════════════════
+   UPCOMING TABLE
+═══════════════════════════════════════════════ */
+.table-wrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.mono { font-family: var(--font-mono); font-size: 12px; }
+.date-soon { color: var(--c-amber) !important; }
+
+.copy-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  transition: var(--transition-fast);
+}
+.copy-link-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
+/* ═══════════════════════════════════════════════
+   CLIENT VIEW
+═══════════════════════════════════════════════ */
+#client-view {
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.client-body {
+  flex: 1;
+  padding: var(--sp-4);
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* Client section cards */
+.client-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.client-section-head {
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.client-section-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.client-section-sub {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+.client-count-badge {
+  flex-shrink: 0;
+  min-width: 26px;
+  height: 26px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-pill);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  font-family: var(--font-mono);
+}
+
+.client-items { padding: var(--sp-2); }
+
+/* Input pending item */
+.client-input-item {
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-bottom: var(--sp-2);
+  background: var(--surface2);
+}
+.client-input-item:last-child { margin-bottom: 0; }
+
+.client-item-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--sp-1);
+}
+.client-item-need {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: var(--sp-3);
+  line-height: 1.5;
+}
+.client-item-waiting {
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  margin-bottom: var(--sp-3);
+}
+.client-item-waiting.amber { color: var(--c-amber); }
+.client-item-waiting.red   { color: var(--c-red); }
+
+.client-item-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.btn-client-upload {
+  flex: 1;
+  min-width: 120px;
+  height: 40px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+  cursor: pointer;
+}
+.btn-client-upload:hover { opacity: 0.88; }
+.btn-client-upload.uploading { opacity: 0.7; cursor: not-allowed; }
+
+.upload-thumb {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--c-green-dim);
+  border: 1px solid var(--c-green);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--c-green);
+  font-weight: 600;
+  margin-top: var(--sp-2);
+}
+
+.btn-client-ack {
+  height: 40px;
+  padding: 0 var(--sp-4);
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  color: var(--text2);
+  transition: var(--transition);
+}
+.btn-client-ack:hover { border-color: var(--text2); color: var(--text); }
+
+/* Approval item */
+.client-approval-item {
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-bottom: var(--sp-2);
+  background: var(--surface2);
+}
+.client-approval-item:last-child { margin-bottom: 0; }
+
+.approval-item-preview {
+  width: 100%;
+  height: 120px;
+  background: var(--surface3);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text3);
+  font-size: 13px;
+  overflow: hidden;
+  object-fit: cover;
+}
+.approval-item-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+}
+
+.approval-item-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.btn-approve-green {
+  height: 44px;
+  background: var(--c-green);
+  color: #fff;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+}
+.btn-approve-green:hover { opacity: 0.88; }
+.btn-approve-green:active { transform: scale(0.97); }
+
+.btn-revise-outline {
+  height: 44px;
+  background: transparent;
+  border: 1.5px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+}
+.btn-revise-outline:hover { border-color: var(--c-red); color: var(--c-red); }
+
+.revision-input-wrap {
+  display: none;
+  margin-top: var(--sp-2);
+}
+.revision-input-wrap.open { display: block; }
+
+.revision-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-size: 15px;
+}
+.btn-send-revision {
+  width: 100%;
+  height: 40px;
+  background: var(--c-red);
+  color: #fff;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: var(--sp-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+}
+.btn-send-revision:hover { opacity: 0.88; }
+
+.approval-confirmed {
+  display: none;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-green-dim);
+  border: 1px solid var(--c-green);
+  border-radius: var(--r-sm);
+  color: var(--c-green);
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: var(--sp-2);
+  align-items: center;
+  gap: var(--sp-2);
+}
+.approval-confirmed.show { display: flex; }
+
+.btn-whatsapp {
+  width: 100%;
+  height: 40px;
+  background: #25D366;
+  color: #fff;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  transition: var(--transition);
+}
+.btn-whatsapp:hover { opacity: 0.88; }
+
+/* New request form */
+.client-request-form {
+  padding: var(--sp-4) var(--sp-5);
+}
+.form-field {
+  margin-bottom: var(--sp-4);
+}
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: var(--sp-2);
+}
+.form-label span { color: var(--c-red); }
+
+.btn-submit-full {
+  width: 100%;
+  height: 52px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+  margin-top: var(--sp-5);
+}
+.btn-submit-full:hover { opacity: 0.88; }
+.btn-submit-full:active { transform: scale(0.98); }
+.btn-submit-full:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════════════════
+   PUBLIC APPROVAL VIEW
+═══════════════════════════════════════════════ */
+#approval-view {
+  min-height: 100vh;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--sp-6) var(--sp-4);
+  background: var(--bg);
+}
+
+.apv-card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-xl);
+  padding: var(--sp-6);
+  box-shadow: var(--shadow-modal);
+}
+.apv-brand {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: var(--sp-5);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.apv-brand span { color: var(--accent); }
+
+.apv-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--sp-2);
+  letter-spacing: -0.3px;
+}
+.apv-meta {
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-bottom: var(--sp-5);
+}
+.apv-preview {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+  padding: var(--sp-4);
+  background: var(--surface2);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-5);
+  white-space: pre-wrap;
+}
+.approval-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  transition: opacity 0.3s;
+}
+.btn-approve {
+  height: 52px;
+  background: var(--c-green);
+  color: #fff;
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-weight: 700;
+  transition: var(--transition);
+}
+.btn-approve:hover { opacity: 0.88; }
+.btn-revise {
+  height: 52px;
+  background: transparent;
+  border: 2px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--r-md);
+  font-size: 15px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.btn-revise:hover { border-color: var(--c-red); color: var(--c-red); }
+.approval-msg {
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: var(--sp-4);
+  display: none;
+}
+.approval-msg:not(:empty) { display: block; }
+.approval-msg.success { background: var(--c-green-dim); color: var(--c-green); border: 1px solid var(--c-green); }
+.approval-msg.revision { background: var(--c-amber-dim); color: var(--c-amber); border: 1px solid var(--c-amber); }
+
+/* ═══════════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.modal-overlay.open { display: flex; }
+
+@media (min-width: 640px) {
+  .modal-overlay { align-items: center; padding: var(--sp-5); }
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--surface);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: var(--sp-5);
+  box-shadow: var(--shadow-modal);
+  max-height: 90vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (min-width: 640px) {
+  .modal-card { border-radius: var(--r-xl); }
+}
+
+/* Fix 7: All form inputs full width on mobile */
+@media (max-width: 539px) {
+  .form-row { grid-template-columns: 1fr !important; }
+}
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 0 auto var(--sp-4);
+}
+@media (min-width: 640px) { .modal-handle { display: none; } }
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--sp-5);
+  gap: var(--sp-3);
+}
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.modal-close:hover { background: var(--surface3); color: var(--text); }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+}
+.form-row-1 { grid-template-columns: 1fr; }
+
+@media (max-width: 539px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
+.form-field { margin-bottom: var(--sp-4); }
+.form-label-sm {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--sp-2);
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  z-index: 1;
+}
+.btn-modal-primary {
+  flex: 1;
+  height: 48px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  transition: var(--transition);
+}
+.btn-modal-primary:hover { opacity: 0.88; }
+.btn-modal-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-modal-ghost {
+  height: 48px;
+  padding: 0 var(--sp-5);
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+.btn-modal-ghost:hover { border-color: var(--text2); color: var(--text); }
+
+.saving-msg {
+  font-size: 12px;
+  color: var(--text3);
+  display: none;
+  font-family: var(--font-mono);
+}
+.saving-msg.active { display: block; }
+
+.draft-status {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: var(--sp-2);
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════════
+   POST DETAIL MODAL
+═══════════════════════════════════════════════ */
+.pmd-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: var(--sp-1);
+  letter-spacing: -0.2px;
+}
+.pmd-id {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: var(--sp-4);
+}
+.pmd-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.pmd-meta-item { }
+.pmd-meta-key {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 3px;
+}
+.pmd-meta-val { font-size: 13px; color: var(--text); }
+
+.pmd-comments {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
+  padding: var(--sp-3);
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--sp-4);
+}
+
+/* ═══════════════════════════════════════════════
+   ERROR BANNER
+═══════════════════════════════════════════════ */
+#error-banner {
+  display: none;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-amber-dim);
+  border-bottom: 1px solid var(--c-amber);
+  font-size: 12px;
+  color: var(--c-amber);
+  flex-shrink: 0;
+}
+#error-banner-stale { color: var(--text3); margin-left: auto; font-family: var(--font-mono); font-size: 11px; }
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  z-index: 9999;
+  padding: 10px 20px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  max-width: 90vw;
+  text-align: center;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+#toast.success { background: var(--c-green); color: #fff; }
+#toast.error   { background: var(--c-red); color: #fff; }
+#toast.info    { background: var(--surface3); color: var(--text); border: 1px solid var(--border2); }
+
+/* Undo toast */
+#undo-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 12px 10px 18px;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  box-shadow: var(--shadow-lift);
+}
+#undo-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+#undo-toast-msg { color: var(--text2); }
+.btn-undo {
+  padding: 4px 12px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 700;
+  transition: var(--transition-fast);
+}
+.btn-undo:hover { opacity: 0.88; }
+
+/* ═══════════════════════════════════════════════
+   SKELETON LOADING
+═══════════════════════════════════════════════ */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--surface2) 0%, var(--surface3) 50%, var(--surface2) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--r-sm);
+}
+.skeleton-card {
+  height: 100px;
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-3);
+}
+
+/* ═══════════════════════════════════════════════
+   EMPTY STATES
+═══════════════════════════════════════════════ */
+.empty-state {
+  padding: var(--sp-7) var(--sp-5);
+  text-align: center;
+  color: var(--text3);
+}
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: var(--sp-3);
+  opacity: 0.5;
+}
+.empty-state p { font-size: 13px; line-height: 1.5; }
+.empty-state strong { color: var(--text2); }
+
+/* ═══════════════════════════════════════════════
+   SECTION HEADERS
+═══════════════════════════════════════════════ */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-3);
+  gap: var(--sp-3);
+}
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.section-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* ═══════════════════════════════════════════════
+   SEARCH / FILTER (Library)
+═══════════════════════════════════════════════ */
+.library-controls {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.search-input {
+  flex: 1;
+  min-width: 160px;
+}
+.filter-select {
+  min-width: 120px;
+  flex: 0;
+}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE — DESKTOP
+═══════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .dash-body {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    grid-template-rows: auto;
+    gap: var(--sp-5);
+    padding: var(--sp-6);
+    align-items: start;
+  }
+
+  /* Left column: hero + meter */
+  .hero-section    { grid-column: 1; grid-row: 1; }
+  .meter-section   { grid-column: 1; grid-row: 2; }
+
+  /* Right column: everything else */
+  #tasks-container { grid-column: 2; grid-row: 1 / span 5; }
+  .tab-panel#panel-tasks .hero-section,
+  .tab-panel#panel-tasks .meter-section { /* contained in tab */ }
+}
+
+/* ═══════════════════════════════════════════════
+   CONTENT LIBRARY POST LINK
+═══════════════════════════════════════════════ */
+.post-link-cell a {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════
+   HIDDEN STAT ELEMENTS (preserve JS compat)
+═══════════════════════════════════════════════ */
+.stat-pill { display: none !important; }
+#pipeline-label, #library-label { display: none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     LOGIN OVERLAY
+══════════════════════════════════════════ -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">GBL <span>Ops</span></div>
+    <div class="login-tagline">Content Command Console</div>
+
+    <!-- Step 1: Email entry -->
+    <div id="login-email-step" class="login-step active">
+      <div class="login-label" style="margin-bottom:var(--sp-4)">Enter your work email to sign in</div>
+      <div class="form-field">
+        <input type="email" id="login-email-input" placeholder="you@gblcommunications.com"
+          style="font-size:16px;text-align:center"
+          onkeydown="if(event.key==='Enter')sendMagicLink()">
+      </div>
+      <button class="btn-modal-primary" style="width:100%;margin-top:var(--sp-2)" onclick="sendMagicLink()">
+        Send Login Link →
+      </button>
+      <div class="login-error" id="login-error" style="margin-top:var(--sp-3)"></div>
+    </div>
+
+    <!-- Step 2: Check email -->
+    <div id="login-sent-step" class="login-step">
+      <div style="font-size:40px;text-align:center;margin-bottom:var(--sp-4)">📬</div>
+      <div class="login-label" style="text-align:center;margin-bottom:var(--sp-2)">Check your inbox</div>
+      <div style="font-size:14px;color:var(--text3);text-align:center;line-height:1.6">
+        We sent a login link to<br>
+        <strong id="login-sent-email" style="color:var(--text1)"></strong><br><br>
+        Tap the link in the email to sign in.<br>It expires in 1 hour.
+      </div>
+      <button class="btn-modal-ghost" style="width:100%;margin-top:var(--sp-5)" onclick="backToEmail()">
+        ← Use a different email
+      </button>
+    </div>
+
+    <!-- Step 3: Verifying token (auto, no UI needed) -->
+    <div id="login-verify-step" class="login-step">
+      <div style="text-align:center;padding:var(--sp-6) 0;color:var(--text3)">
+        Signing you in…
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PUBLIC APPROVAL VIEW  (?approve=POST-ID)
+══════════════════════════════════════════ -->
+<div id="approval-view">
+  <div class="apv-card">
+    <div class="apv-brand">GBL <span>Ops</span> · Approval Request</div>
+    <div id="apv-title" class="apv-title">Loading…</div>
+    <div id="apv-meta"  class="apv-meta"></div>
+    <div id="apv-design-wrap"></div>
+    <div id="apv-preview" class="apv-preview">Fetching post details…</div>
+    <div class="approval-actions">
+      <button class="btn-approve" onclick="submitApproval('approved')">✓ Approve</button>
+      <button class="btn-revise"  onclick="submitApproval('revision')">↺ Request Revision</button>
+    </div>
+    <div id="apv-msg" class="approval-msg"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MAIN DASHBOARD  (Admin / Servicing / Creative)
+══════════════════════════════════════════ -->
+<div id="dashboard-view">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-brand">GBL <span>Ops</span></div>
+    <div class="topbar-divider"></div>
+    <div class="role-badge">
+      <span class="role-dot"></span>
+      <span id="topbar-role-label">—</span>
+    </div>
+    <div class="topbar-spacer"></div>
+
+    <!-- + New Post -->
+    <button class="btn-primary-action" id="btn-new-post" onclick="handleActionButton()">
+      + New Post
+    </button>
+
+    <!-- Notification bell (Admin + Servicing + Creative) -->
+    <div class="notif-wrap" id="notif-wrap">
+      <button class="icon-btn" onclick="toggleNotifPanel()" title="Notifications">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="notif-badge" id="notif-badge" style="display:none">0</span>
+      </button>
+      <div class="notif-panel" id="notif-panel">
+        <div class="notif-panel-head">
+          <span>Notifications</span>
+          <button class="notif-mark-read" onclick="markAllNotificationsRead()">Mark all read</button>
+        </div>
+        <div class="notif-list" id="notif-list">
+          <div class="notif-empty">No notifications yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Refresh -->
+    <button class="icon-btn" onclick="loadPosts()" title="Refresh">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+
+    <!-- User menu -->
+    <div class="user-menu-wrap" id="user-menu-wrap">
+      <button class="icon-btn" onclick="toggleUserMenu()" title="Menu">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <div class="user-menu" id="user-menu">
+        <button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()">
+          <span id="theme-icon">☀</span> Toggle Theme
+        </button>
+        <button class="user-menu-item danger" onclick="logout()">
+          ↩ Sign Out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ERROR BANNER -->
+  <div id="error-banner">
+    <span id="error-banner-msg"></span>
+    <span id="error-banner-stale"></span>
+  </div>
+
+  <!-- PIPELINE STRIP -->
+  <div class="pipeline-strip-wrap" id="pipeline-strip-wrap">
+    <div class="pipeline-strip" id="pipeline-strip"></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tasks" onclick="switchTab(this)">
+        My Tasks
+        <span class="tab-badge" id="badge-tasks" style="display:none"></span>
+      </button>
+      <button class="tab-btn" data-tab="pipeline" onclick="switchTab(this)">Pipeline</button>
+      <button class="tab-btn" data-tab="upcoming" onclick="switchTab(this)">
+        Upcoming
+        <span class="tab-badge" id="badge-upcoming" style="display:none"></span>
+      </button>
+      <button class="tab-btn" data-tab="library" onclick="switchTab(this)">Library</button>
+    </div>
+  </div>
+
+  <!-- TAB: MY TASKS -->
+  <div class="tab-panel active" id="panel-tasks">
+    <div class="dash-body">
+
+      <!-- Admin Insight (Admin only) -->
+      <div id="admin-insight-section"></div>
+
+      <!-- Task Banner (Creative + Servicing) -->
+      <div id="task-banner-section"></div>
+
+      <!-- Admin Task Panel -->
+      <div id="admin-task-section"></div>
+
+      <!-- Zone 1: Hero -->
+      <div class="hero-section" id="next-post-section"></div>
+
+      <!-- Production meter (Admin only) -->
+      <div class="meter-section" id="prod-meter-section"></div>
+
+      <!-- Zone 2: Bucket grid -->
+      <div id="tasks-container"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PIPELINE -->
+  <div class="tab-panel" id="panel-pipeline">
+    <div style="padding:var(--sp-4)">
+      <div class="section-header">
+        <span class="section-title">Pipeline</span>
+        <span class="section-count" id="pipeline-label"></span>
+      </div>
+      <div class="pipeline-board" id="pipeline-container"></div>
+    </div>
+  </div>
+
+  <!-- TAB: UPCOMING -->
+  <div class="tab-panel" id="panel-upcoming">
+    <div style="padding:var(--sp-4)">
+      <div class="section-header">
+        <span class="section-title">Upcoming Publishing</span>
+        <span class="section-count" id="badge-upcoming-count"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Post</th>
+              <th>Stage</th>
+              <th>Owner</th>
+              <th>Date</th>
+              <th>ID</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="upcoming-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: LIBRARY -->
+  <div class="tab-panel" id="panel-library">
+    <div style="padding:var(--sp-4)">
+      <div class="section-header">
+        <span class="section-title">Content Library</span>
+        <span class="section-count" id="library-label"></span>
+      </div>
+      <div class="library-controls">
+        <input type="text" id="search-input" class="search-input" placeholder="Search posts…" oninput="filterLibrary()">
+        <select id="filter-stage" class="filter-select" onchange="filterLibrary()">
+          <option value="">All Stages</option>
+        </select>
+        <select id="filter-owner" class="filter-select" onchange="filterLibrary()">
+          <option value="">All Owners</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Post</th>
+              <th>Pillar</th>
+              <th>Stage</th>
+              <th>Owner</th>
+              <th>Location</th>
+              <th>Date</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="library-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden stat elements for JS compatibility -->
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-total"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-published"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-approval"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-pipeline"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-week"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-overdue"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-ready"></span><span id="pill-ready"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-requests"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-revisions"></span><span id="pill-creative-revisions"></span></span>
+  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-gap"></span><span id="pill-creative-gap"></span></span>
+</div>
+
+<!-- ══════════════════════════════════════════
+     CLIENT VIEW
+══════════════════════════════════════════ -->
+<div id="client-view">
+
+  <!-- Client topbar -->
+  <header class="topbar">
+    <div class="topbar-brand">GBL <span>Ops</span></div>
+    <div class="topbar-spacer"></div>
+    <button class="btn-primary-action" onclick="scrollToNewRequest()">+ New Request</button>
+    <div class="user-menu-wrap" id="client-menu-wrap">
+      <button class="icon-btn" onclick="toggleClientMenu()" title="Menu">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </button>
+      <div class="user-menu" id="client-menu">
+        <button class="user-menu-item" onclick="toggleTheme(); closeClientMenu()">
+          <span>☀</span> Toggle Theme
+        </button>
+        <button class="user-menu-item danger" onclick="logout()">
+          ↩ Sign Out
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="client-body">
+
+    <!-- Card 1: We need something from you -->
+    <div class="client-section" id="client-input-section">
+      <div class="client-section-head">
+        <div>
+          <div class="client-section-title">We need something from you</div>
+          <div class="client-section-sub">Posts waiting on your input to move forward</div>
+        </div>
+        <span class="client-count-badge" id="client-input-count">0</span>
+      </div>
+      <div class="client-items" id="client-input-items">
+        <div class="empty-state">
+          <div class="empty-icon">✨</div>
+          <p>All clear — nothing needed from you right now.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Waiting for your approval -->
+    <div class="client-section" id="client-approval-section">
+      <div class="client-section-head">
+        <div>
+          <div class="client-section-title">Waiting for your approval</div>
+          <div class="client-section-sub">Review and approve before we publish</div>
+        </div>
+        <span class="client-count-badge" id="client-approval-count">0</span>
+      </div>
+      <div class="client-items" id="client-approval-items">
+        <div class="empty-state">
+          <div class="empty-icon">👍</div>
+          <p>Nothing waiting for approval right now.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: New Request -->
+    <div class="client-section" id="client-request-section">
+      <div class="client-section-head">
+        <div>
+          <div class="client-section-title">New Request</div>
+          <div class="client-section-sub">Tell us what you'd like to post</div>
+        </div>
+      </div>
+      <div class="client-request-form">
+        <div class="form-field">
+          <label class="form-label" for="req-topic">What do you want to post about? <span>*</span></label>
+          <textarea id="req-topic" rows="3" placeholder="e.g. Share our Q3 hiring story, announce the product launch…"></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="req-date">Any specific date in mind?</label>
+          <input type="date" id="req-date">
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="req-ref">Reference images or links</label>
+          <input type="url" id="req-ref" placeholder="https://…  or upload below">
+          <input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px" onchange="handleRequestFileUpload(this)">
+        </div>
+        <button class="btn-submit-full" id="req-submit-btn" onclick="submitClientRequest()">
+          Send Request ↗
+        </button>
+      </div>
+    </div>
+
+    <!-- Previously published -->
+    <div class="client-section">
+      <div class="client-section-head">
+        <div>
+          <div class="client-section-title">Live on LinkedIn</div>
+          <div class="client-section-sub">Your published posts</div>
+        </div>
+        <span class="client-count-badge" id="client-approved-label">0</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Post</th><th>Published</th><th>View</th></tr>
+          </thead>
+          <tbody id="client-approved-tbody">
+            <tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>No published posts yet.</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     NEW POST MODAL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="new-post-overlay" onclick="closeNewPostModal(event)">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">New Post</div>
+      <button class="modal-close" onclick="document.getElementById('new-post-overlay').classList.remove('open'); document.body.style.overflow=''">✕</button>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Post Title <span style="color:var(--c-red)">*</span></label>
+      <input type="text" id="npm-title" placeholder="What's this post about?" oninput="saveDraftDebounced()">
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label-sm">Content Pillar</label>
+        <select id="npm-pillar" onchange="saveDraftDebounced()">
+          <option value="">Select pillar</option>
+          <option>Announcements</option>
+          <option>Educational</option>
+          <option>Events</option>
+          <option>Culture</option>
+          <option>Leadership</option>
+          <option>Product</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label-sm">Location</label>
+        <select id="npm-location" onchange="saveDraftDebounced()">
+          <option value="">Select location</option>
+          <option>Mumbai</option>
+          <option>Delhi</option>
+          <option>Bangalore</option>
+          <option>Hyderabad</option>
+          <option>Remote</option>
+          <option>Global</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label-sm">Owner <span style="color:var(--c-red)">*</span></label>
+        <select id="npm-owner" onchange="saveDraftDebounced()">
+          <option value="">Assign to…</option>
+          <option>Creative Team</option>
+          <option>Servicing Team</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label-sm">Stage</label>
+        <select id="npm-stage" onchange="saveDraftDebounced()">
+          <option>In Production</option>
+          <option>Awaiting Brand Input</option>
+          <option>Revisions Needed</option>
+          <option>Ready to Send</option>
+          <option>Sent for Approval</option>
+          <option>Awaiting Approval</option>
+          <option>Scheduled</option>
+          <option>Published</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label-sm">Target Date</label>
+        <input type="date" id="npm-date" onchange="saveDraftDebounced()">
+      </div>
+      <div class="form-field">
+        <label class="form-label-sm">Link</label>
+        <input type="url" id="npm-postlink" placeholder="Canva / LinkedIn / Google Drive" oninput="saveDraftDebounced()">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Brief / Comments</label>
+      <textarea id="npm-comments" rows="3" placeholder="Brief for Creative, notes for Servicing…" oninput="saveDraftDebounced()"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <div>
+        <span class="saving-msg" id="npm-saving">Saving…</span>
+        <span class="draft-status" id="npm-draft-status"></span>
+      </div>
+      <button class="btn-modal-ghost" onclick="document.getElementById('new-post-overlay').classList.remove('open'); document.body.style.overflow=''; saveDraft()">Cancel</button>
+      <button class="btn-modal-primary" id="npm-submit-btn" onclick="submitNewPost()">Create Post</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     POST DETAIL MODAL  (stage update)
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="post-modal-overlay" onclick="closePostModal(event)">
+  <div class="modal-card">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <div class="pmd-title" id="pmd-title">Post Title</div>
+        <div class="pmd-id" id="pmd-id"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('post-modal-overlay').classList.remove('open'); document.body.style.overflow=''">✕</button>
+    </div>
+
+    <div class="pmd-meta-grid">
+      <div class="pmd-meta-item">
+        <div class="pmd-meta-key">Owner</div>
+        <div class="pmd-meta-val" id="pmd-owner">—</div>
+      </div>
+      <div class="pmd-meta-item">
+        <div class="pmd-meta-key">Due Date</div>
+        <div class="pmd-meta-val" id="pmd-date">—</div>
+      </div>
+      <div class="pmd-meta-item">
+        <div class="pmd-meta-key">Current Stage</div>
+        <div class="pmd-meta-val" id="pmd-stage">—</div>
+      </div>
+    </div>
+
+    <!-- Stage selector is the dominant action -->
+    <div class="form-field" style="margin-bottom:var(--sp-5)">
+      <label class="form-label-sm" style="font-size:12px;color:var(--text1);font-weight:700;margin-bottom:var(--sp-2)">Move to Stage</label>
+      <select id="pmd-stage-select" style="font-size:16px;font-weight:600;height:52px">
+        <option>In Production</option>
+        <option>Awaiting Brand Input</option>
+        <option>Revisions Needed</option>
+        <option>Ready to Send</option>
+        <option>Sent for Approval</option>
+        <option>Awaiting Approval</option>
+        <option>Scheduled</option>
+        <option>Published</option>
+        <option>Archive</option>
+      </select>
+    </div>
+
+    <!-- Admin-only editable fields -->
+    <div id="pmd-admin-fields" style="display:none">
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label-sm">Owner</label>
+          <select id="pmd-owner-select">
+            <option value="">— Unassigned —</option>
+            <option>Creative Team</option>
+            <option>Servicing Team</option>
+            <option>Chitra</option>
+            <option>Admin</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label-sm">Target Date</label>
+          <input type="date" id="pmd-date-input">
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label-sm">Caption / Brief</label>
+        <textarea id="pmd-comments-edit" rows="4" placeholder="Caption or brief for this post…"></textarea>
+      </div>
+    </div>
+
+    <div class="pmd-comments" id="pmd-comments"></div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Link</label>
+      <input type="url" id="pmd-postlink" placeholder="Canva / LinkedIn / Google Drive">
+    </div>
+
+    <div class="modal-footer">
+      <span class="saving-msg" id="pmd-saving">Updating…</span>
+      <button class="btn-modal-ghost" onclick="document.getElementById('post-modal-overlay').classList.remove('open'); document.body.style.overflow=''">Cancel</button>
+      <button class="btn-modal-primary" id="pmd-save-btn" onclick="saveStageUpdate()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ADMIN QUICK-EDIT BOTTOM SHEET
+══════════════════════════════════════════ -->
+<div id="admin-edit-overlay" onclick="if(event.target===this)closeAdminEdit()">
+  <div id="admin-edit-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div>
+        <div class="admin-edit-title" id="ae-title">Edit Post</div>
+        <div class="admin-edit-id"   id="ae-id"></div>
+      </div>
+      <button class="modal-close" onclick="closeAdminEdit()">✕</button>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Stage</label>
+      <select id="ae-stage" style="font-size:15px;height:44px">
+        <option>In Production</option>
+        <option>Awaiting Brand Input</option>
+        <option>Revisions Needed</option>
+        <option>Ready to Send</option>
+        <option>Sent for Approval</option>
+        <option>Awaiting Approval</option>
+        <option>Scheduled</option>
+        <option>Published</option>
+        <option>Archive</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label class="form-label-sm">Owner</label>
+        <select id="ae-owner">
+          <option value="">— Unassigned —</option>
+          <option>Creative Team</option>
+          <option>Servicing Team</option>
+          <option>Admin</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label-sm">Target Date</label>
+        <input type="date" id="ae-date">
+      </div>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Link</label>
+      <input type="url" id="ae-link" placeholder="Canva / LinkedIn / Google Drive">
+    </div>
+
+    <div class="form-field">
+      <label class="form-label-sm">Caption / Brief</label>
+      <textarea id="ae-comments" rows="4" placeholder="Caption or brief for this post…"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-ghost" onclick="closeAdminEdit()">Cancel</button>
+      <button class="btn-modal-primary" id="ae-save-btn" onclick="saveAdminEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ZEN MODE BRIEF OVERLAY
+══════════════════════════════════════════ -->
+<!-- ══════════════════════════════════════════
+     PARKED POSTS SHEET
+══════════════════════════════════════════ -->
+<div class="parked-overlay" id="parked-overlay" onclick="if(event.target===this)closeParked()">
+  <div class="parked-sheet">
+    <div class="parked-sheet-head">
+      <span class="parked-sheet-title">Parked Posts</span>
+      <button class="parked-sheet-close" onclick="closeParked()">✕</button>
+    </div>
+    <div class="parked-sheet-list" id="parked-sheet-list"></div>
+  </div>
+</div>
+
+<div id="zen-overlay" onclick="if(event.target===this)closeZen()">
+  <div id="zen-card">
+    <div class="zen-header">
+      <div class="zen-title" id="zen-title">Brief</div>
+      <button class="zen-close" onclick="closeZen()">✕</button>
+    </div>
+    <div class="zen-body">
+      <div class="zen-brief" id="zen-brief"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SNOOZE PANEL
+══════════════════════════════════════════ -->
+<div id="snooze-overlay" onclick="if(event.target===this)closeSnooze()">
+  <div id="snooze-panel">
+    <div class="snooze-title">Snooze this post until…</div>
+    <div class="snooze-options" id="snooze-options"></div>
+    <button class="snooze-cancel" onclick="closeSnooze()">Cancel</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ACTIVITY TIMELINE PANEL
+══════════════════════════════════════════ -->
+<div id="timeline-overlay" onclick="if(event.target===this)closeTimeline()">
+  <div id="timeline-panel">
+    <div class="timeline-header">
+      <div class="timeline-title" id="timeline-title">Activity</div>
+      <button class="timeline-close" onclick="closeTimeline()">✕</button>
+    </div>
+    <div class="timeline-body" id="timeline-body">
+      <div class="timeline-empty">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     TOAST + UNDO TOAST
+══════════════════════════════════════════ -->
+<div id="toast"></div>
+<div id="undo-toast">
+  <span id="undo-toast-msg">Stage updated</span>
+  <button class="btn-undo" onclick="triggerUndo()">Undo</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIG — Supabase
+═══════════════════════════════════════════════ */
+const SUPABASE_URL          = 'https://vxokfscjzytpgdrmertk.supabase.co';
+const SUPABASE_KEY          = 'sb_publishable_PtxwwoAiR96-O0c2vHqsxw_mpm8SrpH';
+const APP_URL               = 'https://guneygaar.github.io/gbl-ops';
+const READY_TO_SEND_TARGET  = 30;
+const CLIENT_REQUEST_FORM_URL = ''; // unused — form is built-in now
+
+const ACCESS_CODES = {
+  'Admin':     '4321',
+  'Servicing': '2222',
+  'Creative':  '1111',
+  'Client':    '9999',
+};
+
+const STAGE_COLORS = {
+  'published':            { hex: '#22c55e', label: 'Published' },
+  'sent for approval':    { hex: '#3b82f6', label: 'Sent for Approval' },
+  'awaiting approval':    { hex: '#3b82f6', label: 'Awaiting Approval' },
+  'awaiting brand input': { hex: '#8b5cf6', label: 'Awaiting Brand Input' },
+  'ready to send':        { hex: '#10b981', label: 'Ready to Send' },
+  'in production':        { hex: '#f59e0b', label: 'In Production' },
+  'revisions needed':     { hex: '#ef4444', label: 'Revisions Needed' },
+  'scheduled':            { hex: '#06b6d4', label: 'Scheduled' },
+  'rejected':             { hex: '#ef4444', label: 'Rejected' },
+  'pipeline':             { hex: '#6366f1', label: 'Pipeline' },
+  'archive':              { hex: '#64748b', label: 'Archive' },
+};
+
+function stageStyle(raw) {
+  const key = (raw || '').toLowerCase().trim();
+  return STAGE_COLORS[key] || { hex: '#64748b', label: raw || 'Unknown' };
+}
+
+const ROLE_STAGES = {
+  'Admin':     null,
+  'Servicing': ['sent for approval','awaiting approval','ready to send','scheduled'],
+  'Creative':  ['in production','revisions needed','awaiting brand input'],
+};
+
+const ROLE_TABS = {
+  'Admin':     ['tasks','pipeline','upcoming','library'],
+  'Servicing': ['tasks','upcoming','library'],
+  'Creative':  ['tasks','library'],
+  'Client':    [],
+};
+
+const ROLE_STATS = {
+  'Admin':     ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'],
+  'Servicing': ['s-approval','s-ready','s-week'],
+  'Creative':  ['s-creative-requests','s-creative-revisions','s-creative-gap'],
+  'Client':    [],
+};
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+let allPosts    = [];
+let cachedPosts = [];
+let currentRole = 'Admin';
+let _renderTimer = null;
+let _retryCount  = 0;
+let _retryTimer  = null;
+
+/* ═══════════════════════════════════════════════
+   SUPABASE API LAYER
+═══════════════════════════════════════════════ */
+const SB_HEADERS = {
+  'apikey':        SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+  'Content-Type':  'application/json',
+  'Prefer':        'return=representation',
+};
+
+async function apiFetch(path, options = {}) {
+  const url = `${SUPABASE_URL}/rest/v1${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: { ...SB_HEADERS, ...(options.headers || {}) }
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Supabase ${res.status}: ${body}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : [];
+}
+
+function normalise(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map(r => ({
+    title:         r.title          || '',
+    stage:         r.stage          || '',
+    owner:         r.owner          || '',
+    contentPillar: r.content_pillar || '',
+    location:      r.location       || '',
+    targetDate:    r.target_date    || '',
+    postLink:      r.post_link      || '',
+    comments:      r.comments       || '',
+    post_id:       r.post_id        || r.id || '',
+    created_at:    r.created_at     || '',
+    updated_at:    r.updated_at     || '',
+    ...r,
+  }));
+}
+
+/* ═══════════════════════════════════════════════
+   ERROR BANNER
+═══════════════════════════════════════════════ */
+function showErrorBanner(msg, staleLabel) {
+  const banner  = document.getElementById('error-banner');
+  const msgEl   = document.getElementById('error-banner-msg');
+  const staleEl = document.getElementById('error-banner-stale');
+  if (!banner) return;
+  msgEl.textContent   = '⚠ ' + msg;
+  staleEl.textContent = staleLabel || '';
+  banner.style.display = 'flex';
+}
+function hideErrorBanner() {
+  const banner = document.getElementById('error-banner');
+  if (banner) banner.style.display = 'none';
+}
+function safeRender(fn) {
+  try { fn(); } catch (err) {
+    console.error('Render error:', err);
+    const el = document.getElementById('tasks-container');
+    if (el) el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠</div>
+      <p>Display error. Your data is safe — try refreshing.</p></div>`;
+  }
+}
+function scheduleRender() {
+  clearTimeout(_renderTimer);
+  _renderTimer = setTimeout(() => safeRender(renderAll), 40);
+}
+
+/* ═══════════════════════════════════════════════
+   DRAFT AUTO-SAVE
+═══════════════════════════════════════════════ */
+const DRAFT_KEY = 'gbl_new_post_draft';
+let _draftTimer = null;
+let _draftDebounce = null;
+
+function saveDraftDebounced() {
+  clearTimeout(_draftDebounce);
+  _draftDebounce = setTimeout(saveDraft, 800);
+}
+
+function saveDraft() {
+  const draft = {
+    title:    document.getElementById('npm-title')?.value    || '',
+    pillar:   document.getElementById('npm-pillar')?.value   || '',
+    location: document.getElementById('npm-location')?.value || '',
+    owner:    document.getElementById('npm-owner')?.value    || '',
+    stage:    document.getElementById('npm-stage')?.value    || '',
+    date:     document.getElementById('npm-date')?.value     || '',
+    comments: document.getElementById('npm-comments')?.value || '',
+    postLink: document.getElementById('npm-postlink')?.value || '',
+    savedAt:  Date.now(),
+  };
+  if (draft.title || draft.comments) {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    showDraftStatus('Draft saved');
+  }
+}
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (Date.now() - d.savedAt > 86400000) { localStorage.removeItem(DRAFT_KEY); return false; }
+    if (!d.title && !d.comments) return false;
+    document.getElementById('npm-title').value    = d.title    || '';
+    document.getElementById('npm-pillar').value   = d.pillar   || '';
+    document.getElementById('npm-location').value = d.location || '';
+    document.getElementById('npm-owner').value    = d.owner    || '';
+    document.getElementById('npm-stage').value    = d.stage    || 'In Production';
+    document.getElementById('npm-date').value     = d.date     || '';
+    document.getElementById('npm-comments').value = d.comments || '';
+    document.getElementById('npm-postlink').value = d.postLink || '';
+    showDraftStatus('Draft restored');
+    return true;
+  } catch (_) { return false; }
+}
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+  clearTimeout(_draftTimer);
+  showDraftStatus('');
+}
+function showDraftStatus(msg) {
+  const el = document.getElementById('npm-draft-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.opacity = msg ? '1' : '0';
+}
+function startDraftAutosave() {
+  clearInterval(_draftTimer);
+  _draftTimer = setInterval(saveDraft, 20000);
+}
+function stopDraftAutosave() {
+  clearInterval(_draftTimer);
+}
+
+/* ═══════════════════════════════════════════════
+   STALE TIMER HELPER
+═══════════════════════════════════════════════ */
+function daysInStage(post) {
+  const ts = post.updated_at || post.created_at;
+  if (!ts) return null;
+  const d = new Date(ts);
+  const now = new Date();
+  return Math.floor((now - d) / 86400000);
+}
+
+// stageName is optional — if provided returns "3d in Review", else "3d"
+function staleLabel(days, stageName) {
+  if (days === null || days < 3) return null;
+  if (stageName) {
+    // Shorten common stage names for compact display
+    const short = {
+      'awaiting approval':    'Approval',
+      'sent for approval':    'Approval',
+      'awaiting brand input': 'Waiting',
+      'in production':        'Production',
+      'revisions needed':     'Revisions',
+      'ready to send':        'Ready',
+      'scheduled':            'Scheduled',
+    }[stageName.toLowerCase().trim()] || stageName;
+    return `${days}d in ${short}`;
+  }
+  return `${days}d`;
+}
+
+function staleClass(days) {
+  if (days === null || days < 3) return '';
+  if (days >= 5) return 'red';
+  return 'amber';
+}
+
+/* ═══════════════════════════════════════════════
+   UNDO TOAST
+═══════════════════════════════════════════════ */
+let _undoPending = null;
+let _undoTimer   = null;
+
+function showUndoToast(msg, undoFn) {
+  _undoPending = undoFn;
+  clearTimeout(_undoTimer);
+  const toast = document.getElementById('undo-toast');
+  document.getElementById('undo-toast-msg').textContent = msg;
+  toast.classList.add('show');
+  _undoTimer = setTimeout(() => {
+    toast.classList.remove('show');
+    _undoPending = null;
+  }, 4500);
+}
+
+function triggerUndo() {
+  if (_undoPending) {
+    _undoPending();
+    _undoPending = null;
+  }
+  clearTimeout(_undoTimer);
+  document.getElementById('undo-toast').classList.remove('show');
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  // Clean path routing: /p/{post_id}  (e.g. review.gblops.com/p/231)
+  const pathMatch = window.location.pathname.match(/^\/p\/(.+)/);
+  if (pathMatch) { showApprovalView(decodeURIComponent(pathMatch[1])); return; }
+
+  const params       = new URLSearchParams(window.location.search);
+  const approveShort = params.get('approve');
+  const action       = params.get('action');
+  const ref          = params.get('ref');
+
+  if (approveShort) { showApprovalView(approveShort); return; }
+  if (action === 'viewApproval' && ref) {
+    showApprovalView(ref.replace(/-gbl$/i, '')); return;
+  }
+
+  // Check for Supabase magic link token in URL hash
+  const hash = window.location.hash;
+  if (hash && hash.includes('access_token=')) {
+    const hashParams = new URLSearchParams(hash.slice(1));
+    const token = hashParams.get('access_token');
+    if (token) { handleMagicLinkToken(token); return; }
+  }
+
+  // Check saved session
+  const savedRole  = localStorage.getItem('gbl_role');
+  const savedToken = localStorage.getItem('gbl_token');
+  if (savedRole && savedToken) {
+    activateRole(savedRole);
+  } else {
+    showLoginOverlay();
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   MAGIC LINK LOGIN
+═══════════════════════════════════════════════ */
+function showLoginOverlay() {
+  document.getElementById('login-overlay').classList.remove('hidden');
+  backToEmail();
+}
+
+function backToEmail() {
+  document.getElementById('login-email-step').classList.add('active');
+  document.getElementById('login-sent-step').classList.remove('active');
+  document.getElementById('login-verify-step').classList.remove('active');
+  document.getElementById('login-error').textContent = '';
+}
+
+async function sendMagicLink() {
+  const email = (document.getElementById('login-email-input').value || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    document.getElementById('login-error').textContent = 'Please enter a valid email.';
+    return;
+  }
+  const btn = document.querySelector('#login-email-step .btn-modal-primary');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  document.getElementById('login-error').textContent = '';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({
+        email,
+        create_user: false,
+        options: { emailRedirectTo: APP_URL }
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error_description || err.msg || 'Send failed');
+    }
+    document.getElementById('login-sent-email').textContent = email;
+    document.getElementById('login-email-step').classList.remove('active');
+    document.getElementById('login-sent-step').classList.add('active');
+  } catch (err) {
+    document.getElementById('login-error').textContent = err.message || 'Could not send link. Try again.';
+    btn.disabled = false;
+    btn.textContent = 'Send Login Link →';
+  }
+}
+
+async function handleMagicLinkToken(accessToken) {
+  // Show verifying state
+  document.getElementById('login-overlay').classList.remove('hidden');
+  ['login-email-step','login-sent-step'].forEach(id =>
+    document.getElementById(id).classList.remove('active'));
+  document.getElementById('login-verify-step').classList.add('active');
+
+  try {
+    // 1. Get user info from Supabase
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
+    });
+    const user = await userRes.json();
+    const email = user.email;
+    if (!email) throw new Error('No email returned');
+
+    // 2. Look up role in user_roles table
+    const roleRes = await fetch(`${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role&limit=1`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+    });
+    const roles = await roleRes.json();
+    const role = roles?.[0]?.role;
+
+    if (!role) {
+      document.getElementById('login-verify-step').innerHTML =
+        `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
+           No role assigned for ${email}.<br>
+           <span style="font-size:13px;color:var(--text3)">Ask your admin to add you to user_roles.</span>
+           <br><br>
+           <button class="btn-modal-ghost" onclick="backToEmail()">← Try again</button>
+         </div>`;
+      return;
+    }
+
+    // 3. Store session and activate
+    localStorage.setItem('gbl_role', role);
+    localStorage.setItem('gbl_email', email);
+    localStorage.setItem('gbl_token', accessToken);
+    document.getElementById('login-overlay').classList.add('hidden');
+    // Clean hash from URL
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    activateRole(role);
+  } catch (err) {
+    document.getElementById('login-verify-step').innerHTML =
+      `<div style="text-align:center;padding:var(--sp-6) 0;color:var(--c-red)">
+         Sign-in failed: ${err.message}<br><br>
+         <button class="btn-modal-ghost" onclick="backToEmail()">← Try again</button>
+       </div>`;
+  }
+}
+
+function logout() {
+  localStorage.removeItem('gbl_role');
+  localStorage.removeItem('gbl_email');
+  localStorage.removeItem('gbl_token');
+  stopRealtime();
+  document.getElementById('dashboard-view').classList.remove('active');
+  document.getElementById('client-view').classList.remove('active');
+  showLoginOverlay();
+}
+
+/* ═══════════════════════════════════════════════
+   ACTIVATE ROLE
+═══════════════════════════════════════════════ */
+function activateRole(role) {
+  currentRole = role;
+  updateActionButton();
+  if (role === 'Client') {
+    document.getElementById('client-view').classList.add('active');
+    loadPostsForClient();
+  } else {
+    document.getElementById('dashboard-view').classList.add('active');
+    document.getElementById('topbar-role-label').textContent = role;
+    loadPosts();
+    loadTasks();
+    startRealtime();
+    fetchUnreadCount();
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   ROLE VISIBILITY
+═══════════════════════════════════════════════ */
+function applyRoleVisibility() {
+  const allowedTabs = ROLE_TABS[currentRole] || [];
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.style.display = allowedTabs.includes(btn.dataset.tab) ? '' : 'none';
+  });
+  const activePanelId = document.querySelector('.tab-panel.active')?.id;
+  const activeTab = activePanelId ? activePanelId.replace('panel-', '') : '';
+  if (!allowedTabs.includes(activeTab) && allowedTabs.length > 0) {
+    const firstBtn = document.querySelector(`.tab-btn[data-tab="${allowedTabs[0]}"]`);
+    if (firstBtn) switchTab(firstBtn);
+  }
+  updateActionButton();
+}
+
+function updateActionButton() {
+  const btn = document.getElementById('btn-new-post');
+  if (!btn) return;
+  btn.textContent = currentRole === 'Client' ? '+ New Request' : '+ New Post';
+}
+
+function handleActionButton() {
+  if (currentRole === 'Client') {
+    scrollToNewRequest();
+  } else {
+    openNewPostModal();
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   NEW POST MODAL
+═══════════════════════════════════════════════ */
+function openNewPostModal() {
+  const hasDraft = loadDraft();
+  if (!hasDraft) {
+    ['npm-title','npm-comments','npm-postlink'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('npm-pillar').value   = '';
+    document.getElementById('npm-location').value = '';
+    document.getElementById('npm-owner').value    = '';
+    document.getElementById('npm-stage').value    = 'In Production';
+    document.getElementById('npm-date').value     = '';
+  }
+  document.getElementById('npm-submit-btn').disabled = false;
+  document.getElementById('npm-saving').classList.remove('active');
+  document.getElementById('new-post-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  startDraftAutosave();
+  setTimeout(() => document.getElementById('npm-title')?.focus(), 60);
+}
+
+function closeNewPostModal(e) {
+  if (e && e.target !== document.getElementById('new-post-overlay')) return;
+  saveDraft();
+  stopDraftAutosave();
+  document.getElementById('new-post-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function submitNewPost() {
+  const title    = document.getElementById('npm-title').value.trim();
+  const owner    = document.getElementById('npm-owner').value;
+  const pillar   = document.getElementById('npm-pillar').value;
+  const location = document.getElementById('npm-location').value;
+  const stage    = document.getElementById('npm-stage').value;
+  const date     = document.getElementById('npm-date').value;
+  const comments = document.getElementById('npm-comments').value.trim();
+  const postLink = document.getElementById('npm-postlink').value.trim();
+
+  if (!title) { showToast('Post title is required', 'error'); document.getElementById('npm-title').focus(); return; }
+  if (!owner) { showToast('Owner is required', 'error'); document.getElementById('npm-owner').focus(); return; }
+
+  const submitBtn = document.getElementById('npm-submit-btn');
+  const savingMsg = document.getElementById('npm-saving');
+  submitBtn.disabled = true;
+  savingMsg.classList.add('active');
+
+  try {
+    await apiFetch('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        title, owner,
+        content_pillar: pillar   || null,
+        location:       location || null,
+        stage:          stage    || 'In Production',
+        target_date:    date     || null,
+        comments:       comments || null,
+        post_link:      postLink || null,
+      }),
+    });
+    clearDraft();
+    stopDraftAutosave();
+    document.getElementById('new-post-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    await loadPosts();
+    showToast('Post created ✓', 'success');
+  } catch (err) {
+    console.error('submitNewPost:', err);
+    saveDraft();
+    showToast('Failed to create — draft saved', 'error');
+    submitBtn.disabled = false;
+    savingMsg.classList.remove('active');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   LOAD DATA
+═══════════════════════════════════════════════ */
+function showLoadingSkeleton(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = [1,2,3].map(() => `<div class="skeleton skeleton-card"></div>`).join('');
+}
+
+async function loadPosts() {
+  showLoadingSkeleton('tasks-container');
+  try {
+    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    allPosts    = normalise(data);
+    cachedPosts = allPosts;
+    hideErrorBanner();
+    scheduleRender();
+    showToast(`${allPosts.length} posts loaded`, 'success');
+  } catch (err) {
+    console.error('loadPosts:', err);
+    if (cachedPosts.length) {
+      allPosts = cachedPosts;
+      scheduleRender();
+      showErrorBanner('Could not reach server. Showing cached data.',
+        `Last updated: ${new Date().toLocaleTimeString()}`);
+    } else {
+      document.getElementById('tasks-container').innerHTML =
+        `<div class="empty-state">
+          <div class="empty-icon">⚠</div>
+          <p><strong>Could not load posts.</strong><br>Check your connection.</p>
+          <button onclick="loadPosts()" style="margin-top:12px;padding:8px 18px;
+            border-radius:8px;background:var(--accent);color:var(--bg);
+            border:none;font-weight:600;cursor:pointer;font-size:13px">Try Again</button>
+        </div>`;
+      showErrorBanner('Could not reach server.');
+    }
+    showToast('Failed to load posts', 'error');
+  }
+}
+
+async function loadPostsForClient() {
+  try {
+    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    allPosts    = normalise(data);
+    cachedPosts = allPosts;
+    hideErrorBanner();
+    renderClientView();
+  } catch (err) {
+    if (cachedPosts.length) {
+      allPosts = cachedPosts;
+      renderClientView();
+      showErrorBanner('Showing cached data — connection issue.');
+    } else {
+      document.getElementById('client-approved-tbody').innerHTML =
+        `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠</div>
+        <p>Could not load. Check your connection.</p></div></td></tr>`;
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   REALTIME — background polling
+═══════════════════════════════════════════════ */
+let _realtimeTimer = null;
+
+function startRealtime() {
+  if (_realtimeTimer) return;
+  _realtimeTimer = setInterval(async () => {
+    if (document.hidden) return;
+    try {
+      const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+      const fresh = normalise(data);
+      const changed = JSON.stringify(fresh.map(p=>p.post_id+p.stage)) !==
+                      JSON.stringify(allPosts.map(p=>p.post_id+p.stage));
+      if (changed) {
+        allPosts    = fresh;
+        cachedPosts = fresh;
+        scheduleRender();
+        fetchUnreadCount();
+      }
+    } catch (_) {}
+  }, 8000);
+}
+
+function stopRealtime() {
+  clearInterval(_realtimeTimer);
+  _realtimeTimer = null;
+}
+
+/* ═══════════════════════════════════════════════
+   NOTIFICATIONS
+═══════════════════════════════════════════════ */
+let _unreadCount = 0;
+
+async function fetchUnreadCount() {
+  if (!currentRole || currentRole === 'Client') return;
+  try {
+    const data = await apiFetch(
+      `/notifications?user_role=eq.${currentRole}&read=eq.false&select=id`
+    );
+    _unreadCount = Array.isArray(data) ? data.length : 0;
+    renderNotificationBadge();
+  } catch (_) {}
+}
+
+async function fetchAndRenderNotifications() {
+  try {
+    const data = await apiFetch(
+      `/notifications?user_role=eq.${currentRole}&order=created_at.desc&limit=20&select=*`
+    );
+    const list = document.getElementById('notif-list');
+    if (!Array.isArray(data) || !data.length) {
+      list.innerHTML = '<div class="notif-empty">All caught up — no notifications</div>';
+      return;
+    }
+    list.innerHTML = data.map(n => `
+      <div class="notif-item ${n.read ? '' : 'unread'}">
+        <div class="notif-dot"></div>
+        <div class="notif-item-body">
+          <div class="notif-msg">${esc(n.message || '')}</div>
+          <div class="notif-time">${timeAgo(n.created_at)}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch (_) {}
+}
+
+async function markAllNotificationsRead() {
+  try {
+    await apiFetch(
+      `/notifications?user_role=eq.${currentRole}&read=eq.false`,
+      { method: 'PATCH', body: JSON.stringify({ read: true }) }
+    );
+    _unreadCount = 0;
+    renderNotificationBadge();
+    fetchAndRenderNotifications();
+  } catch (_) {}
+}
+
+function renderNotificationBadge() {
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  badge.textContent   = _unreadCount > 9 ? '9+' : String(_unreadCount);
+  badge.style.display = _unreadCount > 0 ? 'flex' : 'none';
+}
+
+function toggleNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) fetchAndRenderNotifications();
+  closeUserMenu();
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Math.floor((Date.now() - new Date(ts)) / 60000);
+  if (diff < 1)   return 'Just now';
+  if (diff < 60)  return `${diff}m ago`;
+  if (diff < 1440) return `${Math.floor(diff/60)}h ago`;
+  return `${Math.floor(diff/1440)}d ago`;
+}
+
+/* ═══════════════════════════════════════════════
+   THEME + MENUS
+═══════════════════════════════════════════════ */
+function toggleTheme() {
+  const html   = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  const icon = document.getElementById('theme-icon');
+  if (icon) icon.textContent = isDark ? '☽' : '☀';
+}
+function toggleUserMenu() {
+  document.getElementById('user-menu')?.classList.toggle('open');
+  document.getElementById('notif-panel')?.classList.remove('open');
+}
+function closeUserMenu() {
+  document.getElementById('user-menu')?.classList.remove('open');
+}
+function toggleClientMenu() {
+  document.getElementById('client-menu')?.classList.toggle('open');
+}
+function closeClientMenu() {
+  document.getElementById('client-menu')?.classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('user-menu-wrap')?.contains(e.target)) closeUserMenu();
+  if (!document.getElementById('notif-wrap')?.contains(e.target)) {
+    document.getElementById('notif-panel')?.classList.remove('open');
+  }
+  if (!document.getElementById('client-menu-wrap')?.contains(e.target)) closeClientMenu();
+});
+
+/* ═══════════════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════════════ */
+function renderAll() {
+  updateStats();
+  renderPipelineStrip();
+  renderProductionMeter();
+  renderAdminInsight();
+  renderTaskBanner();
+  renderAdminTaskPanel();
+  renderNextPost();
+  renderTasks();
+  renderPipeline();
+  renderUpcoming();
+  renderLibrary();
+  populateFilterDropdowns();
+  applyRoleVisibility();
+  const pl = document.getElementById('pipeline-label');
+  const ll = document.getElementById('library-label');
+  if (pl) pl.textContent = `${allPosts.length} posts`;
+  if (ll) ll.textContent = `${allPosts.length} posts`;
+}
+
+/* ═══════════════════════════════════════════════
+   STATS (hidden elements for JS compat)
+═══════════════════════════════════════════════ */
+function updateStats() {
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
+  let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
+  let creativeRequests=0, creativeRevisions=0;
+  allPosts.forEach(p => {
+    const stage = (p.stage||'').toLowerCase().trim();
+    if (stage === 'published') published++;
+    if (stage.includes('approval')) awaitingApproval++;
+    if (!['published','archive'].includes(stage)) inPipeline++;
+    if (stage === 'ready to send') readyToSend++;
+    if (stage === 'awaiting brand input') creativeRequests++;
+    if (stage === 'revisions needed') creativeRevisions++;
+    const d = parseDate(p.targetDate);
+    if (d) {
+      if (d > today && d <= weekEnd) dueWeek++;
+      if (d < today && stage !== 'published') overdue++;
+    }
+  });
+  setText('s-total',     allPosts.length);
+  setText('s-published', published);
+  setText('s-approval',  awaitingApproval);
+  setText('s-pipeline',  inPipeline);
+  setText('s-week',      dueWeek);
+  setText('s-overdue',   overdue);
+  setText('s-ready',     `${readyToSend}/${READY_TO_SEND_TARGET}`);
+  setText('s-creative-requests',  creativeRequests);
+  setText('s-creative-revisions', creativeRevisions);
+  setText('s-creative-gap',       `${readyToSend}/${READY_TO_SEND_TARGET}`);
+  updateBadge('badge-tasks',    getMyTasks().length);
+  updateBadge('badge-upcoming', getUpcoming().length);
+}
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function updateBadge(id, count) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; }
+}
+
+/* ═══════════════════════════════════════════════
+   PIPELINE STRIP
+═══════════════════════════════════════════════ */
+const STRIP_STAGES = [
+  { label:'Production', stages:['awaiting brand input','in production','revisions needed'], color:'#f59e0b', tab:'pipeline' },
+  { label:'Review',     stages:['sent for approval','awaiting approval'],                   color:'#3b82f6', tab:'pipeline' },
+  { label:'Ready',      stages:['ready to send'],                                           color:'#10b981', tab:'pipeline', target:true },
+  { label:'Scheduled',  stages:['scheduled'],                                               color:'#06b6d4', tab:'upcoming' },
+  { label:'Published',  stages:['published'],                                               color:'#22c55e', tab:'library' },
+];
+
+function renderPipelineStrip() {
+  const strip = document.getElementById('pipeline-strip');
+  const wrap  = document.getElementById('pipeline-strip-wrap');
+  if (!strip) return;
+  // Only Admin sees the pipeline strip
+  if (currentRole !== 'Admin') {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (wrap) wrap.style.display = '';
+  const html = STRIP_STAGES.map((group) => {
+    const count = allPosts.filter(p =>
+      group.stages.includes((p.stage||'').toLowerCase().trim())
+    ).length;
+    let cClass = '';
+    if (group.target) cClass = count < READY_TO_SEND_TARGET ? ' warn' : ' ok';
+    return `
+      <div class="ps-stage" onclick="goToTab('${group.tab}')">
+        <span class="ps-dot" style="background:${group.color}"></span>
+        <span class="ps-label">${group.label}</span>
+        <span class="ps-count${cClass}">${count}</span>
+      </div>`;
+  }).join('');
+  strip.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   PRODUCTION METER
+═══════════════════════════════════════════════ */
+function renderProductionMeter() {
+  const section = document.getElementById('prod-meter-section');
+  if (!section) return;
+  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready to send').length;
+  const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
+  const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
+  const isOk = gap === 0;
+  section.innerHTML = `
+  <div class="compact-meter">
+    <div class="compact-meter-top">
+      <span class="compact-meter-label">Ready to Send</span>
+      <span class="compact-meter-count" style="color:${isOk?'var(--c-green)':'var(--c-red)'}">
+        ${readyCount}<span style="color:var(--text3);font-weight:400"> / ${READY_TO_SEND_TARGET}</span>
+      </span>
+      <span class="compact-meter-gap" style="color:${isOk?'var(--c-green)':'var(--c-red)'}">
+        ${isOk ? '✓ On target' : `${gap} needed`}
+      </span>
+    </div>
+    <div class="compact-meter-bar">
+      <div class="compact-meter-fill ${isOk?'ok':'warn'}" style="width:${pct}%"></div>
+    </div>
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   MY TASKS
+═══════════════════════════════════════════════ */
+const CREATIVE_URGENCY = ['revisions needed','awaiting brand input','in production'];
+const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready to send','sent for approval','awaiting approval'];
+
+function getMyTasks() {
+  const allowed = ROLE_STAGES[currentRole];
+  if (!allowed) return allPosts;
+  const filtered = allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
+  if (currentRole === 'Creative') {
+    filtered.sort((a,b) => {
+      const ia = CREATIVE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
+      const ib = CREATIVE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
+      return (ia===-1?99:ia) - (ib===-1?99:ib);
+    });
+  }
+  return filtered;
+}
+
+function getNextPost() {
+  const posts = getMyTasks();
+  if (!posts.length) return null;
+  return [...posts].sort((a,b) => {
+    const ia = NEXT_POST_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
+    const ib = NEXT_POST_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
+    return (ia===-1?99:ia) - (ib===-1?99:ib);
+  })[0] || null;
+}
+
+/* ═══════════════════════════════════════════════
+   HERO CARD — Next Post to Produce
+═══════════════════════════════════════════════ */
+function getRelativeDate(rawDate) {
+  const d = parseDate(rawDate);
+  if (!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff  = Math.round((d - today) / 86400000);
+  if (diff === 0)  return { text:'Today',     cls:'today' };
+  if (diff === 1)  return { text:'Tomorrow',  cls:'soon' };
+  if (diff === -1) return { text:'Yesterday', cls:'overdue' };
+  if (diff > 0 && diff <= 7) return { text:`In ${diff} days`, cls:'soon' };
+  if (diff < 0)   return { text:`${Math.abs(diff)}d overdue`, cls:'overdue' };
+  return { text: formatDate(rawDate), cls: '' };
+}
+
+/* ═══════════════════════════════════════════════
+   TASK SYSTEM
+═══════════════════════════════════════════════ */
+let allTasks = [];
+
+async function loadTasks() {
+  try {
+    const data = await apiFetch('/tasks?order=created_at.desc&limit=50');
+    allTasks = Array.isArray(data) ? data : [];
+  } catch { allTasks = []; }
+  renderTaskBanner();
+  renderAdminTaskPanel();
+}
+
+function renderTaskBanner() {
+  const section = document.getElementById('task-banner-section');
+  if (!section) return;
+  if (!['Servicing','Creative'].includes(currentRole)) { section.innerHTML = ''; return; }
+
+  const email    = localStorage.getItem('gbl_email') || '';
+  const name     = email.split('@')[0]; // fallback
+  const roleName = currentRole === 'Servicing' ? 'Servicing Team' : 'Creative Team';
+  // Match by role label OR by first name (Chitra / Pranav)
+  const myTasks  = allTasks.filter(t =>
+    !t.done && (
+      t.assigned_to === roleName ||
+      t.assigned_to === currentRole ||
+      (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))
+    )
+  );
+
+  if (!myTasks.length) { section.innerHTML = ''; return; }
+
+  const rows = myTasks.map(t => {
+    const due = t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
+    return `
+    <div class="task-banner-item" id="task-item-${t.id}">
+      <div>
+        <div class="task-banner-msg">${esc(t.message)}</div>
+        ${due ? `<div class="task-banner-due">${due}</div>` : ''}
+      </div>
+      <button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button>
+    </div>`;
+  }).join('');
+
+  section.innerHTML = `
+  <div class="task-banner">
+    <div class="task-banner-label">Your Tasks (${myTasks.length})</div>
+    ${rows}
+  </div>`;
+}
+
+function renderAdminTaskPanel() {
+  const section = document.getElementById('admin-task-section');
+  if (!section) return;
+  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+
+  const openTasks = allTasks.filter(t => !t.done);
+  const doneTasks = allTasks.filter(t => t.done).slice(0, 5);
+
+  const openRows = openTasks.map(t => {
+    const due  = t.due_date ? ` · Due ${new Date(t.due_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
+    return `
+    <div class="admin-task-item">
+      <div class="admin-task-item-body">
+        <div class="admin-task-item-msg">${esc(t.message)}</div>
+        <div class="admin-task-item-meta">${esc(t.assigned_to)}${due}</div>
+      </div>
+      <button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">✕</button>
+    </div>`;
+  }).join('');
+
+  const doneRows = doneTasks.map(t => `
+    <div class="admin-task-item">
+      <div class="admin-task-item-body admin-task-item-done">
+        <div class="admin-task-item-msg">${esc(t.message)}</div>
+        <div class="admin-task-item-meta">${esc(t.assigned_to)}</div>
+      </div>
+      <button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">✕</button>
+    </div>`).join('');
+
+  section.innerHTML = `
+  <div class="admin-task-wrap">
+    <div class="insight-panel-label">Assign a Task</div>
+    <div class="admin-task-form">
+      <div class="admin-task-row">
+        <select id="atask-assignee" style="flex:1">
+          <option value="">Assign to…</option>
+          <option>Creative Team</option>
+          <option>Servicing Team</option>
+          <option>Chitra</option>
+          <option>Pranav</option>
+        </select>
+        <input type="date" id="atask-due" title="Due date (optional)" style="flex:0 0 auto;width:140px">
+      </div>
+      <input type="text" id="atask-msg" placeholder="e.g. Upload 20 February posts to the system"
+        onkeydown="if(event.key==='Enter')assignTask()">
+      <button class="btn-modal-primary" style="align-self:flex-start;padding:var(--sp-2) var(--sp-5)" onclick="assignTask()">
+        Assign Task
+      </button>
+    </div>
+    ${openTasks.length ? `
+      <div class="admin-task-section-label">Open (${openTasks.length})</div>
+      <div class="admin-task-list">${openRows}</div>` : '<div style="font-size:13px;color:var(--text3)">No open tasks.</div>'}
+    ${doneTasks.length ? `
+      <div class="admin-task-section-label">Completed</div>
+      <div class="admin-task-list">${doneRows}</div>` : ''}
+  </div>`;
+}
+
+async function assignTask() {
+  const assignee = document.getElementById('atask-assignee').value.trim();
+  const msg      = document.getElementById('atask-msg').value.trim();
+  const due      = document.getElementById('atask-due').value || null;
+  if (!assignee) { showToast('Select who to assign to', 'error'); return; }
+  if (!msg)      { showToast('Enter a task message', 'error'); return; }
+  try {
+    await apiFetch('/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ assigned_to: assignee, message: msg, due_date: due }),
+    });
+    document.getElementById('atask-msg').value = '';
+    document.getElementById('atask-due').value = '';
+    document.getElementById('atask-assignee').value = '';
+    showToast('Task assigned ✓', 'success');
+    await loadTasks();
+  } catch { showToast('Failed — try again', 'error'); }
+}
+
+async function markTaskDone(id) {
+  const el = document.getElementById(`task-item-${id}`);
+  if (el) el.style.opacity = '0.4';
+  try {
+    await apiFetch(`/tasks?id=eq.${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ done: true }),
+    });
+    showToast('Task marked done ✓', 'success');
+    await loadTasks();
+  } catch { showToast('Failed — try again', 'error'); if (el) el.style.opacity = ''; }
+}
+
+async function deleteTask(id) {
+  try {
+    await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
+    await loadTasks();
+  } catch { showToast('Failed — try again', 'error'); }
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN INSIGHT PANELS
+═══════════════════════════════════════════════ */
+function renderAdminInsight() {
+  const section = document.getElementById('admin-insight-section');
+  if (!section) return;
+  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+
+  const now = Date.now();
+  const DAY = 86400000;
+
+  // Helper: days since updated_at
+  function daysSince(post) {
+    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
+    if (!t) return 0;
+    return Math.floor((now - new Date(t).getTime()) / DAY);
+  }
+
+  // ── Panel 1: Bottlenecks ──────────────────────
+  const stuckProduction = allPosts.filter(p =>
+    (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3
+  );
+  const stuckClient = allPosts.filter(p =>
+    ['awaiting approval','sent for approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim())
+    && daysSince(p) >= 3
+  );
+  const stuckReview = allPosts.filter(p =>
+    (p.stage||'').toLowerCase().trim() === 'revisions needed' && daysSince(p) >= 2
+  );
+
+  const bottleneckRows = [
+    stuckProduction.length ? `<div class="insight-flag">
+      <span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>
+      Production slow — ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days
+    </div>` : '',
+    stuckClient.length ? `<div class="insight-flag">
+      <span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>
+      Client waiting — ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days
+    </div>` : '',
+    stuckReview.length ? `<div class="insight-flag">
+      <span class="insight-flag-dot amber"></span>
+      Revisions sitting — ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days
+    </div>` : '',
+  ].filter(Boolean).join('');
+
+  const bottleneckPanel = `
+  <div class="insight-panel">
+    <div class="insight-panel-label">Bottlenecks</div>
+    ${bottleneckRows || '<div class="insight-flag"><span class="insight-flag-dot" style="background:var(--c-green)"></span>No blockers — pipeline clear</div>'}
+  </div>`;
+
+  // ── Panel 2: Weekly Throughput ────────────────
+  const weekAgo = now - 7 * DAY;
+  function withinWeek(post, field) {
+    const t = post[field];
+    if (!t) return false;
+    return new Date(t).getTime() >= weekAgo;
+  }
+  const written   = allPosts.filter(p => withinWeek(p, 'created_at') || withinWeek(p, 'createdAt')).length;
+  const approved  = allPosts.filter(p =>
+    ['sent for approval','awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim())
+    && (withinWeek(p, 'updated_at') || withinWeek(p, 'updatedAt'))
+  ).length;
+  const published = allPosts.filter(p =>
+    (p.stage||'').toLowerCase().trim() === 'published'
+    && (withinWeek(p, 'updated_at') || withinWeek(p, 'updatedAt'))
+  ).length;
+
+  const flowPanel = `
+  <div class="insight-panel">
+    <div class="insight-panel-label">This Week</div>
+    <div class="insight-rows">
+      <div class="insight-row">
+        <span class="insight-row-label">Written</span>
+        <span class="insight-row-val ${written === 0 ? 'warn' : ''}">${written}</span>
+      </div>
+      <div class="insight-row">
+        <span class="insight-row-label">Approved</span>
+        <span class="insight-row-val ${approved === 0 ? 'warn' : ''}">${approved}</span>
+      </div>
+      <div class="insight-row">
+        <span class="insight-row-label">Published</span>
+        <span class="insight-row-val ${published === 0 ? 'warn' : 'ok'}">${published}</span>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Panel 3: Parked Posts ─────────────────────
+  const parkedPosts = allPosts.filter(p =>
+    (p.stage||'').toLowerCase().trim() !== 'published'
+    && daysSince(p) >= 7
+  );
+  const parkedPanel = parkedPosts.length ? `
+  <div class="insight-panel">
+    <div class="insight-panel-label">Parked</div>
+    <div class="insight-row">
+      <span class="insight-row-label">No movement in 7+ days</span>
+      <span class="insight-row-val warn" style="display:flex;align-items:center;gap:var(--sp-2)">
+        ${parkedPosts.length}
+        <span class="insight-parked-link" onclick="openParked()">View →</span>
+      </span>
+    </div>
+  </div>` : '';
+
+  section.innerHTML = `<div class="insight-wrap">${bottleneckPanel}${flowPanel}${parkedPanel}</div>`;
+
+  // Cache for parked sheet
+  window._parkedPosts = parkedPosts;
+}
+
+function openParked() {
+  const posts = window._parkedPosts || [];
+  const list  = document.getElementById('parked-sheet-list');
+  const { hex, label } = stageStyle;
+  list.innerHTML = posts.map(p => {
+    const id    = getPostId(p);
+    const title = getTitle(p);
+    const stage = p.stage || '—';
+    const { hex: h } = stageStyle(stage);
+    const days  = Math.floor((Date.now() - new Date(p.updated_at || p.updatedAt || p.created_at).getTime()) / 86400000);
+    return `
+    <div class="bucket-item" onclick="openPostModal('${esc(id)}');closeParked()" style="cursor:pointer">
+      <div class="bucket-item-left">
+        <span class="bucket-item-title">${esc(title)}</span>
+        <span class="bucket-item-pillar">Last moved ${days}d ago</span>
+      </div>
+      <span class="bucket-item-stage" style="background:${h}22;color:${h};border-color:${h}40;opacity:0.85">${esc(stage)}</span>
+    </div>`;
+  }).join('') || '<div style="color:var(--text3);padding:var(--sp-4) 0;font-size:14px">No parked posts.</div>';
+  document.getElementById('parked-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeParked() {
+  document.getElementById('parked-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER NEXT POST (HERO)
+═══════════════════════════════════════════════ */
+function renderNextPost() {
+  const section = document.getElementById('next-post-section');
+  if (!section) return;
+  if (!['Admin','Creative','Servicing'].includes(currentRole)) { section.innerHTML=''; return; }
+
+  const post = getNextPost();
+  if (!post) {
+    section.innerHTML = `
+    <div class="hero-card">
+      <div class="hero-label">${currentRole === 'Creative' ? 'Current Job' : 'Most Urgent Post'}</div>
+      <div class="empty-state" style="padding:var(--sp-5) 0 0">
+        <div class="empty-icon">✓</div>
+        <p>All clear — nothing here right now.</p>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const id        = getPostId(post);
+  const title     = getTitle(post);
+  const stage     = post.stage || '';
+  const stageLC   = stage.toLowerCase().trim();
+  const { hex, label: stageLabel } = stageStyle(stage);
+  const owner     = post.owner || '—';
+  const pillar    = post.contentPillar || '';
+  const comments  = post.comments || '';
+  const postLink  = post.postLink || post.post_link || '';
+  const rawDate   = post.targetDate;
+  const relDate   = getRelativeDate(rawDate);
+  const days      = daysInStage(post);
+  const stLabel   = staleLabel(days, stage);
+  const stCls     = staleClass(days);
+  const canUpdate = ['Admin','Servicing'].includes(currentRole);
+
+  // Context-aware primary action
+  let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
+  if (stageLC === 'revisions needed') {
+    primaryLabel='Mark Revision Done'; primaryAction=`quickStage('${esc(id)}','In Production')`;
+    secondaryLabel='View Details'; secondaryAction=`openPostModal('${esc(id)}')`;
+  } else if (stageLC === 'awaiting brand input') {
+    primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','In Production')`;
+    secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','Sent for Approval')`;
+  } else if (stageLC === 'in production') {
+    primaryLabel='Mark Ready to Send'; primaryAction=`quickStage('${esc(id)}','Ready to Send')`;
+    secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','Sent for Approval')`;
+  } else if (stageLC === 'ready to send') {
+    primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','Sent for Approval')`;
+    secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','Scheduled')`;
+  } else if (stageLC === 'sent for approval' || stageLC === 'awaiting approval') {
+    primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','Scheduled')`;
+    secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`;
+  } else {
+    primaryLabel='Update Stage'; primaryAction=`openPostModal('${esc(id)}')`;
+  }
+
+  const heroLabel = currentRole === 'Creative'
+    ? 'Current Job'
+    : currentRole === 'Servicing'
+    ? 'Needs Your Attention'
+    : 'Most Urgent';
+
+  // Stale warning for Servicing
+  let staleNote = '';
+  if (stLabel && currentRole === 'Servicing') {
+    staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">⏱ ${stLabel} in this stage</div>`;
+  }
+
+  section.innerHTML = `
+  <div class="hero-card">
+    <div class="hero-label">${heroLabel}</div>
+    <div class="hero-title">${esc(title)}</div>
+    <div class="hero-meta">
+      <span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>
+      ${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}
+      ${owner!=='—' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}
+      ${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}
+      ${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}
+    </div>
+    ${staleNote}
+    ${comments ? `
+      <div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>
+      ${comments.length > 120
+        ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>
+           <button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">⬜ Zen Mode — expand brief</button>`
+        : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}
+    ` : ''}
+    ${postLink ? `
+      <a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">
+        ✏ Open in Design Tool ↗
+      </a>
+    ` : currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `
+      <div class="hero-no-design">⚠ No design link — add one below</div>
+    ` : ''}
+    <div class="hero-actions">
+      <button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>
+      ${currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input')
+        ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">⚑ Flag Issue</button>`
+        : secondaryLabel === 'Copy Approval Link'
+          ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link
+             </button>`
+          : secondaryLabel
+            ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>`
+            : ''}
+      ${canUpdate ? `<button class="btn-hero-more" onclick="${currentRole==='Admin' ? `openAdminEdit('${esc(id)}')` : `openPostModal('${esc(id)}')`}" title="Edit post">⋯</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function toggleHeroComments(id, btn) {
+  const el = document.getElementById(`hero-comments-${id}`);
+  if (!el) return;
+  const expanded = el.classList.toggle('expanded');
+  btn.textContent = expanded ? 'Show less' : 'Read more';
+}
+
+/* ═══════════════════════════════════════════════
+   BUCKET CONFIG
+═══════════════════════════════════════════════ */
+const ROLE_BUCKETS = {
+  Admin: [
+    { key:'requests',   label:'Requests',       stages:['awaiting brand input'] },
+    { key:'revisions',  label:'Revisions',       stages:['revisions needed'], warn:true },
+    { key:'production', label:'In Production',   stages:['in production'] },
+    { key:'ready',      label:'Ready to Send',   stages:['ready to send'] },
+    { key:'approval',   label:'For Approval',    stages:['sent for approval','awaiting approval'] },
+    { key:'scheduled',  label:'Scheduled',       stages:['scheduled'] },
+  ],
+  Servicing: [
+    { key:'waiting',    label:'Waiting for Client', stages:['awaiting brand input','awaiting approval'] },
+    { key:'ready',      label:'Ready to Send',       stages:['ready to send','sent for approval'] },
+    { key:'scheduled',  label:'Scheduled',           stages:['scheduled'] },
+  ],
+  Creative: [
+    { key:'requests',   label:'Requests',       stages:['awaiting brand input'] },
+    { key:'production', label:'In Production',  stages:['in production'] },
+    { key:'revisions',  label:'Revisions',      stages:['revisions needed'], warn:true },
+  ],
+};
+
+/* ═══════════════════════════════════════════════
+   RENDER TASKS — bucket grid
+═══════════════════════════════════════════════ */
+function renderTasks() {
+  const container = document.getElementById('tasks-container');
+  if (!container) return;
+  const buckets = ROLE_BUCKETS[currentRole];
+  if (!buckets) {
+    const posts = getMyTasks();
+    container.innerHTML = posts.length
+      ? renderFlatCards(posts)
+      : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
+    return;
+  }
+
+  const canUpdate = ['Admin','Servicing'].includes(currentRole);
+
+  const bucketHtml = buckets.map(bucket => {
+    const posts    = allPosts
+      .filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
+      .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+    const count    = posts.length;
+    const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
+    const isRevBucket  = bucket.key === 'revisions';
+    const isWaitBucket = bucket.key === 'waiting' ||
+      bucket.stages.some(s => ['awaiting brand input','awaiting approval','sent for approval'].includes(s));
+
+    const items = posts.slice(0,8).map(p => {
+      const id     = getPostId(p);
+      const title  = getTitle(p);
+      const pillar = p.contentPillar || '';
+      const postLink = p.postLink || p.post_link || '';
+      const { hex, label: stLabel2 } = stageStyle(p.stage);
+      const days   = daysInStage(p);
+      const sl     = staleLabel(days, p.stage);
+      const sc     = staleClass(days);
+      const comments = p.comments || '';
+
+      // Client delay detection
+      const CLIENT_WAIT_STAGES = ['awaiting brand input','awaiting approval','sent for approval'];
+      const isClientWait = CLIENT_WAIT_STAGES.includes((p.stage||'').toLowerCase().trim());
+      const staleBadgeText = isClientWait && days >= 3
+        ? `⏳ Waiting on client · ${days}d`
+        : (sl || '');
+      const staleBadgeHtml = (isWaitBucket || currentRole==='Admin') && staleBadgeText
+        ? `<span class="stale-badge ${sc}">${staleBadgeText}</span>`
+        : '';
+
+      // Revision notes visible on Creative revisions bucket
+      const revisionHtml = isRevBucket && comments
+        ? `<div class="bucket-item-revision">↺ ${esc(comments.substring(0,80))}</div>`
+        : '';
+
+      // Stage pill as tap target — only show if canUpdate
+      const stagePill = canUpdate
+        ? `<span class="bucket-item-stage" style="background:${hex}22;color:${hex};border-color:${hex}40"
+            onclick="event.stopPropagation();openPostModal('${esc(id)}')"
+            title="Update stage">${esc(stLabel2)}</span>`
+        : '';
+
+      // Nudge client button — Servicing waiting bucket, 3+ days
+      const nudgeHtml = currentRole === 'Servicing' && isClientWait && days >= 3
+        ? `<button class="btn-nudge" onclick="event.stopPropagation();nudgeClient('${esc(id)}','${esc(title)}','${esc(p.targetDate||'')}')">💬 Nudge</button>`
+        : '';
+
+      // Publishing payload — Ready to Send bucket
+      const payloadHtml = bucket.key === 'ready' && (currentRole === 'Servicing' || currentRole === 'Admin')
+        ? `<div class="payload-row">
+            ${comments ? `<button class="btn-payload" onclick="event.stopPropagation();copyCaption('${esc(id)}')">📋 Copy Caption</button>` : ''}
+            ${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="btn-payload" style="text-align:center;text-decoration:none">↗ Open Design</a>` : ''}
+           </div>`
+        : '';
+
+      // Snooze — Servicing only
+      const snoozeHtml = currentRole === 'Servicing'
+        ? `<button class="btn-snooze" onclick="event.stopPropagation();openSnooze('${esc(id)}')">😴</button>`
+        : '';
+
+      const itemClick = currentRole === 'Admin'
+        ? `onclick="openAdminEdit('${esc(id)}')"`
+        : canUpdate
+          ? `onclick="openPostModal('${esc(id)}')"`
+          : '';
+
+      return `
+      <div class="bucket-item" ${itemClick} ${currentRole==='Creative' && bucket.key==='production' ? `ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleBucketDrop(event,'${esc(id)}')"` : ''}>
+        <div class="bucket-item-left">
+          <span class="bucket-item-title">${esc(title)}</span>
+          ${pillar ? `<span class="bucket-item-pillar">${esc(pillar)}</span>` : ''}
+          ${revisionHtml}
+          ${payloadHtml}
+          ${nudgeHtml}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          ${stagePill}
+          ${staleBadgeHtml}
+          <button class="btn-timeline" onclick="event.stopPropagation();openTimeline('${esc(id)}','${esc(title)}')" title="View activity">⏱</button>
+          ${snoozeHtml}
+        </div>
+      </div>`;
+    }).join('');
+
+    const overflow = posts.length > 8
+      ? `<div class="bucket-overflow">+${posts.length-8} more</div>` : '';
+
+    // Urgency signal for Creative Requests bucket
+    const urgencyHeader = bucket.key === 'requests' && count >= 3 && currentRole === 'Creative'
+      ? 'style="background:var(--c-amber-dim)"' : '';
+
+    return `
+    <div class="bucket-card">
+      <div class="bucket-header" ${urgencyHeader}>
+        <span class="bucket-name">${esc(bucket.label)}</span>
+        <span class="bucket-badge${badgeCls}">${count}</span>
+      </div>
+      <div class="bucket-items">
+        ${count ? items + overflow
+          : `<div class="bucket-empty">All clear ✓</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="bucket-grid">${bucketHtml}</div>`;
+}
+
+function renderFlatCards(posts) {
+  return `<div style="display:flex;flex-direction:column;gap:var(--sp-3)">${posts.map(p=>{
+    const {hex,label} = stageStyle(p.stage);
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-4)">
+      <div style="font-weight:600;margin-bottom:var(--sp-2)">${esc(getTitle(p))}</div>
+      <span class="tag" style="background:${hex}22;color:${hex}">${esc(label)}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   QUICK STAGE UPDATE — optimistic + undo
+═══════════════════════════════════════════════ */
+async function quickStage(postId, newStage) {
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (!post) return;
+  const prevStage = post.stage;
+
+  // Optimistic UI update
+  post.stage = newStage;
+  scheduleRender();
+
+  // Show undo toast
+  showUndoToast(`Stage → ${newStage}`, async () => {
+    // Revert optimistically
+    post.stage = prevStage;
+    scheduleRender();
+    try {
+      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stage: prevStage }),
+      });
+    } catch (_) {
+      showToast('Undo failed — refresh to sync', 'error');
+    }
+  });
+
+  // Fire API
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: newStage }),
+    });
+    await loadPosts();
+  } catch (err) {
+    console.error('quickStage:', err);
+    post.stage = prevStage;
+    scheduleRender();
+    showToast('Update failed — reverted', 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   PIPELINE VIEW
+═══════════════════════════════════════════════ */
+const PIPELINE_ORDER = [
+  'In Production','Revisions Needed','Awaiting Brand Input',
+  'Ready to Send','Sent for Approval','Awaiting Approval',
+  'Scheduled','Published','Archive'
+];
+
+function renderPipeline() {
+  const grouped = {};
+  allPosts.forEach(p => {
+    const s = p.stage || 'Unknown';
+    if (!grouped[s]) grouped[s] = [];
+    grouped[s].push(p);
+  });
+  const stages = Object.keys(grouped).sort((a,b) => {
+    const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b);
+    if (ia===-1 && ib===-1) return a.localeCompare(b);
+    if (ia===-1) return 1; if (ib===-1) return -1;
+    return ia - ib;
+  });
+  const html = stages.map(stage => {
+    const posts  = grouped[stage];
+    const {hex, label} = stageStyle(stage);
+    const cards  = posts.map(p => `
+      <div class="pipeline-card">
+        <div class="pipeline-card-title">${esc(getTitle(p))}</div>
+        <div class="pipeline-card-meta">
+          <span>${esc(p.owner||'—')}</span>
+          <span>${formatDate(p.targetDate)||'—'}</span>
+        </div>
+      </div>`).join('');
+    return `
+      <div class="pipeline-col">
+        <div class="pipeline-col-header" style="border-top-color:${hex}">
+          <span class="pipeline-col-label" style="color:${hex}">${esc(label)}</span>
+          <span class="pipeline-col-count">${posts.length}</span>
+        </div>
+        <div class="pipeline-cards">
+          ${cards || '<div style="padding:8px;color:var(--text3);font-size:12px;text-align:center">Empty</div>'}
+        </div>
+      </div>`;
+  }).join('');
+  document.getElementById('pipeline-container').innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════
+   UPCOMING
+═══════════════════════════════════════════════ */
+function getUpcoming() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return allPosts
+    .filter(p => {
+      const d = parseDate(p.targetDate);
+      const s = (p.stage||'').toLowerCase();
+      return d && d >= today && s !== 'published' && s !== 'archive';
+    })
+    .sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
+}
+
+function renderUpcoming() {
+  const posts  = getUpcoming();
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const w7     = new Date(today); w7.setDate(w7.getDate()+7);
+  const w14    = new Date(today); w14.setDate(w14.getDate()+14);
+  const tbody  = document.getElementById('upcoming-tbody');
+  if (!tbody) return;
+  if (!posts.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📅</div><p>No upcoming posts scheduled.</p></div></td></tr>`;
+    return;
+  }
+
+  // Group by date
+  const groups = {};
+  posts.forEach(p => {
+    const d = parseDate(p.targetDate);
+    const key = d ? d.toISOString().split('T')[0] : 'undated';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+
+  const rows = Object.keys(groups).sort().map(dateKey => {
+    const d = new Date(dateKey + 'T00:00:00');
+    const isToday = d.getTime() === today.getTime();
+    const isSoon  = d <= w7;
+    const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
+
+    const postRows = groups[dateKey].map(p => {
+      const {hex, label: stgLabel} = stageStyle(p.stage);
+      const id   = getPostId(p);
+      const link = `${window.location.origin}/p/${id}`;
+      return `<tr>
+        <td>${esc(getTitle(p))}</td>
+        <td><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stgLabel)}</span></td>
+        <td>${esc(p.owner||'—')}</td>
+        <td class="mono">${esc(id)}</td>
+        <td>
+          <button class="copy-link-btn" onclick="copyApprovalLink('${link}')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy Link
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+
+    return `<tr><td colspan="5" style="padding:0">
+      <div class="schedule-date-header ${hdrCls}">${esc(label)}</div>
+    </td></tr>${postRows}`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+}
+
+/* ═══════════════════════════════════════════════
+   CONTENT LIBRARY
+═══════════════════════════════════════════════ */
+function populateFilterDropdowns() {
+  const stages = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
+  const owners = [...new Set(allPosts.map(p=>p.owner||'').filter(Boolean))].sort();
+  const stageEl = document.getElementById('filter-stage');
+  const ownerEl = document.getElementById('filter-owner');
+  if (!stageEl || !ownerEl) return;
+  const curStage = stageEl.value, curOwner = ownerEl.value;
+  stageEl.innerHTML = `<option value="">All Stages</option>` + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  ownerEl.innerHTML = `<option value="">All Owners</option>` + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  stageEl.value = curStage;
+  ownerEl.value = curOwner;
+}
+
+function filterLibrary() {
+  const query = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const stage = (document.getElementById('filter-stage')?.value||'').toLowerCase();
+  const owner = (document.getElementById('filter-owner')?.value||'').toLowerCase();
+  const filtered = allPosts.filter(p => {
+    const tm = getTitle(p).toLowerCase().includes(query);
+    const sm = !stage || (p.stage||'').toLowerCase()===stage;
+    const om = !owner || (p.owner||'').toLowerCase()===owner;
+    return tm && sm && om;
+  });
+  renderLibraryRows(filtered);
+  const ll = document.getElementById('library-label');
+  if (ll) ll.textContent = `${filtered.length} / ${allPosts.length} posts`;
+}
+
+function renderLibrary() {
+  populateFilterDropdowns();
+  renderLibraryRows(allPosts);
+}
+
+function renderLibraryRows(posts) {
+  const tbody = document.getElementById('library-tbody');
+  if (!tbody) return;
+  if (!posts.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match your search.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = posts.map(p => {
+    const {hex,label} = stageStyle(p.stage);
+    const link = p.postLink || p.post_link || '';
+    return `<tr>
+      <td>${esc(getTitle(p))}</td>
+      <td>${esc(p.contentPillar||'—')}</td>
+      <td><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(label)}</span></td>
+      <td>${esc(p.owner||'—')}</td>
+      <td>${esc(p.location||'—')}</td>
+      <td class="mono">${formatDate(p.targetDate)||'—'}</td>
+      <td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   CLIENT VIEW — renderClientView
+═══════════════════════════════════════════════ */
+function renderClientView() {
+  // Card 1: Input Pending
+  const inputPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'awaiting brand input');
+  const inputCount = document.getElementById('client-input-count');
+  if (inputCount) inputCount.textContent = inputPosts.length;
+  const inputItems = document.getElementById('client-input-items');
+  if (inputItems) {
+    if (!inputPosts.length) {
+      inputItems.innerHTML = `<div class="empty-state"><div class="empty-icon">✨</div><p>All clear — nothing needed from you right now.</p></div>`;
+    } else {
+      inputItems.innerHTML = inputPosts.map(p => {
+        const id   = getPostId(p);
+        const days = daysInStage(p);
+        const sl   = staleLabel(days, p.stage);
+        const sc   = staleClass(days);
+        const waitingHtml = sl
+          ? `<div class="client-item-waiting ${sc}">Waiting ${sl} — we need your input</div>`
+          : `<div class="client-item-waiting amber">Waiting for your input</div>`;
+        return `
+        <div class="client-input-item">
+          <div class="client-item-title">${esc(getTitle(p))}</div>
+          <div class="client-item-need">${esc(p.comments||'We need your input to move this post forward.')}</div>
+          ${waitingHtml}
+          <div class="client-item-actions">
+            <label class="btn-client-upload" id="upload-label-${esc(id)}">
+              ↑ Upload Here
+              <input type="file"
+                accept="image/jpeg,image/png,image/webp,video/mp4"
+                style="display:none"
+                onchange="handleClientUpload(this, '${esc(id)}')">
+            </label>
+            <button class="btn-client-ack" onclick="clientAcknowledge('${esc(id)}')">
+              I'll send it on WhatsApp
+            </button>
+          </div>
+          <div id="upload-confirm-${esc(id)}"></div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Card 2: Approval Pending
+  const approvalPosts = allPosts.filter(p => {
+    const s = (p.stage||'').toLowerCase().trim();
+    return s === 'sent for approval' || s === 'awaiting approval';
+  });
+  const approvalCount = document.getElementById('client-approval-count');
+  if (approvalCount) approvalCount.textContent = approvalPosts.length;
+  const approvalItems = document.getElementById('client-approval-items');
+  if (approvalItems) {
+    if (!approvalPosts.length) {
+      approvalItems.innerHTML = `<div class="empty-state"><div class="empty-icon">👍</div><p>Nothing waiting for approval right now.</p></div>`;
+    } else {
+      approvalItems.innerHTML = approvalPosts.map(p => {
+        const id      = getPostId(p);
+        const postLink= p.postLink || p.post_link || '';
+        // Clean path URL for sharing: /p/{id}
+        const approvalUrl = `${window.location.origin}/p/${id}`;
+        const waText  = encodeURIComponent(`LinkedIn post ready for review\n\nPreview and approve here:\n${approvalUrl}\n\nTakes 5 seconds.`);
+        const waLink  = `https://wa.me/?text=${waText}`;
+        const preview = postLink
+          ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" style="display:block;width:100%;height:100px;background:var(--surface3);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;margin-bottom:var(--sp-3)">View Post Design ↗</a>`
+          : `<div class="approval-item-preview">No preview — review brief above</div>`;
+        return `
+        <div class="client-approval-item" id="apv-item-${esc(id)}">
+          <div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>
+          ${preview}
+          <div class="approval-item-actions">
+            <button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">
+              ✓ Approve
+            </button>
+            <button class="btn-revise-outline" onclick="showRevisionInput('${esc(id)}')">
+              ↺ Changes
+            </button>
+          </div>
+          <div class="revision-input-wrap" id="revision-wrap-${esc(id)}">
+            <textarea class="revision-textarea" id="revision-text-${esc(id)}"
+              placeholder="What would you like changed? Be as specific as possible…"
+              rows="3"></textarea>
+            <button class="btn-send-revision" onclick="submitClientRevision('${esc(id)}')">
+              Send Revision Request
+            </button>
+          </div>
+          <div class="approval-confirmed" id="approved-confirm-${esc(id)}">
+            ✓ Approved! The team has been notified.
+          </div>
+          <a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Share on WhatsApp
+          </a>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // Published table
+  renderClientApproved();
+}
+
+async function clientApprove(postId, btn) {
+  btn.disabled = true;
+  btn.textContent = 'Approving…';
+  try {
+    // Fetch current stage first — prevent double approval
+    const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}&select=post_id,stage`);
+    const current = rows[0];
+    if (current && (current.stage||'').toLowerCase() !== 'awaiting approval' &&
+                   (current.stage||'').toLowerCase() !== 'sent for approval') {
+      const confirm = document.getElementById(`approved-confirm-${postId}`);
+      if (confirm) { confirm.textContent = 'Approved ✔ This post has already been reviewed.'; confirm.classList.add('show'); }
+      btn.closest('.approval-item-actions').style.opacity = '0.4';
+      btn.closest('.approval-item-actions').style.pointerEvents = 'none';
+      return;
+    }
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: 'Scheduled' }),
+    });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client',
+      action: `Client approved post ${postId}` });
+    const confirm = document.getElementById(`approved-confirm-${postId}`);
+    if (confirm) confirm.classList.add('show');
+    btn.closest('.approval-item-actions').style.opacity = '0.4';
+    btn.closest('.approval-item-actions').style.pointerEvents = 'none';
+    setTimeout(async () => { await loadPostsForClient(); }, 60000);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '✓ Approve';
+    showToast('Failed to approve — try again', 'error');
+  }
+}
+
+function showRevisionInput(postId) {
+  const wrap = document.getElementById(`revision-wrap-${postId}`);
+  if (wrap) wrap.classList.add('open');
+  const ta = document.getElementById(`revision-text-${postId}`);
+  if (ta) ta.focus();
+}
+
+async function submitClientRevision(postId) {
+  const ta   = document.getElementById(`revision-text-${postId}`);
+  const note = ta ? ta.value.trim() : '';
+  if (!note) { showToast('Please describe the changes needed', 'error'); return; }
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: 'Revisions Needed', comments: note }),
+    });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client',
+      action: `Client requested revisions on post ${postId}` });
+    const wrap = document.getElementById(`revision-wrap-${postId}`);
+    if (wrap) wrap.innerHTML = `<div style="padding:var(--sp-3);background:var(--c-amber-dim);border:1px solid var(--c-amber);border-radius:var(--r-sm);color:var(--c-amber);font-size:13px;font-weight:600;margin-top:var(--sp-2)">↺ Change request sent — the team will update this post.</div>`;
+    showToast('Revision request sent', 'success');
+  } catch (err) {
+    showToast('Failed to send — try again', 'error');
+  }
+}
+
+function clientAcknowledge(postId) {
+  showToast('Got it — send the files on WhatsApp when ready', 'info');
+}
+
+async function handleClientUpload(input, postId) {
+  const file = input.files[0];
+  if (!file) return;
+  const label = document.getElementById(`upload-label-${postId}`);
+  const confirm = document.getElementById(`upload-confirm-${postId}`);
+  if (label) { label.innerHTML = `↑ Uploading…`; label.classList.add('uploading'); }
+  try {
+    const publicUrl = await uploadPostAsset(file, postId);
+    if (confirm) confirm.innerHTML = `<div class="upload-thumb">✓ Uploaded — ${esc(file.name)}</div>`;
+    if (label) { label.style.display='none'; }
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ post_link: publicUrl }),
+    });
+    showToast('File uploaded ✓', 'success');
+  } catch (err) {
+    console.error('upload:', err);
+    if (label) { label.innerHTML = '↑ Upload Here'; label.classList.remove('uploading'); }
+    showToast('Upload failed — try again', 'error');
+  }
+}
+
+function scrollToNewRequest() {
+  const el = document.getElementById('client-request-section');
+  if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+async function submitClientRequest() {
+  const topic = document.getElementById('req-topic')?.value.trim();
+  const date  = document.getElementById('req-date')?.value;
+  const ref   = document.getElementById('req-ref')?.value.trim();
+  if (!topic) { showToast('Please describe what you want to post about', 'error'); return; }
+
+  const btn = document.getElementById('req-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  try {
+    await apiFetch('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        title:       topic,
+        stage:       'Awaiting Brand Input',
+        owner:       'Servicing Team',
+        target_date: date || null,
+        comments:    ref || null,
+      }),
+    });
+    document.getElementById('req-topic').value = '';
+    document.getElementById('req-date').value  = '';
+    document.getElementById('req-ref').value   = '';
+    showToast('Request sent — the team will be in touch ✓', 'success');
+  } catch (err) {
+    showToast('Failed to send — try again', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Send Request ↗';
+  }
+}
+
+function handleRequestFileUpload(input) {
+  const file = input.files[0];
+  if (file) showToast(`${file.name} selected — submit form to upload`, 'info');
+}
+
+function renderClientApproved() {
+  const published = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='published');
+  const label     = document.getElementById('client-approved-label');
+  if (label) label.textContent = published.length;
+  const tbody = document.getElementById('client-approved-tbody');
+  if (!tbody) return;
+  if (!published.length) {
+    tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>No published posts yet.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = published.map(p => {
+    const link = p.postLink || p.post_link || '';
+    return `<tr>
+      <td>${esc(getTitle(p))}</td>
+      <td class="mono">${formatDate(p.targetDate)||'—'}</td>
+      <td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   ACTIVITY LOG — insert action record
+═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════
+   ACTIVITY TIMELINE
+═══════════════════════════════════════════════ */
+async function openTimeline(postId, title) {
+  const overlay = document.getElementById('timeline-overlay');
+  const body    = document.getElementById('timeline-body');
+  const ttl     = document.getElementById('timeline-title');
+  ttl.textContent = title || 'Activity';
+  body.innerHTML  = '<div class="timeline-empty">Loading…</div>';
+  overlay.classList.add('open');
+  try {
+    const rows = await apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.asc`);
+    if (!rows || !rows.length) {
+      body.innerHTML = '<div class="timeline-empty">No activity recorded yet.</div>';
+      return;
+    }
+    body.innerHTML = rows.map(row => {
+      const action = row.action || '';
+      const actor  = row.actor  || 'System';
+      const ts     = row.created_at ? new Date(row.created_at) : null;
+      const time   = ts ? ts.toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+      // Pick icon based on action type
+      let icon = '→';
+      if (/approv/i.test(action))   icon = '✓';
+      if (/revision|revis/i.test(action)) icon = '↺';
+      if (/upload/i.test(action))   icon = '📎';
+      if (/creat|new|add/i.test(action)) icon = '+';
+      return `<div class="tl-item">
+        <div class="tl-icon">${icon}</div>
+        <div class="tl-content">
+          <div class="tl-action">${esc(action)}</div>
+          <div class="tl-meta">${esc(actor)}${time ? ' · '+time : ''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    body.innerHTML = '<div class="timeline-empty">Could not load activity.</div>';
+  }
+}
+
+function closeTimeline() {
+  document.getElementById('timeline-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════
+   ZEN MODE BRIEF
+═══════════════════════════════════════════════ */
+function openZen(title, brief) {
+  document.getElementById('zen-title').textContent  = title;
+  document.getElementById('zen-brief').textContent  = brief;
+  document.getElementById('zen-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeZen() {
+  document.getElementById('zen-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ═══════════════════════════════════════════════
+   SNOOZE
+═══════════════════════════════════════════════ */
+let _snoozePostId = null;
+
+function openSnooze(postId) {
+  _snoozePostId = postId;
+  const today = new Date();
+  const opts = [
+    { label: 'Tomorrow',      days: 1 },
+    { label: 'In 2 days',     days: 2 },
+    { label: 'Next week',     days: 7 },
+    { label: 'In 2 weeks',    days: 14 },
+  ];
+  document.getElementById('snooze-options').innerHTML = opts.map(o => {
+    const d = new Date(today); d.setDate(d.getDate() + o.days);
+    const label = d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    return `<button class="snooze-opt" onclick="confirmSnooze(${o.days})">${o.label} <span style="color:var(--text3);font-size:13px;margin-left:var(--sp-2)">${label}</span></button>`;
+  }).join('');
+  document.getElementById('snooze-overlay').classList.add('open');
+}
+
+function closeSnooze() {
+  document.getElementById('snooze-overlay').classList.remove('open');
+  _snoozePostId = null;
+}
+
+function confirmSnooze(days) {
+  if (!_snoozePostId) return;
+  const until = new Date(); until.setDate(until.getDate() + days);
+  const key   = `snooze_${_snoozePostId}`;
+  localStorage.setItem(key, until.toISOString());
+  closeSnooze();
+  showToast(`Snoozed until ${until.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})} 😴`, 'success');
+  renderAll();
+}
+
+function isSnoozed(postId) {
+  const val = localStorage.getItem(`snooze_${postId}`);
+  if (!val) return false;
+  const until = new Date(val);
+  if (new Date() >= until) { localStorage.removeItem(`snooze_${postId}`); return false; }
+  return true;
+}
+
+/* ═══════════════════════════════════════════════
+   NUDGE CLIENT (WhatsApp)
+═══════════════════════════════════════════════ */
+function nudgeClient(postId, title, targetDate) {
+  const approvalUrl = `${window.location.origin}/p/${postId}`;
+  const dateStr     = targetDate ? new Date(targetDate).toLocaleDateString('en-GB',{day:'numeric',month:'long'}) : 'soon';
+  const msg = encodeURIComponent(
+    `Hey! Just a quick bump on "${title}" — we need your approval so we can get this scheduled for ${dateStr}.\n\nHere's the link:\n${approvalUrl}\n\nTakes 5 seconds — just tap Approve! 🙏`
+  );
+  window.open(`https://wa.me/?text=${msg}`, '_blank');
+}
+
+/* ═══════════════════════════════════════════════
+   COPY CAPTION (Publishing Payload)
+═══════════════════════════════════════════════ */
+function copyCaption(postId) {
+  const pid  = (postId||'').toLowerCase().trim();
+  const post = allPosts.find(p => (getPostId(p)||'').toLowerCase().trim() === pid);
+  if (!post) { showToast('Post not found', 'error'); return; }
+  const text = (post.comments || '').trim() || getTitle(post);
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Caption copied 📋', 'success'))
+    .catch(() => {
+      // fallback for browsers without clipboard API
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      showToast('Caption copied 📋', 'success');
+    });
+}
+
+/* ═══════════════════════════════════════════════
+   FLAG ISSUE (Creative → Awaiting Brand Input)
+═══════════════════════════════════════════════ */
+async function flagIssue(postId) {
+  const reason = prompt('What is the issue? (brief note)');
+  if (reason === null) return; // cancelled
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: 'Awaiting Brand Input', comments: reason }),
+    });
+    await logActivity({ post_id: postId, actor_name: 'Creative Team', actor_role: 'Creative',
+      action: `Flagged issue: ${reason}` });
+    showToast('Issue flagged — Servicing notified ⚑', 'success');
+    await loadPosts();
+  } catch { showToast('Failed — try again', 'error'); }
+}
+
+/* ═══════════════════════════════════════════════
+   DRAG-DROP UPLOAD (Creative In Production cards)
+═══════════════════════════════════════════════ */
+async function handleBucketDrop(event, postId) {
+  event.preventDefault();
+  event.currentTarget.classList.remove('drag-over');
+  const file = event.dataTransfer.files[0];
+  if (!file) return;
+  const allowed = ['image/jpeg','image/png','image/webp','video/mp4'];
+  if (!allowed.includes(file.type)) { showToast('Only JPEG, PNG, WEBP or MP4 allowed', 'error'); return; }
+  showToast('Uploading…', 'info');
+  try {
+    const url = await uploadPostAsset(file, postId);
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: 'Ready to Send', post_link: url }),
+    });
+    await logActivity({ post_id: postId, actor_name: 'Creative Team', actor_role: 'Creative',
+      action: `Uploaded asset and moved to Ready to Send` });
+    showToast('Uploaded — stage → Ready to Send ✓', 'success');
+    await loadPosts();
+  } catch { showToast('Upload failed — try again', 'error'); }
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN QUICK-EDIT SHEET
+═══════════════════════════════════════════════ */
+let _aePostId = '';
+
+function openAdminEdit(postId) {
+  const post = allPosts.find(p => (getPostId(p)||'').toLowerCase().trim() === (postId||'').toLowerCase().trim());
+  if (!post) { showToast('Post not found', 'error'); return; }
+  _aePostId = getPostId(post);
+  document.getElementById('ae-title').textContent    = getTitle(post);
+  document.getElementById('ae-id').textContent       = _aePostId;
+  document.getElementById('ae-link').value           = post.postLink || post.post_link || '';
+  document.getElementById('ae-comments').value       = post.comments || '';
+  document.getElementById('ae-date').value           = post.targetDate ? post.targetDate.slice(0,10) : '';
+  // Stage select
+  const stSel = document.getElementById('ae-stage');
+  const stMatch = Array.from(stSel.options).find(o => o.value.toLowerCase() === (post.stage||'').trim().toLowerCase());
+  stSel.value = stMatch ? stMatch.value : stSel.options[0].value;
+  // Owner select
+  const owSel = document.getElementById('ae-owner');
+  const owMatch = Array.from(owSel.options).find(o => o.value === (post.owner||''));
+  owSel.value = owMatch ? owMatch.value : '';
+  document.getElementById('ae-save-btn').disabled = false;
+  document.getElementById('admin-edit-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAdminEdit() {
+  document.getElementById('admin-edit-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  _aePostId = '';
+}
+
+async function saveAdminEdit() {
+  if (!_aePostId) return;
+  const btn = document.getElementById('ae-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const body = {
+      stage:       document.getElementById('ae-stage').value,
+      owner:       document.getElementById('ae-owner').value || null,
+      post_link:   document.getElementById('ae-link').value.trim() || null,
+      comments:    document.getElementById('ae-comments').value.trim() || null,
+      target_date: document.getElementById('ae-date').value || null,
+    };
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(_aePostId)}`, {
+      method: 'PATCH', body: JSON.stringify(body),
+    });
+    await logActivity({ post_id: _aePostId, actor_name: 'Admin', actor_role: 'Admin',
+      action: `Edited post — stage: ${body.stage}` });
+    closeAdminEdit();
+    await loadPosts();
+    showToast('Post updated ✓', 'success');
+  } catch { showToast('Save failed — check connection', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+}
+
+async function logActivity({ post_id, actor_name, actor_role, action }) {
+  try {
+    await apiFetch('/activity_log', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id:    post_id    || null,
+        actor:      actor_name || 'Unknown',
+        action:     action     || '',
+        created_at: new Date().toISOString(),
+      }),
+    });
+  } catch (err) {
+    // Non-critical — log but don't surface to user
+    console.warn('logActivity failed:', err);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   STORAGE — upload asset
+═══════════════════════════════════════════════ */
+async function uploadPostAsset(file, postId) {
+  const ext      = file.name.split('.').pop();
+  const filename = `${postId}/${Date.now()}.${ext}`;
+  const url      = `${SUPABASE_URL}/storage/v1/object/post-assets/${filename}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type':  file.type,
+      'Cache-Control': '3600',
+    },
+    body: file,
+  });
+  if (!res.ok) throw new Error(`Upload ${res.status}`);
+  return `${SUPABASE_URL}/storage/v1/object/public/post-assets/${filename}`;
+}
+
+/* ═══════════════════════════════════════════════
+   APPROVAL VIEW (public URL)
+═══════════════════════════════════════════════ */
+async function showApprovalView(postId) {
+  document.getElementById('approval-view').classList.add('active');
+  document.getElementById('apv-title').textContent   = 'Loading…';
+  document.getElementById('apv-meta').textContent    = '';
+  document.getElementById('apv-preview').textContent = 'Fetching post details…';
+  try {
+    const rows  = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}&select=*`);
+    const posts = normalise(rows);
+    const post  = posts[0] || null;
+    if (!post) {
+      document.getElementById('apv-title').textContent   = 'Post not found';
+      document.getElementById('apv-meta').textContent    = `Ref: ${postId}`;
+      document.getElementById('apv-preview').textContent = 'This approval link may be invalid or expired.';
+      return;
+    }
+    document.getElementById('apv-title').textContent   = getTitle(post);
+    document.getElementById('apv-meta').textContent    = `${getPostId(post)} · ${formatDate(post.targetDate)||''}`;
+    document.getElementById('apv-preview').textContent = post.comments || 'No preview — please review the attached materials.';
+    // Show design/post link if available
+    const designWrap = document.getElementById('apv-design-wrap');
+    const link = post.postLink || post.post_link || '';
+    designWrap.innerHTML = link
+      ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="apv-design-btn">↗ Open Design Preview</a>`
+      : '';
+    // Check if already reviewed
+    const stageLC = (post.stage||'').toLowerCase();
+    if (stageLC !== 'awaiting approval' && stageLC !== 'sent for approval') {
+      const msg = document.getElementById('apv-msg');
+      msg.className = 'approval-msg success';
+      msg.textContent = 'Approved ✔ This post has already been reviewed.';
+      document.querySelector('.approval-actions').style.opacity = '0.4';
+      document.querySelector('.approval-actions').style.pointerEvents = 'none';
+    }
+    window._approvalPost = post;
+  } catch (err) {
+    document.getElementById('apv-title').textContent   = 'Error';
+    document.getElementById('apv-preview').textContent = 'Could not load post. Please try again.';
+  }
+}
+
+async function submitApproval(type) {
+  const msg  = document.getElementById('apv-msg');
+  const post = window._approvalPost;
+  if (!post) return;
+  const postId = getPostId(post);
+
+  // Lock buttons immediately
+  document.querySelector('.approval-actions').style.opacity      = '0.4';
+  document.querySelector('.approval-actions').style.pointerEvents = 'none';
+
+  if (type === 'approved') {
+    // Re-fetch to check stage hasn't already been changed
+    try {
+      const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}&select=post_id,stage`);
+      const live = rows[0];
+      if (live && (live.stage||'').toLowerCase() !== 'awaiting approval' &&
+                  (live.stage||'').toLowerCase() !== 'sent for approval') {
+        msg.className   = 'approval-msg success';
+        msg.textContent = 'Approved ✔ This post has already been reviewed.';
+        return;
+      }
+      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stage: 'Scheduled' }),
+      });
+      await logActivity({ post_id: postId, actor_name: 'External reviewer', actor_role: 'Client',
+        action: `Client approved post ${postId}` });
+    } catch (_) {}
+    msg.className   = 'approval-msg success';
+    msg.textContent = '✓ Post approved successfully. The team has been notified.';
+  } else {
+    try {
+      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stage: 'Revisions Needed' }),
+      });
+      await logActivity({ post_id: postId, actor_name: 'External reviewer', actor_role: 'Client',
+        action: `Client requested revisions on post ${postId}` });
+    } catch (_) {}
+    msg.className   = 'approval-msg revision';
+    msg.textContent = '↺ Revision requested. The team has been notified.';
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   POST DETAIL MODAL
+═══════════════════════════════════════════════ */
+let _modalPostId = '';
+
+function openPostModal(postId) {
+  const post = allPosts.find(p => (getPostId(p)||'').toLowerCase() === postId.toLowerCase());
+  if (!post) { showToast('Post not found', 'error'); return; }
+  _modalPostId = getPostId(post);
+  document.getElementById('pmd-title').textContent   = getTitle(post);
+  document.getElementById('pmd-id').textContent      = _modalPostId;
+  document.getElementById('pmd-owner').textContent   = post.owner||'—';
+  document.getElementById('pmd-date').textContent    = formatDate(post.targetDate)||'—';
+  document.getElementById('pmd-stage').textContent   = post.stage||'—';
+  document.getElementById('pmd-comments').textContent = post.comments||'No comments.';
+  document.getElementById('pmd-postlink').value = post.postLink || post.post_link || '';
+  const sel   = document.getElementById('pmd-stage-select');
+  const match = Array.from(sel.options).find(o=>o.value.toLowerCase()===(post.stage||'').trim().toLowerCase());
+  sel.value = match ? match.value : sel.options[0].value;
+
+  // Admin: show editable fields
+  const adminFields = document.getElementById('pmd-admin-fields');
+  const commentsStatic = document.getElementById('pmd-comments');
+  if (currentRole === 'Admin') {
+    adminFields.style.display = '';
+    commentsStatic.style.display = 'none';
+    document.getElementById('pmd-comments-edit').value = post.comments || '';
+    document.getElementById('pmd-date-input').value = post.targetDate || '';
+    const ownerSel = document.getElementById('pmd-owner-select');
+    const ownerMatch = Array.from(ownerSel.options).find(o => o.value === (post.owner||''));
+    ownerSel.value = ownerMatch ? ownerMatch.value : '';
+  } else {
+    adminFields.style.display = 'none';
+    commentsStatic.style.display = '';
+  }
+
+  document.getElementById('pmd-save-btn').disabled = false;
+  document.getElementById('pmd-saving').classList.remove('active');
+  document.getElementById('post-modal-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closePostModal(e) {
+  if (e && e.target !== document.getElementById('post-modal-overlay')) return;
+  document.getElementById('post-modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  _modalPostId = '';
+}
+
+async function saveStageUpdate() {
+  const newStage  = document.getElementById('pmd-stage-select').value;
+  const newLink   = document.getElementById('pmd-postlink').value.trim();
+  if (!_modalPostId || !newStage) { showToast('Missing post ID or stage', 'error'); return; }
+  const saveBtn   = document.getElementById('pmd-save-btn');
+  const savingMsg = document.getElementById('pmd-saving');
+  saveBtn.disabled = true;
+  savingMsg.classList.add('active');
+  try {
+    const body = { stage: newStage };
+    if (newLink) body.post_link = newLink;
+    // Admin: save all editable fields
+    if (currentRole === 'Admin') {
+      const caption = document.getElementById('pmd-comments-edit').value.trim();
+      const date    = document.getElementById('pmd-date-input').value;
+      const owner   = document.getElementById('pmd-owner-select').value;
+      if (caption)  body.comments    = caption;
+      if (date)     body.target_date = date;
+      if (owner)    body.owner       = owner;
+    }
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(_modalPostId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+    document.getElementById('post-modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    _modalPostId = '';
+    await loadPosts();
+    showToast(`Saved ✓`, 'success');
+  } catch (err) {
+    console.error('saveStageUpdate:', err);
+    showToast('Failed — check connection', 'error');
+    saveBtn.disabled = false;
+    savingMsg.classList.remove('active');
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════ */
+function goToTab(tabName) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+  if (btn && btn.style.display !== 'none') switchTab(btn);
+}
+function goToLibraryFiltered(stageName) {
+  goToTab('library');
+  const stageEl = document.getElementById('filter-stage');
+  if (stageEl) {
+    const match = Array.from(stageEl.options).find(o=>o.value.toLowerCase()===stageName.toLowerCase());
+    stageEl.value = match ? match.value : '';
+    filterLibrary();
+  }
+}
+function goToPipelineStage(stageName) {
+  goToTab('pipeline');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const needle = stageName.toLowerCase();
+    document.querySelectorAll('.pipeline-col').forEach(col => {
+      const label = col.querySelector('.pipeline-col-label');
+      if (label && label.textContent.toLowerCase().includes(needle)) {
+        col.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'start' });
+      }
+    });
+  }));
+}
+function switchTab(btn) {
+  document.querySelectorAll('#dashboard-view .tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#dashboard-view .tab-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`panel-${btn.dataset.tab}`)?.classList.add('active');
+}
+function switchClientTab(btn) {} // legacy compat
+
+/* ═══════════════════════════════════════════════
+   COPY APPROVAL LINK
+═══════════════════════════════════════════════ */
+function copyApprovalLink(url) {
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('Approval link copied!', 'info'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Link copied!', 'info');
+    });
+}
+
+/* ═══════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className=''; }, 2800);
+}
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+function getTitle(p) {
+  return p.title || p.Title || p['Post Topic'] || p.postTopic || 'Untitled';
+}
+function getPostId(p) {
+  return p.post_id || p['Post ID'] || p.postId || p.id || '';
+}
+function parseDate(raw) {
+  if (!raw) return null;
+  const s   = String(raw).trim();
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) { const d=new Date(+dmy[3],+dmy[2]-1,+dmy[1]); return isNaN(d)?null:d; }
+  const d = new Date(s);
+  return isNaN(d) ? null : d;
+}
+function formatDate(raw) {
+  const d = parseDate(raw);
+  if (!d) return '';
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function esc(str) {
+  return String(str||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/* Legacy stubs */
+function submitPostRequest() { submitClientRequest(); }
+function renderClientApprovedLegacy() { renderClientApproved(); }
+</script>
+</body>
+</html>
