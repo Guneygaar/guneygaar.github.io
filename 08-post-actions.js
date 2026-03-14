@@ -320,8 +320,14 @@ const _pcs = {
   list:    [],
   idx:     0,
 };
+let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
 
 function openPCS(postId, listKey) {
+  // Cancel any deferred forcePCSReset from a previous closePCS() —
+  // without this, a rapid close→open reopens the sheet, then the
+  // stale timer fires 300ms later and nukes it back to hidden.
+  if (_pcsCloseTimer) { clearTimeout(_pcsCloseTimer); _pcsCloseTimer = null; }
+
   // Force-clean any stale PCS state from a previous session
   forcePCSReset();
 
@@ -342,16 +348,16 @@ function openPCS(postId, listKey) {
   overlay.style.display       = '';
   overlay.style.pointerEvents = '';
 
-  // Safari fix: after swipe-close leaves an inline translateY(100%),
-  // re-adding .open in the same frame won't trigger a transition.
-  // Force the off-screen position with transitions disabled, then
-  // use rAF to animate in — guarantees Safari registers the change.
   if (screen) {
     screen.style.cssText       = '';
     screen.style.willChange    = '';
     screen.style.pointerEvents = '';
+    // Safari fix: force the off-screen starting position with transitions
+    // disabled. Without this, Safari may not see a transform change if
+    // the computed value is already translateY(100%) from the CSS rule.
     screen.style.transition    = 'none';
     screen.style.transform     = 'translateY(100%)';
+    console.log('[PCS TRANSFORM WRITE] translateY(100%) — openPCS init');
   }
 
   window._modalOpen = true;
@@ -367,19 +373,31 @@ function openPCS(postId, listKey) {
     return;
   }
 
-  // Frame break: let Safari commit the off-screen position, then animate in
+  // Double-rAF frame break: Safari needs a
+  // compositing pass to commit
+  // the off-screen position before we animate to translateY(0).
+  // A single rAF can coalesce on Safari 16+.
   if (screen) {
     requestAnimationFrame(function() {
-      screen.style.transition = 'transform 260ms ease';
-      screen.style.transform  = 'translateY(0)';
+      requestAnimationFrame(function() {
+        console.log('[PCS TRANSFORM WRITE] translateY(0) — openPCS double-rAF');
+        screen.style.transition = 'transform 260ms ease';
+        screen.style.transform  = 'translateY(0)';
+      });
     });
   }
 }
 
 function closePCS() {
   forcePCSReset();
-  // Safety: re-verify after animations settle (catches mobile compositor lag)
-  setTimeout(forcePCSReset, 300);
+  // Safety: re-verify after animations settle (catches mobile compositor lag).
+  // Store the timer so openPCS can cancel it if the user reopens quickly.
+  if (_pcsCloseTimer) clearTimeout(_pcsCloseTimer);
+  _pcsCloseTimer = setTimeout(function() {
+    console.log('[PCS TRANSFORM WRITE] deferred forcePCSReset firing (300ms timer)');
+    _pcsCloseTimer = null;
+    forcePCSReset();
+  }, 300);
 }
 
 // ═══════════════════════════════════════════════
@@ -394,6 +412,7 @@ function forcePCSReset() {
   // 1. Nuke ALL inline styles on screen — catches any stale transform,
   //    transition, opacity, or anything else set by any code path
   if (screen) {
+    console.log('[PCS TRANSFORM WRITE] cssText="" — forcePCSReset');
     screen.style.cssText = '';
     // Tear down GPU compositing layer (mobile Safari ghost-layer fix)
     screen.style.willChange    = 'auto';
@@ -433,6 +452,7 @@ function _resetSwipeStyles() {
   _swipe.moved = false;
   var screen = document.getElementById('pcs-screen');
   if (screen) {
+    console.log('[PCS TRANSFORM WRITE] "" — _resetSwipeStyles');
     screen.style.transform  = '';
     screen.style.opacity    = '';
     screen.style.transition = '';
@@ -543,6 +563,7 @@ function _pcsTouchEnd(e) {
       if (!screen || dy <= 0) { _resetSwipeStyles(); return; }
       if (dy > 90) {
         // Committed — animate off bottom then close
+        console.log('[PCS TRANSFORM WRITE] translateY(100%) — swipe-close commit');
         screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
         screen.style.transform  = 'translateY(100%)';
         setTimeout(closePCS, 290);
