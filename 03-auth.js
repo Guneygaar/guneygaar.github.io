@@ -3,15 +3,34 @@
    Uses 6-digit OTP code (no magic links)
 =============================================== */
 
-// Prevent concurrent refresh calls from racing each other
-let _refreshInProgress = null;
+// Mutex: prevents concurrent tabs or calls from racing on token refresh.
+// Uses localStorage as the lock so it works across tabs.
+const _REFRESH_LOCK_KEY = 'gbl_refresh_lock';
+const _REFRESH_LOCK_TTL = 10000; // 10 seconds max lock hold
+
+let _refreshInProgress = null; // within-tab dedup promise
 
 async function refreshSession() {
-  // If a refresh is already in-flight, wait for it instead of firing another
+  // Within-tab dedup: if we're already refreshing, wait for that promise
   if (_refreshInProgress) return _refreshInProgress;
 
   const refreshToken = localStorage.getItem('sb_refresh_token');
   if (!refreshToken) return null;
+
+  // Cross-tab lock: check if another tab is currently refreshing
+  const lockVal = localStorage.getItem(_REFRESH_LOCK_KEY);
+  if (lockVal) {
+    const lockTime = parseInt(lockVal, 10);
+    if (Date.now() - lockTime < _REFRESH_LOCK_TTL) {
+      // Another tab holds the lock — wait briefly then read their result
+      await new Promise(r => setTimeout(r, 1500));
+      // After waiting, return whatever token is now in storage
+      return localStorage.getItem('sb_access_token') || null;
+    }
+  }
+
+  // Acquire lock with timestamp
+  localStorage.setItem(_REFRESH_LOCK_KEY, Date.now().toString());
 
   _refreshInProgress = (async () => {
     try {
@@ -35,20 +54,24 @@ async function refreshSession() {
     return await _refreshInProgress;
   } finally {
     _refreshInProgress = null;
+    localStorage.removeItem(_REFRESH_LOCK_KEY);
   }
 }
 
 function showLoginOverlay() {
-  document.getElementById('login-overlay').classList.remove('hidden');
+  const el = document.getElementById('login-overlay');
+  if (!el) return;
+  el.classList.remove('hidden');
   backToEmail();
 }
 
 function backToEmail() {
-  document.getElementById('login-email-step').classList.add('active');
+  document.getElementById('login-email-step')?.classList.add('active');
   document.getElementById('login-code-step')?.classList.remove('active');
   document.getElementById('login-sent-step')?.classList.remove('active');
   document.getElementById('login-verify-step')?.classList.remove('active');
-  document.getElementById('login-error').textContent = '';
+  const errEl = document.getElementById('login-error');
+  if (errEl) errEl.textContent = '';
 }
 
 window.sendMagicLink = async function sendMagicLink() {
@@ -58,6 +81,7 @@ window.sendMagicLink = async function sendMagicLink() {
     return;
   }
   const btn = document.querySelector('#login-email-step .btn-modal-primary');
+  if (!btn) return;
   btn.disabled = true;
   btn.textContent = 'Sending...';
   document.getElementById('login-error').textContent = '';
@@ -76,7 +100,8 @@ window.sendMagicLink = async function sendMagicLink() {
     const codeStep = document.getElementById('login-code-step');
     if (codeStep) {
       codeStep.classList.add('active');
-      document.getElementById('login-code-email-display').textContent = email;
+      const disp = document.getElementById('login-code-email-display');
+      if (disp) disp.textContent = email;
       setTimeout(() => document.getElementById('login-code-input')?.focus(), 100);
     }
   } catch (err) {
@@ -90,13 +115,16 @@ window.verifyOTPCode = async function verifyOTPCode() {
   const email = localStorage.getItem('gbl_pending_email') || '';
   const code  = (document.getElementById('login-code-input')?.value || '').trim();
   if (!code || code.length < 6) {
-    document.getElementById('login-code-error').textContent = 'Please enter the 6-digit code.';
+    const el = document.getElementById('login-code-error');
+    if (el) el.textContent = 'Please enter the 6-digit code.';
     return;
   }
   const btn = document.getElementById('login-verify-code-btn');
+  if (!btn) return;
   btn.disabled = true;
   btn.textContent = 'Verifying...';
-  document.getElementById('login-code-error').textContent = '';
+  const errEl = document.getElementById('login-code-error');
+  if (errEl) errEl.textContent = '';
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
       method: 'POST',
@@ -116,7 +144,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
     localStorage.removeItem('gbl_pending_email');
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
-    document.getElementById('login-code-error').textContent = err.message || 'Incorrect code - try again.';
+    if (errEl) errEl.textContent = err.message || 'Incorrect code - try again.';
     btn.disabled = false;
     btn.textContent = 'Verify ->';
   }
@@ -131,20 +159,22 @@ async function resolveRoleFromToken(accessToken, email) {
     const roleData = await roleRes.json();
     const role = Array.isArray(roleData) && roleData[0]?.role;
     if (!role) {
-      document.getElementById('login-code-error').textContent =
-        `No role found for ${email}. Ask your admin.`;
+      const el = document.getElementById('login-code-error');
+      if (el) el.textContent = `No role found for ${email}. Ask your admin.`;
       return;
     }
     localStorage.setItem('gbl_role', role);
     localStorage.setItem('gbl_email', email);
-    document.getElementById('login-overlay').classList.add('hidden');
+    const overlay = document.getElementById('login-overlay');
+    if (overlay) overlay.classList.add('hidden');
     activateRole(role);
   } catch (err) {
-    document.getElementById('login-code-error').textContent = 'Login failed - try again.';
+    const el = document.getElementById('login-code-error');
+    if (el) el.textContent = 'Login failed - try again.';
   }
 }
 
-// Legacy support for old magic link URLs — guarded against infinite recursion
+// Legacy magic link support — depth-guarded to prevent infinite recursion
 async function handleMagicLinkToken(accessToken, _retried = false) {
   try {
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -174,6 +204,7 @@ function logout() {
   localStorage.removeItem('sb_access_token');
   localStorage.removeItem('sb_refresh_token');
   localStorage.removeItem('gbl_pending_email');
+  localStorage.removeItem(_REFRESH_LOCK_KEY);
   stopRealtime();
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');
@@ -182,14 +213,16 @@ function logout() {
 
 function activateRole(role) {
   currentRole = role;
-  document.getElementById('login-overlay').classList.add('hidden');
+  const overlay = document.getElementById('login-overlay');
+  if (overlay) overlay.classList.add('hidden');
   updateActionButton();
   if (role === 'Client') {
-    document.getElementById('client-view').classList.add('active');
+    document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
   } else {
-    document.getElementById('dashboard-view').classList.add('active');
-    document.getElementById('topbar-role-label').textContent = role;
+    document.getElementById('dashboard-view')?.classList.add('active');
+    const lbl = document.getElementById('topbar-role-label');
+    if (lbl) lbl.textContent = role;
     loadPosts();
     loadTasks();
     startRealtime();
