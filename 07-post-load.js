@@ -1013,7 +1013,7 @@ function renderLibraryCalendar(posts) {
 // Single document-level listener — survives ALL innerHTML replacements.
 // Covers: .row-tile, .calendar-item, .upc-list-row (any element with data-post-id)
 // ═══════════════════════════════════════════════
-document.addEventListener('click', function _cardClickDelegate(e) {
+(document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
   var postId  = card.dataset.postId;
