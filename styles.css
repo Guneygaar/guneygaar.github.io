@@ -666,13 +666,26 @@ a:hover { text-decoration: underline; }
   flex: 1;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: var(--sp-4) var(--sp-4) calc(64px + var(--sp-5));
+  padding: 0 0 calc(64px + var(--sp-5));
   min-height: 0;
+  position: relative;
 }
 
-@media (min-width: 768px) {
-  .dash-body { padding: var(--sp-5) var(--sp-5) calc(64px + var(--sp-5)); }
+/* Panels that don't start with a sticky header need their own top padding */
+#panel-upcoming .dash-body,
+#panel-library  .dash-body {
+  padding-top: var(--sp-4);
+  padding-left: var(--sp-4);
+  padding-right: var(--sp-4);
 }
+
+/* Stage chips in My Tasks also need horizontal breathing room */
+#panel-tasks .dash-body {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+
 
 /* ═══════════════════════════════════════════════
    HERO CARD — Zone 1
@@ -2456,7 +2469,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: var(--sp-2);
   padding: 12px 16px;
   position: sticky;
-  top: 56px;
+  top: 0;
   background: var(--bg);
   z-index: 4;
   border-bottom: 1px solid var(--border);
