@@ -344,6 +344,7 @@ function openPCS(postId, listKey) {
 }
 
 function closePCS() {
+  console.log('[PCS] closePCS called — _modalOpen=' + _modalOpen + ', body.overflow=' + document.body.style.overflow);
   try {
     const _ov = document.getElementById('pcs-overlay');
     if (_ov) _ov.classList.remove('open');
@@ -352,16 +353,17 @@ function closePCS() {
     _removePcsConfirm();
     _pcs.postId = null;
   } finally {
-    // These MUST run even if something above throws
     document.body.style.overflow = '';
     _modalOpen = false;
     _drainDeferredRender();
+    console.log('[PCS] closePCS done — _modalOpen=' + _modalOpen + ', confirms=' + document.querySelectorAll('.pcs-confirm-overlay').length);
   }
 }
 
 // ── Swipe state reset (guaranteed cleanup) ───
 function _resetSwipeStyles() {
-  _swipe.lock = null;
+  _swipe.lock  = null;
+  _swipe.moved = false;
   const screen = document.getElementById('pcs-screen');
   if (screen) {
     screen.style.transform  = '';
@@ -384,7 +386,7 @@ function _pcsAttachSwipe() {
   screen.addEventListener('touchcancel', _pcsTouchCancel, { passive: true });
 }
 
-const _swipe = { x0: 0, y0: 0, lock: null, active: false }; // lock: null | 'h' | 'v'
+const _swipe = { x0: 0, y0: 0, lock: null, active: false, moved: false }; // lock: null | 'h' | 'v'
 
 function _pcsTouchStart(e) {
   if (e.touches.length !== 1) return;
@@ -392,7 +394,8 @@ function _pcsTouchStart(e) {
   _swipe.y0     = e.touches[0].clientY;
   _swipe.lock   = null;
   _swipe.active = true;
-  // transition: none is set lazily in _pcsTouchMove once we detect real movement
+  _swipe.moved  = false;
+  console.log('[PCS] touchstart y0=' + _swipe.y0);
 }
 
 function _pcsTouchMove(e) {
@@ -414,9 +417,11 @@ function _pcsTouchMove(e) {
     const scrollEl = document.getElementById('pcs-scroll');
     if (scrollEl && scrollEl.scrollTop === 0) {
       e.preventDefault();
+      _swipe.moved = true;
       const screen = document.getElementById('pcs-screen');
       if (screen) screen.style.transform = `translateY(${Math.max(0, dy)}px)`;
     }
+    // else: scrollTop > 0 — let browser handle as native scroll, do NOT set moved
     return;
   }
 
@@ -434,7 +439,7 @@ function _pcsTouchMove(e) {
 }
 
 function _pcsTouchCancel() {
-  // Browser interrupted the gesture — reset everything immediately
+  console.log('[PCS] touchcancel — resetting');
   _swipe.active = false;
   _resetSwipeStyles();
 }
@@ -454,14 +459,23 @@ function _pcsTouchEnd(e) {
   // Vertical close gesture
   if (_swipe.lock === 'v') {
     _swipe.lock = null;
+    // If the screen was never visually dragged (user was scrolling content),
+    // do NOT close — just reset styles and bail out.
+    if (!_swipe.moved) {
+      console.log('[PCS] vertical end — content scroll only, no close (moved=false)');
+      _resetSwipeStyles();
+      return;
+    }
     if (!screen || dy <= 0) { _resetSwipeStyles(); return; }
     if (dy > 90) {
       // Committed — animate off bottom then close
+      console.log('[PCS] vertical drag committed close (dy=' + dy + ')');
       screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
       screen.style.transform  = `translateY(100%)`;
       setTimeout(closePCS, 290);
     } else {
       // Spring back — restore to CSS-controlled position
+      console.log('[PCS] vertical drag spring-back (dy=' + dy + ')');
       screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
       screen.style.transform  = 'translateY(0)';
       setTimeout(_resetSwipeStyles, 300);
