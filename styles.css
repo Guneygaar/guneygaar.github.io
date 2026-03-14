@@ -2074,12 +2074,15 @@ tr:hover td { background: var(--surface2); }
 /* Horizontally scrolling filter chip row */
 .lib-filter-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   gap: 6px;
   padding: 8px 16px;
+  width: 100%;
+  box-sizing: border-box;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .lib-filter-chip {
@@ -2093,6 +2096,8 @@ tr:hover td { background: var(--surface2); }
   color: var(--text2);
   font-family: inherit;
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
@@ -2101,6 +2106,7 @@ tr:hover td { background: var(--surface2); }
   padding-right: 24px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 .lib-filter-chip:focus { outline: none; border-color: var(--accent); }
