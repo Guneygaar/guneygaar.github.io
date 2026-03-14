@@ -323,100 +323,89 @@ const _pcs = {
 
 function openPCS(postId, listKey) {
   // Force-clean any stale PCS state from a previous session
-  _forcePCSCleanup();
+  forcePCSReset();
 
   var list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
     : allPosts;
-  const idx = list.findIndex(p => getPostId(p) === postId);
+  var idx = list.findIndex(function(p) { return getPostId(p) === postId; });
   _pcs.listKey = listKey || '';
   _pcs.list    = list;
   _pcs.idx     = idx >= 0 ? idx : 0;
   _pcs.postId  = postId;
 
-  const _overlay = document.getElementById('pcs-overlay');
-  if (!_overlay) return;
+  var overlay = document.getElementById('pcs-overlay');
+  if (!overlay) return;
+  var screen = document.getElementById('pcs-screen');
+
+  // Clear all inline overrides set by forcePCSReset before opening
+  overlay.style.display       = '';
+  overlay.style.pointerEvents = '';
+  if (screen) {
+    screen.style.cssText       = '';
+    screen.style.willChange    = '';
+    screen.style.pointerEvents = '';
+  }
+
   _modalOpen = true;
-  _overlay.classList.add('open');
+  overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
   _renderPCS(postId);
   _pcsAttachSwipe();
 }
 
 function closePCS() {
-  _forcePCSCleanup();
-  // Safety: re-verify after animations settle
-  setTimeout(_verifyPCSCleanup, 400);
+  forcePCSReset();
+  // Safety: re-verify after animations settle (catches mobile compositor lag)
+  setTimeout(forcePCSReset, 300);
 }
 
-// ── Nuclear cleanup — guarantees no PCS state can leak ───
-function _forcePCSCleanup() {
-  // 1. Clear inline styles on screen (transform, opacity, transition)
-  var screen = document.getElementById('pcs-screen');
-  if (screen) {
-    screen.style.transform  = '';
-    screen.style.opacity    = '';
-    screen.style.transition = '';
-  }
-  // 2. Close overlay
+// ═══════════════════════════════════════════════
+// forcePCSReset — single authoritative cleanup
+// Tears down ALL PCS visual state, compositing layers,
+// and event-capturing surfaces. Safe to call multiple times.
+// ═══════════════════════════════════════════════
+function forcePCSReset() {
+  var screen  = document.getElementById('pcs-screen');
   var overlay = document.getElementById('pcs-overlay');
-  if (overlay) overlay.classList.remove('open');
-  // 3. Remove confirm overlays
-  document.querySelectorAll('.pcs-confirm-overlay').forEach(function(el) { el.remove(); });
-  // 4. Reset body
+
+  // 1. Nuke ALL inline styles on screen — catches any stale transform,
+  //    transition, opacity, or anything else set by any code path
+  if (screen) {
+    screen.style.cssText = '';
+    // Tear down GPU compositing layer (mobile Safari ghost-layer fix)
+    screen.style.willChange    = 'auto';
+    // Block the screen from capturing any touch/click events
+    screen.style.pointerEvents = 'none';
+  }
+
+  // 2. Remove .open class AND force display:none as inline backup
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.style.display      = 'none';
+    overlay.style.pointerEvents = 'none';
+  }
+
+  // 3. Remove dynamically-created confirm overlays
+  document.querySelectorAll('.pcs-confirm-overlay').forEach(
+    function(el) { el.remove(); }
+  );
+
+  // 4. Reset body scroll lock
   document.body.style.overflow = '';
-  // 5. Reset state flags
-  _modalOpen    = false;
-  _swipe.lock   = null;
-  _swipe.active = false;
-  _swipe.moved  = false;
+
+  // 5. Reset all state flags
+  _modalOpen = false;
+  _swipe     = { x0: 0, y0: 0, lock: null, active: false, moved: false };
+
   // 6. Clear PCS context
   _pcs.postId = null;
-  // 7. Drain deferred renders
+
+  // 7. Flush any deferred background renders
   _drainDeferredRender();
 }
 
-// ── Safety verification — catches anything _forcePCSCleanup missed ───
-function _verifyPCSCleanup() {
-  var overlay = document.getElementById('pcs-overlay');
-  var isOpen  = overlay && overlay.classList.contains('open');
-  // If PCS is not supposed to be open, verify everything is clean
-  if (!isOpen) {
-    var screen = document.getElementById('pcs-screen');
-    if (screen && (screen.style.transform || screen.style.opacity || screen.style.transition)) {
-      console.warn('[PCS] _verifyPCSCleanup: stale inline styles — forcing cleanup');
-      screen.style.transform  = '';
-      screen.style.opacity    = '';
-      screen.style.transition = '';
-    }
-    // Only clear body overflow if no OTHER modal is open
-    if (document.body.style.overflow === 'hidden') {
-      var anyModal = document.querySelector(
-        '#post-modal-overlay.open, #admin-edit-overlay.open, #new-post-overlay.open, ' +
-        '#snooze-overlay.open, #timeline-overlay.open, #request-sheet-overlay.open'
-      );
-      if (!anyModal) {
-        console.warn('[PCS] _verifyPCSCleanup: body overflow stuck — clearing');
-        document.body.style.overflow = '';
-      }
-    }
-    // Only clear _modalOpen if no modal is actually open
-    if (_modalOpen) {
-      var anyOpen = document.querySelector(
-        '#pcs-overlay.open, #post-modal-overlay.open, #admin-edit-overlay.open, ' +
-        '#new-post-overlay.open, #snooze-overlay.open, #timeline-overlay.open, #request-sheet-overlay.open'
-      );
-      if (!anyOpen) {
-        console.warn('[PCS] _verifyPCSCleanup: _modalOpen stuck — clearing');
-        _modalOpen = false;
-        _drainDeferredRender();
-      }
-    }
-    document.querySelectorAll('.pcs-confirm-overlay').forEach(function(el) { el.remove(); });
-  }
-}
-
-// ── Swipe style reset (clears inline styles, PCS stays open) ───
+// ── Swipe style reset (lightweight — PCS stays open) ───
 function _resetSwipeStyles() {
   _swipe.lock  = null;
   _swipe.moved = false;
@@ -442,7 +431,7 @@ function _pcsAttachSwipe() {
   screen.addEventListener('touchcancel', _pcsTouchCancel, { passive: true });
 }
 
-const _swipe = { x0: 0, y0: 0, lock: null, active: false, moved: false }; // lock: null | 'h' | 'v'
+let _swipe = { x0: 0, y0: 0, lock: null, active: false, moved: false }; // lock: null | 'h' | 'v'
 
 function _pcsTouchStart(e) {
   if (e.touches.length !== 1) return;
@@ -499,7 +488,7 @@ function _pcsTouchMove(e) {
 
 function _pcsTouchCancel() {
   _swipe.active = false;
-  _resetSwipeStyles();
+  forcePCSReset();
 }
 
 function _pcsTouchEnd(e) {
@@ -565,9 +554,9 @@ function _pcsTouchEnd(e) {
       setTimeout(_resetSwipeStyles, 260);
     }
   } catch (err) {
-    // If ANYTHING throws, force full cleanup so the UI never locks
-    console.error('[PCS] _pcsTouchEnd exception — forcing cleanup:', err);
-    _resetSwipeStyles();
+    // If ANYTHING throws, nuclear cleanup so the UI never locks
+    console.error('[PCS] _pcsTouchEnd exception — forcing reset:', err);
+    forcePCSReset();
   }
 }
 
