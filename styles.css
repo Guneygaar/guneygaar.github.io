@@ -655,7 +655,7 @@ a:hover { text-decoration: underline; }
 .dash-body {
   flex: 1;
   overflow-y: auto;
-  padding: calc(56px + var(--sp-4)) var(--sp-4) calc(64px + var(--sp-5));
+  padding: var(--sp-4) var(--sp-4) calc(64px + var(--sp-5));
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
@@ -2586,18 +2586,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 ═══════════════════════════════════════════════ */
 
 .app-header {
-  position: fixed;
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
   height: 56px;
-  z-index: 500;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
 }
 
 .app-header-role {
@@ -2713,8 +2714,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: fixed;
   right: 16px;
   bottom: 80px;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--accent);
   color: var(--bg);
@@ -2722,7 +2723,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 .fab:active { transform: scale(0.94); }
