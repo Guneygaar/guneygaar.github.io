@@ -256,15 +256,7 @@ async function flagIssue(postId) {
   } catch { showToast('Failed — try again', 'error'); }
 }
 
-function handleBucketDrop(event, targetPostId) {
-  event.preventDefault();
-  event.currentTarget.classList.remove('drag-over');
-  const sourcePostId = event.dataTransfer.getData('text/plain');
-  if (!sourcePostId || sourcePostId === targetPostId) return;
-  const targetPost = allPosts.find(p => getPostId(p) === targetPostId);
-  if (!targetPost) return;
-  quickStage(sourcePostId, targetPost.stage);
-}
+// (handleBucketDrop removed — was dead code, never wired to DOM)
 
 async function nudgeClient(postId, title, targetDate) {
   const days      = daysInStage(allPosts.find(p=>getPostId(p)===postId));
@@ -316,94 +308,7 @@ function timeAgo(iso) {
   return `${Math.floor(diff/86400)}d ago`;
 }
 
-// ── Drag & Drop (desktop + mobile) ───────────
-let _dragPostId   = null;
-let _dragStage    = null;
-let _isDragging   = false;
-let _touchTimer   = null;
-let _touchGhost   = null;
-let _touchStartY  = 0;
-
-function onPcardDragStart(event, postId, stage) {
-  _dragPostId = postId;
-  _dragStage  = stage;
-  event.dataTransfer.effectAllowed = 'move';
-  event.dataTransfer.setData('text/plain', postId);
-  event.currentTarget.classList.add('pcard-dragging');
-}
-
-function onPcardDragEnd(event) {
-  event.currentTarget.classList.remove('pcard-dragging');
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  _dragPostId = null;
-  _dragStage  = null;
-}
-
-function onStageDrop(event, dropZone) {
-  event.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const targetStage = dropZone.dataset.stage;
-  const postId = _dragPostId || event.dataTransfer.getData('text/plain');
-  if (!postId || !targetStage || targetStage === _dragStage) return;
-  // Capitalise to match DB values
-  const stageMap = {};
-  (window.PIPELINE_ORDER || []).forEach(s => { stageMap[s.toLowerCase()] = s; });
-  const newStage = stageMap[targetStage] || targetStage;
-  quickStage(postId, newStage);
-}
-
-// Mobile long-press drag
-function onPcardTouchStart(event, postId) {
-  _touchStartY = event.touches[0].clientY;
-  _isDragging  = false;
-  _touchTimer  = setTimeout(() => {
-    _isDragging = true;
-    _dragPostId = postId;
-    const card = event.currentTarget;
-    const rect = card.getBoundingClientRect();
-    _touchGhost = card.cloneNode(true);
-    _touchGhost.style.cssText = `
-      position:fixed; left:${rect.left}px; top:${rect.top}px;
-      width:${rect.width}px; opacity:0.75; pointer-events:none;
-      z-index:9999; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
-      transform:scale(1.02);`;
-    document.body.appendChild(_touchGhost);
-    card.style.opacity = '0.3';
-    if (navigator.vibrate) navigator.vibrate(40);
-  }, 500);
-}
-
-function onPcardTouchMove(event) {
-  const dy = Math.abs(event.touches[0].clientY - _touchStartY);
-  if (dy > 8 && !_isDragging) { clearTimeout(_touchTimer); return; }
-  if (!_isDragging) return;
-  event.preventDefault();
-  const touch = event.touches[0];
-  if (_touchGhost) {
-    _touchGhost.style.top = (touch.clientY - 40) + 'px';
-  }
-  // Highlight drop zone under finger
-  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const zone = el?.closest('.pstage-cards');
-  if (zone) zone.classList.add('drag-over');
-}
-
-function onPcardTouchEnd(event) {
-  clearTimeout(_touchTimer);
-  if (!_isDragging) return;
-  _isDragging = false;
-  const touch = event.changedTouches[0];
-  if (_touchGhost) { _touchGhost.remove(); _touchGhost = null; }
-  // Restore card opacity
-  const card = document.getElementById(`pcard-${_dragPostId}`);
-  if (card) card.style.opacity = '';
-  // Find drop zone
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const zone = el?.closest('.pstage-cards');
-  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
-  if (zone) onStageDrop(event, zone);
-}
+// (Drag & Drop handlers removed — were dead code, never wired to DOM)
 
 // ═══════════════════════════════════════════════
 // PCS — Post Control Screen
@@ -438,8 +343,16 @@ function openPCS(postId, listKey) {
 function closePCS() {
   const _ov = document.getElementById('pcs-overlay');
   if (_ov) _ov.classList.remove('open');
+  // Reset any residual inline styles from swipe animations
+  const screen = document.getElementById('pcs-screen');
+  if (screen) {
+    screen.style.transform  = '';
+    screen.style.opacity    = '';
+    screen.style.transition = '';
+  }
   document.body.style.overflow = '';
   _pcs.postId = null;
+  _swipe.lock = null;
   _modalOpen = false;
   _drainDeferredRender();
 }
@@ -508,6 +421,7 @@ function _pcsTouchEnd(e) {
 
   // Vertical close gesture
   if (_swipe.lock === 'v' && dy > 0) {
+    _swipe.lock = null;
     if (!screen) return;
     if (dy > 90) {
       // Committed — animate off bottom then close
@@ -523,7 +437,8 @@ function _pcsTouchEnd(e) {
     return;
   }
 
-  if (_swipe.lock !== 'h') return;
+  if (_swipe.lock !== 'h') { _swipe.lock = null; return; }
+  _swipe.lock = null;
   const dx  = e.changedTouches[0].clientX - _swipe.x0;
   if (!screen) return;
 
@@ -560,6 +475,7 @@ function _pcsNext() {
         <div>No posts left.</div>
       </div>`;
     if (screen) {
+      // Reset any leftover swipe styles before animating in
       screen.style.transform  = 'translateX(28px)';
       screen.style.opacity    = '0';
       screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
@@ -568,6 +484,7 @@ function _pcsNext() {
         screen.style.opacity   = '1';
       });
     }
+    // closePCS resets all inline styles, so safe to defer
     setTimeout(closePCS, 1800);
     return;
   }
