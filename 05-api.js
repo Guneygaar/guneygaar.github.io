@@ -35,6 +35,7 @@ function normalise(rows) {
     targetDate:    r.target_date    || '',
     postLink:      r.post_link      || '',
     comments:      r.comments       || '',
+    format:        r.format         || '',
     post_id:       r.post_id        || r.id || '',
     created_at:    r.created_at     || '',
     updated_at:    r.updated_at     || '',
