@@ -548,13 +548,11 @@ function _renderFilteredTasks() {
     return;
   }
   container.innerHTML = `
-    <div class="pstages">
       <div class="pstage-header">
         <span class="pstage-name">${esc(bucket.label)}</span>
         <span class="pstage-badge">${posts.length}</span>
       </div>
-      <div class="row-list">${posts.map(p => buildPostCard(p, listKey)).join('')}</div>
-    </div>`;
+      <div class="row-list">${posts.map(p => buildPostCard(p, listKey)).join('')}</div>`;
 }
 
 function renderTasks() {
@@ -596,7 +594,7 @@ function renderTasks() {
       </div>
       <div class="row-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>`;
   }).join('');
-  container.innerHTML = `<div class="pstages">${stagesHtml}</div>`;
+  container.innerHTML = stagesHtml;
 }
 
 function toggleStageOverflow(btn, totalHidden) {
@@ -643,8 +641,7 @@ function renderPipeline() {
         ${cards || `<div class="pstage-empty">Empty</div>`}
       </div>`;
   }).join('');
-  document.getElementById('pipeline-container').innerHTML =
-    `<div class="pstages">${html}</div>`;
+  document.getElementById('pipeline-container').innerHTML = html;
 }
 
 function getUpcoming() {
