@@ -1,6 +1,8 @@
-/* ═══════════════════════════════════════════════
-   07-post-load.js — Data loading & all render*
-═══════════════════════════════════════════════ */
+/* ===============================================
+   07-post-load.js - Data loading & all render*
+=============================================== */
+
+// Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 function showLoadingSkeleton(containerId) {
   const el = document.getElementById(containerId);
@@ -201,7 +203,7 @@ function renderPipelineStrip() {
   const strip = document.getElementById('pipeline-strip');
   const wrap  = document.getElementById('pipeline-strip-wrap');
   if (!strip) return;
-  // Pipeline strip tiles removed — always keep hidden
+  // Pipeline strip tiles removed - always keep hidden
   if (wrap) wrap.style.display = 'none';
   return;
   const html = STRIP_STAGES.map((group) => {
@@ -367,7 +369,9 @@ function daysInStage(post) {
 function staleLabel(days, stageName) {
   if (days === null || days < 3) return null;
   if (stageName) {
-    const short = {'awaiting approval':'Approval','awaiting brand input':'Waiting','in production':'Production','revisions needed':'Revisions','ready':'Ready','scheduled':'Scheduled'}[stageName.toLowerCase().trim()] || stageName;
+    const key = stageName.toLowerCase().trim();
+    const meta = (typeof STAGE_META !== 'undefined') ? STAGE_META[key] : null;
+    const short = meta ? meta.label : stageName;
     return `${days}d in ${short}`;
   }
   return `${days}d`;
@@ -459,7 +463,7 @@ function toggleHeroComments(id, btn) {
   btn.textContent = expanded ? 'Show less' : 'Read more';
 }
 
-// ── Unified post list registry ─────────────────
+// -- Unified post list registry -----------------
 const _postLists = {};
 
 function buildPostCard(p, listKey) {
@@ -487,7 +491,7 @@ function buildPostCard(p, listKey) {
 }
 
 
-// ── Task stage chip filter ─────────────────────
+// -- Task stage chip filter ---------------------
 let _taskFilter = null; // null = show all, string = bucket key
 
 function renderTaskStageChips() {
@@ -646,7 +650,7 @@ function renderPipeline() {
 
 function getUpcoming() {
   const today = new Date(); today.setHours(0,0,0,0);
-  return allPosts.filter(p => { const d = parseDate(p.targetDate); const s = (p.stage||'').toLowerCase(); return d && d >= today && s !== 'published' && s !== 'archive' && s !== 'parked'; }).sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
+  return allPosts.filter(p => { const d = parseDate(p.targetDate); const s = (p.stage||'').toLowerCase(); return d && d >= today && !['published','archive','parked'].includes(s); }).sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
 }
 
 function renderUpcoming() {
@@ -823,7 +827,7 @@ function renderClientApproved() {
   tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${formatDate(p.targetDate)||'—'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td></tr>`; }).join('');
 }
 
-// ── Fix 20: Creative Target Tracker ──────────
+// -- Fix 20: Creative Target Tracker ----------
 function renderCreativeTracker() {
   const section = document.getElementById('admin-insight-section');
   if (!section || currentRole !== 'Creative') return;
@@ -845,7 +849,8 @@ function renderCreativeTracker() {
     const t = new Date(p.updated_at || p.created_at).getTime();
     return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= monthAgo;
   }).length;
-  const inProgress = myPosts.filter(p => ['in production','revisions needed','awaiting brand input'].includes((p.stage||'').toLowerCase().trim())).length;
+  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting approval','scheduled','published','parked'].includes(s)) : ['in production','revisions needed','awaiting brand input'];
+  const inProgress = myPosts.filter(p => _activeStages.includes((p.stage||'').toLowerCase().trim())).length;
   const WEEKLY_TARGET  = 5;
   const MONTHLY_TARGET = 20;
   const weekPct  = Math.min(100, Math.round((doneThisWeek / WEEKLY_TARGET) * 100));
@@ -868,7 +873,7 @@ function renderCreativeTracker() {
     </div>`;
 }
 
-// ── Fix 17: Library view switch ───────────────
+// -- Fix 17: Library view switch ---------------
 let _currentLibraryView = 'list';
 let _boardPillarIdx = 0;
 
