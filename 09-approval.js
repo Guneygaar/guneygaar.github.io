@@ -82,7 +82,7 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'Revisions Needed', comments: text, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'revisions needed', comments: text, updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision: ${text.substring(0,80)}` });
       const c = document.getElementById('approval-confirmation');
@@ -98,7 +98,7 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'Scheduled', updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
       const c = document.getElementById('approval-confirmation');
