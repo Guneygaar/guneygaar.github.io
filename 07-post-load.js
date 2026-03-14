@@ -230,7 +230,7 @@ function renderProductionMeter() {
   section.innerHTML = `
   <div class="compact-meter">
     <div class="compact-meter-top">
-      <span class="compact-meter-label">Ready to Send</span>
+      <span class="compact-meter-label">Ready</span>
       <span class="compact-meter-count" style="color:${isOk?'var(--c-green)':'var(--c-red)'}">
         ${readyCount}<span style="color:var(--text3);font-weight:400"> / ${READY_TO_SEND_TARGET}</span>
       </span>
