@@ -142,6 +142,7 @@ function renderAll() {
   run('creativeTracker',    renderCreativeTracker);
   run('nextPost',           renderNextPost);
   run('tasks',              renderTasks);
+  run('taskStageChips',     renderTaskStageChips);
   run('pipeline',           renderPipeline);
   run('upcoming',           renderUpcoming);
   run('library',            renderLibrary);
@@ -486,7 +487,82 @@ function buildPostCard(p, listKey) {
 }
 
 
+// ── Task stage chip filter ─────────────────────
+let _taskFilter = null; // null = show all, string = bucket key
+
+function renderTaskStageChips() {
+  const el = document.getElementById('task-stage-chips');
+  if (!el) return;
+  const buckets = ROLE_BUCKETS[currentRole];
+  if (!buckets || !buckets.length) { el.innerHTML = ''; return; }
+
+  const chips = buckets.map(bucket => {
+    const count = allPosts.filter(p =>
+      bucket.stages.includes((p.stage||'').toLowerCase().trim())
+    ).length;
+    const active = _taskFilter === bucket.key ? ' chip-active' : '';
+    // Find color from STRIP_STAGES
+    const stripStage = (window.STRIP_STAGES||[]).find(s => s.bucket === bucket.key);
+    const color = stripStage ? stripStage.color : 'var(--text3)';
+    const warn = bucket.warn && count > 0 ? ' chip-warn' : '';
+    return `
+      <button class="stage-chip${active}${warn}" onclick="filterTasksByChip('${bucket.key}')">
+        <span class="chip-dot" style="background:${color}"></span>
+        <span class="chip-label">${esc(bucket.label)}</span>
+        <span class="chip-count">${count}</span>
+      </button>`;
+  }).join('');
+
+  el.innerHTML = `<div class="stage-chip-grid">${chips}</div>`;
+}
+
+function filterTasksByChip(bucketKey) {
+  _taskFilter = _taskFilter === bucketKey ? null : bucketKey;
+  renderTaskStageChips();
+  _renderFilteredTasks();
+}
+
+function _renderFilteredTasks() {
+  const container = document.getElementById('tasks-container');
+  if (!container) return;
+  const buckets = ROLE_BUCKETS[currentRole];
+  if (!buckets) return;
+
+  if (!_taskFilter) {
+    // Show all buckets
+    renderTasks();
+    return;
+  }
+
+  const bucket = buckets.find(b => b.key === _taskFilter);
+  if (!bucket) { renderTasks(); return; }
+
+  const posts = allPosts.filter(p =>
+    bucket.stages.includes((p.stage||'').toLowerCase().trim())
+  );
+  const listKey = `tasks-${bucket.key}`;
+  _postLists[listKey] = posts;
+
+  if (!posts.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><p>Nothing in ${esc(bucket.label)} right now.</p></div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="pstage">
+      <div class="pstage-header">
+        <span class="pstage-name">${esc(bucket.label)}</span>
+        <span class="pstage-badge">${posts.length}</span>
+      </div>
+      <div class="row-list">${posts.map(p => buildPostCard(p, listKey)).join('')}</div>
+    </div>`;
+}
+
 function renderTasks() {
+  renderTaskStageChips();
+
+  // If a chip filter is active, let _renderFilteredTasks handle it
+  if (_taskFilter) { _renderFilteredTasks(); return; }
+
   const container = document.getElementById('tasks-container');
   if (!container) return;
   const buckets = ROLE_BUCKETS[currentRole];
