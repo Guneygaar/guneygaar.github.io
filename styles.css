@@ -3129,7 +3129,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text3);
 }
 .pcs-subtitle span { white-space: nowrap; }
-.pcs-subtitle-stage { font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.pcs-subtitle-stage { font-weight: 600; letter-spacing: 0.01em; }
 .pcs-subtitle-sep {
   margin: 0 5px;
   opacity: 0.4;
@@ -3397,13 +3397,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
   color: var(--text);
 }
-/* Stage values in grid display uppercase */
-.pcs-field-val-stage {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 12px;
-  font-weight: 700;
-}
+
 
 /* Date field — icon + value inline */
 .pcs-date-field {
