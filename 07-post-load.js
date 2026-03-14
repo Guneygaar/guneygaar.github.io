@@ -64,18 +64,27 @@ async function loadPostsForClient() {
 // Background token refresh interval handle (separate from data poll)
 let _tokenRefreshTimer = null;
 
+// Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
+function _postsFingerprint(posts) {
+  let s = '' + posts.length;
+  for (let i = 0; i < posts.length; i++) {
+    s += '|' + (posts[i].post_id || posts[i].id || '') + ':' + (posts[i].stage || '');
+  }
+  return s;
+}
+
 function startRealtime() {
   if (_realtimeTimer) return;
 
-  // Data polling — every 8 seconds
+  // Data polling — every 15 seconds (was 8s; reduces API calls & DOM churn)
   _realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
+    // Skip poll while user is in a modal — they'll get fresh data on close
+    if (_modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
-      const changed = JSON.stringify(fresh.map(p=>p.post_id+p.stage)) !==
-                      JSON.stringify(allPosts.map(p=>p.post_id+p.stage));
-      if (changed) {
+      if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
         allPosts    = fresh;
         cachedPosts = fresh;
         scheduleRender();
@@ -84,7 +93,7 @@ function startRealtime() {
     } catch (e) {
       console.warn('realtime poll failed:', e.message);
     }
-  }, 8000);
+  }, 15000);
 
   // Proactive token refresh — every 50 minutes
   // Keeps sessions alive indefinitely without user action
@@ -156,21 +165,34 @@ async function deleteTask(id) {
 
 function renderAll() {
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
+
+  // Always render: lightweight stats & role visibility
   run('updateStats',        updateStats);
-  run('pipelineStrip',      renderPipelineStrip);
-  run('productionMeter',    renderProductionMeter);
-  run('adminInsight',       renderAdminInsight);
-  run('taskBanner',         renderTaskBanner);
-  run('adminTaskPanel',     renderAdminTaskPanel);
-  run('creativeTracker',    renderCreativeTracker);
-  run('nextPost',           renderNextPost);
-  run('tasks',              renderTasks);
-  run('taskStageChips',     renderTaskStageChips);
-  run('pipeline',           renderPipeline);
-  run('upcoming',           renderUpcoming);
-  run('library',            renderLibrary);
-  run('filterDropdowns',    populateFilterDropdowns);
   run('roleVisibility',     applyRoleVisibility);
+
+  // Active tab detection — only render the visible tab
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
+
+  // Tasks tab widgets (always needed when tasks visible)
+  if (activeTab === 'tasks') {
+    run('pipelineStrip',      renderPipelineStrip);
+    run('productionMeter',    renderProductionMeter);
+    run('adminInsight',       renderAdminInsight);
+    run('taskBanner',         renderTaskBanner);
+    run('adminTaskPanel',     renderAdminTaskPanel);
+    run('creativeTracker',    renderCreativeTracker);
+    run('nextPost',           renderNextPost);
+    run('tasks',              renderTasks);
+    run('taskStageChips',     renderTaskStageChips);
+  } else if (activeTab === 'pipeline') {
+    run('pipeline',           renderPipeline);
+  } else if (activeTab === 'upcoming') {
+    run('upcoming',           renderUpcoming);
+  } else if (activeTab === 'library') {
+    run('library',            renderLibrary);
+    run('filterDropdowns',    populateFilterDropdowns);
+  }
+
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
