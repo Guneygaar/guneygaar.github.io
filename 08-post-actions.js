@@ -614,16 +614,8 @@ function _renderPCS(postId) {
 
   // Subtitle: only non-empty parts, stage gets colour, pillar as short label
   if (elSubtitle) {
-    const _pillarShort = {
-      'leadership':    'Lead',
-      'innovation':    'Innov',
-      'sustainability':'Sustain',
-      'inclusivity':   'Include',
-      'events':        'Event',
-      'announcements': 'Announce',
-    };
     const pillarLabel = post.contentPillar
-      ? (_pillarShort[post.contentPillar] || post.contentPillar)
+      ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
       : '';
     const parts = [
       stageLabel    ? `<span class="pcs-subtitle-stage" style="color:${hex}">${esc(stageLabel)}</span>` : '',
@@ -868,9 +860,7 @@ function _pcsListLabel(listKey) {
 }
 
 function _buildPCSGrid(post, canEdit, id) {
-  // Remove "Awaiting Input" — only valid stages used
-  const STAGES   = ['in production','revisions needed','awaiting brand input','ready','awaiting approval','scheduled','published','parked'];
-  const PILLARS  = ['leadership','innovation','sustainability','inclusivity','events','announcements'];
+  // Use global canonical lists from 01-config.js
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   const OWNERS   = ['Chitra','Pranav','Admin'];
   const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
@@ -883,9 +873,10 @@ function _buildPCSGrid(post, canEdit, id) {
     : (post.targetDate || '');
   const { hex } = stageStyle(post.stage);
 
-  const sel = (field, opts, val, dbField) =>
+  // sel: value stored is DB lowercase, option text is Title Case display label
+  const sel = (field, opts, val, dbField, displayMap) =>
     `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
-       ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+       ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(displayMap ? (displayMap[o] || o) : o)}</option>`).join('')}
      </select>`;
 
   const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
@@ -907,8 +898,8 @@ function _buildPCSGrid(post, canEdit, id) {
      </div>`;
 
   const stageCell = canEdit
-    ? sel('stage', STAGES, post.stage||'', 'stage')
-    : `<span class="pcs-field-val-ro pcs-field-val-stage" style="color:${hex}">${esc(post.stage||'—')}</span>`;
+    ? sel('stage', STAGES_DB, post.stage||'', 'stage', STAGE_DISPLAY)
+    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
 
   return `
     <div class="pcs-section">
@@ -916,7 +907,7 @@ function _buildPCSGrid(post, canEdit, id) {
       <div class="pcs-grid">
         ${cell('Stage',    stageCell)}
         ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
-        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS, post.contentPillar||'', 'contentPillar') : ro(post.contentPillar))}
+        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(PILLAR_DISPLAY[post.contentPillar] || post.contentPillar || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
         ${cell(dateLabel,  dateInput)}
