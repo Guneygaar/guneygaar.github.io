@@ -222,8 +222,10 @@ function timeAgo(ts) {
 function openZen(title, comments) {
   const overlay = document.getElementById('zen-overlay');
   if (!overlay) return;
-  document.getElementById('zen-title').textContent    = title || '';
-  document.getElementById('zen-comments').textContent = comments || '';
+  const zt = document.getElementById('zen-title');
+  const zc = document.getElementById('zen-comments');
+  if (zt) zt.textContent = title || '';
+  if (zc) zc.textContent = comments || '';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -266,7 +268,8 @@ function isSnoozed(postId) {
 async function openTimeline(postId, title) {
   const overlay = document.getElementById('timeline-overlay');
   if (!overlay) return;
-  document.getElementById('timeline-title').textContent = title || postId;
+  const _tt = document.getElementById('timeline-title');
+  if (_tt) _tt.textContent = title || postId;
   const list = document.getElementById('timeline-list');
   list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading…</div>';
   overlay.classList.add('open');
@@ -377,11 +380,14 @@ function closeFabMenu() {
 
 // ── Request Sheet ──────────────────────────────
 function openRequestSheet() {
-  document.getElementById('req-sheet-brief').value = '';
-  document.getElementById('req-sheet-date').value  = '';
-  document.getElementById('req-sheet-owner').value = '';
-  document.getElementById('request-sheet-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
+  const brief   = document.getElementById('req-sheet-brief');
+  const date    = document.getElementById('req-sheet-date');
+  const owner   = document.getElementById('req-sheet-owner');
+  const overlay = document.getElementById('request-sheet-overlay');
+  if (brief)   brief.value   = '';
+  if (date)    date.value    = '';
+  if (owner)   owner.value   = '';
+  if (overlay) { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
 }
 
 function closeRequestSheet() {
