@@ -76,7 +76,7 @@
 
   <!-- HEADER -->
   <header class="app-header">
-    <span class="app-header-role" id="topbar-role-label">admin</span>
+    <span class="app-header-title" id="app-header-title">My Tasks</span>
     <div class="app-header-right">
       <!-- Notification bell -->
       <div class="notif-wrap" id="notif-wrap">
@@ -124,6 +124,7 @@
   </div>
 
   <!-- hidden stat stubs keep JS compat -->
+  <span id="topbar-role-label" style="display:none"></span>
   <div id="pipeline-strip-wrap" style="display:none"><div id="pipeline-strip"></div></div>
 
   <!-- TAB: MY TASKS -->
@@ -142,37 +143,27 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
-    <div style="padding:var(--sp-4)">
-      <div class="section-header">
-        <span class="section-title">Pipeline</span>
-        <span class="section-count" id="pipeline-label"></span>
-      </div>
-      <div class="pipeline-board" id="pipeline-container"></div>
+    <div class="dash-body">
+      <div id="pipeline-container"></div>
     </div>
   </div>
 
   <!-- TAB: UPCOMING -->
   <div class="tab-panel" id="panel-upcoming">
-    <div style="padding:var(--sp-4)">
-      <div class="section-header">
-        <span class="section-title">Upcoming Publishing</span>
-        <span class="section-count" id="badge-upcoming-count"></span>
-      </div>
-      <div id="upcoming-wrap" style="padding:0 var(--sp-4) var(--sp-6)"></div>
+    <div class="dash-body">
+      <div id="upcoming-wrap"></div>
     </div>
   </div>
 
   <!-- TAB: LIBRARY -->
   <div class="tab-panel" id="panel-library">
-    <div style="padding:var(--sp-4)">
+    <div class="dash-body">
       <div class="section-header">
-        <span class="section-title">Content Library</span>
         <div class="library-view-toggle">
           <button class="lib-view-btn active" data-view="list" onclick="switchLibraryView(this)">≡ List</button>
           <button class="lib-view-btn" data-view="pillar" onclick="switchLibraryView(this)">◫ Pillar</button>
           <button class="lib-view-btn" data-view="calendar" onclick="switchLibraryView(this)">⊟ Calendar</button>
         </div>
-        <span class="section-count" id="library-label"></span>
       </div>
       <div class="library-controls" id="library-search-controls">
         <input type="text" id="search-input" class="search-input" placeholder="Search posts…" oninput="filterLibrary()">
@@ -212,20 +203,6 @@
       <span>Library</span>
     </button>
   </nav>
-
-  <!-- FAB -->
-  <button class="fab" id="fab" onclick="toggleFabMenu()">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
-  <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
-  <div class="fab-menu-sheet" id="fab-menu-sheet">
-    <button class="fab-menu-item" id="fab-request-btn" onclick="openRequestSheet(); closeFabMenu()">
-      <span class="fab-menu-icon">📋</span> Create Request
-    </button>
-    <button class="fab-menu-item" onclick="openNewPostModal(); closeFabMenu()">
-      <span class="fab-menu-icon">✏</span> Create Post
-    </button>
-  </div>
 
   <!-- Hidden stat elements for JS compatibility -->
   <span class="stat-pill" style="display:none"><span class="stat-num" id="s-total"></span></span>
@@ -729,6 +706,22 @@
 <div id="undo-toast">
   <span id="undo-toast-msg">Stage updated</span>
   <button class="btn-undo" onclick="triggerUndo()">Undo</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     FAB — body level so fixed positioning is never clipped
+══════════════════════════════════════════ -->
+<button class="fab" id="fab" onclick="toggleFabMenu()">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
+<div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
+<div class="fab-menu-sheet" id="fab-menu-sheet">
+  <button class="fab-menu-item" id="fab-request-btn" onclick="openRequestSheet(); closeFabMenu()">
+    <span class="fab-menu-icon">📋</span> Create Request
+  </button>
+  <button class="fab-menu-item" onclick="openNewPostModal(); closeFabMenu()">
+    <span class="fab-menu-icon">✏</span> Create Post
+  </button>
 </div>
 
 <script src="01-config.js"></script>
