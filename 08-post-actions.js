@@ -70,8 +70,7 @@ async function saveStageUpdate() {
       body: JSON.stringify(payload),
     });
     await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
-    document.getElementById('post-modal-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    closePostModal();
     await loadPosts();
     showToast('Post updated ✓', 'success');
   } catch (err) {
@@ -787,10 +786,14 @@ async function pcsDoNextAction(postId, nextStage) {
 function pcsReplaceDesign(postId) { pcsToggleAttach(postId); }
 
 function refreshSystemViews() {
-  try { renderTasks();    } catch(e) {}
-  try { renderPipeline(); } catch(e) {}
-  try { renderUpcoming(); } catch(e) {}
-  try { renderLibrary();  } catch(e) {}
+  // Only render the active tab — no need to rebuild hidden containers
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
+  try {
+    if (activeTab === 'tasks')    renderTasks();
+    else if (activeTab === 'pipeline') renderPipeline();
+    else if (activeTab === 'upcoming') renderUpcoming();
+    else if (activeTab === 'library')  renderLibrary();
+  } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
 async function updatePost(postId, field, value) {
