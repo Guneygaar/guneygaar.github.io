@@ -2073,41 +2073,40 @@ tr:hover td { background: var(--surface2); }
 
 /* Horizontally scrolling filter chip row */
 .lib-filter-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 6px;
   padding: 8px 16px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.lib-filter-row::-webkit-scrollbar { display: none; }
 
 .lib-filter-chip {
-  height: 30px;
-  padding: 0 12px;
+  height: 38px;
+  padding: 0 8px;
   background: var(--surface2);
   border: 1px solid var(--border);
-  border-radius: var(--r-pill);
-  font-size: 12px;
-  font-weight: 600;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text2);
   font-family: inherit;
-  white-space: nowrap;
-  flex-shrink: 0;
-  /* Remove all native select styling */
+  width: 100%;
   appearance: none;
   -webkit-appearance: none;
-  background-image: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
+  text-overflow: ellipsis;
 }
-.lib-filter-chip:focus { outline: none; }
+.lib-filter-chip:focus { outline: none; border-color: var(--accent); }
 .lib-filter-chip:active { background: var(--surface3); }
 
-/* Active state — chip has a non-default value selected */
+/* Active state */
 .lib-filter-chip.chip-active {
   background: var(--accent-dim);
   border-color: var(--accent);
