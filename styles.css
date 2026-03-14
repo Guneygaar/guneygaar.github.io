@@ -2137,31 +2137,33 @@ tr:hover td { background: var(--surface2); }
 .board-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
+  justify-content: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
+
 .board-nav-title {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   text-align: center;
-  flex: 1;
 }
+
 .board-nav-btn {
-  width: 36px;
-  height: 36px;
+  opacity: 0.6;
+  font-size: 16px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  color: var(--text2);
-  border-radius: 8px;
   flex-shrink: 0;
-  line-height: 1;
 }
-.board-nav-btn:active { background: var(--surface2); }
-.board-nav-btn:disabled { color: var(--border); pointer-events: none; }
+.board-nav-btn:active { opacity: 1; }
+.board-nav-btn:disabled { opacity: 0.2; pointer-events: none; }
 
 .search-input { flex: 1; min-width: 160px; }
 
