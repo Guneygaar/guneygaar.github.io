@@ -71,7 +71,26 @@ function stopDraftAutosave() {
   clearInterval(_draftTimer);
 }
 
+function _populateNewPostDropdowns() {
+  // Stage dropdown — values are DB lowercase, labels are Title Case
+  const stageEl = document.getElementById('npm-stage');
+  if (stageEl && typeof STAGES_DB !== 'undefined') {
+    stageEl.innerHTML = STAGES_DB
+      .filter(s => s !== 'parked')  // parked not user-selectable
+      .map(s => `<option value="${s}">${(STAGE_DISPLAY && STAGE_DISPLAY[s]) || s}</option>`)
+      .join('');
+  }
+  // Pillar dropdown — values are DB lowercase, labels are Title Case
+  const pillarEl = document.getElementById('npm-pillar');
+  if (pillarEl && typeof PILLARS_DB !== 'undefined') {
+    pillarEl.innerHTML = '<option value="">Select pillar</option>' +
+      PILLARS_DB.map(p => `<option value="${p}">${(PILLAR_DISPLAY && PILLAR_DISPLAY[p]) || p}</option>`)
+      .join('');
+  }
+}
+
 function openNewPostModal() {
+  _populateNewPostDropdowns();
   const hasDraft = loadDraft();
   if (!hasDraft) {
     ['npm-title','npm-comments','npm-postlink'].forEach(id => {
