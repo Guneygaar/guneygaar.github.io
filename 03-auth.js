@@ -1,26 +1,41 @@
-/* ═══════════════════════════════════════════════
-   03-auth.js — Authentication & role activation
+/* ===============================================
+   03-auth.js - Authentication & role activation
    Uses 6-digit OTP code (no magic links)
-═══════════════════════════════════════════════ */
+=============================================== */
+
+// Prevent concurrent refresh calls from racing each other
+let _refreshInProgress = null;
 
 async function refreshSession() {
+  // If a refresh is already in-flight, wait for it instead of firing another
+  if (_refreshInProgress) return _refreshInProgress;
+
   const refreshToken = localStorage.getItem('sb_refresh_token');
   if (!refreshToken) return null;
+
+  _refreshInProgress = (async () => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem('sb_access_token', data.access_token);
+        if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
+        return data.access_token;
+      }
+    } catch (_) {}
+    return null;
+  })();
+
   try {
-    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.access_token) {
-      localStorage.setItem('sb_access_token', data.access_token);
-      if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
-      return data.access_token;
-    }
-  } catch (_) {}
-  return null;
+    return await _refreshInProgress;
+  } finally {
+    _refreshInProgress = null;
+  }
 }
 
 function showLoginOverlay() {
@@ -44,7 +59,7 @@ window.sendMagicLink = async function sendMagicLink() {
   }
   const btn = document.querySelector('#login-email-step .btn-modal-primary');
   btn.disabled = true;
-  btn.textContent = 'Sending…';
+  btn.textContent = 'Sending...';
   document.getElementById('login-error').textContent = '';
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
@@ -56,9 +71,7 @@ window.sendMagicLink = async function sendMagicLink() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error_description || err.msg || 'Could not send code');
     }
-    // Store email for verification step
     localStorage.setItem('gbl_pending_email', email);
-    // Show code entry step
     document.getElementById('login-email-step').classList.remove('active');
     const codeStep = document.getElementById('login-code-step');
     if (codeStep) {
@@ -69,7 +82,7 @@ window.sendMagicLink = async function sendMagicLink() {
   } catch (err) {
     document.getElementById('login-error').textContent = err.message || 'Could not send code. Try again.';
     btn.disabled = false;
-    btn.textContent = 'Send Code →';
+    btn.textContent = 'Send Code ->';
   }
 };
 
@@ -82,7 +95,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
   }
   const btn = document.getElementById('login-verify-code-btn');
   btn.disabled = true;
-  btn.textContent = 'Verifying…';
+  btn.textContent = 'Verifying...';
   document.getElementById('login-code-error').textContent = '';
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/verify`, {
@@ -103,9 +116,9 @@ window.verifyOTPCode = async function verifyOTPCode() {
     localStorage.removeItem('gbl_pending_email');
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
-    document.getElementById('login-code-error').textContent = err.message || 'Incorrect code — try again.';
+    document.getElementById('login-code-error').textContent = err.message || 'Incorrect code - try again.';
     btn.disabled = false;
-    btn.textContent = 'Verify →';
+    btn.textContent = 'Verify ->';
   }
 };
 
@@ -127,20 +140,23 @@ async function resolveRoleFromToken(accessToken, email) {
     document.getElementById('login-overlay').classList.add('hidden');
     activateRole(role);
   } catch (err) {
-    document.getElementById('login-code-error').textContent = 'Login failed — try again.';
+    document.getElementById('login-code-error').textContent = 'Login failed - try again.';
   }
 }
 
-async function handleMagicLinkToken(accessToken) {
-  // Legacy support — if someone still has an old magic link
+// Legacy support for old magic link URLs — guarded against infinite recursion
+async function handleMagicLinkToken(accessToken, _retried = false) {
   try {
     const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` },
     });
     if (!userRes.ok) {
-      const newToken = await refreshSession();
-      if (newToken) { handleMagicLinkToken(newToken); return; }
-      showLoginOverlay(); return;
+      if (!_retried) {
+        const newToken = await refreshSession();
+        if (newToken) { handleMagicLinkToken(newToken, true); return; }
+      }
+      showLoginOverlay();
+      return;
     }
     const user  = await userRes.json();
     const email = (user.email || '').toLowerCase().trim();
@@ -166,7 +182,7 @@ function logout() {
 
 function activateRole(role) {
   currentRole = role;
-       document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('login-overlay').classList.add('hidden');
   updateActionButton();
   if (role === 'Client') {
     document.getElementById('client-view').classList.add('active');
