@@ -341,14 +341,20 @@ function openPCS(postId, listKey) {
 }
 
 function closePCS() {
-  const _ov = document.getElementById('pcs-overlay');
-  if (_ov) _ov.classList.remove('open');
-  _resetSwipeStyles();
-  _swipe.active = false;
-  document.body.style.overflow = '';
-  _pcs.postId = null;
-  _modalOpen = false;
-  _drainDeferredRender();
+  try {
+    const _ov = document.getElementById('pcs-overlay');
+    if (_ov) _ov.classList.remove('open');
+    _resetSwipeStyles();
+    _swipe.active = false;
+    // Remove any lingering confirm-delete overlay (appended to body, not inside #pcs-overlay)
+    document.querySelectorAll('.pcs-confirm-overlay').forEach(el => el.remove());
+    _pcs.postId = null;
+  } finally {
+    // These MUST run even if something above throws
+    document.body.style.overflow = '';
+    _modalOpen = false;
+    _drainDeferredRender();
+  }
 }
 
 // ── Swipe state reset (guaranteed cleanup) ───
@@ -888,8 +894,12 @@ async function savePCS() {
 }
 
 function pcsConfirmDelete() {
+  // Remove any existing confirm overlay first
+  document.querySelectorAll('.pcs-confirm-overlay').forEach(el => el.remove());
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
+  // Backdrop tap dismisses the confirm overlay
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
   overlay.innerHTML = `
     <div class="pcs-confirm-sheet">
       <div class="pcs-confirm-msg">Are you sure you want to delete this post?</div>
