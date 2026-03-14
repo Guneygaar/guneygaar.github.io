@@ -548,7 +548,7 @@ function _renderFilteredTasks() {
     return;
   }
   container.innerHTML = `
-    <div class="pstage">
+    <div class="pstages">
       <div class="pstage-header">
         <span class="pstage-name">${esc(bucket.label)}</span>
         <span class="pstage-badge">${posts.length}</span>
@@ -590,13 +590,11 @@ function renderTasks() {
       ? `<button class="pstage-overflow" onclick="toggleStageOverflow(this,${hidden.length})"
            data-hidden-ids="${esc(hidden.map(p=>getPostId(p)).join(','))}">+${hidden.length} more</button>` : '';
     return `
-      <div class="pstage">
-        <div class="pstage-header">
-          <span class="pstage-name">${esc(bucket.label)}</span>
-          <span class="pstage-badge${badgeCls}">${count}</span>
-        </div>
-        <div class="row-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>
-      </div>`;
+      <div class="pstage-header">
+        <span class="pstage-name">${esc(bucket.label)}</span>
+        <span class="pstage-badge${badgeCls}">${count}</span>
+      </div>
+      <div class="row-list">${count ? cards + overflow : `<div class="pstage-empty">All clear ✓</div>`}</div>`;
   }).join('');
   container.innerHTML = `<div class="pstages">${stagesHtml}</div>`;
 }
@@ -637,14 +635,12 @@ function renderPipeline() {
     const { hex, label } = stageStyle(stage);
     const cards = posts.map(p => buildPostCard(p, listKey)).join('');
     return `
-      <div class="pstage">
-        <div class="pstage-header">
-          <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
-          <span class="pstage-badge">${posts.length}</span>
-        </div>
-        <div class="row-list">
-          ${cards || `<div class="pstage-empty">Empty</div>`}
-        </div>
+      <div class="pstage-header">
+        <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
+        <span class="pstage-badge">${posts.length}</span>
+      </div>
+      <div class="row-list">
+        ${cards || `<div class="pstage-empty">Empty</div>`}
       </div>`;
   }).join('');
   document.getElementById('pipeline-container').innerHTML =
