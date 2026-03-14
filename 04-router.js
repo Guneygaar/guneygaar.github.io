@@ -38,11 +38,17 @@ async function _startRouter() {
       const newToken = await refreshSession();
       if (newToken) {
         activateRole(savedRole);
+        if (typeof loadPosts === 'function') {
+          try { await loadPosts(); } catch(e) { console.error('Post loading failed', e); }
+        }
         return;
       }
     }
     if (savedToken) {
       activateRole(savedRole);
+      if (typeof loadPosts === 'function') {
+        try { await loadPosts(); } catch(e) { console.error('Post loading failed', e); }
+      }
       return;
     }
   }
