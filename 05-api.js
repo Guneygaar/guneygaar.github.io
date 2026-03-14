@@ -1,6 +1,6 @@
-/* ═══════════════════════════════════════════════
-   05-api.js — Supabase REST wrapper
-═══════════════════════════════════════════════ */
+/* ===============================================
+   05-api.js - Supabase REST wrapper
+=============================================== */
 
 function getAuthHeaders(extra = {}) {
   const token = localStorage.getItem('sb_access_token');
@@ -20,6 +20,30 @@ async function apiFetch(path, options = {}) {
     ...options,
     headers: getAuthHeaders(options.headers || {}),
   });
+
+  // 401: token expired — attempt one silent refresh then retry
+  if (res.status === 401) {
+    const newToken = await refreshSession();
+    if (newToken) {
+      const retry = await fetch(url, {
+        ...options,
+        headers: getAuthHeaders(options.headers || {}),
+      });
+      if (retry.ok) {
+        const text = await retry.text();
+        return text ? JSON.parse(text) : [];
+      }
+      // Refresh succeeded but retry still failed — force re-login
+      console.warn('apiFetch: retry after refresh failed, logging out');
+      logout();
+      return [];
+    }
+    // No refresh token or refresh failed — force re-login
+    console.warn('apiFetch: session expired and refresh failed, logging out');
+    logout();
+    return [];
+  }
+
   if (!res.ok) {
     const body = await res.text().catch(() => '');
     throw new Error(`Supabase ${res.status}: ${body}`);
@@ -53,12 +77,10 @@ async function uploadPostAsset(file, postId) {
   const url      = `${SUPABASE_URL}/storage/v1/object/post-assets/${filename}`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'apikey':        SUPABASE_KEY,
-      'Authorization': `Bearer ${localStorage.getItem('sb_access_token') || SUPABASE_KEY}`,
+    headers: getAuthHeaders({
       'Content-Type':  file.type,
       'Cache-Control': '3600',
-    },
+    }),
     body: file,
   });
   if (!res.ok) throw new Error(`Upload ${res.status}`);
