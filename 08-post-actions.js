@@ -343,41 +343,48 @@ function openPCS(postId, listKey) {
 function closePCS() {
   const _ov = document.getElementById('pcs-overlay');
   if (_ov) _ov.classList.remove('open');
-  // Reset any residual inline styles from swipe animations
+  _resetSwipeStyles();
+  _swipe.active = false;
+  document.body.style.overflow = '';
+  _pcs.postId = null;
+  _modalOpen = false;
+  _drainDeferredRender();
+}
+
+// ── Swipe state reset (guaranteed cleanup) ───
+function _resetSwipeStyles() {
+  _swipe.lock = null;
   const screen = document.getElementById('pcs-screen');
   if (screen) {
     screen.style.transform  = '';
     screen.style.opacity    = '';
     screen.style.transition = '';
   }
-  document.body.style.overflow = '';
-  _pcs.postId = null;
-  _swipe.lock = null;
-  _modalOpen = false;
-  _drainDeferredRender();
 }
 
 // ── Swipe attachment ──────────────────────────
 function _pcsAttachSwipe() {
   const screen = document.getElementById('pcs-screen');
   if (!screen) return;
-  screen.removeEventListener('touchstart', _pcsTouchStart);
-  screen.removeEventListener('touchmove',  _pcsTouchMove);
-  screen.removeEventListener('touchend',   _pcsTouchEnd);
-  screen.addEventListener('touchstart', _pcsTouchStart, { passive: true });
-  screen.addEventListener('touchmove',  _pcsTouchMove,  { passive: false });
-  screen.addEventListener('touchend',   _pcsTouchEnd,   { passive: true });
+  screen.removeEventListener('touchstart',  _pcsTouchStart);
+  screen.removeEventListener('touchmove',   _pcsTouchMove);
+  screen.removeEventListener('touchend',    _pcsTouchEnd);
+  screen.removeEventListener('touchcancel', _pcsTouchCancel);
+  screen.addEventListener('touchstart',  _pcsTouchStart,  { passive: true });
+  screen.addEventListener('touchmove',   _pcsTouchMove,   { passive: false });
+  screen.addEventListener('touchend',    _pcsTouchEnd,    { passive: true });
+  screen.addEventListener('touchcancel', _pcsTouchCancel, { passive: true });
 }
 
-const _swipe = { x0: 0, y0: 0, lock: null }; // lock: null | 'h' | 'v'
+const _swipe = { x0: 0, y0: 0, lock: null, active: false }; // lock: null | 'h' | 'v'
 
 function _pcsTouchStart(e) {
   if (e.touches.length !== 1) return;
-  _swipe.x0   = e.touches[0].clientX;
-  _swipe.y0   = e.touches[0].clientY;
-  _swipe.lock = null;
-  const screen = document.getElementById('pcs-screen');
-  if (screen) screen.style.transition = 'none';
+  _swipe.x0     = e.touches[0].clientX;
+  _swipe.y0     = e.touches[0].clientY;
+  _swipe.lock   = null;
+  _swipe.active = true;
+  // transition: none is set lazily in _pcsTouchMove once we detect real movement
 }
 
 function _pcsTouchMove(e) {
@@ -389,6 +396,9 @@ function _pcsTouchMove(e) {
   // Lock gesture direction once we know which way it's going
   if (!_swipe.lock && (adx > 8 || ady > 8)) {
     _swipe.lock = adx > ady ? 'h' : 'v';
+    // Disable CSS transitions only when an actual swipe is detected
+    const screen = document.getElementById('pcs-screen');
+    if (screen) screen.style.transition = 'none';
   }
 
   // Vertical downward drag — close gesture (only when scroll is at top)
@@ -415,32 +425,46 @@ function _pcsTouchMove(e) {
   }
 }
 
+function _pcsTouchCancel() {
+  // Browser interrupted the gesture — reset everything immediately
+  _swipe.active = false;
+  _resetSwipeStyles();
+}
+
 function _pcsTouchEnd(e) {
+  _swipe.active = false;
+
+  // No swipe gesture was detected (tap or tiny movement) — clean up and exit
+  if (!_swipe.lock) {
+    _resetSwipeStyles();
+    return;
+  }
+
   const dy = e.changedTouches[0].clientY - _swipe.y0;
   const screen = document.getElementById('pcs-screen');
 
   // Vertical close gesture
-  if (_swipe.lock === 'v' && dy > 0) {
+  if (_swipe.lock === 'v') {
     _swipe.lock = null;
-    if (!screen) return;
+    if (!screen || dy <= 0) { _resetSwipeStyles(); return; }
     if (dy > 90) {
       // Committed — animate off bottom then close
       screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
       screen.style.transform  = `translateY(100%)`;
       setTimeout(closePCS, 290);
     } else {
-      // Spring back
+      // Spring back — restore to CSS-controlled position
       screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
       screen.style.transform  = 'translateY(0)';
-      setTimeout(() => { if (screen) screen.style.transition = ''; }, 300);
+      setTimeout(_resetSwipeStyles, 300);
     }
     return;
   }
 
-  if (_swipe.lock !== 'h') { _swipe.lock = null; return; }
+  if (_swipe.lock !== 'h') { _resetSwipeStyles(); return; }
   _swipe.lock = null;
   const dx  = e.changedTouches[0].clientX - _swipe.x0;
-  if (!screen) return;
+  if (!screen) { _resetSwipeStyles(); return; }
 
   if (dx < -80) {
     // Committed — animate out then load next
@@ -448,16 +472,14 @@ function _pcsTouchEnd(e) {
     screen.style.transform  = 'translateX(-100%)';
     screen.style.opacity    = '0';
     setTimeout(() => {
-      screen.style.transition = '';
-      screen.style.transform  = '';
-      screen.style.opacity    = '';
-      _pcsNext();
+      _resetSwipeStyles();
+      try { _pcsNext(); } catch (err) { console.error('_pcsNext error:', err); closePCS(); }
     }, 220);
   } else {
-    // Spring back
+    // Spring back — restore to CSS-controlled position
     screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
     screen.style.transform  = 'translateX(0)';
-    setTimeout(() => { screen.style.transition = ''; }, 260);
+    setTimeout(_resetSwipeStyles, 260);
   }
 }
 
