@@ -2376,6 +2376,70 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ═══════════════════════════════════════════════
+   STAGE CHIP GRID — My Tasks summary
+═══════════════════════════════════════════════ */
+
+.stage-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.stage-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 10px 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  width: 100%;
+  text-align: left;
+}
+.stage-chip:active { background: var(--surface2); }
+
+.stage-chip.chip-active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.stage-chip.chip-warn {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.stage-chip.chip-warn .chip-count { color: var(--c-red); }
+
+.chip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chip-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  flex-shrink: 0;
+  min-width: 16px;
+  text-align: right;
+}
+
+/* ═══════════════════════════════════════════════
    PSTAGE — vertical stage sections (My Tasks, Pipeline)
 ═══════════════════════════════════════════════ */
 
