@@ -4,135 +4,155 @@
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
+let _realtimeTimer = null;
+let _realtimeBusy  = false;
+let _postsLoading  = false;
+
 function showLoadingSkeleton(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  el.innerHTML = [1,2,3].map(() => `<div class="skeleton skeleton-card"></div>`).join('');
+  el.innerHTML =
+    `<div class="skeleton skeleton-card"></div>
+     <div class="skeleton skeleton-card"></div>
+     <div class="skeleton skeleton-card"></div>`;
 }
 
 async function loadPosts() {
+
+  if (_postsLoading) return;
+  _postsLoading = true;
+
   showLoadingSkeleton('tasks-container');
+
   try {
-    const data = await apiFetch('/posts?select=*&order=id.desc');
-    allPosts    = normalise(data);
-    cachedPosts = allPosts;
+
+    const rows = await apiFetch('/posts?select=*&order=id.desc');
+
+    const fresh = normalise(rows);
+
+    allPosts = fresh;
+    cachedPosts = fresh;
+
     hideErrorBanner();
+
     scheduleRender();
-    showToast(`${allPosts.length} posts loaded`, 'success');
+
   } catch (err) {
-    console.error('loadPosts:', err);
+
+    console.error('loadPosts failed', err);
+
     if (cachedPosts.length) {
+
       allPosts = cachedPosts;
       scheduleRender();
-      showErrorBanner('Could not reach server. Showing cached data.',
-        `Last updated: ${new Date().toLocaleTimeString()}`);
-    } else {
-      document.getElementById('tasks-container').innerHTML =
-        `<div class="empty-state">
-          <div class="empty-icon">⚠</div>
-          <p><strong>Could not load posts.</strong><br>Check your connection.</p>
-          <button onclick="loadPosts()" style="margin-top:12px;padding:8px 18px;
-            border-radius:8px;background:var(--accent);color:var(--bg);
-            border:none;font-weight:600;cursor:pointer;font-size:13px">Try Again</button>
-        </div>`;
-      showErrorBanner('Could not reach server.');
+
+      showErrorBanner(
+        'Connection issue — showing cached data',
+        `Last updated ${new Date().toLocaleTimeString()}`
+      );
+
     }
-    showToast('Failed to load posts', 'error');
+
   }
+
+  _postsLoading = false;
+
 }
 
 async function loadPostsForClient() {
+
   try {
-    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
-    allPosts    = normalise(data);
-    cachedPosts = allPosts;
+
+    const rows = await apiFetch('/posts?select=*&order=created_at.desc');
+
+    const fresh = normalise(rows);
+
+    allPosts = fresh;
+    cachedPosts = fresh;
+
     hideErrorBanner();
+
     renderClientView();
+
   } catch (err) {
+
     if (cachedPosts.length) {
+
       allPosts = cachedPosts;
       renderClientView();
-      showErrorBanner('Showing cached data - connection issue.');
-    } else {
-      document.getElementById('client-approved-tbody').innerHTML =
-        `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠</div>
-        <p>Could not load. Check your connection.</p></div></td></tr>`;
+
+      showErrorBanner('Offline — showing cached data');
+
     }
+
   }
+
 }
 
 function startRealtime() {
-  if (_realtimeTimer) return;
+
+  if (_realtimeTimer !== null) return;
+
   _realtimeTimer = setInterval(async () => {
+
     if (document.hidden) return;
+    if (_realtimeBusy) return;
+
+    _realtimeBusy = true;
+
     try {
-      const data  = await apiFetch('/posts?select=*&order=created_at.desc');
-      const fresh = normalise(data);
-      const changed = JSON.stringify(fresh.map(p=>p.post_id+p.stage)) !==
-                      JSON.stringify(allPosts.map(p=>p.post_id+p.stage));
-      if (changed) {
-        allPosts    = fresh;
+
+      const rows = await apiFetch('/posts?select=*&order=created_at.desc');
+
+      const fresh = normalise(rows);
+
+      if (fresh.length !== allPosts.length) {
+
+        allPosts = fresh;
         cachedPosts = fresh;
         scheduleRender();
-        fetchUnreadCount();
+
       }
-    } catch (_) {}
-  }, 8000);
+
+    } catch (err) {
+
+      console.warn('Realtime sync skipped');
+
+    }
+
+    _realtimeBusy = false;
+
+  }, 10000);
+
 }
 
 function stopRealtime() {
+
+  if (_realtimeTimer === null) return;
+
   clearInterval(_realtimeTimer);
   _realtimeTimer = null;
+
 }
 
 async function loadTasks() {
+
   try {
-    const data = await apiFetch('/tasks?order=created_at.desc&limit=50');
-    allTasks = Array.isArray(data) ? data : [];
-  } catch { allTasks = []; }
+
+    const rows = await apiFetch('/tasks?order=created_at.desc&limit=50');
+
+    allTasks = Array.isArray(rows) ? rows : [];
+
+  } catch {
+
+    allTasks = [];
+
+  }
+
   renderTaskBanner();
   renderAdminTaskPanel();
-}
 
-async function assignTask() {
-  const assignee = document.getElementById('atask-assignee').value.trim();
-  const msg      = document.getElementById('atask-msg').value.trim();
-  const due      = document.getElementById('atask-due').value || null;
-  if (!assignee) { showToast('Select who to assign to', 'error'); return; }
-  if (!msg)      { showToast('Enter a task message', 'error'); return; }
-  try {
-    await apiFetch('/tasks', {
-      method: 'POST',
-      body: JSON.stringify({ assigned_to: assignee, message: msg, due_date: due }),
-    });
-    document.getElementById('atask-msg').value      = '';
-    document.getElementById('atask-due').value      = '';
-    document.getElementById('atask-assignee').value = '';
-    showToast('Task assigned ✓', 'success');
-    await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); }
 }
-
-async function markTaskDone(id) {
-  const el = document.getElementById(`task-item-${id}`);
-  if (el) el.style.opacity = '0.4';
-  try {
-    await apiFetch(`/tasks?id=eq.${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ done: true }),
-    });
-    showToast('Task marked done ✓', 'success');
-    await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); if (el) el.style.opacity = ''; }
-}
-
-async function deleteTask(id) {
-  try {
-    await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
-    await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); }
-}
-
 function renderAll() {
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
   run('updateStats',        updateStats);
