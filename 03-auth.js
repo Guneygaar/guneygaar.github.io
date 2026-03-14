@@ -111,25 +111,12 @@ window.verifyOTPCode = async function verifyOTPCode() {
 
 async function resolveRoleFromToken(accessToken, email) {
   try {
-    let roles = null;
     const roleRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_roles?select=role,email&limit=10`,
+      `${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role&limit=1`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` } }
     );
     const roleData = await roleRes.json();
-    if (Array.isArray(roleData) && roleData.length > 0) {
-      const match = roleData.find(r => (r.email||'').toLowerCase().trim() === email);
-      if (match) roles = [match];
-    }
-    if (!roles || !roles.length) {
-      const fallbackRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/user_roles?email=ilike.${encodeURIComponent(email)}&select=role&limit=1`,
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
-      );
-      const fallbackData = await fallbackRes.json();
-      if (Array.isArray(fallbackData) && fallbackData.length > 0) roles = fallbackData;
-    }
-    const role = roles?.[0]?.role;
+    const role = Array.isArray(roleData) && roleData[0]?.role;
     if (!role) {
       document.getElementById('login-code-error').textContent =
         `No role found for ${email}. Ask your admin.`;
