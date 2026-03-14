@@ -860,7 +860,7 @@ function _pcsListLabel(listKey) {
 }
 
 function _buildPCSGrid(post, canEdit, id) {
-  // Use global canonical lists from 01-config.js
+  // Use canonical lists from 01-config.js (STAGE_META, STAGES_DB, PILLARS_DB)
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   const OWNERS   = ['Chitra','Pranav','Admin'];
   const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
