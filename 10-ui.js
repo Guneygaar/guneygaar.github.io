@@ -21,8 +21,18 @@ function safeRender() {
 }
 
 function scheduleRender() {
+  // Defer background renders while user is interacting with a modal/PCS
+  if (window._modalOpen) { window._deferredRender = true; return; }
   clearTimeout(_renderTimer);
   _renderTimer = setTimeout(safeRender, 60);
+}
+
+function _drainDeferredRender() {
+  if (window._deferredRender) {
+    window._deferredRender = false;
+    clearTimeout(_renderTimer);
+    _renderTimer = setTimeout(safeRender, 60);
+  }
 }
 
 // -- Undo toast --------------------------------
@@ -142,6 +152,8 @@ function switchTab(btn) {
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
     window._taskFilter = null;
   }
+  // Re-render the newly active tab with current data
+  safeRender();
   _fabAttachScroll();
 }
 
