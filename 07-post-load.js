@@ -357,7 +357,7 @@ function openParked() {
     const stage = p.stage || '-';
     const { hex } = stageStyle(stage);
     const days  = Math.floor((Date.now() - new Date(p.updated_at || p.updatedAt || p.created_at).getTime()) / 86400000);
-    return `<div class="upc-list-row" onclick="openPCS('${esc(id)}','');closeParked()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
+    return `<div class="upc-list-row" data-post-id="${esc(id)}" data-list="" data-close-parked="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title)}</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px">Last moved ${days}d ago</div>
@@ -521,8 +521,7 @@ function buildPostCard(p, listKey) {
   const isToday = d && d.toDateString() === new Date().toDateString();
 
   return `
-    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
-         onclick="openPCS('${esc(id)}','${esc(listKey||'')}')">
+    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
       <span class="row-date${isToday ? ' today' : ''}">${esc(dateStr)}</span>
       <span class="row-body">
         <span class="row-title">${esc(title)}</span>
@@ -986,7 +985,7 @@ function renderLibraryCalendar(posts) {
       const isToday = d.toDateString() === today.toDateString();
       const dayStr  = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
+      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
         <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
@@ -998,7 +997,7 @@ function renderLibraryCalendar(posts) {
     const items = noDates.map(p => {
       const id = getPostId(p);
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
+      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
         <span class="calendar-date-badge" style="color:var(--text3)">-</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
@@ -1008,3 +1007,21 @@ function renderLibraryCalendar(posts) {
   }
   container.innerHTML = html || `<div class="empty-state"><div class="empty-icon">[date]</div><p>No posts with dates yet.</p></div>`;
 }
+
+// ═══════════════════════════════════════════════
+// Event delegation for card clicks
+// Single document-level listener — survives ALL innerHTML replacements.
+// Covers: .row-tile, .calendar-item, .upc-list-row (any element with data-post-id)
+// ═══════════════════════════════════════════════
+document.addEventListener('click', function _cardClickDelegate(e) {
+  var card = e.target.closest('[data-post-id]');
+  if (!card) return;
+  var postId  = card.dataset.postId;
+  var listKey = card.dataset.list || '';
+  if (!postId) return;
+  // Parked overlay rows also need to close the parked sheet
+  if (card.dataset.closeParked) {
+    try { closeParked(); } catch (_) {}
+  }
+  openPCS(postId, listKey);
+});
