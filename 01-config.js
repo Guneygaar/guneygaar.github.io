@@ -10,15 +10,13 @@ const CLIENT_REQUEST_FORM_URL = '';
 
 const STAGE_COLORS = {
   'published':            { hex: '#22c55e', label: 'Published' },
-  'sent for approval':    { hex: '#3b82f6', label: 'Sent for Approval' },
   'awaiting approval':    { hex: '#3b82f6', label: 'Awaiting Approval' },
   'awaiting brand input': { hex: '#8b5cf6', label: 'Awaiting Brand Input' },
-  'ready to send':        { hex: '#10b981', label: 'Ready to Send' },
+  'ready':                { hex: '#10b981', label: 'Ready' },
   'in production':        { hex: '#f59e0b', label: 'In Production' },
   'revisions needed':     { hex: '#ef4444', label: 'Revisions Needed' },
   'scheduled':            { hex: '#06b6d4', label: 'Scheduled' },
-  'rejected':             { hex: '#ef4444', label: 'Rejected' },
-  'pipeline':             { hex: '#6366f1', label: 'Pipeline' },
+  'parked':               { hex: '#64748b', label: 'Parked' },
   'archive':              { hex: '#64748b', label: 'Archive' },
 };
 
@@ -29,7 +27,7 @@ function stageStyle(raw) {
 
 const ROLE_STAGES = {
   'Admin':     null,
-  'Servicing': ['sent for approval','awaiting approval','ready to send','scheduled'],
+  'Servicing': ['awaiting approval','ready','scheduled'],
   'Creative':  ['in production','revisions needed','awaiting brand input'],
 };
 
@@ -52,13 +50,13 @@ const ROLE_BUCKETS = {
     { key:'requests',   label:'Requests',       stages:['awaiting brand input'] },
     { key:'revisions',  label:'Revisions',       stages:['revisions needed'], warn:true },
     { key:'production', label:'In Production',   stages:['in production'] },
-    { key:'ready',      label:'Ready to Send',   stages:['ready to send'] },
-    { key:'approval',   label:'For Approval',    stages:['sent for approval','awaiting approval'] },
+    { key:'ready',      label:'Ready',           stages:['ready'] },
+    { key:'approval',   label:'For Approval',    stages:['awaiting approval'] },
     { key:'scheduled',  label:'Scheduled',       stages:['scheduled'] },
   ],
   Servicing: [
     { key:'waiting',    label:'Waiting for Client', stages:['awaiting brand input','awaiting approval'] },
-    { key:'ready',      label:'Ready to Send',       stages:['ready to send','sent for approval'] },
+    { key:'ready',      label:'Ready',               stages:['ready'] },
     { key:'scheduled',  label:'Scheduled',           stages:['scheduled'] },
   ],
   Creative: [
@@ -69,20 +67,20 @@ const ROLE_BUCKETS = {
 };
 
 const STRIP_STAGES = [
-  { label:'In Production', stages:['in production'],               color:'#f59e0b', tab:'tasks',    bucket:'production' },
-  { label:'Revisions',     stages:['revisions needed'],            color:'#ef4444', tab:'tasks',    bucket:'revisions', warn:true },
-  { label:'Requests',      stages:['awaiting brand input'],        color:'#8b5cf6', tab:'tasks',    bucket:'requests' },
-  { label:'Review',        stages:['sent for approval','awaiting approval'], color:'#3b82f6', tab:'tasks', bucket:'approval' },
-  { label:'Ready',         stages:['ready to send'],               color:'#10b981', tab:'tasks',    bucket:'ready', target:true },
-  { label:'Scheduled',     stages:['scheduled'],                   color:'#06b6d4', tab:'upcoming', bucket:null },
-  { label:'Published',     stages:['published'],                   color:'#22c55e', tab:'library',  bucket:null },
+  { label:'In Production', stages:['in production'],    color:'#f59e0b', tab:'tasks',    bucket:'production' },
+  { label:'Revisions',     stages:['revisions needed'], color:'#ef4444', tab:'tasks',    bucket:'revisions', warn:true },
+  { label:'Requests',      stages:['awaiting brand input'], color:'#8b5cf6', tab:'tasks', bucket:'requests' },
+  { label:'Approval',      stages:['awaiting approval'], color:'#3b82f6', tab:'tasks',   bucket:'approval' },
+  { label:'Ready',         stages:['ready'],             color:'#10b981', tab:'tasks',   bucket:'ready', target:true },
+  { label:'Scheduled',     stages:['scheduled'],         color:'#06b6d4', tab:'upcoming', bucket:null },
+  { label:'Published',     stages:['published'],         color:'#22c55e', tab:'library', bucket:null },
 ];
 
 const PIPELINE_ORDER = [
-  'In Production','Revisions Needed','Awaiting Brand Input',
-  'Ready to Send','Sent for Approval','Awaiting Approval',
-  'Scheduled','Published','Archive'
+  'in production','revisions needed','awaiting brand input',
+  'ready','awaiting approval',
+  'scheduled','published','parked','archive'
 ];
 
 const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
-const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready to send','sent for approval','awaiting approval'];
+const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];
