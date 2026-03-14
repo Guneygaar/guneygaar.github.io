@@ -13,7 +13,7 @@ async function quickStage(postId, newStage) {
       method: 'PATCH',
       body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
+    await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     post.stage = oldStage;
@@ -66,7 +66,7 @@ async function saveStageUpdate() {
       method: 'PATCH',
       body: JSON.stringify(payload),
     });
-    await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
+    await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
     document.getElementById('post-modal-overlay').classList.remove('open');
     document.body.style.overflow = '';
     await loadPosts();
@@ -137,7 +137,7 @@ async function clientApprove(postId, btn) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'Scheduled', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
@@ -158,7 +158,7 @@ async function submitClientRevision(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'Revisions Needed', comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'revisions needed', comments: text, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
@@ -171,7 +171,7 @@ async function clientAcknowledge(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'In Production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in production', updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged — sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
@@ -188,7 +188,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ post_link: url, stage: 'In Production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_link: url, stage: 'in production', updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -460,7 +460,7 @@ function _pcsTouchStart(e) {
 }
 
 function _pcsTouchMove(e) {
-  if (e.touches.length !== 1 || _swipe.lock === 'v') return;
+  if (e.touches.length !== 1) return;
   const dx = e.touches[0].clientX - _swipe.x0;
   const dy = e.touches[0].clientY - _swipe.y0;
   const adx = Math.abs(dx), ady = Math.abs(dy);
@@ -469,6 +469,18 @@ function _pcsTouchMove(e) {
   if (!_swipe.lock && (adx > 8 || ady > 8)) {
     _swipe.lock = adx > ady ? 'h' : 'v';
   }
+
+  // Vertical downward drag — close gesture (only when scroll is at top)
+  if (_swipe.lock === 'v' && dy > 0) {
+    const scrollEl = document.getElementById('pcs-scroll');
+    if (scrollEl && scrollEl.scrollTop === 0) {
+      e.preventDefault();
+      const screen = document.getElementById('pcs-screen');
+      if (screen) screen.style.transform = `translateY(${Math.max(0, dy)}px)`;
+    }
+    return;
+  }
+
   if (_swipe.lock !== 'h') return;
 
   // Prevent vertical scroll during horizontal swipe
@@ -476,16 +488,35 @@ function _pcsTouchMove(e) {
 
   // Only track leftward drag (right swipe does nothing)
   if (dx < 0) {
-    const resist = Math.max(dx, -window.innerWidth * 0.6); // cap drag at 60vw
+    const resist = Math.max(dx, -window.innerWidth * 0.6);
     const _ms = document.getElementById('pcs-screen');
     if (_ms) _ms.style.transform = `translateX(${resist}px)`;
   }
 }
 
 function _pcsTouchEnd(e) {
+  const dy = e.changedTouches[0].clientY - _swipe.y0;
+  const screen = document.getElementById('pcs-screen');
+
+  // Vertical close gesture
+  if (_swipe.lock === 'v' && dy > 0) {
+    if (!screen) return;
+    if (dy > 90) {
+      // Committed — animate off bottom then close
+      screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
+      screen.style.transform  = `translateY(100%)`;
+      setTimeout(closePCS, 290);
+    } else {
+      // Spring back
+      screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
+      screen.style.transform  = 'translateY(0)';
+      setTimeout(() => { if (screen) screen.style.transition = ''; }, 300);
+    }
+    return;
+  }
+
   if (_swipe.lock !== 'h') return;
   const dx  = e.changedTouches[0].clientX - _swipe.x0;
-  const screen = document.getElementById('pcs-screen');
   if (!screen) return;
 
   if (dx < -80) {
@@ -581,12 +612,24 @@ function _renderPCS(postId) {
   // Title — dominant element
   if (elTitle) elTitle.textContent = title;
 
-  // Subtitle: only non-empty parts, stage gets colour
+  // Subtitle: only non-empty parts, stage gets colour, pillar as short label
   if (elSubtitle) {
+    const _pillarShort = {
+      'leadership':    'Lead',
+      'innovation':    'Innov',
+      'sustainability':'Sustain',
+      'inclusivity':   'Include',
+      'events':        'Event',
+      'announcements': 'Announce',
+    };
+    const pillarLabel = post.contentPillar
+      ? (_pillarShort[post.contentPillar] || post.contentPillar)
+      : '';
     const parts = [
-      stageLabel ? `<span class="pcs-subtitle-stage" style="color:${hex}">${esc(stageLabel)}</span>` : '',
+      stageLabel    ? `<span class="pcs-subtitle-stage" style="color:${hex}">${esc(stageLabel)}</span>` : '',
       post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
       post.location ? `<span>${esc(post.location)}</span>` : '',
+      pillarLabel   ? `<span>${esc(pillarLabel)}</span>`   : '',
     ].filter(Boolean);
     elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">·</span>');
   }
@@ -625,17 +668,17 @@ function _renderPCS(postId) {
 function _buildStageProgress(stageLC) {
   const steps = [
     { key: 'in production',     label: 'Production' },
-    { key: 'ready to send',     label: 'Ready' },
+    { key: 'ready',             label: 'Ready' },
     { key: 'awaiting approval', label: 'Approval' },
     { key: 'scheduled',         label: 'Scheduled' },
     { key: 'published',         label: 'Published' },
   ];
   // Normalise all variant/edge stages to a progress step
   const norm =
-    (stageLC === 'sent for approval')   ? 'awaiting approval' :
     (stageLC === 'awaiting brand input') ? 'in production'     :
     (stageLC === 'revisions needed')     ? 'in production'     :
     (stageLC === 'draft')                ? 'in production'     :
+    (stageLC === 'parked')               ? 'scheduled'         :
     (stageLC === 'archive')              ? 'published'         :
     stageLC;
 
@@ -779,12 +822,11 @@ async function updatePost(postId, field, value) {
 
 function _pcsNextAction(stageLC) {
   const map = {
-    'awaiting brand input':  { label: 'Start Production',       nextStage: 'In Production' },
-    'in production':         { label: 'Mark Ready to Send',     nextStage: 'Ready to Send' },
-    'revisions needed':      { label: 'Apply Revisions',        nextStage: 'In Production' },
-    'ready to send':         { label: 'Send for Approval',      nextStage: 'Sent for Approval' },
-    'sent for approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
-    'awaiting approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
+    'awaiting brand input':  { label: 'Start Production',       nextStage: 'in production' },
+    'in production':         { label: 'Mark Ready',             nextStage: 'ready' },
+    'revisions needed':      { label: 'Apply Revisions',        nextStage: 'in production' },
+    'ready':                 { label: 'Send for Approval',      nextStage: 'awaiting approval' },
+    'awaiting approval':     { label: 'Schedule Post',          nextStage: 'scheduled' },
     'scheduled':             { label: 'Post Scheduled',         nextStage: null },
     'published':             { label: 'Post Published',         nextStage: null },
   };
@@ -827,8 +869,8 @@ function _pcsListLabel(listKey) {
 
 function _buildPCSGrid(post, canEdit, id) {
   // Remove "Awaiting Input" — only valid stages used
-  const STAGES   = ['Draft','In Production','Revisions Needed','Awaiting Brand Input','Ready to Send','Awaiting Approval','Sent for Approval','Scheduled','Published'];
-  const PILLARS  = ['Leadership','Sustainability by Design','Inclusivity & Discipline','Education','Events','Announcement','Social Media'];
+  const STAGES   = ['in production','revisions needed','awaiting brand input','ready','awaiting approval','scheduled','published','parked'];
+  const PILLARS  = ['leadership','innovation','sustainability','inclusivity','events','announcements'];
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   const OWNERS   = ['Chitra','Pranav','Admin'];
   const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
@@ -866,7 +908,7 @@ function _buildPCSGrid(post, canEdit, id) {
 
   const stageCell = canEdit
     ? sel('stage', STAGES, post.stage||'', 'stage')
-    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(post.stage||'—')}</span>`;
+    : `<span class="pcs-field-val-ro pcs-field-val-stage" style="color:${hex}">${esc(post.stage||'—')}</span>`;
 
   return `
     <div class="pcs-section">
