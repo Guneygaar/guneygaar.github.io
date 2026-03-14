@@ -321,8 +321,10 @@ const _pcs = {
   idx:     0,
 };
 let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
+let _pcsGeneration = 0;   // incremented on every open/close — stale transitionend handlers check this
 
 function openPCS(postId, listKey) {
+  _pcsGeneration++;
   // Cancel any deferred forcePCSReset from a previous closePCS() —
   // without this, a rapid close→open reopens the sheet, then the
   // stale timer fires 300ms later and nukes it back to hidden.
@@ -406,6 +408,7 @@ function closePCS() {
 // and event-capturing surfaces. Safe to call multiple times.
 // ═══════════════════════════════════════════════
 function forcePCSReset() {
+  _pcsGeneration++; // invalidate any pending transitionend handlers
   var screen  = document.getElementById('pcs-screen');
   var overlay = document.getElementById('pcs-overlay');
 
@@ -566,12 +569,24 @@ function _pcsTouchEnd(e) {
         console.log('[PCS TRANSFORM WRITE] translateY(100%) — swipe-close commit');
         screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
         screen.style.transform  = 'translateY(100%)';
-        setTimeout(closePCS, 290);
+        var gen = _pcsGeneration;
+        screen.addEventListener('transitionend', function handler(ev) {
+          if (ev.target !== screen) return;
+          screen.removeEventListener('transitionend', handler);
+          if (_pcsGeneration !== gen) return; // stale — PCS was reopened/reset
+          closePCS();
+        }, { once: true });
       } else {
         // Spring back — restore to CSS-controlled position
         screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
         screen.style.transform  = 'translateY(0)';
-        setTimeout(_resetSwipeStyles, 300);
+        var gen = _pcsGeneration;
+        screen.addEventListener('transitionend', function handler(ev) {
+          if (ev.target !== screen) return;
+          screen.removeEventListener('transitionend', handler);
+          if (_pcsGeneration !== gen) return; // stale
+          _resetSwipeStyles();
+        }, { once: true });
       }
       return;
     }
@@ -586,15 +601,25 @@ function _pcsTouchEnd(e) {
       screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
       screen.style.transform  = 'translateX(-100%)';
       screen.style.opacity    = '0';
-      setTimeout(function() {
+      var gen = _pcsGeneration;
+      screen.addEventListener('transitionend', function handler(ev) {
+        if (ev.target !== screen) return;
+        screen.removeEventListener('transitionend', handler);
+        if (_pcsGeneration !== gen) return; // stale
         _resetSwipeStyles();
         try { _pcsNext(); } catch (err) { console.error('_pcsNext error:', err); closePCS(); }
-      }, 220);
+      }, { once: true });
     } else {
       // Spring back — restore to CSS-controlled position
       screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
       screen.style.transform  = 'translateX(0)';
-      setTimeout(_resetSwipeStyles, 260);
+      var gen = _pcsGeneration;
+      screen.addEventListener('transitionend', function handler(ev) {
+        if (ev.target !== screen) return;
+        screen.removeEventListener('transitionend', handler);
+        if (_pcsGeneration !== gen) return; // stale
+        _resetSwipeStyles();
+      }, { once: true });
     }
   } catch (err) {
     // If ANYTHING throws, nuclear cleanup so the UI never locks
