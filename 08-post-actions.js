@@ -350,8 +350,13 @@ function openPCS(postId, listKey) {
   _modalOpen = true;
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  _renderPCS(postId);
-  _pcsAttachSwipe();
+  try {
+    _renderPCS(postId);
+    _pcsAttachSwipe();
+  } catch (err) {
+    console.error('[PCS] openPCS failed — cleaning up:', err);
+    forcePCSReset();
+  }
 }
 
 function closePCS() {
