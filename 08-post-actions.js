@@ -256,9 +256,9 @@ function handleBucketDrop(event, targetPostId) {
   event.currentTarget.classList.remove('drag-over');
   const sourcePostId = event.dataTransfer.getData('text/plain');
   if (!sourcePostId || sourcePostId === targetPostId) return;
-  const source = allPosts.find(p => getPostId(p) === sourcePostId);
-  if (!source) return;
-  quickStage(sourcePostId, source.stage);
+  const targetPost = allPosts.find(p => getPostId(p) === targetPostId);
+  if (!targetPost) return;
+  quickStage(sourcePostId, targetPost.stage);
 }
 
 async function nudgeClient(postId, title, targetDate) {
@@ -496,7 +496,7 @@ function _pcsTouchEnd(e) {
     }, 220);
   } else {
     // Spring back
-    screen.style.transition = 'transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
     screen.style.transform  = 'translateX(0)';
     setTimeout(() => { screen.style.transition = ''; }, 260);
   }
@@ -516,7 +516,7 @@ function _pcsNext() {
       </div>`;
     // Slide in the end screen
     const screen = document.getElementById('pcs-screen');
-    screen.style.transform = 'translateX(40px)';
+    screen.style.transform = 'translateX(28px)';
     screen.style.opacity   = '0';
     screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
     requestAnimationFrame(() => {
@@ -561,44 +561,170 @@ function _renderPCS(postId) {
   const isPublished = stageLC === 'published';
   const postLink    = post.postLink || post.post_link || '';
   const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const { hex, label: stageLabel } = stageStyle(stage);
 
-  // Two-line header
-  const titleEl = document.getElementById('pcs-topbar-title');
-  if (titleEl) titleEl.textContent = title;
+  // Cache DOM elements — guard every write
+  const elTitle    = document.getElementById('pcs-topbar-title');
+  const elSubtitle = document.getElementById('pcs-subtitle');
+  const elProgress = document.getElementById('pcs-progress-wrap');
+  const elDesign   = document.getElementById('pcs-action-btn-wrap');
+  const elNext     = document.getElementById('pcs-next-action-wrap');
+  const elFields   = document.getElementById('pcs-fields');
+  const elActivity = document.getElementById('pcs-activity-body');
 
-  // Primary action — full-width button
-  const actionWrap = document.getElementById('pcs-action-btn-wrap');
+  // Title — dominant element
+  if (elTitle) elTitle.textContent = title;
+
+  // Subtitle: only non-empty parts, stage gets colour
+  if (elSubtitle) {
+    const parts = [
+      stageLabel ? `<span class="pcs-subtitle-stage" style="color:${hex}">${esc(stageLabel)}</span>` : '',
+      post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
+      post.location ? `<span>${esc(post.location)}</span>` : '',
+    ].filter(Boolean);
+    elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">·</span>');
+  }
+
+  // Stage progress
+  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
+
+  // Design block
+  if (elDesign) elDesign.innerHTML = _buildDesignBlock(postLink, isPublished, canEdit, id);
+
+  // Next Action button
+  if (elNext) {
+    const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
+    if (naLabel && canEdit && nextStage) {
+      elNext.innerHTML =
+        `<button class="pcs-next-action-btn" onclick="pcsDoNextAction('${esc(id)}','${esc(nextStage)}')">
+           ${esc(naLabel)} →
+         </button>`;
+    } else if (naLabel) {
+      elNext.innerHTML = `<div class="pcs-next-action-info">${esc(naLabel)}</div>`;
+    } else {
+      elNext.innerHTML = '';
+    }
+  }
+
+  // Information + Notes sections
+  if (elFields) elFields.innerHTML = _buildPCSGrid(post, canEdit, id);
+
+  // History
+  if (elActivity) {
+    elActivity.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
+    _loadPCSActivity(id, elActivity);
+  }
+}
+
+function _buildStageProgress(stageLC) {
+  const steps = [
+    { key: 'in production',     label: 'Production' },
+    { key: 'ready to send',     label: 'Ready' },
+    { key: 'awaiting approval', label: 'Approval' },
+    { key: 'scheduled',         label: 'Scheduled' },
+    { key: 'published',         label: 'Published' },
+  ];
+  // Normalise all variant/edge stages to a progress step
+  const norm =
+    (stageLC === 'sent for approval')   ? 'awaiting approval' :
+    (stageLC === 'awaiting brand input') ? 'in production'     :
+    (stageLC === 'revisions needed')     ? 'in production'     :
+    (stageLC === 'draft')                ? 'in production'     :
+    (stageLC === 'archive')              ? 'published'         :
+    stageLC;
+
+  const activeIdx = steps.findIndex(s => s.key === norm);
+
+  const dots = steps.map((s, i) => {
+    const isDone    = activeIdx !== -1 && i < activeIdx;
+    const isCurrent = i === activeIdx;
+    const cls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
+    return `<div class="prog-step">
+      <div class="${cls}"></div>
+      <div class="prog-label">${s.label}</div>
+    </div>`;
+  }).join('<div class="prog-line"></div>');
+
+  return `<div class="pcs-progress">${dots}</div>`;
+}
+
+function _buildDesignBlock(postLink, isPublished, canEdit, postId) {
+  // State 2: published/LinkedIn link
+  if (isPublished && postLink) {
+    return `<div class="pcs-design-block">
+      <div class="pcs-design-info">
+        <div class="design-icon-wrap design-icon-linkedin">in</div>
+        <div class="pcs-design-text">
+          <div class="pcs-design-label">Post</div>
+          <div class="pcs-design-status">Published on LinkedIn</div>
+        </div>
+      </div>
+      <div class="pcs-design-actions">
+        <a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary" onclick="closePCS()">View on LinkedIn ↗</a>
+      </div>
+    </div>`;
+  }
+
+  // State 1: Canva link exists
   if (postLink) {
-    const btnLabel = isPublished ? 'View on LinkedIn ↗' : 'Open Canva ↗';
-    actionWrap.innerHTML =
-      `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary"
-          onclick="closePCS()">${btnLabel}</a>`;
-  } else {
-    actionWrap.innerHTML = '';
+    return `<div class="pcs-design-block">
+      <div class="pcs-design-info">
+        <div class="design-icon-wrap design-icon-canva">C</div>
+        <div class="pcs-design-text">
+          <div class="pcs-design-label">Design</div>
+          <div class="pcs-design-status">Canva connected</div>
+        </div>
+      </div>
+      <div class="pcs-design-actions">
+        <a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary" onclick="closePCS()">Open Canva ↗</a>
+        ${canEdit ? `<button class="pcs-design-replace" onclick="pcsToggleAttach('${esc(postId)}')">Replace</button>` : ''}
+      </div>
+      ${canEdit ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
+        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste new Canva URL…">
+        <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
+      </div>` : ''}
+    </div>`;
   }
 
-  // Next Action — clickable button that performs stage transition
-  const nextActionWrap = document.getElementById('pcs-next-action-wrap');
-  const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
-  if (naLabel && canEdit && nextStage) {
-    nextActionWrap.innerHTML =
-      `<button class="pcs-next-action-btn" onclick="pcsDoNextAction('${esc(id)}','${esc(nextStage)}')">
-         Next Action: ${esc(naLabel)}
-       </button>`;
-  } else if (naLabel) {
-    nextActionWrap.innerHTML =
-      `<div class="pcs-next-action-info">Next Action: ${esc(naLabel)}</div>`;
-  } else {
-    nextActionWrap.innerHTML = '';
+  // State 3: no link
+  if (!canEdit) return '';
+  return `<div class="pcs-design-block pcs-design-empty">
+    <div class="pcs-design-info">
+      <div class="design-icon-wrap design-icon-empty">+</div>
+      <div class="pcs-design-text">
+        <div class="pcs-design-label">Design</div>
+        <div class="pcs-design-status muted">No design attached</div>
+      </div>
+    </div>
+    <div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}">
+      <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste Canva URL…">
+      <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Attach</button>
+    </div>
+  </div>`;
+}
+
+function pcsToggleAttach(postId) {
+  const row = document.getElementById(`pcs-attach-row-${postId}`);
+  if (!row) return;
+  const open = row.style.display === 'none';
+  row.style.display = open ? 'flex' : 'none';
+  if (open) document.getElementById(`pcs-attach-input-${postId}`)?.focus();
+}
+
+async function pcsSaveAttach(postId) {
+  const input = document.getElementById(`pcs-attach-input-${postId}`);
+  const url = (input?.value || '').trim();
+  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  await updatePost(postId, 'postLink', url);
+  // Re-render design block with new link
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (post) {
+    const stageLC = (post.stage || '').toLowerCase().trim();
+    const isPublished = stageLC === 'published';
+    const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
+    const el = document.getElementById('pcs-action-btn-wrap');
+    if (el) el.innerHTML = _buildDesignBlock(url, isPublished, canEdit, postId);
   }
-
-  // Metadata grid — inline-edit, no save button
-  document.getElementById('pcs-fields').innerHTML = _buildPCSGrid(post, canEdit, id);
-
-  // Activity
-  const actBody = document.getElementById('pcs-activity-body');
-  actBody.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
-  _loadPCSActivity(id, actBody);
 }
 
 async function pcsDoNextAction(postId, nextStage) {
@@ -606,6 +732,9 @@ async function pcsDoNextAction(postId, nextStage) {
   refreshSystemViews();
   closePCS();
 }
+
+// Legacy stub — replaced by pcsToggleAttach/pcsSaveAttach
+function pcsReplaceDesign(postId) { pcsToggleAttach(postId); }
 
 function refreshSystemViews() {
   try { renderTasks();    } catch(e) {}
@@ -644,21 +773,22 @@ async function updatePost(postId, field, value) {
 
 function _pcsNextAction(stageLC) {
   const map = {
-    'awaiting brand input':  { label: 'Assign to Creative',    nextStage: 'In Production' },
-    'in production':         { label: 'Send for Review',        nextStage: 'Ready to Send' },
-    'revisions needed':      { label: 'Mark Revision Done',     nextStage: 'In Production' },
+    'awaiting brand input':  { label: 'Start Production',       nextStage: 'In Production' },
+    'in production':         { label: 'Mark Ready to Send',     nextStage: 'Ready to Send' },
+    'revisions needed':      { label: 'Apply Revisions',        nextStage: 'In Production' },
     'ready to send':         { label: 'Send for Approval',      nextStage: 'Sent for Approval' },
     'sent for approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
     'awaiting approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
-    'scheduled':             { label: 'Wait for Publish',       nextStage: null },
-    'published':             { label: 'Post is Live',           nextStage: null },
+    'scheduled':             { label: 'Post Scheduled',         nextStage: null },
+    'published':             { label: 'Post Published',         nextStage: null },
   };
-  return map[stageLC] || { label: '', nextStage: null };
+  return map[stageLC] || { label: 'No action available', nextStage: null };
 }
 
 function _loadPCSActivity(postId, bodyEl) {
   apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=25`)
     .then(rows => {
+      if (_pcs.postId !== postId) return; // stale response — discard
       if (!rows || !rows.length) {
         bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
         return;
@@ -666,7 +796,7 @@ function _loadPCSActivity(postId, bodyEl) {
       bodyEl.innerHTML = rows.map(r => {
         const ago = r.created_at ? timeAgo(r.created_at) : '';
         return `<div class="pcs-activity-row">
-          <span class="pcs-activity-who">${esc(r.actor || 'System')}</span>
+          <span class="pcs-activity-who">${esc(r.actor_name || r.actor || 'System')}</span>
           <span class="pcs-activity-what">${esc(r.action || '')}</span>
           <span class="pcs-activity-when">${esc(ago)}</span>
         </div>`;
@@ -690,7 +820,8 @@ function _pcsListLabel(listKey) {
 }
 
 function _buildPCSGrid(post, canEdit, id) {
-  const STAGES   = ['Draft','Awaiting Input','In Production','Ready to Send','Awaiting Approval','Scheduled','Published'];
+  // Remove "Awaiting Input" — only valid stages used
+  const STAGES   = ['Draft','In Production','Revisions Needed','Awaiting Brand Input','Ready to Send','Awaiting Approval','Sent for Approval','Scheduled','Published'];
   const PILLARS  = ['Leadership','Sustainability by Design','Inclusivity & Discipline','Education','Events','Announcement','Social Media'];
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   const OWNERS   = ['Chitra','Pranav','Admin'];
@@ -704,7 +835,6 @@ function _buildPCSGrid(post, canEdit, id) {
     : (post.targetDate || '');
   const { hex } = stageStyle(post.stage);
 
-  // Inline-edit select: changes call updatePost immediately
   const sel = (field, opts, val, dbField) =>
     `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
        ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}
@@ -722,29 +852,33 @@ function _buildPCSGrid(post, canEdit, id) {
                  onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea>`
     : (post.comments ? `<div class="pcs-notes-ro">${esc(post.comments)}</div>` : '');
 
-  const canvaInput = canEdit
-    ? `<input type="url" class="pcs-field-val" placeholder="https://canva.com/design/…"
-              value="${esc(post.postLink || post.post_link || '')}"
-              onblur="updatePost('${esc(id)}','postLink',this.value)">`
-    : ro(post.postLink || post.post_link || '');
-
-  const cell = (icon, label, content) =>
+  const cell = (label, content) =>
     `<div class="pcs-field">
-       <div class="pcs-field-label">${icon} ${label}</div>
+       <div class="pcs-field-label">${label}</div>
        ${content}
      </div>`;
 
+  const stageCell = canEdit
+    ? sel('stage', STAGES, post.stage||'', 'stage')
+    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(post.stage||'—')}</span>`;
+
   return `
-    <div class="pcs-grid">
-      ${cell('●', 'Stage',    canEdit ? sel('stage', STAGES, post.stage||'', 'stage') : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(post.stage||'—')}</span>`)}
-      ${cell('👤', 'Owner',   canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
-      ${cell('🏷', 'Pillar',  canEdit ? sel('contentPillar', PILLARS, post.contentPillar||'', 'contentPillar') : ro(post.contentPillar))}
-      ${cell('📍', 'Location',canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
-      ${cell('📝', 'Format',  canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
-      ${cell('📅', dateLabel, dateInput)}
+    <div class="pcs-section">
+      <div class="pcs-section-label">Information</div>
+      <div class="pcs-grid">
+        ${cell('Stage',    stageCell)}
+        ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
+        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS, post.contentPillar||'', 'contentPillar') : ro(post.contentPillar))}
+        ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
+        ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
+        ${cell(dateLabel,  dateInput)}
+      </div>
     </div>
-    ${canEdit ? `<div class="pcs-field pcs-field-full">${cell('🔗', 'Canva Link', canvaInput)}</div>` : ''}
-    ${(canEdit || post.comments) ? `<div class="pcs-field pcs-field-full">${cell('📋', 'Notes', notesInput)}</div>` : ''}
+    ${(canEdit || post.comments) ? `
+    <div class="pcs-section">
+      <div class="pcs-section-label">Notes</div>
+      ${notesInput || '<div class="pcs-activity-empty">No notes.</div>'}
+    </div>` : ''}
     <input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 }
 
