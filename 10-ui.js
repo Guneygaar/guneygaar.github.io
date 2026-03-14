@@ -121,12 +121,27 @@ function scrollToBucket(bucketKey) {
   }, 80);
 }
 
+const _TAB_TITLES = {
+  tasks: 'My Tasks',
+  pipeline: 'Pipeline',
+  upcoming: 'Upcoming',
+  library: 'Library',
+};
+
 function switchTab(btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  const panel = document.getElementById('panel-' + btn.dataset.tab);
+  const tab = btn.dataset.tab;
+  const panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
+  // Update header title
+  const titleEl = document.getElementById('app-header-title');
+  if (titleEl) titleEl.textContent = _TAB_TITLES[tab] || tab;
+  // Reset task chip filter when leaving tasks tab
+  if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
+    window._taskFilter = null;
+  }
   _fabAttachScroll();
 }
 
@@ -328,10 +343,12 @@ let _fabScrollTimer = null;
 
 function _fabAttachScroll() {
   if (_fabScrollEl) _fabScrollEl.removeEventListener('scroll', _fabOnScroll);
-  // Find active panel's scrollable area
+  // With height:100vh layout, the .dash-body inside active panel is the scroll container
   const activePanel = document.querySelector('.tab-panel.active');
-  _fabScrollEl = activePanel?.querySelector('.dash-body') || activePanel || document.querySelector('.dash-body');
-  if (_fabScrollEl) _fabScrollEl.addEventListener('scroll', _fabOnScroll, { passive: true });
+  _fabScrollEl = activePanel?.querySelector('.dash-body') || document.querySelector('.dash-body');
+  if (_fabScrollEl) {
+    _fabScrollEl.addEventListener('scroll', _fabOnScroll, { passive: true });
+  }
 }
 
 function _fabOnScroll() {
@@ -407,4 +424,7 @@ async function submitRequestSheet() {
 // Attach FAB scroll on initial load
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
+  // Set initial header title
+  const titleEl = document.getElementById('app-header-title');
+  if (titleEl && !titleEl.textContent) titleEl.textContent = 'My Tasks';
 });
