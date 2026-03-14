@@ -659,6 +659,8 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -2078,6 +2080,7 @@ tr:hover td { background: var(--surface2); }
   gap: 6px;
   padding: 8px 16px;
   width: 100%;
+  max-width: 100%;
   box-sizing: border-box;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
@@ -2097,6 +2100,7 @@ tr:hover td { background: var(--surface2); }
   font-family: inherit;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   appearance: none;
   -webkit-appearance: none;
