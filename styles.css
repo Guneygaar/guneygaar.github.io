@@ -2456,11 +2456,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    PSTAGE — vertical stage sections (My Tasks, Pipeline)
 ═══════════════════════════════════════════════ */
 
-.pstages {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 0 0 var(--sp-6);
+/* Direct scroll containers for task/pipeline lists */
+#tasks-container,
+#pipeline-container {
+  display: block;
+  padding-bottom: var(--sp-6);
 }
 
 .pstage-header {
