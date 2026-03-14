@@ -52,7 +52,7 @@ async function loadPostsForClient() {
     if (cachedPosts.length) {
       allPosts = cachedPosts;
       renderClientView();
-      showErrorBanner('Showing cached data — connection issue.');
+      showErrorBanner('Showing cached data - connection issue.');
     } else {
       document.getElementById('client-approved-tbody').innerHTML =
         `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">⚠</div>
@@ -110,7 +110,7 @@ async function assignTask() {
     document.getElementById('atask-assignee').value = '';
     showToast('Task assigned ✓', 'success');
     await loadTasks();
-  } catch { showToast('Failed — try again', 'error'); }
+  } catch { showToast('Failed - try again', 'error'); }
 }
 
 async function markTaskDone(id) {
@@ -123,14 +123,14 @@ async function markTaskDone(id) {
     });
     showToast('Task marked done ✓', 'success');
     await loadTasks();
-  } catch { showToast('Failed — try again', 'error'); if (el) el.style.opacity = ''; }
+  } catch { showToast('Failed - try again', 'error'); if (el) el.style.opacity = ''; }
 }
 
 async function deleteTask(id) {
   try {
     await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
     await loadTasks();
-  } catch { showToast('Failed — try again', 'error'); }
+  } catch { showToast('Failed - try again', 'error'); }
 }
 
 function renderAll() {
@@ -283,9 +283,9 @@ function renderAdminInsight() {
 
   // Populate insights popup body
   const bottleneckRows = [
-    stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow — ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
-    stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting — ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
-    stuckReview.length ? `<div class="insight-flag"><span class="insight-flag-dot amber"></span>Revisions sitting — ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days</div>` : '',
+    stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow - ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
+    stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting - ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
+    stuckReview.length ? `<div class="insight-flag"><span class="insight-flag-dot amber"></span>Revisions sitting - ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days</div>` : '',
   ].filter(Boolean).join('');
   const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
   const approved = allPosts.filter(p => ['awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
@@ -294,7 +294,7 @@ function renderAdminInsight() {
   if (body) {
     body.innerHTML = `
       <div class="insight-wrap">
-        <div class="insight-panel"><div class="insight-panel-label">Bottlenecks</div>${bottleneckRows || '<div class="insight-flag"><span class="insight-flag-dot" style="background:var(--c-green)"></span>No blockers — pipeline clear</div>'}</div>
+        <div class="insight-panel"><div class="insight-panel-label">Bottlenecks</div>${bottleneckRows || '<div class="insight-flag"><span class="insight-flag-dot" style="background:var(--c-green)"></span>No blockers - pipeline clear</div>'}</div>
         <div class="insight-panel"><div class="insight-panel-label">This Week</div><div class="insight-rows">
           <div class="insight-row"><span class="insight-row-label">Written</span><span class="insight-row-val ${written===0?'warn':''}">${written}</span></div>
           <div class="insight-row"><span class="insight-row-label">Approved</span><span class="insight-row-val ${approved===0?'warn':''}">${approved}</span></div>
@@ -311,7 +311,7 @@ function openParked() {
   list.innerHTML = posts.map(p => {
     const id    = getPostId(p);
     const title = getTitle(p);
-    const stage = p.stage || '—';
+    const stage = p.stage || '-';
     const { hex } = stageStyle(stage);
     const days  = Math.floor((Date.now() - new Date(p.updated_at || p.updatedAt || p.created_at).getTime()) / 86400000);
     return `<div class="upc-list-row" onclick="openPCS('${esc(id)}','');closeParked()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
@@ -357,7 +357,7 @@ function renderAdminTaskPanel() {
     return `<div class="admin-task-item"><div class="admin-task-item-body"><div class="admin-task-item-msg">${esc(t.message)}</div><div class="admin-task-item-meta">${esc(t.assigned_to)}${due}</div></div><button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">✕</button></div>`;
   }).join('');
   const doneRows = doneTasks.map(t => `<div class="admin-task-item"><div class="admin-task-item-body admin-task-item-done"><div class="admin-task-item-msg">${esc(t.message)}</div><div class="admin-task-item-meta">${esc(t.assigned_to)}</div></div><button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">✕</button></div>`).join('');
-  section.innerHTML = `<div class="admin-task-wrap"><div class="insight-panel-label">Assign a Task</div><div class="admin-task-form"><div class="admin-task-row"><select id="atask-assignee" style="flex:1"><option value="">Assign to…</option><option>Chitra</option><option>Pranav</option></select><input type="date" id="atask-due" placeholder="Due date (optional)" placeholder="Due date (optional)" title="Due date (optional)" style="flex:0 0 auto;width:140px"></div><input type="text" id="atask-msg" placeholder="e.g. Upload 20 February posts to the system" onkeydown="if(event.key==='Enter')assignTask()"><button class="btn-modal-primary" style="align-self:flex-start;padding:var(--sp-2) var(--sp-5)" onclick="assignTask()">Assign Task</button></div>${openTasks.length ? `<div class="admin-task-section-label">Open (${openTasks.length})</div><div class="admin-task-list">${openRows}</div>` : '<div style="font-size:13px;color:var(--text3)">No open tasks.</div>'}${doneTasks.length ? `<div class="admin-task-section-label">Completed</div><div class="admin-task-list">${doneRows}</div>` : ''}</div>`;
+  section.innerHTML = `<div class="admin-task-wrap"><div class="insight-panel-label">Assign a Task</div><div class="admin-task-form"><div class="admin-task-row"><select id="atask-assignee" style="flex:1"><option value="">Assign to...</option><option>Chitra</option><option>Pranav</option></select><input type="date" id="atask-due" placeholder="Due date (optional)" placeholder="Due date (optional)" title="Due date (optional)" style="flex:0 0 auto;width:140px"></div><input type="text" id="atask-msg" placeholder="e.g. Upload 20 February posts to the system" onkeydown="if(event.key==='Enter')assignTask()"><button class="btn-modal-primary" style="align-self:flex-start;padding:var(--sp-2) var(--sp-5)" onclick="assignTask()">Assign Task</button></div>${openTasks.length ? `<div class="admin-task-section-label">Open (${openTasks.length})</div><div class="admin-task-list">${openRows}</div>` : '<div style="font-size:13px;color:var(--text3)">No open tasks.</div>'}${doneTasks.length ? `<div class="admin-task-section-label">Completed</div><div class="admin-task-list">${doneRows}</div>` : ''}</div>`;
 }
 
 function daysInStage(post) {
@@ -426,7 +426,7 @@ function renderNextPost() {
   if (!['Admin','Creative','Servicing'].includes(currentRole)) { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
-    section.innerHTML = `<div class="hero-card"><div class="hero-label">${currentRole === 'Creative' ? 'Current Job' : 'Most Urgent Post'}</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div></div>`;
+    section.innerHTML = `<div class="hero-card"><div class="hero-label">${currentRole === 'Creative' ? 'Current Job' : 'Most Urgent Post'}</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">✓</div><p>All clear - nothing here right now.</p></div></div>`;
     return;
   }
   const id        = getPostId(post);
@@ -434,7 +434,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = post.owner || '—';
+  const owner     = post.owner || '-';
   const pillar    = post.contentPillar || '';
   const comments  = post.comments || '';
   const postLink  = post.postLink || post.post_link || '';
@@ -453,7 +453,7 @@ function renderNextPost() {
   const heroLabel = currentRole === 'Creative' ? 'Current Job' : currentRole === 'Servicing' ? 'Needs Your Attention' : 'Most Urgent';
   let staleNote = '';
   if (stLabel && currentRole === 'Servicing') staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">⏱ ${stLabel} in this stage</div>`;
-  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='—' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">⬜ Zen Mode — expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">✏ Open in Canva ↗</a>` : currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">⚠ No design link — add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">⚑ Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="${currentRole==='Admin' ? `openAdminEdit('${esc(id)}')` : `openPostModal('${esc(id)}')`}" title="Edit post">⋯</button>` : ''}</div></div>`;
+  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">⬜ Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">✏ Open in Canva ↗</a>` : currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">⚠ No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">⚑ Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="${currentRole==='Admin' ? `openAdminEdit('${esc(id)}')` : `openPostModal('${esc(id)}')`}" title="Edit post">⋯</button>` : ''}</div></div>`;
 }
 
 function toggleHeroComments(id, btn) {
@@ -573,7 +573,7 @@ function renderTasks() {
     _postLists['tasks'] = posts;
     container.innerHTML = posts.length
       ? `<div class="row-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
-      : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear — nothing here right now.</p></div>`;
+      : `<div class="empty-state"><div class="empty-icon">✓</div><p>All clear - nothing here right now.</p></div>`;
     return;
   }
   const stagesHtml = buckets.map(bucket => {
@@ -691,19 +691,6 @@ function renderUpcoming() {
 function populateFilterDropdowns() {
   const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
   const owners  = [...new Set(allPosts.map(p=>p.owner||'').filter(Boolean))].sort();
-  const stageEl = document.getElementById('filter-stage');
-  const ownerEl = document.getElementById('filter-owner');
-  if (!stageEl || !ownerEl) return;
-  const curStage = stageEl.value, curOwner = ownerEl.value;
-  stageEl.innerHTML = `<option value="">All Stages</option>` + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
-  ownerEl.innerHTML = `<option value="">All Owners</option>` + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
-  stageEl.value = curStage;
-  ownerEl.value = curOwner;
-}
-
-function populateFilterDropdowns() {
-  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
-  const owners  = [...new Set(allPosts.map(p=>p.owner||'').filter(Boolean))].sort();
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
   const stageEl  = document.getElementById('filter-stage');
@@ -784,14 +771,14 @@ function renderClientView() {
   if (inputCount) inputCount.textContent = inputPosts.length;
   const inputItems = document.getElementById('client-input-items');
   if (inputItems) {
-    if (!inputPosts.length) { inputItems.innerHTML = `<div class="empty-state"><div class="empty-icon">✨</div><p>All clear — nothing needed from you right now.</p></div>`; }
+    if (!inputPosts.length) { inputItems.innerHTML = `<div class="empty-state"><div class="empty-icon">✨</div><p>All clear - nothing needed from you right now.</p></div>`; }
     else {
       inputItems.innerHTML = inputPosts.map(p => {
         const id   = getPostId(p);
         const days = daysInStage(p);
         const sl   = staleLabel(days, p.stage);
         const sc   = staleClass(days);
-        const waitingHtml = sl ? `<div class="client-item-waiting ${sc}">Waiting ${sl} — we need your input</div>` : `<div class="client-item-waiting amber">Waiting for your input</div>`;
+        const waitingHtml = sl ? `<div class="client-item-waiting ${sc}">Waiting ${sl} - we need your input</div>` : `<div class="client-item-waiting amber">Waiting for your input</div>`;
         return `<div class="client-input-item"><div class="client-item-title">${esc(getTitle(p))}</div><div class="client-item-need">${esc(p.comments||'We need your input to move this post forward.')}</div>${waitingHtml}<div class="client-item-actions"><label class="btn-client-upload" id="upload-label-${esc(id)}">↑ Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, '${esc(id)}')"></label><button class="btn-client-ack" onclick="clientAcknowledge('${esc(id)}')">I'll send it on WhatsApp</button></div><div id="upload-confirm-${esc(id)}"></div></div>`;
       }).join('');
     }
@@ -809,8 +796,8 @@ function renderClientView() {
         const approvalUrl = `${window.location.origin}/p/${id}`;
         const waText      = encodeURIComponent(`LinkedIn post ready for review\n\nPreview and approve here:\n${approvalUrl}\n\nTakes 5 seconds.`);
         const waLink      = `https://wa.me/?text=${waText}`;
-        const preview     = postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" style="display:block;width:100%;height:100px;background:var(--surface3);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;margin-bottom:var(--sp-3)">View Post Design ↗</a>` : `<div class="approval-item-preview">No preview — review brief above</div>`;
-        return `<div class="client-approval-item" id="apv-item-${esc(id)}"><div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>${preview}<div class="approval-item-actions"><button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">✓ Approve</button><button class="btn-revise-outline" onclick="showRevisionInput('${esc(id)}')">↺ Changes</button></div><div class="revision-input-wrap" id="revision-wrap-${esc(id)}"><textarea class="revision-textarea" id="revision-text-${esc(id)}" placeholder="What would you like changed? Be as specific as possible…" rows="3"></textarea><button class="btn-send-revision" onclick="submitClientRevision('${esc(id)}')">Send Revision Request</button></div><div class="approval-confirmed" id="approved-confirm-${esc(id)}">✓ Approved! The team has been notified.</div><a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Share on WhatsApp</a></div>`;
+        const preview     = postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" style="display:block;width:100%;height:100px;background:var(--surface3);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;margin-bottom:var(--sp-3)">View Post Design ↗</a>` : `<div class="approval-item-preview">No preview - review brief above</div>`;
+        return `<div class="client-approval-item" id="apv-item-${esc(id)}"><div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>${preview}<div class="approval-item-actions"><button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">✓ Approve</button><button class="btn-revise-outline" onclick="showRevisionInput('${esc(id)}')">↺ Changes</button></div><div class="revision-input-wrap" id="revision-wrap-${esc(id)}"><textarea class="revision-textarea" id="revision-text-${esc(id)}" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea><button class="btn-send-revision" onclick="submitClientRevision('${esc(id)}')">Send Revision Request</button></div><div class="approval-confirmed" id="approved-confirm-${esc(id)}">✓ Approved! The team has been notified.</div><a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Share on WhatsApp</a></div>`;
       }).join('');
     }
   }
@@ -824,7 +811,7 @@ function renderClientApproved() {
   const tbody = document.getElementById('client-approved-tbody');
   if (!tbody) return;
   if (!published.length) { tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>No published posts yet.</p></div></td></tr>`; return; }
-  tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${formatDate(p.targetDate)||'—'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'—'}</td></tr>`; }).join('');
+  tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${formatDate(p.targetDate)||'-'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">↗ View</a>`:'-'}</td></tr>`; }).join('');
 }
 
 // -- Fix 20: Creative Target Tracker ----------
@@ -969,7 +956,7 @@ function renderLibraryCalendar(posts) {
       const id = getPostId(p);
       const { hex } = stageStyle(p.stage);
       return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
-        <span class="calendar-date-badge" style="color:var(--text3)">—</span>
+        <span class="calendar-date-badge" style="color:var(--text3)">-</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
       </div>`;
