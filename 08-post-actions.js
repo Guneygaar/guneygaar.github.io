@@ -322,6 +322,9 @@ const _pcs = {
 };
 
 function openPCS(postId, listKey) {
+  // Clean up any stale confirm overlay from a previous PCS session
+  _removePcsConfirm();
+
   const list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
     : allPosts;
@@ -346,8 +349,7 @@ function closePCS() {
     if (_ov) _ov.classList.remove('open');
     _resetSwipeStyles();
     _swipe.active = false;
-    // Remove any lingering confirm-delete overlay (appended to body, not inside #pcs-overlay)
-    document.querySelectorAll('.pcs-confirm-overlay').forEach(el => el.remove());
+    _removePcsConfirm();
     _pcs.postId = null;
   } finally {
     // These MUST run even if something above throws
@@ -541,6 +543,8 @@ function _pcsNext() {
 }
 
 function _renderPCS(postId) {
+  // Dismiss confirm overlay when navigating to a different card
+  _removePcsConfirm();
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) { closePCS(); return; }
 
@@ -893,9 +897,16 @@ async function savePCS() {
   // Legacy stub — fields now auto-save via updatePost()
 }
 
-function pcsConfirmDelete() {
-  // Remove any existing confirm overlay first
+function _removePcsConfirm() {
   document.querySelectorAll('.pcs-confirm-overlay').forEach(el => el.remove());
+}
+
+function pcsConfirmDelete() {
+  // Guard: don't create if PCS is already closed (handles race with delayed click after swipe-close)
+  const pcsOpen = document.getElementById('pcs-overlay')?.classList.contains('open');
+  if (!pcsOpen || !_pcs.postId) return;
+  // Only one confirm overlay may exist at a time
+  _removePcsConfirm();
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
   // Backdrop tap dismisses the confirm overlay
@@ -912,7 +923,7 @@ function pcsConfirmDelete() {
 }
 
 async function pcsDoDelete() {
-  document.querySelector('.pcs-confirm-overlay')?.remove();
+  _removePcsConfirm();
   const id = _pcs.postId;
   if (!id) return;
   try {
