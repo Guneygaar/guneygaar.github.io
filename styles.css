@@ -582,7 +582,6 @@ a:hover { text-decoration: underline; }
   min-width: 16px;
   text-align: center;
 }
-}
 .ps-count.warn { background: var(--c-red-dim); color: var(--c-red); }
 .ps-count.warn { color: var(--c-red); }
 .ps-count.ok   { color: var(--c-green); }
@@ -3060,11 +3059,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Header */
 .pcs-header {
-  position: relative;
+  position: sticky;
   padding: 12px 52px;
   text-align: center;
   flex-shrink: 0;
-  position: sticky;
   top: 0;
   z-index: 10;
   background: var(--bg);
