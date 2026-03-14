@@ -84,3 +84,54 @@ const PIPELINE_ORDER = [
 
 const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
 const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];
+
+// ── Canonical stage lists (single source of truth) ────────────────────
+const STAGES_DB = [
+  'awaiting brand input',
+  'in production',
+  'revisions needed',
+  'ready',
+  'awaiting approval',
+  'scheduled',
+  'published',
+  'parked',
+];
+
+const STAGE_DISPLAY = {
+  'awaiting brand input': 'Awaiting Brand Input',
+  'in production':        'In Production',
+  'revisions needed':     'Revisions Needed',
+  'ready':                'Ready',
+  'awaiting approval':    'Awaiting Approval',
+  'scheduled':            'Scheduled',
+  'published':            'Published',
+  'parked':               'Parked',
+};
+
+// ── Canonical pillar lists ─────────────────────────────────────────────
+const PILLARS_DB = [
+  'leadership',
+  'innovation',
+  'sustainability',
+  'inclusivity',
+  'events',
+  'announcements',
+];
+
+const PILLAR_DISPLAY = {
+  'leadership':    'Leadership',
+  'innovation':    'Innovation',
+  'sustainability':'Sustainability',
+  'inclusivity':   'Inclusivity',
+  'events':        'Events',
+  'announcements': 'Announcements',
+};
+
+const PILLAR_SHORT = {
+  'leadership':    'Lead',
+  'innovation':    'Innov',
+  'sustainability':'Sustain',
+  'inclusivity':   'Include',
+  'events':        'Event',
+  'announcements': 'Announce',
+};
