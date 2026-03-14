@@ -164,7 +164,7 @@ function updateStats() {
     if (stage === 'published') published++;
     if (stage.includes('approval')) awaitingApproval++;
     if (!['published','archive'].includes(stage)) inPipeline++;
-    if (stage === 'ready to send') readyToSend++;
+    if (stage === 'ready') readyToSend++;
     if (stage === 'awaiting brand input') creativeRequests++;
     if (stage === 'revisions needed') creativeRevisions++;
     const d = parseDate(p.targetDate);
@@ -223,7 +223,7 @@ function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
   if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
-  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready to send').length;
+  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
   const isOk = gap === 0;
@@ -256,12 +256,12 @@ function renderAdminInsight() {
     return Math.floor((now - new Date(t).getTime()) / DAY);
   }
   const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
-  const stuckClient     = allPosts.filter(p => ['awaiting approval','sent for approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
+  const stuckClient     = allPosts.filter(p => ['awaiting approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
   const stuckReview     = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'revisions needed' && daysSince(p) >= 2);
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
   const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready to send').length;
+  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready').length;
   const parkedPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() !== 'published' && daysSince(p) >= 7);
   window._parkedPosts = parkedPosts;
 
@@ -286,7 +286,7 @@ function renderAdminInsight() {
     stuckReview.length ? `<div class="insight-flag"><span class="insight-flag-dot amber"></span>Revisions sitting — ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days</div>` : '',
   ].filter(Boolean).join('');
   const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
-  const approved = allPosts.filter(p => ['sent for approval','awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const approved = allPosts.filter(p => ['awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
 
   const body = document.getElementById('insights-body');
   if (body) {
@@ -367,7 +367,7 @@ function daysInStage(post) {
 function staleLabel(days, stageName) {
   if (days === null || days < 3) return null;
   if (stageName) {
-    const short = {'awaiting approval':'Approval','sent for approval':'Approval','awaiting brand input':'Waiting','in production':'Production','revisions needed':'Revisions','ready to send':'Ready','scheduled':'Scheduled'}[stageName.toLowerCase().trim()] || stageName;
+    const short = {'awaiting approval':'Approval','awaiting brand input':'Waiting','in production':'Production','revisions needed':'Revisions','ready':'Ready','scheduled':'Scheduled'}[stageName.toLowerCase().trim()] || stageName;
     return `${days}d in ${short}`;
   }
   return `${days}d`;
@@ -440,11 +440,11 @@ function renderNextPost() {
   const stCls     = staleClass(days);
   const canUpdate = ['Admin','Servicing'].includes(currentRole);
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
-  if (stageLC === 'revisions needed') { primaryLabel='Mark Revision Done'; primaryAction=`quickStage('${esc(id)}','In Production')`; secondaryLabel='View Details'; secondaryAction=`openPostModal('${esc(id)}')`; }
-  else if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','In Production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','Sent for Approval')`; }
-  else if (stageLC === 'in production') { primaryLabel='Mark Ready to Send'; primaryAction=`quickStage('${esc(id)}','Ready to Send')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','Sent for Approval')`; }
-  else if (stageLC === 'ready to send') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','Sent for Approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','Scheduled')`; }
-  else if (stageLC === 'sent for approval' || stageLC === 'awaiting approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','Scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
+  if (stageLC === 'revisions needed') { primaryLabel='Mark Revision Done'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='View Details'; secondaryAction=`openPostModal('${esc(id)}')`; }
+  else if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
+  else if (stageLC === 'in production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
+  else if (stageLC === 'ready') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','awaiting approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','scheduled')`; }
+  else if (stageLC === 'awaiting approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
   else { primaryLabel='Update Stage'; primaryAction=`openPostModal('${esc(id)}')`; }
   const heroLabel = currentRole === 'Creative' ? 'Current Job' : currentRole === 'Servicing' ? 'Needs Your Attention' : 'Most Urgent';
   let staleNote = '';
@@ -646,7 +646,7 @@ function renderPipeline() {
 
 function getUpcoming() {
   const today = new Date(); today.setHours(0,0,0,0);
-  return allPosts.filter(p => { const d = parseDate(p.targetDate); const s = (p.stage||'').toLowerCase(); return d && d >= today && s !== 'published' && s !== 'archive'; }).sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
+  return allPosts.filter(p => { const d = parseDate(p.targetDate); const s = (p.stage||'').toLowerCase(); return d && d >= today && s !== 'published' && s !== 'archive' && s !== 'parked'; }).sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
 }
 
 function renderUpcoming() {
@@ -792,7 +792,7 @@ function renderClientView() {
       }).join('');
     }
   }
-  const approvalPosts = allPosts.filter(p => { const s = (p.stage||'').toLowerCase().trim(); return s === 'sent for approval' || s === 'awaiting approval'; });
+  const approvalPosts = allPosts.filter(p => { const s = (p.stage||'').toLowerCase().trim(); return s === 'awaiting approval'; });
   const approvalCount = document.getElementById('client-approval-count');
   if (approvalCount) approvalCount.textContent = approvalPosts.length;
   const approvalItems = document.getElementById('client-approval-items');
@@ -838,12 +838,12 @@ function renderCreativeTracker() {
   const doneThisWeek = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
     const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready to send','sent for approval','scheduled','published'].includes(stage) && t >= weekAgo;
+    return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= weekAgo;
   }).length;
   const doneThisMonth = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
     const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready to send','sent for approval','scheduled','published'].includes(stage) && t >= monthAgo;
+    return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= monthAgo;
   }).length;
   const inProgress = myPosts.filter(p => ['in production','revisions needed','awaiting brand input'].includes((p.stage||'').toLowerCase().trim())).length;
   const WEEKLY_TARGET  = 5;
