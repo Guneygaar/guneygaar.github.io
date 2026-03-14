@@ -129,7 +129,7 @@ document.getElementById('npm-date').value     = '';
 document.getElementById('npm-submit-btn').disabled = false;
 document.getElementById('npm-saving').classList.remove('active');
 
-_modalOpen = true;
+window._modalOpen = true;
 document.getElementById('new-post-overlay').classList.add('open');
 document.body.style.overflow = 'hidden';
 
@@ -147,7 +147,7 @@ stopDraftAutosave();
 
 document.getElementById('new-post-overlay').classList.remove('open');
 document.body.style.overflow = '';
-_modalOpen = false;
+window._modalOpen = false;
 _drainDeferredRender();
 }
 
@@ -202,7 +202,7 @@ stopDraftAutosave();
 
 document.getElementById('new-post-overlay').classList.remove('open');
 document.body.style.overflow = '';
-_modalOpen = false;
+window._modalOpen = false;
 
 await loadPosts();
 

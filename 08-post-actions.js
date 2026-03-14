@@ -25,7 +25,7 @@ async function quickStage(postId, newStage) {
 function openPostModal(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
-  _modalOpen = true;
+  window._modalOpen = true;
   document.getElementById('pmd-title').textContent  = getTitle(post);
   document.getElementById('pmd-id').textContent     = postId;
   const sel = document.getElementById('pmd-stage-select');
@@ -48,7 +48,7 @@ function openPostModal(postId) {
 function closePostModal() {
   document.getElementById('post-modal-overlay').classList.remove('open');
   document.body.style.overflow = '';
-  _modalOpen = false;
+  window._modalOpen = false;
   _drainDeferredRender();
 }
 
@@ -82,7 +82,7 @@ async function saveStageUpdate() {
 function openAdminEdit(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
-  _modalOpen = true;
+  window._modalOpen = true;
   document.getElementById('ae-postid').textContent   = postId;
   document.getElementById('ae-title').value          = getTitle(post);
   document.getElementById('ae-owner').value          = post.owner || '';
@@ -101,7 +101,7 @@ function openAdminEdit(postId) {
 function closeAdminEdit() {
   document.getElementById('admin-edit-overlay').classList.remove('open');
   document.body.style.overflow = '';
-  _modalOpen = false;
+  window._modalOpen = false;
   _drainDeferredRender();
 }
 
@@ -347,7 +347,7 @@ function openPCS(postId, listKey) {
     screen.style.pointerEvents = '';
   }
 
-  _modalOpen = true;
+  window._modalOpen = true;
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
   try {
@@ -400,7 +400,7 @@ function forcePCSReset() {
   document.body.style.overflow = '';
 
   // 5. Reset all state flags
-  _modalOpen = false;
+  window._modalOpen = false;
   _swipe     = { x0: 0, y0: 0, lock: null, active: false, moved: false };
 
   // 6. Clear PCS context

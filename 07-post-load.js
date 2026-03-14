@@ -80,7 +80,7 @@ function startRealtime() {
   _realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     // Skip poll while user is in a modal — they'll get fresh data on close
-    if (_modalOpen) return;
+    if (window._modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);

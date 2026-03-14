@@ -22,14 +22,14 @@ function safeRender() {
 
 function scheduleRender() {
   // Defer background renders while user is interacting with a modal/PCS
-  if (_modalOpen) { _deferredRender = true; return; }
+  if (window._modalOpen) { window._deferredRender = true; return; }
   clearTimeout(_renderTimer);
   _renderTimer = setTimeout(safeRender, 60);
 }
 
 function _drainDeferredRender() {
-  if (_deferredRender) {
-    _deferredRender = false;
+  if (window._deferredRender) {
+    window._deferredRender = false;
     clearTimeout(_renderTimer);
     _renderTimer = setTimeout(safeRender, 60);
   }
