@@ -339,7 +339,7 @@ function _fabOnScroll() {
   if (!fab) return;
   fab.classList.add('hidden');
   clearTimeout(_fabScrollTimer);
-  _fabScrollTimer = setTimeout(() => fab.classList.remove('hidden'), 400);
+  _fabScrollTimer = setTimeout(() => fab.classList.remove('hidden'), 350);
 }
 
 function toggleFabMenu() {
