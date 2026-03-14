@@ -421,14 +421,17 @@ function openPCS(postId, listKey) {
   _pcs.idx     = idx >= 0 ? idx : 0;
   _pcs.postId  = postId;
 
-  document.getElementById('pcs-overlay').classList.add('open');
+  const _overlay = document.getElementById('pcs-overlay');
+  if (!_overlay) return;
+  _overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
   _renderPCS(postId);
   _pcsAttachSwipe();
 }
 
 function closePCS() {
-  document.getElementById('pcs-overlay').classList.remove('open');
+  const _ov = document.getElementById('pcs-overlay');
+  if (_ov) _ov.classList.remove('open');
   document.body.style.overflow = '';
   _pcs.postId = null;
 }
@@ -436,12 +439,12 @@ function closePCS() {
 // ── Swipe attachment ──────────────────────────
 function _pcsAttachSwipe() {
   const screen = document.getElementById('pcs-screen');
-  // Remove any existing listeners to avoid doubles
+  if (!screen) return;
   screen.removeEventListener('touchstart', _pcsTouchStart);
   screen.removeEventListener('touchmove',  _pcsTouchMove);
   screen.removeEventListener('touchend',   _pcsTouchEnd);
   screen.addEventListener('touchstart', _pcsTouchStart, { passive: true });
-  screen.addEventListener('touchmove',  _pcsTouchMove,  { passive: false }); // must be non-passive to preventDefault
+  screen.addEventListener('touchmove',  _pcsTouchMove,  { passive: false });
   screen.addEventListener('touchend',   _pcsTouchEnd,   { passive: true });
 }
 
@@ -453,7 +456,7 @@ function _pcsTouchStart(e) {
   _swipe.y0   = e.touches[0].clientY;
   _swipe.lock = null;
   const screen = document.getElementById('pcs-screen');
-  screen.style.transition = 'none';
+  if (screen) screen.style.transition = 'none';
 }
 
 function _pcsTouchMove(e) {
@@ -474,7 +477,8 @@ function _pcsTouchMove(e) {
   // Only track leftward drag (right swipe does nothing)
   if (dx < 0) {
     const resist = Math.max(dx, -window.innerWidth * 0.6); // cap drag at 60vw
-    document.getElementById('pcs-screen').style.transform = `translateX(${resist}px)`;
+    const _ms = document.getElementById('pcs-screen');
+    if (_ms) _ms.style.transform = `translateX(${resist}px)`;
   }
 }
 
@@ -482,6 +486,7 @@ function _pcsTouchEnd(e) {
   if (_swipe.lock !== 'h') return;
   const dx  = e.changedTouches[0].clientX - _swipe.x0;
   const screen = document.getElementById('pcs-screen');
+  if (!screen) return;
 
   if (dx < -80) {
     // Committed — animate out then load next
@@ -503,26 +508,27 @@ function _pcsTouchEnd(e) {
 }
 
 function _pcsNext() {
+  if (!_pcs.list || !_pcs.list.length) { closePCS(); return; }
   const nextIdx = _pcs.idx + 1;
 
   if (nextIdx >= _pcs.list.length) {
     // End of list — show completion screen then close
     const scroll = document.getElementById('pcs-scroll');
-    const _f = document.getElementById('pcs-footer'); if (_f) _f.innerHTML = '';
-    scroll.innerHTML = `
+    const screen = document.getElementById('pcs-screen');
+    if (scroll) scroll.innerHTML = `
       <div class="pcs-end-screen">
         <div class="pcs-end-icon">✓</div>
         <div>No posts left.</div>
       </div>`;
-    // Slide in the end screen
-    const screen = document.getElementById('pcs-screen');
-    screen.style.transform = 'translateX(28px)';
-    screen.style.opacity   = '0';
-    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-    requestAnimationFrame(() => {
-      screen.style.transform = 'translateX(0)';
-      screen.style.opacity   = '1';
-    });
+    if (screen) {
+      screen.style.transform  = 'translateX(28px)';
+      screen.style.opacity    = '0';
+      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+      requestAnimationFrame(() => {
+        screen.style.transform = 'translateX(0)';
+        screen.style.opacity   = '1';
+      });
+    }
     setTimeout(closePCS, 1800);
     return;
   }
@@ -531,23 +537,23 @@ function _pcsNext() {
   _pcs.idx    = nextIdx;
   _pcs.postId = getPostId(_pcs.list[nextIdx]);
 
-  // Reset scroll position
   const scrollEl = document.getElementById('pcs-scroll');
   if (scrollEl) scrollEl.scrollTop = 0;
 
   _renderPCS(_pcs.postId);
 
-  // Animate in from right
   const screen = document.getElementById('pcs-screen');
-  screen.style.transform  = 'translateX(40px)';
-  screen.style.opacity    = '0';
-  screen.style.transition = 'none';
-  requestAnimationFrame(() => {
-    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-    screen.style.transform  = 'translateX(0)';
-    screen.style.opacity    = '1';
-    setTimeout(() => { screen.style.transition = ''; }, 230);
-  });
+  if (screen) {
+    screen.style.transform  = 'translateX(28px)';
+    screen.style.opacity    = '0';
+    screen.style.transition = 'none';
+    requestAnimationFrame(() => {
+      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+      screen.style.transform  = 'translateX(0)';
+      screen.style.opacity    = '1';
+      setTimeout(() => { screen.style.transition = ''; }, 230);
+    });
+  }
 }
 
 function _renderPCS(postId) {
