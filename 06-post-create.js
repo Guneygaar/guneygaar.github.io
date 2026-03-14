@@ -1,6 +1,6 @@
-/* ═══════════════════════════════════════════════
-   06-post-create.js — New Post modal & drafts
-═══════════════════════════════════════════════ */
+/* ===============================================
+   06-post-create.js - New Post modal & drafts
+=============================================== */
 
 const DRAFT_KEY    = 'gbl_new_post_draft';
 let _draftTimer    = null;
@@ -72,15 +72,15 @@ function stopDraftAutosave() {
 }
 
 function _populateNewPostDropdowns() {
-  // Stage dropdown — values are DB lowercase, labels are Title Case
+  // Stage dropdown - values are DB lowercase from STAGES_DB, labels from STAGE_META via STAGE_DISPLAY
   const stageEl = document.getElementById('npm-stage');
   if (stageEl && typeof STAGES_DB !== 'undefined') {
     stageEl.innerHTML = STAGES_DB
       .filter(s => s !== 'parked')  // parked not user-selectable
-      .map(s => `<option value="${s}">${(STAGE_DISPLAY && STAGE_DISPLAY[s]) || s}</option>`)
+      .map(s => `<option value="${s}">${(STAGE_META && STAGE_META[s]) ? STAGE_META[s].label : s}</option>`)
       .join('');
   }
-  // Pillar dropdown — values are DB lowercase, labels are Title Case
+  // Pillar dropdown - values are DB lowercase, labels are Title Case
   const pillarEl = document.getElementById('npm-pillar');
   if (pillarEl && typeof PILLARS_DB !== 'undefined') {
     pillarEl.innerHTML = '<option value="">Select pillar</option>' +
