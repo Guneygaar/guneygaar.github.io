@@ -3,35 +3,12 @@
 Uses 6-digit OTP code (no magic links)
 =============================================== */
 
-// Mutex: prevents concurrent tabs or calls from racing on token refresh.
-// Uses localStorage as the lock so it works across tabs.
-const _REFRESH_LOCK_KEY = ‘gbl_refresh_lock’;
-const _REFRESH_LOCK_TTL = 10000; // 10 seconds max lock hold
-
-let _refreshInProgress = null; // within-tab dedup promise
+let _refreshInProgress = null;
 
 async function refreshSession() {
-// Within-tab dedup: if we’re already refreshing, wait for that promise
 if (_refreshInProgress) return _refreshInProgress;
-
 const refreshToken = localStorage.getItem(‘sb_refresh_token’);
 if (!refreshToken) return null;
-
-// Cross-tab lock: check if another tab is currently refreshing
-const lockVal = localStorage.getItem(_REFRESH_LOCK_KEY);
-if (lockVal) {
-const lockTime = parseInt(lockVal, 10);
-if (Date.now() - lockTime < _REFRESH_LOCK_TTL) {
-// Another tab holds the lock - wait briefly then read their result
-await new Promise(r => setTimeout(r, 1500));
-// After waiting, return whatever token is now in storage
-return localStorage.getItem(‘sb_access_token’) || null;
-}
-}
-
-// Acquire lock with timestamp
-localStorage.setItem(_REFRESH_LOCK_KEY, Date.now().toString());
-
 *refreshInProgress = (async () => {
 try {
 const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
@@ -49,12 +26,10 @@ return data.access_token;
 } catch (*) {}
 return null;
 })();
-
 try {
 return await _refreshInProgress;
 } finally {
 _refreshInProgress = null;
-localStorage.removeItem(_REFRESH_LOCK_KEY);
 }
 }
 
@@ -174,8 +149,7 @@ if (el) el.textContent = ‘Login failed - try again.’;
 }
 }
 
-// Legacy magic link support - depth-guarded to prevent infinite recursion
-async function handleMagicLinkToken(accessToken, _retried = false) {
+async function handleMagicLinkToken(accessToken, _retried) {
 try {
 const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
 headers: { ‘apikey’: SUPABASE_KEY, ‘Authorization’: `Bearer ${accessToken}` },
@@ -204,7 +178,6 @@ localStorage.removeItem(‘gbl_token’);
 localStorage.removeItem(‘sb_access_token’);
 localStorage.removeItem(‘sb_refresh_token’);
 localStorage.removeItem(‘gbl_pending_email’);
-localStorage.removeItem(_REFRESH_LOCK_KEY);
 stopRealtime();
 document.getElementById(‘dashboard-view’)?.classList.remove(‘active’);
 document.getElementById(‘client-view’)?.classList.remove(‘active’);
