@@ -200,8 +200,9 @@ function renderPipelineStrip() {
   const strip = document.getElementById('pipeline-strip');
   const wrap  = document.getElementById('pipeline-strip-wrap');
   if (!strip) return;
-  if (currentRole !== 'Admin') { if (wrap) wrap.style.display = 'none'; return; }
-  if (wrap) wrap.style.display = '';
+  // Pipeline strip tiles removed — always keep hidden
+  if (wrap) wrap.style.display = 'none';
+  return;
   const html = STRIP_STAGES.map((group) => {
     const count = allPosts.filter(p =>
       group.stages.includes((p.stage||'').toLowerCase().trim())
@@ -480,6 +481,7 @@ function buildPostCard(p, listKey) {
         ${pillar ? `<span class="row-pillar">${esc(pillar)}</span>` : ''}
       </span>
       <span class="row-dot" style="background:${hex}" title="${esc(stage)}"></span>
+      <span class="row-action"></span>
     </div>`;
 }
 
