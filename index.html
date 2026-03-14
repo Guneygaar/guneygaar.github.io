@@ -751,6 +751,15 @@
   </button>
 </div>
 
+<script>
+/* Global state — inline so it runs before any deferred script */
+window._modalOpen      = false;
+window._deferredRender = false;
+window.allPosts        = window.allPosts    || [];
+window.cachedPosts     = window.cachedPosts || [];
+window.currentRole     = window.currentRole || 'Admin';
+window.allTasks        = window.allTasks    || [];
+</script>
 <script src="01-config.js" defer></script>
 <script src="02-session.js" defer></script>
 <script src="03-auth.js" defer></script>

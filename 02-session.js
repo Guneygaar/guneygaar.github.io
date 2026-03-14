@@ -2,15 +2,15 @@
    02-session.js — Mutable runtime state
    ═══════════════════════════════════════════════ */
 
-var allPosts    = [];
-var cachedPosts = [];
-var currentRole = 'Admin';
-var _renderTimer = null;
-var _retryCount  = 0;
-var _retryTimer  = null;
+window.allPosts        = [];
+window.cachedPosts     = [];
+window.currentRole     = 'Admin';
+window._renderTimer    = null;
+window._retryCount     = 0;
+window._retryTimer     = null;
 
-var _unreadCount   = 0;
-var _realtimeTimer = null;
-var allTasks       = [];
-var _modalOpen     = false;   // true while any overlay/PCS is open
-var _deferredRender = false;  // true if a render was skipped due to open modal
+window._unreadCount    = 0;
+window._realtimeTimer  = null;
+window.allTasks        = [];
+window._modalOpen      = false;   // true while any overlay/PCS is open
+window._deferredRender = false;   // true if a render was skipped due to open modal
