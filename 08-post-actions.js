@@ -508,7 +508,7 @@ function _pcsNext() {
   if (nextIdx >= _pcs.list.length) {
     // End of list — show completion screen then close
     const scroll = document.getElementById('pcs-scroll');
-    document.getElementById('pcs-footer').innerHTML = '';
+    const _f = document.getElementById('pcs-footer'); if (_f) _f.innerHTML = '';
     scroll.innerHTML = `
       <div class="pcs-end-screen">
         <div class="pcs-end-icon">✓</div>
@@ -560,54 +560,100 @@ function _renderPCS(postId) {
   const stageLC     = stage.toLowerCase().trim();
   const isPublished = stageLC === 'published';
   const postLink    = post.postLink || post.post_link || '';
+  const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
 
-  // Header title
-  document.getElementById('pcs-topbar-title').textContent = title;
+  // Two-line header
+  const titleEl = document.getElementById('pcs-topbar-title');
+  if (titleEl) titleEl.textContent = title;
 
-  // Action button — Open Canva / View on LinkedIn
+  // Primary action — full-width button
   const actionWrap = document.getElementById('pcs-action-btn-wrap');
   if (postLink) {
     const btnLabel = isPublished ? 'View on LinkedIn ↗' : 'Open Canva ↗';
     actionWrap.innerHTML =
-      `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-link">${btnLabel}</a>`;
+      `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary"
+          onclick="closePCS()">${btnLabel}</a>`;
   } else {
     actionWrap.innerHTML = '';
   }
 
-  // Next Action — display only
+  // Next Action — clickable button that performs stage transition
   const nextActionWrap = document.getElementById('pcs-next-action-wrap');
-  const nextActionText = _pcsNextAction(stageLC);
-  nextActionWrap.innerHTML = nextActionText
-    ? `<div class="pcs-next-action">
-         <div class="pcs-next-action-label">Next Action</div>
-         <div class="pcs-next-action-text">${esc(nextActionText)}</div>
-       </div>` : '';
+  const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
+  if (naLabel && canEdit && nextStage) {
+    nextActionWrap.innerHTML =
+      `<button class="pcs-next-action-btn" onclick="pcsDoNextAction('${esc(id)}','${esc(nextStage)}')">
+         Next Action: ${esc(naLabel)}
+       </button>`;
+  } else if (naLabel) {
+    nextActionWrap.innerHTML =
+      `<div class="pcs-next-action-info">Next Action: ${esc(naLabel)}</div>`;
+  } else {
+    nextActionWrap.innerHTML = '';
+  }
 
-  // Metadata grid
-  const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  // Metadata grid — inline-edit, no save button
   document.getElementById('pcs-fields').innerHTML = _buildPCSGrid(post, canEdit, id);
 
-  // Activity — load immediately
+  // Activity
   const actBody = document.getElementById('pcs-activity-body');
   actBody.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
   _loadPCSActivity(id, actBody);
+}
 
-  // Footer
-  _renderPCSFooter(post, isPublished, canEdit);
+async function pcsDoNextAction(postId, nextStage) {
+  await quickStage(postId, nextStage);
+  refreshSystemViews();
+  closePCS();
+}
+
+function refreshSystemViews() {
+  try { renderTasks();    } catch(e) {}
+  try { renderPipeline(); } catch(e) {}
+  try { renderUpcoming(); } catch(e) {}
+  try { renderLibrary();  } catch(e) {}
+}
+
+async function updatePost(postId, field, value) {
+  // Optimistic update in memory
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (post) post[field] = value;
+
+  const dbField = {
+    stage:         'stage',
+    contentPillar: 'content_pillar',
+    owner:         'owner',
+    location:      'location',
+    format:        'format',
+    targetDate:    'target_date',
+    postLink:      'post_link',
+    comments:      'comments',
+  }[field] || field;
+
+  try {
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ [dbField]: value || null, updated_at: new Date().toISOString() }),
+    });
+    showToast('Saved', 'success');
+    refreshSystemViews();
+  } catch(e) {
+    showToast('Save failed', 'error');
+  }
 }
 
 function _pcsNextAction(stageLC) {
   const map = {
-    'awaiting brand input':  'Waiting for brand to provide assets',
-    'in production':         'Creative is working on the design',
-    'revisions needed':      'Creative to action revision notes',
-    'ready to send':         'Send design for client approval',
-    'sent for approval':     'Waiting for brand approval',
-    'awaiting approval':     'Waiting for brand approval',
-    'scheduled':             'Post is scheduled — no action needed',
-    'published':             'Post is live',
+    'awaiting brand input':  { label: 'Assign to Creative',    nextStage: 'In Production' },
+    'in production':         { label: 'Send for Review',        nextStage: 'Ready to Send' },
+    'revisions needed':      { label: 'Mark Revision Done',     nextStage: 'In Production' },
+    'ready to send':         { label: 'Send for Approval',      nextStage: 'Sent for Approval' },
+    'sent for approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
+    'awaiting approval':     { label: 'Schedule Post',          nextStage: 'Scheduled' },
+    'scheduled':             { label: 'Wait for Publish',       nextStage: null },
+    'published':             { label: 'Post is Live',           nextStage: null },
   };
-  return map[stageLC] || '';
+  return map[stageLC] || { label: '', nextStage: null };
 }
 
 function _loadPCSActivity(postId, bodyEl) {
@@ -656,121 +702,65 @@ function _buildPCSGrid(post, canEdit, id) {
   const dateValue   = isPublished
     ? (post.published_date || post.publishedDate || post.targetDate || '')
     : (post.targetDate || '');
+  const { hex } = stageStyle(post.stage);
 
-  const sel = (elId, opts, val) =>
-    `<select id="${elId}" ${canEdit ? '' : 'disabled'} class="pcs-grid-input">
+  // Inline-edit select: changes call updatePost immediately
+  const sel = (field, opts, val, dbField) =>
+    `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
        ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}
      </select>`;
 
-  const ro = val =>
-    `<div class="pcs-grid-ro">${esc(val || '—')}</div>`;
+  const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
 
   const dateInput = canEdit
-    ? `<input type="date" id="pcs-date" class="pcs-grid-input" value="${esc(dateValue)}">`
+    ? `<input type="date" class="pcs-field-val" value="${esc(dateValue)}"
+             onchange="updatePost('${esc(id)}','targetDate',this.value)">`
     : ro(formatDate(dateValue));
 
-  const stageEl  = canEdit ? sel('pcs-stage',    STAGES,  post.stage || '')          : ro(post.stage);
-  const pillarEl = canEdit ? sel('pcs-pillar',   PILLARS, post.contentPillar || '')  : ro(post.contentPillar);
-  const ownerEl  = canEdit ? sel('pcs-owner',    OWNERS,  post.owner || '')          : ro(post.owner);
-  const locEl    = canEdit ? sel('pcs-location', LOCS,    post.location || '')       : ro(post.location);
-  const fmtEl    = canEdit ? sel('pcs-format',   FORMATS, post.format || '')         : ro(post.format);
+  const notesInput = canEdit
+    ? `<textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="3"
+                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea>`
+    : (post.comments ? `<div class="pcs-notes-ro">${esc(post.comments)}</div>` : '');
 
-  const cell = (label, content) =>
-    `<div class="pcs-grid-cell">
-       <div class="pcs-grid-label">${label}</div>
+  const canvaInput = canEdit
+    ? `<input type="url" class="pcs-field-val" placeholder="https://canva.com/design/…"
+              value="${esc(post.postLink || post.post_link || '')}"
+              onblur="updatePost('${esc(id)}','postLink',this.value)">`
+    : ro(post.postLink || post.post_link || '');
+
+  const cell = (icon, label, content) =>
+    `<div class="pcs-field">
+       <div class="pcs-field-label">${icon} ${label}</div>
        ${content}
      </div>`;
 
-  // Notes/brief — full width below grid
-  const notesFld = canEdit
-    ? `<textarea id="pcs-comments" class="pcs-notes-input" placeholder="Brief or caption…" rows="3">${esc(post.comments || '')}</textarea>`
-    : (post.comments ? `<div class="pcs-notes-ro">${esc(post.comments)}</div>` : '');
-
-  // Canva link field — full width, editable only
-  const canvaFld = canEdit
-    ? `<div class="pcs-canva-field">
-         <div class="pcs-grid-label">Canva Link</div>
-         <input type="url" id="pcs-canva-link" class="pcs-grid-input" placeholder="https://canva.com/design/…"
-                value="${esc(post.postLink || post.post_link || '')}"
-                oninput="updatePCSPreview(this.value)">
-       </div>` : '';
-
   return `
-    <div class="pcs-meta-grid">
-      ${cell('Stage',      stageEl)}
-      ${cell(dateLabel,    dateInput)}
-      ${cell('Handled By', ownerEl)}
-      ${cell('Pillar',     pillarEl)}
-      ${cell('Location',   locEl)}
-      ${cell('Format',     fmtEl)}
+    <div class="pcs-grid">
+      ${cell('●', 'Stage',    canEdit ? sel('stage', STAGES, post.stage||'', 'stage') : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(post.stage||'—')}</span>`)}
+      ${cell('👤', 'Owner',   canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
+      ${cell('🏷', 'Pillar',  canEdit ? sel('contentPillar', PILLARS, post.contentPillar||'', 'contentPillar') : ro(post.contentPillar))}
+      ${cell('📍', 'Location',canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
+      ${cell('📝', 'Format',  canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
+      ${cell('📅', dateLabel, dateInput)}
     </div>
-    ${canvaFld}
-    ${notesFld ? `<div class="pcs-notes-wrap">${notesFld}</div>` : ''}
+    ${canEdit ? `<div class="pcs-field pcs-field-full">${cell('🔗', 'Canva Link', canvaInput)}</div>` : ''}
+    ${(canEdit || post.comments) ? `<div class="pcs-field pcs-field-full">${cell('📋', 'Notes', notesInput)}</div>` : ''}
     <input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 }
 
 function _renderPCSFooter(post, isPublished, canEdit) {
+  // No persistent footer — actions are inline or in primary/next-action buttons
   const footer = document.getElementById('pcs-footer');
-  const postLink = post.postLink || post.post_link || '';
-  if (isPublished) {
-    footer.innerHTML = postLink
-      ? `<button class="pcs-btn-linkedin" onclick="window.open('${esc(postLink)}','_blank','noopener')">View on LinkedIn ↗</button>`
-      : `<span class="pcs-footer-published">Published</span>`;
-  } else if (canEdit) {
-    footer.innerHTML = `
-      <button class="pcs-btn-delete" onclick="pcsConfirmDelete()">Delete</button>
-      <button class="pcs-btn-save"   onclick="savePCS()">Save</button>`;
-  } else {
-    footer.innerHTML = '';
-  }
+  if (footer) footer.innerHTML = '';
 }
 
 function updatePCSPreview(link) {
-  const actionWrap = document.getElementById('pcs-action-btn-wrap');
-  if (!actionWrap) return;
-  if (!link) { actionWrap.innerHTML = ''; return; }
-  const isPublished = (allPosts.find(p => getPostId(p) === _pcs.postId)?.stage || '').toLowerCase() === 'published';
-  const btnLabel = isPublished ? 'View on LinkedIn ↗' : 'Open Canva ↗';
-  actionWrap.innerHTML = `<a href="${esc(link)}" target="_blank" rel="noopener" class="pcs-action-link">${btnLabel}</a>`;
+  // Legacy stub — inline editing now handles updates
+  if (link && _pcs.postId) updatePost(_pcs.postId, 'postLink', link);
 }
 
 async function savePCS() {
-  const id       = document.getElementById('pcs-post-id')?.value;
-  const pillar   = document.getElementById('pcs-pillar')?.value;
-  const location = document.getElementById('pcs-location')?.value;
-  const owner    = document.getElementById('pcs-owner')?.value;
-  const stage    = document.getElementById('pcs-stage')?.value;
-  const date     = document.getElementById('pcs-date')?.value;
-  const canva    = document.getElementById('pcs-canva-link')?.value;
-  const comments = document.getElementById('pcs-comments')?.value;
-  const format   = document.getElementById('pcs-format')?.value;
-
-  if (!id) return;
-  const btn = document.querySelector('.pcs-btn-save');
-  if (btn) { btn.textContent = 'Saving…'; btn.disabled = true; }
-
-  try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        contentPillar: pillar,
-        location:      location,
-        owner:         owner,
-        stage:         stage,
-        targetDate:    date || null,
-        postLink:      canva || null,
-        comments:      comments || null,
-        format:        format || null,
-        updated_at:    new Date().toISOString(),
-      }),
-    });
-    showToast('Saved ✓');
-    await loadPosts();
-    closePCS();
-  } catch(e) {
-    showToast('Save failed — try again', 'error');
-    if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
-  }
+  // Legacy stub — fields now auto-save via updatePost()
 }
 
 function pcsConfirmDelete() {
