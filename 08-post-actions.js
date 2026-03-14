@@ -851,7 +851,7 @@ function _buildPCSGrid(post, canEdit, id) {
   const dateInput = canEdit
     ? `<input type="date" class="pcs-field-val" value="${esc(dateValue)}"
              onchange="updatePost('${esc(id)}','targetDate',this.value)">`
-    : ro(formatDate(dateValue));
+    : `<div class="pcs-date-field"><span class="pcs-date-value">${esc(formatDate(dateValue) || '—')}</span>${formatDate(dateValue) ? '<span class="pcs-date-icon">📅</span>' : ''}</div>`;
 
   const notesInput = canEdit
     ? `<textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="3"
