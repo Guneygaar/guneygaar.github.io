@@ -142,7 +142,7 @@ async function clientApprove(postId, btn) {
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
-    post.stage = 'Scheduled';
+    post.stage = 'scheduled';
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }
@@ -217,7 +217,7 @@ async function submitClientRequest() {
     const email  = localStorage.getItem('gbl_email') || 'Client';
     await apiFetch('/posts', {
       method: 'POST',
-      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`, stage: 'Awaiting Brand Input', owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`, stage: 'awaiting brand input', owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     });
     if (file) await uploadPostAsset(file, postId);
     await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: `New request: ${brief.substring(0,60)}` });
