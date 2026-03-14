@@ -40,7 +40,7 @@ function loadDraft() {
     document.getElementById('npm-pillar').value   = d.pillar   || '';
     document.getElementById('npm-location').value = d.location || '';
     document.getElementById('npm-owner').value    = d.owner    || '';
-    document.getElementById('npm-stage').value    = d.stage    || 'In Production';
+    document.getElementById('npm-stage').value    = d.stage    || 'in production';
     document.getElementById('npm-date').value     = d.date     || '';
     document.getElementById('npm-comments').value = d.comments || '';
     document.getElementById('npm-postlink').value = d.postLink || '';
@@ -81,7 +81,7 @@ function openNewPostModal() {
     document.getElementById('npm-pillar').value   = '';
     document.getElementById('npm-location').value = '';
     document.getElementById('npm-owner').value    = '';
-    document.getElementById('npm-stage').value    = 'In Production';
+    document.getElementById('npm-stage').value    = 'in production';
     document.getElementById('npm-date').value     = '';
   }
   document.getElementById('npm-submit-btn').disabled = false;
@@ -127,7 +127,7 @@ async function submitNewPost() {
         owner,
         content_pillar: pillar   || null,
         location:       location || null,
-        stage:          stage    || 'In Production',
+        stage:          stage    || 'in production',
         target_date:    date     || null,
         comments:       comments || null,
         post_link:      postLink || null
