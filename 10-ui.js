@@ -127,6 +127,7 @@ function switchTab(btn) {
   btn.classList.add('active');
   const panel = document.getElementById('panel-' + btn.dataset.tab);
   if (panel) panel.classList.add('active');
+  _fabAttachScroll();
 }
 
 function switchClientTab(tab) {
@@ -181,8 +182,8 @@ async function markAllNotificationsRead() {
 function renderNotificationBadge() {
   const b = document.getElementById('notif-badge');
   if (!b) return;
-  b.textContent    = _unreadCount > 9 ? '9+' : _unreadCount;
-  b.style.display  = _unreadCount > 0 ? '' : 'none';
+  // notif-badge is now a red dot — just show/hide
+  b.style.display = _unreadCount > 0 ? '' : 'none';
 }
 
 function toggleNotifPanel() {
@@ -320,3 +321,90 @@ function closeInsights() {
   document.getElementById('insights-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
 }
+
+// ── FAB ───────────────────────────────────────
+let _fabScrollEl = null;
+let _fabScrollTimer = null;
+
+function _fabAttachScroll() {
+  if (_fabScrollEl) _fabScrollEl.removeEventListener('scroll', _fabOnScroll);
+  // Find active panel's scrollable area
+  const activePanel = document.querySelector('.tab-panel.active');
+  _fabScrollEl = activePanel?.querySelector('.dash-body') || activePanel || document.querySelector('.dash-body');
+  if (_fabScrollEl) _fabScrollEl.addEventListener('scroll', _fabOnScroll, { passive: true });
+}
+
+function _fabOnScroll() {
+  const fab = document.getElementById('fab');
+  if (!fab) return;
+  fab.classList.add('hidden');
+  clearTimeout(_fabScrollTimer);
+  _fabScrollTimer = setTimeout(() => fab.classList.remove('hidden'), 400);
+}
+
+function toggleFabMenu() {
+  const sheet = document.getElementById('fab-menu-sheet');
+  const backdrop = document.getElementById('fab-backdrop');
+  if (!sheet) return;
+  const open = sheet.classList.toggle('open');
+  backdrop.classList.toggle('open', open);
+  // Show/hide request button based on role
+  const reqBtn = document.getElementById('fab-request-btn');
+  if (reqBtn) reqBtn.style.display = currentRole === 'Creative' ? 'none' : '';
+}
+
+function closeFabMenu() {
+  document.getElementById('fab-menu-sheet')?.classList.remove('open');
+  document.getElementById('fab-backdrop')?.classList.remove('open');
+}
+
+// ── Request Sheet ──────────────────────────────
+function openRequestSheet() {
+  document.getElementById('req-sheet-brief').value = '';
+  document.getElementById('req-sheet-date').value  = '';
+  document.getElementById('req-sheet-owner').value = '';
+  document.getElementById('request-sheet-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRequestSheet() {
+  document.getElementById('request-sheet-overlay')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+async function submitRequestSheet() {
+  const brief = document.getElementById('req-sheet-brief')?.value.trim();
+  if (!brief) { showToast('Please describe the request', 'error'); return; }
+  const date  = document.getElementById('req-sheet-date')?.value  || null;
+  const owner = document.getElementById('req-sheet-owner')?.value || null;
+  const btn   = document.getElementById('req-sheet-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const postId = 'REQ-' + Date.now();
+    await apiFetch('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id:    postId,
+        title:      brief.substring(0, 80),
+        stage:      'Awaiting Brand Input',
+        owner:      owner || null,
+        comments:   brief,
+        target_date: date || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+    closeRequestSheet();
+    showToast('Request created ✓', 'success');
+    await loadPosts();
+  } catch {
+    showToast('Failed — try again', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
+  }
+}
+
+// Attach FAB scroll on initial load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(_fabAttachScroll, 500);
+});
