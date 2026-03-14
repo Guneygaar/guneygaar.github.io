@@ -2019,12 +2019,7 @@ tr:hover td { background: var(--surface2); }
 
 /* ── Library panel layout ── */
 #panel-library {
-  display: none;
-  flex-direction: column;
-  overflow: hidden;
-}
-#panel-library.active {
-  display: flex;
+  overflow: visible; /* allow flex children to manage their own scroll */
 }
 
 /* Sticky search bar */
@@ -2035,10 +2030,8 @@ tr:hover td { background: var(--surface2); }
   padding: 10px 16px 8px;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 4;
   flex-shrink: 0;
+  /* no position:sticky needed — panel is flex column, this stays at top */
 }
 .lib-search-input {
   flex: 1;
