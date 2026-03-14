@@ -641,28 +641,37 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
-.tab-panel { display: none; }
-.tab-panel.active { display: block; }
+/* tab-panel display rules moved to dashboard layout section */
 
 /* ═══════════════════════════════════════════════
    DASHBOARD VIEW LAYOUT
 ═══════════════════════════════════════════════ */
 #dashboard-view {
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Tab panels fill remaining height and scroll internally */
+.tab-panel { display: none; }
+.tab-panel.active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dash-body {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: var(--sp-4) var(--sp-4) calc(64px + var(--sp-5));
-  max-width: 1280px;
-  width: 100%;
-  margin: 0 auto;
+  min-height: 0;
 }
 
 @media (min-width: 768px) {
-  .dash-body { padding: var(--sp-5); }
+  .dash-body { padding: var(--sp-5) var(--sp-5) calc(64px + var(--sp-5)); }
 }
 
 /* ═══════════════════════════════════════════════
@@ -2496,6 +2505,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
+/* Action slot — reserved for future stage-progression button */
+.row-action {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  /* empty for now — button will be injected here */
+}
+
 /* ═══════════════════════════════════════════════
    UPC — Universal Post Card
    Minimal scan-mode list row
@@ -2609,6 +2629,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text3);
 }
 
+.app-header-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
 .app-header-right {
   display: flex;
   align-items: center;
@@ -2713,7 +2740,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .fab {
   position: fixed;
   right: 16px;
-  bottom: 80px;
+  bottom: 88px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
@@ -2745,7 +2772,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .fab-menu-sheet {
   position: fixed;
   right: 16px;
-  bottom: 144px;
+  bottom: 152px;
   z-index: 410;
   background: var(--surface);
   border: 1px solid var(--border);
