@@ -2,7 +2,7 @@
    04-router.js — App entry point (loads LAST)
 ═══════════════════════════════════════════════ */
 
-window.addEventListener('DOMContentLoaded', async () => {
+async function _startRouter() {
   const pathMatch = window.location.pathname.match(/^\/p\/(.+)/);
   if (pathMatch) { showApprovalView(decodeURIComponent(pathMatch[1])); return; }
 
@@ -48,4 +48,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   showLoginOverlay();
-});
+}
+
+// With defer, DOMContentLoaded may already have fired by the time this script
+// runs. Check readyState and invoke immediately if so, otherwise wait.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _startRouter);
+} else {
+  _startRouter();
+}
