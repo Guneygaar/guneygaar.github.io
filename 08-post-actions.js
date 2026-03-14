@@ -341,21 +341,38 @@ function openPCS(postId, listKey) {
   // Clear all inline overrides set by forcePCSReset before opening
   overlay.style.display       = '';
   overlay.style.pointerEvents = '';
+
+  // Safari fix: after swipe-close leaves an inline translateY(100%),
+  // re-adding .open in the same frame won't trigger a transition.
+  // Force the off-screen position with transitions disabled, then
+  // use rAF to animate in — guarantees Safari registers the change.
   if (screen) {
     screen.style.cssText       = '';
     screen.style.willChange    = '';
     screen.style.pointerEvents = '';
+    screen.style.transition    = 'none';
+    screen.style.transform     = 'translateY(100%)';
   }
 
   window._modalOpen = true;
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+
   try {
     _renderPCS(postId);
     _pcsAttachSwipe();
   } catch (err) {
     console.error('[PCS] openPCS failed — cleaning up:', err);
     forcePCSReset();
+    return;
+  }
+
+  // Frame break: let Safari commit the off-screen position, then animate in
+  if (screen) {
+    requestAnimationFrame(function() {
+      screen.style.transition = 'transform 260ms ease';
+      screen.style.transform  = 'translateY(0)';
+    });
   }
 }
 
