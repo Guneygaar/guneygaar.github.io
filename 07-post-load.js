@@ -697,14 +697,65 @@ function populateFilterDropdowns() {
   ownerEl.value = curOwner;
 }
 
+function populateFilterDropdowns() {
+  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
+  const owners  = [...new Set(allPosts.map(p=>p.owner||'').filter(Boolean))].sort();
+  const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
+
+  const stageEl  = document.getElementById('filter-stage');
+  const ownerEl  = document.getElementById('filter-owner');
+  const pillarEl = document.getElementById('filter-pillar');
+  if (!stageEl || !ownerEl) return;
+
+  const curStage  = stageEl.value;
+  const curOwner  = ownerEl.value;
+  const curPillar = pillarEl?.value || '';
+
+  stageEl.innerHTML  = `<option value="">Stage</option>`  + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+
+  stageEl.value  = curStage;
+  ownerEl.value  = curOwner;
+  if (pillarEl) pillarEl.value = curPillar;
+}
+
 function filterLibrary() {
-  const query    = (document.getElementById('search-input')?.value||'').toLowerCase();
-  const stage    = (document.getElementById('filter-stage')?.value||'').toLowerCase();
-  const owner    = (document.getElementById('filter-owner')?.value||'').toLowerCase();
-  const filtered = allPosts.filter(p => { const tm = getTitle(p).toLowerCase().includes(query); const sm = !stage || (p.stage||'').toLowerCase()===stage; const om = !owner || (p.owner||'').toLowerCase()===owner; return tm && sm && om; });
-  renderLibraryRows(filtered);
-  const ll = document.getElementById('library-label');
-  if (ll) ll.textContent = `${filtered.length} / ${allPosts.length} posts`;
+  const query  = (document.getElementById('search-input')?.value||'').toLowerCase();
+  const stage  = (document.getElementById('filter-stage')?.value||'').toLowerCase();
+  const owner  = (document.getElementById('filter-owner')?.value||'').toLowerCase();
+  const pillar = (document.getElementById('filter-pillar')?.value||'').toLowerCase();
+  const date   = (document.getElementById('filter-date')?.value||'');
+
+  // Highlight active chips
+  ['filter-owner','filter-pillar','filter-stage','filter-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('chip-active', el.value !== '');
+  });
+
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const week7  = new Date(today); week7.setDate(week7.getDate()+7);
+
+  const filtered = allPosts.filter(p => {
+    if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
+    if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
+    if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
+    if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
+    if (date) {
+      const d = parseDate(p.targetDate);
+      if (date === 'none')   return !d;
+      if (!d) return false;
+      if (date === 'past')   return d < today;
+      if (date === 'today')  return d.getTime() === today.getTime();
+      if (date === 'week')   return d >= today && d <= week7;
+      if (date === 'future') return d > week7;
+    }
+    return true;
+  });
+
+  if (_currentLibraryView === 'list')     renderLibraryRows(filtered);
+  else if (_currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
+  else if (_currentLibraryView === 'board')    renderLibraryBoard(filtered);
 }
 
 function renderLibrary() {
@@ -819,51 +870,72 @@ function renderCreativeTracker() {
 
 // ── Fix 17: Library view switch ───────────────
 let _currentLibraryView = 'list';
+let _boardPillarIdx = 0;
 
 function switchLibraryView(btn) {
   document.querySelectorAll('.lib-view-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _currentLibraryView = btn.dataset.view;
-  const searchControls = document.getElementById('library-search-controls');
-  if (searchControls) searchControls.style.display = _currentLibraryView === 'list' ? '' : 'none';
-  document.getElementById('library-list-view').style.display    = _currentLibraryView === 'list'     ? '' : 'none';
-  document.getElementById('library-pillar-view').style.display  = _currentLibraryView === 'pillar'   ? '' : 'none';
-  document.getElementById('library-calendar-view').style.display= _currentLibraryView === 'calendar' ? '' : 'none';
-  if (_currentLibraryView === 'pillar')   renderLibraryPillar();
-  if (_currentLibraryView === 'calendar') renderLibraryCalendar();
+
+  document.getElementById('library-list-view').style.display     = _currentLibraryView === 'list'     ? '' : 'none';
+  document.getElementById('library-calendar-view').style.display = _currentLibraryView === 'calendar' ? '' : 'none';
+  document.getElementById('library-board-view').style.display    = _currentLibraryView === 'board'    ? '' : 'none';
+
+  filterLibrary();
 }
 
-function renderLibraryPillar() {
-  const container = document.getElementById('library-pillar-view');
+function renderLibraryBoard(posts) {
+  const container = document.getElementById('library-board-view');
   if (!container) return;
-  const pillars = {};
-  allPosts.forEach(p => {
+
+  posts = posts || allPosts;
+  const pillarsMap = {};
+  posts.forEach(p => {
     const key = p.contentPillar || 'Unassigned';
-    if (!pillars[key]) pillars[key] = [];
-    pillars[key].push(p);
+    if (!pillarsMap[key]) pillarsMap[key] = [];
+    pillarsMap[key].push(p);
   });
-  const sorted = Object.keys(pillars).sort((a,b) => pillars[b].length - pillars[a].length);
-  container.innerHTML = `<div class="pillar-grid">${sorted.map(pillar => {
-    const posts = pillars[pillar];
-    const cards = posts.map(p => {
-      const id = getPostId(p);
-      const { hex, label: stgLabel } = stageStyle(p.stage);
-      return `<div class="pillar-card" onclick="openPCS('${esc(id)}','library')">
-        <span class="pillar-card-title">${esc(getTitle(p))}</span>
-        <div class="pillar-card-meta">
-          <span class="tag tag-stage" style="background:${hex}22;color:${hex};font-size:10px">${esc(stgLabel)}</span>
-        </div>
-      </div>`;
-    }).join('');
-    return `<div class="pillar-section"><div class="pillar-section-head"><span class="pillar-section-name">${esc(pillar)}</span><span class="pillar-section-count">${posts.length}</span></div><div class="pillar-cards">${cards}</div></div>`;
-  }).join('')}</div>`;
+  const pillarNames = Object.keys(pillarsMap).sort((a,b) => pillarsMap[b].length - pillarsMap[a].length);
+  if (!pillarNames.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><p>No posts match.</p></div>`;
+    return;
+  }
+
+  // Clamp index
+  _boardPillarIdx = Math.max(0, Math.min(_boardPillarIdx, pillarNames.length - 1));
+  const current = pillarNames[_boardPillarIdx];
+  const cards   = pillarsMap[current].map(p => buildPostCard(p, 'library')).join('');
+  const hasPrev = _boardPillarIdx > 0;
+  const hasNext = _boardPillarIdx < pillarNames.length - 1;
+
+  container.innerHTML = `
+    <div class="board-nav">
+      <button class="board-nav-btn" onclick="moveBoardPillar(-1)" ${hasPrev ? '' : 'disabled'}>‹</button>
+      <span class="board-nav-title">${esc(current)}</span>
+      <button class="board-nav-btn" onclick="moveBoardPillar(1)"  ${hasNext ? '' : 'disabled'}>›</button>
+    </div>
+    <div class="row-list">${cards}</div>`;
+
+  // Touch swipe support
+  let sx = 0;
+  container.ontouchstart = e => { sx = e.touches[0].clientX; };
+  container.ontouchend   = e => {
+    const dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) > 60) moveBoardPillar(dx < 0 ? 1 : -1);
+  };
 }
 
-function renderLibraryCalendar() {
+function moveBoardPillar(dir) {
+  _boardPillarIdx += dir;
+  filterLibrary();
+}
+
+function renderLibraryCalendar(posts) {
   const container = document.getElementById('library-calendar-view');
   if (!container) return;
-  const withDates  = allPosts.filter(p => p.targetDate).sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
-  const noDates    = allPosts.filter(p => !p.targetDate);
+  posts = posts || allPosts;
+  const withDates  = posts.filter(p => p.targetDate).sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
+  const noDates    = posts.filter(p => !p.targetDate);
   const months     = {};
   const today      = new Date(); today.setHours(0,0,0,0);
   withDates.forEach(p => {
