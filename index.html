@@ -698,25 +698,31 @@
     <!-- Drag handle -->
     <div class="pcs-handle"></div>
 
-    <!-- Nav row: close | menu -->
-    <div class="pcs-header-nav">
-      <button class="pcs-close" onclick="closePCS()">←</button>
-      <button class="pcs-menu" onclick="pcsConfirmDelete()" id="pcs-menu-btn">⋯</button>
+    <!-- Header: back (abs) | centered title + subtitle | menu (abs) -->
+    <div class="pcs-header">
+      <button class="pcs-back" onclick="closePCS()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="pcs-header-center">
+        <div class="pcs-title" id="pcs-topbar-title"></div>
+        <div class="pcs-subtitle" id="pcs-subtitle"></div>
+      </div>
+      <button class="pcs-menu" onclick="pcsConfirmDelete()">⋯</button>
     </div>
-
-    <!-- Title row -->
-    <div class="pcs-title" id="pcs-topbar-title"></div>
 
     <!-- Scrollable content -->
     <div class="pcs-scroll" id="pcs-scroll">
-      <!-- Primary action button -->
+      <!-- Stage progress -->
+      <div id="pcs-progress-wrap"></div>
+      <!-- Primary action (Canva / LinkedIn) -->
       <div id="pcs-action-btn-wrap"></div>
       <!-- Next action button -->
       <div id="pcs-next-action-wrap"></div>
-      <!-- Metadata grid -->
+      <!-- Information section -->
       <div id="pcs-fields"></div>
-      <!-- Activity footer -->
-      <div class="pcs-activity-section">
+      <!-- History section -->
+      <div class="pcs-section" id="pcs-history-section">
+        <div class="pcs-section-label">History</div>
         <div class="pcs-activity-body" id="pcs-activity-body"></div>
       </div>
     </div>
@@ -748,15 +754,13 @@
 
 <script src="01-config.js"></script>
 <script src="02-session.js"></script>
-<script src="03-auth.js"></script>
+<script src="10-ui.js"></script>
 <script src="05-api.js"></script>
-<script src="04-router.js"></script>
-
-<script src="07-post-load.js"></script>
-<script src="08-post-actions.js"></script>
+<script src="03-auth.js"></script>
 <script src="06-post-create.js"></script>
 <script src="09-approval.js"></script>
-
-<script src="10-ui.js"></script>
+<script src="08-post-actions.js"></script>
+<script src="07-post-load.js"></script>
+<script src="04-router.js"></script>
 </body>
 </html>
