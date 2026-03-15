@@ -536,17 +536,24 @@ function _buildStageProgress(stageLC) {
 
   const activeIdx = steps.findIndex(s => s.key === norm);
 
-  const dots = steps.map((s, i) => {
+  let html = '';
+  steps.forEach((s, i) => {
+    if (i > 0) {
+      const lineFuture = activeIdx === -1 || i > activeIdx;
+      html += `<div class="prog-line${lineFuture ? ' prog-line--future' : ''}"></div>`;
+    }
     const isDone    = activeIdx !== -1 && i < activeIdx;
     const isCurrent = i === activeIdx;
-    const cls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
-    return `<div class="prog-step">
-      <div class="${cls}"></div>
+    const isFuture  = !isDone && !isCurrent;
+    const dotCls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
+    const stepCls = isFuture ? 'prog-step prog-step--future' : 'prog-step';
+    html += `<div class="${stepCls}">
+      <div class="${dotCls}"></div>
       <div class="prog-label">${s.label}</div>
     </div>`;
-  }).join('<div class="prog-line"></div>');
+  });
 
-  return `<div class="pcs-progress">${dots}</div>`;
+  return `<div class="pcs-progress">${html}</div>`;
 }
 
 function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
