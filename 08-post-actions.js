@@ -4,7 +4,7 @@
 console.log("LOADED:", "08-post-actions.js");
 
 async function quickStage(postId, newStage) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post) return;
   const oldStage = post.stage;
   post.stage = newStage;
@@ -23,65 +23,8 @@ async function quickStage(postId, newStage) {
   }
 }
 
-function openPostModal(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
-  if (!post) return;
-  window._modalOpen = true;
-  document.getElementById('pmd-title').textContent  = getTitle(post);
-  document.getElementById('pmd-id').textContent     = postId;
-  const sel = document.getElementById('pmd-stage-select');
-  sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
-  document.getElementById('pmd-comments').value    = post.comments || '';
-  document.getElementById('pmd-postlink').value    = post.postLink || post.post_link || '';
-  const adminFields = document.getElementById('pmd-admin-fields');
-  if (adminFields) {
-    adminFields.style.display = currentRole === 'Admin' ? '' : 'none';
-    if (currentRole === 'Admin') {
-      document.getElementById('pmd-owner-select').value = post.owner || '';
-      document.getElementById('pmd-date-input').value   = post.targetDate || '';
-    }
-  }
-  document.getElementById('pmd-save-btn').dataset.postId = postId;
-  document.getElementById('post-modal-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closePostModal() {
-  document.getElementById('post-modal-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-  window._modalOpen = false;
-  _drainDeferredRender();
-}
-
-async function saveStageUpdate() {
-  const postId   = document.getElementById('pmd-save-btn').dataset.postId;
-  const newStage = document.getElementById('pmd-stage-select').value;
-  const comments = document.getElementById('pmd-comments').value.trim();
-  const postLink = document.getElementById('pmd-postlink').value.trim();
-  const btn      = document.getElementById('pmd-save-btn');
-  btn.disabled   = true;
-  const ownerEl  = document.getElementById('pmd-owner-select');
-  const dateEl   = document.getElementById('pmd-date-input');
-  const payload  = { stage: newStage, comments: comments || null, post_link: postLink || null, updated_at: new Date().toISOString() };
-  if (ownerEl && currentRole === 'Admin') payload.owner = ownerEl.value || null;
-  if (dateEl  && currentRole === 'Admin') payload.target_date = dateEl.value || null;
-  try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    });
-    await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
-    closePostModal();
-    await loadPosts();
-    showToast('Post updated ✓', 'success');
-  } catch (err) {
-    showToast('Save failed — try again', 'error');
-    btn.disabled = false;
-  }
-}
-
 function openAdminEdit(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post) return;
   window._modalOpen = true;
   document.getElementById('ae-postid').textContent   = postId;
@@ -91,7 +34,7 @@ function openAdminEdit(postId) {
   document.getElementById('ae-location').value       = post.location || '';
   document.getElementById('ae-date').value           = post.targetDate || '';
   document.getElementById('ae-comments').value       = post.comments || '';
-  document.getElementById('ae-postlink').value       = post.postLink || post.post_link || '';
+  document.getElementById('ae-postlink').value       = post.postLink || '';
   const sel = document.getElementById('ae-stage');
   sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
   document.getElementById('ae-save-btn').dataset.postId = postId;
@@ -135,7 +78,7 @@ async function saveAdminEdit() {
 }
 
 async function clientApprove(postId, btn) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post) return;
   const alreadyApproved = (post.stage||'').toLowerCase().trim() === 'scheduled';
   if (alreadyApproved) { showToast('Already approved ✓', 'success'); return; }
@@ -257,10 +200,8 @@ async function flagIssue(postId) {
   } catch { showToast('Failed — try again', 'error'); }
 }
 
-// (handleBucketDrop removed — was dead code, never wired to DOM)
-
 async function nudgeClient(postId, title, targetDate) {
-  const days      = daysInStage(allPosts.find(p=>getPostId(p)===postId));
+  const days      = daysInStage(getPostById(postId));
   const dateInfo  = targetDate ? `\n\nTarget date: ${formatDate(targetDate)}` : '';
   const msg       = encodeURIComponent(`Hi! Just a quick note — we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
   const waLink    = `https://wa.me/?text=${msg}`;
@@ -269,7 +210,7 @@ async function nudgeClient(postId, title, targetDate) {
 }
 
 async function copyCaption(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post || !post.comments) { showToast('No caption found', 'error'); return; }
   try {
     await navigator.clipboard.writeText(post.comments);
@@ -277,13 +218,9 @@ async function copyCaption(postId) {
   } catch { showToast('Could not copy — try manually', 'error'); }
 }
 
-// Legacy stubs kept for HTML compatibility
-function submitPostRequest() { submitClientRequest(); }
-function renderClientApprovedLegacy() { renderClientApproved(); }
-
 // ── Delete post (Admin only) ──────────────────
 async function deletePost(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   const title = post ? getTitle(post) : postId;
   if (!confirm(`Delete "${title}"?\n\nThis cannot be undone.`)) return;
   const btn = document.getElementById('ae-delete-btn');
@@ -424,29 +361,41 @@ function forcePCSReset() {
 }
 
 function _renderPCS(postId) {
-  // Dismiss confirm overlay when navigating to a different card
   _removePcsConfirm();
-  const post = allPosts.find(p => getPostId(p) === postId);
+
+  // 1. Fetch post
+  const post = getPostById(postId);
   if (!post) { closePCS(); return; }
 
+  // 2. Compute derived state
   const id          = getPostId(post);
   const title       = getTitle(post);
-  const stage       = post.stage || '';
-  const stageLC     = stage.toLowerCase().trim();
+  const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
-  const postLink    = post.postLink || post.post_link || '';
+  const postLink    = post.postLink || '';
   const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const pillarLabel = post.contentPillar
+    ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
+    : '';
+  const dateValue   = isPublished ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
+  const dateDisplay = formatDate(dateValue) || '';
 
-  // Cache DOM elements — guard every write
+  // 3. Build subtitle parts
+  const subtitleParts = [
+    pillarLabel ? `<span>${esc(pillarLabel)}</span>` : '',
+    post.owner  ? `<span>${esc(post.owner)}</span>`  : '',
+    dateDisplay ? `<span>${esc(dateDisplay)}</span>`  : '',
+  ].filter(Boolean);
+
+  // 4. Render into DOM
   const elTitle    = document.getElementById('pcs-topbar-title');
   const elSubtitle = document.getElementById('pcs-subtitle');
   const elProgress = document.getElementById('pcs-progress-wrap');
   const elDesign   = document.getElementById('pcs-action-btn-wrap');
-  const elNext     = document.getElementById('pcs-next-action-wrap');
   const elFields   = document.getElementById('pcs-fields');
   const elActivity = document.getElementById('pcs-activity-body');
 
-  // Title — inline editable on tap (Section 1)
+  // Title — inline editable on tap
   if (elTitle) {
     elTitle.textContent = title;
     if (canEdit) {
@@ -458,34 +407,12 @@ function _renderPCS(postId) {
     }
   }
 
-  // Metadata row: Pillar · Owner · Target Date (Section 2)
-  if (elSubtitle) {
-    const pillarLabel = post.contentPillar
-      ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
-      : '';
-    const dateValue = isPublished
-      ? (post.published_date || post.publishedDate || post.targetDate || '')
-      : (post.targetDate || '');
-    const dateDisplay = formatDate(dateValue) || '';
-    const parts = [
-      pillarLabel   ? `<span>${esc(pillarLabel)}</span>`   : '',
-      post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
-      dateDisplay   ? `<span>${esc(dateDisplay)}</span>`   : '',
-    ].filter(Boolean);
-    elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
-  }
+  if (elSubtitle) elSubtitle.innerHTML = subtitleParts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
+  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
+  if (elDesign)   elDesign.innerHTML = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
+  if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 
-  // Stage progress — clickable stages (Section 3)
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC, canEdit, id);
-
-  // Inline action row
-  if (elNext) elNext.innerHTML = '';
-  if (elDesign) elDesign.innerHTML = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
-
-  // Information + Notes sections
-  if (elFields) elFields.innerHTML = _buildPCSGrid(post, canEdit, id);
-
-  // History — only reload if postId changed (Section 8 — reduce lag)
+  // 5. Load activity asynchronously
   if (elActivity) {
     if (elActivity.dataset.loadedFor !== id) {
       elActivity.dataset.loadedFor = id;
@@ -495,7 +422,7 @@ function _renderPCS(postId) {
   }
 }
 
-// ── Section 1: Inline title editing ──────────────
+// ── Inline title editing ──────────────
 function _pcsTitleEdit(el, postId) {
   if (el.querySelector('input')) return; // already editing
   // Close other interactive layers — only one at a time
@@ -530,11 +457,11 @@ function _pcsTitleEdit(el, postId) {
   });
 }
 
-// ── Section 4: Unified stage change with confirmation ──
+// ── Unified stage change with confirmation ──
 function changeStage(newStage) {
   const postId = _pcs.postId;
   if (!postId) return;
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post) return;
   const current = (post.stage || '').toLowerCase().trim();
   if (current === newStage.toLowerCase().trim()) return; // same stage
@@ -565,19 +492,19 @@ function _showStageConfirm(postId, newStage) {
 async function _executeStageChange(postId, newStage) {
   _removePcsConfirm();
   await quickStage(postId, newStage);
-  // Immediately update the PCS pipeline visually (Section 3 + 4)
+  // Immediately update the PCS pipeline visually
   _refreshPCSAfterStageChange(postId);
   refreshSystemViews();
 }
 
-// Targeted re-render of only the stage-dependent sections (Section 8 — no full re-render)
+// Targeted re-render of only the stage-dependent sections (no full re-render)
 function _refreshPCSAfterStageChange(postId) {
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (!post || _pcs.postId !== postId) return;
 
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
-  const postLink    = post.postLink || post.post_link || '';
+  const postLink    = post.postLink || '';
   const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
   const id          = getPostId(post);
 
@@ -585,12 +512,12 @@ function _refreshPCSAfterStageChange(postId) {
   const elDesign   = document.getElementById('pcs-action-btn-wrap');
   const elFields   = document.getElementById('pcs-fields');
 
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC, canEdit, id);
+  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
   if (elDesign)   elDesign.innerHTML   = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
-  if (elFields)   elFields.innerHTML   = _buildPCSGrid(post, canEdit, id);
+  if (elFields)   elFields.innerHTML   = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 }
 
-function _buildStageProgress(stageLC, canEdit, postId) {
+function _buildStageProgress(stageLC) {
   const steps = [
     { key: 'in production',     label: 'Production' },
     { key: 'ready',             label: 'Ready' },
@@ -613,10 +540,7 @@ function _buildStageProgress(stageLC, canEdit, postId) {
     const isDone    = activeIdx !== -1 && i < activeIdx;
     const isCurrent = i === activeIdx;
     const cls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
-    // Clickable stages (Section 3) — all stages clickable when canEdit
-    const clickAttr = canEdit ? `onclick="changeStage('${esc(s.key)}')"` : '';
-    const clickCls  = canEdit ? ' prog-step--clickable' : '';
-    return `<div class="prog-step${clickCls}" ${clickAttr}>
+    return `<div class="prog-step">
       <div class="${cls}"></div>
       <div class="prog-label">${s.label}</div>
     </div>`;
@@ -656,14 +580,6 @@ function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
   return `<div class="pcs-design-stack">${primary}${replaceRow}${attachRow}</div>`;
 }
 
-// Legacy alias — called by pcsSaveAttach to re-render the action area
-function _buildDesignBlock(postLink, isPublished, canEdit, postId) {
-  const stageLC = (_pcs.postId && allPosts.find(p => getPostId(p) === _pcs.postId))
-    ? (allPosts.find(p => getPostId(p) === _pcs.postId).stage || '').toLowerCase().trim()
-    : '';
-  return _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC);
-}
-
 function pcsToggleAttach(postId) {
   const row = document.getElementById(`pcs-attach-row-${postId}`);
   const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
@@ -696,27 +612,16 @@ async function pcsSaveAttach(postId) {
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
   await updatePost(postId, 'postLink', url);
-  // Re-render design block with new link
-  const post = allPosts.find(p => getPostId(p) === postId);
+  // Re-render design section with new link
+  const post = getPostById(postId);
   if (post) {
     const stageLC = (post.stage || '').toLowerCase().trim();
     const isPublished = stageLC === 'published';
     const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
     const el = document.getElementById('pcs-action-btn-wrap');
-    if (el) el.innerHTML = _buildDesignBlock(url, isPublished, canEdit, postId);
+    if (el) el.innerHTML = _buildInlineActions(url, isPublished, canEdit, postId, stageLC);
   }
 }
-
-async function pcsDoNextAction(postId, nextStage) {
-  // Legacy entry point — route through unified changeStage when PCS is open
-  if (_pcs.postId) { changeStage(nextStage); return; }
-  await quickStage(postId, nextStage);
-  refreshSystemViews();
-  closePCS();
-}
-
-// Legacy stub — replaced by pcsToggleAttach/pcsSaveAttach
-function pcsReplaceDesign(postId) { pcsToggleAttach(postId); }
 
 function refreshSystemViews() {
   // Only render the active tab — no need to rebuild hidden containers
@@ -731,7 +636,7 @@ function refreshSystemViews() {
 
 async function updatePost(postId, field, value) {
   // Optimistic update in memory
-  const post = allPosts.find(p => getPostId(p) === postId);
+  const post = getPostById(postId);
   if (post) post[field] = value;
 
   const dbField = {
@@ -758,19 +663,6 @@ async function updatePost(postId, field, value) {
   }
 }
 
-function _pcsNextAction(stageLC) {
-  const map = {
-    'awaiting brand input':  { label: 'Start Production',       nextStage: 'in production' },
-    'in production':         { label: 'Mark Ready',             nextStage: 'ready' },
-    'revisions needed':      { label: 'Apply Revisions',        nextStage: 'in production' },
-    'ready':                 { label: 'Send for Approval',      nextStage: 'awaiting approval' },
-    'awaiting approval':     { label: 'Schedule Post',          nextStage: 'scheduled' },
-    'scheduled':             { label: 'Post Scheduled',         nextStage: null },
-    'published':             { label: 'Post Published',         nextStage: null },
-  };
-  return map[stageLC] || { label: 'No action available', nextStage: null };
-}
-
 function _loadPCSActivity(postId, bodyEl) {
   apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=25`)
     .then(rows => {
@@ -791,35 +683,19 @@ function _loadPCSActivity(postId, bodyEl) {
     .catch(() => { bodyEl.innerHTML = '<div class="pcs-activity-empty">Could not load.</div>'; });
 }
 
-function _pcsListLabel(listKey) {
-  if (!listKey) return 'Posts';
-  if (listKey === 'tasks') return 'My Tasks';
-  if (listKey === 'upcoming') return 'Upcoming';
-  if (listKey === 'library') return 'Content Library';
-  if (listKey === 'pipeline') return 'Pipeline';
-  if (listKey.startsWith('tasks-')) {
-    const key = listKey.replace('tasks-','');
-    const bucket = (window.ROLE_BUCKETS?.[currentRole]||[]).find(b=>b.key===key);
-    return bucket ? bucket.label : key;
-  }
-  return 'Posts';
-}
-
-function _buildPCSGrid(post, canEdit, id) {
-  // Use canonical lists from 01-config.js (STAGE_META, STAGES_DB, PILLARS_DB)
+function _buildInfoGrid(post, canEdit, id) {
   const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
-  const OWNERS   = ['Chitra','Pranav','Admin'];
+  const OWNERS   = ALLOWED_OWNERS;
   const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
 
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
   const dateLabel   = isPublished ? 'Published Date' : 'Target Date';
   const dateValue   = isPublished
-    ? (post.published_date || post.publishedDate || post.targetDate || '')
+    ? (post.publishedDate || post.targetDate || '')
     : (post.targetDate || '');
   const { hex } = stageStyle(post.stage);
 
-  // sel: value stored is DB lowercase, option text is Title Case display label
   const sel = (field, opts, val, dbField, displayMap) =>
     `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
        ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(displayMap ? (displayMap[o] || o) : o)}</option>`).join('')}
@@ -827,25 +703,18 @@ function _buildPCSGrid(post, canEdit, id) {
 
   const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
 
-  // Stage selector uses unified changeStage() (Section 4)
+  // Stage selector uses unified changeStage() with confirmation
   const stageSel = canEdit
     ? `<select class="pcs-field-val" onchange="changeStage(this.value)">
          ${STAGES_DB.map(o => `<option value="${esc(o)}" ${o === (post.stage||'') ? 'selected' : ''}>${esc(STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o)}</option>`).join('')}
        </select>`
     : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
 
-  // Date field — full click area with 44px minimum tap target (Section 7)
+  // Date field — full click area with 44px minimum tap target
   const dateInput = canEdit
     ? `<label class="pcs-date-tap"><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
              onchange="updatePost('${esc(id)}','targetDate',this.value)"></label>`
     : `<div class="pcs-date-tap"><span class="pcs-date-value">${esc(formatDate(dateValue) || '—')}</span></div>`;
-
-  // Notes — reduced default height, auto-expand (Section 10)
-  const notesInput = canEdit
-    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="2"
-                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
-    : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');
 
   const cell = (label, content) =>
     `<div class="pcs-field">
@@ -853,7 +722,6 @@ function _buildPCSGrid(post, canEdit, id) {
        ${content}
      </div>`;
 
-  // Information grid — preceded by visual divider
   return `
     <div class="pcs-info-divider"></div>
     <div class="pcs-section">
@@ -865,28 +733,24 @@ function _buildPCSGrid(post, canEdit, id) {
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
         ${cell(dateLabel,  dateInput)}
       </div>
-    </div>
-    ${(canEdit || post.comments) ? `
+    </div>`;
+}
+
+function _buildNotes(post, canEdit, id) {
+  if (!canEdit && !post.comments) return '';
+
+  // Notes — reduced default height, auto-expand
+  const notesInput = canEdit
+    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="2"
+                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
+    : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');
+
+  return `
     <div class="pcs-section pcs-notes-section">
       <div class="pcs-section-label">Notes</div>
       ${notesInput || '<div class="pcs-activity-empty">No notes.</div>'}
-    </div>` : ''}
-    <input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
-}
-
-function _renderPCSFooter(post, isPublished, canEdit) {
-  // No persistent footer — actions are inline or in primary/next-action buttons
-  const footer = document.getElementById('pcs-footer');
-  if (footer) footer.innerHTML = '';
-}
-
-function updatePCSPreview(link) {
-  // Legacy stub — inline editing now handles updates
-  if (link && _pcs.postId) updatePost(_pcs.postId, 'postLink', link);
-}
-
-async function savePCS() {
-  // Legacy stub — fields now auto-save via updatePost()
+    </div>`;
 }
 
 function _removePcsConfirm() {
@@ -925,4 +789,3 @@ async function pcsDoDelete() {
     await loadPosts();
   } catch(e) { showToast('Delete failed', 'error'); }
 }
-
