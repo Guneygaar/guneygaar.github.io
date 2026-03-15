@@ -792,7 +792,7 @@ function _removePcsConfirm() {
 }
 
 function pcsConfirmDelete() {
-  // Guard: don't create if PCS is already closed (handles race with delayed click after swipe-close)
+  // Guard: don't create if PCS is already closed (handles race with delayed click after close)
   const pcsOpen = document.getElementById('pcs-overlay')?.classList.contains('open');
   if (!pcsOpen || !_pcs.postId) return;
   // Only one confirm overlay may exist at a time
