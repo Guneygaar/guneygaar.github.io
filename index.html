@@ -694,32 +694,37 @@
 <div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
   <div id="pcs-screen">
 
-    <!-- Header: back (abs) | centered title + subtitle | menu (abs) -->
+    <!-- Header: close (left) | delete (right), centered title + metadata -->
     <div class="pcs-header">
-      <button class="pcs-back" onclick="closePCS()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      <button class="pcs-close-btn" onclick="closePCS()" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <button class="pcs-delete-btn" onclick="pcsConfirmDelete()" aria-label="Delete">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
       </button>
       <div class="pcs-header-center">
         <div class="pcs-title" id="pcs-topbar-title"></div>
         <div class="pcs-subtitle" id="pcs-subtitle"></div>
       </div>
-      <button class="pcs-menu" onclick="pcsConfirmDelete()">⋯</button>
     </div>
 
     <!-- Scrollable content -->
     <div class="pcs-scroll" id="pcs-scroll">
-      <!-- Stage progress -->
-      <div id="pcs-progress-wrap"></div>
-      <!-- Primary action (Canva / LinkedIn) -->
-      <div id="pcs-action-btn-wrap"></div>
-      <!-- Next action button -->
-      <div id="pcs-next-action-wrap"></div>
-      <!-- Information section -->
-      <div id="pcs-fields"></div>
-      <!-- History section -->
-      <div class="pcs-section" id="pcs-history-section">
-        <div class="pcs-section-label">History</div>
-        <div class="pcs-activity-body" id="pcs-activity-body"></div>
+      <!-- Pipeline progress -->
+      <div class="pcs-body-section" id="pcs-progress-wrap"></div>
+      <!-- Action controls -->
+      <div class="pcs-body-section" id="pcs-next-action-wrap"></div>
+      <!-- Tool card (Design/LinkedIn) -->
+      <div class="pcs-body-section" id="pcs-action-btn-wrap"></div>
+      <!-- Information grid + Notes -->
+      <div class="pcs-body-section" id="pcs-fields"></div>
+      <!-- Activity (collapsed by default) -->
+      <div class="pcs-body-section pcs-activity-section" id="pcs-history-section">
+        <button class="pcs-activity-toggle" id="pcs-activity-toggle" onclick="togglePCSActivity()">
+          <span>Activity</span>
+          <svg class="pcs-activity-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
       </div>
     </div>
 
