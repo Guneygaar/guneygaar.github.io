@@ -951,13 +951,6 @@ function renderLibraryBoard(posts) {
     </div>
     <div class="row-list">${cards}</div>`;
 
-  // Touch swipe support
-  let sx = 0;
-  container.ontouchstart = e => { sx = e.touches[0].clientX; };
-  container.ontouchend   = e => {
-    const dx = e.changedTouches[0].clientX - sx;
-    if (Math.abs(dx) > 60) moveBoardPillar(dx < 0 ? 1 : -1);
-  };
 }
 
 function moveBoardPillar(dir) {

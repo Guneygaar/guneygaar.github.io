@@ -3045,21 +3045,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transform: translateY(0);
 }
 
-/* Visual accent bar (no drag interaction) */
-.pcs-handle {
-  width: 36px;
-  height: 4px;
-  background: var(--text3);
-  border-radius: 2px;
-  margin: 12px auto 0;
-  flex-shrink: 0;
-  opacity: 0.55;
-  transition: opacity 0.2s;
-  touch-action: none;
-  pointer-events: none;
-}
-#pcs-overlay.open .pcs-handle { opacity: 0.8; }
-
 /* Header */
 .pcs-header {
   position: sticky;
@@ -3070,7 +3055,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   z-index: 10;
   background: var(--bg);
   border-bottom: 1px solid rgba(0,0,0,0.06);
-  touch-action: none;
 }
 .pcs-back {
   position: absolute;

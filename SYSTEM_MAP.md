@@ -16,7 +16,7 @@ Scripts load via `<script defer>` in `index.html` (lines 754–763). Execution o
 10-ui.js          Toast, tabs, theme, overlays, utility helpers (esc, parseDate, etc.)
 06-post-create.js New post modal, draft autosave (localStorage)
 07-post-load.js   Data loading, realtime poll, ALL render functions
-08-post-actions.js Stage updates, modals (PCS, post modal, admin edit), drag & drop
+08-post-actions.js Stage updates, modals (PCS, post modal, admin edit)
 09-approval.js    Public approval view (unauthenticated)
 04-router.js      App entry point — runs _startRouter() on DOMContentLoaded (LAST)
 ```
@@ -348,14 +348,14 @@ renderAll()
 | `renderLibrary()` | library views | all | Dispatches to list/calendar/board view |
 | `renderLibraryRows()` | `#library-list-view` | all | Flat list of all posts |
 | `renderLibraryCalendar()` | `#library-calendar-view` | all | Posts grouped by month |
-| `renderLibraryBoard()` | `#library-board-view` | all | Posts grouped by pillar (swipeable) |
+| `renderLibraryBoard()` | `#library-board-view` | all | Posts grouped by pillar |
 | `renderClientView()` | client sections | Client | Input needed + approval + published tables |
 
 ### Card Construction
 
 All post cards are built by `buildPostCard(post, listKey)` → returns HTML string with inline `onclick="openPCS(id, listKey)"`.
 
-Cards are registered in `_postLists[listKey]` for PCS navigation (swipe through list).
+Cards are registered in `_postLists[listKey]` for PCS navigation.
 
 ### refreshSystemViews()
 

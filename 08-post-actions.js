@@ -309,8 +309,6 @@ function timeAgo(iso) {
   return `${Math.floor(diff/86400)}d ago`;
 }
 
-// (Drag & Drop handlers removed — were dead code, never wired to DOM)
-
 // ═══════════════════════════════════════════════
 // PCS — Post Control Screen
 // ═══════════════════════════════════════════════
@@ -825,4 +823,3 @@ async function pcsDoDelete() {
   } catch(e) { showToast('Delete failed', 'error'); }
 }
 
-// ── Swipe navigation ──────────────────────────
