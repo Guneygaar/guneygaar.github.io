@@ -369,10 +369,11 @@ function openPCS(postId, listKey) {
     return;
   }
 
-  // 3. Force a synchronous reflow so the browser commits translateY(100%)
-  //    as the starting position. Without this, adding .open in the same
-  //    frame means Safari sees no change and skips the transition.
-  if (screen) { void screen.offsetHeight; }
+  // 3. Force Safari to commit the current computed transform (translateY(100%))
+  //    before we add .open. Reading getComputedStyle().transform forces both
+  //    style resolution AND layout — more reliable than offsetHeight on
+  //    Mobile Safari, which can skip style recalc in some DOM states.
+  if (screen) { void getComputedStyle(screen).transform; }
 
   // 4. Now add .open — CSS transition animates translateY(100%) → translateY(0).
   //    No inline transform needed. The CSS rules handle everything.
