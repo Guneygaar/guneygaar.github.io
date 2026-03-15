@@ -450,40 +450,29 @@ function _renderPCS(postId) {
   // Title — dominant element
   if (elTitle) elTitle.textContent = title;
 
-  // Subtitle: only non-empty parts, stage gets colour, pillar as short label
+  // Metadata row: Owner · Pillar · Target Date — clean centered line
   if (elSubtitle) {
     const pillarLabel = post.contentPillar
       ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
       : '';
+    const dateValue = isPublished
+      ? (post.published_date || post.publishedDate || post.targetDate || '')
+      : (post.targetDate || '');
+    const dateDisplay = formatDate(dateValue) || '';
     const parts = [
-      stageLabel    ? `<span class="pcs-subtitle-stage" style="color:${hex}">${esc(stageLabel)}</span>` : '',
       post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
-      post.location ? `<span>${esc(post.location)}</span>` : '',
       pillarLabel   ? `<span>${esc(pillarLabel)}</span>`   : '',
+      dateDisplay   ? `<span>${esc(dateDisplay)}</span>`   : '',
     ].filter(Boolean);
-    elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">·</span>');
+    elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
   }
 
   // Stage progress
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
 
-  // Design block
-  if (elDesign) elDesign.innerHTML = _buildDesignBlock(postLink, isPublished, canEdit, id);
-
-  // Next Action button
-  if (elNext) {
-    const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
-    if (naLabel && canEdit && nextStage) {
-      elNext.innerHTML =
-        `<button class="pcs-next-action-btn" onclick="pcsDoNextAction('${esc(id)}','${esc(nextStage)}')">
-           ${esc(naLabel)} →
-         </button>`;
-    } else if (naLabel) {
-      elNext.innerHTML = `<div class="pcs-next-action-info">${esc(naLabel)}</div>`;
-    } else {
-      elNext.innerHTML = '';
-    }
-  }
+  // Inline action row — replaces the old large next-action button + design block
+  if (elNext) elNext.innerHTML = '';  // clear legacy next-action slot
+  if (elDesign) elDesign.innerHTML = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
 
   // Information + Notes sections
   if (elFields) elFields.innerHTML = _buildPCSGrid(post, canEdit, id);
@@ -527,59 +516,45 @@ function _buildStageProgress(stageLC) {
   return `<div class="pcs-progress">${dots}</div>`;
 }
 
-function _buildDesignBlock(postLink, isPublished, canEdit, postId) {
-  // State 2: published/LinkedIn link
+function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
+  const chips = [];
+  const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
+  const { hex } = stageStyle(stageLC);
+
+  // Stage chip — advance or informational
+  if (naLabel && canEdit && nextStage) {
+    chips.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="pcsDoNextAction('${esc(postId)}','${esc(nextStage)}')">${esc(naLabel)}</button>`);
+  } else if (naLabel) {
+    chips.push(`<span class="pcs-action-chip pcs-action-chip--info">${esc(naLabel)}</span>`);
+  }
+
+  // Canva / LinkedIn chips
   if (isPublished && postLink) {
-    return `<div class="pcs-design-block">
-      <div class="pcs-design-info">
-        <div class="design-icon-wrap design-icon-linkedin">in</div>
-        <div class="pcs-design-text">
-          <div class="pcs-design-label">Post</div>
-          <div class="pcs-design-status">Published on LinkedIn</div>
-        </div>
-      </div>
-      <div class="pcs-design-actions">
-        <a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary" onclick="closePCS()">View on LinkedIn ↗</a>
-      </div>
-    </div>`;
+    chips.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`);
+  } else if (postLink) {
+    chips.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`);
+    if (canEdit) chips.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">Replace</button>`);
+  } else if (canEdit) {
+    chips.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`);
   }
 
-  // State 1: Canva link exists
-  if (postLink) {
-    return `<div class="pcs-design-block">
-      <div class="pcs-design-info">
-        <div class="design-icon-wrap design-icon-canva">C</div>
-        <div class="pcs-design-text">
-          <div class="pcs-design-label">Design</div>
-          <div class="pcs-design-status">Canva connected</div>
-        </div>
-      </div>
-      <div class="pcs-design-actions">
-        <a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-primary" onclick="closePCS()">Open Canva ↗</a>
-        ${canEdit ? `<button class="pcs-design-replace" onclick="pcsToggleAttach('${esc(postId)}')">Replace</button>` : ''}
-      </div>
-      ${canEdit ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
-        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste new Canva URL…">
+  // Attach URL row (hidden by default, toggled via pcsToggleAttach)
+  const attachRow = canEdit
+    ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
+        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste Canva URL…">
         <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
-      </div>` : ''}
-    </div>`;
-  }
+      </div>`
+    : '';
 
-  // State 3: no link
-  if (!canEdit) return '';
-  return `<div class="pcs-design-block pcs-design-empty">
-    <div class="pcs-design-info">
-      <div class="design-icon-wrap design-icon-empty">+</div>
-      <div class="pcs-design-text">
-        <div class="pcs-design-label">Design</div>
-        <div class="pcs-design-status muted">No design attached</div>
-      </div>
-    </div>
-    <div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}">
-      <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste Canva URL…">
-      <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Attach</button>
-    </div>
-  </div>`;
+  return `<div class="pcs-inline-actions">${chips.join('')}</div>${attachRow}`;
+}
+
+// Legacy alias — called by pcsSaveAttach to re-render the action area
+function _buildDesignBlock(postLink, isPublished, canEdit, postId) {
+  const stageLC = (_pcs.postId && allPosts.find(p => getPostId(p) === _pcs.postId))
+    ? (allPosts.find(p => getPostId(p) === _pcs.postId).stage || '').toLowerCase().trim()
+    : '';
+  return _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC);
 }
 
 function pcsToggleAttach(postId) {
@@ -729,9 +704,9 @@ function _buildPCSGrid(post, canEdit, id) {
     : `<div class="pcs-date-field"><span class="pcs-date-value">${esc(formatDate(dateValue) || '—')}</span>${formatDate(dateValue) ? '<span class="pcs-date-icon">📅</span>' : ''}</div>`;
 
   const notesInput = canEdit
-    ? `<textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="3"
-                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea>`
-    : (post.comments ? `<div class="pcs-notes-ro">${esc(post.comments)}</div>` : '');
+    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="3"
+                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
+    : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');
 
   const cell = (label, content) =>
     `<div class="pcs-field">
