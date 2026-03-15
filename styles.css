@@ -3029,7 +3029,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 #pcs-overlay.open { display: flex; }
 
-/* ── Modal card — theme-aware ── */
+/* ── Modal card — theme-aware with dark mode separation (Section 11) ── */
 #pcs-screen {
   display: flex;
   flex-direction: column;
@@ -3037,6 +3037,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 480px;
   max-height: 90vh;
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.10);
   overflow: hidden;
@@ -3125,8 +3126,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-bottom: 0;
   filter: none;
 }
+/* Section 1: Editable title affordance */
+.pcs-title--editable { cursor: text; }
+.pcs-title--editable:hover {
+  background: var(--surface2);
+  border-radius: 8px;
+}
+.pcs-title-input {
+  width: 100%;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  text-align: center;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: inherit;
+  outline: none;
+}
+.pcs-title-input:focus { border-color: var(--c-blue); }
 
-/* Metadata row — Owner · Pillar · Date */
+/* Metadata row — Pillar · Owner · Date */
 .pcs-subtitle {
   display: flex;
   align-items: center;
@@ -3183,7 +3206,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 6px;
   flex: 1;
   min-width: 0;
+  padding: 4px 0;
+  border-radius: 8px;
+  transition: background 0.12s ease;
 }
+/* Section 3/13: Clickable pipeline steps */
+.prog-step--clickable { cursor: pointer; }
+.prog-step--clickable:hover { background: var(--surface2); }
+.prog-step--clickable:active { transform: scale(0.95); }
 .prog-dot {
   width: 10px;
   height: 10px;
@@ -3195,11 +3225,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--c-green);
 }
 .prog-dot.active {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   background: var(--surface);
-  border: 2.5px solid var(--c-blue);
-  box-shadow: 0 0 0 3px var(--c-blue-dim);
+  border: 3px solid var(--c-blue);
+  box-shadow: 0 0 0 4px var(--c-blue-dim);
 }
 .prog-label {
   font-size: 10px;
@@ -3215,7 +3245,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex: 1;
   height: 2px;
   background: var(--border);
-  margin-top: 5px;
+  margin-top: 9px;
   min-width: 8px;
 }
 
@@ -3229,15 +3259,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 4px;
 }
 
+/* Section 5: Consistent button system — 36px height, 8px radius, 12px gap */
 .pcs-action-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -3248,10 +3278,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
 }
+/* Section 13: Press feedback */
 .pcs-action-chip:hover { background: var(--surface3); }
-.pcs-action-chip:active { background: var(--border2); }
+.pcs-action-chip:active { background: var(--border2); transform: scale(0.97); }
 
 /* Stage advance chip — subtle primary emphasis */
 .pcs-action-chip--stage {
@@ -3296,13 +3327,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
 }
 
-/* Legacy action controls — kept for compat */
+/* Legacy action controls — matched to 36px chip height */
 .pcs-next-action-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   background: var(--c-blue-dim);
   border: none;
   border-radius: 8px;
@@ -3310,9 +3341,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
   color: var(--c-blue);
   cursor: pointer;
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, transform 0.1s ease;
 }
 .pcs-next-action-btn:hover { filter: brightness(1.1); }
+.pcs-next-action-btn:active { transform: scale(0.97); }
 .pcs-next-action-info {
   font-size: 13px;
   color: var(--text3);
@@ -3320,20 +3352,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
 }
 
-/* Inline URL attach row */
+/* Section 6: Attach URL row — consistent 36px, 16px padding, 8px spacing */
 .pcs-attach-row {
   display: flex;
   gap: 8px;
   align-items: center;
   margin-top: 8px;
+  padding: 8px 0;
 }
 .pcs-attach-input {
   flex: 1;
-  height: 34px;
-  background: var(--surface);
+  height: 36px;
+  background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: 8px;
-  padding: 0 10px;
+  padding: 0 12px;
   font-size: 13px;
   color: var(--text);
   font-family: inherit;
@@ -3341,8 +3374,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-attach-input:focus { outline: none; border-color: var(--c-blue); }
 .pcs-attach-save {
-  height: 34px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   background: var(--c-blue);
   color: #ffffff;
   border-radius: 8px;
@@ -3351,17 +3384,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
   border: none;
   cursor: pointer;
+  transition: transform 0.1s ease;
 }
-.pcs-attach-save:active { opacity: 0.85; }
+.pcs-attach-save:hover { filter: brightness(1.1); }
+.pcs-attach-save:active { transform: scale(0.97); }
 
-/* Legacy design block classes — kept for pcsSaveAttach re-render compat */
+/* Legacy design block classes — heights matched to 36px */
 .pcs-design-block { display: none; }
 .pcs-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   background: var(--surface2);
   color: var(--text);
   font-size: 13px;
@@ -3369,12 +3404,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 8px;
   text-decoration: none;
   border: 1px solid var(--border2);
-  transition: background 0.12s ease;
+  transition: background 0.12s ease, transform 0.1s ease;
 }
 .pcs-primary:hover { background: var(--surface3); }
-.pcs-primary:active { background: var(--border2); text-decoration: none; }
+.pcs-primary:active { background: var(--border2); text-decoration: none; transform: scale(0.97); }
 .pcs-design-replace {
-  padding: 0 14px;
+  height: 36px;
+  padding: 0 16px;
   background: var(--surface2);
   border: 1px solid var(--border2);
   border-radius: 8px;
@@ -3383,8 +3419,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text2);
   white-space: nowrap;
   cursor: pointer;
+  transition: background 0.12s ease, transform 0.1s ease;
 }
 .pcs-design-replace:hover { background: var(--surface3); }
+.pcs-design-replace:active { transform: scale(0.97); }
 
 /* ═══════════════════════════════════════════════
    ZONE 3 — CONTENT (Info grid, Notes, Activity)
@@ -3422,23 +3460,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 4px;
 }
 .pcs-field-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text3);
+  opacity: 0.6;
   margin-bottom: 0;
 }
 .pcs-field-val {
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   font-family: inherit;
   padding: 0;
   width: 100%;
   min-width: 0;
+  min-height: 44px;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
@@ -3446,33 +3486,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-field-val:focus { outline: none; color: var(--c-blue); }
 .pcs-field-val:disabled { opacity: 0.45; cursor: default; }
 .pcs-field-val-ro {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text);
 }
 
-/* Date field */
-.pcs-date-field {
+/* Section 7: Date field — full clickable tap area */
+.pcs-date-tap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.pcs-date-tap .pcs-date-input-native {
+  min-height: 44px;
 }
 .pcs-date-value {
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
 }
-.pcs-date-icon {
-  font-size: 14px;
-  opacity: 0.5;
-  flex-shrink: 0;
-  line-height: 1;
-}
 
-/* ── Notes box — subtle container ── */
+/* ── Notes box — subtle container (Section 10/11) ── */
 .pcs-notes-box {
   background: var(--surface2);
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 12px;
 }
 .pcs-notes-input {
@@ -3482,10 +3521,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 15px;
   font-family: inherit;
   line-height: 1.55;
-  min-height: 56px;
+  min-height: 40px;
   resize: none;
   width: 100%;
   padding: 0;
+  overflow: hidden;
 }
 .pcs-notes-input:focus { outline: none; }
 .pcs-notes-input::placeholder { color: var(--text3); }
@@ -3572,19 +3612,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-confirm-btns { display: flex; gap: 8px; }
 .pcs-confirm-cancel {
-  flex: 1; height: 44px; border-radius: 10px;
+  flex: 1; height: 44px; border-radius: 8px;
   border: 1px solid var(--border2); color: var(--text2);
   font-size: 15px; font-weight: 600; background: var(--surface2);
-  cursor: pointer;
+  cursor: pointer; transition: transform 0.1s ease;
 }
 .pcs-confirm-cancel:hover { background: var(--surface3); }
+.pcs-confirm-cancel:active { transform: scale(0.97); }
 .pcs-confirm-delete {
-  flex: 1; height: 44px; border-radius: 10px;
+  flex: 1; height: 44px; border-radius: 8px;
   background: var(--c-red); color: #fff;
   font-size: 15px; font-weight: 700;
   border: none; cursor: pointer;
+  transition: transform 0.1s ease;
 }
 .pcs-confirm-delete:hover { filter: brightness(1.1); }
+.pcs-confirm-delete:active { transform: scale(0.97); }
+/* Stage confirm button */
+.pcs-confirm-stage {
+  flex: 1; height: 44px; border-radius: 8px;
+  background: var(--c-blue); color: #fff;
+  font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.pcs-confirm-stage:hover { filter: brightness(1.1); }
+.pcs-confirm-stage:active { transform: scale(0.97); }
 
 /* End screen */
 .pcs-end-screen {
