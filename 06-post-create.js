@@ -1,6 +1,7 @@
 /* ===============================================
 06-post-create.js - New Post modal & drafts
 =============================================== */
+console.log("LOADED:", "06-post-create.js");
 
 const DRAFT_KEY = 'gbl_new_post_draft';
 let _draftTimer = null;
@@ -129,6 +130,7 @@ document.getElementById('npm-date').value     = '';
 document.getElementById('npm-submit-btn').disabled = false;
 document.getElementById('npm-saving').classList.remove('active');
 
+window._modalOpen = true;
 document.getElementById('new-post-overlay').classList.add('open');
 document.body.style.overflow = 'hidden';
 
@@ -146,6 +148,8 @@ stopDraftAutosave();
 
 document.getElementById('new-post-overlay').classList.remove('open');
 document.body.style.overflow = '';
+window._modalOpen = false;
+_drainDeferredRender();
 }
 
 async function submitNewPost() {
@@ -199,6 +203,7 @@ stopDraftAutosave();
 
 document.getElementById('new-post-overlay').classList.remove('open');
 document.body.style.overflow = '';
+window._modalOpen = false;
 
 await loadPosts();
 

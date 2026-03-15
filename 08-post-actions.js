@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    08-post-actions.js — Stage updates & modals
 ═══════════════════════════════════════════════ */
+console.log("LOADED:", "08-post-actions.js");
 
 async function quickStage(postId, newStage) {
   const post = allPosts.find(p => getPostId(p) === postId);
@@ -25,6 +26,7 @@ async function quickStage(postId, newStage) {
 function openPostModal(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
+  window._modalOpen = true;
   document.getElementById('pmd-title').textContent  = getTitle(post);
   document.getElementById('pmd-id').textContent     = postId;
   const sel = document.getElementById('pmd-stage-select');
@@ -47,6 +49,8 @@ function openPostModal(postId) {
 function closePostModal() {
   document.getElementById('post-modal-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  window._modalOpen = false;
+  _drainDeferredRender();
 }
 
 async function saveStageUpdate() {
@@ -67,8 +71,7 @@ async function saveStageUpdate() {
       body: JSON.stringify(payload),
     });
     await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Updated: stage=${newStage}` });
-    document.getElementById('post-modal-overlay').classList.remove('open');
-    document.body.style.overflow = '';
+    closePostModal();
     await loadPosts();
     showToast('Post updated ✓', 'success');
   } catch (err) {
@@ -80,6 +83,7 @@ async function saveStageUpdate() {
 function openAdminEdit(postId) {
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) return;
+  window._modalOpen = true;
   document.getElementById('ae-postid').textContent   = postId;
   document.getElementById('ae-title').value          = getTitle(post);
   document.getElementById('ae-owner').value          = post.owner || '';
@@ -98,6 +102,8 @@ function openAdminEdit(postId) {
 function closeAdminEdit() {
   document.getElementById('admin-edit-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  window._modalOpen = false;
+  _drainDeferredRender();
 }
 
 async function saveAdminEdit() {
@@ -251,15 +257,7 @@ async function flagIssue(postId) {
   } catch { showToast('Failed — try again', 'error'); }
 }
 
-function handleBucketDrop(event, targetPostId) {
-  event.preventDefault();
-  event.currentTarget.classList.remove('drag-over');
-  const sourcePostId = event.dataTransfer.getData('text/plain');
-  if (!sourcePostId || sourcePostId === targetPostId) return;
-  const targetPost = allPosts.find(p => getPostId(p) === targetPostId);
-  if (!targetPost) return;
-  quickStage(sourcePostId, targetPost.stage);
-}
+// (handleBucketDrop removed — was dead code, never wired to DOM)
 
 async function nudgeClient(postId, title, targetDate) {
   const days      = daysInStage(allPosts.find(p=>getPostId(p)===postId));
@@ -311,95 +309,6 @@ function timeAgo(iso) {
   return `${Math.floor(diff/86400)}d ago`;
 }
 
-// ── Drag & Drop (desktop + mobile) ───────────
-let _dragPostId   = null;
-let _dragStage    = null;
-let _isDragging   = false;
-let _touchTimer   = null;
-let _touchGhost   = null;
-let _touchStartY  = 0;
-
-function onPcardDragStart(event, postId, stage) {
-  _dragPostId = postId;
-  _dragStage  = stage;
-  event.dataTransfer.effectAllowed = 'move';
-  event.dataTransfer.setData('text/plain', postId);
-  event.currentTarget.classList.add('pcard-dragging');
-}
-
-function onPcardDragEnd(event) {
-  event.currentTarget.classList.remove('pcard-dragging');
-  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  _dragPostId = null;
-  _dragStage  = null;
-}
-
-function onStageDrop(event, dropZone) {
-  event.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const targetStage = dropZone.dataset.stage;
-  const postId = _dragPostId || event.dataTransfer.getData('text/plain');
-  if (!postId || !targetStage || targetStage === _dragStage) return;
-  // Capitalise to match DB values
-  const stageMap = {};
-  (window.PIPELINE_ORDER || []).forEach(s => { stageMap[s.toLowerCase()] = s; });
-  const newStage = stageMap[targetStage] || targetStage;
-  quickStage(postId, newStage);
-}
-
-// Mobile long-press drag
-function onPcardTouchStart(event, postId) {
-  _touchStartY = event.touches[0].clientY;
-  _isDragging  = false;
-  _touchTimer  = setTimeout(() => {
-    _isDragging = true;
-    _dragPostId = postId;
-    const card = event.currentTarget;
-    const rect = card.getBoundingClientRect();
-    _touchGhost = card.cloneNode(true);
-    _touchGhost.style.cssText = `
-      position:fixed; left:${rect.left}px; top:${rect.top}px;
-      width:${rect.width}px; opacity:0.75; pointer-events:none;
-      z-index:9999; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.4);
-      transform:scale(1.02);`;
-    document.body.appendChild(_touchGhost);
-    card.style.opacity = '0.3';
-    if (navigator.vibrate) navigator.vibrate(40);
-  }, 500);
-}
-
-function onPcardTouchMove(event) {
-  const dy = Math.abs(event.touches[0].clientY - _touchStartY);
-  if (dy > 8 && !_isDragging) { clearTimeout(_touchTimer); return; }
-  if (!_isDragging) return;
-  event.preventDefault();
-  const touch = event.touches[0];
-  if (_touchGhost) {
-    _touchGhost.style.top = (touch.clientY - 40) + 'px';
-  }
-  // Highlight drop zone under finger
-  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const zone = el?.closest('.pstage-cards');
-  if (zone) zone.classList.add('drag-over');
-}
-
-function onPcardTouchEnd(event) {
-  clearTimeout(_touchTimer);
-  if (!_isDragging) return;
-  _isDragging = false;
-  const touch = event.changedTouches[0];
-  if (_touchGhost) { _touchGhost.remove(); _touchGhost = null; }
-  // Restore card opacity
-  const card = document.getElementById(`pcard-${_dragPostId}`);
-  if (card) card.style.opacity = '';
-  // Find drop zone
-  const el = document.elementFromPoint(touch.clientX, touch.clientY);
-  const zone = el?.closest('.pstage-cards');
-  document.querySelectorAll('.pstage-cards').forEach(z => z.classList.remove('drag-over'));
-  if (zone) onStageDrop(event, zone);
-}
-
 // ═══════════════════════════════════════════════
 // PCS — Post Control Screen
 // ═══════════════════════════════════════════════
@@ -410,184 +319,121 @@ const _pcs = {
   list:    [],
   idx:     0,
 };
+let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
 
 function openPCS(postId, listKey) {
-  const list = (listKey && window._postLists && _postLists[listKey])
+  // Cancel any deferred forcePCSReset from a previous closePCS() —
+  // without this, a rapid close→open reopens the sheet, then the
+  // stale timer fires 300ms later and nukes it back to hidden.
+  if (_pcsCloseTimer) { clearTimeout(_pcsCloseTimer); _pcsCloseTimer = null; }
+
+  // Force-clean any stale PCS state from a previous session
+  forcePCSReset();
+
+  var list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
     : allPosts;
-  const idx = list.findIndex(p => getPostId(p) === postId);
+  var idx = list.findIndex(function(p) { return getPostId(p) === postId; });
   _pcs.listKey = listKey || '';
   _pcs.list    = list;
   _pcs.idx     = idx >= 0 ? idx : 0;
   _pcs.postId  = postId;
 
-  const _overlay = document.getElementById('pcs-overlay');
-  if (!_overlay) return;
-  _overlay.classList.add('open');
+  var overlay = document.getElementById('pcs-overlay');
+  if (!overlay) return;
+  var screen = document.getElementById('pcs-screen');
+
+  // 1. Clear every inline style — no stale transform/transition/opacity
+  if (screen) {
+    screen.style.cssText = '';
+  }
+
+  // 2. Show the overlay WITHOUT .open — screen sits at translateY(100%)
+  //    via the base CSS rule, which is our desired starting position.
+  overlay.classList.remove('open');
+  overlay.style.display       = 'flex';
+  overlay.style.pointerEvents = '';
+
+  window._modalOpen = true;
   document.body.style.overflow = 'hidden';
-  _renderPCS(postId);
-  _pcsAttachSwipe();
+
+  try {
+    _renderPCS(postId);
+  } catch (err) {
+    console.error('[PCS] openPCS failed — cleaning up:', err);
+    forcePCSReset();
+    return;
+  }
+
+  // 3. Force Safari to commit the current computed transform (translateY(100%))
+  //    before we add .open. Reading getComputedStyle().transform forces both
+  //    style resolution AND layout — more reliable than offsetHeight on
+  //    Mobile Safari, which can skip style recalc in some DOM states.
+  if (screen) { void getComputedStyle(screen).transform; }
+
+  // 4. Now add .open — CSS transition animates translateY(100%) → translateY(0).
+  //    No inline transform needed. The CSS rules handle everything.
+  overlay.classList.add('open');
 }
 
 function closePCS() {
-  const _ov = document.getElementById('pcs-overlay');
-  if (_ov) _ov.classList.remove('open');
-  document.body.style.overflow = '';
-  _pcs.postId = null;
+  forcePCSReset();
+  // Safety: re-verify after animations settle (catches mobile compositor lag).
+  // Store the timer so openPCS can cancel it if the user reopens quickly.
+  if (_pcsCloseTimer) clearTimeout(_pcsCloseTimer);
+  _pcsCloseTimer = setTimeout(function() {
+    _pcsCloseTimer = null;
+    forcePCSReset();
+  }, 300);
 }
 
-// ── Swipe attachment ──────────────────────────
-function _pcsAttachSwipe() {
-  const screen = document.getElementById('pcs-screen');
-  if (!screen) return;
-  screen.removeEventListener('touchstart', _pcsTouchStart);
-  screen.removeEventListener('touchmove',  _pcsTouchMove);
-  screen.removeEventListener('touchend',   _pcsTouchEnd);
-  screen.addEventListener('touchstart', _pcsTouchStart, { passive: true });
-  screen.addEventListener('touchmove',  _pcsTouchMove,  { passive: false });
-  screen.addEventListener('touchend',   _pcsTouchEnd,   { passive: true });
-}
+// ═══════════════════════════════════════════════
+// forcePCSReset — single authoritative cleanup
+// Tears down ALL PCS visual state, compositing layers,
+// and event-capturing surfaces. Safe to call multiple times.
+// ═══════════════════════════════════════════════
+function forcePCSReset() {
+  var screen  = document.getElementById('pcs-screen');
+  var overlay = document.getElementById('pcs-overlay');
 
-const _swipe = { x0: 0, y0: 0, lock: null }; // lock: null | 'h' | 'v'
-
-function _pcsTouchStart(e) {
-  if (e.touches.length !== 1) return;
-  _swipe.x0   = e.touches[0].clientX;
-  _swipe.y0   = e.touches[0].clientY;
-  _swipe.lock = null;
-  const screen = document.getElementById('pcs-screen');
-  if (screen) screen.style.transition = 'none';
-}
-
-function _pcsTouchMove(e) {
-  if (e.touches.length !== 1) return;
-  const dx = e.touches[0].clientX - _swipe.x0;
-  const dy = e.touches[0].clientY - _swipe.y0;
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-
-  // Lock gesture direction once we know which way it's going
-  if (!_swipe.lock && (adx > 8 || ady > 8)) {
-    _swipe.lock = adx > ady ? 'h' : 'v';
-  }
-
-  // Vertical downward drag — close gesture (only when scroll is at top)
-  if (_swipe.lock === 'v' && dy > 0) {
-    const scrollEl = document.getElementById('pcs-scroll');
-    if (scrollEl && scrollEl.scrollTop === 0) {
-      e.preventDefault();
-      const screen = document.getElementById('pcs-screen');
-      if (screen) screen.style.transform = `translateY(${Math.max(0, dy)}px)`;
-    }
-    return;
-  }
-
-  if (_swipe.lock !== 'h') return;
-
-  // Prevent vertical scroll during horizontal swipe
-  e.preventDefault();
-
-  // Only track leftward drag (right swipe does nothing)
-  if (dx < 0) {
-    const resist = Math.max(dx, -window.innerWidth * 0.6);
-    const _ms = document.getElementById('pcs-screen');
-    if (_ms) _ms.style.transform = `translateX(${resist}px)`;
-  }
-}
-
-function _pcsTouchEnd(e) {
-  const dy = e.changedTouches[0].clientY - _swipe.y0;
-  const screen = document.getElementById('pcs-screen');
-
-  // Vertical close gesture
-  if (_swipe.lock === 'v' && dy > 0) {
-    if (!screen) return;
-    if (dy > 90) {
-      // Committed — animate off bottom then close
-      screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-      screen.style.transform  = `translateY(100%)`;
-      setTimeout(closePCS, 290);
-    } else {
-      // Spring back
-      screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-      screen.style.transform  = 'translateY(0)';
-      setTimeout(() => { if (screen) screen.style.transition = ''; }, 300);
-    }
-    return;
-  }
-
-  if (_swipe.lock !== 'h') return;
-  const dx  = e.changedTouches[0].clientX - _swipe.x0;
-  if (!screen) return;
-
-  if (dx < -80) {
-    // Committed — animate out then load next
-    screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-    screen.style.transform  = 'translateX(-100%)';
-    screen.style.opacity    = '0';
-    setTimeout(() => {
-      screen.style.transition = '';
-      screen.style.transform  = '';
-      screen.style.opacity    = '';
-      _pcsNext();
-    }, 220);
-  } else {
-    // Spring back
-    screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-    screen.style.transform  = 'translateX(0)';
-    setTimeout(() => { screen.style.transition = ''; }, 260);
-  }
-}
-
-function _pcsNext() {
-  if (!_pcs.list || !_pcs.list.length) { closePCS(); return; }
-  const nextIdx = _pcs.idx + 1;
-
-  if (nextIdx >= _pcs.list.length) {
-    // End of list — show completion screen then close
-    const scroll = document.getElementById('pcs-scroll');
-    const screen = document.getElementById('pcs-screen');
-    if (scroll) scroll.innerHTML = `
-      <div class="pcs-end-screen">
-        <div class="pcs-end-icon">✓</div>
-        <div>No posts left.</div>
-      </div>`;
-    if (screen) {
-      screen.style.transform  = 'translateX(28px)';
-      screen.style.opacity    = '0';
-      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-      requestAnimationFrame(() => {
-        screen.style.transform = 'translateX(0)';
-        screen.style.opacity   = '1';
-      });
-    }
-    setTimeout(closePCS, 1800);
-    return;
-  }
-
-  // Slide in next post
-  _pcs.idx    = nextIdx;
-  _pcs.postId = getPostId(_pcs.list[nextIdx]);
-
-  const scrollEl = document.getElementById('pcs-scroll');
-  if (scrollEl) scrollEl.scrollTop = 0;
-
-  _renderPCS(_pcs.postId);
-
-  const screen = document.getElementById('pcs-screen');
+  // 1. Nuke ALL inline styles on screen — catches any stale transform,
+  //    transition, opacity, or anything else set by any code path
   if (screen) {
-    screen.style.transform  = 'translateX(28px)';
-    screen.style.opacity    = '0';
-    screen.style.transition = 'none';
-    requestAnimationFrame(() => {
-      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-      screen.style.transform  = 'translateX(0)';
-      screen.style.opacity    = '1';
-      setTimeout(() => { screen.style.transition = ''; }, 230);
-    });
+    screen.style.cssText = '';
+    // Tear down GPU compositing layer (mobile Safari ghost-layer fix)
+    screen.style.willChange    = 'auto';
+    // Block the screen from capturing any touch/click events
+    screen.style.pointerEvents = 'none';
   }
+
+  // 2. Remove .open class AND force display:none as inline backup
+  if (overlay) {
+    overlay.classList.remove('open');
+    overlay.style.display      = 'none';
+    overlay.style.pointerEvents = 'none';
+  }
+
+  // 3. Remove dynamically-created confirm overlays
+  document.querySelectorAll('.pcs-confirm-overlay').forEach(
+    function(el) { el.remove(); }
+  );
+
+  // 4. Reset body scroll lock
+  document.body.style.overflow = '';
+
+  // 5. Reset all state flags
+  window._modalOpen = false;
+
+  // 6. Clear PCS context
+  _pcs.postId = null;
+
+  // 7. Flush any deferred background renders
+  _drainDeferredRender();
 }
 
 function _renderPCS(postId) {
+  // Dismiss confirm overlay when navigating to a different card
+  _removePcsConfirm();
   const post = allPosts.find(p => getPostId(p) === postId);
   if (!post) { closePCS(); return; }
 
@@ -778,10 +624,14 @@ async function pcsDoNextAction(postId, nextStage) {
 function pcsReplaceDesign(postId) { pcsToggleAttach(postId); }
 
 function refreshSystemViews() {
-  try { renderTasks();    } catch(e) {}
-  try { renderPipeline(); } catch(e) {}
-  try { renderUpcoming(); } catch(e) {}
-  try { renderLibrary();  } catch(e) {}
+  // Only render the active tab — no need to rebuild hidden containers
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
+  try {
+    if (activeTab === 'tasks')    renderTasks();
+    else if (activeTab === 'pipeline') renderPipeline();
+    else if (activeTab === 'upcoming') renderUpcoming();
+    else if (activeTab === 'library')  renderLibrary();
+  } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
 async function updatePost(postId, field, value) {
@@ -936,9 +786,20 @@ async function savePCS() {
   // Legacy stub — fields now auto-save via updatePost()
 }
 
+function _removePcsConfirm() {
+  document.querySelectorAll('.pcs-confirm-overlay').forEach(el => el.remove());
+}
+
 function pcsConfirmDelete() {
+  // Guard: don't create if PCS is already closed (handles race with delayed click after close)
+  const pcsOpen = document.getElementById('pcs-overlay')?.classList.contains('open');
+  if (!pcsOpen || !_pcs.postId) return;
+  // Only one confirm overlay may exist at a time
+  _removePcsConfirm();
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
+  // Backdrop tap dismisses the confirm overlay
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
   overlay.innerHTML = `
     <div class="pcs-confirm-sheet">
       <div class="pcs-confirm-msg">Are you sure you want to delete this post?</div>
@@ -951,7 +812,7 @@ function pcsConfirmDelete() {
 }
 
 async function pcsDoDelete() {
-  document.querySelector('.pcs-confirm-overlay')?.remove();
+  _removePcsConfirm();
   const id = _pcs.postId;
   if (!id) return;
   try {
@@ -962,4 +823,3 @@ async function pcsDoDelete() {
   } catch(e) { showToast('Delete failed', 'error'); }
 }
 
-// ── Swipe navigation ──────────────────────────

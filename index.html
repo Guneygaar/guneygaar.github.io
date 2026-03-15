@@ -6,7 +6,7 @@
 <title>GBL · Content Ops</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css">
+ <link rel="stylesheet" href="styles.css?v=20260315">
 
 </head>
 <body>
@@ -352,7 +352,7 @@
     <div class="modal-handle"></div>
     <div class="modal-header">
       <div class="modal-title">New Post</div>
-      <button class="modal-close" onclick="document.getElementById('new-post-overlay').classList.remove('open'); document.body.style.overflow=''">✕</button>
+      <button class="modal-close" onclick="closeNewPostModal()">✕</button>
     </div>
 
     <div class="form-field">
@@ -430,7 +430,7 @@
         <span class="saving-msg" id="npm-saving">Saving…</span>
         <span class="draft-status" id="npm-draft-status"></span>
       </div>
-      <button class="btn-modal-ghost" onclick="document.getElementById('new-post-overlay').classList.remove('open'); document.body.style.overflow=''; saveDraft()">Cancel</button>
+      <button class="btn-modal-ghost" onclick="closeNewPostModal()">Cancel</button>
       <button class="btn-modal-primary" id="npm-submit-btn" onclick="submitNewPost()">Create Post</button>
     </div>
   </div>
@@ -447,7 +447,7 @@
         <div class="pmd-title" id="pmd-title">Post Title</div>
         <div class="pmd-id" id="pmd-id"></div>
       </div>
-      <button class="modal-close" onclick="document.getElementById('post-modal-overlay').classList.remove('open'); document.body.style.overflow=''">✕</button>
+      <button class="modal-close" onclick="closePostModal()">✕</button>
     </div>
 
     <div class="pmd-meta-grid">
@@ -513,7 +513,7 @@
 
     <div class="modal-footer">
       <span class="saving-msg" id="pmd-saving">Updating…</span>
-      <button class="btn-modal-ghost" onclick="document.getElementById('post-modal-overlay').classList.remove('open'); document.body.style.overflow=''">Cancel</button>
+      <button class="btn-modal-ghost" onclick="closePostModal()">Cancel</button>
       <button class="btn-modal-primary" id="pmd-save-btn" onclick="saveStageUpdate()">Save</button>
     </div>
   </div>
@@ -694,9 +694,6 @@
 <div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
   <div id="pcs-screen">
 
-    <!-- Drag handle -->
-    <div class="pcs-handle"></div>
-
     <!-- Header: back (abs) | centered title + subtitle | menu (abs) -->
     <div class="pcs-header">
       <button class="pcs-back" onclick="closePCS()">
@@ -751,15 +748,24 @@
   </button>
 </div>
 
-<script src="01-config.js" defer></script>
-<script src="02-session.js" defer></script>
-<script src="03-auth.js" defer></script>
-<script src="05-api.js" defer></script>
-<script src="10-ui.js" defer></script>
-<script src="06-post-create.js" defer></script>
-<script src="07-post-load.js" defer></script>
-<script src="08-post-actions.js" defer></script>
-<script src="09-approval.js" defer></script>
-<script src="04-router.js" defer></script>
+<script>
+/* Global state — inline so it runs before any deferred script */
+window._modalOpen      = false;
+window._deferredRender = false;
+window.allPosts        = window.allPosts    || [];
+window.cachedPosts     = window.cachedPosts || [];
+window.currentRole     = window.currentRole || 'Admin';
+window.allTasks        = window.allTasks    || [];
+</script>
+<script src="01-config.js?v=20260315" defer></script>
+<script src="02-session.js?v=20260315" defer></script>
+<script src="03-auth.js?v=20260315" defer></script>
+<script src="05-api.js?v=20260315" defer></script>
+<script src="10-ui.js?v=20260315" defer></script>
+<script src="06-post-create.js?v=20260315" defer></script>
+<script src="07-post-load.js?v=20260315" defer></script>
+<script src="08-post-actions.js?v=20260315" defer></script>
+<script src="09-approval.js?v=20260315" defer></script>
+<script src="04-router.js?v=20260315" defer></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 /* ===============================================
    07-post-load.js - Data loading & all render*
 =============================================== */
+console.log("LOADED:", "07-post-load.js");
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
@@ -64,18 +65,27 @@ async function loadPostsForClient() {
 // Background token refresh interval handle (separate from data poll)
 let _tokenRefreshTimer = null;
 
+// Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
+function _postsFingerprint(posts) {
+  let s = '' + posts.length;
+  for (let i = 0; i < posts.length; i++) {
+    s += '|' + (posts[i].post_id || posts[i].id || '') + ':' + (posts[i].stage || '');
+  }
+  return s;
+}
+
 function startRealtime() {
   if (_realtimeTimer) return;
 
-  // Data polling — every 8 seconds
+  // Data polling — every 15 seconds (was 8s; reduces API calls & DOM churn)
   _realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
+    // Skip poll while user is in a modal — they'll get fresh data on close
+    if (window._modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
-      const changed = JSON.stringify(fresh.map(p=>p.post_id+p.stage)) !==
-                      JSON.stringify(allPosts.map(p=>p.post_id+p.stage));
-      if (changed) {
+      if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
         allPosts    = fresh;
         cachedPosts = fresh;
         scheduleRender();
@@ -84,7 +94,7 @@ function startRealtime() {
     } catch (e) {
       console.warn('realtime poll failed:', e.message);
     }
-  }, 8000);
+  }, 15000);
 
   // Proactive token refresh — every 50 minutes
   // Keeps sessions alive indefinitely without user action
@@ -156,21 +166,34 @@ async function deleteTask(id) {
 
 function renderAll() {
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
+
+  // Always render: lightweight stats & role visibility
   run('updateStats',        updateStats);
-  run('pipelineStrip',      renderPipelineStrip);
-  run('productionMeter',    renderProductionMeter);
-  run('adminInsight',       renderAdminInsight);
-  run('taskBanner',         renderTaskBanner);
-  run('adminTaskPanel',     renderAdminTaskPanel);
-  run('creativeTracker',    renderCreativeTracker);
-  run('nextPost',           renderNextPost);
-  run('tasks',              renderTasks);
-  run('taskStageChips',     renderTaskStageChips);
-  run('pipeline',           renderPipeline);
-  run('upcoming',           renderUpcoming);
-  run('library',            renderLibrary);
-  run('filterDropdowns',    populateFilterDropdowns);
   run('roleVisibility',     applyRoleVisibility);
+
+  // Active tab detection — only render the visible tab
+  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
+
+  // Tasks tab widgets (always needed when tasks visible)
+  if (activeTab === 'tasks') {
+    run('pipelineStrip',      renderPipelineStrip);
+    run('productionMeter',    renderProductionMeter);
+    run('adminInsight',       renderAdminInsight);
+    run('taskBanner',         renderTaskBanner);
+    run('adminTaskPanel',     renderAdminTaskPanel);
+    run('creativeTracker',    renderCreativeTracker);
+    run('nextPost',           renderNextPost);
+    run('tasks',              renderTasks);
+    run('taskStageChips',     renderTaskStageChips);
+  } else if (activeTab === 'pipeline') {
+    run('pipeline',           renderPipeline);
+  } else if (activeTab === 'upcoming') {
+    run('upcoming',           renderUpcoming);
+  } else if (activeTab === 'library') {
+    run('library',            renderLibrary);
+    run('filterDropdowns',    populateFilterDropdowns);
+  }
+
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
@@ -335,7 +358,7 @@ function openParked() {
     const stage = p.stage || '-';
     const { hex } = stageStyle(stage);
     const days  = Math.floor((Date.now() - new Date(p.updated_at || p.updatedAt || p.created_at).getTime()) / 86400000);
-    return `<div class="upc-list-row" onclick="openPCS('${esc(id)}','');closeParked()" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
+    return `<div class="upc-list-row" data-post-id="${esc(id)}" data-list="" data-close-parked="1" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--border);gap:12px">
       <div style="flex:1;min-width:0">
         <div style="font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title)}</div>
         <div style="font-size:12px;color:var(--text3);margin-top:2px">Last moved ${days}d ago</div>
@@ -499,8 +522,7 @@ function buildPostCard(p, listKey) {
   const isToday = d && d.toDateString() === new Date().toDateString();
 
   return `
-    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}"
-         onclick="openPCS('${esc(id)}','${esc(listKey||'')}')">
+    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
       <span class="row-date${isToday ? ' today' : ''}">${esc(dateStr)}</span>
       <span class="row-body">
         <span class="row-title">${esc(title)}</span>
@@ -929,13 +951,6 @@ function renderLibraryBoard(posts) {
     </div>
     <div class="row-list">${cards}</div>`;
 
-  // Touch swipe support
-  let sx = 0;
-  container.ontouchstart = e => { sx = e.touches[0].clientX; };
-  container.ontouchend   = e => {
-    const dx = e.changedTouches[0].clientX - sx;
-    if (Math.abs(dx) > 60) moveBoardPillar(dx < 0 ? 1 : -1);
-  };
 }
 
 function moveBoardPillar(dir) {
@@ -964,7 +979,7 @@ function renderLibraryCalendar(posts) {
       const isToday = d.toDateString() === today.toDateString();
       const dayStr  = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
+      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
         <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
@@ -976,7 +991,7 @@ function renderLibraryCalendar(posts) {
     const items = noDates.map(p => {
       const id = getPostId(p);
       const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" onclick="openPCS('${esc(id)}','library')">
+      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
         <span class="calendar-date-badge" style="color:var(--text3)">-</span>
         <span class="calendar-item-title">${esc(getTitle(p))}</span>
         <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
@@ -986,3 +1001,21 @@ function renderLibraryCalendar(posts) {
   }
   container.innerHTML = html || `<div class="empty-state"><div class="empty-icon">[date]</div><p>No posts with dates yet.</p></div>`;
 }
+
+// ═══════════════════════════════════════════════
+// Event delegation for card clicks
+// Single document-level listener — survives ALL innerHTML replacements.
+// Covers: .row-tile, .calendar-item, .upc-list-row (any element with data-post-id)
+// ═══════════════════════════════════════════════
+(document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
+  var card = e.target.closest('[data-post-id]');
+  if (!card) return;
+  var postId  = card.dataset.postId;
+  var listKey = card.dataset.list || '';
+  if (!postId) return;
+  // Parked overlay rows also need to close the parked sheet
+  if (card.dataset.closeParked) {
+    try { closeParked(); } catch (_) {}
+  }
+  openPCS(postId, listKey);
+});
