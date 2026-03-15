@@ -621,35 +621,41 @@ function _buildStageProgress(stageLC, canEdit, postId) {
 }
 
 function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
-  const chips = [];
   const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
 
-  // Stage chip — uses unified changeStage() (Section 4)
+  // Row 1: Next Stage + Canva/LinkedIn
+  const row1 = [];
   if (naLabel && canEdit && nextStage) {
-    chips.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="changeStage('${esc(nextStage)}')">${esc(naLabel)}</button>`);
+    row1.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="changeStage('${esc(nextStage)}')">${esc(naLabel)}</button>`);
   } else if (naLabel) {
-    chips.push(`<span class="pcs-action-chip pcs-action-chip--info">${esc(naLabel)}</span>`);
+    row1.push(`<span class="pcs-action-chip pcs-action-chip--info">${esc(naLabel)}</span>`);
   }
 
-  // Canva / LinkedIn chips
+  // Link chip — LinkedIn when published, Canva otherwise (Section 7)
   if (isPublished && postLink) {
-    chips.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`);
+    row1.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`);
   } else if (postLink) {
-    chips.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`);
-    if (canEdit) chips.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">Replace</button>`);
+    row1.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`);
   } else if (canEdit) {
-    chips.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`);
+    row1.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`);
   }
 
-  // Attach URL row — proper modal layout (Section 6)
+  // Row 2: Replace link (low-emphasis text action)
+  let row2 = '';
+  if (canEdit && postLink) {
+    const replaceLabel = isPublished ? 'Replace link' : 'Replace design';
+    row2 = `<div class="pcs-action-row2"><button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">${replaceLabel}</button></div>`;
+  }
+
+  // Attach URL row
   const attachRow = canEdit
     ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
-        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste Canva URL…">
+        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste URL…">
         <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
       </div>`
     : '';
 
-  return `<div class="pcs-inline-actions">${chips.join('')}</div>${attachRow}`;
+  return `<div class="pcs-inline-actions">${row1.join('')}</div>${row2}${attachRow}`;
 }
 
 // Legacy alias — called by pcsSaveAttach to re-render the action area
