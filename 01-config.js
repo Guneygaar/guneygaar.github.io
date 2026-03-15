@@ -154,5 +154,8 @@ const STRIP_STAGES = [
   { label:'Published',     stages:['published'],            color: STAGE_META['published'].hex,            tab:'library',  bucket:null },
 ];
 
+// Canonical owner list — used by dropdowns, validation, and grid
+const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Admin'];
+
 const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
 const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];

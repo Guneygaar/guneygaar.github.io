@@ -3207,31 +3207,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  flex: 1;
-  min-width: 0;
-  padding: 4px 0;
-  border-radius: 8px;
-  transition: background 120ms ease, transform 120ms ease;
+  flex-shrink: 0;
 }
-/* Clickable pipeline steps — glow + scale */
-.prog-step--clickable { cursor: pointer; }
-.prog-step--clickable:hover {
-  background: var(--surface2);
-  transform: scale(1.08);
-}
-.prog-step--clickable:hover .prog-dot {
-  box-shadow: 0 0 0 5px var(--surface3);
-}
-.prog-step--clickable:hover + .prog-line {
-  background: var(--border2);
-}
-.prog-step--clickable:active { transform: scale(0.95); }
 .prog-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: var(--border2);
-  transition: all 150ms ease;
+  background: #d1d5db;
 }
 .prog-dot.done {
   background: var(--c-green);
@@ -3261,15 +3243,56 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-width: 8px;
   transition: background 120ms ease;
 }
-/* Brighten connector before hovered step */
-.prog-line:has(+ .prog-step--clickable:hover) {
-  background: var(--border2);
-}
 
-/* ═══════════════════════════════════════════════
-   ZONE 2 — DESIGN SECTION
-   Vertical stack: primary button + replace text
-═══════════════════════════════════════════════ */
+/* ── Action controls ── */
+/* Inline URL attach row */
+.pcs-attach-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pcs-attach-input {
+  flex: 1;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: #111111;
+  font-family: inherit;
+  min-width: 0;
+}
+.pcs-attach-input:focus { outline: none; border-color: #2563eb; }
+.pcs-attach-save {
+  height: 36px;
+  padding: 0 14px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+}
+.pcs-attach-save:active { opacity: 0.85; }
+/* Cancel text under attach row */
+.pcs-attach-cancel {
+  background: none;
+  border: none;
+  color: var(--text3, #6b7280);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 8px;
+  margin-top: 2px;
+  transition: color 120ms ease;
+}
+.pcs-attach-cancel:hover { color: var(--text2, #374151); }
+
+/* ── Design section layout ── */
 .pcs-design-stack {
   display: flex;
   flex-direction: column;
@@ -3707,16 +3730,3 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-confirm-stage:hover { filter: brightness(1.1); }
 .pcs-confirm-stage:active { transform: scale(0.97); }
-
-/* End screen */
-.pcs-end-screen {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 12px; color: var(--text2); font-size: 15px;
-}
-.pcs-end-icon { font-size: 40px; }
-
-/* Legacy compat */
-.pcs-footer { display: none; }
-.pcs-back { display: none; }
-.pcs-menu { display: none; }

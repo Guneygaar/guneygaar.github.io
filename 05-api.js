@@ -64,6 +64,7 @@ async function apiFetch(path, options = {}) {
 function normalise(rows) {
   if (!Array.isArray(rows)) return [];
   return rows.map(r => ({
+    ...r,
     title:         r.title          || '',
     stage:         r.stage          || '',
     owner:         r.owner          || '',
@@ -71,12 +72,12 @@ function normalise(rows) {
     location:      r.location       || '',
     targetDate:    r.target_date    || '',
     postLink:      r.post_link      || '',
+    publishedDate: r.published_date || '',
     comments:      r.comments       || '',
     format:        r.format         || '',
     post_id:       r.post_id        || r.id || '',
     created_at:    r.created_at     || '',
     updated_at:    r.updated_at     || '',
-    ...r,
   }));
 }
 

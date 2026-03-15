@@ -436,88 +436,6 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     POST DETAIL MODAL  (stage update)
-══════════════════════════════════════════ -->
-<div class="modal-overlay" id="post-modal-overlay" onclick="closePostModal(event)">
-  <div class="modal-card">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div>
-        <div class="pmd-title" id="pmd-title">Post Title</div>
-        <div class="pmd-id" id="pmd-id"></div>
-      </div>
-      <button class="modal-close" onclick="closePostModal()">✕</button>
-    </div>
-
-    <div class="pmd-meta-grid">
-      <div class="pmd-meta-item">
-        <div class="pmd-meta-key">Owner</div>
-        <div class="pmd-meta-val" id="pmd-owner">—</div>
-      </div>
-      <div class="pmd-meta-item">
-        <div class="pmd-meta-key">Due Date</div>
-        <div class="pmd-meta-val" id="pmd-date">—</div>
-      </div>
-      <div class="pmd-meta-item">
-        <div class="pmd-meta-key">Current Stage</div>
-        <div class="pmd-meta-val" id="pmd-stage">—</div>
-      </div>
-    </div>
-
-    <!-- Stage selector is the dominant action -->
-    <div class="form-field" style="margin-bottom:var(--sp-5)">
-      <label class="form-label-sm" style="font-size:12px;color:var(--text1);font-weight:700;margin-bottom:var(--sp-2)">Move to Stage</label>
-      <select id="pmd-stage-select" style="font-size:16px;font-weight:600;height:52px">
-        <option>In Production</option>
-        <option>Awaiting Brand Input</option>
-        <option>Revisions Needed</option>
-        <option>Ready to Send</option>
-        <option>Sent for Approval</option>
-        <option>Awaiting Approval</option>
-        <option>Scheduled</option>
-        <option>Published</option>
-        <option>Archive</option>
-      </select>
-    </div>
-
-    <!-- Admin-only editable fields -->
-    <div id="pmd-admin-fields" style="display:none">
-      <div class="form-row">
-        <div class="form-field">
-          <label class="form-label-sm">Owner</label>
-          <select id="pmd-owner-select">
-            <option value="">— Unassigned —</option>
-            <option>Chitra</option>
-            <option>Pranav</option>
-            <option>Admin</option>
-          </select>
-        </div>
-        <div class="form-field">
-          <label class="form-label-sm">Target Date</label>
-          <input type="date" id="pmd-date-input">
-        </div>
-      </div>
-      <div class="form-field">
-        <label class="form-label-sm">Caption / Brief</label>
-        <textarea id="pmd-comments-edit" rows="4" placeholder="Caption or brief for this post…"></textarea>
-      </div>
-    </div>
-
-    <div class="pmd-comments" id="pmd-comments"></div>
-
-    <div class="form-field">
-      <label class="form-label-sm">Link</label>
-      <input type="url" id="pmd-postlink" placeholder="Canva / LinkedIn / Google Drive">
-    </div>
-
-    <div class="modal-footer">
-      <span class="saving-msg" id="pmd-saving">Updating…</span>
-      <button class="btn-modal-ghost" onclick="closePostModal()">Cancel</button>
-      <button class="btn-modal-primary" id="pmd-save-btn" onclick="saveStageUpdate()">Save</button>
-    </div>
-  </div>
-</div>
 
 <!-- ══════════════════════════════════════════
      ADMIN QUICK-EDIT BOTTOM SHEET
@@ -712,8 +630,6 @@
     <div class="pcs-scroll" id="pcs-scroll">
       <!-- Pipeline progress -->
       <div class="pcs-body-section" id="pcs-progress-wrap"></div>
-      <!-- Action controls -->
-      <div class="pcs-body-section" id="pcs-next-action-wrap"></div>
       <!-- Tool card (Design/LinkedIn) -->
       <div class="pcs-body-section" id="pcs-action-btn-wrap"></div>
       <!-- Information grid + Notes -->

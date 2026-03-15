@@ -24,7 +24,7 @@ async function showApprovalView(postId) {
     const stage   = (post.stage||'').toLowerCase().trim();
     const title   = getTitle(post);
     const comments= post.comments || '';
-    const postLink= post.postLink || post.post_link || '';
+    const postLink= post.postLink || '';
     const {hex, label: stageLabel} = stageStyle(post.stage);
     const relDate = getRelativeDate(post.targetDate);
 
