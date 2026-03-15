@@ -436,7 +436,6 @@ function _renderPCS(postId) {
   const isPublished = stageLC === 'published';
   const postLink    = post.postLink || post.post_link || '';
   const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
-  const { hex, label: stageLabel } = stageStyle(stage);
 
   // Cache DOM elements — guard every write
   const elTitle    = document.getElementById('pcs-topbar-title');
@@ -447,10 +446,19 @@ function _renderPCS(postId) {
   const elFields   = document.getElementById('pcs-fields');
   const elActivity = document.getElementById('pcs-activity-body');
 
-  // Title — dominant element
-  if (elTitle) elTitle.textContent = title;
+  // Title — inline editable on tap (Section 1)
+  if (elTitle) {
+    elTitle.textContent = title;
+    if (canEdit) {
+      elTitle.classList.add('pcs-title--editable');
+      elTitle.onclick = function() { _pcsTitleEdit(elTitle, id); };
+    } else {
+      elTitle.classList.remove('pcs-title--editable');
+      elTitle.onclick = null;
+    }
+  }
 
-  // Metadata row: Owner · Pillar · Target Date — clean centered line
+  // Metadata row: Pillar · Owner · Target Date (Section 2)
   if (elSubtitle) {
     const pillarLabel = post.contentPillar
       ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
@@ -460,31 +468,124 @@ function _renderPCS(postId) {
       : (post.targetDate || '');
     const dateDisplay = formatDate(dateValue) || '';
     const parts = [
-      post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
       pillarLabel   ? `<span>${esc(pillarLabel)}</span>`   : '',
+      post.owner    ? `<span>${esc(post.owner)}</span>`    : '',
       dateDisplay   ? `<span>${esc(dateDisplay)}</span>`   : '',
     ].filter(Boolean);
     elSubtitle.innerHTML = parts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
   }
 
-  // Stage progress
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
+  // Stage progress — clickable stages (Section 3)
+  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC, canEdit, id);
 
-  // Inline action row — replaces the old large next-action button + design block
-  if (elNext) elNext.innerHTML = '';  // clear legacy next-action slot
+  // Inline action row
+  if (elNext) elNext.innerHTML = '';
   if (elDesign) elDesign.innerHTML = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
 
   // Information + Notes sections
   if (elFields) elFields.innerHTML = _buildPCSGrid(post, canEdit, id);
 
-  // History
+  // History — only reload if postId changed (Section 8 — reduce lag)
   if (elActivity) {
-    elActivity.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
-    _loadPCSActivity(id, elActivity);
+    if (elActivity.dataset.loadedFor !== id) {
+      elActivity.dataset.loadedFor = id;
+      elActivity.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
+      _loadPCSActivity(id, elActivity);
+    }
   }
 }
 
-function _buildStageProgress(stageLC) {
+// ── Section 1: Inline title editing ──────────────
+function _pcsTitleEdit(el, postId) {
+  if (el.querySelector('input')) return; // already editing
+  const current = el.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'pcs-title-input';
+  input.value = current;
+  input.maxLength = 200;
+  el.textContent = '';
+  el.appendChild(input);
+  input.focus();
+  input.select();
+
+  function save() {
+    const val = input.value.trim();
+    if (val && val !== current) {
+      el.textContent = val;
+      updatePost(postId, 'title', val);
+    } else {
+      el.textContent = current;
+    }
+  }
+  function cancel() { el.textContent = current; }
+
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.removeEventListener('blur', save); cancel(); }
+  });
+}
+
+// ── Section 4: Unified stage change with confirmation ──
+function changeStage(newStage) {
+  const postId = _pcs.postId;
+  if (!postId) return;
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (!post) return;
+  const current = (post.stage || '').toLowerCase().trim();
+  if (current === newStage.toLowerCase().trim()) return; // same stage
+
+  _showStageConfirm(postId, newStage);
+}
+
+function _showStageConfirm(postId, newStage) {
+  _removePcsConfirm();
+  const displayName = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[newStage]) || newStage;
+  const overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
+  overlay.addEventListener('keydown', function(e) { if (e.key === 'Escape') this.remove(); });
+  overlay.innerHTML = `
+    <div class="pcs-confirm-sheet">
+      <div class="pcs-confirm-msg">Move this post to <strong>${esc(displayName)}</strong>?</div>
+      <div class="pcs-confirm-btns">
+        <button class="pcs-confirm-cancel" onclick="this.closest('.pcs-confirm-overlay').remove()">Cancel</button>
+        <button class="pcs-confirm-stage" onclick="_executeStageChange('${esc(postId)}','${esc(newStage)}')">Confirm</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function _executeStageChange(postId, newStage) {
+  _removePcsConfirm();
+  await quickStage(postId, newStage);
+  // Immediately update the PCS pipeline visually (Section 3 + 4)
+  _refreshPCSAfterStageChange(postId);
+  refreshSystemViews();
+}
+
+// Targeted re-render of only the stage-dependent sections (Section 8 — no full re-render)
+function _refreshPCSAfterStageChange(postId) {
+  const post = allPosts.find(p => getPostId(p) === postId);
+  if (!post || _pcs.postId !== postId) return;
+
+  const stageLC     = (post.stage || '').toLowerCase().trim();
+  const isPublished = stageLC === 'published';
+  const postLink    = post.postLink || post.post_link || '';
+  const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const id          = getPostId(post);
+
+  const elProgress = document.getElementById('pcs-progress-wrap');
+  const elDesign   = document.getElementById('pcs-action-btn-wrap');
+  const elFields   = document.getElementById('pcs-fields');
+
+  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC, canEdit, id);
+  if (elDesign)   elDesign.innerHTML   = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
+  if (elFields)   elFields.innerHTML   = _buildPCSGrid(post, canEdit, id);
+}
+
+function _buildStageProgress(stageLC, canEdit, postId) {
   const steps = [
     { key: 'in production',     label: 'Production' },
     { key: 'ready',             label: 'Ready' },
@@ -507,7 +608,10 @@ function _buildStageProgress(stageLC) {
     const isDone    = activeIdx !== -1 && i < activeIdx;
     const isCurrent = i === activeIdx;
     const cls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
-    return `<div class="prog-step">
+    // Clickable stages (Section 3) — all stages clickable when canEdit
+    const clickAttr = canEdit ? `onclick="changeStage('${esc(s.key)}')"` : '';
+    const clickCls  = canEdit ? ' prog-step--clickable' : '';
+    return `<div class="prog-step${clickCls}" ${clickAttr}>
       <div class="${cls}"></div>
       <div class="prog-label">${s.label}</div>
     </div>`;
@@ -519,11 +623,10 @@ function _buildStageProgress(stageLC) {
 function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
   const chips = [];
   const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
-  const { hex } = stageStyle(stageLC);
 
-  // Stage chip — advance or informational
+  // Stage chip — uses unified changeStage() (Section 4)
   if (naLabel && canEdit && nextStage) {
-    chips.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="pcsDoNextAction('${esc(postId)}','${esc(nextStage)}')">${esc(naLabel)}</button>`);
+    chips.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="changeStage('${esc(nextStage)}')">${esc(naLabel)}</button>`);
   } else if (naLabel) {
     chips.push(`<span class="pcs-action-chip pcs-action-chip--info">${esc(naLabel)}</span>`);
   }
@@ -538,7 +641,7 @@ function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
     chips.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`);
   }
 
-  // Attach URL row (hidden by default, toggled via pcsToggleAttach)
+  // Attach URL row — proper modal layout (Section 6)
   const attachRow = canEdit
     ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
         <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste Canva URL…">
@@ -562,7 +665,16 @@ function pcsToggleAttach(postId) {
   if (!row) return;
   const open = row.style.display === 'none';
   row.style.display = open ? 'flex' : 'none';
-  if (open) document.getElementById(`pcs-attach-input-${postId}`)?.focus();
+  if (open) {
+    const input = document.getElementById(`pcs-attach-input-${postId}`);
+    if (input) {
+      input.focus();
+      // Escape closes attach row (Section 6)
+      input.onkeydown = function(e) {
+        if (e.key === 'Escape') { row.style.display = 'none'; }
+      };
+    }
+  }
 }
 
 async function pcsSaveAttach(postId) {
@@ -582,6 +694,8 @@ async function pcsSaveAttach(postId) {
 }
 
 async function pcsDoNextAction(postId, nextStage) {
+  // Legacy entry point — route through unified changeStage when PCS is open
+  if (_pcs.postId) { changeStage(nextStage); return; }
   await quickStage(postId, nextStage);
   refreshSystemViews();
   closePCS();
@@ -607,6 +721,7 @@ async function updatePost(postId, field, value) {
   if (post) post[field] = value;
 
   const dbField = {
+    title:         'title',
     stage:         'stage',
     contentPillar: 'content_pillar',
     owner:         'owner',
@@ -698,13 +813,23 @@ function _buildPCSGrid(post, canEdit, id) {
 
   const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
 
-  const dateInput = canEdit
-    ? `<input type="date" class="pcs-field-val" value="${esc(dateValue)}"
-             onchange="updatePost('${esc(id)}','targetDate',this.value)">`
-    : `<div class="pcs-date-field"><span class="pcs-date-value">${esc(formatDate(dateValue) || '—')}</span>${formatDate(dateValue) ? '<span class="pcs-date-icon">📅</span>' : ''}</div>`;
+  // Stage selector uses unified changeStage() (Section 4)
+  const stageSel = canEdit
+    ? `<select class="pcs-field-val" onchange="changeStage(this.value)">
+         ${STAGES_DB.map(o => `<option value="${esc(o)}" ${o === (post.stage||'') ? 'selected' : ''}>${esc(STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o)}</option>`).join('')}
+       </select>`
+    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
 
+  // Date field — full click area with 44px minimum tap target (Section 7)
+  const dateInput = canEdit
+    ? `<label class="pcs-date-tap"><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
+             onchange="updatePost('${esc(id)}','targetDate',this.value)"></label>`
+    : `<div class="pcs-date-tap"><span class="pcs-date-value">${esc(formatDate(dateValue) || '—')}</span></div>`;
+
+  // Notes — reduced default height, auto-expand (Section 10)
   const notesInput = canEdit
-    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="3"
+    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="2"
+                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
                  onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
     : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');
 
@@ -714,15 +839,11 @@ function _buildPCSGrid(post, canEdit, id) {
        ${content}
      </div>`;
 
-  const stageCell = canEdit
-    ? sel('stage', STAGES_DB, post.stage||'', 'stage', STAGE_DISPLAY)
-    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
-
+  // Section 9: "Information" label removed — grid stands alone
   return `
     <div class="pcs-section">
-      <div class="pcs-section-label">Information</div>
       <div class="pcs-grid">
-        ${cell('Stage',    stageCell)}
+        ${cell('Stage',    stageSel)}
         ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(PILLAR_DISPLAY[post.contentPillar] || post.contentPillar || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
