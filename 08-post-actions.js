@@ -321,10 +321,8 @@ const _pcs = {
   idx:     0,
 };
 let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
-let _pcsGeneration = 0;   // incremented on every open/close — stale transitionend handlers check this
 
 function openPCS(postId, listKey) {
-  _pcsGeneration++;
   // Cancel any deferred forcePCSReset from a previous closePCS() —
   // without this, a rapid close→open reopens the sheet, then the
   // stale timer fires 300ms later and nukes it back to hidden.
@@ -362,7 +360,6 @@ function openPCS(postId, listKey) {
 
   try {
     _renderPCS(postId);
-    _pcsAttachSwipe();
   } catch (err) {
     console.error('[PCS] openPCS failed — cleaning up:', err);
     forcePCSReset();
@@ -397,7 +394,6 @@ function closePCS() {
 // and event-capturing surfaces. Safe to call multiple times.
 // ═══════════════════════════════════════════════
 function forcePCSReset() {
-  _pcsGeneration++; // invalidate any pending transitionend handlers
   var screen  = document.getElementById('pcs-screen');
   var overlay = document.getElementById('pcs-overlay');
 
@@ -428,241 +424,12 @@ function forcePCSReset() {
 
   // 5. Reset all state flags
   window._modalOpen = false;
-  _swipe     = { x0: 0, y0: 0, lock: null, active: false, moved: false };
 
   // 6. Clear PCS context
   _pcs.postId = null;
 
   // 7. Flush any deferred background renders
   _drainDeferredRender();
-}
-
-// ── Swipe style reset (lightweight — PCS stays open) ───
-function _resetSwipeStyles() {
-  _swipe.lock  = null;
-  _swipe.moved = false;
-  var screen = document.getElementById('pcs-screen');
-  if (screen) {
-    screen.style.transform  = '';
-    screen.style.opacity    = '';
-    screen.style.transition = '';
-  }
-}
-
-// ── Swipe attachment ──────────────────────────
-function _pcsAttachSwipe() {
-  const screen = document.getElementById('pcs-screen');
-  if (!screen) return;
-  screen.removeEventListener('touchstart',  _pcsTouchStart);
-  screen.removeEventListener('touchmove',   _pcsTouchMove);
-  screen.removeEventListener('touchend',    _pcsTouchEnd);
-  screen.removeEventListener('touchcancel', _pcsTouchCancel);
-  screen.addEventListener('touchstart',  _pcsTouchStart,  { passive: true });
-  screen.addEventListener('touchmove',   _pcsTouchMove,   { passive: false });
-  screen.addEventListener('touchend',    _pcsTouchEnd,    { passive: true });
-  screen.addEventListener('touchcancel', _pcsTouchCancel, { passive: true });
-}
-
-let _swipe = { x0: 0, y0: 0, lock: null, active: false, moved: false }; // lock: null | 'h' | 'v'
-
-function _pcsTouchStart(e) {
-  if (e.touches.length !== 1) return;
-  _swipe.x0     = e.touches[0].clientX;
-  _swipe.y0     = e.touches[0].clientY;
-  _swipe.lock   = null;
-  _swipe.active = true;
-  _swipe.moved  = false;
-}
-
-function _pcsTouchMove(e) {
-  if (e.touches.length !== 1) return;
-  var dx = e.touches[0].clientX - _swipe.x0;
-  var dy = e.touches[0].clientY - _swipe.y0;
-  var adx = Math.abs(dx), ady = Math.abs(dy);
-
-  // Lock gesture direction once we know which way it's going
-  if (!_swipe.lock && (adx > 8 || ady > 8)) {
-    _swipe.lock = adx > ady ? 'h' : 'v';
-    // NOTE: transition:none is set lazily below, only when we actually move the screen
-  }
-
-  // Vertical downward drag — close gesture (only when scroll is at top)
-  if (_swipe.lock === 'v' && dy > 0) {
-    var scrollEl = document.getElementById('pcs-scroll');
-    if (scrollEl && scrollEl.scrollTop === 0) {
-      e.preventDefault();
-      _swipe.moved = true;
-      var screen = document.getElementById('pcs-screen');
-      if (screen) {
-        screen.style.transition = 'none';
-        screen.style.transform = 'translateY(' + Math.max(0, dy) + 'px)';
-      }
-    }
-    // else: scrollTop > 0 — browser handles as native scroll, no inline styles set
-    return;
-  }
-
-  if (_swipe.lock !== 'h') return;
-
-  // Prevent vertical scroll during horizontal swipe
-  e.preventDefault();
-
-  // Only track leftward drag (right swipe does nothing)
-  if (dx < 0) {
-    var resist = Math.max(dx, -window.innerWidth * 0.6);
-    var ms = document.getElementById('pcs-screen');
-    if (ms) {
-      ms.style.transition = 'none';
-      ms.style.transform = 'translateX(' + resist + 'px)';
-    }
-  }
-}
-
-function _pcsTouchCancel() {
-  _swipe.active = false;
-  forcePCSReset();
-}
-
-function _pcsTouchEnd(e) {
-  _swipe.active = false;
-  try {
-    // No swipe gesture was detected (tap or tiny movement) — clean up and exit
-    if (!_swipe.lock) {
-      _resetSwipeStyles();
-      return;
-    }
-
-    // Guard: if changedTouches is empty, bail to cleanup
-    if (!e.changedTouches || !e.changedTouches.length) {
-      _resetSwipeStyles();
-      return;
-    }
-
-    var dy = e.changedTouches[0].clientY - _swipe.y0;
-    var screen = document.getElementById('pcs-screen');
-
-    // Vertical close gesture
-    if (_swipe.lock === 'v') {
-      _swipe.lock = null;
-      // If the screen was never visually dragged (user was scrolling content),
-      // do NOT close — just reset styles and bail out.
-      if (!_swipe.moved) {
-        _resetSwipeStyles();
-        return;
-      }
-      if (!screen || dy <= 0) { _resetSwipeStyles(); return; }
-      if (dy > 90) {
-        // Committed — animate off bottom then close
-        screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-        screen.style.transform  = 'translateY(100%)';
-        var gen = _pcsGeneration;
-        screen.addEventListener('transitionend', function handler(ev) {
-          if (ev.target !== screen) return;
-          screen.removeEventListener('transitionend', handler);
-          if (_pcsGeneration !== gen) return; // stale — PCS was reopened/reset
-          closePCS();
-        }, { once: true });
-      } else {
-        // Spring back — restore to CSS-controlled position
-        screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-        screen.style.transform  = 'translateY(0)';
-        var gen = _pcsGeneration;
-        screen.addEventListener('transitionend', function handler(ev) {
-          if (ev.target !== screen) return;
-          screen.removeEventListener('transitionend', handler);
-          if (_pcsGeneration !== gen) return; // stale
-          _resetSwipeStyles();
-        }, { once: true });
-      }
-      return;
-    }
-
-    if (_swipe.lock !== 'h') { _resetSwipeStyles(); return; }
-    _swipe.lock = null;
-    var dx = e.changedTouches[0].clientX - _swipe.x0;
-    if (!screen) { _resetSwipeStyles(); return; }
-
-    if (dx < -80) {
-      // Committed — animate out then load next
-      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-      screen.style.transform  = 'translateX(-100%)';
-      screen.style.opacity    = '0';
-      var gen = _pcsGeneration;
-      screen.addEventListener('transitionend', function handler(ev) {
-        if (ev.target !== screen) return;
-        screen.removeEventListener('transitionend', handler);
-        if (_pcsGeneration !== gen) return; // stale
-        _resetSwipeStyles();
-        try { _pcsNext(); } catch (err) { console.error('_pcsNext error:', err); closePCS(); }
-      }, { once: true });
-    } else {
-      // Spring back — restore to CSS-controlled position
-      screen.style.transition = 'transform 0.28s cubic-bezier(.22,.61,.36,1)';
-      screen.style.transform  = 'translateX(0)';
-      var gen = _pcsGeneration;
-      screen.addEventListener('transitionend', function handler(ev) {
-        if (ev.target !== screen) return;
-        screen.removeEventListener('transitionend', handler);
-        if (_pcsGeneration !== gen) return; // stale
-        _resetSwipeStyles();
-      }, { once: true });
-    }
-  } catch (err) {
-    // If ANYTHING throws, nuclear cleanup so the UI never locks
-    console.error('[PCS] _pcsTouchEnd exception — forcing reset:', err);
-    forcePCSReset();
-  }
-}
-
-function _pcsNext() {
-  if (!_pcs.list || !_pcs.list.length) { closePCS(); return; }
-  const nextIdx = _pcs.idx + 1;
-
-  if (nextIdx >= _pcs.list.length) {
-    // End of list — show completion screen then close
-    const scroll = document.getElementById('pcs-scroll');
-    const screen = document.getElementById('pcs-screen');
-    if (scroll) scroll.innerHTML = `
-      <div class="pcs-end-screen">
-        <div class="pcs-end-icon">✓</div>
-        <div>No posts left.</div>
-      </div>`;
-    if (screen) {
-      // Reset any leftover swipe styles before animating in
-      screen.style.transform  = 'translateX(28px)';
-      screen.style.opacity    = '0';
-      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-      requestAnimationFrame(() => {
-        screen.style.transform = 'translateX(0)';
-        screen.style.opacity   = '1';
-      });
-    }
-    // closePCS resets all inline styles, so safe to defer
-    setTimeout(closePCS, 1800);
-    return;
-  }
-
-  // Slide in next post
-  _pcs.idx    = nextIdx;
-  _pcs.postId = getPostId(_pcs.list[nextIdx]);
-
-  const scrollEl = document.getElementById('pcs-scroll');
-  if (scrollEl) scrollEl.scrollTop = 0;
-
-  _renderPCS(_pcs.postId);
-
-  const screen = document.getElementById('pcs-screen');
-  if (screen) {
-    screen.style.transform  = 'translateX(28px)';
-    screen.style.opacity    = '0';
-    screen.style.transition = 'none';
-    requestAnimationFrame(() => {
-      screen.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
-      screen.style.transform  = 'translateX(0)';
-      screen.style.opacity    = '1';
-      setTimeout(() => { screen.style.transition = ''; }, 230);
-    });
-  }
 }
 
 function _renderPCS(postId) {
