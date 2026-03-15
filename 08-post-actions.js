@@ -498,6 +498,9 @@ function _renderPCS(postId) {
 // ── Section 1: Inline title editing ──────────────
 function _pcsTitleEdit(el, postId) {
   if (el.querySelector('input')) return; // already editing
+  // Close other interactive layers — only one at a time
+  _removePcsConfirm();
+  pcsCloseAttach(postId);
   const current = el.textContent;
   const input = document.createElement('input');
   input.type = 'text';
@@ -541,6 +544,8 @@ function changeStage(newStage) {
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
+  // Close any open attach editor — only one interactive layer at a time
+  if (_pcs.postId) pcsCloseAttach(_pcs.postId);
   const displayName = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[newStage]) || newStage;
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
@@ -621,41 +626,34 @@ function _buildStageProgress(stageLC, canEdit, postId) {
 }
 
 function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
-  const { label: naLabel, nextStage } = _pcsNextAction(stageLC);
-
-  // Row 1: Next Stage + Canva/LinkedIn
-  const row1 = [];
-  if (naLabel && canEdit && nextStage) {
-    row1.push(`<button class="pcs-action-chip pcs-action-chip--stage" onclick="changeStage('${esc(nextStage)}')">${esc(naLabel)}</button>`);
-  } else if (naLabel) {
-    row1.push(`<span class="pcs-action-chip pcs-action-chip--info">${esc(naLabel)}</span>`);
-  }
-
-  // Link chip — LinkedIn when published, Canva otherwise (Section 7)
+  // Design section — vertical stack: primary link button + replace text
+  // Pipeline is the sole stage control; no Next Stage chip here.
+  let primary = '';
   if (isPublished && postLink) {
-    row1.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`);
+    primary = `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
   } else if (postLink) {
-    row1.push(`<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`);
+    primary = `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
   } else if (canEdit) {
-    row1.push(`<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`);
+    primary = `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`;
   }
 
-  // Row 2: Replace link (low-emphasis text action)
-  let row2 = '';
+  // Replace text — low emphasis, directly below primary
+  let replaceRow = '';
   if (canEdit && postLink) {
     const replaceLabel = isPublished ? 'Replace link' : 'Replace design';
-    row2 = `<div class="pcs-action-row2"><button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">${replaceLabel}</button></div>`;
+    replaceRow = `<button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">${replaceLabel}</button>`;
   }
 
-  // Attach URL row
+  // Attach URL editor — inline, aligned to primary button width
   const attachRow = canEdit
     ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
-        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste URL…">
+        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste design link...">
         <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
-      </div>`
+      </div>
+      <button class="pcs-attach-cancel" id="pcs-attach-cancel-${esc(postId)}" style="display:none" onclick="pcsCloseAttach('${esc(postId)}')">Cancel</button>`
     : '';
 
-  return `<div class="pcs-inline-actions">${row1.join('')}</div>${row2}${attachRow}`;
+  return `<div class="pcs-design-stack">${primary}${replaceRow}${attachRow}</div>`;
 }
 
 // Legacy alias — called by pcsSaveAttach to re-render the action area
@@ -668,19 +666,29 @@ function _buildDesignBlock(postLink, isPublished, canEdit, postId) {
 
 function pcsToggleAttach(postId) {
   const row = document.getElementById(`pcs-attach-row-${postId}`);
+  const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
   if (!row) return;
   const open = row.style.display === 'none';
   row.style.display = open ? 'flex' : 'none';
+  if (cancel) cancel.style.display = open ? '' : 'none';
   if (open) {
+    // Close any confirm overlay first — only one interactive layer at a time
+    _removePcsConfirm();
     const input = document.getElementById(`pcs-attach-input-${postId}`);
     if (input) {
       input.focus();
-      // Escape closes attach row (Section 6)
       input.onkeydown = function(e) {
-        if (e.key === 'Escape') { row.style.display = 'none'; }
+        if (e.key === 'Escape') { pcsCloseAttach(postId); }
       };
     }
   }
+}
+
+function pcsCloseAttach(postId) {
+  const row = document.getElementById(`pcs-attach-row-${postId}`);
+  const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
+  if (row) row.style.display = 'none';
+  if (cancel) cancel.style.display = 'none';
 }
 
 async function pcsSaveAttach(postId) {
@@ -845,8 +853,9 @@ function _buildPCSGrid(post, canEdit, id) {
        ${content}
      </div>`;
 
-  // Section 9: "Information" label removed — grid stands alone
+  // Information grid — preceded by visual divider
   return `
+    <div class="pcs-info-divider"></div>
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
@@ -858,7 +867,7 @@ function _buildPCSGrid(post, canEdit, id) {
       </div>
     </div>
     ${(canEdit || post.comments) ? `
-    <div class="pcs-section">
+    <div class="pcs-section pcs-notes-section">
       <div class="pcs-section-label">Notes</div>
       ${notesInput || '<div class="pcs-activity-empty">No notes.</div>'}
     </div>` : ''}

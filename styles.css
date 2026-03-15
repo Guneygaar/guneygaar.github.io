@@ -3189,6 +3189,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-body-section:empty {
   display: none;
 }
+/* Design section gets 24px major spacing above */
+#pcs-action-btn-wrap {
+  margin-top: 0;
+}
 
 /* ── Pipeline progress row ── */
 .pcs-progress {
@@ -3213,11 +3217,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .prog-step--clickable { cursor: pointer; }
 .prog-step--clickable:hover {
   background: var(--surface2);
+  transform: scale(1.08);
 }
 .prog-step--clickable:hover .prog-dot {
-  box-shadow: 0 0 0 4px var(--surface3);
+  box-shadow: 0 0 0 5px var(--surface3);
 }
-.prog-step--clickable:active { transform: scale(0.93); }
+.prog-step--clickable:hover + .prog-line {
+  background: var(--border2);
+}
+.prog-step--clickable:active { transform: scale(0.95); }
 .prog-dot {
   width: 10px;
   height: 10px;
@@ -3251,12 +3259,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--border);
   margin-top: 9px;
   min-width: 8px;
+  transition: background 120ms ease;
+}
+/* Brighten connector before hovered step */
+.prog-line:has(+ .prog-step--clickable:hover) {
+  background: var(--border2);
 }
 
 /* ═══════════════════════════════════════════════
-   ZONE 2 — INLINE ACTION ROW
-   Replaces the old large next-action button
+   ZONE 2 — DESIGN SECTION
+   Vertical stack: primary button + replace text
 ═══════════════════════════════════════════════ */
+.pcs-design-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Legacy horizontal layout kept for compatibility */
 .pcs-inline-actions {
   display: flex;
   align-items: center;
@@ -3331,25 +3352,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
 }
 
-/* Row 2: Low-emphasis text action (Replace design / Replace link) */
-.pcs-action-row2 {
-  display: flex;
-  justify-content: center;
-  margin-top: 8px;
-}
+/* Low-emphasis text action (Replace design / Replace link) */
 .pcs-action-text {
   background: none;
   border: none;
-  color: var(--text3);
-  font-size: 12px;
+  color: var(--text);
+  opacity: 0.55;
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
-  transition: color 120ms ease, background 120ms ease;
+  transition: opacity 120ms ease, background 120ms ease;
 }
-.pcs-action-text:hover { color: var(--text2); background: var(--surface2); }
+.pcs-action-text:hover { opacity: 0.8; background: var(--surface2); }
 .pcs-action-text:active { transform: scale(0.97); }
 
 /* Legacy action controls — matched to 36px chip height */
@@ -3413,6 +3430,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-attach-save:hover { filter: brightness(1.1); }
 .pcs-attach-save:active { transform: scale(0.97); }
+/* Cancel text under attach row */
+.pcs-attach-cancel {
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 2px 8px;
+  margin-top: 2px;
+  transition: color 120ms ease;
+}
+.pcs-attach-cancel:hover { color: var(--text2); }
+
+/* ── Information section divider ── */
+.pcs-info-divider {
+  height: 1px;
+  background: var(--border);
+  opacity: 0.5;
+  margin: 24px 0 0;
+}
+
+/* ── Notes section — lighter feel ── */
+.pcs-notes-section {
+  margin-top: 16px;
+}
 
 /* Legacy design block classes — heights matched to 36px */
 .pcs-design-block { display: none; }
@@ -3536,7 +3580,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 16px;
+  padding: 14px;
 }
 .pcs-notes-input {
   border: none;
