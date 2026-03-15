@@ -186,10 +186,23 @@ The `esc()` function is used throughout for HTML escaping. A dedicated test shou
 | 7 | Stage workflow | `08-post-actions` | Medium-high | High — core business logic |
 | 8 | Rendering | `07-post-load` | High | Medium — visual bugs |
 
-## Recommended First Steps
+## Implementation Status
 
-1. Run `npm init -y && npm install -D vitest jsdom` to set up the test framework
-2. Create a `tests/` directory
-3. Start with Priority 1 (pure utilities) — these give the most coverage for the least effort
-4. Add a GitHub Actions workflow to run tests on push
-5. Gradually extract testable logic from DOM-coupled functions as you add Priority 3+ tests
+### Completed
+
+- [x] `npm init` + Vitest + jsdom installed
+- [x] `tests/` directory created with 3 test files (47 tests)
+- [x] **Priority 1 — Pure utility functions** (`tests/utils.test.js`): `getTitle`, `getPostId`, `parseDate`, `formatDate`, `esc`, `timeAgo`
+- [x] **Priority 1 — API normalise** (`tests/normalise.test.js`): field mapping, defaults, fallbacks, non-array input
+- [x] **Priority 2 — Config integrity** (`tests/config.test.js`): `stageStyle` + structural validation of `STAGE_META`/`STAGES_DB`/`PIPELINE_ORDER`/`ROLE_STAGES`/`ROLE_BUCKETS`/`STRIP_STAGES`/`PILLARS_DB`
+- [x] **Shared utilities extracted** to `utils.js` (removed duplicates from `10-ui.js` and `08-post-actions.js`)
+- [x] **GitHub Actions CI** workflow (`.github/workflows/test.yml`) runs tests on push/PR
+
+### Remaining (Priority 3+)
+
+- [ ] Priority 3 — API layer (`apiFetch` with fetch mocking)
+- [ ] Priority 4 — Auth flow (OTP, session refresh, logout)
+- [ ] Priority 5 — Post creation & draft management
+- [ ] Priority 6 — Routing
+- [ ] Priority 7 — Stage workflow (`quickStage`, optimistic update + rollback)
+- [ ] Priority 8 — Rendering (extract data-transformation logic into testable pure functions)
