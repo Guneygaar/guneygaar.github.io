@@ -221,6 +221,16 @@ function toggleNotifPanel() {
   if (open) { fetchAndRenderNotifications(); markAllNotificationsRead(); }
 }
 
+// -- PCS Activity toggle -----------------------
+function togglePCSActivity() {
+  const body = document.getElementById('pcs-activity-body');
+  const section = document.getElementById('pcs-history-section');
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (section) section.classList.toggle('expanded', !isOpen);
+}
+
 // -- Zen mode ----------------------------------
 function openZen(title, comments) {
   const overlay = document.getElementById('zen-overlay');
