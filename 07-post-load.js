@@ -1,6 +1,7 @@
 /* ===============================================
    07-post-load.js - Data loading & all render*
 =============================================== */
+console.log("LOADED:", "07-post-load.js");
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 

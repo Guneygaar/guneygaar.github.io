@@ -2,6 +2,7 @@
    01-config.js - App-wide constants & colour maps
    Single source of truth for stages and pillars.
 =============================================== */
+console.log("LOADED:", "01-config.js");
 
 // Global modal state — must exist before any other script runs
 if (window._modalOpen === undefined)      window._modalOpen = false;

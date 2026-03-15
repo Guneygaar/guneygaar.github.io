@@ -1,6 +1,7 @@
 /* ===============================================
    04-router.js - App entry point (loads LAST)
 =============================================== */
+console.log("LOADED:", "04-router.js");
 
 async function _startRouter() {
   const pathMatch = window.location.pathname.match(/^\/p\/(.+)/);

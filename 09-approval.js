@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    09-approval.js — Public approval view
 ═══════════════════════════════════════════════ */
+console.log("LOADED:", "09-approval.js");
 
 async function showApprovalView(postId) {
   document.getElementById('login-overlay')?.classList.add('hidden');

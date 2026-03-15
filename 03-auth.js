@@ -2,6 +2,7 @@
    03-auth.js - Authentication & role activation
    Uses 6-digit OTP code (no magic links)
 =============================================== */
+console.log("LOADED:", "03-auth.js");
 
 let _refreshInProgress = null;
 

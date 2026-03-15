@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    08-post-actions.js — Stage updates & modals
 ═══════════════════════════════════════════════ */
+console.log("LOADED:", "08-post-actions.js");
 
 async function quickStage(postId, newStage) {
   const post = allPosts.find(p => getPostId(p) === postId);

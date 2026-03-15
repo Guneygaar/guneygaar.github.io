@@ -1,6 +1,7 @@
 /* ===============================================
 06-post-create.js - New Post modal & drafts
 =============================================== */
+console.log("LOADED:", "06-post-create.js");
 
 const DRAFT_KEY = 'gbl_new_post_draft';
 let _draftTimer = null;

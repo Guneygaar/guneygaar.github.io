@@ -1,6 +1,7 @@
 /* ===============================================
    05-api.js - Supabase REST wrapper
 =============================================== */
+console.log("LOADED:", "05-api.js");
 
 function getAuthHeaders(extra = {}) {
   const token = localStorage.getItem('sb_access_token');

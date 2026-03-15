@@ -1,6 +1,7 @@
 /* ===============================================
    10-ui.js - Toast, tabs, timeline, zen & utils
    =============================================== */
+console.log("LOADED:", "10-ui.js");
 
 // -- Error banner ------------------------------
 function showErrorBanner(msg, sub) {

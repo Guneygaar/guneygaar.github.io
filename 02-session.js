@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════
    02-session.js — Mutable runtime state
    ═══════════════════════════════════════════════ */
+console.log("LOADED:", "02-session.js");
 
 window.allPosts        = [];
 window.cachedPosts     = [];
