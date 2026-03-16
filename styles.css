@@ -3271,7 +3271,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: flex-start;
   padding: 0;
   min-width: 0;
-  gap: var(--pcs-space-2);
+  gap: 10px;
 }
 
 /* Title — most visually prominent element */
@@ -3363,7 +3363,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex: 1;
 }
 .pipeline-dot {
@@ -3394,7 +3394,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   letter-spacing: 0.02em;
   white-space: nowrap;
   text-align: center;
-  opacity: 0.65;
+  opacity: 0.6;
   margin-top: 4px;
 }
 .pipeline-stage:has(.pipeline-dot.active) .pipeline-label {
@@ -3597,7 +3597,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
-  opacity: 0.4;
+  opacity: 0.28;
   margin: 0;
 }
 
@@ -3661,11 +3661,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.65;
 }
 
-/* ── Information grid ── */
+/* ── Information grid — stacked single-column layout ── */
 .pcs-grid {
-  display: grid;
-  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
-  gap: var(--pcs-space-4) var(--pcs-column-gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcs-space-4);
   width: 100%;
   max-width: 100%;
 }
@@ -3681,14 +3681,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text);
-  opacity: 0.6;
+  opacity: 0.55;
   margin-bottom: 0;
 }
 .pcs-field-val {
   border: none;
   background: transparent;
   color: var(--text);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   font-family: inherit;
   padding: 0;
@@ -3707,7 +3707,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-field-val:disabled { opacity: 0.45; cursor: default; }
 .pcs-field-val-ro {
   display: block;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text);
   width: 100%;
@@ -3718,11 +3718,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   white-space: nowrap;
 }
 .pcs-field:nth-child(even) {
-  text-align: right;
+  text-align: left;
 }
 .pcs-field:nth-child(even) .pcs-field-val,
 .pcs-field:nth-child(even) select {
-  text-align: right;
+  text-align: left;
 }
 .pcs-field select {
   width: 100%;
