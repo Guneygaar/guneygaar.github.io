@@ -3270,6 +3270,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: flex-start;
   padding: 0;
   min-width: 0;
+  gap: var(--pcs-space-2);
 }
 
 /* Title — most visually prominent element */
@@ -3321,7 +3322,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 13px;
   color: var(--text);
   opacity: 0.7;
-  margin-top: var(--pcs-space-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3413,9 +3413,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Design section layout ── */
 .pcs-design-stack {
   display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  gap: var(--pcs-space-4);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pcs-space-2);
 }
 
 /* Legacy horizontal layout kept for compatibility */
@@ -3588,6 +3588,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: color 120ms ease;
 }
 .pcs-attach-cancel:hover { color: var(--text2); }
+
+/* ── Fields container — vertical rhythm for grid + notes ── */
+#pcs-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcs-space-5);
+}
 
 /* ── Information section divider ── */
 .pcs-info-divider {
