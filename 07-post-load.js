@@ -384,7 +384,7 @@ function renderTaskBanner() {
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
-    const due = t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
+    const due = t.due_date ? `Due ${parseDate(t.due_date)?.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) || ''}` : '';
     return `<div class="task-banner-item" id="task-item-${t.id}"><div><div class="task-banner-msg">${esc(t.message)}</div>${due ? `<div class="task-banner-due">${due}</div>` : ''}</div><button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button></div>`;
   }).join('');
   section.innerHTML = `<div class="task-banner"><div class="task-banner-label">Your Tasks (${myTasks.length})</div>${rows}</div>`;
@@ -397,7 +397,7 @@ function renderAdminTaskPanel() {
   const openTasks = allTasks.filter(t => !t.done);
   const doneTasks = allTasks.filter(t => t.done).slice(0, 5);
   const openRows = openTasks.map(t => {
-    const due = t.due_date ? ` . Due ${new Date(t.due_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
+    const due = t.due_date ? ` . Due ${parseDate(t.due_date)?.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) || ''}` : '';
     return `<div class="admin-task-item"><div class="admin-task-item-body"><div class="admin-task-item-msg">${esc(t.message)}</div><div class="admin-task-item-meta">${esc(t.assigned_to)}${due}</div></div><button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">x</button></div>`;
   }).join('');
   const doneRows = doneTasks.map(t => `<div class="admin-task-item"><div class="admin-task-item-body admin-task-item-done"><div class="admin-task-item-msg">${esc(t.message)}</div><div class="admin-task-item-meta">${esc(t.assigned_to)}</div></div><button class="btn-task-delete" onclick="deleteTask(${t.id})" title="Delete task">x</button></div>`).join('');
@@ -800,7 +800,7 @@ function renderLibrary() {
 function renderLibraryRows(posts) {
   const listView = document.getElementById('library-list-view');
   if (!listView) return;
-  posts = posts.slice().sort((a, b) => new Date(b.targetDate) - new Date(a.targetDate));
+  posts = posts.slice().sort((a, b) => (parseDate(b.targetDate) || 0) - (parseDate(a.targetDate) || 0));
   _postLists['library'] = posts;
   if (!posts.length) {
     listView.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>`;
@@ -810,8 +810,8 @@ function renderLibraryRows(posts) {
   // Group posts by month
   const groups = {};
   posts.forEach(p => {
-    const d = p.targetDate ? new Date(p.targetDate) : null;
-    const key = d && !isNaN(d) ? d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : 'No Date';
+    const d = parseDate(p.targetDate);
+    const key = d ? d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : 'No Date';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
@@ -999,8 +999,8 @@ function _insightThisMonth(posts) {
   const curYear  = now.getFullYear();
 
   const thisMonth = posts.filter(p => {
-    const d = p.targetDate ? new Date(p.targetDate) : null;
-    return d && !isNaN(d) && d.getMonth() === curMonth && d.getFullYear() === curYear;
+    const d = parseDate(p.targetDate);
+    return d && d.getMonth() === curMonth && d.getFullYear() === curYear;
   });
 
   const total     = thisMonth.length;
@@ -1129,12 +1129,12 @@ function renderLibraryCalendar(posts) {
   const container = document.getElementById('library-calendar-view');
   if (!container) return;
   posts = posts || allPosts;
-  const withDates  = posts.filter(p => p.targetDate).sort((a,b) => new Date(a.targetDate) - new Date(b.targetDate));
+  const withDates  = posts.filter(p => p.targetDate).sort((a,b) => (parseDate(a.targetDate) || 0) - (parseDate(b.targetDate) || 0));
   const noDates    = posts.filter(p => !p.targetDate);
   const months     = {};
   const today      = new Date(); today.setHours(0,0,0,0);
   withDates.forEach(p => {
-    const d   = new Date(p.targetDate);
+    const d   = parseDate(p.targetDate);
     const key = d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
     if (!months[key]) months[key] = [];
     months[key].push(p);
@@ -1142,9 +1142,9 @@ function renderLibraryCalendar(posts) {
   let html = Object.entries(months).map(([month, posts]) => {
     const items = posts.map(p => {
       const id  = getPostId(p);
-      const d   = new Date(p.targetDate);
-      const isToday = d.toDateString() === today.toDateString();
-      const dayStr  = d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      const d   = parseDate(p.targetDate);
+      const isToday = d && d.toDateString() === today.toDateString();
+      const dayStr  = d ? d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
       const { hex } = stageStyle(p.stage);
       return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
         <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
