@@ -194,8 +194,8 @@ async function flagIssue(postId) {
       method: 'PATCH',
       body: JSON.stringify({ comments: `⚑ ${msg}`, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Creative', actor_role: 'Creative', action: `Issue flagged: ${msg.substring(0,80)}` });
-    showToast('Issue flagged — Servicing has been notified ✓', 'success');
+    await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Issue flagged: ${msg.substring(0,80)}` });
+    showToast('Issue flagged — team has been notified', 'success');
     await loadPosts();
   } catch { showToast('Failed — try again', 'error'); }
 }
@@ -206,7 +206,7 @@ async function nudgeClient(postId, title, targetDate) {
   const msg       = encodeURIComponent(`Hi! Just a quick note — we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
   const waLink    = `https://wa.me/?text=${msg}`;
   window.open(waLink, '_blank');
-  await logActivity({ post_id: postId, actor_name: 'Servicing', actor_role: 'Servicing', action: `Client nudged after ${days}d` });
+  await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Client nudged after ${days}d` });
 }
 
 async function copyCaption(postId) {
