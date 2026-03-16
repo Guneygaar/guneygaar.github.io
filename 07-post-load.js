@@ -794,7 +794,7 @@ function filterLibrary() {
 
 function renderLibrary() {
   populateFilterDropdowns();
-  renderLibraryRows(allPosts);
+  filterLibrary();
 }
 
 function renderLibraryRows(posts) {
