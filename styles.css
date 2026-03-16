@@ -71,7 +71,7 @@
 
   /* Notes */
   --pcs-notes-radius: 12px;
-  --pcs-notes-padding: 12px;
+  --pcs-notes-padding: 16px;
 
   /* Safe area */
   --pcs-safe-bottom: 24px;
@@ -3277,10 +3277,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Title — most visually prominent element */
 .pcs-title {
   font-size: 22px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--text);
   line-height: 1.25;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.01em;
   text-align: left;
   max-width: 100%;
   display: -webkit-box;
@@ -3388,13 +3388,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.3;
 }
 .pipeline-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text3);
   letter-spacing: 0.02em;
   white-space: nowrap;
   text-align: center;
-  opacity: 0.45;
+  opacity: 0.65;
+  margin-top: 4px;
 }
 .pipeline-stage:has(.pipeline-dot.active) .pipeline-label {
   color: var(--c-blue);
@@ -3596,7 +3597,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
-  opacity: 0.14;
+  opacity: 0.4;
   margin: 0;
 }
 
@@ -3678,9 +3679,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-field-label {
   font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: var(--text);
-  opacity: 0.65;
+  opacity: 0.6;
   margin-bottom: 0;
 }
 .pcs-field-val {
@@ -3815,7 +3816,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 13px;
   font-weight: 600;
   color: var(--text2);
-  padding: 0;
+  padding: var(--pcs-space-2) 0 0;
   margin-left: 0;
   text-align: left;
   height: 40px;
@@ -3840,7 +3841,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: baseline;
   gap: var(--pcs-space-2);
-  padding: var(--pcs-space-2) 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--border);
   font-size: 12px;
 }
