@@ -787,9 +787,9 @@ function filterLibrary() {
     return true;
   });
 
-  if (_currentLibraryView === 'list')     renderLibraryRows(filtered);
+  if (_currentLibraryView === 'list')          renderLibraryRows(filtered);
   else if (_currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
-  else if (_currentLibraryView === 'board')    renderLibraryBoard(filtered);
+  else if (_currentLibraryView === 'insights') renderLibraryInsights(filtered);
 }
 
 function renderLibrary() {
@@ -920,57 +920,209 @@ function renderCreativeTracker() {
 
 // -- Fix 17: Library view switch ---------------
 let _currentLibraryView = 'list';
-let _boardPillarIdx = 0;
 
 function switchLibraryView(btn) {
   document.querySelectorAll('.lib-view-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _currentLibraryView = btn.dataset.view;
 
-  document.getElementById('library-list-view').style.display     = _currentLibraryView === 'list'     ? '' : 'none';
-  document.getElementById('library-calendar-view').style.display = _currentLibraryView === 'calendar' ? '' : 'none';
-  document.getElementById('library-board-view').style.display    = _currentLibraryView === 'board'    ? '' : 'none';
+  document.getElementById('library-list-view').style.display      = _currentLibraryView === 'list'     ? '' : 'none';
+  document.getElementById('library-calendar-view').style.display  = _currentLibraryView === 'calendar' ? '' : 'none';
+  document.getElementById('library-insights-view').style.display  = _currentLibraryView === 'insights' ? '' : 'none';
+
+  // Hide filter row in insights view
+  const filterRow = document.getElementById('lib-filter-row');
+  if (filterRow) filterRow.style.display = _currentLibraryView === 'insights' ? 'none' : '';
 
   filterLibrary();
 }
 
-function renderLibraryBoard(posts) {
-  const container = document.getElementById('library-board-view');
-  if (!container) return;
+// -- Insights panel (replaces Board) ---------------
 
+function renderLibraryInsights(posts) {
+  const container = document.getElementById('library-insights-view');
+  if (!container) return;
   posts = posts || allPosts;
-  const pillarsMap = {};
-  posts.forEach(p => {
-    const key = p.contentPillar || 'Unassigned';
-    if (!pillarsMap[key]) pillarsMap[key] = [];
-    pillarsMap[key].push(p);
-  });
-  const pillarNames = Object.keys(pillarsMap).sort((a,b) => pillarsMap[b].length - pillarsMap[a].length);
-  if (!pillarNames.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match.</p></div>`;
+
+  if (!posts.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts to analyze.</p></div>`;
     return;
   }
 
-  // Clamp index
-  _boardPillarIdx = Math.max(0, Math.min(_boardPillarIdx, pillarNames.length - 1));
-  const current = pillarNames[_boardPillarIdx];
-  const cards   = pillarsMap[current].map(p => buildPostCard(p, 'library')).join('');
-  const hasPrev = _boardPillarIdx > 0;
-  const hasNext = _boardPillarIdx < pillarNames.length - 1;
+  const html = [
+    _insightThisMonth(posts),
+    _insightSection('PIPELINE', _insightPipeline(posts)),
+    _insightSection('PILLARS', _insightPillars(posts)),
+    _insightSection('LOCATIONS', _insightLocations(posts)),
+    _insightSection('OWNERS', _insightOwners(posts)),
+    _insightSection('FORMATS', _insightFormats(posts)),
+  ].join('');
 
-  container.innerHTML = `
-    <div class="board-nav">
-      <button class="board-nav-btn" onclick="moveBoardPillar(-1)" ${hasPrev ? '' : 'disabled'}><</button>
-      <span class="board-nav-title">${esc(current)}</span>
-      <button class="board-nav-btn" onclick="moveBoardPillar(1)"  ${hasNext ? '' : 'disabled'}>></button>
-    </div>
-    <div class="row-list">${cards}</div>`;
+  container.innerHTML = `<div class="insights-wrap">${html}</div>`;
 
+  // Trigger bar animations after paint
+  requestAnimationFrame(() => {
+    container.querySelectorAll('.insight-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  });
 }
 
-function moveBoardPillar(dir) {
-  _boardPillarIdx += dir;
-  filterLibrary();
+/* --- helpers --- */
+
+function _insightBar(pct) {
+  return `<div class="insight-bar-track"><div class="insight-bar-fill" data-pct="${Math.min(100, Math.max(0, pct))}" style="width:0%"></div></div>`;
+}
+
+function _insightRow(label, count, pct, onclick) {
+  const tap = onclick ? ` onclick="${onclick}"` : '';
+  return `<div class="insight-row"${tap}>`
+    + `<span class="insight-label">${esc(label)}</span>`
+    + _insightBar(pct)
+    + `<span class="insight-count">${count}</span>`
+    + `</div>`;
+}
+
+function _insightSection(title, rowsHtml) {
+  return `<div class="row-tile insight-card">`
+    + `<div class="insight-section-title">${esc(title)}</div>`
+    + rowsHtml
+    + `</div>`;
+}
+
+/* --- THIS MONTH card --- */
+
+function _insightThisMonth(posts) {
+  const TARGET = 35;
+  const now = new Date();
+  const curMonth = now.getMonth();
+  const curYear  = now.getFullYear();
+
+  const thisMonth = posts.filter(p => {
+    const d = p.targetDate ? new Date(p.targetDate) : null;
+    return d && !isNaN(d) && d.getMonth() === curMonth && d.getFullYear() === curYear;
+  });
+
+  const total     = thisMonth.length;
+  const published = thisMonth.filter(p => (p.stage||'').toLowerCase() === 'published').length;
+  const pending   = total - published;
+
+  return `<div class="row-tile insight-card">`
+    + `<div class="insight-section-title">THIS MONTH</div>`
+    + `<div class="insight-subtitle">Target: ${TARGET} posts</div>`
+    + _insightRow('Posts',     total,     (total / TARGET) * 100)
+    + _insightRow('Published', published, (published / TARGET) * 100)
+    + _insightRow('Pending',   pending,   (pending / TARGET) * 100)
+    + `</div>`;
+}
+
+/* --- PIPELINE --- */
+
+function _insightPipeline(posts) {
+  const stages = [
+    'in production',
+    'ready',
+    'awaiting approval',
+    'scheduled',
+    'published',
+  ];
+  const counts = {};
+  stages.forEach(s => counts[s] = 0);
+  posts.forEach(p => {
+    const s = (p.stage||'').toLowerCase();
+    if (s in counts) counts[s]++;
+  });
+  const max = Math.max(1, ...Object.values(counts));
+  return stages.map(s => {
+    const label = (STAGE_META[s] || {}).label || s;
+    return _insightRow(label, counts[s], (counts[s] / max) * 100,
+      `insightFilter('stage','${esc(s)}')`);
+  }).join('');
+}
+
+/* --- PILLARS --- */
+
+function _insightPillars(posts) {
+  const pillars = PILLARS_DB || ['leadership','innovation','sustainability','inclusivity','events','announcements'];
+  const counts = {};
+  pillars.forEach(p => counts[p] = 0);
+  posts.forEach(p => {
+    const k = (p.contentPillar||'').toLowerCase();
+    if (k in counts) counts[k]++;
+  });
+  const max = Math.max(1, ...Object.values(counts));
+  return pillars.map(p => {
+    const label = (PILLAR_DISPLAY && PILLAR_DISPLAY[p]) || p;
+    return _insightRow(label, counts[p], (counts[p] / max) * 100,
+      `insightFilter('pillar','${esc(p)}')`);
+  }).join('');
+}
+
+/* --- LOCATIONS (top 3) --- */
+
+function _insightLocations(posts) {
+  const counts = {};
+  posts.forEach(p => {
+    const loc = (p.location||'').trim();
+    if (loc) counts[loc] = (counts[loc]||0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  const max = sorted.length ? sorted[0][1] : 1;
+  return sorted.map(([loc, n]) =>
+    _insightRow(loc, n, (n / max) * 100,
+      `insightFilter('location','${esc(loc)}')`)).join('')
+    || `<div class="insight-empty">No location data</div>`;
+}
+
+/* --- OWNERS (top 3) --- */
+
+function _insightOwners(posts) {
+  const counts = {};
+  posts.forEach(p => {
+    const o = (p.owner||'').trim();
+    if (o) counts[o] = (counts[o]||0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  const max = sorted.length ? sorted[0][1] : 1;
+  return sorted.map(([owner, n]) =>
+    _insightRow(owner, n, (n / max) * 100,
+      `insightFilter('owner','${esc(owner)}')`)).join('')
+    || `<div class="insight-empty">No owner data</div>`;
+}
+
+/* --- FORMATS --- */
+
+function _insightFormats(posts) {
+  const formats = ['Creative','Photo','Carousel','Video','Text'];
+  const counts = {};
+  formats.forEach(f => counts[f] = 0);
+  posts.forEach(p => {
+    const f = (p.format||'').trim();
+    if (f in counts) counts[f]++;
+  });
+  const max = Math.max(1, ...Object.values(counts));
+  return formats.map(f =>
+    _insightRow(f, counts[f], (counts[f] / max) * 100,
+      `insightFilter('format','${esc(f)}')`)).join('');
+}
+
+/* --- Tap-to-filter from insights --- */
+
+function insightFilter(type, value) {
+  // Switch to list view and apply filter
+  const listBtn = document.querySelector('.lib-view-btn[data-view="list"]');
+  if (listBtn) switchLibraryView(listBtn);
+
+  if (type === 'stage') {
+    const el = document.getElementById('filter-stage');
+    if (el) { el.value = value; filterLibrary(); }
+  } else if (type === 'pillar') {
+    const el = document.getElementById('filter-pillar');
+    if (el) { el.value = value; filterLibrary(); }
+  } else if (type === 'owner') {
+    const el = document.getElementById('filter-owner');
+    if (el) { el.value = value; filterLibrary(); }
+  }
 }
 
 function renderLibraryCalendar(posts) {
