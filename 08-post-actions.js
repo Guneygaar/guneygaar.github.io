@@ -542,24 +542,17 @@ function _buildStageProgress(stageLC) {
 
   const activeIdx = steps.findIndex(s => s.key === norm);
 
-  let html = '';
-  steps.forEach((s, i) => {
-    if (i > 0) {
-      const lineFuture = activeIdx === -1 || i > activeIdx;
-      html += `<div class="prog-line${lineFuture ? ' prog-line--future' : ''}"></div>`;
-    }
+  const html = steps.map((s, i) => {
     const isDone    = activeIdx !== -1 && i < activeIdx;
     const isCurrent = i === activeIdx;
-    const isFuture  = !isDone && !isCurrent;
-    const dotCls = isCurrent ? 'prog-dot active' : isDone ? 'prog-dot done' : 'prog-dot';
-    const stepCls = isFuture ? 'prog-step prog-step--future' : 'prog-step';
-    html += `<div class="${stepCls}">
+    const dotCls = isDone ? 'pipeline-dot completed' : isCurrent ? 'pipeline-dot active' : 'pipeline-dot pending';
+    return `<div class="pipeline-stage">
       <div class="${dotCls}"></div>
-      <div class="prog-label">${s.label}</div>
+      <div class="pipeline-label">${s.label}</div>
     </div>`;
-  });
+  }).join('');
 
-  return `<div class="pcs-progress">${html}</div>`;
+  return `<div class="pipeline-container">${html}</div>`;
 }
 
 function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
