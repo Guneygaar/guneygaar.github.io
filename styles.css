@@ -3268,6 +3268,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: var(--pcs-space-2);
   flex-shrink: 0;
+  position: relative;
 }
 /* Future steps: reduced opacity */
 .prog-step--future .prog-dot  { opacity: 0.3; }
@@ -3277,6 +3278,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: var(--pcs-pipeline-dot);
   border-radius: 50%;
   background: #d1d5db;
+  position: relative;
+  z-index: 1;
 }
 .prog-dot.done {
   background: var(--c-green);
@@ -3615,6 +3618,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 16px;
   font-weight: 500;
   color: var(--text);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.pcs-field select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Section 7: Date field — full clickable tap area */
@@ -3622,6 +3633,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   gap: var(--pcs-space-2);
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   min-height: 44px;
@@ -3631,14 +3643,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-height: 44px;
 }
 .pcs-date-value {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--pcs-space-2);
   min-width: 0;
   max-width: 100%;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
