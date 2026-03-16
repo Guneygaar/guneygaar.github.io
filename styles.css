@@ -3663,16 +3663,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── Information grid — stacked single-column layout ── */
 .pcs-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pcs-space-4);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 32px;
+  row-gap: 16px;
   width: 100%;
   max-width: 100%;
 }
 .pcs-field {
   display: flex;
   flex-direction: column;
-  gap: var(--pcs-space-1);
+  gap: 4px;
   min-width: 0;
   width: 100%;
 }
@@ -3695,7 +3696,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  min-height: 44px;
+  min-height: 0;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
