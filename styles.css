@@ -3738,6 +3738,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   color: var(--text);
 }
+div.pcs-date-tap {
+  min-height: 0;
+}
 .pcs-date-tap .pcs-date-input-native {
   min-height: 44px;
   width: 100%;
