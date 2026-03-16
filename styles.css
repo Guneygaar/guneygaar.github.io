@@ -3724,10 +3724,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Section 7: Date field — full clickable tap area */
 .pcs-date-tap {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
+  display: block;
+  position: relative;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -3738,7 +3736,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
-  line-height: 1;
+  line-height: 44px;
 }
 .pcs-date-tap .pcs-date-input-native {
   min-height: 44px;
@@ -3747,9 +3745,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 100%;
 }
 .pcs-date-icon {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: var(--pcs-space-4);
   height: var(--pcs-space-4);
-  flex-shrink: 0;
 }
 
 /* ── Notes box — subtle container ── */
