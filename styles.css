@@ -3739,6 +3739,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text);
 }
 div.pcs-date-tap {
+  display: block;
+  position: relative;
   min-height: 0;
 }
 .pcs-date-tap .pcs-date-input-native {
@@ -3748,14 +3750,18 @@ div.pcs-date-tap {
   max-width: 100%;
 }
 .pcs-date-text {
-  flex: 1;
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: 22px;
 }
 .pcs-date-icon {
-  flex-shrink: 0;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   opacity: 0.6;
   width: var(--pcs-space-4);
   height: var(--pcs-space-4);
