@@ -2684,12 +2684,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 8px 16px var(--sp-4);
 }
 
-.pcs-month-label {
+.pcs-library-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 11px;
   letter-spacing: 0.08em;
   opacity: 0.6;
   margin-top: 18px;
   margin-bottom: 8px;
+}
+
+.pcs-month-count {
+  opacity: 0.5;
 }
 
 .row-tile {

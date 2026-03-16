@@ -818,7 +818,7 @@ function renderLibraryRows(posts) {
 
   let html = '';
   for (const [month, group] of Object.entries(groups)) {
-    html += `<div class="pcs-month-group"><div class="pcs-month-label">${esc(month)}</div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
+    html += `<div class="pcs-month-group"><div class="pcs-library-month"><span class="pcs-month-label">${esc(month)}</span><span class="pcs-month-count">${group.length}</span></div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
   }
   listView.innerHTML = html;
 }
