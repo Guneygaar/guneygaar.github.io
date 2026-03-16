@@ -713,17 +713,18 @@ function renderUpcoming() {
   posts.forEach(p => {
     const d   = parseDate(p.targetDate);
     const key = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : 'undated';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(p);
+    if (!groups[key]) groups[key] = { date: d, posts: [] };
+    groups[key].posts.push(p);
   });
 
   container.innerHTML = Object.keys(groups).sort().map(dateKey => {
-    const d       = parseDate(dateKey);
-    const isToday = d.getTime() === today.getTime();
-    const isSoon  = d <= w7;
-    const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
+    const g       = groups[dateKey];
+    const d       = g.date;
+    const isToday = d && d.getTime() === today.getTime();
+    const isSoon  = d && d <= w7;
+    const label   = isToday ? 'Today' : d ? d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase() : 'NO DATE';
     const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
-    const cards   = groups[dateKey].map(p => buildPostCard(p, 'upcoming')).join('');
+    const cards   = g.posts.map(p => buildPostCard(p, 'upcoming')).join('');
     return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div><div class="row-list" style="gap:10px;padding-top:6px">${cards}</div></div>`;
   }).join('');
 }
