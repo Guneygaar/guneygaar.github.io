@@ -24,6 +24,10 @@ function formatDate(raw) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function displayDate(raw) {
+  return formatDate(raw) || '—';
+}
+
 function esc(str) {
   return String(str ?? '')
     .replace(/&/g,'&amp;')

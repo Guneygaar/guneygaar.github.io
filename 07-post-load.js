@@ -461,7 +461,7 @@ function getRelativeDate(rawDate) {
   if (diff === -1) return { text:'Yesterday', cls:'overdue' };
   if (diff > 0 && diff <= 7) return { text:`In ${diff} days`, cls:'soon' };
   if (diff < 0)   return { text:`${Math.abs(diff)}d overdue`, cls:'overdue' };
-  return { text: formatDate(rawDate), cls: '' };
+  return { text: displayDate(rawDate), cls: '' };
 }
 
 function renderNextPost() {
@@ -712,13 +712,13 @@ function renderUpcoming() {
   const groups = {};
   posts.forEach(p => {
     const d   = parseDate(p.targetDate);
-    const key = d ? d.toISOString().split('T')[0] : 'undated';
+    const key = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : 'undated';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
 
   container.innerHTML = Object.keys(groups).sort().map(dateKey => {
-    const d       = new Date(dateKey + 'T00:00:00');
+    const d       = parseDate(dateKey);
     const isToday = d.getTime() === today.getTime();
     const isSoon  = d <= w7;
     const label   = isToday ? 'Today' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();
@@ -869,7 +869,7 @@ function renderClientApproved() {
   const tbody = document.getElementById('client-approved-tbody');
   if (!tbody) return;
   if (!published.length) { tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">?</div><p>No published posts yet.</p></div></td></tr>`; return; }
-  tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${formatDate(p.targetDate)||'-'}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
+  tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
 }
 
 // -- Fix 20: Creative Target Tracker ----------
