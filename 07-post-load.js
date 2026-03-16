@@ -380,8 +380,8 @@ function renderTaskBanner() {
   if (!section) return;
   if (!['Servicing','Creative'].includes(currentRole)) { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('gbl_email') || '';
-  const roleName = currentRole === 'Servicing' ? 'Servicing Team' : '';
-  const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || t.assigned_to === currentRole || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
+  const roleName = currentRole;
+  const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
     const due = t.due_date ? `Due ${new Date(t.due_date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}` : '';
@@ -882,7 +882,7 @@ function renderCreativeTracker() {
   const monthAgo = now - 30 * DAY;
   const myPosts = allPosts.filter(p => {
     const o = (p.owner||'').toLowerCase();
-    return o.includes('pranav') || o.includes('creative');
+    return o === 'pranav';
   });
   const doneThisWeek = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
