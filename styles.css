@@ -3602,8 +3602,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── Notes section — lighter feel ── */
-.pcs-notes-section {
-}
 
 /* Legacy design block classes — heights matched to 36px */
 .pcs-design-block { display: none; }
@@ -3718,13 +3716,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.pcs-field:nth-child(even) {
-  text-align: left;
-}
-.pcs-field:nth-child(even) .pcs-field-val,
-.pcs-field:nth-child(even) select {
-  text-align: left;
-}
 .pcs-field select {
   width: 100%;
   min-width: 0;
@@ -3740,26 +3731,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 100%;
   min-height: 44px;
   cursor: pointer;
-}
-.pcs-date-tap .pcs-date-input-native {
-  min-height: 44px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-.pcs-date-value {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
   line-height: 1;
+}
+.pcs-date-tap .pcs-date-input-native {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .pcs-date-icon {
   width: var(--pcs-space-4);
