@@ -9,8 +9,13 @@ function getPostById(postId) { return allPosts.find(p => getPostId(p) === postId
 
 function parseDate(raw) {
   if (!raw) return null;
-  const d = new Date(raw);
-  return isNaN(d) ? null : d;
+  const parts = String(raw).split('-');
+  if (parts.length !== 3) return null;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
 }
 
 function formatDate(raw) {
