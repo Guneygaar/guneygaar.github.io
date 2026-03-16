@@ -811,14 +811,14 @@ function renderLibraryRows(posts) {
   const groups = {};
   posts.forEach(p => {
     const d = p.targetDate ? new Date(p.targetDate) : null;
-    const key = d && !isNaN(d) ? d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).toUpperCase() : 'NO DATE';
+    const key = d && !isNaN(d) ? d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : 'No Date';
     if (!groups[key]) groups[key] = [];
     groups[key].push(p);
   });
 
   let html = '';
   for (const [month, group] of Object.entries(groups)) {
-    html += `<div class="pcs-month-group"><div class="pcs-library-month"><span class="pcs-month-label">${esc(month)}</span><span class="pcs-month-count">${group.length}</span></div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
+    html += `<div class="pcs-month-group"><div class="pcs-library-month">${esc(month)} &middot; ${group.length} post${group.length === 1 ? '' : 's'}</div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
   }
   listView.innerHTML = html;
 }
