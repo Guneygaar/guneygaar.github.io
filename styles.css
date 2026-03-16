@@ -78,6 +78,12 @@
 
   /* Inline separator */
   --pcs-inline-separator-gap: 6px;
+
+  /* Insights layout */
+  --pcs-card-padding: 20px;
+  --pcs-row-gap: var(--pcs-space-3);
+  --pcs-section-gap: var(--pcs-space-5);
+  --pcs-bar-height: 6px;
 }
 
 [data-theme="dark"] {
@@ -2223,14 +2229,14 @@ tr:hover td { background: var(--surface2); }
 .insights-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 16px var(--sp-4);
+  gap: var(--pcs-section-gap);
+  padding: var(--pcs-card-padding) var(--pcs-card-padding) var(--sp-4);
 }
 
 .insight-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--pcs-row-gap);
 }
 
 .insight-section-title {
@@ -2243,52 +2249,50 @@ tr:hover td { background: var(--surface2); }
   top: 0;
   background: var(--surface);
   z-index: 1;
-  padding: 2px 0;
-  margin-bottom: 2px;
+  padding: var(--pcs-space-1) 0;
+  margin-bottom: var(--pcs-space-1);
 }
 
 .insight-subtitle {
   font-size: 11px;
   color: var(--text3);
-  margin-bottom: 4px;
+  margin-bottom: var(--pcs-space-1);
 }
 
 .insight-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 120px 1fr 40px;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
+  gap: var(--pcs-row-gap);
+  padding: var(--pcs-space-2) 0;
   cursor: pointer;
-  border-radius: 6px;
-  transition: background 150ms ease;
+  border-radius: var(--r-sm);
+  transition: background var(--transition);
 }
 
 .insight-row:active {
-  background: rgba(255,255,255,0.05);
+  background: var(--accent-dim);
 }
 
 .insight-label {
   font-size: 12px;
   color: var(--text2);
-  min-width: 90px;
-  flex-shrink: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .insight-bar-track {
-  flex: 1;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255,255,255,0.08);
+  height: var(--pcs-bar-height);
+  border-radius: calc(var(--pcs-bar-height) / 2);
+  background: var(--border);
   overflow: hidden;
 }
 
 .insight-bar-fill {
   height: 100%;
-  border-radius: 3px;
-  background: rgba(255,255,255,0.45);
+  border-radius: calc(var(--pcs-bar-height) / 2);
+  background: var(--accent);
   transition: width 200ms ease-out;
 }
 
@@ -2296,16 +2300,14 @@ tr:hover td { background: var(--surface2); }
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
-  min-width: 24px;
   text-align: right;
-  flex-shrink: 0;
   font-family: var(--font-mono, monospace);
 }
 
 .insight-empty {
   font-size: 12px;
   color: var(--text3);
-  padding: 4px 0;
+  padding: var(--pcs-space-1) 0;
 }
 
 .search-input { flex: 1; min-width: 160px; }
