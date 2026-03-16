@@ -3351,63 +3351,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── Pipeline progress row ── */
-.pcs-progress {
+/* ── Pipeline stage indicator ── */
+.pipeline-container {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
+  align-items: flex-start;
   padding: 0 0 var(--pcs-space-2);
-  margin: 0;
 }
-.prog-step {
+.pipeline-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--pcs-space-2);
-  flex-shrink: 0;
-  position: relative;
+  gap: 6px;
+  flex: 1;
 }
-/* Future steps: reduced opacity */
-.prog-step--future .prog-dot  { opacity: 0.3; }
-.prog-step--future .prog-label { opacity: 0.45; }
-.prog-dot {
-  width: var(--pcs-pipeline-dot);
-  height: var(--pcs-pipeline-dot);
+.pipeline-dot {
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #d1d5db;
-  position: relative;
-  z-index: 1;
+  background: var(--border2);
+  opacity: 0.3;
 }
-.prog-dot.done {
+.pipeline-dot.completed {
   background: var(--c-green);
+  opacity: 1;
 }
-.prog-dot.active {
-  width: 12px;
-  height: 12px;
+.pipeline-dot.active {
   background: var(--surface);
   border: 2px solid var(--c-blue);
   box-shadow: 0 0 0 3px var(--c-blue-dim);
+  opacity: 1;
 }
-.prog-label {
-  font-size: 10px;
+.pipeline-dot.pending {
+  background: var(--border2);
+  opacity: 0.3;
+}
+.pipeline-label {
+  font-size: 12px;
   font-weight: 600;
   color: var(--text3);
   letter-spacing: 0.02em;
   white-space: nowrap;
   text-align: center;
+  opacity: 0.45;
 }
-.prog-step:has(.prog-dot.active) .prog-label { color: var(--c-blue); opacity: 1; font-weight: 700; }
-.prog-step:has(.prog-dot.done) .prog-label   { color: var(--c-green); opacity: 0.9; }
-.prog-line {
-  flex: 1;
-  height: var(--pcs-pipeline-line);
-  background: var(--border);
-  position: relative;
-  top: calc((12px - var(--pcs-pipeline-line)) / 2);
-  min-width: var(--pcs-space-2);
-  opacity: 0.5;
+.pipeline-stage:has(.pipeline-dot.active) .pipeline-label {
+  color: var(--c-blue);
+  opacity: 1;
+  font-weight: 700;
 }
-.prog-line--future {
-  opacity: 0.15;
+.pipeline-stage:has(.pipeline-dot.completed) .pipeline-label {
+  color: var(--c-green);
+  opacity: 0.9;
 }
 
 /* ── Design section layout ── */
