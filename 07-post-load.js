@@ -806,7 +806,21 @@ function renderLibraryRows(posts) {
     listView.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>`;
     return;
   }
-  listView.innerHTML = `<div class="row-list">${posts.map(p => buildPostCard(p, 'library')).join('')}</div>`;
+
+  // Group posts by month
+  const groups = {};
+  posts.forEach(p => {
+    const d = p.targetDate ? new Date(p.targetDate) : null;
+    const key = d && !isNaN(d) ? d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).toUpperCase() : 'NO DATE';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(p);
+  });
+
+  let html = '';
+  for (const [month, group] of Object.entries(groups)) {
+    html += `<div class="pcs-month-group"><div class="pcs-month-label">${esc(month)}</div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
+  }
+  listView.innerHTML = html;
 }
 
 function renderClientView() {
