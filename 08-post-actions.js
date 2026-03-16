@@ -725,24 +725,24 @@ function _buildInfoGrid(post, canEdit, id) {
   const { hex } = stageStyle(post.stage);
 
   const sel = (field, opts, val, dbField, displayMap) =>
-    `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
+    `<div class="pcs-value-shell"><select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
        ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(displayMap ? (displayMap[o] || o) : o)}</option>`).join('')}
-     </select>`;
+     </select></div>`;
 
-  const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
+  const ro = val => `<div class="pcs-value-shell"><span class="pcs-field-val-ro">${esc(val || '—')}</span></div>`;
 
   // Stage selector uses unified changeStage() with confirmation
   const stageSel = canEdit
-    ? `<select class="pcs-field-val" onchange="changeStage(this.value)">
+    ? `<div class="pcs-value-shell"><select class="pcs-field-val" onchange="changeStage(this.value)">
          ${STAGES_DB.map(o => `<option value="${esc(o)}" ${o === (post.stage||'') ? 'selected' : ''}>${esc(STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o)}</option>`).join('')}
-       </select>`
-    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
+       </select></div>`
+    : `<div class="pcs-value-shell"><span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span></div>`;
 
   // Date field — full click area with 44px minimum tap target
   const dateInput = canEdit
-    ? `<label class="pcs-date-tap"><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
-             onchange="updatePost('${esc(id)}','targetDate',this.value)"></label>`
-    : `<div class="pcs-date-tap"><span class="pcs-date-text">${esc(formatDate(dateValue) || '—')}</span><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`;
+    ? `<div class="pcs-value-shell"><label class="pcs-date-tap"><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
+             onchange="updatePost('${esc(id)}','targetDate',this.value)"></label></div>`
+    : `<div class="pcs-value-shell"><span class="pcs-date-text">${esc(formatDate(dateValue) || '—')}</span><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`;
 
   const cell = (label, content) =>
     `<div class="pcs-field">
