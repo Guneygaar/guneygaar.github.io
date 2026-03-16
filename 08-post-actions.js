@@ -372,7 +372,8 @@ function _renderPCS(postId) {
   const title       = getTitle(post);
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
-  const postLink    = post.postLink || '';
+  const canvaUrl    = post.postLink || '';
+  const linkedinUrl = post.linkedinUrl || '';
   const canEdit     = ['Admin','Servicing'].includes(currentRole);
   const pillarLabel = post.contentPillar
     ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
@@ -409,7 +410,7 @@ function _renderPCS(postId) {
 
   if (elSubtitle) elSubtitle.innerHTML = subtitleParts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
-  if (elDesign)   elDesign.innerHTML = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
+  if (elDesign)   elDesign.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
   if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 
   // 5. Load activity asynchronously
@@ -504,7 +505,8 @@ function _refreshPCSAfterStageChange(postId) {
 
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
-  const postLink    = post.postLink || '';
+  const canvaUrl    = post.postLink || '';
+  const linkedinUrl = post.linkedinUrl || '';
   const canEdit     = ['Admin','Servicing'].includes(currentRole);
   const id          = getPostId(post);
 
@@ -513,7 +515,7 @@ function _refreshPCSAfterStageChange(postId) {
   const elFields   = document.getElementById('pcs-fields');
 
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
-  if (elDesign)   elDesign.innerHTML   = _buildInlineActions(postLink, isPublished, canEdit, id, stageLC);
+  if (elDesign)   elDesign.innerHTML   = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
   if (elFields)   elFields.innerHTML   = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
 }
 
@@ -556,25 +558,27 @@ function _buildStageProgress(stageLC) {
   return `<div class="pcs-progress">${html}</div>`;
 }
 
-function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
+function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
   // Design section — vertical stack: primary link button + replace text
   // Pipeline is the sole stage control; no Next Stage chip here.
   let buttons = '';
-  if (postLink) {
-    buttons += `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
+  if (canvaUrl) {
+    buttons += `<a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
   }
-  if (isPublished && postLink) {
-    buttons += `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
+  if (isPublished && linkedinUrl) {
+    buttons += `<a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
   }
-  if (!postLink && canEdit) {
+  if (!canvaUrl && canEdit) {
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`;
   }
 
   // Replace text — low emphasis, directly below primary
   let replaceRow = '';
-  if (canEdit && postLink) {
-    const replaceLabel = isPublished ? 'Replace link' : 'Replace design';
+  if (canEdit && isPublished) {
+    const replaceLabel = linkedinUrl ? 'Replace link' : '+ LinkedIn link';
     replaceRow = `<button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">${replaceLabel}</button>`;
+  } else if (canEdit && canvaUrl) {
+    replaceRow = `<button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">Replace design</button>`;
   }
 
   // Attach URL editor — inline, aligned to primary button width
@@ -620,15 +624,19 @@ async function pcsSaveAttach(postId) {
   const input = document.getElementById(`pcs-attach-input-${postId}`);
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
-  await updatePost(postId, 'postLink', url);
-  // Re-render design section with new link
+  // Determine which field to save: published posts → linkedinUrl, otherwise → postLink (canva)
   const post = getPostById(postId);
+  const stageLC = (post?.stage || '').toLowerCase().trim();
+  const isPublished = stageLC === 'published';
+  const field = isPublished ? 'linkedinUrl' : 'postLink';
+  await updatePost(postId, field, url);
+  // Re-render design section with updated links
   if (post) {
-    const stageLC = (post.stage || '').toLowerCase().trim();
-    const isPublished = stageLC === 'published';
+    const canvaUrl    = post.postLink || '';
+    const linkedinUrl = post.linkedinUrl || '';
     const canEdit = ['Admin','Servicing'].includes(currentRole);
     const el = document.getElementById('pcs-action-btn-wrap');
-    if (el) el.innerHTML = _buildInlineActions(url, isPublished, canEdit, postId, stageLC);
+    if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
   }
 }
 
@@ -657,6 +665,7 @@ async function updatePost(postId, field, value) {
     format:        'format',
     targetDate:    'target_date',
     postLink:      'post_link',
+    linkedinUrl:   'linkedin_url',
     comments:      'comments',
   }[field] || field;
 
