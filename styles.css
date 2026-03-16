@@ -3570,18 +3570,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Information grid ── */
 .pcs-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
   gap: var(--pcs-space-4) var(--pcs-column-gap);
-  width: var(--pcs-content-width);
-  max-width: var(--pcs-content-width);
-  margin-left: 0;
-  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
 }
 .pcs-field {
   display: flex;
   flex-direction: column;
   gap: var(--pcs-space-1);
   min-width: 0;
+  width: 100%;
 }
 .pcs-field-label {
   font-size: 12px;
@@ -3613,6 +3612,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-field-val:focus { outline: none; color: var(--c-blue); }
 .pcs-field-val:disabled { opacity: 0.45; cursor: default; }
 .pcs-field-val-ro {
+  display: block;
   font-size: 16px;
   font-weight: 500;
   color: var(--text);
@@ -3649,6 +3649,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-date-tap .pcs-date-input-native {
   min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .pcs-date-value {
   display: flex;
