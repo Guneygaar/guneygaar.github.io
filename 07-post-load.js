@@ -478,7 +478,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = post.owner || '-';
+  const owner     = post.owner || 'Admin';
   const pillar    = post.contentPillar || '';
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';

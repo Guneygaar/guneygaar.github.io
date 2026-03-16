@@ -385,7 +385,7 @@ function _renderPCS(postId) {
   // 3. Build subtitle parts — always Pillar · Owner · Date
   const subtitleParts = [
     `<span>${esc(pillarLabel || '—')}</span>`,
-    `<span>${esc(post.owner  || '—')}</span>`,
+    `<span>${esc(post.owner  || 'Admin')}</span>`,
     `<span>${esc(dateDisplay || '—')}</span>`,
   ];
 
