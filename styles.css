@@ -3087,6 +3087,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   width: var(--pcs-modal-width);
   max-width: var(--pcs-modal-width);
+  height: 100dvh;
   max-height: 90vh;
   background: var(--surface);
   border: 1px solid rgba(255,255,255,0.06);
@@ -3208,8 +3209,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 0;
-  flex-wrap: nowrap;
+  gap: var(--pcs-inline-separator-gap);
+  flex-wrap: wrap;
   font-size: 13px;
   color: var(--text);
   opacity: 0.7;
@@ -3220,8 +3221,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-subtitle span { white-space: nowrap; }
 .pcs-subtitle-sep {
-  margin-left: var(--pcs-inline-separator-gap);
-  margin-right: var(--pcs-inline-separator-gap);
+  margin: 0;
   opacity: 0.5;
 }
 
@@ -3304,7 +3304,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--border);
   transform: translateY(var(--pcs-pipeline-offset));
   min-width: var(--pcs-space-2);
-  opacity: 0.35;
+  opacity: 0.5;
 }
 .prog-line--future {
   opacity: 0.15;
@@ -3566,7 +3566,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Information grid ── */
 .pcs-grid {
   display: grid;
-  grid-template-columns: var(--pcs-column-width) var(--pcs-column-width);
+  grid-template-columns:
+    minmax(0, var(--pcs-column-width))
+    minmax(0, var(--pcs-column-width));
   gap: var(--pcs-space-4) var(--pcs-column-gap);
   width: var(--pcs-content-width);
 }
@@ -3625,6 +3627,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: var(--pcs-space-2);
   max-width: 100%;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
