@@ -800,6 +800,7 @@ function renderLibrary() {
 function renderLibraryRows(posts) {
   const listView = document.getElementById('library-list-view');
   if (!listView) return;
+  posts = posts.slice().sort((a, b) => new Date(b.targetDate) - new Date(a.targetDate));
   _postLists['library'] = posts;
   if (!posts.length) {
     listView.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>`;
