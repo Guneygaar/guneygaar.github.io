@@ -373,7 +373,7 @@ function _renderPCS(postId) {
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
   const postLink    = post.postLink || '';
-  const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const canEdit     = ['Admin','Servicing'].includes(currentRole);
   const pillarLabel = post.contentPillar
     ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
     : '';
@@ -505,7 +505,7 @@ function _refreshPCSAfterStageChange(postId) {
   const stageLC     = (post.stage || '').toLowerCase().trim();
   const isPublished = stageLC === 'published';
   const postLink    = post.postLink || '';
-  const canEdit     = !isPublished && ['Admin','Servicing'].includes(currentRole);
+  const canEdit     = ['Admin','Servicing'].includes(currentRole);
   const id          = getPostId(post);
 
   const elProgress = document.getElementById('pcs-progress-wrap');
@@ -559,13 +559,15 @@ function _buildStageProgress(stageLC) {
 function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
   // Design section — vertical stack: primary link button + replace text
   // Pipeline is the sole stage control; no Next Stage chip here.
-  let primary = '';
+  let buttons = '';
+  if (postLink) {
+    buttons += `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
+  }
   if (isPublished && postLink) {
-    primary = `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
-  } else if (postLink) {
-    primary = `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
-  } else if (canEdit) {
-    primary = `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`;
+    buttons += `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
+  }
+  if (!postLink && canEdit) {
+    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`;
   }
 
   // Replace text — low emphasis, directly below primary
@@ -584,7 +586,7 @@ function _buildInlineActions(postLink, isPublished, canEdit, postId, stageLC) {
       <button class="pcs-attach-cancel" id="pcs-attach-cancel-${esc(postId)}" style="display:none" onclick="pcsCloseAttach('${esc(postId)}')">Cancel</button>`
     : '';
 
-  return `<div class="pcs-design-stack">${primary}${replaceRow}${attachRow}</div>`;
+  return `<div class="pcs-design-stack">${buttons}${replaceRow}${attachRow}</div>`;
 }
 
 function pcsToggleAttach(postId) {
@@ -624,7 +626,7 @@ async function pcsSaveAttach(postId) {
   if (post) {
     const stageLC = (post.stage || '').toLowerCase().trim();
     const isPublished = stageLC === 'published';
-    const canEdit = !isPublished && ['Admin','Servicing'].includes(currentRole);
+    const canEdit = ['Admin','Servicing'].includes(currentRole);
     const el = document.getElementById('pcs-action-btn-wrap');
     if (el) el.innerHTML = _buildInlineActions(url, isPublished, canEdit, postId, stageLC);
   }
