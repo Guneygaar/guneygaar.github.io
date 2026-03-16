@@ -3671,7 +3671,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
   width: 100%;
 }
@@ -3680,7 +3680,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text);
-  opacity: 0.6;
+  opacity: 0.55;
   margin-bottom: 0;
 }
 .pcs-field-val {
@@ -3715,39 +3715,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.pcs-value-shell {
-  background: var(--surface);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.pcs-value-shell .pcs-field-val,
-.pcs-value-shell .pcs-field-val-ro {
-  padding: 0;
-}
-.pcs-value-shell .pcs-date-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text);
-}
-.pcs-value-shell .pcs-date-icon {
-  flex-shrink: 0;
-  margin-left: auto;
-  opacity: 0.6;
-  width: var(--pcs-space-4);
-  height: var(--pcs-space-4);
 }
 .pcs-field select {
   width: 100%;
