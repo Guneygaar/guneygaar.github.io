@@ -3619,6 +3619,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pcs-field:nth-child(even) {
+  text-align: right;
+}
+.pcs-field:nth-child(even) .pcs-field-val,
+.pcs-field:nth-child(even) select {
+  text-align: right;
 }
 .pcs-field select {
   width: 100%;
