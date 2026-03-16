@@ -72,6 +72,7 @@ function normalise(rows) {
     location:      r.location       || '',
     targetDate:    r.target_date    || '',
     postLink:      r.post_link      || '',
+    linkedinUrl:   r.linkedin_url   || '',
     publishedDate: r.published_date || '',
     comments:      r.comments       || '',
     format:        r.format         || '',

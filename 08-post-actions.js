@@ -517,7 +517,10 @@ function _refreshPCSAfterStageChange(postId) {
 
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
   if (elDesign)   elDesign.innerHTML   = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
-  if (elFields)   elFields.innerHTML   = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
+  // Note: elFields is intentionally NOT rebuilt here.
+  // Rebuilding the grid via innerHTML destroys <select> and <input>
+  // elements while other async saves (pillar, owner, etc.) may still
+  // be in flight, causing those changes to silently revert.
 }
 
 function _buildStageProgress(stageLC) {
@@ -662,8 +665,9 @@ function refreshSystemViews() {
 }
 
 async function updatePost(postId, field, value) {
-  // Optimistic update in memory
+  // Optimistic update in memory — store old value for rollback
   const post = getPostById(postId);
+  const oldValue = post ? post[field] : undefined;
   if (post) post[field] = value;
 
   const dbField = {
@@ -687,6 +691,9 @@ async function updatePost(postId, field, value) {
     showToast('Saved', 'success');
     refreshSystemViews();
   } catch(e) {
+    // Rollback optimistic update on failure
+    if (post) post[field] = oldValue;
+    scheduleRender();
     showToast('Save failed', 'error');
   }
 }
