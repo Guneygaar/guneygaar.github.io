@@ -249,6 +249,7 @@ const _pcs = {
   idx:     0,
 };
 let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
+let _pcsEditingTarget = null; // 'canva' | 'linkedin' — which link the attach input saves to
 
 function openPCS(postId, listKey) {
   // Cancel any deferred forcePCSReset from a previous closePCS() —
@@ -559,61 +560,67 @@ function _buildStageProgress(stageLC) {
 }
 
 function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
-  // Design section — vertical stack: primary link button + replace text
+  // Design section — each link gets its own button + pencil edit icon.
   // Pipeline is the sole stage control; no Next Stage chip here.
+  const pencilStyle = 'style="font-size:12px;margin-left:6px;opacity:0.55;cursor:pointer;background:none;border:none;padding:2px"';
+
   let buttons = '';
   if (canvaUrl) {
-    buttons += `<a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>`;
+    buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
+      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>
+      ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">✎</button>` : ''}
+    </div>`;
   }
   if (isPublished && linkedinUrl) {
-    buttons += `<a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>`;
+    buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
+      <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>
+      ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">✎</button>` : ''}
+    </div>`;
   }
   if (!canvaUrl && canEdit) {
-    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="pcsToggleAttach('${esc(postId)}')">+ Design</button>`;
+    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','canva')">+ Design</button>`;
   }
-
-  // Replace text — low emphasis, directly below primary
-  let replaceRow = '';
-  if (canEdit && isPublished) {
-    const replaceLabel = linkedinUrl ? 'Replace link' : '+ LinkedIn link';
-    replaceRow = `<button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">${replaceLabel}</button>`;
-  } else if (canEdit && canvaUrl) {
-    replaceRow = `<button class="pcs-action-text" onclick="pcsToggleAttach('${esc(postId)}')">Replace design</button>`;
+  if (isPublished && !linkedinUrl && canEdit) {
+    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','linkedin')">+ LinkedIn</button>`;
   }
 
   // Attach URL editor — inline, aligned to primary button width
   const attachRow = canEdit
     ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
-        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste design link...">
+        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste link...">
         <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
       </div>
       <button class="pcs-attach-cancel" id="pcs-attach-cancel-${esc(postId)}" style="display:none" onclick="pcsCloseAttach('${esc(postId)}')">Cancel</button>`
     : '';
 
-  return `<div class="pcs-design-stack">${buttons}${replaceRow}${attachRow}</div>`;
+  return `<div class="pcs-design-stack">${buttons}${attachRow}</div>`;
 }
 
-function pcsToggleAttach(postId) {
+function _pcsEditLink(postId, target) {
+  _pcsEditingTarget = target; // 'canva' or 'linkedin'
   const row = document.getElementById(`pcs-attach-row-${postId}`);
   const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
   if (!row) return;
-  const open = row.style.display === 'none';
-  row.style.display = open ? 'flex' : 'none';
-  if (cancel) cancel.style.display = open ? '' : 'none';
-  if (open) {
-    // Close any confirm overlay first — only one interactive layer at a time
-    _removePcsConfirm();
-    const input = document.getElementById(`pcs-attach-input-${postId}`);
-    if (input) {
-      input.focus();
-      input.onkeydown = function(e) {
-        if (e.key === 'Escape') { pcsCloseAttach(postId); }
-      };
-    }
+  row.style.display = 'flex';
+  if (cancel) cancel.style.display = '';
+  // Close any confirm overlay first — only one interactive layer at a time
+  _removePcsConfirm();
+  const input = document.getElementById(`pcs-attach-input-${postId}`);
+  if (input) {
+    input.value = '';
+    input.placeholder = target === 'linkedin' ? 'Paste LinkedIn link...' : 'Paste Canva link...';
+    input.focus();
+    input.onkeydown = function(e) {
+      if (e.key === 'Escape') { pcsCloseAttach(postId); }
+    };
   }
 }
 
+// Legacy alias — attach toggle used in _showStageConfirm guard
+function pcsToggleAttach(postId) { _pcsEditLink(postId, _pcsEditingTarget || 'canva'); }
+
 function pcsCloseAttach(postId) {
+  _pcsEditingTarget = null;
   const row = document.getElementById(`pcs-attach-row-${postId}`);
   const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
   if (row) row.style.display = 'none';
@@ -624,14 +631,17 @@ async function pcsSaveAttach(postId) {
   const input = document.getElementById(`pcs-attach-input-${postId}`);
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
-  // Determine which field to save: published posts → linkedinUrl, otherwise → postLink (canva)
-  const post = getPostById(postId);
-  const stageLC = (post?.stage || '').toLowerCase().trim();
-  const isPublished = stageLC === 'published';
-  const field = isPublished ? 'linkedinUrl' : 'postLink';
+  // Save to the field that matches the editing target — never infer from stage
+  const field = _pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
   await updatePost(postId, field, url);
+  // Clear editing state and hide attach row (auto-disappear)
+  _pcsEditingTarget = null;
+  pcsCloseAttach(postId);
   // Re-render design section with updated links
+  const post = getPostById(postId);
   if (post) {
+    const stageLC     = (post.stage || '').toLowerCase().trim();
+    const isPublished = stageLC === 'published';
     const canvaUrl    = post.postLink || '';
     const linkedinUrl = post.linkedinUrl || '';
     const canEdit = ['Admin','Servicing'].includes(currentRole);
