@@ -3570,9 +3570,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── Information grid ── */
 .pcs-grid {
   display: grid;
-  grid-template-columns:
-    minmax(0, var(--pcs-column-width))
-    minmax(0, var(--pcs-column-width));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--pcs-space-4) var(--pcs-column-gap);
   width: var(--pcs-content-width);
   max-width: var(--pcs-content-width);
@@ -3651,7 +3649,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 100%;
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
