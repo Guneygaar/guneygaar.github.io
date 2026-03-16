@@ -3072,7 +3072,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 ═══════════════════════════════════════════════ */
 .pcs-header {
   position: relative;
-  padding: 64px 24px 0;  /* 40px button zone + 24px gap before title */
+  padding: 68px 24px 0;  /* 48px button zone (20px top + 32px icon) + 16px gap */
   text-align: left;
   flex-shrink: 0;
   border-bottom: none;
@@ -3081,16 +3081,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-close-btn,
 .pcs-delete-btn {
   position: absolute;
-  top: 16px;            /* 24px safe spacing from top */
+  top: 20px;
   width: 32px;
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--surface2);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
   color: var(--text2);
-  border: none;
   cursor: pointer;
   transition: background 120ms ease, transform 120ms ease;
 }
@@ -3184,7 +3184,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-top: 16px;
 }
 .pcs-body-section:first-child {
-  margin-top: 20px;    /* metadata → pipeline gap */
+  margin-top: 24px;    /* metadata → pipeline gap */
 }
 .pcs-body-section:empty {
   display: none;
@@ -3215,7 +3215,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 /* Future steps: reduced opacity */
 .prog-step--future .prog-dot  { opacity: 0.3; }
-.prog-step--future .prog-label { opacity: 0.5; }
+.prog-step--future .prog-label { opacity: 0.45; }
 .prog-dot {
   width: 8px;
   height: 8px;
@@ -3229,7 +3229,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 12px;
   height: 12px;
   background: var(--surface);
-  border: 2.5px solid var(--c-blue);
+  border: 2px solid var(--c-blue);
   box-shadow: 0 0 0 3px var(--c-blue-dim);
 }
 .prog-label {
@@ -3241,12 +3241,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
 }
 .prog-step:has(.prog-dot.active) .prog-label { color: var(--c-blue); opacity: 1; font-weight: 700; }
-.prog-step:has(.prog-dot.done) .prog-label   { color: var(--c-green); opacity: 1; }
+.prog-step:has(.prog-dot.done) .prog-label   { color: var(--c-green); opacity: 0.9; }
 .prog-line {
   flex: 1;
   height: 1.5px;
   background: var(--border);
-  margin-top: 3px;       /* center with 8px dot */
+  position: relative;
+  top: 3px;              /* center with 8px dot */
   min-width: 8px;
   opacity: 0.7;
 }
@@ -3487,7 +3488,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
-  opacity: 0.5;
+  opacity: 0.14;
   margin: 24px 0 0;
 }
 
@@ -3609,18 +3610,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-height: 44px;
 }
 .pcs-date-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
+  line-height: 1;
+}
+.pcs-date-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* ── Notes box — subtle container ── */
 .pcs-notes-box {
-  background: var(--surface2);
+  background: rgba(255,255,255,0.04);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 12px;
-  opacity: 0.95;
 }
 .pcs-notes-input {
   border: none;
@@ -3661,6 +3670,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
   color: var(--text2);
   padding: 0;
+  margin-left: 0;
+  text-align: left;
   height: 40px;
   font-family: inherit;
   transition: color 0.12s ease;
