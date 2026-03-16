@@ -3269,6 +3269,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: var(--pcs-space-2);
   flex-shrink: 0;
 }
+.pcs-progress > .prog-step,
+.pcs-progress > .prog-line {
+  align-self: flex-start;
+}
 /* Future steps: reduced opacity */
 .prog-step--future .prog-dot  { opacity: 0.3; }
 .prog-step--future .prog-label { opacity: 0.45; }
@@ -3302,7 +3306,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex: 1;
   height: var(--pcs-pipeline-line);
   background: var(--border);
-  transform: translateY(var(--pcs-pipeline-offset));
+  position: relative;
+  top: calc((var(--pcs-pipeline-dot) - var(--pcs-pipeline-line)) / 2);
   min-width: var(--pcs-space-2);
   opacity: 0.5;
 }
@@ -3571,11 +3576,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     minmax(0, var(--pcs-column-width));
   gap: var(--pcs-space-4) var(--pcs-column-gap);
   width: var(--pcs-content-width);
+  max-width: var(--pcs-content-width);
+  margin-left: 0;
+  margin-right: 0;
 }
 .pcs-field {
   display: flex;
   flex-direction: column;
   gap: var(--pcs-space-1);
+  min-width: 0;
 }
 .pcs-field-label {
   font-size: 12px;
@@ -3595,12 +3604,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 0;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .pcs-field-val:focus { outline: none; color: var(--c-blue); }
 .pcs-field-val:disabled { opacity: 0.45; cursor: default; }
@@ -3625,6 +3636,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: inline-flex;
   align-items: center;
   gap: var(--pcs-space-2);
+  min-width: 0;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -3646,6 +3658,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid var(--border);
   border-radius: var(--pcs-notes-radius);
   padding: var(--pcs-notes-padding);
+  min-height: 40px;
+  max-height: 120px;
+  height: auto;
+  overflow: hidden;
 }
 .pcs-notes-input {
   border: none;
@@ -3655,11 +3671,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: inherit;
   line-height: 1.55;
   min-height: 40px;
-  height: 64px;
+  max-height: 120px;
+  height: auto;
   resize: none;
   width: 100%;
   padding: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 .pcs-notes-input:focus { outline: none; }
 .pcs-notes-input::placeholder { color: var(--text3); }
