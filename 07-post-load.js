@@ -405,18 +405,45 @@ function renderDashboard() {
   }
   const soft_runway = Math.floor(ready * 0.7);
 
-  // ── TEXT PIPELINE ──
-  const pipelineRows = [
-    { label: 'Production', count: production },
-    { label: 'Ready',      count: ready },
-    { label: 'Scheduled',  count: scheduled },
-    { label: 'Published',  count: published },
-  ];
-  const pipelineHtml = pipelineRows.map(r =>
-    `<div class="rw-pipe-row${r.count === 0 ? ' rw-pipe-zero' : ''}">` +
-    `<span class="rw-pipe-label">${r.label}</span>` +
-    `<span class="rw-pipe-count">${r.count}</span></div>`
-  ).join('');
+  // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
+  const { enrichedPosts } = computeDelayMeta(filteredPosts);
+  const delayed = enrichedPosts.filter(p => p.isDelayed);
+
+  // Group delayed posts by type → by owner
+  function buildBlock(label, posts) {
+    if (!posts.length) return '';
+    const byOwner = {};
+    posts.forEach(p => {
+      const name = (p.owner || 'Admin').toUpperCase();
+      if (!byOwner[name]) byOwner[name] = { count: 0, maxH: 0 };
+      byOwner[name].count++;
+      if (p.delayHours > byOwner[name].maxH) byOwner[name].maxH = p.delayHours;
+    });
+    const rows = Object.entries(byOwner)
+      .sort((a, b) => b[1].maxH - a[1].maxH)
+      .slice(0, 3)
+      .map(([name, d]) => {
+        const days = Math.round(d.maxH / 24);
+        const hot = d.maxH > 72 ? ' pb-hot' : '';
+        const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
+        return `<div class="pb-row" onclick="goToTab('library');setTimeout(()=>{const s=document.getElementById('filter-owner');if(s){s.value='${ownerVal}';filterLibrary();}},80)">` +
+          `<span class="pb-name">${name}</span>` +
+          `<span class="pb-count">${d.count}</span>` +
+          `<span class="pb-delay${hot}">${days}d</span></div>`;
+      }).join('');
+    return `<div class="pb-block"><div class="pb-label">${label}</div>${rows}</div>`;
+  }
+
+  const internalDelayed = delayed.filter(p => p.delayType === 'internal');
+  const clientDelayed = delayed.filter(p => p.delayType === 'client');
+  const requestDelayed = delayed.filter(p => p.delayType === 'request');
+
+  // Max 2 blocks, most severe first
+  const blocks = [];
+  if (internalDelayed.length) blocks.push(buildBlock('OVERDUE \u2014 INTERNAL', internalDelayed));
+  if (clientDelayed.length) blocks.push(buildBlock('WAITING \u2014 CLIENT', clientDelayed));
+  if (requestDelayed.length && blocks.length < 2) blocks.push(buildBlock('STALE REQUESTS', requestDelayed));
+  const pressureHtml = blocks.slice(0, 2).join('');
 
   // ── TODAY CHECK (scheduled today OR published today) ──
   const todayKey = dayKey(now);
@@ -427,14 +454,13 @@ function renderDashboard() {
   });
   const todayHasPost = futureDays.has(todayKey) || publishedToday;
 
-  // ── WARNINGS (max 2: primary signal + secondary concern) ──
-  const warnings = [];
-  if (!todayHasPost) warnings.push({ text: 'No post scheduled today' });
-  if (hard_runway <= 2 && warnings.length < 2) warnings.push({ text: hard_runway === 0 ? 'No runway' : 'Low runway' });
-  if (ready === 0 && warnings.length < 2) warnings.push({ text: 'No posts ready' });
-  // First warning = red (rw-warn-1), second = amber (rw-warn-2)
-  const warningsHtml = warnings.map((w, i) =>
-    `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${w.text}</span>`
+  // ── STATE LINE ──
+  const stateParts = [];
+  if (!todayHasPost) stateParts.push('No post today');
+  if (hard_runway <= 2) stateParts.push(hard_runway === 0 ? 'No runway' : 'Low runway');
+  if (ready === 0) stateParts.push('No posts ready');
+  const stateLine = stateParts.slice(0, 2).map((t, i) =>
+    `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${t}</span>`
   ).join('');
 
   // ── RUNWAY STATE COLOR ──
@@ -458,17 +484,16 @@ function renderDashboard() {
     actionText = `${hard_runway}d runway \u2014 maintain pace`;
   }
 
-  // ── RENDER (command center: single vertical flow) ──
+  // ── RENDER (pressure board: single vertical flow) ──
   el.innerHTML = `<div class="rw-cc">
-    <div class="rw-month">${monthLabel}</div>
+    ${stateLine ? `<div class="rw-state">${stateLine}</div>` : `<div class="rw-month">${monthLabel}</div>`}
     <div class="rw-hero">
       <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
       ${nextGapDay ? `<div class="rw-next-gap">${hard_runway >= 3 ? 'Covered till' : 'Next gap:'} ${nextGapDay}</div>` : ''}
       <div class="rw-runway-label">days of runway</div>
       ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} ready</div>` : ''}
     </div>
-    <div class="rw-pipeline">${pipelineHtml}</div>
-    ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
+    ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
 }
