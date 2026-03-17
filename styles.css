@@ -983,6 +983,11 @@ a:hover { text-decoration: underline; }
   padding-left: 10px;
   border-left: 2px solid var(--pcs-border-soft);
 }
+.db-signal.db-signal-muted {
+  opacity: 0.35;
+  font-size: 12px;
+  border-left-style: dashed;
+}
 
 /* Momentum */
 .db-momentum {

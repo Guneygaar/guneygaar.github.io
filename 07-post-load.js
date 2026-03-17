@@ -251,13 +251,35 @@ function updateBadge(id, count) {
 function computeDelayMeta(posts) {
   const now = Date.now();
   const HOUR = 3600000;
+  // Stages that require status_changed_at for delay computation
+  const needsStatusTs = new Set(['in production', 'scheduled', 'awaiting approval']);
+
   const enrichedPosts = posts.map(p => {
     const s = (p.stage || '').toLowerCase().trim();
-    const changedAt = p.status_changed_at || p.statusChangedAt;
+    const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
     const createdAt = p.created_at || p.createdAt;
-    const ref = changedAt ? new Date(changedAt).getTime() : (createdAt ? new Date(createdAt).getTime() : 0);
-    const hours = ref ? (now - ref) / HOUR : 0;
 
+    // If this stage needs status_changed_at and it's missing → unknown
+    if (needsStatusTs.has(s) && !hasStatusTimestamp) {
+      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
+    }
+
+    // Pick the right reference timestamp per delay type
+    // request delay: uses created_at (when the request was made)
+    // internal/client delay: uses status_changed_at (when it entered this stage)
+    let ref = 0;
+    if (s === 'awaiting brand input') {
+      ref = createdAt ? new Date(createdAt).getTime() : 0;
+    } else {
+      const changedAt = p.status_changed_at || p.statusChangedAt;
+      ref = changedAt ? new Date(changedAt).getTime() : 0;
+    }
+
+    if (!ref) {
+      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
+    }
+
+    const hours = (now - ref) / HOUR;
     let delayType = 'none';
     let isDelayed = false;
     let isCritical = false;
@@ -278,11 +300,12 @@ function computeDelayMeta(posts) {
   return {
     enrichedPosts,
     aggregates: {
-      totalDelayed:    delayed.length,
-      internalDelayed: delayed.filter(p => p.delayType === 'internal').length,
-      clientDelayed:   delayed.filter(p => p.delayType === 'client').length,
-      requestDelayed:  delayed.filter(p => p.delayType === 'request').length,
-      criticalCount:   delayed.filter(p => p.isCritical).length,
+      totalDelayed:      delayed.length,
+      internalDelayed:   delayed.filter(p => p.delayType === 'internal').length,
+      clientDelayed:     delayed.filter(p => p.delayType === 'client').length,
+      requestDelayed:    delayed.filter(p => p.delayType === 'request').length,
+      criticalCount:     delayed.filter(p => p.isCritical).length,
+      unknownDelayCount: enrichedPosts.filter(p => p.delayType === 'unknown').length,
     }
   };
 }
@@ -421,9 +444,12 @@ function renderDashboard() {
   if (awaitingApproval > 5 && delay.clientDelayed === 0) signals.push(`Approval queue at ${awaitingApproval}`);
   if (delay.requestDelayed > 0) signals.push(`${delay.requestDelayed} request${delay.requestDelayed > 1 ? 's' : ''} stalled >24h`);
   if (revisions > 3) signals.push(`${revisions} in revision cycle`);
-  const signalsHtml = signals.length
+  let signalsHtml = signals.length
     ? signals.slice(0, 4).map(s => `<div class="db-signal">${s}</div>`).join('')
     : '';
+  if (delay.unknownDelayCount > 0) {
+    signalsHtml += `<div class="db-signal db-signal-muted">Some delay signals unavailable</div>`;
+  }
 
   // ── 4. MOMENTUM ──
   const recentDays = 3;
