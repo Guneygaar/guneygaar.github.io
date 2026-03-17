@@ -461,18 +461,25 @@ function renderDashboard() {
   } else if (hard_runway <= 2) {
     uiState = 'risk'; stateMsg = 'Low runway \u2014 will run out soon'; stateClass = 'st-risk';
   } else {
-    uiState = 'safe'; stateMsg = 'You\u2019re covered'; stateClass = 'st-safe';
+    uiState = 'safe'; stateMsg = 'On track'; stateClass = 'st-safe';
   }
 
-  // ── RUNWAY STATE COLOR ──
-  const runwayState = hard_runway === 0 ? 'rw-runway-crit'
-    : hard_runway <= 2 ? 'rw-runway-warn'
+  // ── RUNWAY DISPLAY (state-consistent) ──
+  // Failure state: display 0 regardless of actual runway — today is the gap
+  const runwayDisplay = uiState === 'failure' ? 0 : hard_runway;
+  const runwayState = runwayDisplay === 0 ? 'rw-runway-crit'
+    : runwayDisplay <= 2 ? 'rw-runway-warn'
     : '';
 
-  // ── CONTEXT LINE ──
-  const contextLine = nextGapDay
-    ? (uiState === 'safe' ? `Covered till ${nextGapDay}` : `Next gap: ${nextGapDay}`)
-    : '';
+  // ── CONTEXT LINE (state-driven, no contradiction) ──
+  let contextLine = '';
+  if (uiState === 'failure') {
+    contextLine = 'Runway ends today';
+  } else if (uiState === 'risk' && nextGapDay) {
+    contextLine = `Next gap: ${nextGapDay}`;
+  } else if (uiState === 'safe' && nextGapDay) {
+    contextLine = `Covered till ${nextGapDay}`;
+  }
 
   // ── ACTION LINE (verb-led, count-based) ──
   let actionText = '';
@@ -493,7 +500,7 @@ function renderDashboard() {
   // ── RENDER (state-driven, single vertical flow) ──
   el.innerHTML = `<div class="rw-cc">
     <div class="rw-state ${stateClass}">${stateMsg}</div>
-    <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
+    <div class="rw-runway-hard ${runwayState}">${runwayDisplay}</div>
     ${contextLine ? `<div class="rw-context">${contextLine}</div>` : ''}
     ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
