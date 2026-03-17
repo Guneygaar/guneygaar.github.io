@@ -3757,8 +3757,11 @@ div.pcs-date-tap {
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  z-index: 1;
 }
 .pcs-date-text {
+  position: relative;
+  z-index: 2;
   display: block;
   min-width: 0;
   overflow: hidden;
