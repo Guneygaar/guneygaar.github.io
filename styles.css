@@ -3721,37 +3721,55 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-width: 0;
   max-width: 100%;
 }
-.pcs-field-val,
-.pcs-field-val-ro,
-.pcs-date-text {
+/* Section 7: Unified value shell — all metadata fields */
+.pcs-value-shell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.pcs-value-shell .pcs-field-val,
+.pcs-value-shell .pcs-field-val-ro {
   display: block;
   line-height: 1.4;
   margin: 0;
   padding: 0;
 }
 
-/* Section 7: Date field — full clickable tap area */
+.pcs-value-shell .pcs-date-text {
+  line-height: 1.4;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pcs-value-shell .pcs-date-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+  width: var(--pcs-space-4);
+  height: var(--pcs-space-4);
+}
+
+/* Date tap — layout delegated to .pcs-value-shell */
 .pcs-date-tap {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  min-height: 44px;
+  display: contents;
   cursor: pointer;
-  overflow: hidden;
-  white-space: nowrap;
   font-size: 15px;
   font-weight: 500;
   color: var(--text);
 }
-div.pcs-date-tap {
-  display: inline-flex;
+label.pcs-date-tap {
+  display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 0;
+  position: relative;
+  width: 100%;
+  cursor: pointer;
 }
 .pcs-date-tap .pcs-date-input-native {
   position: absolute;
@@ -3762,23 +3780,6 @@ div.pcs-date-tap {
   color: transparent;
   background: transparent;
   border: none;
-}
-.pcs-date-text {
-  position: relative;
-  z-index: 2;
-  display: inline-block;
-  line-height: 1.4;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding-right: 0;
-}
-.pcs-date-icon {
-  flex-shrink: 0;
-  opacity: 0.6;
-  width: var(--pcs-space-4);
-  height: var(--pcs-space-4);
 }
 
 /* ── Notes box — subtle container ── */
