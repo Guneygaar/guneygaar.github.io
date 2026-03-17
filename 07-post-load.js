@@ -340,7 +340,7 @@ function renderDashboard() {
 
   // ── COUNTS (from filteredPosts, never allPosts) ──
   const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
-  const approvalPosts   = filteredPosts.filter(p => stg(p) === 'awaiting approval');
+  const readyPosts      = filteredPosts.filter(p => stg(p) === 'ready');
   const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
 
   // Published uses allPosts scoped to current month (display metric only)
@@ -351,7 +351,7 @@ function renderDashboard() {
   });
 
   const production = productionPosts.length;
-  const approval   = approvalPosts.length;
+  const ready      = readyPosts.length;
   const scheduled  = scheduledPosts.length;
   const published  = pubThisMonth.length;
 
@@ -403,69 +403,125 @@ function renderDashboard() {
       nextGapDay = dn[check.getDay()];
     }
   }
-  const soft_runway = Math.floor(approval * 0.7);
+  const soft_runway = Math.floor(ready * 0.7);
 
-  // ── TEXT PIPELINE (replaces graph) ──
-  const pipelineRows = [
-    { label: 'Production', count: production },
-    { label: 'Approval',   count: approval },
-    { label: 'Scheduled',  count: scheduled },
-    { label: 'Published',  count: published },
-  ];
-  const pipelineHtml = pipelineRows.map(r =>
-    `<div class="rw-pipe-row${r.count === 0 ? ' rw-pipe-zero' : ''}">` +
-    `<span class="rw-pipe-label">${r.label}</span>` +
-    `<span class="rw-pipe-count">${r.count}</span></div>`
-  ).join('');
+  // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
+  const { enrichedPosts } = computeDelayMeta(filteredPosts);
+  const delayed = enrichedPosts.filter(p => p.isDelayed);
 
-  // ── TODAY CHECK ──
-  const todayHasPost = futureDays.has(dayKey(now));
-
-  // ── WARNINGS (max 2: primary signal + secondary concern) ──
-  const warnings = [];
-  if (!todayHasPost) warnings.push({ text: 'No post scheduled today' });
-  if (hard_runway === 0 && warnings.length < 2) warnings.push({ text: 'No runway' });
-  else if (hard_runway <= 2 && hard_runway > 0 && warnings.length < 2) warnings.push({ text: 'Low runway \u2014 act now' });
-  if (approval === 0 && warnings.length < 2) warnings.push({ text: 'Approval empty' });
-  // First warning = red (rw-warn-1), second = amber (rw-warn-2)
-  const warningsHtml = warnings.map((w, i) =>
-    `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${w.text}</span>`
-  ).join('');
-
-  // ── RUNWAY STATE COLOR ──
-  const runwayState = hard_runway === 0 ? 'rw-runway-crit'
-    : hard_runway <= 2 ? 'rw-runway-warn'
-    : '';
-
-  // ── ACTION LINE (always a directive, count-based) ──
-  let actionText = '';
-  if (hard_runway === 0) {
-    actionText = 'No content scheduled \u2014 create and send immediately';
-  } else if (hard_runway <= 2 && approval > 0) {
-    actionText = `Push ${approval} approval${approval !== 1 ? 's' : ''} to schedule now`;
-  } else if (hard_runway <= 2) {
-    actionText = 'Create content urgently \u2014 runway expires in ' + hard_runway + 'd';
-  } else if (production > approval) {
-    actionText = `Move ${production} production post${production !== 1 ? 's' : ''} to approval`;
-  } else if (approval > scheduled) {
-    actionText = `Schedule ${approval} approved post${approval !== 1 ? 's' : ''}`;
-  } else {
-    actionText = `${hard_runway}d runway \u2014 maintain current pace`;
+  // Group delayed posts by type → by owner
+  function buildBlock(label, posts) {
+    if (!posts.length) return '';
+    const byOwner = {};
+    posts.forEach(p => {
+      const name = (p.owner || 'Admin').toUpperCase();
+      if (!byOwner[name]) byOwner[name] = { count: 0, maxH: 0 };
+      byOwner[name].count++;
+      if (p.delayHours > byOwner[name].maxH) byOwner[name].maxH = p.delayHours;
+    });
+    const rows = Object.entries(byOwner)
+      .sort((a, b) => b[1].maxH - a[1].maxH)
+      .slice(0, 3)
+      .map(([name, d]) => {
+        const days = Math.round(d.maxH / 24);
+        const hot = d.maxH > 72 ? ' pb-hot' : '';
+        const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
+        return `<div class="pb-row" data-owner="${ownerVal.replace(/"/g, '&quot;')}">` +
+          `<span class="pb-name">${name}</span>` +
+          `<span class="pb-count">${d.count}</span>` +
+          `<span class="pb-delay${hot}">${days}d</span></div>`;
+      }).join('');
+    return `<div class="pb-block"><div class="pb-label">${label}</div>${rows}</div>`;
   }
 
-  // ── RENDER (command center: single vertical flow) ──
+  const internalDelayed = delayed.filter(p => p.delayType === 'internal');
+  const clientDelayed = delayed.filter(p => p.delayType === 'client');
+  const requestDelayed = delayed.filter(p => p.delayType === 'request');
+
+  // Max 2 blocks, most severe first
+  const blocks = [];
+  if (internalDelayed.length) blocks.push(buildBlock('OVERDUE \u2014 INTERNAL', internalDelayed));
+  if (clientDelayed.length) blocks.push(buildBlock('WAITING \u2014 CLIENT', clientDelayed));
+  if (requestDelayed.length && blocks.length < 2) blocks.push(buildBlock('STALE REQUESTS', requestDelayed));
+  const pressureHtml = blocks.slice(0, 2).join('');
+
+  // ── TODAY CHECK (scheduled today OR published today) ──
+  const todayKey = dayKey(now);
+  const publishedToday = allPosts.some(p => {
+    if (stg(p) !== 'published') return false;
+    const d = parseDate(p.targetDate);
+    return d && dayKey(d) === todayKey;
+  });
+  const todayHasPost = futureDays.has(todayKey) || publishedToday;
+
+  // ── STATE (single source, one message only) ──
+  // Sunday (non-posting day): skip failure check — no post expected
+  const todayIsPostingDay = isPostingDay(now);
+  let uiState, stateMsg, stateClass;
+  if (todayIsPostingDay && !todayHasPost) {
+    uiState = 'failure'; stateMsg = 'No post scheduled today'; stateClass = 'st-fail';
+  } else if (hard_runway <= 2) {
+    uiState = 'risk'; stateMsg = 'Low runway \u2014 will run out soon'; stateClass = 'st-risk';
+  } else {
+    uiState = 'safe'; stateMsg = 'On track'; stateClass = 'st-safe';
+  }
+
+  // ── RUNWAY DISPLAY (state-consistent) ──
+  // Failure state: display 0 regardless of actual runway — today is the gap
+  const runwayDisplay = uiState === 'failure' ? 0 : hard_runway;
+  const runwayState = runwayDisplay === 0 ? 'rw-runway-crit'
+    : runwayDisplay <= 2 ? 'rw-runway-warn'
+    : '';
+
+  // ── CONTEXT LINE (state-driven, no contradiction) ──
+  let contextLine = '';
+  if (uiState === 'failure') {
+    contextLine = 'Runway ends today';
+  } else if (uiState === 'risk' && nextGapDay) {
+    contextLine = `Next gap: ${nextGapDay}`;
+  } else if (uiState === 'safe' && nextGapDay) {
+    contextLine = `Covered till ${nextGapDay}`;
+  }
+
+  // ── ACTION LINE (state-aligned, verb-led) ──
+  let actionText = '';
+  if (uiState === 'failure') {
+    // Failure: override — no counts, no runway refs, just immediate fix
+    actionText = 'Schedule today\u2019s post immediately';
+  } else if (hard_runway === 0) {
+    actionText = 'Schedule content now';
+  } else if (hard_runway <= 2 && ready > 0) {
+    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
+  } else if (hard_runway <= 2) {
+    actionText = 'Create content \u2014 runway expires in ' + hard_runway + 'd';
+  } else if (production > ready) {
+    actionText = `Finish ${production} production post${production !== 1 ? 's' : ''}`;
+  } else if (ready > scheduled) {
+    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
+  } else {
+    actionText = 'Maintain pace';
+  }
+
+  // ── RENDER (state-driven, single vertical flow) ──
   el.innerHTML = `<div class="rw-cc">
-    <div class="rw-month">${monthLabel}</div>
-    <div class="rw-hero">
-      <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
-      ${nextGapDay ? `<div class="rw-next-gap">Covered till ${nextGapDay}</div>` : ''}
-      <div class="rw-runway-label">days of runway</div>
-      ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
-    </div>
-    <div class="rw-pipeline">${pipelineHtml}</div>
-    ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
+    <div class="rw-state ${stateClass}">${stateMsg}</div>
+    <div class="rw-runway-hard ${runwayState}">${runwayDisplay}</div>
+    ${contextLine ? `<div class="rw-context">${contextLine}</div>` : ''}
+    ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
+
+  // ── CLICK DELEGATION for pressure block names ──
+  el.querySelectorAll('[data-owner]').forEach(row => {
+    row.addEventListener('click', () => {
+      const owner = row.dataset.owner;
+      goToTab('library');
+      setTimeout(() => {
+        const s = document.getElementById('filter-owner');
+        if (s) { s.value = owner; filterLibrary(); }
+      }, 80);
+    });
+  });
 }
 
 /* Legacy stubs — keep function names callable so renderAll doesn't error */

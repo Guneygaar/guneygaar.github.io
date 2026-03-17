@@ -809,28 +809,27 @@ a:hover { text-decoration: underline; }
 .pcs-dash-surface { padding: 0; }
 
 /* ── Runway Control System ── */
-/* ── Command Center ── */
+/* ── State-driven UI ── */
 .rw-cc {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   padding: 32px var(--pcs-gap-4) var(--pcs-gap-4);
   max-width: 520px;
   margin: 0 auto;
 }
-.rw-month {
-  font-size: 11px;
+
+/* State line — single message */
+.rw-state {
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text3);
-  opacity: 0.45;
+  padding: 4px 0;
 }
-.rw-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.rw-state.st-fail { color: var(--c-red, #ef4444); }
+.rw-state.st-risk { color: var(--c-amber, #f59e0b); }
+.rw-state.st-safe { color: var(--text3); opacity: 0.5; }
+
+/* Runway number */
 .rw-runway-hard {
   font-size: 56px;
   font-weight: 600;
@@ -841,71 +840,70 @@ a:hover { text-decoration: underline; }
 }
 .rw-runway-crit { color: var(--c-red, #ef4444); }
 .rw-runway-warn { color: var(--c-amber, #f59e0b); }
-.rw-next-gap {
+
+/* Context line */
+.rw-context {
   font-size: 13px;
   color: var(--text3);
-  opacity: 0.55;
-  margin-top: 2px;
-}
-.rw-runway-label {
-  font-size: 14px;
-  color: var(--text2);
-  opacity: 0.6;
-}
-.rw-runway-soft {
-  font-size: 13px;
-  color: var(--text3);
-  opacity: 0.45;
-  margin-top: 4px;
+  opacity: 0.5;
+  margin-top: -12px;
 }
 
-/* Text pipeline */
-.rw-pipeline {
+/* Pressure blocks */
+.rw-pressure {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
 }
-.rw-pipe-row {
+.pb-block {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 0;
+  flex-direction: column;
+  gap: 8px;
 }
-.rw-pipe-row.rw-pipe-zero { opacity: 0.35; }
-.rw-pipe-label {
+.pb-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  opacity: 0.5;
+}
+.pb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: opacity 100ms ease;
+}
+.pb-row:active { opacity: 0.7; }
+@media (hover: hover) {
+  .pb-row:hover { opacity: 0.7; }
+}
+.pb-name {
   font-size: 13px;
+  font-weight: 600;
+  background: var(--surface2, rgba(128,128,128,0.08));
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.pb-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  font-variant-numeric: tabular-nums;
+  min-width: 18px;
+}
+.pb-delay {
+  font-size: 12px;
   color: var(--text3);
   opacity: 0.55;
-}
-.rw-pipe-count {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
-
-/* Warnings (max 2: red primary, amber secondary) */
-.rw-warnings {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.rw-warn {
-  font-size: 13px;
-  padding: 3px 10px;
-  border-left: 3px solid var(--pcs-border-soft);
-  color: var(--text3);
-  opacity: 0.7;
-}
-.rw-warn-1 {
+.pb-delay.pb-hot {
   color: var(--c-red, #ef4444);
   opacity: 1;
-  border-left-color: var(--c-red, #ef4444);
-}
-.rw-warn-2 {
-  color: var(--c-amber, #f59e0b);
-  opacity: 0.75;
-  border-left-color: var(--c-amber, #f59e0b);
 }
 
 /* Action line */
