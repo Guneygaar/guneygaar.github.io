@@ -3721,6 +3721,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-width: 0;
   max-width: 100%;
 }
+.pcs-field-val,
+.pcs-field-val-ro,
+.pcs-date-text {
+  display: block;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+}
 
 /* Section 7: Date field — full clickable tap area */
 .pcs-date-tap {
