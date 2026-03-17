@@ -3468,6 +3468,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   justify-content: center;
   gap: var(--pcs-space-3);
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* ── Divider ── */
