@@ -809,28 +809,27 @@ a:hover { text-decoration: underline; }
 .pcs-dash-surface { padding: 0; }
 
 /* ── Runway Control System ── */
-/* ── Command Center ── */
+/* ── State-driven UI ── */
 .rw-cc {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   padding: 32px var(--pcs-gap-4) var(--pcs-gap-4);
   max-width: 520px;
   margin: 0 auto;
 }
-.rw-month {
-  font-size: 11px;
+
+/* State line — single message */
+.rw-state {
+  font-size: 13px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text3);
-  opacity: 0.45;
+  padding: 4px 0;
 }
-.rw-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.rw-state.st-fail { color: var(--c-red, #ef4444); }
+.rw-state.st-risk { color: var(--c-amber, #f59e0b); }
+.rw-state.st-safe { color: var(--text3); opacity: 0.5; }
+
+/* Runway number */
 .rw-runway-hard {
   font-size: 56px;
   font-weight: 600;
@@ -841,46 +840,13 @@ a:hover { text-decoration: underline; }
 }
 .rw-runway-crit { color: var(--c-red, #ef4444); }
 .rw-runway-warn { color: var(--c-amber, #f59e0b); }
-.rw-next-gap {
-  font-size: 13px;
-  color: var(--text3);
-  opacity: 0.55;
-  margin-top: 2px;
-}
-.rw-runway-label {
-  font-size: 14px;
-  color: var(--text2);
-  opacity: 0.6;
-}
-.rw-runway-soft {
-  font-size: 13px;
-  color: var(--text3);
-  opacity: 0.45;
-  margin-top: 4px;
-}
 
-/* State line */
-.rw-state {
-  display: flex;
-  gap: 10px;
-}
-.rw-warn {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-left: 3px solid var(--pcs-border-soft);
+/* Context line */
+.rw-context {
+  font-size: 13px;
   color: var(--text3);
-  opacity: 0.7;
-}
-.rw-warn-1 {
-  color: var(--c-red, #ef4444);
-  opacity: 1;
-  border-left-color: var(--c-red, #ef4444);
-}
-.rw-warn-2 {
-  color: var(--c-amber, #f59e0b);
-  opacity: 0.75;
-  border-left-color: var(--c-amber, #f59e0b);
+  opacity: 0.5;
+  margin-top: -12px;
 }
 
 /* Pressure blocks */

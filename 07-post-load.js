@@ -454,18 +454,24 @@ function renderDashboard() {
   });
   const todayHasPost = futureDays.has(todayKey) || publishedToday;
 
-  // ── STATE LINE ──
-  const stateParts = [];
-  if (!todayHasPost) stateParts.push('No post today');
-  if (hard_runway <= 2) stateParts.push(hard_runway === 0 ? 'No runway' : 'Low runway');
-  if (ready === 0) stateParts.push('No posts ready');
-  const stateLine = stateParts.slice(0, 2).map((t, i) =>
-    `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${t}</span>`
-  ).join('');
+  // ── STATE (single source, one message only) ──
+  let uiState, stateMsg, stateClass;
+  if (!todayHasPost) {
+    uiState = 'failure'; stateMsg = 'No post scheduled today'; stateClass = 'st-fail';
+  } else if (hard_runway <= 2) {
+    uiState = 'risk'; stateMsg = 'Low runway \u2014 will run out soon'; stateClass = 'st-risk';
+  } else {
+    uiState = 'safe'; stateMsg = 'You\u2019re covered'; stateClass = 'st-safe';
+  }
 
   // ── RUNWAY STATE COLOR ──
   const runwayState = hard_runway === 0 ? 'rw-runway-crit'
     : hard_runway <= 2 ? 'rw-runway-warn'
+    : '';
+
+  // ── CONTEXT LINE ──
+  const contextLine = nextGapDay
+    ? (uiState === 'safe' ? `Covered till ${nextGapDay}` : `Next gap: ${nextGapDay}`)
     : '';
 
   // ── ACTION LINE (verb-led, count-based) ──
@@ -484,15 +490,11 @@ function renderDashboard() {
     actionText = `${hard_runway}d runway \u2014 maintain pace`;
   }
 
-  // ── RENDER (pressure board: single vertical flow) ──
+  // ── RENDER (state-driven, single vertical flow) ──
   el.innerHTML = `<div class="rw-cc">
-    ${stateLine ? `<div class="rw-state">${stateLine}</div>` : `<div class="rw-month">${monthLabel}</div>`}
-    <div class="rw-hero">
-      <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
-      ${nextGapDay ? `<div class="rw-next-gap">${hard_runway >= 3 ? 'Covered till' : 'Next gap:'} ${nextGapDay}</div>` : ''}
-      <div class="rw-runway-label">days of runway</div>
-      ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} ready</div>` : ''}
-    </div>
+    <div class="rw-state ${stateClass}">${stateMsg}</div>
+    <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
+    ${contextLine ? `<div class="rw-context">${contextLine}</div>` : ''}
     ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
