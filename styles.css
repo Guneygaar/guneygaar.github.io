@@ -3243,10 +3243,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: var(--pcs-space-4);
   width: var(--pcs-modal-width);
   max-width: var(--pcs-modal-width);
-  height: 70vh;
-  height: min(70dvh, 680px);
-  max-height: 70vh;
-  max-height: min(70dvh, 680px);
+  height: min(70vh, 680px);
+  max-height: 680px;
   padding-bottom: calc(var(--pcs-content-padding) + env(safe-area-inset-bottom));
   color: var(--text-primary);
   background: var(--surface);
@@ -3270,16 +3268,26 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   #pcs-overlay { align-items: flex-end; }
   #pcs-screen {
     max-width: 100%;
-    height: 88vh;
-    height: min(88dvh, 680px);
-    max-height: 88vh;
-    max-height: min(88dvh, 680px);
+    height: min(88vh, 680px);
+    max-height: 680px;
     border-radius: 20px 20px 0 0;
     transform: translateY(100%);
     opacity: 1;
   }
   #pcs-overlay.open #pcs-screen {
     transform: translateY(0);
+  }
+}
+
+/* Progressive enhancement — stable visible viewport (svh) */
+@supports (height: 100svh) {
+  #pcs-screen {
+    height: min(70svh, 680px);
+  }
+  @media (max-width: 540px) {
+    #pcs-screen {
+      height: min(88svh, 680px);
+    }
   }
 }
 
