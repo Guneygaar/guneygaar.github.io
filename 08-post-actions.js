@@ -663,6 +663,22 @@ async function updatePost(postId, field, value) {
   const oldValue = post ? post[field] : undefined;
   if (post) post[field] = value;
 
+  // Sync subtitle immediately after optimistic update
+  if (post && ['contentPillar', 'owner', 'targetDate', 'publishedDate'].includes(field)) {
+    const elSub = document.getElementById('pcs-subtitle');
+    if (elSub) {
+      const stLC = (post.stage || '').toLowerCase().trim();
+      const isPub = stLC === 'published';
+      const pLabel = post.contentPillar
+        ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
+        : '—';
+      const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
+      const dDisp = formatDate(dVal) || '—';
+      const parts = [pLabel, post.owner || 'Admin', dDisp];
+      elSub.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
+    }
+  }
+
   const dbField = {
     title:         'title',
     stage:         'stage',
