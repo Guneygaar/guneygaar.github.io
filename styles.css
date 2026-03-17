@@ -939,17 +939,60 @@ a:hover { text-decoration: underline; }
   line-height: 1.4;
 }
 
-/* Detail toggle */
-.pcs-dash-detail-toggle {
+/* Intelligence rows */
+.pcs-intel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--pcs-gap-2) var(--pcs-gap-3);
+}
+.pcs-intel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.4;
+}
+.pcs-intel-val {
+  font-weight: 600;
+  color: var(--text1);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Command action links */
+.pcs-action-link {
+  display: block;
   font-size: 13px;
   font-weight: 500;
   color: var(--accent);
-  padding: var(--pcs-gap-2) var(--pcs-gap-3);
+  padding: 6px var(--pcs-gap-3);
   cursor: pointer;
   transition: opacity 120ms ease;
 }
-.pcs-dash-detail-toggle:active { opacity: 0.7; }
-.pcs-dash-detail-toggle.pcs-detail-open { opacity: 0.6; }
+.pcs-action-link:active { opacity: 0.7; }
+@media (hover: hover) {
+  .pcs-action-link:hover { opacity: 0.8; }
+}
+
+/* Enter Flow CTA */
+.pcs-enter-flow {
+  text-align: center;
+  padding: var(--pcs-gap-4) var(--pcs-gap-3);
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.pcs-enter-flow:active { opacity: 0.7; }
+.pcs-enter-flow-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.pcs-enter-flow-sub {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 4px;
+}
 
 /* ═══════════════════════════════════════════════
    HERO CARD — Zone 1 (legacy, hidden sections)

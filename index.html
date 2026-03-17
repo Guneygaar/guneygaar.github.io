@@ -132,18 +132,23 @@
     <div class="dash-body pcs-dash-flow">
       <!-- Hero -->
       <div id="pcs-dash-hero"></div>
+      <!-- System Intelligence -->
+      <div id="pcs-dash-intel"></div>
+      <!-- Approval Intelligence -->
+      <div id="pcs-dash-approval-intel"></div>
       <!-- Divider -->
       <div class="pcs-dash-divider"></div>
       <!-- Pipeline flow -->
       <div id="pcs-dash-pipeline"></div>
       <!-- Blockers -->
       <div id="pcs-dash-blockers"></div>
-      <!-- Collapsible detail layer -->
-      <div id="pcs-dash-detail-toggle" class="pcs-dash-detail-toggle" onclick="toggleDashDetail()">View detailed tasks &rarr;</div>
-      <div id="pcs-dash-detail" class="pcs-dash-detail" style="display:none">
-        <div id="task-stage-chips"></div>
-        <div id="tasks-container"></div>
-      </div>
+      <!-- Command Actions -->
+      <div id="pcs-dash-actions"></div>
+      <!-- Enter Flow -->
+      <div id="pcs-dash-enter-flow"></div>
+      <!-- Hidden: stage chips + task list (rendered by existing logic, kept for JS compat) -->
+      <div id="task-stage-chips" style="display:none"></div>
+      <div id="tasks-container" style="display:none"></div>
       <!-- Hidden stubs for JS compat -->
       <div id="admin-insight-section" style="display:none"></div>
       <div id="task-banner-section"   style="display:none"></div>
