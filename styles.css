@@ -3379,7 +3379,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-subtitle span { white-space: nowrap; }
 .pcs-subtitle-sep {
   margin: 0;
-  opacity: 0.5;
+  color: var(--text-tertiary);
 }
 
 /* ── Scroll area ── */
@@ -3439,21 +3439,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pipeline-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text3);
+  color: var(--text-tertiary);
   letter-spacing: 0.02em;
   white-space: nowrap;
   text-align: center;
-  opacity: 0.6;
   margin-top: 4px;
 }
 .pipeline-stage:has(.pipeline-dot.active) .pipeline-label {
   color: var(--c-blue);
-  opacity: 1;
   font-weight: 700;
 }
 .pipeline-stage:has(.pipeline-dot.completed) .pipeline-label {
   color: var(--c-green);
-  opacity: 0.9;
 }
 
 /* ── Design section layout ── */
@@ -3478,7 +3475,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: none;
   border-top: 1px solid var(--border);
   margin: var(--pcs-space-4) 0;
-  opacity: 0.08;
+  opacity: 0.16;
 }
 
 /* Action chip system */
@@ -3528,7 +3525,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: transparent;
   color: #7D2AE8;
   width: 80px;
-  opacity: 0.90;
 }
 [data-theme="dark"] .pcs-action-chip--canva { color: #b68aff; background: rgba(125,42,232,0.18); }
 .pcs-action-chip--canva:hover { filter: brightness(1.1); }
@@ -3653,7 +3649,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
-  opacity: 0.28;
+  opacity: 0.4;
   margin: 0;
 }
 
@@ -3835,7 +3831,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-value-shell svg {
   position: relative;
   top: 1px;
-  opacity: 0.6;
 }
 
 /* Date tap — inside .pcs-value-shell */
