@@ -3221,7 +3221,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-height: 70vh;
   color: var(--text-primary);
   background: var(--surface);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.25);
   overflow: hidden;
@@ -3275,9 +3275,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-tertiary);
   cursor: pointer;
   transition: background 120ms ease, transform 120ms ease;
 }
@@ -3468,7 +3468,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: inherit;
   border: 1px solid var(--border2);
   background: var(--surface2);
-  color: var(--text);
+  color: var(--text-primary);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
@@ -3490,7 +3490,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-action-chip--info {
   background: transparent;
   border-color: var(--border);
-  color: var(--text3);
+  color: var(--text-tertiary);
   cursor: default;
   font-weight: 500;
 }
@@ -3520,7 +3520,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Secondary chip (+ Design) */
 .pcs-action-chip--secondary {
   background: var(--surface2);
-  color: var(--text2);
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -3528,8 +3528,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-action-text {
   background: none;
   border: none;
-  color: var(--text);
-  opacity: 0.78;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
@@ -3537,9 +3536,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: var(--pcs-space-1) 0;
   border-radius: 0;
   text-decoration: none;
-  transition: opacity 120ms ease;
+  transition: color 120ms ease;
 }
-.pcs-action-text:hover { opacity: 0.95; }
+.pcs-action-text:hover { color: var(--text-primary); }
 .pcs-action-text:active { transform: scale(0.97); }
 
 /* Legacy action controls — matched to 36px chip height */
@@ -3562,7 +3561,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-next-action-btn:active { transform: scale(0.97); }
 .pcs-next-action-info {
   font-size: 13px;
-  color: var(--text3);
+  color: var(--text-tertiary);
   padding: var(--pcs-space-1) 0;
   text-align: center;
 }
@@ -3582,7 +3581,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: var(--pcs-space-2);
   padding: 0 var(--pcs-space-3);
   font-size: 13px;
-  color: var(--text);
+  color: var(--text-primary);
   font-family: inherit;
   min-width: 0;
 }
@@ -3607,7 +3606,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-attach-cancel {
   background: none;
   border: none;
-  color: var(--text3);
+  color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -3615,7 +3614,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: var(--pcs-space-1) var(--pcs-space-2);
   transition: color 120ms ease;
 }
-.pcs-attach-cancel:hover { color: var(--text2); }
+.pcs-attach-cancel:hover { color: var(--text-secondary); }
 
 /* ── Fields container — vertical rhythm for grid + notes ── */
 #pcs-fields {
@@ -3643,7 +3642,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height: var(--pcs-button-height);
   padding: 0 var(--pcs-space-4);
   background: var(--surface2);
-  color: var(--text);
+  color: var(--text-primary);
   font-size: 13px;
   font-weight: 600;
   border-radius: var(--pcs-button-radius);
@@ -3849,7 +3848,7 @@ label.pcs-date-tap {
 
 /* ── Notes box — subtle container ── */
 .pcs-notes-box {
-  background: rgba(255,255,255,0.04);
+  background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: var(--pcs-notes-radius);
   padding: var(--pcs-notes-padding);
@@ -3861,7 +3860,7 @@ label.pcs-date-tap {
 .pcs-notes-input {
   border: none;
   background: transparent;
-  color: var(--text);
+  color: var(--text-primary);
   font-size: 15px;
   font-family: inherit;
   line-height: 1.55;
@@ -3874,7 +3873,7 @@ label.pcs-date-tap {
   overflow: auto;
 }
 .pcs-notes-input:focus { outline: none; }
-.pcs-notes-input::placeholder { color: var(--text3); }
+.pcs-notes-input::placeholder { color: var(--text-tertiary); }
 .pcs-notes-ro {
   font-size: 15px;
   color: var(--text2);
@@ -3895,7 +3894,7 @@ label.pcs-date-tap {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: var(--text2);
+  color: var(--text-secondary);
   padding: var(--pcs-space-2) 0 0;
   margin-left: 0;
   text-align: left;
@@ -3903,7 +3902,7 @@ label.pcs-date-tap {
   font-family: inherit;
   transition: color 0.12s ease;
 }
-.pcs-activity-toggle:hover { color: var(--text); }
+.pcs-activity-toggle:hover { color: var(--text-primary); }
 .pcs-activity-chevron {
   transition: transform 0.2s ease;
 }
@@ -3926,11 +3925,11 @@ label.pcs-date-tap {
   font-size: 12px;
 }
 .pcs-activity-row:last-child { border-bottom: none; }
-.pcs-activity-who { font-weight: 600; color: var(--text2); flex-shrink: 0; }
-.pcs-activity-what { flex: 1; color: var(--text3); }
-.pcs-activity-when { font-size: 11px; color: var(--text3); flex-shrink: 0; white-space: nowrap; }
+.pcs-activity-who { font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
+.pcs-activity-what { flex: 1; color: var(--text-tertiary); }
+.pcs-activity-when { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; white-space: nowrap; }
 .pcs-activity-loading,
-.pcs-activity-empty { font-size: 12px; color: var(--text3); padding: var(--pcs-space-1) 0; }
+.pcs-activity-empty { font-size: 12px; color: var(--text-tertiary); padding: var(--pcs-space-1) 0; }
 
 /* ── Delete confirm — theme-aware ── */
 .pcs-confirm-overlay {
