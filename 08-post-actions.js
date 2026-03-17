@@ -753,7 +753,7 @@ function _buildInfoGrid(post, canEdit, id) {
   const cell = (label, content) =>
     `<div class="pcs-field">
        <div class="pcs-field-label">${label}</div>
-       ${content}
+       <div class="pcs-value-shell">${content}</div>
      </div>`;
 
   return `
