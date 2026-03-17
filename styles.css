@@ -3243,7 +3243,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: var(--pcs-space-4);
   width: var(--pcs-modal-width);
   max-width: var(--pcs-modal-width);
-  height: auto;
+  height: 70vh;
+  height: min(70dvh, 680px);
   max-height: 70vh;
   max-height: min(70dvh, 680px);
   padding-bottom: calc(var(--pcs-content-padding) + env(safe-area-inset-bottom));
@@ -3269,6 +3270,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   #pcs-overlay { align-items: flex-end; }
   #pcs-screen {
     max-width: 100%;
+    height: 88vh;
+    height: min(88dvh, 680px);
     max-height: 88vh;
     max-height: min(88dvh, 680px);
     border-radius: 20px 20px 0 0;
