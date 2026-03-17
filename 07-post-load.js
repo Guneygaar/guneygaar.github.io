@@ -319,17 +319,24 @@ function renderDashboard() {
   // ── UI LABEL (display only, does NOT affect logic) ──
   const now = new Date();
   now.setHours(0, 0, 0, 0);
+  const DAY = 86400000;
   const monthLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * DAY);
 
-  // ── PIPELINE FILTER (no month restriction) ──
-  // Include all active posts, exclude archived/stale states only
-  const EXCLUDED = new Set(['published', 'archive', 'parked']);
+  // ── PIPELINE FILTER ──
+  // Active stages only, AND touched within last 14 days
   const ACTIVE_STAGES = new Set([
     'awaiting brand input', 'in production', 'revisions needed',
     'ready', 'awaiting approval', 'scheduled'
   ]);
 
-  const filteredPosts = allPosts.filter(p => ACTIVE_STAGES.has(stg(p)));
+  const filteredPosts = allPosts.filter(p => {
+    if (!ACTIVE_STAGES.has(stg(p))) return false;
+    const updated = p.updated_at || p.updatedAt;
+    const created = p.created_at || p.createdAt;
+    const ts = updated ? new Date(updated) : (created ? new Date(created) : null);
+    return ts && ts >= fourteenDaysAgo;
+  });
 
   // ── COUNTS (from filteredPosts, never allPosts) ──
   const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
@@ -348,8 +355,8 @@ function renderDashboard() {
   const scheduled  = scheduledPosts.length;
   const published  = pubThisMonth.length;
 
-  // ── RUNWAY (consecutive days from today) ──
-  // Get ALL future scheduled dates (no month restriction)
+  // ── RUNWAY (consecutive days, smart start) ──
+  // Collect ALL future scheduled dates (no month restriction)
   const futureDays = new Set();
   allPosts.filter(p => stg(p) === 'scheduled').forEach(p => {
     const d = parseDate(p.targetDate);
@@ -357,10 +364,22 @@ function renderDashboard() {
       futureDays.add(d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
     }
   });
-  // Sort and count consecutive days starting from today
+
+  // Determine start: today if it has content, else earliest future date
   let hard_runway = 0;
   if (futureDays.size > 0) {
-    const check = new Date(now);
+    const todayKey = now.getFullYear() + '-' + String(now.getMonth()).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+    let start;
+    if (futureDays.has(todayKey)) {
+      start = new Date(now);
+    } else {
+      // Find earliest future date
+      const sorted = Array.from(futureDays).sort();
+      const parts = sorted[0].split('-');
+      start = new Date(Number(parts[0]), Number(parts[1]), Number(parts[2]));
+    }
+    // Count consecutive days from start
+    const check = new Date(start);
     while (true) {
       const key = check.getFullYear() + '-' + String(check.getMonth()).padStart(2,'0') + '-' + String(check.getDate()).padStart(2,'0');
       if (!futureDays.has(key)) break;
