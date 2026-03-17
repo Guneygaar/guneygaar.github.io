@@ -399,8 +399,8 @@ function renderDashboard() {
     }
     // Next gap: first posting day with no content
     if (hard_runway > 0) {
-      const dn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      nextGapDay = dn[check.getDay()] + ' ' + check.getDate() + '/' + (check.getMonth() + 1);
+      const dn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      nextGapDay = dn[check.getDay()];
     }
   }
   const soft_runway = Math.floor(approval * 0.7);
@@ -421,15 +421,15 @@ function renderDashboard() {
   // ── TODAY CHECK ──
   const todayHasPost = futureDays.has(dayKey(now));
 
-  // ── WARNINGS (max 3, ordered: today → runway → pipeline) ──
+  // ── WARNINGS (max 2: primary signal + secondary concern) ──
   const warnings = [];
-  if (!todayHasPost) warnings.push({ text: 'No post scheduled today', level: 'crit' });
-  if (hard_runway === 0 && warnings.length < 3) warnings.push({ text: 'No runway', level: 'crit' });
-  else if (hard_runway <= 2 && hard_runway > 0 && warnings.length < 3) warnings.push({ text: 'Low runway \u2014 act now', level: 'crit' });
-  if (approval === 0 && warnings.length < 3) warnings.push({ text: 'Approval empty', level: 'risk' });
-  if (production === 0 && warnings.length < 3) warnings.push({ text: 'Production empty', level: 'risk' });
-  const warningsHtml = warnings.map(w =>
-    `<span class="rw-warn rw-warn-${w.level}">${w.text}</span>`
+  if (!todayHasPost) warnings.push({ text: 'No post scheduled today' });
+  if (hard_runway === 0 && warnings.length < 2) warnings.push({ text: 'No runway' });
+  else if (hard_runway <= 2 && hard_runway > 0 && warnings.length < 2) warnings.push({ text: 'Low runway \u2014 act now' });
+  if (approval === 0 && warnings.length < 2) warnings.push({ text: 'Approval empty' });
+  // First warning = red (rw-warn-1), second = amber (rw-warn-2)
+  const warningsHtml = warnings.map((w, i) =>
+    `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${w.text}</span>`
   ).join('');
 
   // ── RUNWAY STATE COLOR ──
@@ -458,7 +458,7 @@ function renderDashboard() {
     <div class="rw-month">${monthLabel}</div>
     <div class="rw-hero">
       <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
-      ${nextGapDay ? `<div class="rw-next-gap">Next gap: ${nextGapDay}</div>` : ''}
+      ${nextGapDay ? `<div class="rw-next-gap">Covered till ${nextGapDay}</div>` : ''}
       <div class="rw-runway-label">days of runway</div>
       ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
     </div>
