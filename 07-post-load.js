@@ -943,6 +943,18 @@ function _calNav(delta) {
   filterLibrary();
 }
 
+function normalizeOwner(owner) {
+  if (!owner) return 'Admin';
+  const map = { 'pranav': 'Pranav', 'admin': 'Admin', 'chitra': 'Chitra' };
+  return map[owner.toLowerCase().trim()] || 'Admin';
+}
+
+function normalizePillar(pillar) {
+  if (!pillar) return 'General';
+  const key = pillar.toLowerCase().trim();
+  return PILLAR_DISPLAY[key] || 'General';
+}
+
 function groupPostsByDay(posts, month, year) {
   const map = {};
   posts.forEach(p => {
@@ -1006,9 +1018,9 @@ function renderLibraryCalendar(posts) {
     const dayPosts = dayMap[key] || [];
 
     const first = dayPosts[0];
-    const pillarKey = first ? (first.contentPillar || '').toLowerCase() : '';
+    const pillarKey = first ? (first.contentPillar || '').toLowerCase().trim() : '';
     const pillar = first
-      ? (PILLAR_SHORT[pillarKey] || PILLAR_DISPLAY[pillarKey] || first.contentPillar || 'General')
+      ? (PILLAR_SHORT[pillarKey] || normalizePillar(first.contentPillar))
       : '';
     const postId = first ? getPostId(first) : '';
     const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;

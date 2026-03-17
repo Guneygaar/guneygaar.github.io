@@ -2555,8 +2555,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   gap: 4px;
   border-radius: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pcs-cal-cell-empty {
   background: transparent;
@@ -2566,11 +2567,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 .pcs-cal-cell.pcs-cal-has-post:active {
-  background: var(--surface2);
+  transform: scale(0.98);
+  background: var(--surface3);
+}
+.pcs-cal-cell.pcs-cal-today {
+  border-color: var(--accent);
 }
 .pcs-cal-cell.pcs-cal-today .pcs-cal-date {
   color: var(--accent);
   font-weight: 700;
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .pcs-cal-cell.pcs-cal-has-post:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+  }
 }
 
 .pcs-cal-date {
