@@ -933,54 +933,104 @@ function switchLibraryView(btn) {
 }
 
 
+let _calMonth = new Date().getMonth();
+let _calYear  = new Date().getFullYear();
+
+function _calNav(delta) {
+  _calMonth += delta;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  filterLibrary();
+}
+
+function groupPostsByDay(posts, month, year) {
+  const map = {};
+  posts.forEach(p => {
+    const d = parseDate(p.targetDate);
+    if (!d || d.getMonth() !== month || d.getFullYear() !== year) return;
+    const s = (p.stage || '').toLowerCase().trim();
+    if (s !== 'published' && s !== 'scheduled') return;
+    const key = p.targetDate;
+    if (!map[key]) map[key] = [];
+    map[key].push(p);
+  });
+  return map;
+}
+
 function renderLibraryCalendar(posts) {
   const container = document.getElementById('library-calendar-view');
   if (!container) return;
   posts = posts || allPosts;
-  const withDates  = posts.filter(p => p.targetDate).sort((a,b) => (parseDate(a.targetDate) || 0) - (parseDate(b.targetDate) || 0));
-  const noDates    = posts.filter(p => !p.targetDate);
-  const months     = {};
-  const today      = new Date(); today.setHours(0,0,0,0);
-  withDates.forEach(p => {
-    const d   = parseDate(p.targetDate);
-    const key = formatMonthYearLong(p.targetDate);
-    if (!months[key]) months[key] = [];
-    months[key].push(p);
+
+  const dayMap = groupPostsByDay(posts, _calMonth, _calYear);
+  const monthLabel = MONTHS_LONG[_calMonth] + ' ' + _calYear;
+
+  // Grid: first day of month and total days
+  const firstDay = new Date(_calYear, _calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+  const totalCells = firstDay + daysInMonth <= 35 ? 35 : 42;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Header
+  let html = `<div class="pcs-cal-header">
+    <span class="pcs-cal-title">${esc(monthLabel)}</span>
+    <span class="pcs-cal-nav">
+      <button class="pcs-cal-nav-btn" onclick="_calNav(-1)">&lsaquo;</button>
+      <button class="pcs-cal-nav-btn" onclick="_calNav(1)">&rsaquo;</button>
+    </span>
+  </div>`;
+
+  // Day-of-week labels
+  html += `<div class="pcs-cal-grid pcs-cal-dow">`;
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
+    html += `<div class="pcs-cal-dow-label">${d}</div>`;
   });
-  let html = Object.entries(months).map(([month, posts]) => {
-    const items = posts.map(p => {
-      const id  = getPostId(p);
-      const d   = parseDate(p.targetDate);
-      const isToday = d && d.toDateString() === today.toDateString();
-      const dayStr  = formatDateShort(p.targetDate);
-      const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
-        <span class="calendar-date-badge ${isToday?'today-badge':''}">${dayStr}</span>
-        <span class="calendar-item-title">${esc(getTitle(p))}</span>
-        <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
-      </div>`;
-    }).join('');
-    return `<div class="calendar-month"><div class="calendar-month-head">${esc(month)}</div><div class="calendar-week-strip">${items}</div></div>`;
-  }).join('');
-  if (noDates.length) {
-    const items = noDates.map(p => {
-      const id = getPostId(p);
-      const { hex } = stageStyle(p.stage);
-      return `<div class="calendar-item" data-post-id="${esc(id)}" data-list="library">
-        <span class="calendar-date-badge" style="color:var(--text3)">-</span>
-        <span class="calendar-item-title">${esc(getTitle(p))}</span>
-        <span style="width:8px;height:8px;border-radius:50%;background:${hex};flex-shrink:0"></span>
-      </div>`;
-    }).join('');
-    html += `<div class="calendar-month"><div class="calendar-month-head">No Date Set</div><div class="calendar-week-strip">${items}</div></div>`;
+  html += `</div>`;
+
+  // Cells
+  html += `<div class="pcs-cal-grid">`;
+  for (let i = 0; i < totalCells; i++) {
+    const dayNum = i - firstDay + 1;
+    if (i < firstDay || dayNum > daysInMonth) {
+      html += `<div class="pcs-cal-cell pcs-cal-cell-empty"></div>`;
+      continue;
+    }
+
+    const dd = String(dayNum).padStart(2, '0');
+    const mm = String(_calMonth + 1).padStart(2, '0');
+    const key = `${_calYear}-${mm}-${dd}`;
+    const cellDate = new Date(_calYear, _calMonth, dayNum);
+    const isToday = cellDate.getTime() === today.getTime();
+    const dayPosts = dayMap[key] || [];
+
+    const first = dayPosts[0];
+    const pillar = first
+      ? ((PILLAR_DISPLAY && PILLAR_DISPLAY[(first.contentPillar || '').toLowerCase()]) || first.contentPillar || 'General')
+      : '';
+    const postId = first ? getPostId(first) : '';
+    const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;
+
+    const clickAttr = postId ? ` data-post-id="${esc(postId)}" data-list="library"` : '';
+    const todayClass = isToday ? ' pcs-cal-today' : '';
+    const hasPost = dayPosts.length ? ' pcs-cal-has-post' : '';
+
+    html += `<div class="pcs-cal-cell${todayClass}${hasPost}"${clickAttr}>`;
+    html += `<div class="pcs-cal-date">${dayNum}</div>`;
+    if (pillar) html += `<div class="pcs-cal-pill">${esc(pillar)}</div>`;
+    if (extra)  html += `<div class="pcs-cal-more">+${extra}</div>`;
+    html += `</div>`;
   }
-  container.innerHTML = html || `<div class="empty-state"><div class="empty-icon">[date]</div><p>No posts with dates yet.</p></div>`;
+  html += `</div>`;
+
+  container.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════
 // Event delegation for card clicks
 // Single document-level listener — survives ALL innerHTML replacements.
-// Covers: .row-tile, .calendar-item, .upc-list-row (any element with data-post-id)
+// Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ═══════════════════════════════════════════════
 (document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
   var card = e.target.closest('[data-post-id]');
