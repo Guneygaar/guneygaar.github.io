@@ -3732,6 +3732,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Section 7: Date field — full clickable tap area */
 .pcs-date-tap {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -3754,10 +3755,10 @@ div.pcs-date-tap {
 }
 .pcs-date-tap .pcs-date-input-native {
   position: absolute;
-  width: 1px;
-  height: 1px;
   opacity: 0;
-  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
   color: transparent;
   background: transparent;
   border: none;
