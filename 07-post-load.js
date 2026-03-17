@@ -481,9 +481,12 @@ function renderDashboard() {
     contextLine = `Covered till ${nextGapDay}`;
   }
 
-  // ── ACTION LINE (verb-led, count-based) ──
+  // ── ACTION LINE (state-aligned, verb-led) ──
   let actionText = '';
-  if (hard_runway === 0) {
+  if (uiState === 'failure') {
+    // Failure: override — no counts, no runway refs, just immediate fix
+    actionText = 'Schedule today\u2019s post immediately';
+  } else if (hard_runway === 0) {
     actionText = 'Schedule content now';
   } else if (hard_runway <= 2 && ready > 0) {
     actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
