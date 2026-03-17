@@ -2822,30 +2822,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .row-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 8px 16px var(--sp-4);
 }
 
 .pcs-library-month {
-  display: grid;
-  grid-template-columns: 64px 1fr auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   font-size: 12px;
   letter-spacing: 0.08em;
   opacity: 0.65;
   margin-top: var(--pcs-space-5);
-  margin-bottom: var(--pcs-space-3);
-  padding: 0 16px var(--pcs-space-2);
+  margin-bottom: 8px;
+  padding: 0 32px var(--pcs-space-2) 32px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.pcs-month-label {
-  grid-column: 1;
-  justify-self: start;
-}
-.pcs-month-count {
-  grid-column: 3;
-  justify-self: end;
-}
+.pcs-month-label {}
+.pcs-month-count {}
 
 .row-tile {
   display: grid;
@@ -2869,9 +2863,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 11px;
   font-weight: 700;
   color: var(--text3);
+  opacity: 0.92;
   width: 64px;
   min-width: 64px;
   text-align: left;
+  font-variant-numeric: tabular-nums;
 }
 .row-date.today { color: var(--accent); }
 
