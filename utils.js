@@ -22,6 +22,39 @@ const MONTHS = [
   'Jan','Feb','Mar','Apr','May','Jun',
   'Jul','Aug','Sep','Oct','Nov','Dec'
 ];
+const MONTHS_LONG = [
+  'January','February','March','April','May','June',
+  'July','August','September','October','November','December'
+];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// "D Mon" — no year
+function formatDateShort(raw) {
+  const d = parseDate(raw);
+  if (!d) return '';
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+// "Mon YYYY" — for group headers
+function formatMonthYear(raw) {
+  const d = parseDate(raw);
+  if (!d) return 'No Date';
+  return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "Month YYYY" — for calendar headers
+function formatMonthYearLong(raw) {
+  const d = parseDate(raw);
+  if (!d) return 'No Date';
+  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// "DAY D Mon" uppercased — for schedule date headers
+function formatWeekdayDateShort(raw) {
+  const d = parseDate(raw);
+  if (!d) return 'NO DATE';
+  return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`.toUpperCase();
+}
 
 function formatDate(raw) {
   const d = parseDate(raw);
