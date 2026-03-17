@@ -790,7 +790,6 @@ function filterLibrary() {
 
   if (_currentLibraryView === 'list')          renderLibraryRows(filtered);
   else if (_currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
-  else if (_currentLibraryView === 'insights') renderLibraryInsights(filtered);
 }
 
 function renderLibrary() {
@@ -929,75 +928,10 @@ function switchLibraryView(btn) {
 
   document.getElementById('library-list-view').style.display      = _currentLibraryView === 'list'     ? '' : 'none';
   document.getElementById('library-calendar-view').style.display  = _currentLibraryView === 'calendar' ? '' : 'none';
-  document.getElementById('library-insights-view').style.display  = _currentLibraryView === 'insights' ? '' : 'none';
-
-  // Hide filter row in insights view
-  const filterRow = document.getElementById('lib-filter-row');
-  if (filterRow) filterRow.style.display = _currentLibraryView === 'insights' ? 'none' : '';
 
   filterLibrary();
 }
 
-// -- Insights Hero ---------------
-
-const INSIGHTS_TARGET = 35;
-
-function getInsightsHero(posts) {
-  const now = new Date();
-  const curMonth = now.getMonth();
-  const curYear  = now.getFullYear();
-
-  const filtered = posts.filter(p => {
-    const d = parseDate(p.targetDate);
-    return d && d.getMonth() === curMonth && d.getFullYear() === curYear;
-  });
-
-  const prepared = filtered.filter(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    return s !== 'parked' && s !== 'rejected';
-  }).length;
-
-  const approved = filtered.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'approved'
-  ).length;
-
-  const awaitingApproval = filtered.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
-  ).length;
-
-  return { prepared, approved, awaitingApproval, target: INSIGHTS_TARGET };
-}
-
-function renderLibraryInsights(posts) {
-  const container = document.getElementById('library-insights-view');
-  if (!container) return;
-  posts = posts || allPosts;
-
-  const hero = getInsightsHero(posts);
-  const progress = hero.target ? hero.prepared / hero.target : 0;
-  const pct = Math.min(progress * 100, 100);
-
-  let status;
-  if (progress >= 0.8)      status = 'On track';
-  else if (progress >= 0.6) status = 'At risk';
-  else                       status = 'Behind';
-
-  container.innerHTML = `
-    <div id="pcs-insights-hero">
-      <div class="pcs-insights-label">THIS MONTH</div>
-      <div class="pcs-insights-main">${hero.prepared} / ${hero.target} prepared</div>
-      <div class="pcs-insights-bar">
-        <div class="pcs-insights-bar-fill" style="width:0%"></div>
-      </div>
-      <div class="pcs-insights-status">${status}</div>
-      <div class="pcs-insights-sub">${hero.approved} approved &middot; ${hero.awaitingApproval} awaiting approval</div>
-    </div>`;
-
-  requestAnimationFrame(() => {
-    const fill = container.querySelector('.pcs-insights-bar-fill');
-    if (fill) fill.style.width = pct + '%';
-  });
-}
 
 function renderLibraryCalendar(posts) {
   const container = document.getElementById('library-calendar-view');
