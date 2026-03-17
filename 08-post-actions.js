@@ -376,22 +376,10 @@ function _renderPCS(postId) {
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
   const canEdit     = ['Admin','Servicing'].includes(currentRole);
-  const pillarLabel = post.contentPillar
-    ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
-    : '';
   const dateValue   = isPublished ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
-  const dateDisplay = formatDate(dateValue) || '';
 
-  // 3. Build subtitle parts — always Pillar · Owner · Date
-  const subtitleParts = [
-    `<span>${esc(pillarLabel || '—')}</span>`,
-    `<span>${esc(post.owner  || 'Admin')}</span>`,
-    `<span>${esc(dateDisplay || '—')}</span>`,
-  ];
-
-  // 4. Render into DOM
+  // 3. Render into DOM
   const elTitle    = document.getElementById('pcs-topbar-title');
-  const elSubtitle = document.getElementById('pcs-subtitle');
   const elProgress = document.getElementById('pcs-progress-wrap');
   const elDesign   = document.getElementById('pcs-action-btn-wrap');
   const elFields   = document.getElementById('pcs-fields');
@@ -409,7 +397,7 @@ function _renderPCS(postId) {
     }
   }
 
-  if (elSubtitle) elSubtitle.innerHTML = subtitleParts.join('<span class="pcs-subtitle-sep">\u00b7</span>');
+  _updateSubtitle(post);
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
   if (elDesign)   elDesign.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
   if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
@@ -422,6 +410,21 @@ function _renderPCS(postId) {
       _loadPCSActivity(id, elActivity);
     }
   }
+}
+
+// ── Subtitle sync (single source of truth) ──────────────
+function _updateSubtitle(post) {
+  const el = document.getElementById('pcs-subtitle');
+  if (!el || !post) return;
+  const stLC = (post.stage || '').toLowerCase().trim();
+  const isPub = stLC === 'published';
+  const pLabel = post.contentPillar
+    ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
+    : '—';
+  const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
+  const dDisp = formatDate(dVal) || '—';
+  const parts = [pLabel, post.owner || 'Admin', dDisp];
+  el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
 // ── Inline title editing ──────────────
@@ -664,20 +667,7 @@ async function updatePost(postId, field, value) {
   if (post) post[field] = value;
 
   // Sync subtitle immediately after optimistic update
-  if (post && ['contentPillar', 'owner', 'targetDate', 'publishedDate'].includes(field)) {
-    const elSub = document.getElementById('pcs-subtitle');
-    if (elSub) {
-      const stLC = (post.stage || '').toLowerCase().trim();
-      const isPub = stLC === 'published';
-      const pLabel = post.contentPillar
-        ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
-        : '—';
-      const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
-      const dDisp = formatDate(dVal) || '—';
-      const parts = [pLabel, post.owner || 'Admin', dDisp];
-      elSub.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
-    }
-  }
+  _updateSubtitle(post);
 
   const dbField = {
     title:         'title',
