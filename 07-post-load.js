@@ -426,7 +426,7 @@ function renderDashboard() {
         const days = Math.round(d.maxH / 24);
         const hot = d.maxH > 72 ? ' pb-hot' : '';
         const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
-        return `<div class="pb-row" onclick="goToTab('library');setTimeout(()=>{const s=document.getElementById('filter-owner');if(s){s.value='${ownerVal}';filterLibrary();}},80)">` +
+        return `<div class="pb-row" data-owner="${ownerVal.replace(/"/g, '&quot;')}">` +
           `<span class="pb-name">${name}</span>` +
           `<span class="pb-count">${d.count}</span>` +
           `<span class="pb-delay${hot}">${days}d</span></div>`;
@@ -455,8 +455,10 @@ function renderDashboard() {
   const todayHasPost = futureDays.has(todayKey) || publishedToday;
 
   // ── STATE (single source, one message only) ──
+  // Sunday (non-posting day): skip failure check — no post expected
+  const todayIsPostingDay = isPostingDay(now);
   let uiState, stateMsg, stateClass;
-  if (!todayHasPost) {
+  if (todayIsPostingDay && !todayHasPost) {
     uiState = 'failure'; stateMsg = 'No post scheduled today'; stateClass = 'st-fail';
   } else if (hard_runway <= 2) {
     uiState = 'risk'; stateMsg = 'Low runway \u2014 will run out soon'; stateClass = 'st-risk';
@@ -508,6 +510,18 @@ function renderDashboard() {
     ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
+
+  // ── CLICK DELEGATION for pressure block names ──
+  el.querySelectorAll('[data-owner]').forEach(row => {
+    row.addEventListener('click', () => {
+      const owner = row.dataset.owner;
+      goToTab('library');
+      setTimeout(() => {
+        const s = document.getElementById('filter-owner');
+        if (s) { s.value = owner; filterLibrary(); }
+      }, 80);
+    });
+  });
 }
 
 /* Legacy stubs — keep function names callable so renderAll doesn't error */
