@@ -176,6 +176,9 @@ function renderAll() {
 
   // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
+    run('dashHero',           renderDashHero);
+    run('dashPipeline',       renderDashPipeline);
+    run('dashBlockers',       renderDashBlockers);
     run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
@@ -241,6 +244,134 @@ function setText(id, val) {
 function updateBadge(id, count) {
   const el = document.getElementById(id);
   if (el) { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; }
+}
+
+// ═══════════════════════════════════════════════
+// Dashboard — Hero, Pipeline, Blockers
+// ═══════════════════════════════════════════════
+
+function renderDashHero() {
+  const el = document.getElementById('pcs-dash-hero');
+  if (!el) return;
+
+  const awaiting = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  ).length;
+  const ready = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'ready'
+  ).length;
+
+  const now = Date.now();
+  const DAY = 86400000;
+  function daysSince(post) {
+    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
+    return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
+  }
+  const stuck = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return (s === 'in production' && daysSince(p) >= 3)
+      || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
+      || (s === 'revisions needed' && daysSince(p) >= 2);
+  }).length;
+
+  let statusMsg;
+  if (stuck === 0 && awaiting < 5) statusMsg = 'Flow is healthy';
+  else if (stuck > 0)              statusMsg = 'Bottlenecks detected';
+  else if (awaiting > 10)          statusMsg = 'Approval backlog increasing';
+  else                             statusMsg = 'Pipeline moving';
+
+  el.innerHTML = `
+    <div class="pcs-dash-hero-num">${awaiting}</div>
+    <div class="pcs-dash-hero-label">Approvals pending</div>
+    <div class="pcs-dash-hero-secondary">${ready} ready &middot; ${stuck} stuck</div>
+    <div class="pcs-dash-hero-status">${statusMsg}</div>`;
+}
+
+function renderDashPipeline() {
+  const el = document.getElementById('pcs-dash-pipeline');
+  if (!el) return;
+
+  const stages = [
+    { key: 'in production',        label: 'Production', color: STAGE_META['in production'].hex },
+    { key: 'ready',                label: 'Ready',      color: STAGE_META['ready'].hex },
+    { key: 'awaiting approval',    label: 'Approval',   color: STAGE_META['awaiting approval'].hex },
+    { key: 'scheduled',            label: 'Scheduled',  color: STAGE_META['scheduled'].hex },
+  ];
+
+  const counts = {};
+  let maxCount = 0;
+  allPosts.forEach(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    stages.forEach(st => { if (s === st.key) counts[st.key] = (counts[st.key] || 0) + 1; });
+  });
+  stages.forEach(st => { counts[st.key] = counts[st.key] || 0; if (counts[st.key] > maxCount) maxCount = counts[st.key]; });
+
+  const nodes = stages.map((st, i) => {
+    const isActive = counts[st.key] === maxCount && maxCount > 0;
+    const activeClass = isActive ? ' pcs-pipe-active' : '';
+    const connector = i < stages.length - 1 ? '<div class="pcs-pipe-connector"></div>' : '';
+    return `<div class="pcs-pipe-node${activeClass}">
+      <div class="pcs-pipe-dot" style="background:${st.color}"></div>
+      <div class="pcs-pipe-count">${counts[st.key]}</div>
+      <div class="pcs-pipe-label">${st.label}</div>
+    </div>${connector}`;
+  }).join('');
+
+  el.innerHTML = `<div class="pcs-pipe-row">${nodes}</div>`;
+}
+
+function renderDashBlockers() {
+  const el = document.getElementById('pcs-dash-blockers');
+  if (!el) return;
+
+  const approvalCount = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  ).length;
+  const inputCount = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
+  ).length;
+
+  if (!approvalCount && !inputCount) {
+    el.innerHTML = '';
+    return;
+  }
+
+  let approvalSignal;
+  if (approvalCount === 0)      approvalSignal = 'No approvals pending';
+  else if (approvalCount <= 3)  approvalSignal = 'Approval flow stable';
+  else                          approvalSignal = 'Approval bottleneck building';
+
+  let inputSignal = '';
+  if (inputCount > 0) inputSignal = 'Dependency on brand slowing progress';
+
+  let html = '<div class="pcs-blockers-card">';
+
+  if (approvalCount > 0) {
+    html += `<div class="pcs-block-section pcs-block-amber">
+      <div class="pcs-block-heading">Awaiting approval <span class="pcs-block-count">${approvalCount}</span></div>
+      <div class="pcs-block-signal">${approvalSignal}</div>
+    </div>`;
+  }
+
+  if (inputCount > 0) {
+    html += `<div class="pcs-block-section pcs-block-blue">
+      <div class="pcs-block-heading">Waiting for input <span class="pcs-block-count">${inputCount}</span></div>
+      <div class="pcs-block-signal">${inputSignal}</div>
+    </div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function toggleDashDetail() {
+  const detail = document.getElementById('pcs-dash-detail');
+  const toggle = document.getElementById('pcs-dash-detail-toggle');
+  if (!detail || !toggle) return;
+  const open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : '';
+  toggle.textContent = open ? 'View detailed tasks →' : 'Hide details';
+  toggle.classList.toggle('pcs-detail-open', !open);
 }
 
 function renderPipelineStrip() {
