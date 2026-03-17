@@ -340,7 +340,7 @@ function renderDashboard() {
 
   // ── COUNTS (from filteredPosts, never allPosts) ──
   const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
-  const approvalPosts   = filteredPosts.filter(p => stg(p) === 'awaiting approval');
+  const readyPosts      = filteredPosts.filter(p => stg(p) === 'ready');
   const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
 
   // Published uses allPosts scoped to current month (display metric only)
@@ -351,7 +351,7 @@ function renderDashboard() {
   });
 
   const production = productionPosts.length;
-  const approval   = approvalPosts.length;
+  const ready      = readyPosts.length;
   const scheduled  = scheduledPosts.length;
   const published  = pubThisMonth.length;
 
@@ -403,12 +403,12 @@ function renderDashboard() {
       nextGapDay = dn[check.getDay()];
     }
   }
-  const soft_runway = Math.floor(approval * 0.7);
+  const soft_runway = Math.floor(ready * 0.7);
 
-  // ── TEXT PIPELINE (replaces graph) ──
+  // ── TEXT PIPELINE ──
   const pipelineRows = [
     { label: 'Production', count: production },
-    { label: 'Approval',   count: approval },
+    { label: 'Ready',      count: ready },
     { label: 'Scheduled',  count: scheduled },
     { label: 'Published',  count: published },
   ];
@@ -418,15 +418,20 @@ function renderDashboard() {
     `<span class="rw-pipe-count">${r.count}</span></div>`
   ).join('');
 
-  // ── TODAY CHECK ──
-  const todayHasPost = futureDays.has(dayKey(now));
+  // ── TODAY CHECK (scheduled today OR published today) ──
+  const todayKey = dayKey(now);
+  const publishedToday = allPosts.some(p => {
+    if (stg(p) !== 'published') return false;
+    const d = parseDate(p.targetDate);
+    return d && dayKey(d) === todayKey;
+  });
+  const todayHasPost = futureDays.has(todayKey) || publishedToday;
 
   // ── WARNINGS (max 2: primary signal + secondary concern) ──
   const warnings = [];
   if (!todayHasPost) warnings.push({ text: 'No post scheduled today' });
-  if (hard_runway === 0 && warnings.length < 2) warnings.push({ text: 'No runway' });
-  else if (hard_runway <= 2 && hard_runway > 0 && warnings.length < 2) warnings.push({ text: 'Low runway \u2014 act now' });
-  if (approval === 0 && warnings.length < 2) warnings.push({ text: 'Approval empty' });
+  if (hard_runway <= 2 && warnings.length < 2) warnings.push({ text: hard_runway === 0 ? 'No runway' : 'Low runway' });
+  if (ready === 0 && warnings.length < 2) warnings.push({ text: 'No posts ready' });
   // First warning = red (rw-warn-1), second = amber (rw-warn-2)
   const warningsHtml = warnings.map((w, i) =>
     `<span class="rw-warn rw-warn-${i === 0 ? '1' : '2'}">${w.text}</span>`
@@ -437,20 +442,20 @@ function renderDashboard() {
     : hard_runway <= 2 ? 'rw-runway-warn'
     : '';
 
-  // ── ACTION LINE (always a directive, count-based) ──
+  // ── ACTION LINE (verb-led, count-based) ──
   let actionText = '';
   if (hard_runway === 0) {
-    actionText = 'No content scheduled \u2014 create and send immediately';
-  } else if (hard_runway <= 2 && approval > 0) {
-    actionText = `Push ${approval} approval${approval !== 1 ? 's' : ''} to schedule now`;
+    actionText = 'Schedule content now';
+  } else if (hard_runway <= 2 && ready > 0) {
+    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
   } else if (hard_runway <= 2) {
-    actionText = 'Create content urgently \u2014 runway expires in ' + hard_runway + 'd';
-  } else if (production > approval) {
-    actionText = `Move ${production} production post${production !== 1 ? 's' : ''} to approval`;
-  } else if (approval > scheduled) {
-    actionText = `Schedule ${approval} approved post${approval !== 1 ? 's' : ''}`;
+    actionText = 'Create content \u2014 runway expires in ' + hard_runway + 'd';
+  } else if (production > ready) {
+    actionText = `Finish ${production} production post${production !== 1 ? 's' : ''}`;
+  } else if (ready > scheduled) {
+    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
   } else {
-    actionText = `${hard_runway}d runway \u2014 maintain current pace`;
+    actionText = `${hard_runway}d runway \u2014 maintain pace`;
   }
 
   // ── RENDER (command center: single vertical flow) ──
@@ -458,9 +463,9 @@ function renderDashboard() {
     <div class="rw-month">${monthLabel}</div>
     <div class="rw-hero">
       <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
-      ${nextGapDay ? `<div class="rw-next-gap">Covered till ${nextGapDay}</div>` : ''}
+      ${nextGapDay ? `<div class="rw-next-gap">${hard_runway >= 3 ? 'Covered till' : 'Next gap:'} ${nextGapDay}</div>` : ''}
       <div class="rw-runway-label">days of runway</div>
-      ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
+      ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} ready</div>` : ''}
     </div>
     <div class="rw-pipeline">${pipelineHtml}</div>
     ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
