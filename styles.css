@@ -859,11 +859,11 @@ a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
-/* Text pipeline (replaces graph) */
+/* Text pipeline */
 .rw-pipeline {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
 }
 .rw-pipe-row {
   display: flex;
@@ -874,16 +874,17 @@ a:hover { text-decoration: underline; }
 .rw-pipe-row.rw-pipe-zero { opacity: 0.35; }
 .rw-pipe-label {
   font-size: 13px;
-  color: var(--text2);
+  color: var(--text3);
+  opacity: 0.55;
 }
 .rw-pipe-count {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 
-/* Warnings */
+/* Warnings (max 2: red primary, amber secondary) */
 .rw-warnings {
   display: flex;
   flex-direction: column;
@@ -891,19 +892,19 @@ a:hover { text-decoration: underline; }
 }
 .rw-warn {
   font-size: 13px;
-  color: var(--text3);
-  opacity: 0.85;
   padding: 3px 10px;
   border-left: 3px solid var(--pcs-border-soft);
+  color: var(--text3);
+  opacity: 0.7;
 }
-.rw-warn-crit {
+.rw-warn-1 {
   color: var(--c-red, #ef4444);
   opacity: 1;
   border-left-color: var(--c-red, #ef4444);
 }
-.rw-warn-risk {
+.rw-warn-2 {
   color: var(--c-amber, #f59e0b);
-  opacity: 0.9;
+  opacity: 0.75;
   border-left-color: var(--c-amber, #f59e0b);
 }
 
@@ -913,6 +914,7 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
+  margin-top: 4px;
   transition: opacity 120ms ease;
 }
 .rw-action:active { opacity: 0.7; }
