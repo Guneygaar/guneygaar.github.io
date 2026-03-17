@@ -2274,88 +2274,45 @@ tr:hover td { background: var(--surface2); }
    INSIGHTS PANEL
 ═══════════════════════════════════════════════ */
 
-.insights-wrap {
+#pcs-insights-hero {
   display: flex;
   flex-direction: column;
-  gap: var(--pcs-section-gap);
-  padding: var(--pcs-card-padding) var(--pcs-card-padding) var(--sp-4);
+  gap: 8px;
+  padding: var(--pcs-card-padding);
 }
 
-.insight-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pcs-row-gap);
-}
-
-.insight-section-title {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--text2);
-  text-transform: uppercase;
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-  z-index: 1;
-  padding: var(--pcs-space-1) 0;
-  margin-bottom: var(--pcs-space-1);
-}
-
-.insight-subtitle {
-  font-size: 11px;
-  color: var(--text3);
-  margin-bottom: var(--pcs-space-1);
-}
-
-.insight-row {
-  display: grid;
-  grid-template-columns: 120px 1fr 40px;
-  align-items: center;
-  gap: var(--pcs-row-gap);
-  padding: var(--pcs-space-2) 0;
-  cursor: pointer;
-  border-radius: var(--r-sm);
-  transition: background var(--transition);
-}
-
-.insight-row:active {
-  background: var(--accent-dim);
-}
-
-.insight-label {
+.pcs-insights-label {
   font-size: 12px;
-  color: var(--text2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  opacity: 0.6;
 }
 
-.insight-bar-track {
-  height: var(--pcs-bar-height);
-  border-radius: calc(var(--pcs-bar-height) / 2);
-  background: var(--border);
-  overflow: hidden;
-}
-
-.insight-bar-fill {
-  height: 100%;
-  border-radius: calc(var(--pcs-bar-height) / 2);
-  background: var(--accent);
-  transition: width 200ms ease-out;
-}
-
-.insight-count {
-  font-size: 12px;
+.pcs-insights-main {
+  font-size: 28px;
   font-weight: 600;
-  color: var(--text);
-  text-align: right;
-  font-family: var(--font-mono, monospace);
 }
 
-.insight-empty {
+.pcs-insights-bar {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pcs-insights-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 160ms ease;
+}
+
+.pcs-insights-status {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.pcs-insights-sub {
   font-size: 12px;
-  color: var(--text3);
-  padding: var(--pcs-space-1) 0;
+  opacity: 0.6;
 }
 
 .search-input { flex: 1; min-width: 160px; }

@@ -938,192 +938,65 @@ function switchLibraryView(btn) {
   filterLibrary();
 }
 
-// -- Insights panel (replaces Board) ---------------
+// -- Insights Hero ---------------
+
+const INSIGHTS_TARGET = 35;
+
+function getInsightsHero(posts) {
+  const now = new Date();
+  const curMonth = now.getMonth();
+  const curYear  = now.getFullYear();
+
+  const filtered = posts.filter(p => {
+    const d = parseDate(p.targetDate);
+    return d && d.getMonth() === curMonth && d.getFullYear() === curYear;
+  });
+
+  const prepared = filtered.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return s !== 'parked' && s !== 'rejected';
+  }).length;
+
+  const approved = filtered.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'approved'
+  ).length;
+
+  const awaitingApproval = filtered.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  ).length;
+
+  return { prepared, approved, awaitingApproval, target: INSIGHTS_TARGET };
+}
 
 function renderLibraryInsights(posts) {
   const container = document.getElementById('library-insights-view');
   if (!container) return;
   posts = posts || allPosts;
 
-  if (!posts.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts to analyze.</p></div>`;
-    return;
-  }
+  const hero = getInsightsHero(posts);
+  const progress = hero.target ? hero.prepared / hero.target : 0;
+  const pct = Math.min(progress * 100, 100);
 
-  const html = [
-    _insightThisMonth(posts),
-    _insightSection('PIPELINE', _insightPipeline(posts)),
-    _insightSection('PILLARS', _insightPillars(posts)),
-    _insightSection('LOCATIONS', _insightLocations(posts)),
-    _insightSection('OWNERS', _insightOwners(posts)),
-    _insightSection('FORMATS', _insightFormats(posts)),
-  ].join('');
+  let status;
+  if (progress >= 0.8)      status = 'On track';
+  else if (progress >= 0.6) status = 'At risk';
+  else                       status = 'Behind';
 
-  container.innerHTML = `<div class="insights-wrap">${html}</div>`;
+  container.innerHTML = `
+    <div id="pcs-insights-hero">
+      <div class="pcs-insights-label">THIS MONTH</div>
+      <div class="pcs-insights-main">${hero.prepared} / ${hero.target} prepared</div>
+      <div class="pcs-insights-bar">
+        <div class="pcs-insights-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="pcs-insights-status">${status}</div>
+      <div class="pcs-insights-sub">${hero.approved} approved &middot; ${hero.awaitingApproval} awaiting approval</div>
+    </div>`;
 
-  // Trigger bar animations after paint
   requestAnimationFrame(() => {
-    container.querySelectorAll('.insight-bar-fill').forEach(el => {
-      el.style.width = el.dataset.pct + '%';
-    });
+    const fill = container.querySelector('.pcs-insights-bar-fill');
+    if (fill) fill.style.width = pct + '%';
   });
-}
-
-/* --- helpers --- */
-
-function _insightBar(pct) {
-  return `<div class="insight-bar-track"><div class="insight-bar-fill" data-pct="${Math.min(100, Math.max(0, pct))}" style="width:0%"></div></div>`;
-}
-
-function _insightRow(label, count, pct, onclick) {
-  const tap = onclick ? ` onclick="${onclick}"` : '';
-  return `<div class="insight-row"${tap}>`
-    + `<span class="insight-label">${esc(label)}</span>`
-    + _insightBar(pct)
-    + `<span class="insight-count">${count}</span>`
-    + `</div>`;
-}
-
-function _insightSection(title, rowsHtml) {
-  return `<div class="row-tile insight-card">`
-    + `<div class="insight-section-title">${esc(title)}</div>`
-    + rowsHtml
-    + `</div>`;
-}
-
-/* --- THIS MONTH card --- */
-
-function _insightThisMonth(posts) {
-  const TARGET = 35;
-  const now = new Date();
-  const curMonth = now.getMonth();
-  const curYear  = now.getFullYear();
-
-  const thisMonth = posts.filter(p => {
-    const d = parseDate(p.targetDate);
-    return d && d.getMonth() === curMonth && d.getFullYear() === curYear;
-  });
-
-  const total     = thisMonth.length;
-  const published = thisMonth.filter(p => (p.stage||'').toLowerCase() === 'published').length;
-  const pending   = total - published;
-
-  return `<div class="row-tile insight-card">`
-    + `<div class="insight-section-title">THIS MONTH</div>`
-    + `<div class="insight-subtitle">Target: ${TARGET} posts</div>`
-    + _insightRow('Posts',     total,     (total / TARGET) * 100)
-    + _insightRow('Published', published, (published / TARGET) * 100)
-    + _insightRow('Pending',   pending,   (pending / TARGET) * 100)
-    + `</div>`;
-}
-
-/* --- PIPELINE --- */
-
-function _insightPipeline(posts) {
-  const stages = [
-    'in production',
-    'ready',
-    'awaiting approval',
-    'scheduled',
-    'published',
-  ];
-  const counts = {};
-  stages.forEach(s => counts[s] = 0);
-  posts.forEach(p => {
-    const s = (p.stage||'').toLowerCase();
-    if (s in counts) counts[s]++;
-  });
-  const max = Math.max(1, ...Object.values(counts));
-  return stages.map(s => {
-    const label = (STAGE_META[s] || {}).label || s;
-    return _insightRow(label, counts[s], (counts[s] / max) * 100,
-      `insightFilter('stage','${esc(s)}')`);
-  }).join('');
-}
-
-/* --- PILLARS --- */
-
-function _insightPillars(posts) {
-  const pillars = PILLARS_DB || ['leadership','innovation','sustainability','inclusivity','events','announcements'];
-  const counts = {};
-  pillars.forEach(p => counts[p] = 0);
-  posts.forEach(p => {
-    const k = (p.contentPillar||'').toLowerCase();
-    if (k in counts) counts[k]++;
-  });
-  const max = Math.max(1, ...Object.values(counts));
-  return pillars.map(p => {
-    const label = (PILLAR_DISPLAY && PILLAR_DISPLAY[p]) || p;
-    return _insightRow(label, counts[p], (counts[p] / max) * 100,
-      `insightFilter('pillar','${esc(p)}')`);
-  }).join('');
-}
-
-/* --- LOCATIONS (top 3) --- */
-
-function _insightLocations(posts) {
-  const counts = {};
-  posts.forEach(p => {
-    const loc = (p.location||'').trim();
-    if (loc) counts[loc] = (counts[loc]||0) + 1;
-  });
-  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
-  const max = sorted.length ? sorted[0][1] : 1;
-  return sorted.map(([loc, n]) =>
-    _insightRow(loc, n, (n / max) * 100,
-      `insightFilter('location','${esc(loc)}')`)).join('')
-    || `<div class="insight-empty">No location data</div>`;
-}
-
-/* --- OWNERS (top 3) --- */
-
-function _insightOwners(posts) {
-  const counts = {};
-  posts.forEach(p => {
-    const o = (p.owner||'').trim();
-    if (o) counts[o] = (counts[o]||0) + 1;
-  });
-  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
-  const max = sorted.length ? sorted[0][1] : 1;
-  return sorted.map(([owner, n]) =>
-    _insightRow(owner, n, (n / max) * 100,
-      `insightFilter('owner','${esc(owner)}')`)).join('')
-    || `<div class="insight-empty">No owner data</div>`;
-}
-
-/* --- FORMATS --- */
-
-function _insightFormats(posts) {
-  const formats = ['Creative','Photo','Carousel','Video','Text'];
-  const counts = {};
-  formats.forEach(f => counts[f] = 0);
-  posts.forEach(p => {
-    const f = (p.format||'').trim();
-    if (f in counts) counts[f]++;
-  });
-  const max = Math.max(1, ...Object.values(counts));
-  return formats.map(f =>
-    _insightRow(f, counts[f], (counts[f] / max) * 100,
-      `insightFilter('format','${esc(f)}')`)).join('');
-}
-
-/* --- Tap-to-filter from insights --- */
-
-function insightFilter(type, value) {
-  // Switch to list view and apply filter
-  const listBtn = document.querySelector('.lib-view-btn[data-view="list"]');
-  if (listBtn) switchLibraryView(listBtn);
-
-  if (type === 'stage') {
-    const el = document.getElementById('filter-stage');
-    if (el) { el.value = value; filterLibrary(); }
-  } else if (type === 'pillar') {
-    const el = document.getElementById('filter-pillar');
-    if (el) { el.value = value; filterLibrary(); }
-  } else if (type === 'owner') {
-    const el = document.getElementById('filter-owner');
-    if (el) { el.value = value; filterLibrary(); }
-  }
 }
 
 function renderLibraryCalendar(posts) {
