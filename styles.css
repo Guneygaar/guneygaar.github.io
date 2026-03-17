@@ -85,6 +85,18 @@
   --pcs-section-gap: var(--pcs-space-5);
   --pcs-bar-height: 6px;
 
+  /* Dashboard layout tokens */
+  --pcs-gap-1: 8px;
+  --pcs-gap-2: 12px;
+  --pcs-gap-3: 16px;
+  --pcs-gap-4: 24px;
+  --pcs-gap-5: 32px;
+  --pcs-radius: 16px;
+  --pcs-surface-1: var(--surface);
+  --pcs-surface-2: var(--surface2);
+  --pcs-surface-3: var(--surface3);
+  --pcs-border-soft: rgba(255,255,255,0.06);
+
   /* Semantic tokens — single source of truth (light defaults) */
   --text-primary: #111111;
   --text-secondary: #6b7280;
@@ -788,7 +800,168 @@ a:hover { text-decoration: underline; }
 
 
 /* ═══════════════════════════════════════════════
-   HERO CARD — Zone 1
+   DASHBOARD — CALM VERTICAL FLOW
+═══════════════════════════════════════════════ */
+
+.pcs-dash-flow {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hero */
+#pcs-dash-hero {
+  padding: var(--pcs-gap-4) var(--pcs-gap-3) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcs-gap-1);
+}
+.pcs-dash-hero-num {
+  font-size: 42px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pcs-dash-hero-label {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  opacity: 0.9;
+}
+.pcs-dash-hero-secondary {
+  font-size: 13px;
+  color: var(--text2);
+  opacity: 0.6;
+}
+.pcs-dash-hero-status {
+  font-size: 13px;
+  color: var(--text2);
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+/* Divider */
+.pcs-dash-divider {
+  height: 1px;
+  background: var(--pcs-border-soft);
+  margin: var(--pcs-gap-3) var(--pcs-gap-3);
+}
+
+/* Pipeline flow */
+.pcs-pipe-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0 var(--pcs-gap-3);
+  margin-bottom: var(--pcs-gap-4);
+}
+.pcs-pipe-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  opacity: 0.5;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.pcs-pipe-node.pcs-pipe-active {
+  opacity: 1;
+  transform: scale(1.05);
+}
+.pcs-pipe-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.pcs-pipe-count {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.pcs-pipe-label {
+  font-size: 11px;
+  color: var(--text3);
+  opacity: 0.6;
+}
+.pcs-pipe-connector {
+  width: 24px;
+  height: 1px;
+  background: var(--pcs-border-soft);
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: -16px;
+}
+
+/* Blockers card */
+.pcs-blockers-card {
+  background: var(--pcs-surface-2);
+  border-radius: var(--pcs-radius);
+  padding: var(--pcs-gap-3);
+  border: 1px solid var(--pcs-border-soft);
+  margin: 0 var(--pcs-gap-3) var(--pcs-gap-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcs-gap-3);
+}
+.pcs-block-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pcs-gap-1);
+  padding: var(--pcs-gap-2);
+  border-radius: 12px;
+}
+.pcs-block-amber { background: rgba(245, 158, 11, 0.04); }
+.pcs-block-blue  { background: rgba(59, 130, 246, 0.04); }
+.pcs-block-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: var(--pcs-gap-1);
+  margin-bottom: 4px;
+}
+.pcs-block-count {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+}
+.pcs-block-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pcs-gap-2);
+  padding: 6px 0;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+.pcs-block-row:active { opacity: 0.7; transform: scale(0.98); }
+.pcs-block-title {
+  font-size: 13px;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pcs-block-pillar {
+  font-size: 10px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.pcs-block-more {
+  font-size: 11px;
+  color: var(--text3);
+  padding: 4px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   HERO CARD — Zone 1 (legacy, hidden sections)
 ═══════════════════════════════════════════════ */
 .hero-section { margin-bottom: var(--sp-4); }
 
@@ -2278,23 +2451,10 @@ tr:hover td { background: var(--surface2); }
    RESPONSIVE — DESKTOP
 ═══════════════════════════════════════════════ */
 @media (min-width: 1024px) {
-  .dash-body {
-    display: grid;
-    grid-template-columns: 360px 1fr;
-    grid-template-rows: auto;
-    gap: var(--sp-5);
-    padding: var(--sp-6);
-    align-items: start;
+  .pcs-dash-flow {
+    max-width: 640px;
+    margin: 0 auto;
   }
-
-  /* Left column: hero + meter */
-  .hero-section    { grid-column: 1; grid-row: 1; }
-  .meter-section   { grid-column: 1; grid-row: 2; }
-
-  /* Right column: everything else */
-  #tasks-container { grid-column: 2; grid-row: 1 / span 5; }
-  .tab-panel#panel-tasks .hero-section,
-  .tab-panel#panel-tasks .meter-section { /* contained in tab */ }
 }
 
 /* ═══════════════════════════════════════════════

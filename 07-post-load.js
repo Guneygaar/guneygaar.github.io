@@ -176,6 +176,9 @@ function renderAll() {
 
   // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
+    run('dashHero',           renderDashHero);
+    run('dashPipeline',       renderDashPipeline);
+    run('dashBlockers',       renderDashBlockers);
     run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
@@ -241,6 +244,128 @@ function setText(id, val) {
 function updateBadge(id, count) {
   const el = document.getElementById(id);
   if (el) { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; }
+}
+
+// ═══════════════════════════════════════════════
+// Dashboard — Hero, Pipeline, Blockers
+// ═══════════════════════════════════════════════
+
+function renderDashHero() {
+  const el = document.getElementById('pcs-dash-hero');
+  if (!el) return;
+
+  const awaiting = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  ).length;
+  const ready = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'ready'
+  ).length;
+
+  const now = Date.now();
+  const DAY = 86400000;
+  function daysSince(post) {
+    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
+    return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
+  }
+  const stuck = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return (s === 'in production' && daysSince(p) >= 3)
+      || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
+      || (s === 'revisions needed' && daysSince(p) >= 2);
+  }).length;
+
+  const heroNum = awaiting || ready;
+  const heroLabel = awaiting ? 'Approvals pending' : 'Posts ready';
+  const statusMsg = stuck > 0
+    ? `${stuck} stuck in pipeline. Check blockers.`
+    : 'Pipeline clear. Team on track.';
+
+  el.innerHTML = `
+    <div class="pcs-dash-hero-num">${heroNum}</div>
+    <div class="pcs-dash-hero-label">${heroLabel}</div>
+    <div class="pcs-dash-hero-secondary">${ready} ready &middot; ${stuck} stuck</div>
+    <div class="pcs-dash-hero-status">${statusMsg}</div>`;
+}
+
+function renderDashPipeline() {
+  const el = document.getElementById('pcs-dash-pipeline');
+  if (!el) return;
+
+  const stages = [
+    { key: 'in production',        label: 'Production', color: STAGE_META['in production'].hex },
+    { key: 'ready',                label: 'Ready',      color: STAGE_META['ready'].hex },
+    { key: 'awaiting approval',    label: 'Approval',   color: STAGE_META['awaiting approval'].hex },
+    { key: 'scheduled',            label: 'Scheduled',  color: STAGE_META['scheduled'].hex },
+  ];
+
+  const counts = {};
+  let maxCount = 0;
+  allPosts.forEach(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    stages.forEach(st => { if (s === st.key) counts[st.key] = (counts[st.key] || 0) + 1; });
+  });
+  stages.forEach(st => { counts[st.key] = counts[st.key] || 0; if (counts[st.key] > maxCount) maxCount = counts[st.key]; });
+
+  const nodes = stages.map((st, i) => {
+    const isActive = counts[st.key] === maxCount && maxCount > 0;
+    const activeClass = isActive ? ' pcs-pipe-active' : '';
+    const connector = i < stages.length - 1 ? '<div class="pcs-pipe-connector"></div>' : '';
+    return `<div class="pcs-pipe-node${activeClass}">
+      <div class="pcs-pipe-dot" style="background:${st.color}"></div>
+      <div class="pcs-pipe-count">${counts[st.key]}</div>
+      <div class="pcs-pipe-label">${st.label}</div>
+    </div>${connector}`;
+  }).join('');
+
+  el.innerHTML = `<div class="pcs-pipe-row">${nodes}</div>`;
+}
+
+function renderDashBlockers() {
+  const el = document.getElementById('pcs-dash-blockers');
+  if (!el) return;
+
+  const approvalPosts = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  );
+  const inputPosts = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
+  );
+
+  if (!approvalPosts.length && !inputPosts.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  function blockRow(p) {
+    const id = getPostId(p);
+    const title = getTitle(p);
+    const pillar = PILLAR_SHORT[(p.contentPillar || '').toLowerCase()] || p.contentPillar || '';
+    return `<div class="pcs-block-row" data-post-id="${esc(id)}" data-list="tasks">
+      <span class="pcs-block-title">${esc(title)}</span>
+      ${pillar ? `<span class="pcs-block-pillar">${esc(pillar)}</span>` : ''}
+    </div>`;
+  }
+
+  let html = '<div class="pcs-blockers-card">';
+
+  if (approvalPosts.length) {
+    html += `<div class="pcs-block-section pcs-block-amber">
+      <div class="pcs-block-heading">Awaiting approval <span class="pcs-block-count">${approvalPosts.length}</span></div>
+      ${approvalPosts.slice(0, 5).map(blockRow).join('')}
+      ${approvalPosts.length > 5 ? `<div class="pcs-block-more">+${approvalPosts.length - 5} more</div>` : ''}
+    </div>`;
+  }
+
+  if (inputPosts.length) {
+    html += `<div class="pcs-block-section pcs-block-blue">
+      <div class="pcs-block-heading">Waiting for input <span class="pcs-block-count">${inputPosts.length}</span></div>
+      ${inputPosts.slice(0, 5).map(blockRow).join('')}
+      ${inputPosts.length > 5 ? `<div class="pcs-block-more">+${inputPosts.length - 5} more</div>` : ''}
+    </div>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function renderPipelineStrip() {
