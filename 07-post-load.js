@@ -314,220 +314,146 @@ function renderDashboard() {
   const el = document.getElementById('pcs-dashboard');
   if (!el) return;
 
-  const now = Date.now();
-  const DAY = 86400000;
-  const { enrichedPosts, aggregates: delay } = computeDelayMeta(allPosts);
   function stg(p) { return (p.stage || '').toLowerCase().trim(); }
-  function daysSince(p) {
-    const t = p.updated_at || p.updatedAt || p.created_at || p.createdAt;
-    return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
-  }
 
-  // ── Compute all data once ──
-  const total = allPosts.length;
-  const stages = [
-    { key: 'awaiting brand input', label: 'Request',    color: STAGE_META['awaiting brand input'].hex },
-    { key: 'in production',        label: 'Production', color: STAGE_META['in production'].hex },
-    { key: 'revisions needed',     label: 'Revisions',  color: STAGE_META['revisions needed'].hex },
-    { key: 'ready',                label: 'Ready',      color: STAGE_META['ready'].hex },
-    { key: 'awaiting approval',    label: 'Approval',   color: STAGE_META['awaiting approval'].hex },
-    { key: 'scheduled',            label: 'Scheduled',  color: STAGE_META['scheduled'].hex },
-    { key: 'published',            label: 'Published',  color: STAGE_META['published'].hex },
-  ];
-  const counts = {};
-  allPosts.forEach(p => { const s = stg(p); stages.forEach(st => { if (s === st.key) counts[st.key] = (counts[st.key] || 0) + 1; }); });
-  stages.forEach(st => { counts[st.key] = counts[st.key] || 0; });
+  // ── UI LABEL (display only, does NOT affect logic) ──
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const DAY = 86400000;
+  const monthLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * DAY);
 
-  const stuck = allPosts.filter(p => {
-    const s = stg(p);
-    return (s === 'in production' && daysSince(p) >= 3)
-      || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
-      || (s === 'revisions needed' && daysSince(p) >= 2);
-  }).length;
+  // ── PIPELINE FILTER ──
+  // Active stages only, AND touched within last 14 days
+  const ACTIVE_STAGES = new Set([
+    'awaiting brand input', 'in production', 'revisions needed',
+    'ready', 'awaiting approval', 'scheduled'
+  ]);
 
-  const awaitingApproval = counts['awaiting approval'];
-  const awaitingInput    = counts['awaiting brand input'];
-  const revisions        = counts['revisions needed'];
-  const published        = counts['published'];
-  const scheduled        = counts['scheduled'];
-  const ready            = counts['ready'];
-  const rejected = allPosts.filter(p => stg(p) === 'rejected').length;
+  const filteredPosts = allPosts.filter(p => {
+    if (!ACTIVE_STAGES.has(stg(p))) return false;
+    const updated = p.updated_at || p.updatedAt;
+    const created = p.created_at || p.createdAt;
+    const ts = updated ? new Date(updated) : (created ? new Date(created) : null);
+    return ts && ts >= fourteenDaysAgo;
+  });
 
-  // Approval intel
-  const sent = allPosts.filter(p =>
-    ['awaiting approval', 'approved', 'scheduled', 'published'].includes(stg(p))
-  ).length;
-  const approved = allPosts.filter(p =>
-    ['approved', 'scheduled', 'published'].includes(stg(p))
-  ).length;
-  const revisionRate = sent > 0 ? Math.round((revisions / sent) * 100) : 0;
+  // ── COUNTS (from filteredPosts, never allPosts) ──
+  const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
+  const approvalPosts   = filteredPosts.filter(p => stg(p) === 'awaiting approval');
+  const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
 
-  // Avg approval wait
-  const inApproval = allPosts.filter(p => stg(p) === 'awaiting approval');
-  let avgWait = 0;
-  if (inApproval.length) {
-    const sum = inApproval.reduce((s, p) => {
-      const t = p.created_at || p.createdAt;
-      return s + (t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0);
-    }, 0);
-    avgWait = Math.round(sum / inApproval.length);
-  }
-
-  // Delivery pace
-  const today = new Date();
-  const dayOfMonth = today.getDate();
+  // Published uses allPosts scoped to current month (display metric only)
   const pubThisMonth = allPosts.filter(p => {
     if (stg(p) !== 'published') return false;
     const d = parseDate(p.targetDate);
-    return d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
-  }).length;
-
-  // Status message (calm surface + embedded tension)
-  let statusMsg = 'System nominal';
-  if (delay.criticalCount > 0)    statusMsg = 'Critical delays active';
-  else if (stuck > 0)             statusMsg = 'Friction detected';
-  else if (delay.totalDelayed > 0) statusMsg = 'Delays in pipeline';
-  else if (awaitingApproval > 10) statusMsg = 'Approval load high';
-
-  // ── 1. HERO: System Health ──
-  // Flow bar — continuous distribution
-  const flowStages = stages.filter(st => counts[st.key] > 0);
-  const flowTotal = flowStages.reduce((s, st) => s + counts[st.key], 0) || 1;
-  const flowBar = flowStages.map(st => {
-    const pct = Math.max((counts[st.key] / flowTotal) * 100, 3);
-    const isHeavy = counts[st.key] > flowTotal * 0.35;
-    return `<div class="db-flow-seg${isHeavy ? ' db-flow-heavy' : ''}" style="width:${pct}%;background:${st.color}" title="${st.label}: ${counts[st.key]}"></div>`;
-  }).join('');
-
-  const flowLabels = flowStages.map(st =>
-    `<span class="db-flow-label">${st.label} <span class="db-flow-ct">${counts[st.key]}</span></span>`
-  ).join('');
-
-  // ── 2. FLOW TIMELINE — stage-by-stage with imbalance ──
-  const pipeStages = [
-    { key: 'awaiting brand input', label: 'Request' },
-    { key: 'in production',        label: 'Production' },
-    { key: 'ready',                label: 'Ready' },
-    { key: 'awaiting approval',    label: 'Approval' },
-    { key: 'scheduled',            label: 'Scheduled' },
-    { key: 'published',            label: 'Published' },
-  ];
-  // Per-stage delay counts from enrichedPosts
-  const stageDelays = {};
-  enrichedPosts.forEach(p => {
-    if (!p.isDelayed) return;
-    const s = stg(p);
-    stageDelays[s] = (stageDelays[s] || 0) + 1;
+    return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   });
 
-  const pipeMax = Math.max(...pipeStages.map(s => counts[s.key] || 0), 1);
-  const flowTimeline = pipeStages.map(st => {
-    const c = counts[st.key] || 0;
-    const h = Math.max(Math.round((c / pipeMax) * 32), 2);
-    const color = STAGE_META[st.key].hex;
-    const heavy = c === pipeMax && c > 0;
-    const dCount = stageDelays[st.key] || 0;
-    const hasDelay = dCount > 0;
-    return `<div class="db-tl-stage${heavy ? ' db-tl-heavy' : ''}${hasDelay ? ' db-tl-delayed' : ''}">
-      <div class="db-tl-bar" style="height:${h}px;background:${color}"></div>
-      <div class="db-tl-ct">${c}${hasDelay ? `<span class="db-tl-delay-ct">${dCount}</span>` : ''}</div>
-      <div class="db-tl-lbl">${st.label}</div>
-    </div>`;
-  }).join('<div class="db-tl-arrow"></div>');
+  const production = productionPosts.length;
+  const approval   = approvalPosts.length;
+  const scheduled  = scheduledPosts.length;
+  const published  = pubThisMonth.length;
 
-  // ── 3. BOTTLENECK SIGNALS (max 4) ──
-  const signals = [];
-  if (delay.criticalCount > 0) signals.push(`${delay.criticalCount} critical delay${delay.criticalCount > 1 ? 's' : ''} \u00b7 client side`);
-  if (stuck > 0) signals.push(`${stuck} item${stuck > 1 ? 's' : ''} stuck in pipeline`);
-  if (delay.internalDelayed > 0 && !signals.some(s => s.includes('stuck'))) signals.push(`${delay.internalDelayed} delayed internally`);
-  if (delay.clientDelayed > 0 && delay.criticalCount === 0) signals.push(`${delay.clientDelayed} awaiting client \u00b7 delayed`);
-  if (awaitingApproval > 5 && delay.clientDelayed === 0) signals.push(`Approval queue at ${awaitingApproval}`);
-  if (delay.requestDelayed > 0) signals.push(`${delay.requestDelayed} request${delay.requestDelayed > 1 ? 's' : ''} stalled >24h`);
-  if (revisions > 3) signals.push(`${revisions} in revision cycle`);
-  let signalsHtml = signals.length
-    ? signals.slice(0, 4).map(s => `<div class="db-signal">${s}</div>`).join('')
-    : '';
-  if (delay.unknownDelayCount > 0) {
-    signalsHtml += `<div class="db-signal db-signal-muted">Some delay signals unavailable</div>`;
+  // ── RUNWAY (consecutive posting days, smart start) ──
+  // Sunday (getDay() === 0) is NOT a posting day: skip, don't break, don't count
+  function isPostingDay(d) { return d.getDay() !== 0; }
+  function dayKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
 
-  // ── 4. MOMENTUM ──
-  const recentDays = 3;
-  const recentCutoff = now - (recentDays * DAY);
-  const recentMoved = allPosts.filter(p => {
-    const t = p.updated_at || p.updatedAt;
-    return t && new Date(t).getTime() > recentCutoff;
-  }).length;
-  const momentumMsg = recentMoved > 0
-    ? `${recentMoved} post${recentMoved > 1 ? 's' : ''} moved in the last ${recentDays} days`
-    : 'No movement in the last 3 days';
-  const paceMsg = pubThisMonth >= dayOfMonth ? 'Delivery on pace' : 'Delivery below target';
+  // Collect ALL future scheduled dates (no month restriction)
+  const futureDays = new Set();
+  allPosts.filter(p => stg(p) === 'scheduled').forEach(p => {
+    const d = parseDate(p.targetDate);
+    if (d && d >= now) futureDays.add(dayKey(d));
+  });
 
-  // ── 5. RIGHT COLUMN — Actions + Metadata ──
-  const actions = [];
-  if (awaitingApproval > 10) actions.push({ text: 'Push approvals', onclick: "goToTab('pipeline')" });
-  if (stuck > 0)             actions.push({ text: 'Review stuck items', onclick: "goToTab('pipeline')" });
-  if (awaitingInput > 0)     actions.push({ text: 'Follow up with client', onclick: "goToTab('pipeline')" });
+  // Determine start: today if it has content, else earliest future date
+  // If start lands on a non-posting day, advance to next posting day
+  let hard_runway = 0;
+  if (futureDays.size > 0) {
+    let start;
+    if (futureDays.has(dayKey(now))) {
+      start = new Date(now);
+    } else {
+      const sorted = Array.from(futureDays).sort();
+      const parts = sorted[0].split('-');
+      start = new Date(Number(parts[0]), Number(parts[1]), Number(parts[2]));
+    }
+    // H2: if start is a non-posting day, advance to next posting day
+    while (!isPostingDay(start)) start.setDate(start.getDate() + 1);
+    // Count consecutive posting days from start (H1: max 365 iterations)
+    const check = new Date(start);
+    let iterations = 0;
+    while (iterations++ < 365) {
+      if (!isPostingDay(check)) {
+        // Non-posting day: skip (no break, no count)
+        check.setDate(check.getDate() + 1);
+        continue;
+      }
+      if (!futureDays.has(dayKey(check))) break;
+      hard_runway++;
+      check.setDate(check.getDate() + 1);
+    }
+  }
+  const soft_runway = Math.floor(approval * 0.7);
 
-  let approvalInterpretation = '';
-  if (sent > 0) {
-    const eff = approved / sent;
-    if (eff >= 0.7) approvalInterpretation = 'Strong approval flow';
-    else if (eff >= 0.4) approvalInterpretation = 'Approval flow moderate';
-    else approvalInterpretation = 'Approval friction high';
-    if (rejected > approved * 0.5) approvalInterpretation += ' \u00b7 Rejection high';
+  // ── FLOW NODES: Production → Approval → Scheduled → Published ──
+  const flowNodes = [
+    { label: 'Production', count: production, color: STAGE_META['in production'].hex },
+    { label: 'Approval',   count: approval,   color: STAGE_META['awaiting approval'].hex },
+    { label: 'Scheduled',  count: scheduled,  color: STAGE_META['scheduled'].hex },
+    { label: 'Published',  count: published,  color: STAGE_META['published'].hex },
+  ];
+  const nodeMax = Math.max(...flowNodes.map(n => n.count), 1);
+  const flowHtml = flowNodes.map(n => {
+    const h = Math.max(Math.round((n.count / nodeMax) * 36), 3);
+    const dominant = n.count === nodeMax && n.count > 0;
+    return `<div class="rw-node${dominant ? ' rw-node-dom' : ''}">
+      <div class="rw-node-bar" style="height:${h}px;background:${n.color}"></div>
+      <div class="rw-node-ct">${n.count}</div>
+      <div class="rw-node-lbl">${n.label}</div>
+    </div>`;
+  }).join('<div class="rw-node-arrow"></div>');
+
+  // ── RUNWAY-SPECIFIC WARNINGS (max 3) ──
+  // C1: runway is single source of truth, not scheduled count
+  const warnings = [];
+  if (hard_runway === 0) warnings.push({ text: 'No runway', level: 'crit' });
+  if (approval === 0 && warnings.length < 3) warnings.push({ text: 'No posts in approval', level: 'risk' });
+  if (production === 0 && warnings.length < 3) warnings.push({ text: 'Pipeline dry \u2014 no production', level: 'risk' });
+  const warningsHtml = warnings.map(w =>
+    `<span class="rw-warn rw-warn-${w.level}">${w.text}</span>`
+  ).join('');
+
+  // ── ACTION LINE (always a directive, never generic) ──
+  let actionText = '';
+  if (hard_runway === 0) {
+    actionText = 'No content scheduled \u2014 create and send immediately';
+  } else if (hard_runway <= 2 && approval > 0) {
+    actionText = 'Push approvals now';
+  } else if (hard_runway <= 2) {
+    actionText = 'Create content urgently';
+  } else if (production > approval) {
+    actionText = 'Move production to approval';
+  } else if (approval > scheduled) {
+    actionText = 'Convert approvals to schedule';
+  } else {
+    actionText = 'Maintain current pace';
   }
 
   // ── RENDER ──
-  el.innerHTML = `<div class="db-grid">
-    <div class="db-left">
-      <div class="db-hero">
-        <div class="db-hero-head">
-          <div class="db-hero-total">${total}</div>
-          <div class="db-hero-lbl">posts in system</div>
-          <div class="db-hero-status${(stuck > 0 || delay.totalDelayed > 0) ? ' db-hero-warn' : ''}">${statusMsg}</div>
-        </div>
-        <div class="db-flow-bar">${flowBar}</div>
-        <div class="db-flow-labels">${flowLabels}</div>
-      </div>
-
-      <div class="db-section">
-        <div class="db-section-title">Flow</div>
-        <div class="db-timeline">${flowTimeline}</div>
-      </div>
-
-      ${signalsHtml ? `<div class="db-section">
-        <div class="db-section-title">Signals</div>
-        <div class="db-signals">${signalsHtml}</div>
-      </div>` : ''}
-
-      <div class="db-section">
-        <div class="db-section-title">Momentum</div>
-        <div class="db-momentum">${momentumMsg}</div>
-        <div class="db-momentum db-momentum-pace">${paceMsg}</div>
-      </div>
+  el.innerHTML = `<div class="rw-dash">
+    <div class="rw-month">${monthLabel}</div>
+    <div class="rw-hero">
+      <div class="rw-runway-hard">${hard_runway}</div>
+      <div class="rw-runway-label">days of runway</div>
+      ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
     </div>
-
-    <div class="db-right">
-      ${actions.length ? `<div class="db-aside-group">
-        ${actions.slice(0, 3).map(a =>
-          `<div class="db-action" onclick="${a.onclick}">${a.text} &rarr;</div>`
-        ).join('')}
-      </div>` : ''}
-
-      <div class="db-aside-group">
-        <div class="db-aside-title">Approval Intelligence</div>
-        <div class="db-meta-row"><span>Sent</span><span class="db-meta-val">${sent}</span></div>
-        <div class="db-meta-row"><span>Approved</span><span class="db-meta-val">${approved}</span></div>
-        <div class="db-meta-row"><span>Published</span><span class="db-meta-val">${published}</span></div>
-        <div class="db-meta-row"><span>Rejected</span><span class="db-meta-val">${rejected}</span></div>
-        <div class="db-meta-row"><span>Revision rate</span><span class="db-meta-val">${revisionRate}%</span></div>
-        <div class="db-meta-row"><span>Avg wait</span><span class="db-meta-val">${avgWait}d</span></div>
-        ${approvalInterpretation ? `<div class="db-intel-sub">${approvalInterpretation}</div>` : ''}
-      </div>
-
-      <div class="db-aside-enter" onclick="goToTab('pipeline')">Enter Flow &rarr;</div>
-    </div>
+    <div class="rw-flow">${flowHtml}</div>
+    ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
+    <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
 }
 
