@@ -809,11 +809,12 @@ a:hover { text-decoration: underline; }
 .pcs-dash-surface { padding: 0; }
 
 /* ── Runway Control System ── */
-.rw-dash {
+/* ── Command Center ── */
+.rw-cc {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: var(--pcs-gap-4);
+  gap: 24px;
+  padding: 32px var(--pcs-gap-4) var(--pcs-gap-4);
   max-width: 520px;
   margin: 0 auto;
 }
@@ -840,6 +841,12 @@ a:hover { text-decoration: underline; }
 }
 .rw-runway-crit { color: var(--c-red, #ef4444); }
 .rw-runway-warn { color: var(--c-amber, #f59e0b); }
+.rw-next-gap {
+  font-size: 13px;
+  color: var(--text3);
+  opacity: 0.55;
+  margin-top: 2px;
+}
 .rw-runway-label {
   font-size: 14px;
   color: var(--text2);
@@ -852,55 +859,34 @@ a:hover { text-decoration: underline; }
   margin-top: 4px;
 }
 
-/* Flow nodes */
-.rw-flow {
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-}
-.rw-node {
-  flex: 1;
+/* Text pipeline (replaces graph) */
+.rw-pipeline {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  opacity: 0.5;
-  transition: opacity 160ms ease;
+  gap: 6px;
 }
-.rw-node-zero { opacity: 0.28; }
-.rw-node-dom { opacity: 1; font-weight: 700; }
-.rw-node-bar {
-  width: 100%;
-  max-width: 36px;
-  border-radius: 2px;
-  transition: height 200ms ease;
+.rw-pipe-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0;
 }
-.rw-node-ct {
-  font-size: 12px;
-  font-weight: 600;
+.rw-pipe-row.rw-pipe-zero { opacity: 0.35; }
+.rw-pipe-label {
+  font-size: 13px;
   color: var(--text2);
+}
+.rw-pipe-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
   font-variant-numeric: tabular-nums;
-}
-.rw-node-lbl {
-  font-size: 10px;
-  color: var(--text3);
-  opacity: 0.6;
-  text-align: center;
-}
-.rw-node-arrow {
-  width: 12px;
-  height: 1px;
-  background: var(--pcs-border-soft);
-  opacity: 0.25;
-  flex-shrink: 0;
-  align-self: center;
-  margin-bottom: 20px;
 }
 
 /* Warnings */
 .rw-warnings {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
 }
 .rw-warn {

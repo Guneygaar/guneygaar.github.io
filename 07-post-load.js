@@ -372,6 +372,7 @@ function renderDashboard() {
   // Determine start: today if it has content, else earliest future date
   // If start lands on a non-posting day, advance to next posting day
   let hard_runway = 0;
+  let nextGapDay = '';
   if (futureDays.size > 0) {
     let start;
     if (futureDays.has(dayKey(now))) {
@@ -396,38 +397,37 @@ function renderDashboard() {
       hard_runway++;
       check.setDate(check.getDate() + 1);
     }
+    // Next gap: first posting day with no content
+    if (hard_runway > 0) {
+      const dn = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      nextGapDay = dn[check.getDay()] + ' ' + check.getDate() + '/' + (check.getMonth() + 1);
+    }
   }
   const soft_runway = Math.floor(approval * 0.7);
 
-  // ── FLOW NODES: Production → Approval → Scheduled → Published ──
-  const flowNodes = [
-    { label: 'Production', count: production, color: STAGE_META['in production'].hex },
-    { label: 'Approval',   count: approval,   color: STAGE_META['awaiting approval'].hex },
-    { label: 'Scheduled',  count: scheduled,  color: STAGE_META['scheduled'].hex },
-    { label: 'Published',  count: published,  color: STAGE_META['published'].hex },
+  // ── TEXT PIPELINE (replaces graph) ──
+  const pipelineRows = [
+    { label: 'Production', count: production },
+    { label: 'Approval',   count: approval },
+    { label: 'Scheduled',  count: scheduled },
+    { label: 'Published',  count: published },
   ];
-  const nodeMax = Math.max(...flowNodes.map(n => n.count), 1);
-  const flowHtml = flowNodes.map(n => {
-    const h = Math.max(Math.round((n.count / nodeMax) * 36), 3);
-    const dominant = n.count === nodeMax && n.count > 0;
-    const zero = n.count === 0;
-    return `<div class="rw-node${dominant ? ' rw-node-dom' : ''}${zero ? ' rw-node-zero' : ''}">
-      <div class="rw-node-bar" style="height:${h}px;background:${n.color}"></div>
-      <div class="rw-node-ct">${n.count}</div>
-      <div class="rw-node-lbl">${n.label}</div>
-    </div>`;
-  }).join('<div class="rw-node-arrow"></div>');
+  const pipelineHtml = pipelineRows.map(r =>
+    `<div class="rw-pipe-row${r.count === 0 ? ' rw-pipe-zero' : ''}">` +
+    `<span class="rw-pipe-label">${r.label}</span>` +
+    `<span class="rw-pipe-count">${r.count}</span></div>`
+  ).join('');
 
   // ── TODAY CHECK ──
   const todayHasPost = futureDays.has(dayKey(now));
 
-  // ── RUNWAY-SPECIFIC WARNINGS (max 3) ──
-  // C1: runway is single source of truth, not scheduled count
+  // ── WARNINGS (max 3, ordered: today → runway → pipeline) ──
   const warnings = [];
-  if (hard_runway === 0) warnings.push({ text: 'No runway', level: 'crit' });
-  if (!todayHasPost && warnings.length < 3) warnings.push({ text: 'No post scheduled today', level: 'crit' });
-  if (approval === 0 && warnings.length < 3) warnings.push({ text: 'No posts in approval', level: 'risk' });
-  if (production === 0 && warnings.length < 3) warnings.push({ text: 'Pipeline dry \u2014 no production', level: 'risk' });
+  if (!todayHasPost) warnings.push({ text: 'No post scheduled today', level: 'crit' });
+  if (hard_runway === 0 && warnings.length < 3) warnings.push({ text: 'No runway', level: 'crit' });
+  else if (hard_runway <= 2 && hard_runway > 0 && warnings.length < 3) warnings.push({ text: 'Low runway \u2014 act now', level: 'crit' });
+  if (approval === 0 && warnings.length < 3) warnings.push({ text: 'Approval empty', level: 'risk' });
+  if (production === 0 && warnings.length < 3) warnings.push({ text: 'Production empty', level: 'risk' });
   const warningsHtml = warnings.map(w =>
     `<span class="rw-warn rw-warn-${w.level}">${w.text}</span>`
   ).join('');
@@ -453,15 +453,16 @@ function renderDashboard() {
     actionText = `${hard_runway}d runway \u2014 maintain current pace`;
   }
 
-  // ── RENDER ──
-  el.innerHTML = `<div class="rw-dash">
+  // ── RENDER (command center: single vertical flow) ──
+  el.innerHTML = `<div class="rw-cc">
     <div class="rw-month">${monthLabel}</div>
     <div class="rw-hero">
       <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
+      ${nextGapDay ? `<div class="rw-next-gap">Next gap: ${nextGapDay}</div>` : ''}
       <div class="rw-runway-label">days of runway</div>
       ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
     </div>
-    <div class="rw-flow">${flowHtml}</div>
+    <div class="rw-pipeline">${pipelineHtml}</div>
     ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
     <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
