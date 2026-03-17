@@ -426,15 +426,33 @@ function renderDashApprovalIntel() {
   const approved = allPosts.filter(p =>
     ['approved', 'scheduled', 'published'].includes((p.stage || '').toLowerCase().trim())
   ).length;
+  const published = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'published'
+  ).length;
+  const rejected = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'rejected'
+  ).length;
   const revisions = allPosts.filter(p =>
     (p.stage || '').toLowerCase().trim() === 'revisions needed'
   ).length;
   const revisionRate = sent > 0 ? Math.round((revisions / sent) * 100) : 0;
 
+  let interpretation = '';
+  if (sent > 0) {
+    const efficiency = approved / sent;
+    if (efficiency >= 0.7) interpretation = 'Strong approval flow \u00b7 Delivery on track';
+    else if (efficiency >= 0.4) interpretation = 'Approval flow moderate';
+    else interpretation = 'Approval friction high';
+    if (rejected > approved * 0.5) interpretation += ' \u00b7 Rejection high';
+  }
+
   el.innerHTML = `<div class="pcs-intel-rows">
     <div class="pcs-intel-row">Sent for approval: <span class="pcs-intel-val">${sent}</span></div>
     <div class="pcs-intel-row">Approved: <span class="pcs-intel-val">${approved}</span></div>
+    <div class="pcs-intel-row">Published: <span class="pcs-intel-val">${published}</span></div>
+    <div class="pcs-intel-row">Rejected: <span class="pcs-intel-val">${rejected}</span></div>
     <div class="pcs-intel-row">Revision rate: <span class="pcs-intel-val">${revisionRate}%</span></div>
+    ${interpretation ? `<div class="pcs-intel-sub">${interpretation}</div>` : ''}
   </div>`;
 }
 

@@ -959,6 +959,11 @@ a:hover { text-decoration: underline; }
   color: var(--text1);
   font-variant-numeric: tabular-nums;
 }
+.pcs-intel-sub {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 4px;
+}
 
 /* Command action links */
 .pcs-action-link {
