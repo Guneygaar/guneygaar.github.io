@@ -520,6 +520,7 @@ function _refreshPCSAfterStageChange(postId) {
 
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
   if (elDesign)   elDesign.innerHTML   = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
+  _updateSubtitle(post);
   // Note: elFields is intentionally NOT rebuilt here.
   // Rebuilding the grid via innerHTML destroys <select> and <input>
   // elements while other async saves (pillar, owner, etc.) may still
