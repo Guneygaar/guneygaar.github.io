@@ -862,7 +862,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   gap: 4px;
   flex: 1;
-  opacity: 0.5;
+  opacity: 0.4;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 .pcs-pipe-node.pcs-pipe-active {
@@ -876,7 +876,7 @@ a:hover { text-decoration: underline; }
 }
 .pcs-pipe-count {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
@@ -889,6 +889,7 @@ a:hover { text-decoration: underline; }
   width: 24px;
   height: 1px;
   background: var(--pcs-border-soft);
+  opacity: 0.3;
   flex-shrink: 0;
   align-self: center;
   margin-top: -16px;
@@ -931,34 +932,24 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   color: var(--text3);
 }
-.pcs-block-row {
-  display: flex;
-  align-items: center;
-  gap: var(--pcs-gap-2);
-  padding: 6px 0;
+.pcs-block-signal {
+  font-size: 13px;
+  color: var(--text2);
+  opacity: 0.7;
+  line-height: 1.4;
+}
+
+/* Detail toggle */
+.pcs-dash-detail-toggle {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  padding: var(--pcs-gap-2) var(--pcs-gap-3);
   cursor: pointer;
   transition: opacity 120ms ease;
 }
-.pcs-block-row:active { opacity: 0.7; transform: scale(0.98); }
-.pcs-block-title {
-  font-size: 13px;
-  color: var(--text);
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pcs-block-pillar {
-  font-size: 10px;
-  color: var(--text3);
-  flex-shrink: 0;
-}
-.pcs-block-more {
-  font-size: 11px;
-  color: var(--text3);
-  padding: 4px 0;
-}
+.pcs-dash-detail-toggle:active { opacity: 0.7; }
+.pcs-dash-detail-toggle.pcs-detail-open { opacity: 0.6; }
 
 /* ═══════════════════════════════════════════════
    HERO CARD — Zone 1 (legacy, hidden sections)

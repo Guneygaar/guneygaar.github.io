@@ -138,10 +138,12 @@
       <div id="pcs-dash-pipeline"></div>
       <!-- Blockers -->
       <div id="pcs-dash-blockers"></div>
-      <!-- Stage chip summary -->
-      <div id="task-stage-chips"></div>
-      <!-- Task list -->
-      <div id="tasks-container"></div>
+      <!-- Collapsible detail layer -->
+      <div id="pcs-dash-detail-toggle" class="pcs-dash-detail-toggle" onclick="toggleDashDetail()">View detailed tasks &rarr;</div>
+      <div id="pcs-dash-detail" class="pcs-dash-detail" style="display:none">
+        <div id="task-stage-chips"></div>
+        <div id="tasks-container"></div>
+      </div>
       <!-- Hidden stubs for JS compat -->
       <div id="admin-insight-section" style="display:none"></div>
       <div id="task-banner-section"   style="display:none"></div>

@@ -274,15 +274,15 @@ function renderDashHero() {
       || (s === 'revisions needed' && daysSince(p) >= 2);
   }).length;
 
-  const heroNum = awaiting || ready;
-  const heroLabel = awaiting ? 'Approvals pending' : 'Posts ready';
-  const statusMsg = stuck > 0
-    ? `${stuck} stuck in pipeline. Check blockers.`
-    : 'Pipeline clear. Team on track.';
+  let statusMsg;
+  if (stuck === 0 && awaiting < 5) statusMsg = 'Flow is healthy';
+  else if (stuck > 0)              statusMsg = 'Bottlenecks detected';
+  else if (awaiting > 10)          statusMsg = 'Approval backlog increasing';
+  else                             statusMsg = 'Pipeline moving';
 
   el.innerHTML = `
-    <div class="pcs-dash-hero-num">${heroNum}</div>
-    <div class="pcs-dash-hero-label">${heroLabel}</div>
+    <div class="pcs-dash-hero-num">${awaiting}</div>
+    <div class="pcs-dash-hero-label">Approvals pending</div>
     <div class="pcs-dash-hero-secondary">${ready} ready &middot; ${stuck} stuck</div>
     <div class="pcs-dash-hero-status">${statusMsg}</div>`;
 }
@@ -324,48 +324,54 @@ function renderDashBlockers() {
   const el = document.getElementById('pcs-dash-blockers');
   if (!el) return;
 
-  const approvalPosts = allPosts.filter(p =>
+  const approvalCount = allPosts.filter(p =>
     (p.stage || '').toLowerCase().trim() === 'awaiting approval'
-  );
-  const inputPosts = allPosts.filter(p =>
+  ).length;
+  const inputCount = allPosts.filter(p =>
     (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
-  );
+  ).length;
 
-  if (!approvalPosts.length && !inputPosts.length) {
+  if (!approvalCount && !inputCount) {
     el.innerHTML = '';
     return;
   }
 
-  function blockRow(p) {
-    const id = getPostId(p);
-    const title = getTitle(p);
-    const pillar = PILLAR_SHORT[(p.contentPillar || '').toLowerCase()] || p.contentPillar || '';
-    return `<div class="pcs-block-row" data-post-id="${esc(id)}" data-list="tasks">
-      <span class="pcs-block-title">${esc(title)}</span>
-      ${pillar ? `<span class="pcs-block-pillar">${esc(pillar)}</span>` : ''}
-    </div>`;
-  }
+  let approvalSignal;
+  if (approvalCount === 0)      approvalSignal = 'No approvals pending';
+  else if (approvalCount <= 3)  approvalSignal = 'Approval flow stable';
+  else                          approvalSignal = 'Approval bottleneck building';
+
+  let inputSignal = '';
+  if (inputCount > 0) inputSignal = 'Dependency on brand slowing progress';
 
   let html = '<div class="pcs-blockers-card">';
 
-  if (approvalPosts.length) {
+  if (approvalCount > 0) {
     html += `<div class="pcs-block-section pcs-block-amber">
-      <div class="pcs-block-heading">Awaiting approval <span class="pcs-block-count">${approvalPosts.length}</span></div>
-      ${approvalPosts.slice(0, 5).map(blockRow).join('')}
-      ${approvalPosts.length > 5 ? `<div class="pcs-block-more">+${approvalPosts.length - 5} more</div>` : ''}
+      <div class="pcs-block-heading">Awaiting approval <span class="pcs-block-count">${approvalCount}</span></div>
+      <div class="pcs-block-signal">${approvalSignal}</div>
     </div>`;
   }
 
-  if (inputPosts.length) {
+  if (inputCount > 0) {
     html += `<div class="pcs-block-section pcs-block-blue">
-      <div class="pcs-block-heading">Waiting for input <span class="pcs-block-count">${inputPosts.length}</span></div>
-      ${inputPosts.slice(0, 5).map(blockRow).join('')}
-      ${inputPosts.length > 5 ? `<div class="pcs-block-more">+${inputPosts.length - 5} more</div>` : ''}
+      <div class="pcs-block-heading">Waiting for input <span class="pcs-block-count">${inputCount}</span></div>
+      <div class="pcs-block-signal">${inputSignal}</div>
     </div>`;
   }
 
   html += '</div>';
   el.innerHTML = html;
+}
+
+function toggleDashDetail() {
+  const detail = document.getElementById('pcs-dash-detail');
+  const toggle = document.getElementById('pcs-dash-detail-toggle');
+  if (!detail || !toggle) return;
+  const open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : '';
+  toggle.textContent = open ? 'View detailed tasks →' : 'Hide details';
+  toggle.classList.toggle('pcs-detail-open', !open);
 }
 
 function renderPipelineStrip() {
