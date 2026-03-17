@@ -3758,6 +3758,9 @@ div.pcs-date-tap {
   min-width: 0;
   max-width: 100%;
   z-index: 1;
+  color: transparent;
+  background: transparent;
+  border: none;
 }
 .pcs-date-text {
   position: relative;
