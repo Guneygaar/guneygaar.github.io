@@ -177,8 +177,12 @@ function renderAll() {
   // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
     run('dashHero',           renderDashHero);
+    run('dashIntel',          renderDashIntel);
+    run('dashApprovalIntel',  renderDashApprovalIntel);
     run('dashPipeline',       renderDashPipeline);
     run('dashBlockers',       renderDashBlockers);
+    run('dashActions',        renderDashActions);
+    run('dashEnterFlow',      renderDashEnterFlow);
     run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
@@ -310,7 +314,7 @@ function renderDashPipeline() {
     const isActive = counts[st.key] === maxCount && maxCount > 0;
     const activeClass = isActive ? ' pcs-pipe-active' : '';
     const connector = i < stages.length - 1 ? '<div class="pcs-pipe-connector"></div>' : '';
-    return `<div class="pcs-pipe-node${activeClass}">
+    return `<div class="pcs-pipe-node${activeClass}" onclick="goToTab('pipeline')" style="cursor:pointer">
       <div class="pcs-pipe-dot" style="background:${st.color}"></div>
       <div class="pcs-pipe-count">${counts[st.key]}</div>
       <div class="pcs-pipe-label">${st.label}</div>
@@ -364,14 +368,137 @@ function renderDashBlockers() {
   el.innerHTML = html;
 }
 
-function toggleDashDetail() {
-  const detail = document.getElementById('pcs-dash-detail');
-  const toggle = document.getElementById('pcs-dash-detail-toggle');
-  if (!detail || !toggle) return;
-  const open = detail.style.display !== 'none';
-  detail.style.display = open ? 'none' : '';
-  toggle.textContent = open ? 'View detailed tasks →' : 'Hide details';
-  toggle.classList.toggle('pcs-detail-open', !open);
+function renderDashIntel() {
+  const el = document.getElementById('pcs-dash-intel');
+  if (!el) return;
+
+  const now = Date.now();
+  const DAY = 86400000;
+
+  // Pipeline health: check distribution balance
+  const stageCounts = {};
+  const trackStages = ['in production', 'ready', 'awaiting approval', 'scheduled'];
+  allPosts.forEach(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    if (trackStages.includes(s)) stageCounts[s] = (stageCounts[s] || 0) + 1;
+  });
+  const vals = trackStages.map(s => stageCounts[s] || 0);
+  const max = Math.max(...vals, 1);
+  const min = Math.min(...vals);
+  const pipelineHealth = (max - min) <= max * 0.5 ? 'Stable' : 'Unbalanced';
+
+  // Delivery pace
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const published = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    if (s !== 'published') return false;
+    const d = parseDate(p.targetDate);
+    return d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+  }).length;
+  const paceLabel = published >= dayOfMonth ? 'On pace' : 'Below target';
+
+  // Avg approval time (rough: days since creation for posts in approval)
+  const inApproval = allPosts.filter(p => (p.stage || '').toLowerCase().trim() === 'awaiting approval');
+  let avgDays = 0;
+  if (inApproval.length) {
+    const total = inApproval.reduce((sum, p) => {
+      const t = p.created_at || p.createdAt;
+      return sum + (t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0);
+    }, 0);
+    avgDays = Math.round(total / inApproval.length);
+  }
+
+  el.innerHTML = `<div class="pcs-intel-rows">
+    <div class="pcs-intel-row">Approval wait: <span class="pcs-intel-val">${avgDays}d avg</span></div>
+    <div class="pcs-intel-row">Pipeline: <span class="pcs-intel-val">${pipelineHealth}</span></div>
+    <div class="pcs-intel-row">Delivery pace: <span class="pcs-intel-val">${paceLabel}</span></div>
+  </div>`;
+}
+
+function renderDashApprovalIntel() {
+  const el = document.getElementById('pcs-dash-approval-intel');
+  if (!el) return;
+
+  const sent = allPosts.filter(p =>
+    ['awaiting approval', 'approved', 'scheduled', 'published'].includes((p.stage || '').toLowerCase().trim())
+  ).length;
+  const approved = allPosts.filter(p =>
+    ['approved', 'scheduled', 'published'].includes((p.stage || '').toLowerCase().trim())
+  ).length;
+  const published = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'published'
+  ).length;
+  const rejected = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'rejected'
+  ).length;
+  const revisions = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'revisions needed'
+  ).length;
+  const revisionRate = sent > 0 ? Math.round((revisions / sent) * 100) : 0;
+
+  let interpretation = '';
+  if (sent > 0) {
+    const efficiency = approved / sent;
+    if (efficiency >= 0.7) interpretation = 'Strong approval flow \u00b7 Delivery on track';
+    else if (efficiency >= 0.4) interpretation = 'Approval flow moderate';
+    else interpretation = 'Approval friction high';
+    if (rejected > approved * 0.5) interpretation += ' \u00b7 Rejection high';
+  }
+
+  el.innerHTML = `<div class="pcs-intel-rows">
+    <div class="pcs-intel-row">Sent for approval: <span class="pcs-intel-val">${sent}</span></div>
+    <div class="pcs-intel-row">Approved: <span class="pcs-intel-val">${approved}</span></div>
+    <div class="pcs-intel-row">Published: <span class="pcs-intel-val">${published}</span></div>
+    <div class="pcs-intel-row">Rejected: <span class="pcs-intel-val">${rejected}</span></div>
+    <div class="pcs-intel-row">Revision rate: <span class="pcs-intel-val">${revisionRate}%</span></div>
+    ${interpretation ? `<div class="pcs-intel-sub">${interpretation}</div>` : ''}
+  </div>`;
+}
+
+function renderDashActions() {
+  const el = document.getElementById('pcs-dash-actions');
+  if (!el) return;
+
+  const awaiting = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  ).length;
+  const input = allPosts.filter(p =>
+    (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
+  ).length;
+
+  const now = Date.now();
+  const DAY = 86400000;
+  function daysSince(post) {
+    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
+    return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
+  }
+  const stuck = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return (s === 'in production' && daysSince(p) >= 3)
+      || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
+      || (s === 'revisions needed' && daysSince(p) >= 2);
+  }).length;
+
+  const actions = [];
+  if (awaiting > 10) actions.push({ text: 'Push approvals', onclick: "goToTab('pipeline')" });
+  if (stuck > 0)     actions.push({ text: 'Review stuck items', onclick: "goToTab('pipeline')" });
+  if (input > 0)     actions.push({ text: 'Follow up with client', onclick: "goToTab('pipeline')" });
+
+  if (!actions.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = actions.slice(0, 2).map(a =>
+    `<div class="pcs-action-link" onclick="${a.onclick}">${a.text} &rarr;</div>`
+  ).join('');
+}
+
+function renderDashEnterFlow() {
+  const el = document.getElementById('pcs-dash-enter-flow');
+  if (!el) return;
+  el.innerHTML = `<div class="pcs-enter-flow" onclick="goToTab('pipeline')">
+    <div class="pcs-enter-flow-label">Enter Flow &rarr;</div>
+    <div class="pcs-enter-flow-sub">See what&rsquo;s moving, what&rsquo;s stuck, and take action</div>
+  </div>`;
 }
 
 function renderPipelineStrip() {
