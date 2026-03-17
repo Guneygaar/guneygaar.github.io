@@ -355,34 +355,40 @@ function renderDashboard() {
   const scheduled  = scheduledPosts.length;
   const published  = pubThisMonth.length;
 
-  // ── RUNWAY (consecutive days, smart start) ──
+  // ── RUNWAY (consecutive posting days, smart start) ──
+  // Sunday (getDay() === 0) is NOT a posting day: skip, don't break, don't count
+  function isPostingDay(d) { return d.getDay() !== 0; }
+  function dayKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
   // Collect ALL future scheduled dates (no month restriction)
   const futureDays = new Set();
   allPosts.filter(p => stg(p) === 'scheduled').forEach(p => {
     const d = parseDate(p.targetDate);
-    if (d && d >= now) {
-      futureDays.add(d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
-    }
+    if (d && d >= now) futureDays.add(dayKey(d));
   });
 
-  // Determine start: today if it has content, else earliest future date
+  // Determine start: today if it has content, else earliest future posting date
   let hard_runway = 0;
   if (futureDays.size > 0) {
-    const todayKey = now.getFullYear() + '-' + String(now.getMonth()).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
     let start;
-    if (futureDays.has(todayKey)) {
+    if (futureDays.has(dayKey(now))) {
       start = new Date(now);
     } else {
-      // Find earliest future date
       const sorted = Array.from(futureDays).sort();
       const parts = sorted[0].split('-');
       start = new Date(Number(parts[0]), Number(parts[1]), Number(parts[2]));
     }
-    // Count consecutive days from start
+    // Count consecutive posting days from start
     const check = new Date(start);
     while (true) {
-      const key = check.getFullYear() + '-' + String(check.getMonth()).padStart(2,'0') + '-' + String(check.getDate()).padStart(2,'0');
-      if (!futureDays.has(key)) break;
+      if (!isPostingDay(check)) {
+        // Non-posting day: skip silently (no break, no count)
+        check.setDate(check.getDate() + 1);
+        continue;
+      }
+      if (!futureDays.has(dayKey(check))) break;
       hard_runway++;
       check.setDate(check.getDate() + 1);
     }
