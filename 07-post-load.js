@@ -369,7 +369,8 @@ function renderDashboard() {
     if (d && d >= now) futureDays.add(dayKey(d));
   });
 
-  // Determine start: today if it has content, else earliest future posting date
+  // Determine start: today if it has content, else earliest future date
+  // If start lands on a non-posting day, advance to next posting day
   let hard_runway = 0;
   if (futureDays.size > 0) {
     let start;
@@ -380,11 +381,14 @@ function renderDashboard() {
       const parts = sorted[0].split('-');
       start = new Date(Number(parts[0]), Number(parts[1]), Number(parts[2]));
     }
-    // Count consecutive posting days from start
+    // H2: if start is a non-posting day, advance to next posting day
+    while (!isPostingDay(start)) start.setDate(start.getDate() + 1);
+    // Count consecutive posting days from start (H1: max 365 iterations)
     const check = new Date(start);
-    while (true) {
+    let iterations = 0;
+    while (iterations++ < 365) {
       if (!isPostingDay(check)) {
-        // Non-posting day: skip silently (no break, no count)
+        // Non-posting day: skip (no break, no count)
         check.setDate(check.getDate() + 1);
         continue;
       }
@@ -414,8 +418,9 @@ function renderDashboard() {
   }).join('<div class="rw-node-arrow"></div>');
 
   // ── RUNWAY-SPECIFIC WARNINGS (max 3) ──
+  // C1: runway is single source of truth, not scheduled count
   const warnings = [];
-  if (scheduled === 0) warnings.push({ text: 'No scheduled posts', level: 'crit' });
+  if (hard_runway === 0) warnings.push({ text: 'No runway', level: 'crit' });
   if (approval === 0 && warnings.length < 3) warnings.push({ text: 'No posts in approval', level: 'risk' });
   if (production === 0 && warnings.length < 3) warnings.push({ text: 'Pipeline dry \u2014 no production', level: 'risk' });
   const warningsHtml = warnings.map(w =>
