@@ -3839,7 +3839,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Date tap — inside .pcs-value-shell */
 div.pcs-date-tap {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   font-size: 16px;
   line-height: 1.4;
@@ -3848,7 +3848,7 @@ div.pcs-date-tap {
 }
 label.pcs-date-tap {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   position: relative;
   width: 100%;
