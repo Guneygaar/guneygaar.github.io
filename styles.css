@@ -3732,7 +3732,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 13px;
   line-height: 1.3;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
 .pcs-value {
@@ -3753,7 +3753,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   line-height: 1.3;
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
   margin-bottom: 4px;
 }
 .pcs-field-val {
@@ -3827,11 +3827,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.6;
   width: var(--pcs-space-4);
   height: var(--pcs-space-4);
-}
-
-.pcs-value-shell svg {
   position: relative;
   top: 1px;
+}
+
+/* ── Target Date — subtle signal via color only ── */
+.pcs-field[data-field="targetDate"] .pcs-value {
+  color: var(--text-primary);
 }
 
 /* Date tap — inside .pcs-value-shell */
