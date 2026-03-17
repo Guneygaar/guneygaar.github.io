@@ -3753,11 +3753,11 @@ div.pcs-date-tap {
   min-height: 0;
 }
 .pcs-date-tap .pcs-date-input-native {
-  min-height: 44px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  z-index: 1;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
   color: transparent;
   background: transparent;
   border: none;
