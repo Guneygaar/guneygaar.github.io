@@ -1006,8 +1006,9 @@ function renderLibraryCalendar(posts) {
     const dayPosts = dayMap[key] || [];
 
     const first = dayPosts[0];
+    const pillarKey = first ? (first.contentPillar || '').toLowerCase() : '';
     const pillar = first
-      ? ((PILLAR_DISPLAY && PILLAR_DISPLAY[(first.contentPillar || '').toLowerCase()]) || first.contentPillar || 'General')
+      ? (PILLAR_SHORT[pillarKey] || PILLAR_DISPLAY[pillarKey] || first.contentPillar || 'General')
       : '';
     const postId = first ? getPostId(first) : '';
     const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;
