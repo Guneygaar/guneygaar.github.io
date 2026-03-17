@@ -18,10 +18,18 @@ function parseDate(raw) {
   return new Date(y, m - 1, d);
 }
 
+const MONTHS = [
+  'Jan','Feb','Mar','Apr','May','Jun',
+  'Jul','Aug','Sep','Oct','Nov','Dec'
+];
+
 function formatDate(raw) {
   const d = parseDate(raw);
   if (!d) return null;
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const day   = d.getDate();
+  const month = MONTHS[d.getMonth()];
+  const year  = d.getFullYear();
+  return `${day} ${month} ${year}`;
 }
 
 function displayDate(raw) {
