@@ -3299,7 +3299,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding-top: var(--pcs-header-padding);
   padding-left: var(--pcs-content-padding);
   padding-right: var(--pcs-content-padding);
-  padding-bottom: 4px;
+  padding-bottom: 8px;
   text-align: left;
   flex-shrink: 0;
   border-bottom: none;
@@ -3943,6 +3943,7 @@ label.pcs-date-tap {
 /* ── Activity section (collapsed by default) ── */
 .pcs-activity-section {
   border-top: 1.5px solid var(--border2);
+  margin-top: -4px;
   padding-top: 0;
 }
 .pcs-activity-toggle {
