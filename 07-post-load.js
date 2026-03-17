@@ -316,68 +316,58 @@ function renderDashboard() {
 
   function stg(p) { return (p.stage || '').toLowerCase().trim(); }
 
-  // ── MONTH FILTER (mandatory) ──
+  // ── UI LABEL (display only, does NOT affect logic) ──
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const activeMonth = now.getMonth();
-  const activeYear  = now.getFullYear();
-  const monthLabel  = MONTHS_LONG[activeMonth] + ' ' + activeYear;
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
+  const monthLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
 
-  // Date selection depends on status
-  // scheduled/published → use targetDate (delivery date)
-  // active stages (request/production/approval) → use created_at
-  function postDate(p) {
-    const s = stg(p);
-    if (s === 'scheduled' || s === 'published') {
-      return parseDate(p.targetDate);
-    }
-    const raw = p.created_at || p.createdAt;
-    return raw ? new Date(raw) : null;
-  }
-
+  // ── PIPELINE FILTER (no month restriction) ──
+  // Include all active posts, exclude archived/stale states only
+  const EXCLUDED = new Set(['published', 'archive', 'parked']);
   const ACTIVE_STAGES = new Set([
     'awaiting brand input', 'in production', 'revisions needed',
-    'ready', 'awaiting approval'
+    'ready', 'awaiting approval', 'scheduled'
   ]);
 
-  const filteredPosts = allPosts.filter(p => {
-    const s = stg(p);
-    const d = postDate(p);
-    if (!d) return false;
-    // Scheduled/published: month match on targetDate
-    if (s === 'scheduled' || s === 'published') {
-      return d.getMonth() === activeMonth && d.getFullYear() === activeYear;
-    }
-    // Active stages: month match on created_at, but exclude >30 days old
-    if (ACTIVE_STAGES.has(s)) {
-      if (d < thirtyDaysAgo) return false;
-      return d.getMonth() === activeMonth && d.getFullYear() === activeYear;
-    }
-    return false;
-  });
+  const filteredPosts = allPosts.filter(p => ACTIVE_STAGES.has(stg(p)));
 
-  // ── COUNTS (all from filteredPosts, never allPosts) ──
+  // ── COUNTS (from filteredPosts, never allPosts) ──
   const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
   const approvalPosts   = filteredPosts.filter(p => stg(p) === 'awaiting approval');
   const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
-  const publishedPosts  = filteredPosts.filter(p => stg(p) === 'published');
+
+  // Published uses allPosts scoped to current month (display metric only)
+  const pubThisMonth = allPosts.filter(p => {
+    if (stg(p) !== 'published') return false;
+    const d = parseDate(p.targetDate);
+    return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
 
   const production = productionPosts.length;
   const approval   = approvalPosts.length;
   const scheduled  = scheduledPosts.length;
-  const published  = publishedPosts.length;
+  const published  = pubThisMonth.length;
 
-  // ── RUNWAY (date-based, not count-based) ──
-  // Extract unique future days from scheduled posts
-  const scheduledDays = new Set();
-  scheduledPosts.forEach(p => {
+  // ── RUNWAY (consecutive days from today) ──
+  // Get ALL future scheduled dates (no month restriction)
+  const futureDays = new Set();
+  allPosts.filter(p => stg(p) === 'scheduled').forEach(p => {
     const d = parseDate(p.targetDate);
     if (d && d >= now) {
-      scheduledDays.add(d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate());
+      futureDays.add(d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'));
     }
   });
-  const hard_runway = scheduledDays.size;
+  // Sort and count consecutive days starting from today
+  let hard_runway = 0;
+  if (futureDays.size > 0) {
+    const check = new Date(now);
+    while (true) {
+      const key = check.getFullYear() + '-' + String(check.getMonth()).padStart(2,'0') + '-' + String(check.getDate()).padStart(2,'0');
+      if (!futureDays.has(key)) break;
+      hard_runway++;
+      check.setDate(check.getDate() + 1);
+    }
+  }
   const soft_runway = Math.floor(approval * 0.7);
 
   // ── FLOW NODES: Production → Approval → Scheduled → Published ──
