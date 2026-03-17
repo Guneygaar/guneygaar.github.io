@@ -409,9 +409,9 @@ function renderDashboard() {
   const { enrichedPosts } = computeDelayMeta(filteredPosts);
   const delayed = enrichedPosts.filter(p => p.isDelayed);
 
-  // Group delayed posts by type → by owner
-  function buildBlock(label, posts) {
-    if (!posts.length) return '';
+  // Group delayed posts by type → by owner (pressure strips)
+  function buildPressureRows(posts) {
+    if (!posts.length) return { rows: '', overflow: 0 };
     const byOwner = {};
     posts.forEach(p => {
       const name = (p.owner || 'Admin').toUpperCase();
@@ -419,31 +419,42 @@ function renderDashboard() {
       byOwner[name].count++;
       if (p.delayHours > byOwner[name].maxH) byOwner[name].maxH = p.delayHours;
     });
-    const rows = Object.entries(byOwner)
-      .sort((a, b) => b[1].maxH - a[1].maxH)
-      .slice(0, 3)
-      .map(([name, d]) => {
-        const days = Math.round(d.maxH / 24);
-        const hot = d.maxH > 72 ? ' pb-hot' : '';
-        const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
-        return `<div class="pb-row" data-owner="${ownerVal.replace(/"/g, '&quot;')}">` +
-          `<span class="pb-name">${name}</span>` +
-          `<span class="pb-count">${d.count}</span>` +
-          `<span class="pb-delay${hot}">${days}d</span></div>`;
-      }).join('');
-    return `<div class="pb-block"><div class="pb-label">${label}</div>${rows}</div>`;
+    const sorted = Object.entries(byOwner).sort((a, b) => b[1].maxH - a[1].maxH);
+    const overflow = Math.max(0, sorted.length - 2);
+    const rows = sorted.slice(0, 2).map(([name, d]) => {
+      const days = Math.round(d.maxH / 24);
+      const sev = d.maxH > 72 ? 'pc-sev-high' : d.maxH > 36 ? 'pc-sev-mid' : 'pc-sev-low';
+      const edgeW = Math.min(6, Math.max(3, Math.round(d.maxH / 24)));
+      const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
+      return `<div class="pc-strip ${sev}" data-owner="${ownerVal.replace(/"/g, '&quot;')}" style="--edge-w:${edgeW}px">` +
+        `<span class="pc-name">${name}</span>` +
+        `<span class="pc-count">${d.count}</span>` +
+        `<span class="pc-delay">${days}d</span></div>`;
+    }).join('');
+    return { rows, overflow };
   }
 
   const internalDelayed = delayed.filter(p => p.delayType === 'internal');
   const clientDelayed = delayed.filter(p => p.delayType === 'client');
   const requestDelayed = delayed.filter(p => p.delayType === 'request');
 
-  // Max 2 blocks, most severe first
-  const blocks = [];
-  if (internalDelayed.length) blocks.push(buildBlock('OVERDUE \u2014 INTERNAL', internalDelayed));
-  if (clientDelayed.length) blocks.push(buildBlock('WAITING \u2014 CLIENT', clientDelayed));
-  if (requestDelayed.length && blocks.length < 2) blocks.push(buildBlock('STALE REQUESTS', requestDelayed));
-  const pressureHtml = blocks.slice(0, 2).join('');
+  // Priority: overdue > client > stale (show ONE type only)
+  let pressureLabel = '';
+  let pressureSource = [];
+  if (internalDelayed.length) {
+    pressureLabel = 'OVERDUE'; pressureSource = internalDelayed;
+  } else if (clientDelayed.length) {
+    pressureLabel = 'WAITING ON CLIENT'; pressureSource = clientDelayed;
+  } else if (requestDelayed.length) {
+    pressureLabel = 'STALE'; pressureSource = requestDelayed;
+  }
+  const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
+
+  // ── INVENTORY (ready-to-send health) ──
+  const invCount = ready + scheduled;
+  const invTarget = typeof READY_TO_SEND_TARGET !== 'undefined' ? READY_TO_SEND_TARGET : 30;
+  const invGap = Math.max(0, invTarget - invCount);
+  const invPct = Math.min(100, Math.round((invCount / invTarget) * 100));
 
   // ── TODAY CHECK (scheduled today OR published today) ──
   const todayKey = dayKey(now);
@@ -502,16 +513,33 @@ function renderDashboard() {
     actionText = 'Maintain pace';
   }
 
-  // ── RENDER (state-driven, single vertical flow) ──
-  el.innerHTML = `<div class="rw-cc">
-    <div class="rw-state ${stateClass}">${stateMsg}</div>
-    <div class="rw-runway-hard ${runwayState}">${runwayDisplay}</div>
-    ${contextLine ? `<div class="rw-context">${contextLine}</div>` : ''}
-    ${pressureHtml ? `<div class="rw-pressure">${pressureHtml}</div>` : ''}
-    <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
+  // ── RENDER (pressure control interface) ──
+  const pressureBlock = pressureRows ? `<div class="pc-zone">
+      <div class="pc-label">${pressureLabel}</div>
+      <div class="pc-strips">${pressureRows}</div>
+      ${pressureOverflow > 0 ? `<div class="pc-overflow">+${pressureOverflow} at risk</div>` : ''}
+    </div>` : '';
+
+  const inventoryBlock = `<div class="pc-inv">
+      <div class="pc-inv-head">
+        <span class="pc-inv-name">INVENTORY</span>
+        <span class="pc-inv-ratio">${invCount}<span class="pc-inv-sep"> / </span>${invTarget}</span>
+      </div>
+      ${invGap > 0 ? `<div class="pc-inv-gap">↓ ${invGap} short</div>` : ''}
+      <div class="pc-inv-bar"><div class="pc-inv-fill" style="width:${invPct}%"></div></div>
+    </div>`;
+
+  el.innerHTML = `<div class="pc-root">
+    <div class="pc-state ${stateClass}">${stateMsg}</div>
+    <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
+    ${contextLine ? `<div class="pc-context">${contextLine}</div>` : ''}
+    ${pressureBlock}
+    ${inventoryBlock}
+    <div class="pc-action" data-nav="pipeline">${actionText} →</div>
   </div>`;
 
-  // ── CLICK DELEGATION for pressure block names ──
+  // ── CLICK DELEGATION ──
+  el.querySelector('[data-nav="pipeline"]')?.addEventListener('click', () => goToTab('pipeline'));
   el.querySelectorAll('[data-owner]').forEach(row => {
     row.addEventListener('click', () => {
       const owner = row.dataset.owner;

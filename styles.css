@@ -808,116 +808,182 @@ a:hover { text-decoration: underline; }
 ═══════════════════════════════════════════════ */
 .pcs-dash-surface { padding: 0; }
 
-/* ── Runway Control System ── */
-/* ── State-driven UI ── */
-.rw-cc {
+/* ── Pressure Control Interface ── */
+.pc-root {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 32px var(--pcs-gap-4) var(--pcs-gap-4);
+  padding: 30px var(--pcs-gap-4) var(--pcs-gap-4);
   max-width: 520px;
-  margin: 0 auto;
 }
 
-/* State line — single message */
-.rw-state {
+/* 1. State line */
+.pc-state {
   font-size: 13px;
-  font-weight: 600;
-  padding: 4px 0;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0 0 18px;
 }
-.rw-state.st-fail { color: var(--c-red, #ef4444); }
-.rw-state.st-risk { color: var(--c-amber, #f59e0b); }
-.rw-state.st-safe { color: var(--text3); opacity: 0.5; }
+.pc-state.st-fail { color: var(--c-red, #ef4444); }
+.pc-state.st-risk { color: var(--c-amber, #f59e0b); }
+.pc-state.st-safe { color: var(--text3); opacity: 0.45; }
 
-/* Runway number */
-.rw-runway-hard {
-  font-size: 56px;
-  font-weight: 600;
+/* 2. Runway number — dominant anchor */
+.pc-runway {
+  font-size: 52px;
+  font-weight: 700;
   color: var(--text);
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
-.rw-runway-crit { color: var(--c-red, #ef4444); }
-.rw-runway-warn { color: var(--c-amber, #f59e0b); }
+.pc-runway.rw-runway-crit { color: var(--c-red, #ef4444); }
+.pc-runway.rw-runway-warn { color: var(--c-amber, #f59e0b); }
 
-/* Context line */
-.rw-context {
-  font-size: 13px;
+/* 3. Context line — tight to runway */
+.pc-context {
+  font-size: 12.5px;
   color: var(--text3);
-  opacity: 0.5;
-  margin-top: -12px;
+  opacity: 0.45;
+  margin-top: 4px;
+  padding-bottom: 22px;
 }
 
-/* Pressure blocks */
-.rw-pressure {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.pb-block {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.pb-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text3);
-  opacity: 0.5;
-}
-.pb-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: opacity 100ms ease;
-}
-.pb-row:active { opacity: 0.7; }
-@media (hover: hover) {
-  .pb-row:hover { opacity: 0.7; }
-}
-.pb-name {
-  font-size: 13px;
-  font-weight: 600;
-  background: var(--surface2, rgba(128,128,128,0.08));
-  padding: 4px 10px;
+/* 4. Pressure zone — core system */
+.pc-zone {
+  padding: 16px 0 20px;
+  margin-top: 2px;
   border-radius: 6px;
-  color: var(--text);
-  letter-spacing: 0.02em;
+  background: rgba(239, 68, 68, 0.03);
 }
-.pb-count {
-  font-size: 13px;
-  font-weight: 600;
+.pc-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  opacity: 0.5;
+  padding: 0 0 10px 12px;
+}
+.pc-strips {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Pressure strip — signal row */
+.pc-strip {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 14px 7px 12px;
+  border-left: var(--edge-w, 3px) solid var(--c-amber, #f59e0b);
+  cursor: pointer;
+  transition: opacity 80ms ease;
+}
+.pc-strip.pc-sev-high { border-left-color: var(--c-red, #ef4444); }
+.pc-strip.pc-sev-mid  { border-left-color: var(--c-amber, #f59e0b); }
+.pc-strip.pc-sev-low  { border-left-color: var(--text3); opacity: 0.7; }
+
+.pc-strip:active { opacity: 0.6; }
+@media (hover: hover) {
+  .pc-strip:hover { opacity: 0.65; }
+}
+
+/* Strip — name dominates */
+.pc-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  flex: 1;
+}
+.pc-count {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text2);
   font-variant-numeric: tabular-nums;
-  min-width: 18px;
+  opacity: 0.7;
 }
-.pb-delay {
-  font-size: 12px;
+.pc-delay {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-amber, #f59e0b);
+}
+.pc-sev-high .pc-delay { color: var(--c-red, #ef4444); }
+
+.pc-overflow {
+  font-size: 11px;
   color: var(--text3);
   opacity: 0.55;
-  font-variant-numeric: tabular-nums;
-}
-.pb-delay.pb-hot {
-  color: var(--c-red, #ef4444);
-  opacity: 1;
+  padding: 6px 0 0 14px;
 }
 
-/* Action line */
-.rw-action {
+/* 5. Inventory — calm, structural */
+.pc-inv {
+  padding: 18px 0 16px;
+  margin-top: 4px;
+}
+.pc-inv-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.pc-inv-name {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  opacity: 0.45;
+}
+.pc-inv-ratio {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.pc-inv-sep {
+  font-weight: 400;
+  color: var(--text3);
+  opacity: 0.4;
+}
+.pc-inv-gap {
+  font-size: 12px;
+  color: var(--text3);
+  opacity: 0.5;
+  margin-top: 3px;
+}
+/* Fragmented inventory bar */
+.pc-inv-bar {
+  margin-top: 8px;
+  height: 3px;
+  background: var(--surface2, rgba(128,128,128,0.08));
+  border-radius: 2px;
+  max-width: 180px;
+  overflow: hidden;
+}
+.pc-inv-fill {
+  height: 100%;
+  background: var(--text3);
+  opacity: 0.25;
+  border-radius: 2px;
+  transition: width 300ms ease;
+}
+
+/* 6. Action line */
+.pc-action {
   font-size: 13px;
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
-  margin-top: 4px;
+  padding-top: 20px;
   transition: opacity 120ms ease;
 }
-.rw-action:active { opacity: 0.7; }
+.pc-action:active { opacity: 0.6; }
 @media (hover: hover) {
-  .rw-action:hover { opacity: 0.75; }
+  .pc-action:hover { opacity: 0.7; }
 }
 
 
