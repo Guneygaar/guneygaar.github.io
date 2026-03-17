@@ -176,13 +176,7 @@ function renderAll() {
 
   // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
-    run('dashHero',           renderDashHero);
-    run('dashIntel',          renderDashIntel);
-    run('dashApprovalIntel',  renderDashApprovalIntel);
-    run('dashPipeline',       renderDashPipeline);
-    run('dashBlockers',       renderDashBlockers);
-    run('dashActions',        renderDashActions);
-    run('dashEnterFlow',      renderDashEnterFlow);
+    run('dashboard',          renderDashboard);
     run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
@@ -254,252 +248,297 @@ function updateBadge(id, count) {
 // Dashboard — Hero, Pipeline, Blockers
 // ═══════════════════════════════════════════════
 
-function renderDashHero() {
-  const el = document.getElementById('pcs-dash-hero');
-  if (!el) return;
+function computeDelayMeta(posts) {
+  const now = Date.now();
+  const HOUR = 3600000;
+  // Stages that require status_changed_at for delay computation
+  const needsStatusTs = new Set(['in production', 'scheduled', 'awaiting approval']);
 
-  const awaiting = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
-  ).length;
-  const ready = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'ready'
-  ).length;
+  const enrichedPosts = posts.map(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
+    const createdAt = p.created_at || p.createdAt;
+
+    // If this stage needs status_changed_at and it's missing → unknown
+    if (needsStatusTs.has(s) && !hasStatusTimestamp) {
+      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
+    }
+
+    // Pick the right reference timestamp per delay type
+    // request delay: uses created_at (when the request was made)
+    // internal/client delay: uses status_changed_at (when it entered this stage)
+    let ref = 0;
+    if (s === 'awaiting brand input') {
+      ref = createdAt ? new Date(createdAt).getTime() : 0;
+    } else {
+      const changedAt = p.status_changed_at || p.statusChangedAt;
+      ref = changedAt ? new Date(changedAt).getTime() : 0;
+    }
+
+    if (!ref) {
+      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
+    }
+
+    const hours = (now - ref) / HOUR;
+    let delayType = 'none';
+    let isDelayed = false;
+    let isCritical = false;
+
+    if (s === 'awaiting brand input' && hours > 24) {
+      delayType = 'request'; isDelayed = true;
+    } else if ((s === 'in production' || s === 'scheduled') && hours > 72) {
+      delayType = 'internal'; isDelayed = true;
+    } else if (s === 'awaiting approval' && hours > 72) {
+      delayType = 'client'; isDelayed = true;
+      if (hours > 120) isCritical = true;
+    }
+
+    return { ...p, delayType, delayHours: Math.round(hours), isDelayed, isCritical };
+  });
+
+  const delayed = enrichedPosts.filter(p => p.isDelayed);
+  return {
+    enrichedPosts,
+    aggregates: {
+      totalDelayed:      delayed.length,
+      internalDelayed:   delayed.filter(p => p.delayType === 'internal').length,
+      clientDelayed:     delayed.filter(p => p.delayType === 'client').length,
+      requestDelayed:    delayed.filter(p => p.delayType === 'request').length,
+      criticalCount:     delayed.filter(p => p.isCritical).length,
+      unknownDelayCount: enrichedPosts.filter(p => p.delayType === 'unknown').length,
+    }
+  };
+}
+
+function renderDashboard() {
+  const el = document.getElementById('pcs-dashboard');
+  if (!el) return;
 
   const now = Date.now();
   const DAY = 86400000;
-  function daysSince(post) {
-    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
+  const { enrichedPosts, aggregates: delay } = computeDelayMeta(allPosts);
+  function stg(p) { return (p.stage || '').toLowerCase().trim(); }
+  function daysSince(p) {
+    const t = p.updated_at || p.updatedAt || p.created_at || p.createdAt;
     return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
   }
+
+  // ── Compute all data once ──
+  const total = allPosts.length;
+  const stages = [
+    { key: 'awaiting brand input', label: 'Request',    color: STAGE_META['awaiting brand input'].hex },
+    { key: 'in production',        label: 'Production', color: STAGE_META['in production'].hex },
+    { key: 'revisions needed',     label: 'Revisions',  color: STAGE_META['revisions needed'].hex },
+    { key: 'ready',                label: 'Ready',      color: STAGE_META['ready'].hex },
+    { key: 'awaiting approval',    label: 'Approval',   color: STAGE_META['awaiting approval'].hex },
+    { key: 'scheduled',            label: 'Scheduled',  color: STAGE_META['scheduled'].hex },
+    { key: 'published',            label: 'Published',  color: STAGE_META['published'].hex },
+  ];
+  const counts = {};
+  allPosts.forEach(p => { const s = stg(p); stages.forEach(st => { if (s === st.key) counts[st.key] = (counts[st.key] || 0) + 1; }); });
+  stages.forEach(st => { counts[st.key] = counts[st.key] || 0; });
+
   const stuck = allPosts.filter(p => {
-    const s = (p.stage || '').toLowerCase().trim();
+    const s = stg(p);
     return (s === 'in production' && daysSince(p) >= 3)
       || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
       || (s === 'revisions needed' && daysSince(p) >= 2);
   }).length;
 
-  let statusMsg;
-  if (stuck === 0 && awaiting < 5) statusMsg = 'Flow is healthy';
-  else if (stuck > 0)              statusMsg = 'Bottlenecks detected';
-  else if (awaiting > 10)          statusMsg = 'Approval backlog increasing';
-  else                             statusMsg = 'Pipeline moving';
+  const awaitingApproval = counts['awaiting approval'];
+  const awaitingInput    = counts['awaiting brand input'];
+  const revisions        = counts['revisions needed'];
+  const published        = counts['published'];
+  const scheduled        = counts['scheduled'];
+  const ready            = counts['ready'];
+  const rejected = allPosts.filter(p => stg(p) === 'rejected').length;
 
-  el.innerHTML = `
-    <div class="pcs-dash-hero-num">${awaiting}</div>
-    <div class="pcs-dash-hero-label">Approvals pending</div>
-    <div class="pcs-dash-hero-secondary">${ready} ready &middot; ${stuck} stuck</div>
-    <div class="pcs-dash-hero-status">${statusMsg}</div>`;
-}
-
-function renderDashPipeline() {
-  const el = document.getElementById('pcs-dash-pipeline');
-  if (!el) return;
-
-  const stages = [
-    { key: 'in production',        label: 'Production', color: STAGE_META['in production'].hex },
-    { key: 'ready',                label: 'Ready',      color: STAGE_META['ready'].hex },
-    { key: 'awaiting approval',    label: 'Approval',   color: STAGE_META['awaiting approval'].hex },
-    { key: 'scheduled',            label: 'Scheduled',  color: STAGE_META['scheduled'].hex },
-  ];
-
-  const counts = {};
-  let maxCount = 0;
-  allPosts.forEach(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    stages.forEach(st => { if (s === st.key) counts[st.key] = (counts[st.key] || 0) + 1; });
-  });
-  stages.forEach(st => { counts[st.key] = counts[st.key] || 0; if (counts[st.key] > maxCount) maxCount = counts[st.key]; });
-
-  const nodes = stages.map((st, i) => {
-    const isActive = counts[st.key] === maxCount && maxCount > 0;
-    const activeClass = isActive ? ' pcs-pipe-active' : '';
-    const connector = i < stages.length - 1 ? '<div class="pcs-pipe-connector"></div>' : '';
-    return `<div class="pcs-pipe-node${activeClass}" onclick="goToTab('pipeline')" style="cursor:pointer">
-      <div class="pcs-pipe-dot" style="background:${st.color}"></div>
-      <div class="pcs-pipe-count">${counts[st.key]}</div>
-      <div class="pcs-pipe-label">${st.label}</div>
-    </div>${connector}`;
-  }).join('');
-
-  el.innerHTML = `<div class="pcs-pipe-row">${nodes}</div>`;
-}
-
-function renderDashBlockers() {
-  const el = document.getElementById('pcs-dash-blockers');
-  if (!el) return;
-
-  const approvalCount = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
+  // Approval intel
+  const sent = allPosts.filter(p =>
+    ['awaiting approval', 'approved', 'scheduled', 'published'].includes(stg(p))
   ).length;
-  const inputCount = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
+  const approved = allPosts.filter(p =>
+    ['approved', 'scheduled', 'published'].includes(stg(p))
   ).length;
+  const revisionRate = sent > 0 ? Math.round((revisions / sent) * 100) : 0;
 
-  if (!approvalCount && !inputCount) {
-    el.innerHTML = '';
-    return;
+  // Avg approval wait
+  const inApproval = allPosts.filter(p => stg(p) === 'awaiting approval');
+  let avgWait = 0;
+  if (inApproval.length) {
+    const sum = inApproval.reduce((s, p) => {
+      const t = p.created_at || p.createdAt;
+      return s + (t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0);
+    }, 0);
+    avgWait = Math.round(sum / inApproval.length);
   }
-
-  let approvalSignal;
-  if (approvalCount === 0)      approvalSignal = 'No approvals pending';
-  else if (approvalCount <= 3)  approvalSignal = 'Approval flow stable';
-  else                          approvalSignal = 'Approval bottleneck building';
-
-  let inputSignal = '';
-  if (inputCount > 0) inputSignal = 'Dependency on brand slowing progress';
-
-  let html = '<div class="pcs-blockers-card">';
-
-  if (approvalCount > 0) {
-    html += `<div class="pcs-block-section pcs-block-amber">
-      <div class="pcs-block-heading">Awaiting approval <span class="pcs-block-count">${approvalCount}</span></div>
-      <div class="pcs-block-signal">${approvalSignal}</div>
-    </div>`;
-  }
-
-  if (inputCount > 0) {
-    html += `<div class="pcs-block-section pcs-block-blue">
-      <div class="pcs-block-heading">Waiting for input <span class="pcs-block-count">${inputCount}</span></div>
-      <div class="pcs-block-signal">${inputSignal}</div>
-    </div>`;
-  }
-
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-function renderDashIntel() {
-  const el = document.getElementById('pcs-dash-intel');
-  if (!el) return;
-
-  const now = Date.now();
-  const DAY = 86400000;
-
-  // Pipeline health: check distribution balance
-  const stageCounts = {};
-  const trackStages = ['in production', 'ready', 'awaiting approval', 'scheduled'];
-  allPosts.forEach(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    if (trackStages.includes(s)) stageCounts[s] = (stageCounts[s] || 0) + 1;
-  });
-  const vals = trackStages.map(s => stageCounts[s] || 0);
-  const max = Math.max(...vals, 1);
-  const min = Math.min(...vals);
-  const pipelineHealth = (max - min) <= max * 0.5 ? 'Stable' : 'Unbalanced';
 
   // Delivery pace
   const today = new Date();
   const dayOfMonth = today.getDate();
-  const published = allPosts.filter(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    if (s !== 'published') return false;
+  const pubThisMonth = allPosts.filter(p => {
+    if (stg(p) !== 'published') return false;
     const d = parseDate(p.targetDate);
     return d && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
   }).length;
-  const paceLabel = published >= dayOfMonth ? 'On pace' : 'Below target';
 
-  // Avg approval time (rough: days since creation for posts in approval)
-  const inApproval = allPosts.filter(p => (p.stage || '').toLowerCase().trim() === 'awaiting approval');
-  let avgDays = 0;
-  if (inApproval.length) {
-    const total = inApproval.reduce((sum, p) => {
-      const t = p.created_at || p.createdAt;
-      return sum + (t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0);
-    }, 0);
-    avgDays = Math.round(total / inApproval.length);
-  }
+  // Status message (calm surface + embedded tension)
+  let statusMsg = 'System nominal';
+  if (delay.criticalCount > 0)    statusMsg = 'Critical delays active';
+  else if (stuck > 0)             statusMsg = 'Friction detected';
+  else if (delay.totalDelayed > 0) statusMsg = 'Delays in pipeline';
+  else if (awaitingApproval > 10) statusMsg = 'Approval load high';
 
-  el.innerHTML = `<div class="pcs-intel-rows">
-    <div class="pcs-intel-row">Approval wait: <span class="pcs-intel-val">${avgDays}d avg</span></div>
-    <div class="pcs-intel-row">Pipeline: <span class="pcs-intel-val">${pipelineHealth}</span></div>
-    <div class="pcs-intel-row">Delivery pace: <span class="pcs-intel-val">${paceLabel}</span></div>
-  </div>`;
-}
+  // ── 1. HERO: System Health ──
+  // Flow bar — continuous distribution
+  const flowStages = stages.filter(st => counts[st.key] > 0);
+  const flowTotal = flowStages.reduce((s, st) => s + counts[st.key], 0) || 1;
+  const flowBar = flowStages.map(st => {
+    const pct = Math.max((counts[st.key] / flowTotal) * 100, 3);
+    const isHeavy = counts[st.key] > flowTotal * 0.35;
+    return `<div class="db-flow-seg${isHeavy ? ' db-flow-heavy' : ''}" style="width:${pct}%;background:${st.color}" title="${st.label}: ${counts[st.key]}"></div>`;
+  }).join('');
 
-function renderDashApprovalIntel() {
-  const el = document.getElementById('pcs-dash-approval-intel');
-  if (!el) return;
-
-  const sent = allPosts.filter(p =>
-    ['awaiting approval', 'approved', 'scheduled', 'published'].includes((p.stage || '').toLowerCase().trim())
-  ).length;
-  const approved = allPosts.filter(p =>
-    ['approved', 'scheduled', 'published'].includes((p.stage || '').toLowerCase().trim())
-  ).length;
-  const published = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'published'
-  ).length;
-  const rejected = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'rejected'
-  ).length;
-  const revisions = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'revisions needed'
-  ).length;
-  const revisionRate = sent > 0 ? Math.round((revisions / sent) * 100) : 0;
-
-  let interpretation = '';
-  if (sent > 0) {
-    const efficiency = approved / sent;
-    if (efficiency >= 0.7) interpretation = 'Strong approval flow \u00b7 Delivery on track';
-    else if (efficiency >= 0.4) interpretation = 'Approval flow moderate';
-    else interpretation = 'Approval friction high';
-    if (rejected > approved * 0.5) interpretation += ' \u00b7 Rejection high';
-  }
-
-  el.innerHTML = `<div class="pcs-intel-rows">
-    <div class="pcs-intel-row">Sent for approval: <span class="pcs-intel-val">${sent}</span></div>
-    <div class="pcs-intel-row">Approved: <span class="pcs-intel-val">${approved}</span></div>
-    <div class="pcs-intel-row">Published: <span class="pcs-intel-val">${published}</span></div>
-    <div class="pcs-intel-row">Rejected: <span class="pcs-intel-val">${rejected}</span></div>
-    <div class="pcs-intel-row">Revision rate: <span class="pcs-intel-val">${revisionRate}%</span></div>
-    ${interpretation ? `<div class="pcs-intel-sub">${interpretation}</div>` : ''}
-  </div>`;
-}
-
-function renderDashActions() {
-  const el = document.getElementById('pcs-dash-actions');
-  if (!el) return;
-
-  const awaiting = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting approval'
-  ).length;
-  const input = allPosts.filter(p =>
-    (p.stage || '').toLowerCase().trim() === 'awaiting brand input'
-  ).length;
-
-  const now = Date.now();
-  const DAY = 86400000;
-  function daysSince(post) {
-    const t = post.updated_at || post.updatedAt || post.created_at || post.createdAt;
-    return t ? Math.floor((now - new Date(t).getTime()) / DAY) : 0;
-  }
-  const stuck = allPosts.filter(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    return (s === 'in production' && daysSince(p) >= 3)
-      || (['awaiting approval', 'awaiting brand input'].includes(s) && daysSince(p) >= 3)
-      || (s === 'revisions needed' && daysSince(p) >= 2);
-  }).length;
-
-  const actions = [];
-  if (awaiting > 10) actions.push({ text: 'Push approvals', onclick: "goToTab('pipeline')" });
-  if (stuck > 0)     actions.push({ text: 'Review stuck items', onclick: "goToTab('pipeline')" });
-  if (input > 0)     actions.push({ text: 'Follow up with client', onclick: "goToTab('pipeline')" });
-
-  if (!actions.length) { el.innerHTML = ''; return; }
-
-  el.innerHTML = actions.slice(0, 2).map(a =>
-    `<div class="pcs-action-link" onclick="${a.onclick}">${a.text} &rarr;</div>`
+  const flowLabels = flowStages.map(st =>
+    `<span class="db-flow-label">${st.label} <span class="db-flow-ct">${counts[st.key]}</span></span>`
   ).join('');
-}
 
-function renderDashEnterFlow() {
-  const el = document.getElementById('pcs-dash-enter-flow');
-  if (!el) return;
-  el.innerHTML = `<div class="pcs-enter-flow" onclick="goToTab('pipeline')">
-    <div class="pcs-enter-flow-label">Enter Flow &rarr;</div>
-    <div class="pcs-enter-flow-sub">See what&rsquo;s moving, what&rsquo;s stuck, and take action</div>
+  // ── 2. FLOW TIMELINE — stage-by-stage with imbalance ──
+  const pipeStages = [
+    { key: 'awaiting brand input', label: 'Request' },
+    { key: 'in production',        label: 'Production' },
+    { key: 'ready',                label: 'Ready' },
+    { key: 'awaiting approval',    label: 'Approval' },
+    { key: 'scheduled',            label: 'Scheduled' },
+    { key: 'published',            label: 'Published' },
+  ];
+  // Per-stage delay counts from enrichedPosts
+  const stageDelays = {};
+  enrichedPosts.forEach(p => {
+    if (!p.isDelayed) return;
+    const s = stg(p);
+    stageDelays[s] = (stageDelays[s] || 0) + 1;
+  });
+
+  const pipeMax = Math.max(...pipeStages.map(s => counts[s.key] || 0), 1);
+  const flowTimeline = pipeStages.map(st => {
+    const c = counts[st.key] || 0;
+    const h = Math.max(Math.round((c / pipeMax) * 32), 2);
+    const color = STAGE_META[st.key].hex;
+    const heavy = c === pipeMax && c > 0;
+    const dCount = stageDelays[st.key] || 0;
+    const hasDelay = dCount > 0;
+    return `<div class="db-tl-stage${heavy ? ' db-tl-heavy' : ''}${hasDelay ? ' db-tl-delayed' : ''}">
+      <div class="db-tl-bar" style="height:${h}px;background:${color}"></div>
+      <div class="db-tl-ct">${c}${hasDelay ? `<span class="db-tl-delay-ct">${dCount}</span>` : ''}</div>
+      <div class="db-tl-lbl">${st.label}</div>
+    </div>`;
+  }).join('<div class="db-tl-arrow"></div>');
+
+  // ── 3. BOTTLENECK SIGNALS (max 4) ──
+  const signals = [];
+  if (delay.criticalCount > 0) signals.push(`${delay.criticalCount} critical delay${delay.criticalCount > 1 ? 's' : ''} \u00b7 client side`);
+  if (stuck > 0) signals.push(`${stuck} item${stuck > 1 ? 's' : ''} stuck in pipeline`);
+  if (delay.internalDelayed > 0 && !signals.some(s => s.includes('stuck'))) signals.push(`${delay.internalDelayed} delayed internally`);
+  if (delay.clientDelayed > 0 && delay.criticalCount === 0) signals.push(`${delay.clientDelayed} awaiting client \u00b7 delayed`);
+  if (awaitingApproval > 5 && delay.clientDelayed === 0) signals.push(`Approval queue at ${awaitingApproval}`);
+  if (delay.requestDelayed > 0) signals.push(`${delay.requestDelayed} request${delay.requestDelayed > 1 ? 's' : ''} stalled >24h`);
+  if (revisions > 3) signals.push(`${revisions} in revision cycle`);
+  let signalsHtml = signals.length
+    ? signals.slice(0, 4).map(s => `<div class="db-signal">${s}</div>`).join('')
+    : '';
+  if (delay.unknownDelayCount > 0) {
+    signalsHtml += `<div class="db-signal db-signal-muted">Some delay signals unavailable</div>`;
+  }
+
+  // ── 4. MOMENTUM ──
+  const recentDays = 3;
+  const recentCutoff = now - (recentDays * DAY);
+  const recentMoved = allPosts.filter(p => {
+    const t = p.updated_at || p.updatedAt;
+    return t && new Date(t).getTime() > recentCutoff;
+  }).length;
+  const momentumMsg = recentMoved > 0
+    ? `${recentMoved} post${recentMoved > 1 ? 's' : ''} moved in the last ${recentDays} days`
+    : 'No movement in the last 3 days';
+  const paceMsg = pubThisMonth >= dayOfMonth ? 'Delivery on pace' : 'Delivery below target';
+
+  // ── 5. RIGHT COLUMN — Actions + Metadata ──
+  const actions = [];
+  if (awaitingApproval > 10) actions.push({ text: 'Push approvals', onclick: "goToTab('pipeline')" });
+  if (stuck > 0)             actions.push({ text: 'Review stuck items', onclick: "goToTab('pipeline')" });
+  if (awaitingInput > 0)     actions.push({ text: 'Follow up with client', onclick: "goToTab('pipeline')" });
+
+  let approvalInterpretation = '';
+  if (sent > 0) {
+    const eff = approved / sent;
+    if (eff >= 0.7) approvalInterpretation = 'Strong approval flow';
+    else if (eff >= 0.4) approvalInterpretation = 'Approval flow moderate';
+    else approvalInterpretation = 'Approval friction high';
+    if (rejected > approved * 0.5) approvalInterpretation += ' \u00b7 Rejection high';
+  }
+
+  // ── RENDER ──
+  el.innerHTML = `<div class="db-grid">
+    <div class="db-left">
+      <div class="db-hero">
+        <div class="db-hero-head">
+          <div class="db-hero-total">${total}</div>
+          <div class="db-hero-lbl">posts in system</div>
+          <div class="db-hero-status${(stuck > 0 || delay.totalDelayed > 0) ? ' db-hero-warn' : ''}">${statusMsg}</div>
+        </div>
+        <div class="db-flow-bar">${flowBar}</div>
+        <div class="db-flow-labels">${flowLabels}</div>
+      </div>
+
+      <div class="db-section">
+        <div class="db-section-title">Flow</div>
+        <div class="db-timeline">${flowTimeline}</div>
+      </div>
+
+      ${signalsHtml ? `<div class="db-section">
+        <div class="db-section-title">Signals</div>
+        <div class="db-signals">${signalsHtml}</div>
+      </div>` : ''}
+
+      <div class="db-section">
+        <div class="db-section-title">Momentum</div>
+        <div class="db-momentum">${momentumMsg}</div>
+        <div class="db-momentum db-momentum-pace">${paceMsg}</div>
+      </div>
+    </div>
+
+    <div class="db-right">
+      ${actions.length ? `<div class="db-aside-group">
+        ${actions.slice(0, 3).map(a =>
+          `<div class="db-action" onclick="${a.onclick}">${a.text} &rarr;</div>`
+        ).join('')}
+      </div>` : ''}
+
+      <div class="db-aside-group">
+        <div class="db-aside-title">Approval Intelligence</div>
+        <div class="db-meta-row"><span>Sent</span><span class="db-meta-val">${sent}</span></div>
+        <div class="db-meta-row"><span>Approved</span><span class="db-meta-val">${approved}</span></div>
+        <div class="db-meta-row"><span>Published</span><span class="db-meta-val">${published}</span></div>
+        <div class="db-meta-row"><span>Rejected</span><span class="db-meta-val">${rejected}</span></div>
+        <div class="db-meta-row"><span>Revision rate</span><span class="db-meta-val">${revisionRate}%</span></div>
+        <div class="db-meta-row"><span>Avg wait</span><span class="db-meta-val">${avgWait}d</span></div>
+        ${approvalInterpretation ? `<div class="db-intel-sub">${approvalInterpretation}</div>` : ''}
+      </div>
+
+      <div class="db-aside-enter" onclick="goToTab('pipeline')">Enter Flow &rarr;</div>
+    </div>
   </div>`;
 }
+
+/* Legacy stubs — keep function names callable so renderAll doesn't error */
+function renderDashHero() {}
+function renderDashPipeline() {}
+function renderDashBlockers() {}
+function renderDashIntel() {}
+function renderDashApprovalIntel() {}
+function renderDashActions() {}
+function renderDashEnterFlow() {}
 
 function renderPipelineStrip() {
   const strip = document.getElementById('pipeline-strip');
