@@ -46,13 +46,13 @@
   --pcs-space-1: 4px;
   --pcs-space-2: 8px;
   --pcs-space-3: 12px;
-  --pcs-space-4: 12px;
-  --pcs-space-5: 24px;
+  --pcs-space-4: 10px;
+  --pcs-space-5: 20px;
 
   /* Header system */
   --pcs-header-icon-zone: 32px;
   --pcs-header-gap: 24px;
-  --pcs-header-padding: 52px;
+  --pcs-header-padding: 44px;
 
   /* Icons */
   --pcs-icon-size: 20px;
@@ -71,10 +71,10 @@
 
   /* Notes */
   --pcs-notes-radius: 12px;
-  --pcs-notes-padding: 16px;
+  --pcs-notes-padding: 14px;
 
   /* Safe area */
-  --pcs-safe-bottom: 24px;
+  --pcs-safe-bottom: 20px;
 
   /* Inline separator */
   --pcs-inline-separator-gap: 6px;
@@ -3326,7 +3326,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: flex-start;
   padding: 0;
   min-width: 0;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Title — most visually prominent element */
@@ -3394,7 +3394,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 0 var(--pcs-content-padding) var(--pcs-content-padding);
+  padding: 0 var(--pcs-content-padding) 20px;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -3405,7 +3405,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: sticky;
   bottom: 0;
   display: block;
-  height: 16px;
+  height: 12px;
   background: linear-gradient(to bottom, transparent, var(--surface));
   pointer-events: none;
   flex-shrink: 0;
@@ -3491,7 +3491,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-divider {
   border: none;
   border-top: 1px solid var(--border);
-  margin: var(--pcs-space-4) 0;
+  margin: 8px 0;
   opacity: 0.16;
 }
 
@@ -3716,7 +3716,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--pcs-space-2);
+  gap: 6px;
   background: transparent;
   border-radius: 0;
 }
