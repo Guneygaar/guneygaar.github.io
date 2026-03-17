@@ -3253,13 +3253,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   box-shadow: 0 10px 30px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.25);
   overflow: hidden;
   will-change: transform;
-  transform: translateY(40px) scale(0.97);
+  transform: translateY(8px);
   opacity: 0;
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-              opacity 0.22s ease;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 #pcs-overlay.open #pcs-screen {
-  transform: translateY(0) scale(1);
+  transform: translateY(0);
   opacity: 1;
 }
 
@@ -3319,14 +3319,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid var(--border);
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: background 120ms ease, transform 120ms ease;
+  transition: background 120ms ease,
+              transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pcs-close-btn { left: var(--pcs-content-padding); }
 .pcs-delete-btn { right: var(--pcs-content-padding); }
 .pcs-close-btn:hover,
 .pcs-delete-btn:hover { background: var(--surface3); }
 .pcs-close-btn:active,
-.pcs-delete-btn:active { background: var(--border2); transform: scale(0.93); }
+.pcs-delete-btn:active { background: var(--border2); transform: scale(0.98); }
 
 .pcs-header-center {
   display: flex;
@@ -3445,6 +3447,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 50%;
   background: var(--border2);
   opacity: 0.45;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 160ms cubic-bezier(0.4, 0, 0.2, 1),
+              background 160ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pipeline-dot.completed {
   background: var(--c-green);
@@ -3521,11 +3526,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+  transition: background 120ms ease, border-color 120ms ease,
+              transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 /* Press feedback */
 .pcs-action-chip:hover { background: var(--surface3); }
-.pcs-action-chip:active { background: var(--border2); transform: scale(0.97); }
+.pcs-action-chip:active { background: var(--border2); transform: scale(0.98); }
 
 /* Stage advance chip — subtle primary emphasis */
 .pcs-action-chip--stage {
@@ -3696,10 +3703,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: var(--pcs-button-radius);
   text-decoration: none;
   border: 1px solid var(--border2);
-  transition: background 0.12s ease, transform 0.1s ease;
+  transition: background 120ms ease,
+              transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pcs-primary:hover { background: var(--surface3); }
-.pcs-primary:active { background: var(--border2); text-decoration: none; transform: scale(0.97); }
+.pcs-primary:active { background: var(--border2); text-decoration: none; transform: scale(0.98); }
 .pcs-design-replace {
   height: var(--pcs-button-height);
   padding: 0 var(--pcs-space-4);
@@ -3883,7 +3892,9 @@ label.pcs-date-tap {
   line-height: 1.4;
   font-weight: 500;
   color: var(--text-primary);
+  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+label.pcs-date-tap:active { transform: scale(0.98); }
 .pcs-date-tap .pcs-date-input-native {
   position: absolute;
   opacity: 0;
@@ -3961,14 +3972,32 @@ label.pcs-date-tap {
   text-align: left;
   height: 40px;
   font-family: inherit;
-  transition: color 0.12s ease;
+  transition: color 120ms ease,
+              transform 120ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pcs-activity-toggle:hover { color: var(--text-primary); }
+.pcs-activity-toggle:active { transform: scale(0.98); }
 .pcs-activity-chevron {
   transition: transform 0.2s ease;
 }
 .pcs-activity-section.expanded .pcs-activity-chevron {
   transform: rotate(90deg);
+}
+
+/* ── Desktop hover lift (pointer devices only) ── */
+@media (hover: hover) {
+  .pcs-action-chip:hover,
+  .pcs-primary:hover,
+  .pcs-activity-toggle:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+  }
+  .pcs-close-btn:hover,
+  .pcs-delete-btn:hover {
+    transform: translateY(-1px);
+    opacity: 0.95;
+  }
 }
 
 .pcs-activity-body {
