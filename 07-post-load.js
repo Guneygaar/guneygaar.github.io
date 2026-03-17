@@ -318,13 +318,15 @@ function renderDashboard() {
 
   // ── MONTH FILTER (mandatory) ──
   const now = new Date();
+  now.setHours(0, 0, 0, 0);
   const activeMonth = now.getMonth();
   const activeYear  = now.getFullYear();
   const monthLabel  = MONTHS_LONG[activeMonth] + ' ' + activeYear;
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000);
 
-  // Date selection depends on status (correction #1)
+  // Date selection depends on status
   // scheduled/published → use targetDate (delivery date)
-  // all others → use created_at
+  // active stages (request/production/approval) → use created_at
   function postDate(p) {
     const s = stg(p);
     if (s === 'scheduled' || s === 'published') {
@@ -334,20 +336,48 @@ function renderDashboard() {
     return raw ? new Date(raw) : null;
   }
 
+  const ACTIVE_STAGES = new Set([
+    'awaiting brand input', 'in production', 'revisions needed',
+    'ready', 'awaiting approval'
+  ]);
+
   const filteredPosts = allPosts.filter(p => {
+    const s = stg(p);
     const d = postDate(p);
     if (!d) return false;
-    return d.getMonth() === activeMonth && d.getFullYear() === activeYear;
+    // Scheduled/published: month match on targetDate
+    if (s === 'scheduled' || s === 'published') {
+      return d.getMonth() === activeMonth && d.getFullYear() === activeYear;
+    }
+    // Active stages: month match on created_at, but exclude >30 days old
+    if (ACTIVE_STAGES.has(s)) {
+      if (d < thirtyDaysAgo) return false;
+      return d.getMonth() === activeMonth && d.getFullYear() === activeYear;
+    }
+    return false;
   });
 
   // ── COUNTS (all from filteredPosts, never allPosts) ──
-  const production = filteredPosts.filter(p => stg(p) === 'in production').length;
-  const approval   = filteredPosts.filter(p => stg(p) === 'awaiting approval').length;
-  const scheduled  = filteredPosts.filter(p => stg(p) === 'scheduled').length;
-  const published  = filteredPosts.filter(p => stg(p) === 'published').length;
+  const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
+  const approvalPosts   = filteredPosts.filter(p => stg(p) === 'awaiting approval');
+  const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
+  const publishedPosts  = filteredPosts.filter(p => stg(p) === 'published');
 
-  // ── RUNWAY (locked logic) ──
-  const hard_runway = scheduled;
+  const production = productionPosts.length;
+  const approval   = approvalPosts.length;
+  const scheduled  = scheduledPosts.length;
+  const published  = publishedPosts.length;
+
+  // ── RUNWAY (date-based, not count-based) ──
+  // Extract unique future days from scheduled posts
+  const scheduledDays = new Set();
+  scheduledPosts.forEach(p => {
+    const d = parseDate(p.targetDate);
+    if (d && d >= now) {
+      scheduledDays.add(d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate());
+    }
+  });
+  const hard_runway = scheduledDays.size;
   const soft_runway = Math.floor(approval * 0.7);
 
   // ── FLOW NODES: Production → Approval → Scheduled → Published ──
@@ -368,34 +398,29 @@ function renderDashboard() {
     </div>`;
   }).join('<div class="rw-node-arrow"></div>');
 
-  // ── INLINE WARNINGS (max 3) ──
-  const { aggregates: delay } = computeDelayMeta(filteredPosts);
+  // ── RUNWAY-SPECIFIC WARNINGS (max 3) ──
   const warnings = [];
-  if (delay.criticalCount > 0) warnings.push(`${delay.criticalCount} critical delay${delay.criticalCount > 1 ? 's' : ''}`);
-  if (delay.clientDelayed > 0 && delay.criticalCount === 0) warnings.push(`${delay.clientDelayed} awaiting client`);
-  if (delay.internalDelayed > 0) warnings.push(`${delay.internalDelayed} delayed internally`);
-  const warningsHtml = warnings.slice(0, 3).map(w =>
-    `<span class="rw-warn">${w}</span>`
+  if (scheduled === 0) warnings.push({ text: 'No scheduled posts', level: 'crit' });
+  if (approval === 0 && warnings.length < 3) warnings.push({ text: 'No posts in approval', level: 'risk' });
+  if (production === 0 && warnings.length < 3) warnings.push({ text: 'Pipeline dry \u2014 no production', level: 'risk' });
+  const warningsHtml = warnings.map(w =>
+    `<span class="rw-warn rw-warn-${w.level}">${w.text}</span>`
   ).join('');
 
-  // ── ACTION LINE ──
+  // ── ACTION LINE (always a directive, never generic) ──
   let actionText = '';
-  let actionClick = '';
-  if (hard_runway === 0 && approval === 0) {
-    actionText = 'Nothing scheduled \u2014 start production';
-    actionClick = "goToTab('pipeline')";
+  if (hard_runway === 0) {
+    actionText = 'No content scheduled \u2014 create and send immediately';
   } else if (hard_runway <= 2 && approval > 0) {
-    actionText = 'Runway low \u2014 push approvals';
-    actionClick = "goToTab('pipeline')";
+    actionText = 'Push approvals now';
   } else if (hard_runway <= 2) {
-    actionText = 'Runway critical \u2014 move posts forward';
-    actionClick = "goToTab('pipeline')";
-  } else if (production > scheduled) {
-    actionText = 'Heavy in production \u2014 review pipeline';
-    actionClick = "goToTab('pipeline')";
+    actionText = 'Create content urgently';
+  } else if (production > approval) {
+    actionText = 'Move production to approval';
+  } else if (approval > scheduled) {
+    actionText = 'Convert approvals to schedule';
   } else {
-    actionText = 'Enter flow';
-    actionClick = "goToTab('pipeline')";
+    actionText = 'Maintain current pace';
   }
 
   // ── RENDER ──
@@ -408,7 +433,7 @@ function renderDashboard() {
     </div>
     <div class="rw-flow">${flowHtml}</div>
     ${warningsHtml ? `<div class="rw-warnings">${warningsHtml}</div>` : ''}
-    <div class="rw-action" onclick="${actionClick}">${actionText} &rarr;</div>
+    <div class="rw-action" onclick="goToTab('pipeline')">${actionText} &rarr;</div>
   </div>`;
 }
 

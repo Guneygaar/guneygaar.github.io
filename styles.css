@@ -902,10 +902,20 @@ a:hover { text-decoration: underline; }
 }
 .rw-warn {
   font-size: 12px;
-  color: var(--text2);
-  opacity: 0.65;
+  color: var(--text3);
+  opacity: 0.6;
   padding: 2px 8px;
   border-left: 2px solid var(--pcs-border-soft);
+}
+.rw-warn-crit {
+  color: var(--c-red, #ef4444);
+  opacity: 0.8;
+  border-left-color: var(--c-red, #ef4444);
+}
+.rw-warn-risk {
+  color: var(--c-amber, #f59e0b);
+  opacity: 0.7;
+  border-left-color: var(--c-amber, #f59e0b);
 }
 
 /* Action line */
