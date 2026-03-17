@@ -3102,6 +3102,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .upc-menu button.danger { color: var(--c-red); }
 
 /* ═══════════════════════════════════════════════
+   PRIORITY CARD
+═══════════════════════════════════════════════ */
+
+.pc-strip::before {
+  transform: translateX(1px);
+  box-shadow: 2px 0 8px rgba(0,0,0,0.35);
+}
+
+.pc-sev-high { --edge-w: 9px; }
+.pc-sev-mid  { --edge-w: 6px; }
+
+.pc-delay {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pc-sev-high .pc-delay {
+  font-size: 16px;
+}
+
+/* ═══════════════════════════════════════════════
    APP HEADER
 ═══════════════════════════════════════════════ */
 
