@@ -497,7 +497,7 @@ function renderDashboard() {
   } else if (ready > scheduled) {
     actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
   } else {
-    actionText = `${hard_runway}d runway \u2014 maintain pace`;
+    actionText = 'Maintain pace';
   }
 
   // ── RENDER (state-driven, single vertical flow) ──
