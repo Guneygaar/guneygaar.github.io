@@ -410,44 +410,54 @@ function renderDashboard() {
   const flowHtml = flowNodes.map(n => {
     const h = Math.max(Math.round((n.count / nodeMax) * 36), 3);
     const dominant = n.count === nodeMax && n.count > 0;
-    return `<div class="rw-node${dominant ? ' rw-node-dom' : ''}">
+    const zero = n.count === 0;
+    return `<div class="rw-node${dominant ? ' rw-node-dom' : ''}${zero ? ' rw-node-zero' : ''}">
       <div class="rw-node-bar" style="height:${h}px;background:${n.color}"></div>
       <div class="rw-node-ct">${n.count}</div>
       <div class="rw-node-lbl">${n.label}</div>
     </div>`;
   }).join('<div class="rw-node-arrow"></div>');
 
+  // ── TODAY CHECK ──
+  const todayHasPost = futureDays.has(dayKey(now));
+
   // ── RUNWAY-SPECIFIC WARNINGS (max 3) ──
   // C1: runway is single source of truth, not scheduled count
   const warnings = [];
   if (hard_runway === 0) warnings.push({ text: 'No runway', level: 'crit' });
+  if (!todayHasPost && warnings.length < 3) warnings.push({ text: 'No post scheduled today', level: 'crit' });
   if (approval === 0 && warnings.length < 3) warnings.push({ text: 'No posts in approval', level: 'risk' });
   if (production === 0 && warnings.length < 3) warnings.push({ text: 'Pipeline dry \u2014 no production', level: 'risk' });
   const warningsHtml = warnings.map(w =>
     `<span class="rw-warn rw-warn-${w.level}">${w.text}</span>`
   ).join('');
 
-  // ── ACTION LINE (always a directive, never generic) ──
+  // ── RUNWAY STATE COLOR ──
+  const runwayState = hard_runway === 0 ? 'rw-runway-crit'
+    : hard_runway <= 2 ? 'rw-runway-warn'
+    : '';
+
+  // ── ACTION LINE (always a directive, count-based) ──
   let actionText = '';
   if (hard_runway === 0) {
     actionText = 'No content scheduled \u2014 create and send immediately';
   } else if (hard_runway <= 2 && approval > 0) {
-    actionText = 'Push approvals now';
+    actionText = `Push ${approval} approval${approval !== 1 ? 's' : ''} to schedule now`;
   } else if (hard_runway <= 2) {
-    actionText = 'Create content urgently';
+    actionText = 'Create content urgently \u2014 runway expires in ' + hard_runway + 'd';
   } else if (production > approval) {
-    actionText = 'Move production to approval';
+    actionText = `Move ${production} production post${production !== 1 ? 's' : ''} to approval`;
   } else if (approval > scheduled) {
-    actionText = 'Convert approvals to schedule';
+    actionText = `Schedule ${approval} approved post${approval !== 1 ? 's' : ''}`;
   } else {
-    actionText = 'Maintain current pace';
+    actionText = `${hard_runway}d runway \u2014 maintain current pace`;
   }
 
   // ── RENDER ──
   el.innerHTML = `<div class="rw-dash">
     <div class="rw-month">${monthLabel}</div>
     <div class="rw-hero">
-      <div class="rw-runway-hard">${hard_runway}</div>
+      <div class="rw-runway-hard ${runwayState}">${hard_runway}</div>
       <div class="rw-runway-label">days of runway</div>
       ${soft_runway > 0 ? `<div class="rw-runway-soft">+${soft_runway} in approval</div>` : ''}
     </div>
