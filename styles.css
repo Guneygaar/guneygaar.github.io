@@ -46,13 +46,13 @@
   --pcs-space-1: 4px;
   --pcs-space-2: 8px;
   --pcs-space-3: 12px;
-  --pcs-space-4: 16px;
+  --pcs-space-4: 12px;
   --pcs-space-5: 24px;
 
   /* Header system */
   --pcs-header-icon-zone: 32px;
   --pcs-header-gap: 24px;
-  --pcs-header-padding: 56px;
+  --pcs-header-padding: 52px;
 
   /* Icons */
   --pcs-icon-size: 20px;
@@ -3399,6 +3399,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   gap: var(--pcs-space-4);
+}
+.pcs-scroll::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  display: block;
+  height: 16px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 /* Body sections — spacing controlled by .pcs-scroll gap */
