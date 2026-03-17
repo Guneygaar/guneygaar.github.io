@@ -90,6 +90,29 @@
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
   --surface-bg: #ffffff;
+
+  /* Base theme tokens — light mode defaults (fallback when no data-theme) */
+  --bg:         #f2f1ed;
+  --surface:    #ffffff;
+  --surface2:   #eeecea;
+  --surface3:   #e4e2de;
+  --border:     rgba(0,0,0,0.07);
+  --border2:    rgba(0,0,0,0.14);
+  --text:       #18191f;
+  --text2:      #545c72;
+  --text3:      #9299ae;
+  --accent:     #b5831a;
+  --accent-dim: rgba(181,131,26,0.10);
+  --accent-hover: rgba(181,131,26,0.16);
+  --accent-glow:  rgba(181,131,26,0.06);
+  --c-amber:  #d97706;  --c-amber-dim:  rgba(217,119,6,0.10);
+  --c-blue:   #2563eb;  --c-blue-dim:   rgba(37,99,235,0.10);
+  --c-green:  #059669;  --c-green-dim:  rgba(5,150,105,0.10);
+  --c-cyan:   #0891b2;  --c-cyan-dim:   rgba(8,145,178,0.10);
+  --c-purple: #7c3aed;  --c-purple-dim: rgba(124,58,237,0.10);
+  --c-red:    #dc2626;  --c-red-dim:    rgba(220,38,38,0.10);
+  --c-pub:    #16a34a;  --c-pub-dim:    rgba(22,163,74,0.10);
+  --c-muted:  #64748b;  --c-muted-dim:  rgba(100,116,139,0.10);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -99,13 +122,6 @@
     --text-tertiary: rgba(255,255,255,0.4);
     --surface-bg: #0b0f1a;
   }
-}
-
-[data-theme="dark"] {
-  --text-primary: rgba(255,255,255,0.92);
-  --text-secondary: rgba(255,255,255,0.6);
-  --text-tertiary: rgba(255,255,255,0.4);
-  --surface-bg: #0b0f1a;
 }
 
 [data-theme="dark"] {
@@ -122,6 +138,11 @@
   --accent-dim: rgba(232,195,122,0.12);
   --accent-hover: rgba(232,195,122,0.18);
   --accent-glow:  rgba(232,195,122,0.07);
+
+  --text-primary: rgba(255,255,255,0.92);
+  --text-secondary: rgba(255,255,255,0.6);
+  --text-tertiary: rgba(255,255,255,0.4);
+  --surface-bg: #0b0f1a;
 
   --c-amber:  #f59e0b;  --c-amber-dim:  rgba(245,158,11,0.14);
   --c-blue:   #3b82f6;  --c-blue-dim:   rgba(59,130,246,0.14);
@@ -147,6 +168,11 @@
   --accent-dim: rgba(181,131,26,0.10);
   --accent-hover: rgba(181,131,26,0.16);
   --accent-glow:  rgba(181,131,26,0.06);
+
+  --text-primary: #111111;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --surface-bg: #ffffff;
 
   --c-amber:  #d97706;  --c-amber-dim:  rgba(217,119,6,0.10);
   --c-blue:   #2563eb;  --c-blue-dim:   rgba(37,99,235,0.10);
