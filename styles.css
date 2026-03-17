@@ -85,22 +85,19 @@
   --pcs-section-gap: var(--pcs-space-5);
   --pcs-bar-height: 6px;
 
-  /* Semantic text colors — light mode defaults */
+  /* Semantic tokens — single source of truth (light defaults) */
   --text-primary: #111111;
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
   --surface-bg: #ffffff;
 
-  /* Base theme tokens — light mode defaults (fallback when no data-theme) */
+  /* Base theme tokens — light mode defaults */
   --bg:         #f2f1ed;
   --surface:    #ffffff;
-  --surface2:   #eeecea;
+  --surface2:   #f9fafb;
   --surface3:   #e4e2de;
-  --border:     rgba(0,0,0,0.07);
+  --border:     #e5e7eb;
   --border2:    rgba(0,0,0,0.14);
-  --text:       #18191f;
-  --text2:      #545c72;
-  --text3:      #9299ae;
   --accent:     #b5831a;
   --accent-dim: rgba(181,131,26,0.10);
   --accent-hover: rgba(181,131,26,0.16);
@@ -113,6 +110,11 @@
   --c-red:    #dc2626;  --c-red-dim:    rgba(220,38,38,0.10);
   --c-pub:    #16a34a;  --c-pub-dim:    rgba(22,163,74,0.10);
   --c-muted:  #64748b;  --c-muted-dim:  rgba(100,116,139,0.10);
+
+  /* Legacy aliases → semantic tokens */
+  --text:       var(--text-primary);
+  --text2:      var(--text-secondary);
+  --text3:      var(--text-tertiary);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -125,25 +127,23 @@
 }
 
 [data-theme="dark"] {
+  /* Semantic tokens — dark overrides */
+  --text-primary: rgba(255,255,255,0.92);
+  --text-secondary: rgba(255,255,255,0.6);
+  --text-tertiary: rgba(255,255,255,0.4);
+  --surface-bg: #0b0f1a;
+
+  /* Base theme tokens — dark overrides */
   --bg:         #0c0d11;
   --surface:    #161820;
   --surface2:   #1e2130;
   --surface3:   #252840;
   --border:     rgba(255,255,255,0.07);
   --border2:    rgba(255,255,255,0.14);
-  --text:       #eaecf4;
-  --text2:      #8892aa;
-  --text3:      #50597a;
   --accent:     #e8c37a;
   --accent-dim: rgba(232,195,122,0.12);
   --accent-hover: rgba(232,195,122,0.18);
   --accent-glow:  rgba(232,195,122,0.07);
-
-  --text-primary: rgba(255,255,255,0.92);
-  --text-secondary: rgba(255,255,255,0.6);
-  --text-tertiary: rgba(255,255,255,0.4);
-  --surface-bg: #0b0f1a;
-
   --c-amber:  #f59e0b;  --c-amber-dim:  rgba(245,158,11,0.14);
   --c-blue:   #3b82f6;  --c-blue-dim:   rgba(59,130,246,0.14);
   --c-green:  #10b981;  --c-green-dim:  rgba(16,185,129,0.14);
@@ -152,28 +152,28 @@
   --c-red:    #ef4444;  --c-red-dim:    rgba(239,68,68,0.14);
   --c-pub:    #22c55e;  --c-pub-dim:    rgba(34,197,94,0.14);
   --c-muted:  #64748b;  --c-muted-dim:  rgba(100,116,139,0.14);
+
+  /* Legacy aliases follow semantic tokens automatically via inheritance */
 }
 
 [data-theme="light"] {
-  --bg:         #f2f1ed;
-  --surface:    #ffffff;
-  --surface2:   #eeecea;
-  --surface3:   #e4e2de;
-  --border:     rgba(0,0,0,0.07);
-  --border2:    rgba(0,0,0,0.14);
-  --text:       #18191f;
-  --text2:      #545c72;
-  --text3:      #9299ae;
-  --accent:     #b5831a;
-  --accent-dim: rgba(181,131,26,0.10);
-  --accent-hover: rgba(181,131,26,0.16);
-  --accent-glow:  rgba(181,131,26,0.06);
-
+  /* Semantic tokens — explicit light overrides */
   --text-primary: #111111;
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
   --surface-bg: #ffffff;
 
+  /* Base theme tokens — light overrides */
+  --bg:         #f2f1ed;
+  --surface:    #ffffff;
+  --surface2:   #f9fafb;
+  --surface3:   #e4e2de;
+  --border:     #e5e7eb;
+  --border2:    rgba(0,0,0,0.14);
+  --accent:     #b5831a;
+  --accent-dim: rgba(181,131,26,0.10);
+  --accent-hover: rgba(181,131,26,0.16);
+  --accent-glow:  rgba(181,131,26,0.06);
   --c-amber:  #d97706;  --c-amber-dim:  rgba(217,119,6,0.10);
   --c-blue:   #2563eb;  --c-blue-dim:   rgba(37,99,235,0.10);
   --c-green:  #059669;  --c-green-dim:  rgba(5,150,105,0.10);
@@ -3379,7 +3379,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-subtitle span { white-space: nowrap; }
 .pcs-subtitle-sep {
   margin: 0;
-  opacity: 0.5;
+  color: var(--text-tertiary);
 }
 
 /* ── Scroll area ── */
@@ -3439,21 +3439,18 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pipeline-label {
   font-size: 11px;
   font-weight: 600;
-  color: var(--text3);
+  color: var(--text-tertiary);
   letter-spacing: 0.02em;
   white-space: nowrap;
   text-align: center;
-  opacity: 0.6;
   margin-top: 4px;
 }
 .pipeline-stage:has(.pipeline-dot.active) .pipeline-label {
   color: var(--c-blue);
-  opacity: 1;
   font-weight: 700;
 }
 .pipeline-stage:has(.pipeline-dot.completed) .pipeline-label {
   color: var(--c-green);
-  opacity: 0.9;
 }
 
 /* ── Design section layout ── */
@@ -3478,7 +3475,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: none;
   border-top: 1px solid var(--border);
   margin: var(--pcs-space-4) 0;
-  opacity: 0.08;
+  opacity: 0.16;
 }
 
 /* Action chip system */
@@ -3528,7 +3525,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-color: transparent;
   color: #7D2AE8;
   width: 80px;
-  opacity: 0.90;
 }
 [data-theme="dark"] .pcs-action-chip--canva { color: #b68aff; background: rgba(125,42,232,0.18); }
 .pcs-action-chip--canva:hover { filter: brightness(1.1); }
@@ -3653,7 +3649,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
-  opacity: 0.28;
+  opacity: 0.4;
   margin: 0;
 }
 
@@ -3835,7 +3831,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-value-shell svg {
   position: relative;
   top: 1px;
-  opacity: 0.6;
 }
 
 /* Date tap — inside .pcs-value-shell */
