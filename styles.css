@@ -3765,7 +3765,8 @@ div.pcs-date-tap {
 .pcs-date-text {
   position: relative;
   z-index: 2;
-  display: block;
+  display: inline-block;
+  line-height: 1.4;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3774,7 +3775,8 @@ div.pcs-date-tap {
 }
 .pcs-date-icon {
   position: static;
-  transform: none;
+  flex-shrink: 0;
+  transform: translateY(-1px);
   opacity: 0.6;
   width: var(--pcs-space-4);
   height: var(--pcs-space-4);
