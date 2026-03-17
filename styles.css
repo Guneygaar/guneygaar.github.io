@@ -3214,7 +3214,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #pcs-screen {
   display: flex;
   flex-direction: column;
-  gap: var(--pcs-space-5);
+  gap: var(--pcs-space-4);
   width: var(--pcs-modal-width);
   max-width: var(--pcs-modal-width);
   height: auto;
@@ -3294,7 +3294,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: flex-start;
   padding: 0;
   min-width: 0;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Title — most visually prominent element */
@@ -3366,7 +3366,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--pcs-space-5);
+  gap: var(--pcs-space-4);
 }
 
 /* Body sections — spacing controlled by .pcs-scroll gap */
@@ -3445,6 +3445,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   justify-content: center;
   gap: var(--pcs-space-3);
   flex-wrap: wrap;
+}
+
+/* ── Divider ── */
+.pcs-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: var(--pcs-space-4) 0;
+  opacity: 0.08;
 }
 
 /* Action chip system */
@@ -3724,7 +3732,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text-secondary);
-  margin-bottom: 0;
+  margin-bottom: 4px;
 }
 .pcs-field-val {
   border: none;
@@ -3769,7 +3777,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Section 7: Unified value shell — all metadata fields */
 .pcs-value-shell {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
   width: 100%;
   min-width: 0;
