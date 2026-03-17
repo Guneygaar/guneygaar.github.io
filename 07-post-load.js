@@ -526,7 +526,7 @@ function renderDashboard() {
         <span class="pc-inv-ratio">${invCount}<span class="pc-inv-sep"> / </span>${invTarget}</span>
       </div>
       ${invGap > 0 ? `<div class="pc-inv-gap">↓ ${invGap} short</div>` : ''}
-      <div class="pc-inv-bar"><div class="pc-inv-fill" style="width:${invPct}%"></div></div>
+      <div class="pc-inv-bar">${Array.from({length: 15}, (_, i) => `<span${i < Math.round(invCount / invTarget * 15) ? ' class="filled"' : ''}></span>`).join('')}</div>
     </div>`;
 
   el.innerHTML = `<div class="pc-root">
