@@ -248,12 +248,52 @@ function updateBadge(id, count) {
 // Dashboard — Hero, Pipeline, Blockers
 // ═══════════════════════════════════════════════
 
+function computeDelayMeta(posts) {
+  const now = Date.now();
+  const HOUR = 3600000;
+  const enrichedPosts = posts.map(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    const changedAt = p.status_changed_at || p.statusChangedAt;
+    const createdAt = p.created_at || p.createdAt;
+    const ref = changedAt ? new Date(changedAt).getTime() : (createdAt ? new Date(createdAt).getTime() : 0);
+    const hours = ref ? (now - ref) / HOUR : 0;
+
+    let delayType = 'none';
+    let isDelayed = false;
+    let isCritical = false;
+
+    if (s === 'awaiting brand input' && hours > 24) {
+      delayType = 'request'; isDelayed = true;
+    } else if ((s === 'in production' || s === 'scheduled') && hours > 72) {
+      delayType = 'internal'; isDelayed = true;
+    } else if (s === 'awaiting approval' && hours > 72) {
+      delayType = 'client'; isDelayed = true;
+      if (hours > 120) isCritical = true;
+    }
+
+    return { ...p, delayType, delayHours: Math.round(hours), isDelayed, isCritical };
+  });
+
+  const delayed = enrichedPosts.filter(p => p.isDelayed);
+  return {
+    enrichedPosts,
+    aggregates: {
+      totalDelayed:    delayed.length,
+      internalDelayed: delayed.filter(p => p.delayType === 'internal').length,
+      clientDelayed:   delayed.filter(p => p.delayType === 'client').length,
+      requestDelayed:  delayed.filter(p => p.delayType === 'request').length,
+      criticalCount:   delayed.filter(p => p.isCritical).length,
+    }
+  };
+}
+
 function renderDashboard() {
   const el = document.getElementById('pcs-dashboard');
   if (!el) return;
 
   const now = Date.now();
   const DAY = 86400000;
+  const { enrichedPosts, aggregates: delay } = computeDelayMeta(allPosts);
   function stg(p) { return (p.stage || '').toLowerCase().trim(); }
   function daysSince(p) {
     const t = p.updated_at || p.updatedAt || p.created_at || p.createdAt;
@@ -321,7 +361,9 @@ function renderDashboard() {
 
   // Status message (calm surface + embedded tension)
   let statusMsg = 'System nominal';
-  if (stuck > 0)               statusMsg = 'Friction detected';
+  if (delay.criticalCount > 0)    statusMsg = 'Critical delays active';
+  else if (stuck > 0)             statusMsg = 'Friction detected';
+  else if (delay.totalDelayed > 0) statusMsg = 'Delays in pipeline';
   else if (awaitingApproval > 10) statusMsg = 'Approval load high';
 
   // ── 1. HERO: System Health ──
@@ -347,24 +389,37 @@ function renderDashboard() {
     { key: 'scheduled',            label: 'Scheduled' },
     { key: 'published',            label: 'Published' },
   ];
+  // Per-stage delay counts from enrichedPosts
+  const stageDelays = {};
+  enrichedPosts.forEach(p => {
+    if (!p.isDelayed) return;
+    const s = stg(p);
+    stageDelays[s] = (stageDelays[s] || 0) + 1;
+  });
+
   const pipeMax = Math.max(...pipeStages.map(s => counts[s.key] || 0), 1);
   const flowTimeline = pipeStages.map(st => {
     const c = counts[st.key] || 0;
     const h = Math.max(Math.round((c / pipeMax) * 32), 2);
     const color = STAGE_META[st.key].hex;
     const heavy = c === pipeMax && c > 0;
-    return `<div class="db-tl-stage${heavy ? ' db-tl-heavy' : ''}">
+    const dCount = stageDelays[st.key] || 0;
+    const hasDelay = dCount > 0;
+    return `<div class="db-tl-stage${heavy ? ' db-tl-heavy' : ''}${hasDelay ? ' db-tl-delayed' : ''}">
       <div class="db-tl-bar" style="height:${h}px;background:${color}"></div>
-      <div class="db-tl-ct">${c}</div>
+      <div class="db-tl-ct">${c}${hasDelay ? `<span class="db-tl-delay-ct">${dCount}</span>` : ''}</div>
       <div class="db-tl-lbl">${st.label}</div>
     </div>`;
   }).join('<div class="db-tl-arrow"></div>');
 
   // ── 3. BOTTLENECK SIGNALS (max 4) ──
   const signals = [];
+  if (delay.criticalCount > 0) signals.push(`${delay.criticalCount} critical delay${delay.criticalCount > 1 ? 's' : ''} \u00b7 client side`);
   if (stuck > 0) signals.push(`${stuck} item${stuck > 1 ? 's' : ''} stuck in pipeline`);
-  if (awaitingApproval > 5) signals.push(`Approval queue at ${awaitingApproval}`);
-  if (awaitingInput > 0) signals.push(`${awaitingInput} waiting on client input`);
+  if (delay.internalDelayed > 0 && !signals.some(s => s.includes('stuck'))) signals.push(`${delay.internalDelayed} delayed internally`);
+  if (delay.clientDelayed > 0 && delay.criticalCount === 0) signals.push(`${delay.clientDelayed} awaiting client \u00b7 delayed`);
+  if (awaitingApproval > 5 && delay.clientDelayed === 0) signals.push(`Approval queue at ${awaitingApproval}`);
+  if (delay.requestDelayed > 0) signals.push(`${delay.requestDelayed} request${delay.requestDelayed > 1 ? 's' : ''} stalled >24h`);
   if (revisions > 3) signals.push(`${revisions} in revision cycle`);
   const signalsHtml = signals.length
     ? signals.slice(0, 4).map(s => `<div class="db-signal">${s}</div>`).join('')
@@ -404,7 +459,7 @@ function renderDashboard() {
         <div class="db-hero-head">
           <div class="db-hero-total">${total}</div>
           <div class="db-hero-lbl">posts in system</div>
-          <div class="db-hero-status${stuck > 0 ? ' db-hero-warn' : ''}">${statusMsg}</div>
+          <div class="db-hero-status${(stuck > 0 || delay.totalDelayed > 0) ? ' db-hero-warn' : ''}">${statusMsg}</div>
         </div>
         <div class="db-flow-bar">${flowBar}</div>
         <div class="db-flow-labels">${flowLabels}</div>

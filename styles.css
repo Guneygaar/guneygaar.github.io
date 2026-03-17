@@ -949,6 +949,16 @@ a:hover { text-decoration: underline; }
   opacity: 0.6;
   text-align: center;
 }
+.db-tl-stage.db-tl-delayed .db-tl-ct {
+  opacity: 1;
+}
+.db-tl-delay-ct {
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.5;
+  margin-left: 1px;
+}
+.db-tl-delay-ct::before { content: '/'; }
 .db-tl-arrow {
   width: 12px;
   height: 1px;
