@@ -3219,6 +3219,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: var(--pcs-modal-width);
   height: auto;
   max-height: 70vh;
+  color: var(--text-primary);
   background: var(--surface);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 20px;
@@ -3300,7 +3301,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-title {
   font-size: 22px;
   font-weight: 650;
-  color: var(--text);
+  color: var(--text-primary);
   line-height: 1.25;
   letter-spacing: -0.01em;
   text-align: left;
@@ -3322,7 +3323,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   font-size: 22px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-primary);
   line-height: 1.25;
   letter-spacing: -0.3px;
   text-align: left;
@@ -3677,8 +3678,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.03em;
-  color: var(--text);
-  opacity: 0.65;
+  color: var(--text-secondary);
 }
 
 /* ── Information grid — stacked single-column layout ── */
