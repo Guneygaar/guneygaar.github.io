@@ -101,6 +101,7 @@ async function clientApprove(postId, btn) {
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
     post.stage = 'scheduled';
+    post._dirtyAt = Date.now();
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }

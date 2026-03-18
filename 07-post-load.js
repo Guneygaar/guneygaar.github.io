@@ -5,6 +5,43 @@ console.log("LOADED:", "07-post-load.js");
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
+// ── Central merge — the ONLY way to update allPosts from server data ──
+// Preserves _dirtyAt on posts with recent local changes (< 5s window).
+// Never replaces allPosts blindly — always mutates existing objects in-place.
+function mergePosts(fresh) {
+  const now = Date.now();
+  const map = new Map(allPosts.map(p => [getPostId(p), p]));
+
+  fresh.forEach(fp => {
+    const id = getPostId(fp);
+    const existing = map.get(id);
+
+    if (!existing) {
+      map.set(id, fp);
+      return;
+    }
+
+    // Time-based protection: skip overwrite if local change happened < 5s ago
+    if (existing._dirtyAt && (now - existing._dirtyAt < 5000)) {
+      console.log('[PCS] MERGE SKIP (age=' + (now - existing._dirtyAt) + 'ms):', id, 'local=' + existing.stage, 'server=' + fp.stage);
+      return;
+    }
+
+    // Window expired or no local change — clean up and let server win
+    delete existing._dirty;
+    delete existing._dirtyAt;
+
+    Object.assign(existing, fp);
+  });
+
+  // Remove posts deleted on server
+  const freshIds = new Set(fresh.map(p => getPostId(p)));
+  map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
+
+  allPosts    = Array.from(map.values());
+  cachedPosts = allPosts;
+}
+
 function showLoadingSkeleton(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -15,8 +52,7 @@ async function loadPosts() {
   showLoadingSkeleton('tasks-container');
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
-    allPosts    = normalise(data);
-    cachedPosts = allPosts;
+    mergePosts(normalise(data));
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
@@ -45,8 +81,7 @@ async function loadPosts() {
 async function loadPostsForClient() {
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
-    allPosts    = normalise(data);
-    cachedPosts = allPosts;
+    mergePosts(normalise(data));
     hideErrorBanner();
     renderClientView();
   } catch (err) {
@@ -86,45 +121,7 @@ function startRealtime() {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
       if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
-        // Safe merge: mutate existing objects to preserve references held by
-        // PCS modal, filters, and click handlers. Never replace allPosts blindly.
-        const now = Date.now();
-        const existingById = new Map(allPosts.map(p => [getPostId(p), p]));
-
-        fresh.forEach(freshPost => {
-          const id = getPostId(freshPost);
-          const existing = existingById.get(id);
-
-          if (!existing) {
-            // New post from server — add it
-            existingById.set(id, freshPost);
-            return;
-          }
-
-          // Time-based protection: skip overwrite if local change happened < 5s ago.
-          // _dirtyAt is the ONLY guard — _dirty flag is irrelevant here.
-          if (existing._dirtyAt) {
-            const age = now - existing._dirtyAt;
-            if (age < 5000) {
-              console.log('[PCS] POLL SKIP (age=' + age + 'ms):', id, 'local=' + existing.stage, 'server=' + freshPost.stage);
-              return;  // local wins regardless of _dirty flag
-            }
-            // Window expired — clean up, let server win
-            delete existing._dirty;
-            delete existing._dirtyAt;
-          }
-
-          console.log('[PCS] POLL MERGE:', id, 'server=' + freshPost.stage, Date.now());
-          // Mutate existing object in-place (preserves all held references)
-          Object.assign(existing, freshPost);
-        });
-
-        // Remove posts deleted on server
-        const freshIds = new Set(fresh.map(p => getPostId(p)));
-        existingById.forEach((_, id) => { if (!freshIds.has(id)) existingById.delete(id); });
-
-        allPosts    = Array.from(existingById.values());
-        cachedPosts = allPosts;
+        mergePosts(fresh);
         scheduleRender();
         fetchUnreadCount();
       }
