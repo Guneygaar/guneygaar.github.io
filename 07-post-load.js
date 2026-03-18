@@ -462,11 +462,11 @@ function renderDashboard() {
   let pressureLabel = '';
   let pressureSource = [];
   if (internalDelayed.length) {
-    pressureLabel = 'NOT SORTED'; pressureSource = internalDelayed;
+    pressureLabel = 'IN PRODUCTION \u2014 NOT MOVING'; pressureSource = internalDelayed;
   } else if (clientDelayed.length) {
-    pressureLabel = 'NOT SORTED'; pressureSource = clientDelayed;
+    pressureLabel = 'CLIENT \u2014 WAITING'; pressureSource = clientDelayed;
   } else if (requestDelayed.length) {
-    pressureLabel = 'NOT SORTED'; pressureSource = requestDelayed;
+    pressureLabel = 'READY \u2014 NOT SENT'; pressureSource = requestDelayed;
   }
   const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
 
