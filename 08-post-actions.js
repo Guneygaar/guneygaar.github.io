@@ -525,11 +525,18 @@ function _refreshPCSAfterStageChange(postId) {
   // Rebuilding the grid via innerHTML destroys <select> and <input>
   // elements while other async saves (pillar, owner, etc.) may still
   // be in flight, causing those changes to silently revert.
-  // Instead, surgically update only the Owner cell text:
-  if (elFields) {
-    const ownerCell = elFields.querySelector('.pcs-field:nth-child(2) .pcs-field-val-ro');
-    if (ownerCell) ownerCell.textContent = formatOwner(getResponsibleOwner(post));
-  }
+  // Instead, surgically update only the Owner cell text via stable class hook:
+  const ownerEl = document.querySelector('.pcs-owner-val');
+  if (ownerEl) ownerEl.textContent = formatOwner(getResponsibleOwner(post));
+
+  triggerStageConfirmation();
+}
+
+function triggerStageConfirmation() {
+  const el = document.getElementById('pcs-screen');
+  if (!el) return;
+  el.classList.add('pcs-confirm');
+  setTimeout(() => { el.classList.remove('pcs-confirm'); }, 420);
 }
 
 function _buildStageProgress(stageLC) {
@@ -770,7 +777,7 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    ro(formatOwner(getResponsibleOwner(post))))}
+        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(getResponsibleOwner(post)))}</span>`)}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
