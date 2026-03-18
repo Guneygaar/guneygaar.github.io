@@ -416,11 +416,11 @@ function renderDashboard() {
   //   'scheduled'            → null     (done — not actionable)
   //   'published'            → null     (done — not actionable)
   function getResponsibleOwner(post) {
-    const s = stg(post);
+    const s = (post.stage || '').toLowerCase();
+    if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
     if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
     if (s === 'ready') return 'CHITRA';
-    if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
-    return null;
+    return null; // scheduled, published, parked → hidden
   }
 
   // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
@@ -456,15 +456,15 @@ function renderDashboard() {
   const clientDelayed = delayed.filter(p => p.delayType === 'client');
   const requestDelayed = delayed.filter(p => p.delayType === 'request');
 
-  // Priority: overdue > client > stale (show ONE type only)
+  // Priority: overdue > client > request (show ONE type only, no "STALE")
   let pressureLabel = '';
   let pressureSource = [];
   if (internalDelayed.length) {
-    pressureLabel = 'OVERDUE'; pressureSource = internalDelayed;
+    pressureLabel = 'IN PRODUCTION DELAY'; pressureSource = internalDelayed;
   } else if (clientDelayed.length) {
     pressureLabel = 'WAITING ON CLIENT'; pressureSource = clientDelayed;
   } else if (requestDelayed.length) {
-    pressureLabel = 'STALE'; pressureSource = requestDelayed;
+    pressureLabel = 'AWAITING APPROVAL SEND'; pressureSource = requestDelayed;
   }
   const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
 
@@ -516,17 +516,17 @@ function renderDashboard() {
   let actionText = '';
   if (uiState === 'failure') {
     // Failure: override — no counts, no runway refs, just immediate fix
-    actionText = 'Chitra: Schedule today\u2019s post immediately';
+    actionText = 'Chitra: Send today\u2019s post for approval immediately';
   } else if (hard_runway === 0) {
-    actionText = 'Chitra: Schedule content now';
+    actionText = 'Chitra: Send content for approval now';
   } else if (hard_runway <= 2 && ready > 0) {
-    actionText = `Chitra: Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
+    actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval now`;
   } else if (hard_runway <= 2) {
     actionText = `Pranav: Create content \u2014 runway expires in ${hard_runway}d`;
   } else if (production > ready) {
     actionText = `Pranav: Finish ${production} production post${production !== 1 ? 's' : ''}`;
   } else if (ready > scheduled) {
-    actionText = `Chitra: Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
+    actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval`;
   } else {
     actionText = 'Maintain pace';
   }
@@ -560,11 +560,16 @@ function renderDashboard() {
   el.querySelector('[data-nav="pipeline"]')?.addEventListener('click', () => goToTab('pipeline'));
   el.querySelectorAll('[data-owner]').forEach(row => {
     row.addEventListener('click', () => {
-      const owner = row.dataset.owner;
-      goToTab('library');
+      const owner = row.dataset.owner.toUpperCase();
+      goToTab('pipeline');
       setTimeout(() => {
-        const s = document.getElementById('filter-owner');
-        if (s) { s.value = owner; filterLibrary(); }
+        if (owner === 'CLIENT') {
+          window.pcsPipelineFilter = ['awaiting approval','awaiting brand input'];
+        } else if (owner === 'CHITRA') {
+          window.pcsPipelineFilter = ['ready'];
+        } else if (owner === 'PRANAV') {
+          window.pcsPipelineFilter = ['in production','revisions needed'];
+        }
       }, 80);
     });
   });
