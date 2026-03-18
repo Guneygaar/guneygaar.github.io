@@ -527,6 +527,8 @@ function renderDashboard() {
     actionText = `Pranav: Finish ${production} production post${production !== 1 ? 's' : ''}`;
   } else if (ready > scheduled) {
     actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval`;
+  } else if (invCount / invTarget < 0.8) {
+    actionText = `Pranav: Add ${invGap} post${invGap !== 1 ? 's' : ''} to inventory`;
   } else {
     actionText = 'Maintain pace';
   }
