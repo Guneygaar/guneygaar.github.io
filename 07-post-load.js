@@ -470,6 +470,16 @@ function renderDashboard() {
   }
   const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
 
+  // ── PRESSURE INTENSITY LEVEL (deterministic, no scores) ──
+  let pressureLevel = 0;
+  if (hard_runway === 0) {
+    pressureLevel = 3;
+  } else if (clientDelayed.length > 0) {
+    pressureLevel = 2;
+  } else if (internalDelayed.length > 0) {
+    pressureLevel = 1;
+  }
+
   // ── PRANAV PRODUCTION HEALTH (ready + scheduled vs target) ──
   const invCount = ready + scheduled;
   const invTarget = typeof READY_TO_SEND_TARGET !== 'undefined' ? READY_TO_SEND_TARGET : 30;
@@ -556,7 +566,7 @@ function renderDashboard() {
 
   // inventoryBlock is now inlined in the HTML below with data-nav="inventory"
 
-  el.innerHTML = `<div class="pc-root ${uiState}">
+  el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
     <div class="pc-sorted-tag ${uiState}">${uiState === 'safe' ? 'Flow is stable' : uiState === 'risk' ? 'Flow at risk' : 'Flow broken'}</div>
     <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
