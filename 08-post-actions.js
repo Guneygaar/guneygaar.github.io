@@ -8,15 +8,21 @@ async function quickStage(postId, newStage) {
   if (!post) return;
   const oldStage = post.stage;
   post.stage = newStage;
+  post._dirty = true;
+  post._dirtyAt = Date.now();
   scheduleRender();
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
     });
+    delete post._dirty;
+    delete post._dirtyAt;
     await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
+    delete post._dirty;
+    delete post._dirtyAt;
     post.stage = oldStage;
     scheduleRender();
     showToast('Update failed — try again', 'error');
@@ -502,6 +508,8 @@ function _executeStageChange(postId, newStage) {
   if (!post) return;
   const previousStage = post.stage;
   post.stage = newStage;
+  post._dirty = true;
+  post._dirtyAt = Date.now();
 
   // ── 2. Instant UI re-render (before DB) ──
   _renderPCS(postId);
@@ -513,10 +521,13 @@ function _executeStageChange(postId, newStage) {
     method: 'PATCH',
     body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
   })
+    .then(() => { delete post._dirty; delete post._dirtyAt; })
     .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
     .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
     .catch(() => {
       // Rollback local state
+      delete post._dirty;
+      delete post._dirtyAt;
       post.stage = previousStage;
       _renderPCS(postId);
       _renderBackgroundViews();
@@ -666,13 +677,13 @@ function refreshSystemViews() {
   } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
-// Re-render all stage-dependent background views (dashboard + pipeline + active tab)
+// Re-render all stage-dependent background views (dashboard + active tab)
 function _renderBackgroundViews() {
   try { renderDashboard(); } catch(e) { console.error('renderDashboard:', e); }
-  // Preserve any active pipeline filter during stage-change re-render
-  const savedFilter = window.pcsPipelineFilter;
-  try { window.pcsPipelineFilter = savedFilter; renderPipeline(); } catch(e) { console.error('renderPipeline:', e); }
-  refreshSystemViews();
+  // refreshSystemViews renders the active tab (pipeline/tasks/upcoming/library).
+  // Pipeline filter is preserved — refreshSystemViews calls renderPipeline which
+  // reads window.pcsPipelineFilter directly. Single render, no duplicates.
+  try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
 async function updatePost(postId, field, value) {
