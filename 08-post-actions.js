@@ -383,6 +383,7 @@ function _renderPCS(postId) {
   const id          = getPostId(post);
   const title       = getTitle(post);
   const stageLC     = (post.stage || '').toLowerCase().trim();
+  console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
