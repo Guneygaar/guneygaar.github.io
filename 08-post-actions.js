@@ -36,41 +36,45 @@ function openAdminEdit(postId) {
   const post = getPostById(postId);
   if (!post) return;
   window._modalOpen = true;
-  document.getElementById('ae-postid').textContent   = postId;
-  document.getElementById('ae-title').value          = getTitle(post);
-  document.getElementById('ae-owner').value          = getResponsibleOwner(post) || '—';
-  document.getElementById('ae-pillar').value         = post.contentPillar || '';
-  document.getElementById('ae-location').value       = post.location || '';
-  document.getElementById('ae-date').value           = post.targetDate || '';
-  document.getElementById('ae-comments').value       = post.comments || '';
-  document.getElementById('ae-postlink').value       = post.postLink || '';
-  const sel = document.getElementById('ae-stage');
-  sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
-  document.getElementById('ae-save-btn').dataset.postId = postId;
-  document.getElementById('admin-edit-overlay').classList.add('open');
+  const _ae = id => document.getElementById(id);
+  const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
+  const aeTitle  = _ae('ae-title');     if (aeTitle) aeTitle.value = getTitle(post);
+  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = getResponsibleOwner(post) || '—';
+  const aePillar = _ae('ae-pillar');    if (aePillar) aePillar.value = post.contentPillar || '';
+  const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
+  const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
+  const aeComm   = _ae('ae-comments');  if (aeComm) aeComm.value = post.comments || '';
+  const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || '';
+  const sel = _ae('ae-stage');
+  if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
+  const aeBtn = _ae('ae-save-btn');     if (aeBtn) aeBtn.dataset.postId = postId;
+  const aeOverlay = _ae('admin-edit-overlay');
+  if (aeOverlay) aeOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeAdminEdit() {
-  document.getElementById('admin-edit-overlay').classList.remove('open');
+  document.getElementById('admin-edit-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
   window._modalOpen = false;
   _drainDeferredRender();
 }
 
 async function saveAdminEdit() {
-  const postId   = document.getElementById('ae-save-btn').dataset.postId;
-  const title    = document.getElementById('ae-title').value.trim();
-  const owner    = document.getElementById('ae-owner').value;
-  const pillar   = document.getElementById('ae-pillar').value;
-  const location = document.getElementById('ae-location').value;
-  const stage    = document.getElementById('ae-stage').value;
-  const date     = document.getElementById('ae-date').value;
-  const comments = document.getElementById('ae-comments').value.trim();
-  const postLink = document.getElementById('ae-postlink').value.trim();
+  const _ae = id => document.getElementById(id);
+  const postId   = _ae('ae-save-btn')?.dataset?.postId;
+  if (!postId) return;
+  const title    = (_ae('ae-title')?.value || '').trim();
+  const owner    = _ae('ae-owner')?.value || '';
+  const pillar   = _ae('ae-pillar')?.value || '';
+  const location = _ae('ae-location')?.value || '';
+  const stage    = _ae('ae-stage')?.value || '';
+  const date     = _ae('ae-date')?.value || '';
+  const comments = (_ae('ae-comments')?.value || '').trim();
+  const postLink = (_ae('ae-postlink')?.value || '').trim();
   if (!title) { showToast('Title is required', 'error'); return; }
-  const btn = document.getElementById('ae-save-btn');
-  btn.disabled = true;
+  const btn = _ae('ae-save-btn');
+  if (btn) btn.disabled = true;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
@@ -82,7 +86,7 @@ async function saveAdminEdit() {
     showToast('Post saved ✓', 'success');
   } catch (err) {
     showToast('Save failed — try again', 'error');
-    btn.disabled = false;
+    if (btn) btn.disabled = false;
   }
 }
 

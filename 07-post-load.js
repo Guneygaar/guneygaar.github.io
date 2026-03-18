@@ -71,7 +71,8 @@ async function loadPosts() {
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${new Date().toLocaleTimeString()}`);
     } else {
-      document.getElementById('tasks-container').innerHTML =
+      const tc = document.getElementById('tasks-container');
+      if (tc) tc.innerHTML =
         `<div class="empty-state">
           <div class="empty-icon">[!]</div>
           <p><strong>Could not load posts.</strong><br>Check your connection.</p>
@@ -98,7 +99,8 @@ async function loadPostsForClient() {
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
-      document.getElementById('client-approved-tbody').innerHTML =
+      const catb = document.getElementById('client-approved-tbody');
+      if (catb) catb.innerHTML =
         `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">[!]</div>
         <p>Could not load. Check your connection.</p></div></td></tr>`;
     }
@@ -353,6 +355,9 @@ function computeDelayMeta(posts) {
 }
 
 function renderDashboard() {
+  try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
+}
+function _renderDashboardInner() {
   const el = document.getElementById('pcs-dashboard');
   if (!el) return;
 
@@ -770,6 +775,7 @@ function renderAdminInsight() {
 function openParked() {
   const posts = window._parkedPosts || [];
   const list  = document.getElementById('parked-sheet-list');
+  if (!list) return;
   list.innerHTML = posts.map(p => {
     const id    = getPostId(p);
     const title = getTitle(p);
@@ -784,12 +790,12 @@ function openParked() {
       <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${hex}22;color:${hex};flex-shrink:0">${esc(stage)}</span>
     </div>`;
   }).join('') || '<div style="color:var(--text3);padding:var(--sp-4) 0;font-size:14px">No parked posts.</div>';
-  document.getElementById('parked-overlay').classList.add('open');
+  document.getElementById('parked-overlay')?.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
 function closeParked() {
-  document.getElementById('parked-overlay').classList.remove('open');
+  document.getElementById('parked-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
 }
 
@@ -1021,6 +1027,9 @@ function _renderFilteredTasks() {
 }
 
 function renderTasks() {
+  try { _renderTasksInner(); } catch(e) { console.error('[PCS] renderTasks crash:', e); }
+}
+function _renderTasksInner() {
   renderTaskStageChips();
 
   // If a chip filter is active, let _renderFilteredTasks handle it
@@ -1083,6 +1092,9 @@ function toggleStageOverflow(btn, totalHidden) {
 }
 
 function renderPipeline() {
+  try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
+}
+function _renderPipelineInner() {
   // Consume pressure-click filter (set by dashboard click handler)
   const activeFilter = window.pcsPipelineFilter;
   window.pcsPipelineFilter = null;
@@ -1147,6 +1159,7 @@ function renderPipeline() {
   }).join('');
 
   const container = document.getElementById('pipeline-container');
+  if (!container) return;
   container.innerHTML = html;
 
   // ── GLOBAL EMPTY STATE (filtered view with no results) ──
@@ -1172,6 +1185,9 @@ function getUpcoming() {
 }
 
 function renderUpcoming() {
+  try { _renderUpcomingInner(); } catch(e) { console.error('[PCS] renderUpcoming crash:', e); }
+}
+function _renderUpcomingInner() {
   // Consume date filter (set by runway click)
   const activeFilter = window.pcsUpcomingFilter;
   window.pcsUpcomingFilter = null;
@@ -1283,8 +1299,10 @@ function filterLibrary() {
 }
 
 function renderLibrary() {
-  populateFilterDropdowns();
-  filterLibrary();
+  try {
+    populateFilterDropdowns();
+    filterLibrary();
+  } catch(e) { console.error('[PCS] renderLibrary crash:', e); }
 }
 
 function renderLibraryRows(posts) {
@@ -1314,6 +1332,9 @@ function renderLibraryRows(posts) {
 }
 
 function renderClientView() {
+  try { _renderClientViewInner(); } catch(e) { console.error('[PCS] renderClientView crash:', e); }
+}
+function _renderClientViewInner() {
   const inputPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'awaiting brand input');
   const inputCount = document.getElementById('client-input-count');
   if (inputCount) inputCount.textContent = inputPosts.length;
@@ -1415,8 +1436,10 @@ function switchLibraryView(btn) {
   btn.classList.add('active');
   _currentLibraryView = btn.dataset.view;
 
-  document.getElementById('library-list-view').style.display      = _currentLibraryView === 'list'     ? '' : 'none';
-  document.getElementById('library-calendar-view').style.display  = _currentLibraryView === 'calendar' ? '' : 'none';
+  const llv = document.getElementById('library-list-view');
+  const lcv = document.getElementById('library-calendar-view');
+  if (llv) llv.style.display = _currentLibraryView === 'list'     ? '' : 'none';
+  if (lcv) lcv.style.display = _currentLibraryView === 'calendar' ? '' : 'none';
 
   filterLibrary();
 }
