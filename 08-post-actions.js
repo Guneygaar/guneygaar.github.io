@@ -10,19 +10,22 @@ async function quickStage(postId, newStage) {
   post.stage = newStage;
   post._dirty = true;
   post._dirtyAt = Date.now();
+  console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
+    console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
     });
+    console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     delete post._dirty;
-    delete post._dirtyAt;
+    // KEEP _dirtyAt — poll uses time-based protection for 5s after change
     await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     delete post._dirty;
-    delete post._dirtyAt;
+    // KEEP _dirtyAt — poll will clear it after 5s window expires
     post.stage = oldStage;
     scheduleRender();
     showToast('Update failed — try again', 'error');
@@ -510,6 +513,7 @@ function _executeStageChange(postId, newStage) {
   post.stage = newStage;
   post._dirty = true;
   post._dirtyAt = Date.now();
+  console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // ── 2. Instant UI re-render (before DB) ──
   _renderPCS(postId);
@@ -517,17 +521,18 @@ function _executeStageChange(postId, newStage) {
   _renderBackgroundViews();
 
   // ── 3. Async DB persistence with rollback on failure ──
+  console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
   apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
     method: 'PATCH',
     body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
   })
-    .then(() => { delete post._dirty; delete post._dirtyAt; })
+    .then(() => { console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now()); delete post._dirty; /* KEEP _dirtyAt for time-based poll protection */ })
     .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
     .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
     .catch(() => {
       // Rollback local state
       delete post._dirty;
-      delete post._dirtyAt;
+      // KEEP _dirtyAt — poll will clear it after 5s window expires
       post.stage = previousStage;
       _renderPCS(postId);
       _renderBackgroundViews();
