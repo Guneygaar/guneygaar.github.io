@@ -490,11 +490,11 @@ function renderDashboard() {
   const todayIsPostingDay = isPostingDay(now);
   let uiState, stateMsg, stateClass;
   if (todayIsPostingDay && !todayHasPost) {
-    uiState = 'failure'; stateMsg = 'Not sorted \u2014 today is empty'; stateClass = 'st-fail';
+    uiState = 'failure'; stateMsg = 'Runway broken'; stateClass = 'st-fail';
   } else if (hard_runway <= 2) {
-    uiState = 'risk'; stateMsg = 'Not sorted \u2014 will break soon'; stateClass = 'st-risk';
+    uiState = 'risk'; stateMsg = 'Runway will break soon'; stateClass = 'st-risk';
   } else {
-    uiState = 'safe'; stateMsg = 'Sorted'; stateClass = 'st-safe';
+    uiState = 'safe'; stateMsg = 'Runway clear'; stateClass = 'st-safe';
   }
 
   // ── RUNWAY DISPLAY (state-consistent) ──
@@ -508,12 +508,12 @@ function renderDashboard() {
   let contextLine = '';
   let contextClickable = false;
   if (uiState === 'failure') {
-    contextLine = 'Nothing sorted for today';
+    contextLine = 'No posts for today';
   } else if (uiState === 'risk' && nextGapDay) {
     contextLine = `Break on ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   } else if (uiState === 'safe' && nextGapDay) {
-    contextLine = `Sorted till ${nextGapDay}`;
+    contextLine = `Clear till ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   }
 
@@ -558,7 +558,7 @@ function renderDashboard() {
 
   el.innerHTML = `<div class="pc-root ${uiState}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
-    <div class="pc-sorted-tag ${uiState}">${uiState === 'safe' ? 'All sorted' : uiState === 'risk' ? 'Not fully sorted' : 'Nothing sorted'}</div>
+    <div class="pc-sorted-tag ${uiState}">${uiState === 'safe' ? 'Flow is stable' : uiState === 'risk' ? 'Flow at risk' : 'Flow broken'}</div>
     <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
     ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
     ${pressureBlock}
