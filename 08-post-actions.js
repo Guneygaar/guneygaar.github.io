@@ -523,37 +523,45 @@ function _executeStageChange(postId, newStage) {
   triggerStageConfirmation();
   _renderBackgroundViews();
 
-  // ── 3. Async DB persistence with rollback on failure ──
-  console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
-  apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
-  })
-    .then(() => {
-      console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
-      delete post._dirty;
-      // CRITICAL: force final UI sync immediately after DB success
-      _renderPCS(postId);
-      _renderBackgroundViews();
-      console.log('[PCS] FINAL RENDER SYNC:', postId, post.stage, Date.now());
-    })
-    .then(() => {
-      // NON-CRITICAL — must NOT trigger rollback
-      try { logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
-    })
-    .then(() => {
-      try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
-    })
-    .catch((err) => {
-      console.error('[PCS] DB WRITE FAILED:', postId, err);
-      // ONLY rollback if DB call failed — non-critical ops above are guarded
-      delete post._dirty;
-      // KEEP _dirtyAt — poll will clear it after 5s window expires
-      setStage(post, previousStage, '_executeStageChange_rollback');
-      _renderPCS(postId);
-      _renderBackgroundViews();
-      showToast('Update failed — rolled back', 'error');
+  // ── 3. Async DB persistence — isolated from side effects ──
+  _executeStageChangeAsync(post, postId, newStage, previousStage);
+}
+
+async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
+  // ── DB WRITE — rollback ONLY if this fails ──
+  try {
+    console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
+
+    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
     });
+
+    console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
+
+    delete post._dirty;
+
+    // FINAL TRUTH RENDER
+    _renderPCS(postId);
+    _renderBackgroundViews();
+    console.log('[PCS] FINAL RENDER SYNC:', postId, post.stage, Date.now());
+
+  } catch (err) {
+    console.error('[PCS] DB WRITE FAILED:', postId, err);
+
+    delete post._dirty;
+    // KEEP _dirtyAt — poll will clear it after 5s window expires
+    setStage(post, previousStage, '_executeStageChange_rollback');
+
+    _renderPCS(postId);
+    _renderBackgroundViews();
+    showToast('Update failed — rolled back', 'error');
+    return; // STOP — do not run side effects
+  }
+
+  // ── NON-CRITICAL — completely outside DB try/catch ──
+  try { logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
 
