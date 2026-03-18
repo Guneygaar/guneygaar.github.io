@@ -494,43 +494,36 @@ function _showStageConfirm(postId, newStage) {
   document.body.appendChild(overlay);
 }
 
-async function _executeStageChange(postId, newStage) {
+function _executeStageChange(postId, newStage) {
   _removePcsConfirm();
-  await quickStage(postId, newStage);
-  // Immediately update the PCS pipeline visually
-  _refreshPCSAfterStageChange(postId);
-  refreshSystemViews();
-}
 
-// Targeted re-render of only the stage-dependent sections (no full re-render)
-function _refreshPCSAfterStageChange(postId) {
+  // ── 1. Optimistic local state update ──
   const post = getPostById(postId);
-  if (!post || _pcs.postId !== postId) return;
+  if (!post) return;
+  const previousStage = post.stage;
+  post.stage = newStage;
 
-  const stageLC     = (post.stage || '').toLowerCase().trim();
-  const isPublished = stageLC === 'published';
-  const canvaUrl    = post.postLink || '';
-  const linkedinUrl = post.linkedinUrl || '';
-  const canEdit     = ['Admin','Servicing'].includes(currentRole);
-  const id          = getPostId(post);
-
-  const elProgress = document.getElementById('pcs-progress-wrap');
-  const elDesign   = document.getElementById('pcs-action-btn-wrap');
-  const elFields   = document.getElementById('pcs-fields');
-
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
-  if (elDesign)   elDesign.innerHTML   = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
-  _updateSubtitle(post);
-  // Note: elFields is intentionally NOT rebuilt here.
-  // Rebuilding the grid via innerHTML destroys <select> and <input>
-  // elements while other async saves (pillar, owner, etc.) may still
-  // be in flight, causing those changes to silently revert.
-  // Instead, surgically update only the Owner cell text via stable class hook:
-  const ownerEl = document.querySelector('.pcs-owner-val');
-  if (ownerEl) ownerEl.textContent = formatOwner(getResponsibleOwner(post));
-
+  // ── 2. Instant UI re-render (before DB) ──
+  _renderPCS(postId);
   triggerStageConfirmation();
+  _renderBackgroundViews();
+
+  // ── 3. Async DB persistence with rollback on failure ──
+  apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
+  })
+    .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
+    .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
+    .catch(() => {
+      // Rollback local state
+      post.stage = previousStage;
+      _renderPCS(postId);
+      _renderBackgroundViews();
+      showToast('Update failed — rolled back', 'error');
+    });
 }
+
 
 function triggerStageConfirmation() {
   const el = document.getElementById('pcs-screen');
@@ -671,6 +664,15 @@ function refreshSystemViews() {
     else if (activeTab === 'upcoming') renderUpcoming();
     else if (activeTab === 'library')  renderLibrary();
   } catch(e) { console.error('refreshSystemViews:', e); }
+}
+
+// Re-render all stage-dependent background views (dashboard + pipeline + active tab)
+function _renderBackgroundViews() {
+  try { renderDashboard(); } catch(e) { console.error('renderDashboard:', e); }
+  // Preserve any active pipeline filter during stage-change re-render
+  const savedFilter = window.pcsPipelineFilter;
+  try { window.pcsPipelineFilter = savedFilter; renderPipeline(); } catch(e) { console.error('renderPipeline:', e); }
+  refreshSystemViews();
 }
 
 async function updatePost(postId, field, value) {
