@@ -407,16 +407,18 @@ function renderDashboard() {
 
   // ── RESPONSIBLE OWNER (stage-based, UI only — never written to DB) ──
   // Three accountable parties: PRANAV (production), CHITRA (scheduling), CLIENT (approval)
-  //   'in production'        → internal delay   → PRANAV
-  //   'revisions needed'     → not delayed      → PRANAV
-  //   'ready'                → not delayed      → CHITRA
-  //   'scheduled'            → internal delay   → CHITRA
-  //   'awaiting approval'    → client delay     → CLIENT
-  //   'awaiting brand input' → request delay    → CLIENT
+  // Actionable stages only — scheduled/published are done, never shown as pressure
+  //   'in production'        → PRANAV   (production work)
+  //   'revisions needed'     → PRANAV   (production work)
+  //   'ready'                → CHITRA   (needs scheduling)
+  //   'awaiting approval'    → CLIENT   (external blocker)
+  //   'awaiting brand input' → CLIENT   (external blocker)
+  //   'scheduled'            → null     (done — not actionable)
+  //   'published'            → null     (done — not actionable)
   function getResponsibleOwner(post) {
     const s = stg(post);
     if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
-    if (s === 'ready' || s === 'scheduled') return 'CHITRA';
+    if (s === 'ready') return 'CHITRA';
     if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
     return null;
   }
