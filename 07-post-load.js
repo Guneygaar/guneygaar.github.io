@@ -556,7 +556,7 @@ function renderDashboard() {
 
   // inventoryBlock is now inlined in the HTML below with data-nav="inventory"
 
-  el.innerHTML = `<div class="pc-root">
+  el.innerHTML = `<div class="pc-root ${uiState}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
     <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
     ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
