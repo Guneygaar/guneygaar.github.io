@@ -101,23 +101,17 @@ function startRealtime() {
             return;
           }
 
-          // Dirty protection: skip overwrite if local change is recent
-          if (existing._dirty) {
+          // Time-based protection: skip overwrite if local change happened < 5s ago.
+          // _dirtyAt is the ONLY guard — _dirty flag is irrelevant here.
+          if (existing._dirtyAt) {
             const age = now - existing._dirtyAt;
             if (age < 5000) {
-              console.log('[PCS] POLL SKIP (dirty, age=' + age + 'ms):', id, 'local=' + existing.stage, 'server=' + freshPost.stage);
-              return;  // local wins
+              console.log('[PCS] POLL SKIP (age=' + age + 'ms):', id, 'local=' + existing.stage, 'server=' + freshPost.stage);
+              return;  // local wins regardless of _dirty flag
             }
-            // Grace window expired — clear flags, let server win
+            // Window expired — clean up, let server win
             delete existing._dirty;
             delete existing._dirtyAt;
-          }
-
-          // Stage mismatch safety: if local stage differs and post was recently
-          // touched (even if _dirty already cleared by success), skip overwrite
-          if (freshPost.stage !== existing.stage && existing._dirtyAt && (now - existing._dirtyAt) < 5000) {
-            console.log('[PCS] POLL SKIP (stage mismatch):', id, 'local=' + existing.stage, 'server=' + freshPost.stage);
-            return;
           }
 
           console.log('[PCS] POLL MERGE:', id, 'server=' + freshPost.stage, Date.now());
