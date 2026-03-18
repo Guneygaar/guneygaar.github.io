@@ -854,7 +854,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = getResponsibleOwner(post) || '—';
+  const owner     = formatOwner(getResponsibleOwner(post));
   const pillar    = formatPillarDisplay(post.contentPillar);
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';

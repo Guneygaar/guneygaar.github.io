@@ -132,6 +132,12 @@ function getPillarShort(p) {
   return PILLAR_SHORT[key] || key;
 }
 
+// Display-only owner formatter (internal values stay UPPERCASE)
+function formatOwner(name) {
+  if (!name) return '\u2014';
+  return name.charAt(0) + name.slice(1).toLowerCase();
+}
+
 // -------------------------------------------------------
 // ROLE & WORKFLOW CONFIG
 // -------------------------------------------------------

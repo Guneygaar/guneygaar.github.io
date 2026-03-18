@@ -423,7 +423,7 @@ function _updateSubtitle(post) {
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';
-  const parts = [pLabel, getResponsibleOwner(post) || '—', dDisp];
+  const parts = [pLabel, formatOwner(getResponsibleOwner(post)), dDisp];
   el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
@@ -525,6 +525,11 @@ function _refreshPCSAfterStageChange(postId) {
   // Rebuilding the grid via innerHTML destroys <select> and <input>
   // elements while other async saves (pillar, owner, etc.) may still
   // be in flight, causing those changes to silently revert.
+  // Instead, surgically update only the Owner cell text:
+  if (elFields) {
+    const ownerCell = elFields.querySelector('.pcs-field:nth-child(2) .pcs-field-val-ro');
+    if (ownerCell) ownerCell.textContent = formatOwner(getResponsibleOwner(post));
+  }
 }
 
 function _buildStageProgress(stageLC) {
@@ -765,7 +770,7 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    ro(getResponsibleOwner(post) || '—'))}
+        ${cell('Owner',    ro(formatOwner(getResponsibleOwner(post))))}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
