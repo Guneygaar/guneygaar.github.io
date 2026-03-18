@@ -10,12 +10,15 @@ async function quickStage(postId, newStage) {
   post.stage = newStage;
   post._dirty = true;
   post._dirtyAt = Date.now();
+  console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
+    console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
     });
+    console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     delete post._dirty;
     delete post._dirtyAt;
     await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
@@ -510,6 +513,7 @@ function _executeStageChange(postId, newStage) {
   post.stage = newStage;
   post._dirty = true;
   post._dirtyAt = Date.now();
+  console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // ── 2. Instant UI re-render (before DB) ──
   _renderPCS(postId);
@@ -517,11 +521,12 @@ function _executeStageChange(postId, newStage) {
   _renderBackgroundViews();
 
   // ── 3. Async DB persistence with rollback on failure ──
+  console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
   apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
     method: 'PATCH',
     body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
   })
-    .then(() => { delete post._dirty; delete post._dirtyAt; })
+    .then(() => { console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now()); delete post._dirty; delete post._dirtyAt; })
     .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
     .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
     .catch(() => {
