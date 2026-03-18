@@ -373,6 +373,7 @@ function renderDashboard() {
   // If start lands on a non-posting day, advance to next posting day
   let hard_runway = 0;
   let nextGapDay = '';
+  let nextGapDate = null; // actual Date for click navigation
   if (futureDays.size > 0) {
     let start;
     if (futureDays.has(dayKey(now))) {
@@ -401,6 +402,7 @@ function renderDashboard() {
     if (hard_runway > 0) {
       const dn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
       nextGapDay = dn[check.getDay()];
+      nextGapDate = new Date(check); // store for click navigation
     }
   }
   const soft_runway = Math.floor(ready * 0.7);
@@ -504,33 +506,45 @@ function renderDashboard() {
 
   // ── CONTEXT LINE (state-driven, no contradiction) ──
   let contextLine = '';
+  let contextClickable = false;
   if (uiState === 'failure') {
     contextLine = 'Runway ends today';
   } else if (uiState === 'risk' && nextGapDay) {
     contextLine = `Next gap: ${nextGapDay}`;
+    contextClickable = !!nextGapDate;
   } else if (uiState === 'safe' && nextGapDay) {
     contextLine = `Covered till ${nextGapDay}`;
+    contextClickable = !!nextGapDate;
   }
 
   // ── ACTION LINE (state-aligned, verb-led, owner-prefixed) ──
+  // Each branch also sets actionFilter so clicking navigates to correct posts
   let actionText = '';
+  let actionFilter = null; // stages to filter pipeline on click
   if (uiState === 'failure') {
-    // Failure: override — no counts, no runway refs, just immediate fix
     actionText = 'Chitra: Send today\u2019s post for approval immediately';
+    actionFilter = ['ready'];
   } else if (hard_runway === 0) {
     actionText = 'Chitra: Send content for approval now';
+    actionFilter = ['ready'];
   } else if (hard_runway <= 2 && ready > 0) {
     actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval now`;
+    actionFilter = ['ready'];
   } else if (hard_runway <= 2) {
     actionText = `Pranav: Create content \u2014 runway expires in ${hard_runway}d`;
+    actionFilter = ['in production', 'revisions needed'];
   } else if (production > ready) {
     actionText = `Pranav: Finish ${production} production post${production !== 1 ? 's' : ''}`;
+    actionFilter = ['in production', 'revisions needed'];
   } else if (ready > scheduled) {
     actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval`;
+    actionFilter = ['ready'];
   } else if (invCount / invTarget < 0.8) {
     actionText = `Pranav: Add ${invGap} post${invGap !== 1 ? 's' : ''} to inventory`;
+    actionFilter = ['in production', 'revisions needed'];
   } else {
     actionText = 'Maintain pace';
+    actionFilter = null;
   }
 
   // ── RENDER (pressure control interface) ──
@@ -540,39 +554,59 @@ function renderDashboard() {
       ${pressureOverflow > 0 ? `<div class="pc-overflow">+${pressureOverflow} at risk</div>` : ''}
     </div>` : '';
 
-  const inventoryBlock = `<div class="pc-inv">
+  // inventoryBlock is now inlined in the HTML below with data-nav="inventory"
+
+  el.innerHTML = `<div class="pc-root">
+    <div class="pc-state ${stateClass}">${stateMsg}</div>
+    <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
+    ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
+    ${pressureBlock}
+    <div class="pc-inv" data-nav="inventory" style="cursor:pointer">
       <div class="pc-inv-head">
         <span class="pc-inv-name">PRANAV</span>
         <span class="pc-inv-ratio">${invCount}<span class="pc-inv-sep"> / </span>${invTarget}</span>
       </div>
       ${invGap > 0 ? `<div class="pc-inv-gap">\u2193 ${invGap} short</div>` : ''}
       <div class="pc-inv-bar">${Array.from({length: 15}, (_, i) => `<span${i < Math.round(invCount / invTarget * 15) ? ' class="filled"' : ''}></span>`).join('')}</div>
-    </div>`;
-
-  el.innerHTML = `<div class="pc-root">
-    <div class="pc-state ${stateClass}">${stateMsg}</div>
-    <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
-    ${contextLine ? `<div class="pc-context">${contextLine}</div>` : ''}
-    ${pressureBlock}
-    ${inventoryBlock}
-    <div class="pc-action" data-nav="pipeline">${actionText} →</div>
+    </div>
+    <div class="pc-action" data-nav="pipeline">${actionText} \u2192</div>
   </div>`;
 
   // ── CLICK DELEGATION ──
-  el.querySelector('[data-nav="pipeline"]')?.addEventListener('click', () => goToTab('pipeline'));
+
+  // Action line → pipeline with context-aware filter
+  el.querySelector('[data-nav="pipeline"]')?.addEventListener('click', () => {
+    if (actionFilter) {
+      navigateWithFilter('pipeline', actionFilter);
+    } else {
+      goToTab('pipeline');
+    }
+  });
+
+  // Pressure rows → pipeline filtered by owner stages
   el.querySelectorAll('[data-owner]').forEach(row => {
     row.addEventListener('click', () => {
       const owner = row.dataset.owner.toUpperCase();
-      // Set filter BEFORE navigation so renderPipeline consumes it
       if (owner === 'CLIENT') {
-        window.pcsPipelineFilter = ['awaiting approval','awaiting brand input'];
+        navigateWithFilter('pipeline', ['awaiting approval','awaiting brand input']);
       } else if (owner === 'CHITRA') {
-        window.pcsPipelineFilter = ['ready'];
+        navigateWithFilter('pipeline', ['ready']);
       } else if (owner === 'PRANAV') {
-        window.pcsPipelineFilter = ['in production','revisions needed'];
+        navigateWithFilter('pipeline', ['in production','revisions needed']);
       }
-      goToTab('pipeline');
     });
+  });
+
+  // Runway context → upcoming filtered to gap date
+  if (nextGapDate) {
+    el.querySelector('[data-nav="upcoming-gap"]')?.addEventListener('click', () => {
+      navigateWithFilter('upcoming', { date: new Date(nextGapDate) });
+    });
+  }
+
+  // Inventory block → pipeline filtered to Pranav stages
+  el.querySelector('[data-nav="inventory"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['in production','revisions needed']);
   });
 }
 
@@ -1047,9 +1081,24 @@ function getUpcoming() {
 }
 
 function renderUpcoming() {
+  // Consume date filter (set by runway click)
+  const activeFilter = window.pcsUpcomingFilter;
+  window.pcsUpcomingFilter = null;
+
   const container = document.getElementById('upcoming-wrap');
   if (!container) return;
-  const posts = getUpcoming();
+  let posts = getUpcoming();
+
+  // Apply date filter if present — show only posts matching that date
+  if (activeFilter && activeFilter.date) {
+    const filterDate = activeFilter.date;
+    filterDate.setHours(0, 0, 0, 0);
+    posts = posts.filter(p => {
+      const d = parseDate(p.targetDate);
+      return d && d.getTime() === filterDate.getTime();
+    });
+  }
+
   _postLists['upcoming'] = posts;
   const today = new Date(); today.setHours(0,0,0,0);
   const w7    = new Date(today); w7.setDate(w7.getDate()+7);

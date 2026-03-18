@@ -101,6 +101,21 @@ function goToTab(tabName) {
   if (btn) switchTab(btn);
 }
 
+/**
+ * Standard navigation handler — sets filter BEFORE tab switch so the
+ * target render function consumes it on the same frame.
+ *   tab:    'pipeline' | 'upcoming'
+ *   filter: string[] of stages  OR  { date: Date } for upcoming
+ */
+function navigateWithFilter(tab, filter) {
+  if (tab === 'pipeline') {
+    window.pcsPipelineFilter = filter;
+  } else if (tab === 'upcoming') {
+    window.pcsUpcomingFilter = filter;
+  }
+  goToTab(tab);
+}
+
 function goToLibraryFiltered(stage) {
   goToTab('library');
   const sel = document.getElementById('filter-stage');
