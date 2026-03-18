@@ -407,23 +407,7 @@ function renderDashboard() {
   }
   const soft_runway = Math.floor(ready * 0.7);
 
-  // ── RESPONSIBLE OWNER (stage-based, UI only — never written to DB) ──
-  // Three accountable parties: PRANAV (production), CHITRA (scheduling), CLIENT (approval)
-  // Actionable stages only — scheduled/published are done, never shown as pressure
-  //   'in production'        → PRANAV   (production work)
-  //   'revisions needed'     → PRANAV   (production work)
-  //   'ready'                → CHITRA   (needs scheduling)
-  //   'awaiting approval'    → CLIENT   (external blocker)
-  //   'awaiting brand input' → CLIENT   (external blocker)
-  //   'scheduled'            → null     (done — not actionable)
-  //   'published'            → null     (done — not actionable)
-  function getResponsibleOwner(post) {
-    const s = (post.stage || '').toLowerCase();
-    if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
-    if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
-    if (s === 'ready') return 'CHITRA';
-    return null; // scheduled, published, parked → hidden
-  }
+  // getResponsibleOwner() is defined globally in 01-config.js
 
   // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
   const { enrichedPosts } = computeDelayMeta(filteredPosts);
@@ -1065,6 +1049,28 @@ function renderPipeline() {
     ? allPosts.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
     : allPosts;
 
+  // ── PRIORITY SORT: daysInStage DESC → targetDate ASC → created_at ASC ──
+  function prioritySort(posts) {
+    return posts.slice().sort((a, b) => {
+      const dA = daysInStage(a) || 0, dB = daysInStage(b) || 0;
+      if (dB !== dA) return dB - dA; // longest in stage first
+      const tA = parseDate(a.targetDate), tB = parseDate(b.targetDate);
+      if (tA && tB) return tA - tB; // nearest date first
+      if (tA) return -1; if (tB) return 1;
+      const cA = a.created_at || a.createdAt || '', cB = b.created_at || b.createdAt || '';
+      return cA < cB ? -1 : cA > cB ? 1 : 0; // oldest first
+    });
+  }
+
+  // ── ROLE-SPECIFIC EMPTY STATES ──
+  const emptyMsg = {};
+  if (activeFilter) {
+    const key = activeFilter.sort().join(',');
+    if (key.includes('in production')) emptyMsg.default = 'Nothing in production \u2014 create new posts';
+    else if (key.includes('ready')) emptyMsg.default = 'Nothing ready \u2014 wait or push production';
+    else if (key.includes('awaiting approval')) emptyMsg.default = 'Nothing pending \u2014 you\u2019re clear';
+  }
+
   const grouped = {};
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
   const stages = Object.keys(grouped).sort((a,b) => {
@@ -1073,22 +1079,49 @@ function renderPipeline() {
     if (ia===-1) return 1; if (ib===-1) return -1;
     return ia - ib;
   });
+
+  let isFirstCard = true;
   const html = stages.map(stage => {
-    const posts   = grouped[stage];
+    const posts   = prioritySort(grouped[stage]);
     const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
     _postLists[listKey] = posts;
     const { hex, label } = stageStyle(stage);
-    const cards = posts.map(p => buildPostCard(p, listKey)).join('');
+    const cards = posts.map((p, i) => {
+      const card = buildPostCard(p, listKey);
+      if (isFirstCard && activeFilter) {
+        isFirstCard = false;
+        return card.replace('class="row-tile"', 'class="row-tile pc-focus"');
+      }
+      return card;
+    }).join('');
     return `
       <div class="pstage-header">
         <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
         <span class="pstage-badge">${posts.length}</span>
       </div>
       <div class="row-list">
-        ${cards || `<div class="pstage-empty">Empty</div>`}
+        ${cards || `<div class="pstage-empty">${emptyMsg.default || 'Empty'}</div>`}
       </div>`;
   }).join('');
-  document.getElementById('pipeline-container').innerHTML = html;
+
+  const container = document.getElementById('pipeline-container');
+  container.innerHTML = html;
+
+  // ── GLOBAL EMPTY STATE (filtered view with no results) ──
+  if (activeFilter && stages.length === 0) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">\u2713</div><p>${emptyMsg.default || 'Nothing here \u2014 you\u2019re clear'}</p></div>`;
+    return;
+  }
+
+  // ── AUTO-SCROLL to first focused card ──
+  if (activeFilter) {
+    requestAnimationFrame(() => {
+      const focus = container.querySelector('.pc-focus');
+      if (focus) {
+        focus.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }
 }
 
 function getUpcoming() {
