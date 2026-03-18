@@ -537,10 +537,16 @@ function _executeStageChange(postId, newStage) {
       _renderBackgroundViews();
       console.log('[PCS] FINAL RENDER SYNC:', postId, post.stage, Date.now());
     })
-    .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
-    .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
-    .catch(() => {
-      // Rollback local state
+    .then(() => {
+      // NON-CRITICAL — must NOT trigger rollback
+      try { logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+    })
+    .then(() => {
+      try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
+    })
+    .catch((err) => {
+      console.error('[PCS] DB WRITE FAILED:', postId, err);
+      // ONLY rollback if DB call failed — non-critical ops above are guarded
       delete post._dirty;
       // KEEP _dirtyAt — poll will clear it after 5s window expires
       setStage(post, previousStage, '_executeStageChange_rollback');
