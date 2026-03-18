@@ -65,7 +65,7 @@ async function saveAdminEdit() {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ title, owner: owner||null, content_pillar: pillar||null, location: location||null, stage: stage||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: stage||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
@@ -419,7 +419,7 @@ function _updateSubtitle(post) {
   const stLC = (post.stage || '').toLowerCase().trim();
   const isPub = stLC === 'published';
   const pLabel = post.contentPillar
-    ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
+    ? getPillarShort(post.contentPillar)
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';
@@ -662,6 +662,9 @@ function refreshSystemViews() {
 }
 
 async function updatePost(postId, field, value) {
+  // Sanitize pillar before any write — enforce lowercase
+  if (field === 'contentPillar') value = sanitizePillar(value);
+
   // Optimistic update in memory — store old value for rollback
   const post = getPostById(postId);
   const oldValue = post ? post[field] : undefined;
@@ -763,7 +766,7 @@ function _buildInfoGrid(post, canEdit, id) {
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
         ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
-        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(PILLAR_DISPLAY[post.contentPillar] || post.contentPillar || '—'))}
+        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
         ${cell(dateLabel,  dateInput)}
