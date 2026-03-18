@@ -68,6 +68,17 @@ function stageStyle(raw) {
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
 
+// Helper: derive responsible owner from stage (single source of truth)
+// PRANAV = production, CHITRA = scheduling, CLIENT = approval
+function getResponsibleOwner(post) {
+  const s = (post?.stage || '').toLowerCase().trim();
+  if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
+  if (s === 'ready') return 'CHITRA';
+  if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
+  return null; // scheduled, published, parked, unknown
+}
+window.getResponsibleOwner = getResponsibleOwner;
+
 // -------------------------------------------------------
 // PILLAR SYSTEM
 // -------------------------------------------------------

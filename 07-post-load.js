@@ -407,23 +407,7 @@ function renderDashboard() {
   }
   const soft_runway = Math.floor(ready * 0.7);
 
-  // ── RESPONSIBLE OWNER (stage-based, UI only — never written to DB) ──
-  // Three accountable parties: PRANAV (production), CHITRA (scheduling), CLIENT (approval)
-  // Actionable stages only — scheduled/published are done, never shown as pressure
-  //   'in production'        → PRANAV   (production work)
-  //   'revisions needed'     → PRANAV   (production work)
-  //   'ready'                → CHITRA   (needs scheduling)
-  //   'awaiting approval'    → CLIENT   (external blocker)
-  //   'awaiting brand input' → CLIENT   (external blocker)
-  //   'scheduled'            → null     (done — not actionable)
-  //   'published'            → null     (done — not actionable)
-  function getResponsibleOwner(post) {
-    const s = (post.stage || '').toLowerCase();
-    if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
-    if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
-    if (s === 'ready') return 'CHITRA';
-    return null; // scheduled, published, parked → hidden
-  }
+  // getResponsibleOwner() is defined globally in 01-config.js
 
   // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
   const { enrichedPosts } = computeDelayMeta(filteredPosts);
