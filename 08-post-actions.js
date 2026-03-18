@@ -101,6 +101,7 @@ async function clientApprove(postId, btn) {
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
     post.stage = 'scheduled';
+    post._dirtyAt = Date.now();
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }
@@ -238,7 +239,8 @@ async function deletePost(postId) {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
-    allPosts = allPosts.filter(p => getPostId(p) !== postId);
+    const idx = allPosts.findIndex(p => getPostId(p) === postId);
+    if (idx !== -1) allPosts.splice(idx, 1);
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {
