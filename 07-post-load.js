@@ -561,16 +561,15 @@ function renderDashboard() {
   el.querySelectorAll('[data-owner]').forEach(row => {
     row.addEventListener('click', () => {
       const owner = row.dataset.owner.toUpperCase();
+      // Set filter BEFORE navigation so renderPipeline consumes it
+      if (owner === 'CLIENT') {
+        window.pcsPipelineFilter = ['awaiting approval','awaiting brand input'];
+      } else if (owner === 'CHITRA') {
+        window.pcsPipelineFilter = ['ready'];
+      } else if (owner === 'PRANAV') {
+        window.pcsPipelineFilter = ['in production','revisions needed'];
+      }
       goToTab('pipeline');
-      setTimeout(() => {
-        if (owner === 'CLIENT') {
-          window.pcsPipelineFilter = ['awaiting approval','awaiting brand input'];
-        } else if (owner === 'CHITRA') {
-          window.pcsPipelineFilter = ['ready'];
-        } else if (owner === 'PRANAV') {
-          window.pcsPipelineFilter = ['in production','revisions needed'];
-        }
-      }, 80);
     });
   });
 }
@@ -1006,8 +1005,16 @@ function toggleStageOverflow(btn, totalHidden) {
 }
 
 function renderPipeline() {
+  // Consume pressure-click filter (set by dashboard click handler)
+  const activeFilter = window.pcsPipelineFilter;
+  window.pcsPipelineFilter = null;
+
+  const source = activeFilter && Array.isArray(activeFilter)
+    ? allPosts.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
+    : allPosts;
+
   const grouped = {};
-  allPosts.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
+  source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
   const stages = Object.keys(grouped).sort((a,b) => {
     const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b);
     if (ia===-1 && ib===-1) return a.localeCompare(b);
