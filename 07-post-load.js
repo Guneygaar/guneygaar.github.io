@@ -486,6 +486,25 @@ function renderDashboard() {
   const invGap = Math.max(0, invTarget - invCount);
   const invPct = Math.min(100, Math.round((invCount / invTarget) * 100));
 
+  // ── SCORECARD METRICS (from existing stage counts, read-only) ──
+  const pranavTarget = 35;
+  const pranavCount = production + ready + scheduled;
+  const pranavGap = Math.max(0, pranavTarget - pranavCount);
+  const pranavSorted = pranavGap === 0;
+
+  const chitraTotal = production + ready; // pool available to Chitra
+  const chitraReady = ready; // what Chitra has moved to ready
+  const chitraGap = Math.max(0, production); // what Chitra hasn't sent yet
+  const chitraSorted = chitraGap === 0;
+
+  const clientPosts = filteredPosts.filter(p => {
+    const s = stg(p);
+    return s === 'awaiting approval' || s === 'awaiting brand input';
+  });
+  const clientPending = clientPosts.length;
+  const clientReceived = clientPending + scheduled;
+  const clientSorted = clientPending === 0;
+
   // ── TODAY CHECK (scheduled today OR published today) ──
   const todayKey = dayKey(now);
   const publishedToday = allPosts.some(p => {
@@ -504,7 +523,7 @@ function renderDashboard() {
   } else if (hard_runway <= 2) {
     uiState = 'risk'; stateMsg = 'Runway will break soon'; stateClass = 'st-risk';
   } else {
-    uiState = 'safe'; stateMsg = 'Runway clear'; stateClass = 'st-safe';
+    uiState = 'safe'; stateMsg = 'Sorted'; stateClass = 'st-safe';
   }
 
   // ── RUNWAY DISPLAY (state-consistent) ──
@@ -520,111 +539,90 @@ function renderDashboard() {
   if (uiState === 'failure') {
     contextLine = 'No posts for today';
   } else if (uiState === 'risk' && nextGapDay) {
-    contextLine = `Break on ${nextGapDay}`;
+    contextLine = `Breaks on ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   } else if (uiState === 'safe' && nextGapDay) {
     contextLine = `Clear till ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   }
 
-  // ── ACTION LINE (state-aligned, verb-led, owner-prefixed) ──
-  // Each branch also sets actionFilter so clicking navigates to correct posts
+  // ── ACTION LINE (scorecard-aligned priority) ──
   let actionText = '';
-  let actionFilter = null; // stages to filter pipeline on click
-  if (uiState === 'failure') {
-    actionText = 'Chitra: Sort today\u2019s post for approval now';
-    actionFilter = ['ready'];
-  } else if (hard_runway === 0) {
-    actionText = 'Chitra: Sort content for approval now';
-    actionFilter = ['ready'];
-  } else if (hard_runway <= 2 && ready > 0) {
-    actionText = `Chitra: Sort ${ready} post${ready !== 1 ? 's' : ''} for approval now`;
-    actionFilter = ['ready'];
-  } else if (hard_runway <= 2) {
-    actionText = `Pranav: Sort content \u2014 runway expires in ${hard_runway}d`;
-    actionFilter = ['in production', 'revisions needed'];
-  } else if (production > ready) {
-    actionText = `Pranav: Sort ${production} post${production !== 1 ? 's' : ''} into ready`;
-    actionFilter = ['in production', 'revisions needed'];
-  } else if (ready > scheduled) {
+  let actionFilter = null;
+  if (ready > 0) {
     actionText = `Chitra: Sort ${ready} post${ready !== 1 ? 's' : ''} for approval`;
     actionFilter = ['ready'];
-  } else if (invCount / invTarget < 0.8) {
-    actionText = `Pranav: Sort ${invGap} post${invGap !== 1 ? 's' : ''} into ready`;
+  } else if (clientPending > 0) {
+    actionText = `Follow up on ${clientPending} approval${clientPending !== 1 ? 's' : ''}`;
+    actionFilter = ['awaiting approval', 'awaiting brand input'];
+  } else if (pranavGap > 0) {
+    actionText = `Pranav: Add ${pranavGap} post${pranavGap !== 1 ? 's' : ''}`;
     actionFilter = ['in production', 'revisions needed'];
   } else {
     actionText = 'Stay sorted';
     actionFilter = null;
   }
 
-  // ── RENDER (pressure control interface) ──
-  const pressureBlock = pressureRows ? `<div class="pc-zone">
-      <div class="pc-label">${pressureLabel}</div>
-      <div class="pc-strips">${pressureRows}</div>
-      ${pressureOverflow > 0 ? `<div class="pc-overflow">+${pressureOverflow} at risk</div>` : ''}
-    </div>` : `<div class="pc-zone pc-zone-clear">
-      <div class="pc-label pc-label-clear">CLIENT \u2014 CLEAR</div>
-    </div>`;
+  // ── SCORECARD ROWS ──
+  function scRow(name, count, total, gap, gapLabel, sorted, navAttr) {
+    if (sorted) {
+      return `<div class="sc-row sc-sorted"><span class="sc-name">${name}</span><span class="sc-dot">\u2022</span><span class="sc-ok">Sorted</span></div>`;
+    }
+    return `<div class="sc-row sc-pending" ${navAttr}><span class="sc-name">${name}</span><span class="sc-num">${count}<span class="sc-sep"> / </span>${total}</span><div class="sc-gap">\u2193 ${gap} ${gapLabel}</div></div>`;
+  }
 
-  // inventoryBlock is now inlined in the HTML below with data-nav="inventory"
+  const clientRow = scRow('CLIENT', clientPending > 0 ? (clientReceived - clientPending) : 0, clientReceived || clientPending, clientPending, 'pending', clientSorted, 'data-nav="client"');
+  const pranavRow = scRow('PRANAV', pranavCount, pranavTarget, pranavGap, 'short', pranavSorted, 'data-nav="pranav"');
+  const chitraRow = scRow('CHITRA', chitraReady, chitraTotal || chitraReady, chitraGap, 'not sent', chitraSorted, 'data-nav="chitra"');
 
+  // ── RENDER (scorecard interface) ──
   el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
-    <div class="pc-sorted-tag ${uiState} pc-clickable" data-nav="flow-risk">${uiState === 'safe' ? 'Flow is stable' : uiState === 'risk' ? 'Flow at risk' : 'Flow broken'}</div>
-    <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
-    ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
-    ${pressureBlock}
-    <div class="pc-inv" data-nav="inventory" style="cursor:pointer">
-      <div class="pc-inv-head">
-        <span class="pc-inv-name">PRANAV</span>
-        <span class="pc-inv-ratio">${invCount}<span class="pc-inv-sep"> / </span>${invTarget}</span>
-      </div>
-      ${invGap > 0 ? `<div class="pc-inv-gap">\u2193 ${invGap} short</div>` : ''}
-      <div class="pc-inv-bar">${Array.from({length: 15}, (_, i) => `<span${i < Math.round(invCount / invTarget * 15) ? ' class="filled"' : ''}></span>`).join('')}</div>
+    <div class="pc-runway ${runwayState}" data-nav="runway">${runwayDisplay}</div>
+    ${contextLine ? `<div class="pc-context pc-clickable" data-nav="runway">${contextLine}</div>` : ''}
+    <div class="sc-card">
+      ${clientRow}
+      ${pranavRow}
+      ${chitraRow}
     </div>
-    <div class="pc-action" data-nav="pipeline">${actionText} \u2192</div>
+    <div class="pc-action" data-nav="action">${actionText} \u2192</div>
   </div>`;
 
   // ── CLICK DELEGATION ──
 
-  // Action line → pipeline with context-aware filter
-  el.querySelector('[data-nav="pipeline"]')?.addEventListener('click', () => {
+  // Runway + context → upcoming with gap range
+  el.querySelectorAll('[data-nav="runway"]').forEach(r => {
+    r.addEventListener('click', () => {
+      if (nextGapDate) {
+        navigateWithFilter('upcoming', { from: new Date(), to: new Date(nextGapDate) });
+      } else {
+        goToTab('upcoming');
+      }
+    });
+  });
+
+  // CLIENT row → pipeline (awaiting stages)
+  el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['awaiting approval', 'awaiting brand input']);
+  });
+
+  // PRANAV row → pipeline (production stages)
+  el.querySelector('[data-nav="pranav"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['in production', 'revisions needed']);
+  });
+
+  // CHITRA row → pipeline (ready stage)
+  el.querySelector('[data-nav="chitra"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['ready']);
+  });
+
+  // Action line → same as responsible role
+  el.querySelector('[data-nav="action"]')?.addEventListener('click', () => {
     if (actionFilter) {
       navigateWithFilter('pipeline', actionFilter);
     } else {
       goToTab('pipeline');
     }
-  });
-
-  // Pressure rows → pipeline filtered by owner stages
-  el.querySelectorAll('[data-owner]').forEach(row => {
-    row.addEventListener('click', () => {
-      const owner = row.dataset.owner.toUpperCase();
-      if (owner === 'CLIENT') {
-        navigateWithFilter('pipeline', ['awaiting approval','awaiting brand input']);
-      } else if (owner === 'CHITRA') {
-        navigateWithFilter('pipeline', ['ready']);
-      } else if (owner === 'PRANAV') {
-        navigateWithFilter('pipeline', ['in production','revisions needed']);
-      }
-    });
-  });
-
-  // Runway context → upcoming filtered to gap date
-  if (nextGapDate) {
-    el.querySelector('[data-nav="upcoming-gap"]')?.addEventListener('click', () => {
-      navigateWithFilter('upcoming', { date: new Date(nextGapDate) });
-    });
-  }
-
-  // Inventory block → pipeline filtered to Pranav stages
-  el.querySelector('[data-nav="inventory"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['in production','revisions needed']);
-  });
-
-  // Flow tag → pipeline filtered to all active stages
-  el.querySelector('[data-nav="flow-risk"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['in production','revisions needed','awaiting approval','awaiting brand input']);
   });
 }
 

@@ -849,7 +849,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* SUBTLE PERSISTENT PRESSURE */
-.pc-root[data-pressure="3"] .pc-strip {
+.pc-root[data-pressure="3"] .sc-pending {
   animation: pulse 1.4s ease-in-out infinite;
 }
 
@@ -870,26 +870,9 @@ a:hover { text-decoration: underline; }
 .pc-state.st-risk { color: var(--c-amber, #f59e0b); }
 .pc-state.st-safe { color: #5b8a6e; opacity: 0.7; }
 
-/* Flow micro-tag — subtle, clickable, never dominant */
-.pc-sorted-tag {
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-  margin-bottom: 4px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 3px;
-}
-.pc-sorted-tag.safe { color: #5b8a6e; opacity: 0.35; }
-.pc-sorted-tag.risk { color: var(--c-amber, #f59e0b); opacity: 0.35; }
-.pc-sorted-tag.failure { color: var(--c-red, #ef4444); opacity: 0.4; }
-.pc-sorted-tag:active { opacity: 0.8; }
-
-/* 2. Runway number — dominant anchor */
+/* 2. Runway number — dominant anchor, clickable */
 .pc-runway {
+  cursor: pointer;
   font-size: 52px;
   font-weight: 700;
   color: var(--text);
@@ -908,233 +891,139 @@ a:hover { text-decoration: underline; }
   text-shadow: 0 0 12px rgba(255, 180, 0, 0.25);
 }
 
-/* 3. Context line — tight to runway */
+/* 3. Context line — tight to runway, always clickable */
 .pc-context {
   font-size: 12.5px;
   color: var(--text3);
-  opacity: 0.45;
+  opacity: 0.55;
   margin-top: 4px;
   padding-bottom: 22px;
-}
-.pc-context.pc-clickable {
   cursor: pointer;
-  opacity: 0.7;
   text-decoration: underline;
   text-decoration-style: dotted;
   text-underline-offset: 3px;
 }
-.pc-context.pc-clickable:active {
+.pc-context:active {
   opacity: 1;
 }
 
-/* 4a. Pressure zone — clear state (no delays) */
-.pc-zone-clear {
-  padding: 12px 0 16px;
-}
-.pc-label-clear {
-  opacity: 0.25;
-  font-size: 9px;
-}
-
-/* 4. Pressure zone — core system */
-.pc-zone {
-  position: relative;
-  padding: 16px 0 20px;
-  margin-top: 2px;
-  border-radius: 6px;
-  background: transparent;
-  transition: background 250ms ease, box-shadow 250ms ease, transform 200ms ease;
-}
-.pc-root.safe .pc-zone { background: transparent; }
-.pc-root.risk .pc-zone {
-  background: rgba(255, 180, 0, 0.03);
-}
-.pc-root.failure .pc-zone {
-  background: rgba(255, 60, 60, 0.06);
-  box-shadow: inset 0 1px 8px rgba(255, 60, 60, 0.06);
-  transform: translateY(-1px);
-}
-.pc-zone::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 6px;
-  background: radial-gradient(ellipse at left, rgba(255, 80, 80, 0.06), transparent 70%);
-  opacity: 0;
-  transition: opacity 250ms ease;
-}
-.pc-root.risk .pc-zone::after { opacity: 0.4; }
-.pc-root.failure .pc-zone::after { opacity: 0.8; }
-.pc-label {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text3);
-  opacity: 0.5;
-  padding: 0 0 10px 14px;
-}
-.pc-strips {
+/* 4. Scorecard — 3-role accountability */
+.sc-card {
+  padding: 16px 0 8px;
+  margin-top: 4px;
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
-/* Pressure strip — weighted signal row */
-.pc-strip {
+/* Scorecard row — base */
+.sc-row {
   position: relative;
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 7px 14px 7px 18px;
-  border-left: none;
-  cursor: pointer;
-  transition: opacity 80ms ease;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 9px 14px 9px 16px;
   line-height: 1.35;
+  transition: opacity 80ms ease;
 }
-.pc-strip + .pc-strip {
-  margin-top: 6px;
-}
-/* Left edge mass — not a border, a weighted slab */
-.pc-strip::before {
+
+/* Slight row misalignment — break table feel */
+.sc-row:nth-child(2) { padding-left: 18px; }
+.sc-row:nth-child(3) { padding-left: 14px; transform: translateY(1px); }
+
+/* Left edge — pressure slab */
+.sc-row::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 2px;
-  bottom: 2px;
-  width: var(--edge-w, 4px);
-  background: currentColor;
-  opacity: 0.9;
-  filter: blur(0.2px);
-  box-shadow: 2px 0 6px rgba(0,0,0,0.25);
-}
-/* Severity drives edge mass */
-.pc-sev-high { color: var(--c-red, #ef4444); --edge-w: 8px; }
-.pc-sev-mid  { color: var(--c-amber, #f59e0b); --edge-w: 5px; }
-.pc-sev-low  { color: var(--text3); --edge-w: 3px; opacity: 0.7; }
-
-/* State-driven slab glow */
-.pc-root.risk .pc-strip::before { box-shadow: 2px 0 8px rgba(255, 180, 0, 0.15); }
-.pc-root.failure .pc-strip::before { box-shadow: 2px 0 10px rgba(255, 60, 60, 0.25); }
-.pc-root.failure .pc-sev-high {
-  animation: strip-pulse 1.2s ease-in-out infinite;
-}
-@keyframes strip-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.88; }
-}
-/* Row imbalance — break perfect rhythm */
-.pc-strip:nth-child(2) {
-  transform: translateY(1px);
-  opacity: 0.88;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  background: var(--text3);
+  opacity: 0.15;
+  border-radius: 1px;
 }
 
-.pc-strip:active { opacity: 0.6; }
-@media (hover: hover) {
-  .pc-strip:hover { opacity: 0.65; }
+/* Pending row — clickable, sharp */
+.sc-pending {
+  cursor: pointer;
 }
-
-/* Strip typography — delay dominates, name supports */
-.pc-name {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #ffffff;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  flex: 1;
-}
-.pc-root.safe .pc-name { color: var(--text); opacity: 0.85; }
-.pc-count {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text2);
-  font-variant-numeric: tabular-nums;
+.sc-pending::before {
+  width: 4px;
+  background: var(--c-amber, #f59e0b);
   opacity: 0.7;
 }
-.pc-delay {
-  font-size: 15px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.2px;
-  color: var(--text3);
-}
-.pc-root.risk .pc-delay { color: var(--c-amber, #f59e0b); }
-.pc-root.failure .pc-delay {
-  color: var(--c-red, #ff4d4f);
-  font-size: 16px;
-  font-weight: 700;
-}
-.pc-sev-high .pc-delay {
-  color: var(--c-red, #ff4d4f);
-  font-size: 16px;
+.sc-pending:active { opacity: 0.6; }
+@media (hover: hover) {
+  .sc-pending:hover { opacity: 0.7; }
 }
 
-.pc-overflow {
-  font-size: 11px;
-  color: var(--text3);
-  opacity: 0.55;
-  padding: 6px 0 0 18px;
+/* Failure state pending rows — red edge */
+.pc-root.failure .sc-pending::before {
+  background: var(--c-red, #ef4444);
+  opacity: 0.85;
+  width: 5px;
+  box-shadow: 2px 0 8px rgba(255, 60, 60, 0.2);
 }
 
-/* 5. Inventory — structural, subdued */
-.pc-inv {
-  padding: 18px 0 16px;
-  margin-top: 4px;
-  opacity: 0.95;
+/* Sorted row — calm, faded, not clickable */
+.sc-sorted {
+  opacity: 0.35;
+  cursor: default;
 }
-.pc-inv-head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+.sc-sorted::before {
+  background: #5b8a6e;
+  opacity: 0.25;
 }
-.pc-inv-name {
+
+/* Scorecard typography */
+.sc-name {
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text);
-  opacity: 0.9;
 }
-.pc-inv-ratio {
-  font-size: 20px;
+.sc-sorted .sc-name {
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.sc-num {
+  font-size: 18px;
   font-weight: 600;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
-.pc-inv-sep {
+.sc-sep {
   font-weight: 400;
   color: var(--text3);
   opacity: 0.4;
 }
-.pc-inv-gap {
-  font-size: 12px;
+
+.sc-gap {
+  width: 100%;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text3);
-  opacity: 0.65;
-  margin-top: 3px;
+  opacity: 0.55;
+  padding-left: 1px;
+  margin-top: -2px;
 }
-/* Fragmented inventory bar */
-.pc-inv-bar {
-  margin-top: 8px;
-  height: 3px;
-  display: flex;
-  gap: 2px;
-  max-width: 180px;
+
+.sc-dot {
+  color: #5b8a6e;
+  font-size: 14px;
+  line-height: 1;
 }
-.pc-inv-bar > span {
-  height: 100%;
-  width: 6px;
-  background: var(--text2);
-  opacity: 0.22;
-  border-radius: 1px;
-}
-.pc-inv-bar > span.filled {
-  opacity: 0.65;
-}
-.pc-inv-bar > span:nth-child(3n) {
-  transform: scaleY(0.75);
+.sc-ok {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5b8a6e;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* 6. Action line */
