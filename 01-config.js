@@ -196,5 +196,19 @@ const STRIP_STAGES = [
 // Canonical owner list — used by dropdowns, validation, and grid
 const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Admin'];
 
+// ── Stage change interceptor — logs every .stage mutation ──
+function setStage(post, newStage, source) {
+  console.log('STAGE CHANGE →', {
+    id: post.id || post.post_id,
+    from: post.stage,
+    to: newStage,
+    source,
+    time: Date.now(),
+    stack: new Error().stack
+  });
+  post.stage = newStage;
+}
+window.setStage = setStage;
+
 const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
 const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];

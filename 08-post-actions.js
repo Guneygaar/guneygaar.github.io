@@ -7,7 +7,7 @@ async function quickStage(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   const oldStage = post.stage;
-  post.stage = newStage;
+  setStage(post, newStage, 'quickStage');
   post._dirty = true;
   post._dirtyAt = Date.now();
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
@@ -26,7 +26,7 @@ async function quickStage(postId, newStage) {
   } catch (err) {
     delete post._dirty;
     // KEEP _dirtyAt — poll will clear it after 5s window expires
-    post.stage = oldStage;
+    setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
     showToast('Update failed — try again', 'error');
   }
@@ -100,7 +100,7 @@ async function clientApprove(postId, btn) {
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
-    post.stage = 'scheduled';
+    setStage(post, 'scheduled', 'clientApprove');
     post._dirtyAt = Date.now();
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
@@ -512,7 +512,7 @@ function _executeStageChange(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   const previousStage = post.stage;
-  post.stage = newStage;
+  setStage(post, newStage, '_executeStageChange');
   post._dirty = true;
   post._dirtyAt = Date.now();
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
@@ -535,7 +535,7 @@ function _executeStageChange(postId, newStage) {
       // Rollback local state
       delete post._dirty;
       // KEEP _dirtyAt — poll will clear it after 5s window expires
-      post.stage = previousStage;
+      setStage(post, previousStage, '_executeStageChange_rollback');
       _renderPCS(postId);
       _renderBackgroundViews();
       showToast('Update failed — rolled back', 'error');
