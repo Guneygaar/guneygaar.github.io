@@ -468,7 +468,7 @@ function renderDashboard() {
   }
   const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
 
-  // ── INVENTORY (ready-to-send health) ──
+  // ── PRANAV PRODUCTION HEALTH (ready + scheduled vs target) ──
   const invCount = ready + scheduled;
   const invTarget = typeof READY_TO_SEND_TARGET !== 'undefined' ? READY_TO_SEND_TARGET : 30;
   const invGap = Math.max(0, invTarget - invCount);
@@ -542,10 +542,10 @@ function renderDashboard() {
 
   const inventoryBlock = `<div class="pc-inv">
       <div class="pc-inv-head">
-        <span class="pc-inv-name">INVENTORY</span>
+        <span class="pc-inv-name">PRANAV</span>
         <span class="pc-inv-ratio">${invCount}<span class="pc-inv-sep"> / </span>${invTarget}</span>
       </div>
-      ${invGap > 0 ? `<div class="pc-inv-gap">↓ ${invGap} short</div>` : ''}
+      ${invGap > 0 ? `<div class="pc-inv-gap">\u2193 ${invGap} short</div>` : ''}
       <div class="pc-inv-bar">${Array.from({length: 15}, (_, i) => `<span${i < Math.round(invCount / invTarget * 15) ? ' class="filled"' : ''}></span>`).join('')}</div>
     </div>`;
 
