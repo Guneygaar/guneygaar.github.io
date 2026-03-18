@@ -86,22 +86,38 @@ function startRealtime() {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
       if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
-        // Merge: protect locally-dirty posts from stale poll overwrites
+        // Safe merge: mutate existing objects to preserve references held by
+        // PCS modal, filters, and click handlers. Never replace allPosts blindly.
         const now = Date.now();
-        const dirtyById = {};
-        for (let i = 0; i < allPosts.length; i++) {
-          const p = allPosts[i];
-          if (p._dirty && (now - p._dirtyAt < 3000)) {
-            dirtyById[getPostId(p)] = p;
+        const existingById = new Map(allPosts.map(p => [getPostId(p), p]));
+
+        fresh.forEach(freshPost => {
+          const id = getPostId(freshPost);
+          const existing = existingById.get(id);
+
+          if (!existing) {
+            // New post from server — add it
+            existingById.set(id, freshPost);
+            return;
           }
-        }
-        // Replace fresh entries with dirty local copies that are still within the grace window
-        for (let i = 0; i < fresh.length; i++) {
-          const local = dirtyById[getPostId(fresh[i])];
-          if (local) fresh[i] = local;
-        }
-        allPosts    = fresh;
-        cachedPosts = fresh;
+
+          // Dirty protection: skip overwrite if local change is recent
+          if (existing._dirty) {
+            if ((now - existing._dirtyAt) < 3000) return;  // local wins
+            delete existing._dirty;
+            delete existing._dirtyAt;
+          }
+
+          // Mutate existing object in-place (preserves all held references)
+          Object.assign(existing, freshPost);
+        });
+
+        // Remove posts deleted on server
+        const freshIds = new Set(fresh.map(p => getPostId(p)));
+        existingById.forEach((_, id) => { if (!freshIds.has(id)) existingById.delete(id); });
+
+        allPosts    = Array.from(existingById.values());
+        cachedPosts = allPosts;
         scheduleRender();
         fetchUnreadCount();
       }

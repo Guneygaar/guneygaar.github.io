@@ -677,18 +677,13 @@ function refreshSystemViews() {
   } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
-// Re-render all stage-dependent background views (dashboard + pipeline + active tab)
+// Re-render all stage-dependent background views (dashboard + active tab)
 function _renderBackgroundViews() {
   try { renderDashboard(); } catch(e) { console.error('renderDashboard:', e); }
-  // Preserve any active pipeline filter during stage-change re-render
-  const savedFilter = window.pcsPipelineFilter;
-  try { window.pcsPipelineFilter = savedFilter; renderPipeline(); } catch(e) { console.error('renderPipeline:', e); }
-  // refreshSystemViews also calls renderPipeline/renderTasks for the active tab.
-  // Skip pipeline here since we just rendered it above; only run for non-pipeline tabs.
-  const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
-  if (activeTab !== 'pipeline') {
-    try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
-  }
+  // refreshSystemViews renders the active tab (pipeline/tasks/upcoming/library).
+  // Pipeline filter is preserved — refreshSystemViews calls renderPipeline which
+  // reads window.pcsPipelineFilter directly. Single render, no duplicates.
+  try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
 async function updatePost(postId, field, value) {
