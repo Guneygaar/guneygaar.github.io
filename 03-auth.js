@@ -51,16 +51,18 @@ function backToEmail() {
 }
 
 window.sendMagicLink = async function sendMagicLink() {
-  const email = (document.getElementById('login-email-input').value || '').trim().toLowerCase();
+  const email = (document.getElementById('login-email-input')?.value || '').trim().toLowerCase();
   if (!email || !email.includes('@')) {
-    document.getElementById('login-error').textContent = 'Please enter a valid email.';
+    const errEl = document.getElementById('login-error');
+    if (errEl) errEl.textContent = 'Please enter a valid email.';
     return;
   }
   const btn = document.querySelector('#login-email-step .btn-modal-primary');
   if (!btn) return;
   btn.disabled = true;
   btn.textContent = 'Sending...';
-  document.getElementById('login-error').textContent = '';
+  const errClr = document.getElementById('login-error');
+  if (errClr) errClr.textContent = '';
   try {
     const res = await fetch(`${SUPABASE_URL}/auth/v1/otp`, {
       method: 'POST',
@@ -72,7 +74,7 @@ window.sendMagicLink = async function sendMagicLink() {
       throw new Error(err.error_description || err.msg || 'Could not send code');
     }
     localStorage.setItem('gbl_pending_email', email);
-    document.getElementById('login-email-step').classList.remove('active');
+    document.getElementById('login-email-step')?.classList.remove('active');
     const codeStep = document.getElementById('login-code-step');
     if (codeStep) {
       codeStep.classList.add('active');
@@ -81,7 +83,8 @@ window.sendMagicLink = async function sendMagicLink() {
       setTimeout(() => document.getElementById('login-code-input')?.focus(), 100);
     }
   } catch (err) {
-    document.getElementById('login-error').textContent = err.message || 'Could not send code. Try again.';
+    const errMsg = document.getElementById('login-error');
+    if (errMsg) errMsg.textContent = err.message || 'Could not send code. Try again.';
     btn.disabled = false;
     btn.textContent = 'Send Code ->';
   }

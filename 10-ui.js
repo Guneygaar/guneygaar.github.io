@@ -7,7 +7,8 @@ console.log("LOADED:", "10-ui.js");
 function showErrorBanner(msg, sub) {
   const b = document.getElementById('error-banner');
   if (!b) return;
-  b.querySelector('.error-banner-msg').textContent = msg;
+  const m = b.querySelector('.error-banner-msg');
+  if (m) m.textContent = msg;
   const s = b.querySelector('.error-banner-sub');
   if (s) s.textContent = sub || '';
   b.classList.remove('hidden');
@@ -45,7 +46,8 @@ function showUndoToast(msg, undoFn) {
   _undoFn = undoFn;
   const t = document.getElementById('undo-toast');
   if (!t) return;
-  t.querySelector('.undo-toast-msg').textContent = msg;
+  const um = t.querySelector('.undo-toast-msg');
+  if (um) um.textContent = msg;
   t.classList.add('active');
   _undoTimer = setTimeout(() => t.classList.remove('active'), 5000);
 }
@@ -299,6 +301,7 @@ async function openTimeline(postId, title) {
   const _tt = document.getElementById('timeline-title');
   if (_tt) _tt.textContent = title || postId;
   const list = document.getElementById('timeline-list');
+  if (!list) return;
   list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading…</div>';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';

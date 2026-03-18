@@ -45,14 +45,15 @@ return false;
 
 if (!d.title && !d.comments) return false;
 
-document.getElementById('npm-title').value    = d.title    || '';
-document.getElementById('npm-pillar').value   = d.pillar   || '';
-document.getElementById('npm-location').value = d.location || '';
-document.getElementById('npm-owner').value    = d.owner    || '';
-document.getElementById('npm-stage').value    = d.stage    || 'in production';
-document.getElementById('npm-date').value     = d.date     || '';
-document.getElementById('npm-comments').value = d.comments || '';
-document.getElementById('npm-postlink').value = d.postLink || '';
+const _npm = id => document.getElementById(id);
+if (_npm('npm-title'))    _npm('npm-title').value    = d.title    || '';
+if (_npm('npm-pillar'))   _npm('npm-pillar').value   = d.pillar   || '';
+if (_npm('npm-location')) _npm('npm-location').value = d.location || '';
+if (_npm('npm-owner'))    _npm('npm-owner').value    = d.owner    || '';
+if (_npm('npm-stage'))    _npm('npm-stage').value    = d.stage    || 'in production';
+if (_npm('npm-date'))     _npm('npm-date').value     = d.date     || '';
+if (_npm('npm-comments')) _npm('npm-comments').value = d.comments || '';
+if (_npm('npm-postlink')) _npm('npm-postlink').value = d.postLink || '';
 
 showDraftStatus('Draft restored');
 return true;
@@ -120,18 +121,20 @@ const el = document.getElementById(id);
 if (el) el.value = '';
 });
 
-document.getElementById('npm-pillar').value   = '';
-document.getElementById('npm-location').value = '';
-document.getElementById('npm-owner').value    = '';
-document.getElementById('npm-stage').value    = 'in production';
-document.getElementById('npm-date').value     = '';
+const _np = id => document.getElementById(id);
+if (_np('npm-pillar'))   _np('npm-pillar').value   = '';
+if (_np('npm-location')) _np('npm-location').value = '';
+if (_np('npm-owner'))    _np('npm-owner').value    = '';
+if (_np('npm-stage'))    _np('npm-stage').value    = 'in production';
+if (_np('npm-date'))     _np('npm-date').value     = '';
 }
 
-document.getElementById('npm-submit-btn').disabled = false;
-document.getElementById('npm-saving').classList.remove('active');
+const npmSubmit = document.getElementById('npm-submit-btn');
+if (npmSubmit) npmSubmit.disabled = false;
+document.getElementById('npm-saving')?.classList.remove('active');
 
 window._modalOpen = true;
-document.getElementById('new-post-overlay').classList.add('open');
+document.getElementById('new-post-overlay')?.classList.add('open');
 document.body.style.overflow = 'hidden';
 
 startDraftAutosave();
@@ -146,7 +149,7 @@ if (e && e.target !== document.getElementById('new-post-overlay')) return;
 saveDraft();
 stopDraftAutosave();
 
-document.getElementById('new-post-overlay').classList.remove('open');
+document.getElementById('new-post-overlay')?.classList.remove('open');
 document.body.style.overflow = '';
 window._modalOpen = false;
 _drainDeferredRender();
@@ -154,32 +157,33 @@ _drainDeferredRender();
 
 async function submitNewPost() {
 
-const title    = document.getElementById('npm-title').value.trim();
-const owner    = document.getElementById('npm-owner').value;
-const pillar   = document.getElementById('npm-pillar').value;
-const location = document.getElementById('npm-location').value;
-const stage    = document.getElementById('npm-stage').value;
-const date     = document.getElementById('npm-date').value;
-const comments = document.getElementById('npm-comments').value.trim();
-const postLink = document.getElementById('npm-postlink').value.trim();
+const _s = id => document.getElementById(id);
+const title    = (_s('npm-title')?.value || '').trim();
+const owner    = _s('npm-owner')?.value || '';
+const pillar   = _s('npm-pillar')?.value || '';
+const location = _s('npm-location')?.value || '';
+const stage    = _s('npm-stage')?.value || '';
+const date     = _s('npm-date')?.value || '';
+const comments = (_s('npm-comments')?.value || '').trim();
+const postLink = (_s('npm-postlink')?.value || '').trim();
 
 if (!title) {
 showToast('Post title is required', 'error');
-document.getElementById('npm-title').focus();
+_s('npm-title')?.focus();
 return;
 }
 
 if (!owner) {
 showToast('Owner is required', 'error');
-document.getElementById('npm-owner').focus();
+_s('npm-owner')?.focus();
 return;
 }
 
-const submitBtn = document.getElementById('npm-submit-btn');
-const savingMsg = document.getElementById('npm-saving');
+const submitBtn = _s('npm-submit-btn');
+const savingMsg = _s('npm-saving');
 
-submitBtn.disabled = true;
-savingMsg.classList.add('active');
+if (submitBtn) submitBtn.disabled = true;
+if (savingMsg) savingMsg.classList.add('active');
 
 try {
 
@@ -201,7 +205,7 @@ post_link: postLink || null
 clearDraft();
 stopDraftAutosave();
 
-document.getElementById('new-post-overlay').classList.remove('open');
+document.getElementById('new-post-overlay')?.classList.remove('open');
 document.body.style.overflow = '';
 window._modalOpen = false;
 
@@ -217,7 +221,7 @@ saveDraft();
 
 showToast('Failed to create - draft saved', 'error');
 
-submitBtn.disabled = false;
-savingMsg.classList.remove('active');
+if (submitBtn) submitBtn.disabled = false;
+if (savingMsg) savingMsg.classList.remove('active');
 }
 }
