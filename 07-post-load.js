@@ -606,17 +606,45 @@ function _renderDashboardInner() {
   const pranavRow = scRow('PRANAV', pranavCount, pranavTarget, pranavGap, 'short', pranavSorted, 'data-nav="pranav"');
   const chitraRow = scRow('CHITRA', chitraReady, chitraTotal || chitraReady, chitraGap, 'not sent', chitraSorted, 'data-nav="chitra"');
 
-  // ── RENDER (scorecard interface) ──
+  // ── RUNWAY DISPLAY TEXT ──
+  const runwayText = runwayDisplay === 1 ? '1 DAY CLEAR' : `${runwayDisplay} DAYS CLEAR`;
+
+  // ── CLIENT ACTION TEXT ──
+  const clientActionText = clientPending === 0 ? 'ALL CLEAR'
+    : clientPending === 1 ? '1 AWAITING REVIEW'
+    : `${clientPending} AWAITING REVIEW`;
+
+  // ── RENDER (system interface) ──
   el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
-    <div class="pc-state ${stateClass}">${stateMsg}</div>
-    <div class="pc-runway ${runwayState}" data-nav="runway">${runwayDisplay}</div>
-    ${contextLine ? `<div class="pc-context pc-clickable" data-nav="runway">${contextLine}</div>` : ''}
-    <div class="sc-card">
-      ${clientRow}
-      ${pranavRow}
-      ${chitraRow}
+    <div class="pc-section" data-nav="runway">
+      <div class="pc-label">RUNWAY</div>
+      <div class="pc-headline">${runwayText}</div>
+      ${contextLine ? `<div class="pc-sub">${contextLine}</div>` : ''}
     </div>
-    <div class="pc-action" data-nav="action">${actionText} \u2192</div>
+
+    <div class="pc-divider"></div>
+
+    <div class="pc-section" data-nav="chitra">
+      <div class="pc-label">CHITRA</div>
+      <div class="pc-ratio">${chitraReady}<span class="pc-ratio-sep">:</span>${chitraTotal || chitraReady}</div>
+      <div class="pc-action-text">READY TO SEND</div>
+    </div>
+
+    <div class="pc-divider"></div>
+
+    <div class="pc-section" data-nav="pranav">
+      <div class="pc-label">PRANAV</div>
+      <div class="pc-ratio">${pranavCount}<span class="pc-ratio-sep">:</span>${pranavTarget}</div>
+      <div class="pc-action-text">READY TO MOVE</div>
+    </div>
+
+    <div class="pc-divider"></div>
+
+    <div class="pc-client-strip" data-nav="client">
+      <span class="pc-client-label">CLIENT</span>
+      <span class="pc-client-count">${clientPending}</span>
+      <span class="pc-client-action">${clientActionText}</span>
+    </div>
   </div>`;
 
   // ── CLICK DELEGATION ──
