@@ -562,13 +562,15 @@ function renderDashboard() {
       <div class="pc-label">${pressureLabel}</div>
       <div class="pc-strips">${pressureRows}</div>
       ${pressureOverflow > 0 ? `<div class="pc-overflow">+${pressureOverflow} at risk</div>` : ''}
-    </div>` : '';
+    </div>` : `<div class="pc-zone pc-zone-clear">
+      <div class="pc-label pc-label-clear">CLIENT \u2014 CLEAR</div>
+    </div>`;
 
   // inventoryBlock is now inlined in the HTML below with data-nav="inventory"
 
   el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
-    <div class="pc-sorted-tag ${uiState}">${uiState === 'safe' ? 'Flow is stable' : uiState === 'risk' ? 'Flow at risk' : 'Flow broken'}</div>
+    <div class="pc-sorted-tag ${uiState} pc-clickable" data-nav="flow-risk">${uiState === 'safe' ? 'Flow is stable' : uiState === 'risk' ? 'Flow at risk' : 'Flow broken'}</div>
     <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
     ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
     ${pressureBlock}
@@ -618,6 +620,11 @@ function renderDashboard() {
   // Inventory block → pipeline filtered to Pranav stages
   el.querySelector('[data-nav="inventory"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['in production','revisions needed']);
+  });
+
+  // Flow tag → pipeline filtered to all active stages
+  el.querySelector('[data-nav="flow-risk"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['in production','revisions needed','awaiting approval','awaiting brand input']);
   });
 }
 
