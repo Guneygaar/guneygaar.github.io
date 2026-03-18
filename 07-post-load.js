@@ -38,7 +38,9 @@ function mergePosts(fresh) {
   const freshIds = new Set(fresh.map(p => getPostId(p)));
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
-  allPosts    = Array.from(map.values());
+  // Mutate in-place — preserve the single array reference
+  allPosts.length = 0;
+  map.forEach(p => allPosts.push(p));
   cachedPosts = allPosts;
 }
 
@@ -59,7 +61,8 @@ async function loadPosts() {
   } catch (err) {
     console.error('loadPosts:', err);
     if (cachedPosts.length) {
-      allPosts = cachedPosts;
+      allPosts.length = 0;
+      cachedPosts.forEach(p => allPosts.push(p));
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${new Date().toLocaleTimeString()}`);
@@ -86,7 +89,8 @@ async function loadPostsForClient() {
     renderClientView();
   } catch (err) {
     if (cachedPosts.length) {
-      allPosts = cachedPosts;
+      allPosts.length = 0;
+      cachedPosts.forEach(p => allPosts.push(p));
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
