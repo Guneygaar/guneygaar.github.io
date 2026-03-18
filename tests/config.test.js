@@ -13,7 +13,7 @@ function loadConfig() {
       STAGE_META, STAGES_DB, PIPELINE_ORDER, STAGE_DISPLAY, STAGE_COLORS,
       PILLARS_DB, PILLAR_DISPLAY, PILLAR_SHORT,
       ROLE_STAGES, ROLE_BUCKETS, STRIP_STAGES,
-      stageStyle,
+      stageStyle, formatPillarDisplay, getPillarShort,
     };
   `);
   return fn(window);
@@ -111,5 +111,51 @@ describe('config integrity', () => {
     for (const p of config.PILLARS_DB) {
       expect(config.PILLAR_SHORT[p]).toBeDefined();
     }
+  });
+
+  it('PILLARS_DB includes growth pillar', () => {
+    expect(config.PILLARS_DB).toContain('growth');
+  });
+
+  it('PILLARS_DB values are all lowercase', () => {
+    for (const p of config.PILLARS_DB) {
+      expect(p).toBe(p.toLowerCase());
+    }
+  });
+});
+
+// ─── Pillar helpers ─────────────────────────────
+describe('formatPillarDisplay', () => {
+  it('returns Capital Case for known pillar', () => {
+    expect(config.formatPillarDisplay('leadership')).toBe('Leadership');
+    expect(config.formatPillarDisplay('sustainability')).toBe('Sustainability');
+    expect(config.formatPillarDisplay('growth')).toBe('Growth');
+  });
+
+  it('returns empty string for falsy input', () => {
+    expect(config.formatPillarDisplay('')).toBe('');
+    expect(config.formatPillarDisplay(null)).toBe('');
+    expect(config.formatPillarDisplay(undefined)).toBe('');
+  });
+
+  it('capitalizes unknown pillar gracefully', () => {
+    expect(config.formatPillarDisplay('custom')).toBe('Custom');
+  });
+});
+
+describe('getPillarShort', () => {
+  it('returns short label for known pillar', () => {
+    expect(config.getPillarShort('leadership')).toBe('Lead');
+    expect(config.getPillarShort('innovation')).toBe('Innov');
+    expect(config.getPillarShort('sustainability')).toBe('Sustain');
+  });
+
+  it('returns empty string for falsy input', () => {
+    expect(config.getPillarShort('')).toBe('');
+    expect(config.getPillarShort(null)).toBe('');
+  });
+
+  it('falls back to raw value for unknown pillar', () => {
+    expect(config.getPillarShort('custom')).toBe('custom');
   });
 });

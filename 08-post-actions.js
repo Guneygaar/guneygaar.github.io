@@ -419,7 +419,7 @@ function _updateSubtitle(post) {
   const stLC = (post.stage || '').toLowerCase().trim();
   const isPub = stLC === 'published';
   const pLabel = post.contentPillar
-    ? (PILLAR_SHORT[post.contentPillar] || PILLAR_DISPLAY[post.contentPillar] || post.contentPillar)
+    ? getPillarShort(post.contentPillar)
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';

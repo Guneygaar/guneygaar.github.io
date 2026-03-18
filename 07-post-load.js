@@ -769,7 +769,7 @@ function renderNextPost() {
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
   const owner     = post.owner || 'Admin';
-  const pillar    = post.contentPillar || '';
+  const pillar    = formatPillarDisplay(post.contentPillar);
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';
   const relDate   = getRelativeDate(post.targetDate);
@@ -804,7 +804,7 @@ function buildPostCard(p, listKey) {
   const id     = getPostId(p);
   const title  = getTitle(p);
   const stage  = p.stage || '';
-  const pillar = p.contentPillar || '';
+  const pillar = getPillarShort(p.contentPillar);
   const { hex } = stageStyle(stage);
 
   const d = parseDate(p.targetDate);
@@ -1038,7 +1038,7 @@ function populateFilterDropdowns() {
 
   stageEl.innerHTML  = `<option value="">Stage</option>`  + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
-  if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+  if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(formatPillarDisplay(p))}</option>`).join('');
 
   stageEl.value  = curStage;
   ownerEl.value  = curOwner;
@@ -1241,8 +1241,7 @@ function normalizeOwner(owner) {
 
 function normalizePillar(pillar) {
   if (!pillar) return 'General';
-  const key = pillar.toLowerCase().trim();
-  return PILLAR_DISPLAY[key] || 'General';
+  return formatPillarDisplay(pillar) || 'General';
 }
 
 function groupPostsByDay(posts, month, year) {
@@ -1308,9 +1307,8 @@ function renderLibraryCalendar(posts) {
     const dayPosts = dayMap[key] || [];
 
     const first = dayPosts[0];
-    const pillarKey = first ? (first.contentPillar || '').toLowerCase().trim() : '';
     const pillar = first
-      ? (PILLAR_SHORT[pillarKey] || normalizePillar(first.contentPillar))
+      ? getPillarShort(first.contentPillar)
       : '';
     const postId = first ? getPostId(first) : '';
     const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;

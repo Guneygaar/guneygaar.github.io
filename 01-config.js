@@ -79,6 +79,7 @@ const PILLARS_DB = [
   'inclusivity',
   'events',
   'announcements',
+  'growth',
 ];
 
 const PILLAR_DISPLAY = {
@@ -88,6 +89,7 @@ const PILLAR_DISPLAY = {
   'inclusivity':   'Inclusivity',
   'events':        'Events',
   'announcements': 'Announcements',
+  'growth':        'Growth',
 };
 
 const PILLAR_SHORT = {
@@ -95,9 +97,22 @@ const PILLAR_SHORT = {
   'innovation':    'Innov',
   'sustainability':'Sustain',
   'inclusivity':   'Include',
-  'events':        'Event',
+  'events':        'Events',
   'announcements': 'Announce',
+  'growth':        'Growth',
 };
+
+// Formatter: DB value → Capital Case display label (for dropdowns)
+function formatPillarDisplay(p) {
+  if (!p) return '';
+  return PILLAR_DISPLAY[p] || p.charAt(0).toUpperCase() + p.slice(1);
+}
+
+// Formatter: DB value → short label (for subtitles / tight UI)
+function getPillarShort(p) {
+  if (!p) return '';
+  return PILLAR_SHORT[p] || p;
+}
 
 // -------------------------------------------------------
 // ROLE & WORKFLOW CONFIG
