@@ -68,7 +68,7 @@ function normalise(rows) {
     title:         r.title          || '',
     stage:         r.stage          || '',
     owner:         r.owner          || '',
-    contentPillar: r.content_pillar || '',
+    contentPillar: (r.content_pillar || '').toLowerCase().trim(),
     location:      r.location       || '',
     targetDate:    r.target_date    || '',
     postLink:      r.post_link      || '',

@@ -1240,8 +1240,8 @@ function normalizeOwner(owner) {
 }
 
 function normalizePillar(pillar) {
-  if (!pillar) return 'General';
-  return formatPillarDisplay(pillar) || 'General';
+  if (!pillar) return '';
+  return sanitizePillar(pillar);
 }
 
 function groupPostsByDay(posts, month, year) {

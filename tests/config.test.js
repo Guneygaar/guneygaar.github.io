@@ -13,7 +13,7 @@ function loadConfig() {
       STAGE_META, STAGES_DB, PIPELINE_ORDER, STAGE_DISPLAY, STAGE_COLORS,
       PILLARS_DB, PILLAR_DISPLAY, PILLAR_SHORT,
       ROLE_STAGES, ROLE_BUCKETS, STRIP_STAGES,
-      stageStyle, formatPillarDisplay, getPillarShort,
+      stageStyle, sanitizePillar, formatPillarDisplay, getPillarShort,
     };
   `);
   return fn(window);
@@ -157,5 +157,60 @@ describe('getPillarShort', () => {
 
   it('falls back to raw value for unknown pillar', () => {
     expect(config.getPillarShort('custom')).toBe('custom');
+  });
+
+  it('normalizes mixed-case input before lookup', () => {
+    expect(config.getPillarShort('Leadership')).toBe('Lead');
+    expect(config.getPillarShort('INNOVATION')).toBe('Innov');
+  });
+});
+
+// ─── sanitizePillar ─────────────────────────────
+describe('sanitizePillar', () => {
+  it('lowercases and trims input', () => {
+    expect(config.sanitizePillar('Leadership')).toBe('leadership');
+    expect(config.sanitizePillar('  GROWTH  ')).toBe('growth');
+    expect(config.sanitizePillar('Innovation')).toBe('innovation');
+  });
+
+  it('returns empty string for falsy input', () => {
+    expect(config.sanitizePillar('')).toBe('');
+    expect(config.sanitizePillar(null)).toBe('');
+    expect(config.sanitizePillar(undefined)).toBe('');
+  });
+
+  it('is idempotent on already-clean values', () => {
+    for (const p of config.PILLARS_DB) {
+      expect(config.sanitizePillar(p)).toBe(p);
+    }
+  });
+});
+
+// ─── Pillar system lockdown ─────────────────────
+describe('pillar system lockdown', () => {
+  it('PILLAR_DISPLAY keys exactly match PILLARS_DB', () => {
+    expect(Object.keys(config.PILLAR_DISPLAY).sort()).toEqual([...config.PILLARS_DB].sort());
+  });
+
+  it('PILLAR_SHORT keys exactly match PILLARS_DB', () => {
+    expect(Object.keys(config.PILLAR_SHORT).sort()).toEqual([...config.PILLARS_DB].sort());
+  });
+
+  it('no PILLAR_DISPLAY value is lowercase (prevents DB/display confusion)', () => {
+    for (const [key, label] of Object.entries(config.PILLAR_DISPLAY)) {
+      expect(label).not.toBe(key);
+      expect(label.charAt(0)).toBe(label.charAt(0).toUpperCase());
+    }
+  });
+
+  it('formatPillarDisplay handles mixed-case input safely', () => {
+    expect(config.formatPillarDisplay('LEADERSHIP')).toBe('Leadership');
+    expect(config.formatPillarDisplay('  Growth  ')).toBe('Growth');
+  });
+
+  it('all PILLARS_DB values contain only lowercase a-z', () => {
+    for (const p of config.PILLARS_DB) {
+      expect(p).toMatch(/^[a-z]+$/);
+    }
   });
 });

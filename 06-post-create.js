@@ -102,7 +102,7 @@ if (pillarEl && typeof PILLARS_DB !== 'undefined') {
 pillarEl.innerHTML =
 '<option value="">Select pillar</option>' +
 PILLARS_DB
-.map(p => `<option value="${p}">${(PILLAR_DISPLAY && PILLAR_DISPLAY[p]) || p}</option>`)
+.map(p => `<option value="${p}">${formatPillarDisplay(p)}</option>`)
 .join('');
 }
 }
@@ -189,7 +189,7 @@ body: JSON.stringify({
 post_id: 'POST-' + Date.now(),
 title,
 owner,
-content_pillar: pillar || null,
+content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
 stage: stage || 'in production',
 target_date: date || null,

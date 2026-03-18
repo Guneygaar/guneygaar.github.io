@@ -102,16 +102,23 @@ const PILLAR_SHORT = {
   'growth':        'Growth',
 };
 
+// Sanitizer: enforce lowercase before ANY DB write
+function sanitizePillar(p) {
+  return (p || '').toLowerCase().trim();
+}
+
 // Formatter: DB value → Capital Case display label (for dropdowns)
 function formatPillarDisplay(p) {
   if (!p) return '';
-  return PILLAR_DISPLAY[p] || p.charAt(0).toUpperCase() + p.slice(1);
+  const key = sanitizePillar(p);
+  return PILLAR_DISPLAY[key] || key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 // Formatter: DB value → short label (for subtitles / tight UI)
 function getPillarShort(p) {
   if (!p) return '';
-  return PILLAR_SHORT[p] || p;
+  const key = sanitizePillar(p);
+  return PILLAR_SHORT[key] || key;
 }
 
 // -------------------------------------------------------

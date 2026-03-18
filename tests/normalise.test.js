@@ -75,4 +75,14 @@ describe('normalise', () => {
     const rows = [{ id: '42' }];
     expect(normalise(rows)[0].post_id).toBe('42');
   });
+
+  it('lowercases content_pillar on read (prevents mixed-case drift)', () => {
+    const rows = [{ content_pillar: 'Leadership' }];
+    expect(normalise(rows)[0].contentPillar).toBe('leadership');
+  });
+
+  it('trims whitespace from content_pillar', () => {
+    const rows = [{ content_pillar: '  growth  ' }];
+    expect(normalise(rows)[0].contentPillar).toBe('growth');
+  });
 });
