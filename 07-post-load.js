@@ -31,6 +31,10 @@ function mergePosts(fresh) {
     delete existing._dirty;
     delete existing._dirtyAt;
 
+    // Log stage change from poll merge BEFORE Object.assign overwrites it
+    if (existing.stage !== fp.stage) {
+      setStage(existing, fp.stage, 'poll_merge');
+    }
     Object.assign(existing, fp);
   });
 
