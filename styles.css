@@ -841,7 +841,20 @@ a:hover { text-decoration: underline; }
 }
 .pc-state.st-fail { color: var(--c-red, #ef4444); font-weight: 600; letter-spacing: 0.04em; }
 .pc-state.st-risk { color: var(--c-amber, #f59e0b); }
-.pc-state.st-safe { color: var(--text3); opacity: 0.45; }
+.pc-state.st-safe { color: #5b8a6e; opacity: 0.7; }
+
+/* Sorted micro-tag */
+.pc-sorted-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+.pc-sorted-tag.safe { color: #5b8a6e; opacity: 0.5; }
+.pc-sorted-tag.risk { color: var(--c-amber, #f59e0b); opacity: 0.45; }
+.pc-sorted-tag.failure { color: var(--c-red, #ef4444); opacity: 0.55; }
 
 /* 2. Runway number — dominant anchor */
 .pc-runway {

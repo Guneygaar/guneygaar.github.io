@@ -462,11 +462,11 @@ function renderDashboard() {
   let pressureLabel = '';
   let pressureSource = [];
   if (internalDelayed.length) {
-    pressureLabel = 'IN PRODUCTION DELAY'; pressureSource = internalDelayed;
+    pressureLabel = 'NOT SORTED'; pressureSource = internalDelayed;
   } else if (clientDelayed.length) {
-    pressureLabel = 'WAITING ON CLIENT'; pressureSource = clientDelayed;
+    pressureLabel = 'NOT SORTED'; pressureSource = clientDelayed;
   } else if (requestDelayed.length) {
-    pressureLabel = 'AWAITING APPROVAL SEND'; pressureSource = requestDelayed;
+    pressureLabel = 'NOT SORTED'; pressureSource = requestDelayed;
   }
   const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
 
@@ -490,11 +490,11 @@ function renderDashboard() {
   const todayIsPostingDay = isPostingDay(now);
   let uiState, stateMsg, stateClass;
   if (todayIsPostingDay && !todayHasPost) {
-    uiState = 'failure'; stateMsg = 'No post scheduled today'; stateClass = 'st-fail';
+    uiState = 'failure'; stateMsg = 'Not sorted \u2014 today is empty'; stateClass = 'st-fail';
   } else if (hard_runway <= 2) {
-    uiState = 'risk'; stateMsg = 'Low runway \u2014 will run out soon'; stateClass = 'st-risk';
+    uiState = 'risk'; stateMsg = 'Not sorted \u2014 will break soon'; stateClass = 'st-risk';
   } else {
-    uiState = 'safe'; stateMsg = 'On track'; stateClass = 'st-safe';
+    uiState = 'safe'; stateMsg = 'Sorted'; stateClass = 'st-safe';
   }
 
   // ── RUNWAY DISPLAY (state-consistent) ──
@@ -508,12 +508,12 @@ function renderDashboard() {
   let contextLine = '';
   let contextClickable = false;
   if (uiState === 'failure') {
-    contextLine = 'Runway ends today';
+    contextLine = 'Nothing sorted for today';
   } else if (uiState === 'risk' && nextGapDay) {
-    contextLine = `Next gap: ${nextGapDay}`;
+    contextLine = `Break on ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   } else if (uiState === 'safe' && nextGapDay) {
-    contextLine = `Covered till ${nextGapDay}`;
+    contextLine = `Sorted till ${nextGapDay}`;
     contextClickable = !!nextGapDate;
   }
 
@@ -522,28 +522,28 @@ function renderDashboard() {
   let actionText = '';
   let actionFilter = null; // stages to filter pipeline on click
   if (uiState === 'failure') {
-    actionText = 'Chitra: Send today\u2019s post for approval immediately';
+    actionText = 'Chitra: Sort today\u2019s post for approval now';
     actionFilter = ['ready'];
   } else if (hard_runway === 0) {
-    actionText = 'Chitra: Send content for approval now';
+    actionText = 'Chitra: Sort content for approval now';
     actionFilter = ['ready'];
   } else if (hard_runway <= 2 && ready > 0) {
-    actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval now`;
+    actionText = `Chitra: Sort ${ready} post${ready !== 1 ? 's' : ''} for approval now`;
     actionFilter = ['ready'];
   } else if (hard_runway <= 2) {
-    actionText = `Pranav: Create content \u2014 runway expires in ${hard_runway}d`;
+    actionText = `Pranav: Sort content \u2014 runway expires in ${hard_runway}d`;
     actionFilter = ['in production', 'revisions needed'];
   } else if (production > ready) {
-    actionText = `Pranav: Finish ${production} production post${production !== 1 ? 's' : ''}`;
+    actionText = `Pranav: Sort ${production} post${production !== 1 ? 's' : ''} into ready`;
     actionFilter = ['in production', 'revisions needed'];
   } else if (ready > scheduled) {
-    actionText = `Chitra: Send ${ready} post${ready !== 1 ? 's' : ''} for approval`;
+    actionText = `Chitra: Sort ${ready} post${ready !== 1 ? 's' : ''} for approval`;
     actionFilter = ['ready'];
   } else if (invCount / invTarget < 0.8) {
-    actionText = `Pranav: Add ${invGap} post${invGap !== 1 ? 's' : ''} to inventory`;
+    actionText = `Pranav: Sort ${invGap} post${invGap !== 1 ? 's' : ''} into ready`;
     actionFilter = ['in production', 'revisions needed'];
   } else {
-    actionText = 'Maintain pace';
+    actionText = 'Stay sorted';
     actionFilter = null;
   }
 
@@ -558,6 +558,7 @@ function renderDashboard() {
 
   el.innerHTML = `<div class="pc-root ${uiState}">
     <div class="pc-state ${stateClass}">${stateMsg}</div>
+    <div class="pc-sorted-tag ${uiState}">${uiState === 'safe' ? 'All sorted' : uiState === 'risk' ? 'Not fully sorted' : 'Nothing sorted'}</div>
     <div class="pc-runway ${runwayState}">${runwayDisplay}</div>
     ${contextLine ? `<div class="pc-context${contextClickable ? ' pc-clickable' : ''}"${contextClickable ? ' data-nav="upcoming-gap"' : ''}>${contextLine}</div>` : ''}
     ${pressureBlock}
