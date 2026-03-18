@@ -383,6 +383,7 @@ function _renderPCS(postId) {
   const id          = getPostId(post);
   const title       = getTitle(post);
   const stageLC     = (post.stage || '').toLowerCase().trim();
+  console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
@@ -528,15 +529,16 @@ function _executeStageChange(postId, newStage) {
     method: 'PATCH',
     body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
   })
-    .then(() => { console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now()); delete post._dirty; /* KEEP _dirtyAt for time-based poll protection */ })
-    .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
     .then(() => {
-      // CRITICAL: force final UI sync after DB success
+      console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
+      delete post._dirty;
+      // CRITICAL: force final UI sync immediately after DB success
       _renderPCS(postId);
       _renderBackgroundViews();
       console.log('[PCS] FINAL RENDER SYNC:', postId, post.stage, Date.now());
-      showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage));
     })
+    .then(() => logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }))
+    .then(() => showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)))
     .catch(() => {
       // Rollback local state
       delete post._dirty;
