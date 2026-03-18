@@ -405,16 +405,34 @@ function renderDashboard() {
   }
   const soft_runway = Math.floor(ready * 0.7);
 
+  // ── RESPONSIBLE OWNER (stage-based, UI only — never written to DB) ──
+  // Three accountable parties: PRANAV (production), CHITRA (scheduling), CLIENT (approval)
+  // Actionable stages only — scheduled/published are done, never shown as pressure
+  //   'in production'        → PRANAV   (production work)
+  //   'revisions needed'     → PRANAV   (production work)
+  //   'ready'                → CHITRA   (needs scheduling)
+  //   'awaiting approval'    → CLIENT   (external blocker)
+  //   'awaiting brand input' → CLIENT   (external blocker)
+  //   'scheduled'            → null     (done — not actionable)
+  //   'published'            → null     (done — not actionable)
+  function getResponsibleOwner(post) {
+    const s = stg(post);
+    if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
+    if (s === 'ready') return 'CHITRA';
+    if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
+    return null;
+  }
+
   // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
   const { enrichedPosts } = computeDelayMeta(filteredPosts);
-  const delayed = enrichedPosts.filter(p => p.isDelayed);
+  const delayed = enrichedPosts.filter(p => p.isDelayed && getResponsibleOwner(p));
 
   // Group delayed posts by type → by owner (pressure strips)
   function buildPressureRows(posts) {
     if (!posts.length) return { rows: '', overflow: 0 };
     const byOwner = {};
     posts.forEach(p => {
-      const name = (p.owner || 'Admin').toUpperCase();
+      const name = getResponsibleOwner(p) || 'UNKNOWN';
       if (!byOwner[name]) byOwner[name] = { count: 0, maxH: 0 };
       byOwner[name].count++;
       if (p.delayHours > byOwner[name].maxH) byOwner[name].maxH = p.delayHours;
@@ -494,21 +512,21 @@ function renderDashboard() {
     contextLine = `Covered till ${nextGapDay}`;
   }
 
-  // ── ACTION LINE (state-aligned, verb-led) ──
+  // ── ACTION LINE (state-aligned, verb-led, owner-prefixed) ──
   let actionText = '';
   if (uiState === 'failure') {
     // Failure: override — no counts, no runway refs, just immediate fix
-    actionText = 'Schedule today\u2019s post immediately';
+    actionText = 'Chitra: Schedule today\u2019s post immediately';
   } else if (hard_runway === 0) {
-    actionText = 'Schedule content now';
+    actionText = 'Chitra: Schedule content now';
   } else if (hard_runway <= 2 && ready > 0) {
-    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
+    actionText = `Chitra: Schedule ${ready} ready post${ready !== 1 ? 's' : ''} now`;
   } else if (hard_runway <= 2) {
-    actionText = 'Create content \u2014 runway expires in ' + hard_runway + 'd';
+    actionText = `Pranav: Create content \u2014 runway expires in ${hard_runway}d`;
   } else if (production > ready) {
-    actionText = `Finish ${production} production post${production !== 1 ? 's' : ''}`;
+    actionText = `Pranav: Finish ${production} production post${production !== 1 ? 's' : ''}`;
   } else if (ready > scheduled) {
-    actionText = `Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
+    actionText = `Chitra: Schedule ${ready} ready post${ready !== 1 ? 's' : ''}`;
   } else {
     actionText = 'Maintain pace';
   }
