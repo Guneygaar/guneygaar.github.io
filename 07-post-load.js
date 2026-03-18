@@ -86,6 +86,20 @@ function startRealtime() {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
       if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
+        // Merge: protect locally-dirty posts from stale poll overwrites
+        const now = Date.now();
+        const dirtyById = {};
+        for (let i = 0; i < allPosts.length; i++) {
+          const p = allPosts[i];
+          if (p._dirty && (now - p._dirtyAt < 3000)) {
+            dirtyById[getPostId(p)] = p;
+          }
+        }
+        // Replace fresh entries with dirty local copies that are still within the grace window
+        for (let i = 0; i < fresh.length; i++) {
+          const local = dirtyById[getPostId(fresh[i])];
+          if (local) fresh[i] = local;
+        }
         allPosts    = fresh;
         cachedPosts = fresh;
         scheduleRender();
