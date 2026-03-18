@@ -406,11 +406,17 @@ function renderDashboard() {
   const soft_runway = Math.floor(ready * 0.7);
 
   // ── RESPONSIBLE OWNER (stage-based, UI only — never written to DB) ──
+  // Must align with stages computeDelayMeta() can flag as delayed:
+  //   'awaiting brand input' → request delay   → PRANAV (internal action needed)
+  //   'in production'        → internal delay   → PRANAV
+  //   'scheduled'            → internal delay   → CHITRA (needs to unblock)
+  //   'awaiting approval'    → client delay     → CHITRA (needs to chase client)
+  //   'revisions needed'     → not delayed      → PRANAV (production work)
+  //   'ready'                → not delayed      → CHITRA (needs scheduling)
   function getResponsibleOwner(post) {
     const s = stg(post);
-    if (s === 'in production') return 'PRANAV';
-    if (s === 'ready' || s === 'approval_pending' || s === 'sent_to_client') return 'CHITRA';
-    if (s === 'awaiting approval') return 'CHITRA';
+    if (s === 'in production' || s === 'awaiting brand input' || s === 'revisions needed') return 'PRANAV';
+    if (s === 'ready' || s === 'awaiting approval' || s === 'scheduled') return 'CHITRA';
     return null;
   }
 
