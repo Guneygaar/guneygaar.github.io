@@ -3088,6 +3088,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .row-tile:active { background: var(--surface2); }
 
+/* First actionable card — subtle emphasis */
+.row-tile.pc-focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 2px 12px rgba(59, 130, 246, 0.12);
+  scroll-margin-top: 16px;
+}
+
 .row-date {
   grid-column: 1;
   font-family: var(--font-mono, monospace);
