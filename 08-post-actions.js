@@ -497,40 +497,12 @@ function _showStageConfirm(postId, newStage) {
 async function _executeStageChange(postId, newStage) {
   _removePcsConfirm();
   await quickStage(postId, newStage);
-  // Immediately update the PCS pipeline visually
-  _refreshPCSAfterStageChange(postId);
+  // Full PCS re-render from updated local state (no partial patching)
+  _renderPCS(postId);
+  triggerStageConfirmation();
   refreshSystemViews();
 }
 
-// Targeted re-render of only the stage-dependent sections (no full re-render)
-function _refreshPCSAfterStageChange(postId) {
-  const post = getPostById(postId);
-  if (!post || _pcs.postId !== postId) return;
-
-  const stageLC     = (post.stage || '').toLowerCase().trim();
-  const isPublished = stageLC === 'published';
-  const canvaUrl    = post.postLink || '';
-  const linkedinUrl = post.linkedinUrl || '';
-  const canEdit     = ['Admin','Servicing'].includes(currentRole);
-  const id          = getPostId(post);
-
-  const elProgress = document.getElementById('pcs-progress-wrap');
-  const elDesign   = document.getElementById('pcs-action-btn-wrap');
-  const elFields   = document.getElementById('pcs-fields');
-
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
-  if (elDesign)   elDesign.innerHTML   = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
-  _updateSubtitle(post);
-  // Note: elFields is intentionally NOT rebuilt here.
-  // Rebuilding the grid via innerHTML destroys <select> and <input>
-  // elements while other async saves (pillar, owner, etc.) may still
-  // be in flight, causing those changes to silently revert.
-  // Instead, surgically update only the Owner cell text via stable class hook:
-  const ownerEl = document.querySelector('.pcs-owner-val');
-  if (ownerEl) ownerEl.textContent = formatOwner(getResponsibleOwner(post));
-
-  triggerStageConfirmation();
-}
 
 function triggerStageConfirmation() {
   const el = document.getElementById('pcs-screen');
