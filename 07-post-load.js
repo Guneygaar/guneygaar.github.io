@@ -870,7 +870,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = post.owner || 'Admin';
+  const owner     = getResponsibleOwner(post) || '—';
   const pillar    = formatPillarDisplay(post.contentPillar);
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';
@@ -1149,7 +1149,7 @@ function renderUpcoming() {
 
 function populateFilterDropdowns() {
   const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
-  const owners  = [...new Set(allPosts.map(p=>p.owner||'').filter(Boolean))].sort();
+  const owners  = ['PRANAV','CHITRA','CLIENT'];
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
   const stageEl  = document.getElementById('filter-stage');
@@ -1189,7 +1189,7 @@ function filterLibrary() {
   const filtered = allPosts.filter(p => {
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
-    if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
+    if (owner  && (getResponsibleOwner(p)||'').toLowerCase() !== owner) return false;
     if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
     if (date) {
       const d = parseDate(p.targetDate);
@@ -1296,8 +1296,7 @@ function renderCreativeTracker() {
   const weekAgo = now - 7 * DAY;
   const monthAgo = now - 30 * DAY;
   const myPosts = allPosts.filter(p => {
-    const o = (p.owner||'').toLowerCase();
-    return o === 'pranav';
+    return getResponsibleOwner(p) === 'PRANAV';
   });
   const doneThisWeek = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
@@ -1358,10 +1357,10 @@ function _calNav(delta) {
   filterLibrary();
 }
 
-function normalizeOwner(owner) {
-  if (!owner) return 'Admin';
-  const map = { 'pranav': 'Pranav', 'admin': 'Admin', 'chitra': 'Chitra' };
-  return map[owner.toLowerCase().trim()] || 'Admin';
+function normalizeOwner(owner, stage) {
+  // Stage-derived ownership — DB owner is ignored in UI
+  const derived = stage ? getResponsibleOwner({ stage }) : null;
+  return derived || '—';
 }
 
 function normalizePillar(pillar) {

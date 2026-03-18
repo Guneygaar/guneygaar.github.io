@@ -29,7 +29,7 @@ function openAdminEdit(postId) {
   window._modalOpen = true;
   document.getElementById('ae-postid').textContent   = postId;
   document.getElementById('ae-title').value          = getTitle(post);
-  document.getElementById('ae-owner').value          = post.owner || '';
+  document.getElementById('ae-owner').value          = getResponsibleOwner(post) || '—';
   document.getElementById('ae-pillar').value         = post.contentPillar || '';
   document.getElementById('ae-location').value       = post.location || '';
   document.getElementById('ae-date').value           = post.targetDate || '';
@@ -423,7 +423,7 @@ function _updateSubtitle(post) {
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';
-  const parts = [pLabel, post.owner || 'Admin', dDisp];
+  const parts = [pLabel, getResponsibleOwner(post) || '—', dDisp];
   el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
@@ -765,7 +765,7 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(post.owner))}
+        ${cell('Owner',    ro(getResponsibleOwner(post) || '—'))}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
