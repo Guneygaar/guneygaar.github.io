@@ -217,6 +217,54 @@ function switchClientTab(tab) {
   document.getElementById('client-panel-' + tab)?.classList.add('active');
 }
 
+// -- Notification formatting helpers -----------
+function _notifActor(actor) {
+  if (!actor) return 'System';
+  const a = actor.toLowerCase();
+  if (a.includes('pranav')) return 'Pranav';
+  if (a.includes('chitra')) return 'Chitra';
+  if (a.includes('client')) return 'Client';
+  if (a.includes('admin'))  return 'Admin';
+  return 'System';
+}
+
+function _notifAction(action) {
+  if (!action) return 'updated';
+  const a = action.toLowerCase();
+  if (a.includes('stage') || a.includes('moved')) {
+    const m = action.match(/→\s*(.+)/);
+    if (m) return 'moved to ' + m[1].trim();
+    return 'changed stage';
+  }
+  if (a.includes('approved') || a.includes('approve')) return 'approved';
+  if (a.includes('rejected') || a.includes('reject')) return 'rejected';
+  if (a.includes('created') || a.includes('create') || a.includes('new request')) return 'created';
+  if (a.includes('edit') || a.includes('saved'))   return 'updated';
+  if (a.includes('comment') || a.includes('change')) return 'requested changes';
+  if (a.includes('upload'))  return 'uploaded asset';
+  if (a.includes('flag'))    return 'flagged an issue';
+  if (a.includes('nudge'))   return 'nudged client';
+  if (a.includes('delete'))  return 'deleted';
+  if (a.includes('acknowledge')) return 'acknowledged';
+  return 'updated';
+}
+
+function _notifTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === now.toDateString()) return 'Today, ' + time;
+  const y = new Date(); y.setDate(now.getDate() - 1);
+  if (d.toDateString() === y.toDateString()) return 'Yesterday, ' + time;
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' + time;
+}
+
+function _notifTitle(postId) {
+  const post = getPostById(postId);
+  return post?.title || 'Untitled Post';
+}
+
 // -- Notifications -----------------------------
 async function fetchUnreadCount() {
   try {
@@ -236,12 +284,18 @@ async function fetchAndRenderNotifications() {
       list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">No activity yet.</div>';
       return;
     }
-    list.innerHTML = data.map(n => `
+    list.innerHTML = data.map(n => {
+      const actor  = _notifActor(n.actor);
+      const action = _notifAction(n.action);
+      const title  = _notifTitle(n.post_id);
+      const time   = _notifTime(n.created_at);
+      return `
       <div class="notif-item ${n.read ? '' : 'unread'}">
-        <div class="notif-actor">${esc(n.actor||'System')}</div>
-        <div class="notif-msg">${esc(n.action||'')}</div>
-        <div class="notif-time" title="${esc(formatIST(n.created_at))}">${timeAgo(n.created_at)}</div>
-      </div>`).join('');
+        <div class="notif-primary">${esc(actor)} ${esc(action)}</div>
+        <div class="notif-secondary">${esc(title)}</div>
+        <div class="notif-ts">${esc(time)}</div>
+      </div>`;
+    }).join('');
   } catch {
     list.innerHTML = '<div style="padding:16px;color:var(--c-red);text-align:center">Could not load.</div>';
   }
