@@ -804,7 +804,7 @@ a:hover { text-decoration: underline; }
 ═══════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════
-   DASHBOARD — Pressure Mirror
+   DASHBOARD — Pressure Interface
 ═══════════════════════════════════════════════ */
 .pcs-dash-surface { padding: 0; }
 
@@ -838,28 +838,17 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: #ffffff;
   opacity: 0.5;
-  margin-bottom: 6px;
-}
-.pc-label-sep {
-  opacity: 0.3;
-  margin: 0 2px;
+  margin-bottom: 8px;
 }
 
-/* ── Runway headline ── */
-.pc-headline {
-  font-size: 28px;
-  font-weight: 600;
+/* ── Pending number — dominant ── */
+.pc-number {
+  font-size: clamp(40px, 10vw, 56px);
+  font-weight: 700;
   color: #ffffff;
   line-height: 1;
-  letter-spacing: -0.3px;
-}
-
-/* ── Runway sub ── */
-.pc-sub {
-  font-size: 13px;
-  color: #ffffff;
-  opacity: 0.6;
-  margin-top: 6px;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Divider ── */
@@ -867,30 +856,6 @@ a:hover { text-decoration: underline; }
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
   margin: 20px 0;
-}
-
-/* ── Ratio — dominant score ── */
-.pc-ratio {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 8px;
-}
-.pc-ratio-val {
-  font-size: clamp(48px, 12vw, 64px);
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1;
-  letter-spacing: -1px;
-  font-variant-numeric: tabular-nums;
-}
-.pc-ratio-sep {
-  font-size: clamp(48px, 12vw, 64px);
-  font-weight: 700;
-  color: #ffffff;
-  opacity: 0.2;
-  line-height: 1;
 }
 
 /* ── Action text ── */
@@ -902,50 +867,12 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.5px;
 }
 
-/* ── Client strip — inverted ── */
-.pc-client-strip {
-  background: #ffffff;
-  color: #000000;
-  padding: 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  text-align: center;
-  -webkit-tap-highlight-color: transparent;
-}
-.pc-client-strip:active { opacity: 0.85; }
-
-.pc-client-top {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  opacity: 0.5;
-  margin-bottom: 8px;
-}
-.pc-client-score {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 6px;
-}
-.pc-client-num {
-  font-size: 18px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-.pc-client-sep {
-  font-size: 18px;
-  font-weight: 700;
-  opacity: 0.2;
-}
-.pc-client-action {
-  font-size: 14px;
-  font-weight: 400;
-}
-
 /* ── Legacy classes (hidden — kept for JS compat) ── */
 .sc-card, .sc-row, .sc-name, .sc-num, .sc-sep, .sc-gap, .sc-dot, .sc-ok,
-.pc-state, .pc-context, .pc-runway { display: none; }
+.pc-state, .pc-context, .pc-runway, .pc-headline, .pc-sub, .pc-ratio,
+.pc-ratio-val, .pc-ratio-sep, .pc-label-sep, .pc-client-strip,
+.pc-client-top, .pc-client-score, .pc-client-num, .pc-client-sep,
+.pc-client-action { display: none; }
 .pc-root > .pc-action { display: none; }
 
 

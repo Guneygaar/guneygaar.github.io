@@ -606,50 +606,38 @@ function _renderDashboardInner() {
   const pranavRow = scRow('PRANAV', pranavCount, pranavTarget, pranavGap, 'short', pranavSorted, 'data-nav="pranav"');
   const chitraRow = scRow('CHITRA', chitraReady, chitraTotal || chitraReady, chitraGap, 'not sent', chitraSorted, 'data-nav="chitra"');
 
-  // ── RUNWAY DISPLAY TEXT ──
-  const runwayText = runwayDisplay === 1 ? '1 DAY LEFT' : `${runwayDisplay} DAYS LEFT`;
+  // ── PENDING COUNTS (what's stuck per person) ──
+  const chitraPending = production; // posts in production not yet moved to ready
+  const pranavPending = pranavGap;  // posts short of 35 target
+  // clientPending already computed above
 
-  // ── CHITRA ACTION TEXT (dynamic) ──
-  const chitraBehind = production > ready;
-  const chitraActionText = chitraBehind ? 'FOLLOW UP' : 'SEND FOR APPROVAL';
+  // ── ACTION TEXT (pressure-driven) ──
+  const chitraAction = chitraPending === 0 ? 'ALL CLEAR' : 'SEND FOR APPROVAL';
+  const pranavAction = pranavPending === 0 ? 'ON TARGET' : 'CREATE MORE';
+  const clientAction = clientPending === 0 ? 'ALL CLEAR' : 'REVIEW NOW';
 
-  // ── PRANAV ACTION TEXT ──
-  const pranavActionText = pranavGap > 0 ? 'CREATE MORE' : 'ON TARGET';
-
-  // ── CLIENT ACTION TEXT ──
-  const clientActionText = clientPending === 0 ? 'ALL CLEAR'
-    : clientPending === 1 ? '1 AWAITING APPROVAL'
-    : `${clientPending} AWAITING APPROVAL`;
-
-  // ── RENDER (pressure mirror) ──
+  // ── RENDER (pressure interface) ──
   el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
-    <div class="pc-section" data-nav="runway">
-      <div class="pc-label">RUNWAY</div>
-      <div class="pc-headline">${runwayText}</div>
-      ${contextLine ? `<div class="pc-sub">${contextLine}</div>` : ''}
-    </div>
-
-    <div class="pc-divider"></div>
-
     <div class="pc-section" data-nav="chitra">
-      <div class="pc-label">CHITRA <span class="pc-label-sep">:</span> TARGET</div>
-      <div class="pc-ratio"><span class="pc-ratio-val">${chitraReady}</span><span class="pc-ratio-sep">:</span><span class="pc-ratio-val">${chitraTotal}</span></div>
-      <div class="pc-action-text">${chitraActionText}</div>
+      <div class="pc-label">CHITRA</div>
+      <div class="pc-number">${chitraPending} PENDING</div>
+      <div class="pc-action-text">${chitraAction}</div>
     </div>
 
     <div class="pc-divider"></div>
 
     <div class="pc-section" data-nav="pranav">
-      <div class="pc-label">PRANAV <span class="pc-label-sep">:</span> TARGET</div>
-      <div class="pc-ratio"><span class="pc-ratio-val">${pranavCount}</span><span class="pc-ratio-sep">:</span><span class="pc-ratio-val">${pranavTarget}</span></div>
-      <div class="pc-action-text">${pranavActionText}</div>
+      <div class="pc-label">PRANAV</div>
+      <div class="pc-number">${pranavPending} PENDING</div>
+      <div class="pc-action-text">${pranavAction}</div>
     </div>
 
     <div class="pc-divider"></div>
 
-    <div class="pc-client-strip" data-nav="client">
-      <div class="pc-client-top">CLIENT REVIEW</div>
-      <div class="pc-client-score"><span class="pc-client-num">${clientPending}</span><span class="pc-client-sep">:</span><span class="pc-client-num">${clientPending}</span> <span class="pc-client-action">${clientActionText}</span></div>
+    <div class="pc-section" data-nav="client">
+      <div class="pc-label">CLIENT</div>
+      <div class="pc-number">${clientPending} PENDING</div>
+      <div class="pc-action-text">${clientAction}</div>
     </div>
   </div>`;
 
