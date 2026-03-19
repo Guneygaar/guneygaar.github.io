@@ -205,7 +205,7 @@ async function fetchAndRenderNotifications() {
       <div class="notif-item ${n.read ? '' : 'unread'}">
         <div class="notif-actor">${esc(n.actor||'System')}</div>
         <div class="notif-msg">${esc(n.action||'')}</div>
-        <div class="notif-time">${timeAgo(n.created_at)}</div>
+        <div class="notif-time" title="${esc(formatIST(n.created_at))}">${timeAgo(n.created_at)}</div>
       </div>`).join('');
   } catch {
     list.innerHTML = '<div style="padding:16px;color:var(--c-red);text-align:center">Could not load.</div>';
@@ -316,7 +316,7 @@ async function openTimeline(postId, title) {
         <div class="timeline-dot"></div>
         <div class="timeline-content">
           <div class="timeline-action">${esc(e.action||'')}</div>
-          <div class="timeline-meta">${esc(e.actor||'Unknown')} · ${timeAgo(e.created_at)}</div>
+          <div class="timeline-meta" title="${esc(formatIST(e.created_at))}">${esc(e.actor||'Unknown')} · ${timeAgo(e.created_at)}</div>
         </div>
       </div>`).join('');
   } catch {

@@ -6,26 +6,32 @@ console.log("LOADED:", "08-post-actions.js");
 async function quickStage(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
+  // Block duplicate writes — if a PATCH is already in-flight, bail
+  if (post._dirty) return;
   const oldStage = post.stage;
   setStage(post, newStage, 'quickStage');
   post._dirty = true;
-  post._dirtyAt = Date.now();
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+    const actor = resolveActor();
+    const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
-    delete post._dirty;
-    // KEEP _dirtyAt — poll uses time-based protection for 5s after change
-    await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
+    // Apply server response (includes DB-set status_changed_at)
+    if (Array.isArray(rows) && rows[0]) {
+      const server = normalise(rows)[0];
+      Object.assign(post, server);
+    }
+    post._dirty = false;
+    scheduleRender();
+    await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
-    delete post._dirty;
-    // KEEP _dirtyAt — poll will clear it after 5s window expires
+    post._dirty = false;
     setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
     showToast('Update failed — try again', 'error');
@@ -99,13 +105,12 @@ async function clientApprove(postId, btn) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
     setStage(post, 'scheduled', 'clientApprove');
-    post._dirtyAt = Date.now();
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }
@@ -516,10 +521,11 @@ function _executeStageChange(postId, newStage) {
   // ── 1. Optimistic local state update ──
   const post = getPostById(postId);
   if (!post) return;
+  // Block duplicate writes — if a PATCH is already in-flight, bail
+  if (post._dirty) return;
   const previousStage = post.stage;
   setStage(post, newStage, '_executeStageChange');
   post._dirty = true;
-  post._dirtyAt = Date.now();
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // ── 2. Instant UI re-render (before DB) ──
@@ -533,17 +539,23 @@ function _executeStageChange(postId, newStage) {
 
 async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   // ── DB WRITE — rollback ONLY if this fails ──
+  const actor = resolveActor();
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+    const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
 
-    delete post._dirty;
+    // Apply server response (includes DB-set status_changed_at)
+    if (Array.isArray(rows) && rows[0]) {
+      const server = normalise(rows)[0];
+      Object.assign(post, server);
+    }
+    post._dirty = false;
 
     // FINAL TRUTH RENDER
     _renderPCS(postId);
@@ -553,8 +565,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   } catch (err) {
     console.error('[PCS] DB WRITE FAILED:', postId, err);
 
-    delete post._dirty;
-    // KEEP _dirtyAt — poll will clear it after 5s window expires
+    post._dirty = false;
     setStage(post, previousStage, '_executeStageChange_rollback');
 
     _renderPCS(postId);
@@ -564,7 +575,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // ── NON-CRITICAL — completely outside DB try/catch ──
-  try { logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
@@ -769,10 +780,11 @@ function _loadPCSActivity(postId, bodyEl) {
       }
       bodyEl.innerHTML = rows.map(r => {
         const ago = r.created_at ? timeAgo(r.created_at) : '';
+        const istTime = r.created_at ? formatIST(r.created_at) : '';
         return `<div class="pcs-activity-row">
           <span class="pcs-activity-who">${esc(r.actor_name || r.actor || 'System')}</span>
           <span class="pcs-activity-what">${esc(r.action || '')}</span>
-          <span class="pcs-activity-when">${esc(ago)}</span>
+          <span class="pcs-activity-when" title="${esc(istTime)}">${esc(ago)}</span>
         </div>`;
       }).join('');
     })

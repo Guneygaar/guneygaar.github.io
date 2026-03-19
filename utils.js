@@ -86,3 +86,25 @@ function timeAgo(ts) {
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
 }
+
+// IST display formatter — display-only, never mutates raw data
+function formatIST(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+// Resolve actor name for write paths — URL-path based, strict allowlist
+function resolveActor() {
+  const path = window.location.pathname.toLowerCase();
+  if (path.includes('client')) return 'Client';
+  if (path.includes('chitra') || path.includes('ops')) return 'Chitra';
+  if (path.includes('admin')) return 'Chitra';
+  return 'Pranav';
+}
