@@ -881,7 +881,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-width: 520px;
+  max-width: 420px;
   width: 100%;
   margin: 0 auto;
   padding: 0;
@@ -1067,27 +1067,23 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── Retro Industrial Scoreboard ── */
-.pcs-scoreboard {
-  --sb-bg: #000000;
-  --sb-panel: #0D0D0D;
-  --sb-border: #2A2A2A;
-  --sb-divider: #3A3A3A;
-  --sb-red: #FF3B30;
-  --sb-gold: #FFD700;
-  --sb-green: #00C853;
-  --sb-white: #EAEAEA;
 
+/* Outer frame — hardware casing */
+.pcs-scoreboard {
   width: 100%;
-  max-width: 520px;
+  max-width: 420px;
   margin: 0 auto;
-  background-color: var(--sb-bg);
+  border: 2px solid #2a2a2a;
+  padding: 8px;
+  background: #0b0b0b;
   font-family: 'Roboto Mono', monospace;
-  color: var(--sb-white);
+  color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Metal texture (mandatory) ── */
-.sb-metal {
+/* Inner frame — panel face */
+.sb-inner {
+  border: 1px solid #3a3a3a;
   background-color: #0D0D0D;
   background-image:
     repeating-linear-gradient(
@@ -1097,52 +1093,47 @@ a:hover { text-decoration: underline; }
       transparent 1px,
       transparent 3px
     );
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── 1. Critical Panel ── */
 .sb-critical-panel {
-  height: 96px;
-  padding: 16px;
-  text-align: center;
+  height: 100px;
+  background: #140909;
+  border-bottom: 1px solid #3a1a1a;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid var(--sb-border);
+  text-align: center;
 }
 .sb-critical-label {
   font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--sb-white);
+  color: #FF3B30;
   margin-bottom: 8px;
 }
 .sb-critical-num {
-  font-size: 32px;
+  font-size: 48px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  color: #FF3B30;
 }
-.sb-critical-num.critical { color: var(--sb-red); }
-.sb-critical-num.stable { color: var(--sb-green); }
 
-/* ── 2. Main Scoreboard Grid ── */
+/* ── 2. Main Scoreboard ── */
 .sb-main-grid {
   height: 240px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  position: relative;
-  border-bottom: 1px solid var(--sb-border);
+  grid-template-columns: 1fr 3px 1fr;
+  border-bottom: 1px solid #333;
 }
-.sb-main-grid::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  background: var(--sb-divider);
+.sb-divider {
+  background: #444;
+  width: 3px;
 }
 .sb-main-cell {
   display: flex;
@@ -1156,24 +1147,26 @@ a:hover { text-decoration: underline; }
 .sb-main-cell:active { opacity: 0.8; }
 .sb-main-label {
   font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--sb-white);
+  color: #EAEAEA;
   margin-bottom: 12px;
 }
 .sb-main-num {
-  font-size: 56px;
-  font-weight: 700;
+  font-size: 72px;
+  font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.sb-main-num.gold { color: var(--sb-gold); }
-.sb-main-num.green { color: var(--sb-green); }
+.sb-main-num.gold { color: #FFD700; }
+.sb-main-num.green { color: #00C853; }
 .sb-main-sub {
   font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--sb-white);
+  color: #EAEAEA;
   margin-top: 12px;
 }
 
@@ -1181,19 +1174,12 @@ a:hover { text-decoration: underline; }
 .sb-client-strip {
   height: 120px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  position: relative;
-  border-bottom: 1px solid var(--sb-border);
+  grid-template-columns: 1fr 1px 1fr;
+  border-bottom: 1px solid #333;
 }
-.sb-client-strip::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+.sb-client-divider {
+  background: #444;
   width: 1px;
-  background: var(--sb-divider);
 }
 .sb-client-cell {
   display: flex;
@@ -1206,17 +1192,18 @@ a:hover { text-decoration: underline; }
 }
 .sb-client-cell:active { opacity: 0.8; }
 .sb-client-num {
-  font-size: 32px;
+  font-size: 36px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--sb-red);
+  color: #FF3B30;
 }
 .sb-client-label {
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--sb-white);
+  color: #EAEAEA;
   margin-top: 8px;
 }
 
@@ -1227,7 +1214,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 0 16px;
-  border-top: 1px solid var(--sb-border);
+  border-top: 1px solid #333;
 }
 .sb-task-content {
   flex: 1;
@@ -1235,14 +1222,15 @@ a:hover { text-decoration: underline; }
 }
 .sb-task-label {
   font-size: 12px;
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--sb-white);
+  color: #EAEAEA;
   margin-bottom: 4px;
 }
 .sb-task-text {
   font-size: 12px;
-  color: var(--sb-white);
+  color: #EAEAEA;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1257,6 +1245,7 @@ a:hover { text-decoration: underline; }
   height: 48px;
   background: #C9A24A;
   border: 1px solid #8a6d2a;
+  border-radius: 0;
   color: #000;
   display: flex;
   align-items: center;
@@ -1267,15 +1256,12 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   margin-left: 16px;
   padding: 0;
-  border-radius: 0;
   -webkit-tap-highlight-color: transparent;
 }
 .sb-fab:active { opacity: 0.8; }
 
 /* ── Top Task (legacy compat) ── */
-.top-task {
-  display: none;
-}
+.top-task { display: none; }
 .top-task-label, .top-task-text { display: none; }
 
 /* ═══════════════════════════════════════════════
