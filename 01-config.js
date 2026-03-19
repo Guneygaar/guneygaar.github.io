@@ -21,7 +21,7 @@ const CLIENT_REQUEST_FORM_URL = '';
 
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
-  'in production':        { label: 'In Production',        hex: '#f59e0b' },
+  'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },
   'revisions needed':     { label: 'Revisions Needed',     hex: '#ef4444' },
   'ready':                { label: 'Ready',                hex: '#10b981' },
   'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
