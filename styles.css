@@ -1342,13 +1342,19 @@ a:hover { text-decoration: underline; }
 }
 
 /* 7. NUMBERS — tight LED glow */
-.sb-main-num,
 .sb-client-num {
   letter-spacing: -1px;
   text-shadow:
     0 0 6px currentColor,
     0 0 12px rgba(0,0,0,0.6);
   filter: contrast(1.1) brightness(1.05);
+}
+.sb-main-num {
+  letter-spacing: -1px;
+  text-shadow:
+    0 0 8px currentColor,
+    0 0 16px rgba(0,0,0,0.8);
+  filter: contrast(1.2) brightness(1.1);
 }
 
 /* Critical number — stronger red LED */
