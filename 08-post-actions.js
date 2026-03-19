@@ -7,10 +7,10 @@ async function quickStage(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const oldStage = post.stage;
   setStage(post, newStage, 'quickStage');
-  post._dirty = true;
+  post._isSaving = true;
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
@@ -27,12 +27,12 @@ async function quickStage(postId, newStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
-    post._dirty = false;
+    post._isSaving = false;
     setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
     showToast('Update failed — try again', 'error');
@@ -40,8 +40,13 @@ async function quickStage(postId, newStage) {
 }
 
 function openAdminEdit(postId) {
+  console.log('[openAdminEdit] MODAL POST ID:', postId);
   const post = getPostById(postId);
-  if (!post) return;
+  if (!post) {
+    console.error('[openAdminEdit] BLOCKED: post not found for', postId);
+    showToast('Post not found', 'error');
+    return;
+  }
   window._modalOpen = true;
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
@@ -55,6 +60,7 @@ function openAdminEdit(postId) {
   const sel = _ae('ae-stage');
   if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
   const aeBtn = _ae('ae-save-btn');     if (aeBtn) aeBtn.dataset.postId = postId;
+  console.log('[openAdminEdit] ae-save-btn.dataset.postId SET TO:', aeBtn?.dataset?.postId);
   const aeOverlay = _ae('admin-edit-overlay');
   if (aeOverlay) aeOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -68,9 +74,15 @@ function closeAdminEdit() {
 }
 
 async function saveAdminEdit() {
+  console.log('[saveAdminEdit] SAVE CLICKED');
   const _ae = id => document.getElementById(id);
   const postId   = _ae('ae-save-btn')?.dataset?.postId;
-  if (!postId) return;
+  console.log('[saveAdminEdit] SAVE postId:', postId);
+  if (!postId) {
+    console.error('[saveAdminEdit] BLOCKED: no postId on ae-save-btn dataset');
+    showToast('Save failed — post not found', 'error');
+    return;
+  }
   const title    = (_ae('ae-title')?.value || '').trim();
   const owner    = _ae('ae-owner')?.value || '';
   const pillar   = _ae('ae-pillar')?.value || '';
@@ -79,23 +91,28 @@ async function saveAdminEdit() {
   const date     = _ae('ae-date')?.value || '';
   const comments = (_ae('ae-comments')?.value || '').trim();
   const postLink = (_ae('ae-postlink')?.value || '').trim();
-  if (!title) { showToast('Title is required', 'error'); return; }
+  if (!title) {
+    console.warn('[saveAdminEdit] BLOCKED: title empty');
+    showToast('Title is required', 'error');
+    return;
+  }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
+  console.log('[saveAdminEdit] VALIDATION PASSED');
+  console.log('[saveAdminEdit] PAYLOAD:', _payload);
   try {
-    const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
-    console.log('[saveAdminEdit] FORM STAGE:', stage, '→ DB STAGE:', toDbStage(stage));
-    console.log('[saveAdminEdit] PAYLOAD BEFORE SEND:', _payload);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify(_payload),
     });
-    console.log('[saveAdminEdit] SAVE OK for', postId);
+    console.log('[saveAdminEdit] API SUCCESS for', postId);
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
     showToast('Post saved ✓', 'success');
   } catch (err) {
+    console.error('[saveAdminEdit] API FAILED:', err);
     showToast('Save failed — try again', 'error');
     if (btn) btn.disabled = false;
   }
@@ -528,10 +545,10 @@ function _executeStageChange(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const previousStage = post.stage;
   setStage(post, newStage, '_executeStageChange');
-  post._dirty = true;
+  post._isSaving = true;
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // ── 2. Instant UI re-render (before DB) ──
@@ -562,7 +579,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
 
     // FINAL TRUTH RENDER
     _renderPCS(postId);
@@ -572,7 +589,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   } catch (err) {
     console.error('[PCS] DB WRITE FAILED:', postId, err);
 
-    post._dirty = false;
+    post._isSaving = false;
     setStage(post, previousStage, '_executeStageChange_rollback');
 
     _renderPCS(postId);
@@ -747,10 +764,10 @@ async function updatePost(postId, field, value) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const oldValue = post[field];
   post[field] = value;
-  post._dirty = true;
+  post._isSaving = true;
 
   // Sync subtitle immediately after optimistic update
   _updateSubtitle(post);
@@ -782,12 +799,12 @@ async function updatePost(postId, field, value) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
     showToast('Saved', 'success');
     refreshSystemViews();
   } catch(e) {
     // Rollback optimistic update on failure
-    post._dirty = false;
+    post._isSaving = false;
     post[field] = oldValue;
     scheduleRender();
     showToast('Save failed', 'error');

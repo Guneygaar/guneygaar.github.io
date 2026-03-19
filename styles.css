@@ -3637,6 +3637,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .pcs-close-btn,
+.pcs-edit-btn,
 .pcs-delete-btn {
   position: absolute;
   top: calc((var(--pcs-header-icon-zone) - var(--pcs-icon-size)) / 2);
@@ -3655,10 +3656,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
               opacity 140ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 .pcs-close-btn { left: var(--pcs-content-padding); }
+.pcs-edit-btn   { right: calc(var(--pcs-content-padding) + var(--pcs-header-icon-zone) + 8px); }
 .pcs-delete-btn { right: var(--pcs-content-padding); }
 .pcs-close-btn:hover,
+.pcs-edit-btn:hover,
 .pcs-delete-btn:hover { background: var(--surface3); }
 .pcs-close-btn:active,
+.pcs-edit-btn:active,
 .pcs-delete-btn:active { background: var(--border2); transform: scale(0.98); }
 
 .pcs-header-center {
@@ -4325,6 +4329,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
     opacity: 0.95;
   }
   .pcs-close-btn:hover,
+  .pcs-edit-btn:hover,
   .pcs-delete-btn:hover {
     transform: translateY(-1px);
     opacity: 0.95;
