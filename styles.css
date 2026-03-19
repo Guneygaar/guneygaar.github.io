@@ -1306,6 +1306,7 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
+  letter-spacing: 0.5px;
   background: linear-gradient(180deg, #090909, #030303);
   border-top: 2px solid rgba(255,255,255,0.06);
   box-shadow:
