@@ -190,25 +190,59 @@ function logout() {
 
 function activateRole(role) {
   currentRole = role;
+  // Resolve effectiveRole: Admin can preview other roles via localStorage
+  if (role === 'Admin') {
+    const preview = localStorage.getItem('pcs_role_preview');
+    effectiveRole = (preview && preview !== 'Admin') ? preview : 'Admin';
+  } else {
+    // Non-admin: clear any stale preview, effectiveRole = real role
+    localStorage.removeItem('pcs_role_preview');
+    effectiveRole = role;
+  }
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
   updateActionButton();
-  if (role === 'Client') {
+  if (effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
   } else {
     document.getElementById('dashboard-view')?.classList.add('active');
     const lbl = document.getElementById('topbar-role-label');
-    if (lbl) lbl.textContent = role;
+    if (lbl) lbl.textContent = effectiveRole;
     loadPosts();
     loadTasks();
     startRealtime();
     fetchUnreadCount();
   }
+  // Admin-only: inject role preview switcher into topbar
+  if (role === 'Admin') _injectRolePreview();
+}
+
+function _injectRolePreview() {
+  const header = document.querySelector('#dashboard-view .app-header-right, #client-view .app-header-right');
+  if (!header) return;
+  // Avoid duplicate injection
+  if (document.getElementById('role-preview')) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-right:8px;font-size:12px;color:var(--text3)';
+  wrap.innerHTML = `<label for="role-preview" style="opacity:0.7">View as</label>
+    <select id="role-preview" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);cursor:pointer">
+      <option value="Admin">Admin</option>
+      <option value="Pranav">Pranav</option>
+      <option value="Chitra">Chitra</option>
+      <option value="Client">Client</option>
+    </select>`;
+  header.prepend(wrap);
+  const sel = document.getElementById('role-preview');
+  sel.value = effectiveRole;
+  sel.onchange = function() {
+    localStorage.setItem('pcs_role_preview', this.value);
+    location.reload();
+  };
 }
 
 function applyRoleVisibility() {
-  const allowedTabs = ROLE_TABS[currentRole] || [];
+  const allowedTabs = ROLE_TABS[effectiveRole] || [];
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.style.display = allowedTabs.includes(btn.dataset.tab) ? '' : 'none';
   });
@@ -224,11 +258,11 @@ function applyRoleVisibility() {
 function updateActionButton() {
   const btn = document.getElementById('btn-new-post');
   if (!btn) return;
-  btn.textContent = currentRole === 'Client' ? '+ New Request' : '+ New Post';
+  btn.textContent = effectiveRole === 'Client' ? '+ New Request' : '+ New Post';
 }
 
 function handleActionButton() {
-  if (currentRole === 'Client') {
+  if (effectiveRole === 'Client') {
     scrollToNewRequest();
   } else {
     openNewPostModal();

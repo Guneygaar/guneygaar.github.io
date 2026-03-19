@@ -6,6 +6,8 @@ console.log("LOADED:", "02-session.js");
 window.allPosts        = [];
 window.cachedPosts     = [];
 window.currentRole     = 'Admin';
+// Admin-only role preview — overrides UI visibility without touching auth
+window.effectiveRole   = (localStorage.getItem('pcs_role_preview') || 'Admin');
 window._renderTimer    = null;
 window._retryCount     = 0;
 window._retryTimer     = null;
