@@ -718,7 +718,6 @@ function refreshSystemViews() {
   try {
     if (activeTab === 'tasks')    renderTasks();
     else if (activeTab === 'pipeline') renderPipeline();
-    else if (activeTab === 'upcoming') renderUpcoming();
     else if (activeTab === 'library')  renderLibrary();
   } catch(e) { console.error('refreshSystemViews:', e); }
 }
@@ -726,7 +725,7 @@ function refreshSystemViews() {
 // Re-render all stage-dependent background views (dashboard + active tab)
 function _renderBackgroundViews() {
   try { renderDashboard(); } catch(e) { console.error('renderDashboard:', e); }
-  // refreshSystemViews renders the active tab (pipeline/tasks/upcoming/library).
+  // refreshSystemViews renders the active tab (pipeline/tasks/library).
   // Pipeline filter is preserved — refreshSystemViews calls renderPipeline which
   // reads window.pcsPipelineFilter directly. Single render, no duplicates.
   try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }

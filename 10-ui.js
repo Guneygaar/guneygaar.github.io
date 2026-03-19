@@ -106,14 +106,14 @@ function goToTab(tabName) {
 /**
  * Standard navigation handler — sets filter BEFORE tab switch so the
  * target render function consumes it on the same frame.
- *   tab:    'pipeline' | 'upcoming'
- *   filter: string[] of stages  OR  { date: Date } for upcoming
+ *   tab:    'pipeline'
+ *   filter: string[] of stages
  */
 function navigateWithFilter(tab, filter) {
-  if (tab === 'pipeline') {
-    window.pcsPipelineFilter = filter;
-  } else if (tab === 'upcoming') {
-    window.pcsUpcomingFilter = filter;
+  if (tab === 'pipeline' || tab === 'upcoming') {
+    // 'upcoming' redirects to pipeline filtered to scheduled
+    window.pcsPipelineFilter = (tab === 'upcoming') ? ['scheduled'] : filter;
+    tab = 'pipeline';
   }
   goToTab(tab);
 }
@@ -152,7 +152,6 @@ function scrollToBucket(bucketKey) {
 const _TAB_TITLES = {
   tasks: 'My Tasks',
   pipeline: 'Pipeline',
-  upcoming: 'Upcoming',
   library: 'Library',
 };
 
