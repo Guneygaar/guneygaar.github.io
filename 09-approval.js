@@ -100,7 +100,7 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
       const c = document.getElementById('approval-confirmation');

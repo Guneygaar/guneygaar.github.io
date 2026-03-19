@@ -83,10 +83,14 @@ async function saveAdminEdit() {
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
   try {
+    const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
+    console.log('[saveAdminEdit] FORM STAGE:', stage, '→ DB STAGE:', toDbStage(stage));
+    console.log('[saveAdminEdit] PAYLOAD BEFORE SEND:', _payload);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: stage||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() }),
+      body: JSON.stringify(_payload),
     });
+    console.log('[saveAdminEdit] SAVE OK for', postId);
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
