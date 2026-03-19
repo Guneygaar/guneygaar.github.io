@@ -79,13 +79,8 @@ const STAGES_DB = STAGE_ORDER;
 // Pipeline order (includes archive at end)
 const PIPELINE_ORDER = [...STAGE_ORDER, 'archive'];
 
-// Role-based primary stages for visual dimming (non-primary cards get dimmed)
-const ROLE_PRIMARY_STAGES = {
-  Admin:     ['in production', 'ready'],
-  Servicing: ['ready', 'awaiting brand input', 'awaiting approval'],
-  Creative:  ['ready', 'awaiting brand input', 'awaiting approval'],
-  Client:    ['awaiting approval', 'awaiting brand input'],
-};
+// REMOVED: Role-based dimming disabled — all posts fully visible to all roles
+// const ROLE_PRIMARY_STAGES = { ... };
 
 // Pipeline RENDER order — visual pipeline excludes parked/rejected (they live in Library only)
 const PIPELINE_RENDER_ORDER = [

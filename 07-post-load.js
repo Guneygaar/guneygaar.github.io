@@ -838,10 +838,8 @@ function buildPostCard(p, listKey) {
   const dateStr = formatDateShort(p.targetDate);
   const isToday = d && d.toDateString() === new Date().toDateString();
 
-  // Role-based dimming: primary stages are bright, others are dimmed
-  const stageLC = stage.toLowerCase().trim();
-  const isPrimary = ROLE_PRIMARY_STAGES[effectiveRole]?.includes(stageLC);
-  const dimClass = isPrimary ? 'pc-primary' : 'pc-dim';
+  // All posts fully visible — no role-based dimming
+  const dimClass = 'pc-primary';
 
   return `
     <div class="row-tile ${dimClass}" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
