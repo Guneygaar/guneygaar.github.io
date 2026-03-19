@@ -804,30 +804,33 @@ a:hover { text-decoration: underline; }
 ═══════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════
-   DASHBOARD — System Control Surface
+   DASHBOARD — Pressure Interface
 ═══════════════════════════════════════════════ */
 .pcs-dash-surface { padding: 0; }
 
-/* ── Root container ── */
+/* ── Root — centered column ── */
 .pc-root {
   display: flex;
   flex-direction: column;
-  padding: 24px 20px;
-  max-width: 520px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 32px 20px calc(24px + env(safe-area-inset-bottom, 0px));
   background: #000000;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  font-feature-settings: "tnum";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-align: center;
 }
 
-/* ── Section block (runway / chitra / pranav) ── */
+/* ── Section block ── */
 .pc-section {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .pc-section:active { opacity: 0.7; }
 
-/* ── Section label (RUNWAY / CHITRA / PRANAV) ── */
+/* ── Label ── */
 .pc-label {
   font-size: 11px;
   font-weight: 600;
@@ -835,95 +838,42 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: #ffffff;
   opacity: 0.5;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
-/* ── Runway headline ("7 DAYS CLEAR") ── */
-.pc-headline {
-  font-size: 28px;
-  font-weight: 600;
+/* ── Pending number — dominant ── */
+.pc-number {
+  font-size: clamp(40px, 10vw, 56px);
+  font-weight: 700;
   color: #ffffff;
   line-height: 1;
-  letter-spacing: -0.3px;
-  font-feature-settings: "tnum";
-}
-
-/* ── Runway sub ("Breaks on Thursday") ── */
-.pc-sub {
-  font-size: 13px;
-  color: #ffffff;
-  opacity: 0.6;
-  margin-top: 4px;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Divider ── */
 .pc-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
-  margin: 16px 0;
+  margin: 20px 0;
 }
 
-/* ── Ratio numbers (11:14 / 14:35) — dominant ── */
-.pc-ratio {
-  font-size: 64px;
-  font-weight: 700;
-  color: #ffffff;
-  line-height: 1;
-  letter-spacing: -1px;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-  margin-top: 6px;
-}
-
-.pc-ratio-sep {
-  opacity: 0.3;
-}
-
-/* ── Action text below ratio ── */
+/* ── Action text ── */
 .pc-action-text {
   font-size: 13px;
   color: #ffffff;
   opacity: 0.75;
-  margin-top: 4px;
+  margin-top: 6px;
+  letter-spacing: 0.5px;
 }
 
-/* ── Client strip — inverted ── */
-.pc-client-strip {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  color: #000000;
-  padding: 0 16px;
-  height: 44px;
-  border-radius: 6px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.pc-client-strip:active { opacity: 0.85; }
-
-.pc-client-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-
-.pc-client-count {
-  font-size: 18px;
-  font-weight: 700;
-  font-feature-settings: "tnum";
-}
-
-.pc-client-action {
-  font-size: 14px;
-  font-weight: 400;
-}
-
-/* ── Legacy scorecard classes (kept for JS compat — hidden in new UI) ── */
+/* ── Legacy classes (hidden — kept for JS compat) ── */
 .sc-card, .sc-row, .sc-name, .sc-num, .sc-sep, .sc-gap, .sc-dot, .sc-ok,
-.pc-state, .pc-context, .pc-action, .pc-runway { display: none; }
+.pc-state, .pc-context, .pc-runway, .pc-headline, .pc-sub, .pc-ratio,
+.pc-ratio-val, .pc-ratio-sep, .pc-label-sep, .pc-client-strip,
+.pc-client-top, .pc-client-score, .pc-client-num, .pc-client-sep,
+.pc-client-action { display: none; }
+.pc-root > .pc-action { display: none; }
 
 
 /* ═══════════════════════════════════════════════
