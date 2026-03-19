@@ -1154,6 +1154,15 @@ a:hover { text-decoration: underline; }
   filter: brightness(1.15);
 }
 
+/* SAFETY GUARDS */
+.pcs-scoreboard .sb-num,
+.pcs-scoreboard .sb-btn {
+  will-change: transform, filter;
+}
+.pcs-scoreboard .sb-num {
+  white-space: nowrap;
+}
+
 /* CLIENT SECTION */
 .pcs-scoreboard .sb-client {
   margin-top: 16px;
