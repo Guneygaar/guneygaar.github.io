@@ -210,15 +210,31 @@ async function assignTask() {
 
 async function markTaskDone(id) {
   const el = document.getElementById(`task-item-${id}`);
-  if (el) el.style.opacity = '0.4';
+  const btn = el?.querySelector('.btn-task-done');
+
+  // Double-click guard
+  if (btn?.disabled) return;
+  if (btn) btn.disabled = true;
+
+  // Optimistic UI
+  if (el) el.classList.add('task-done');
+
   try {
     await apiFetch(`/tasks?id=eq.${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ done: true }),
     });
+    console.log('[Task] Completed:', id);
     showToast('Task marked done OK', 'success');
-    await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); if (el) el.style.opacity = ''; }
+    // UX delay — let user see the strike-through before refresh
+    setTimeout(() => loadTasks(), 600);
+  } catch (err) {
+    console.error('[Task] Failed:', err);
+    showToast('Failed - try again', 'error');
+    // Rollback
+    if (el) el.classList.remove('task-done');
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function deleteTask(id) {

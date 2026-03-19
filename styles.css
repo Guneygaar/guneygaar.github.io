@@ -1451,6 +1451,9 @@ a:hover { text-decoration: underline; }
   min-height: 28px;
 }
 .btn-task-done:hover { background: var(--accent); color: var(--surface); }
+.btn-task-done:disabled { opacity: 0.4; pointer-events: none; }
+.task-done .task-banner-msg { text-decoration: line-through; opacity: 0.5; }
+.task-done .btn-task-done { opacity: 0.3; pointer-events: none; }
 
 /* ── Admin Task Panel ── */
 .admin-task-wrap {
