@@ -40,8 +40,13 @@ async function quickStage(postId, newStage) {
 }
 
 function openAdminEdit(postId) {
+  console.log('[openAdminEdit] MODAL POST ID:', postId);
   const post = getPostById(postId);
-  if (!post) return;
+  if (!post) {
+    console.error('[openAdminEdit] BLOCKED: post not found for', postId);
+    showToast('Post not found', 'error');
+    return;
+  }
   window._modalOpen = true;
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
@@ -55,6 +60,7 @@ function openAdminEdit(postId) {
   const sel = _ae('ae-stage');
   if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
   const aeBtn = _ae('ae-save-btn');     if (aeBtn) aeBtn.dataset.postId = postId;
+  console.log('[openAdminEdit] ae-save-btn.dataset.postId SET TO:', aeBtn?.dataset?.postId);
   const aeOverlay = _ae('admin-edit-overlay');
   if (aeOverlay) aeOverlay.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -71,6 +77,7 @@ async function saveAdminEdit() {
   console.log('[saveAdminEdit] SAVE CLICKED');
   const _ae = id => document.getElementById(id);
   const postId   = _ae('ae-save-btn')?.dataset?.postId;
+  console.log('[saveAdminEdit] SAVE postId:', postId);
   if (!postId) {
     console.error('[saveAdminEdit] BLOCKED: no postId on ae-save-btn dataset');
     showToast('Save failed — post not found', 'error');
