@@ -74,13 +74,11 @@ function _newPostsRequest() {
   return window._postsReqId;
 }
 
-function _isStaleRequest(reqId) {
-  return reqId !== window._postsReqId;
-}
-
-function _commitPostsLoaded(source) {
+function _commitPostsResult(reqId, source) {
+  if (reqId !== window._postsReqId) return false;
   window._postsLoaded = true;
   window._postsSource = source;
+  return true;
 }
 
 function showLoadingSkeleton(containerId) {
@@ -94,19 +92,17 @@ async function loadPosts() {
   const reqId = _newPostsRequest();
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
-    if (_isStaleRequest(reqId)) return;
+    if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
-    _commitPostsLoaded('network');
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
   } catch (err) {
-    if (_isStaleRequest(reqId)) return;
     console.error('loadPosts:', err);
     if (cachedPosts.length) {
+      if (!_commitPostsResult(reqId, 'cache')) return;
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      _commitPostsLoaded('cache');
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -130,17 +126,15 @@ async function loadPostsForClient() {
   const reqId = _newPostsRequest();
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
-    if (_isStaleRequest(reqId)) return;
+    if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
-    _commitPostsLoaded('network');
     hideErrorBanner();
     renderClientView();
   } catch (err) {
-    if (_isStaleRequest(reqId)) return;
     if (cachedPosts.length) {
+      if (!_commitPostsResult(reqId, 'cache')) return;
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      _commitPostsLoaded('cache');
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
