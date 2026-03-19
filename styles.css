@@ -790,12 +790,6 @@ a:hover { text-decoration: underline; }
   position: relative;
 }
 
-/* Upcoming panel needs padding since it has no sticky header */
-#panel-upcoming .dash-body {
-  padding-top: var(--sp-4);
-  padding-left: var(--sp-4);
-  padding-right: var(--sp-4);
-}
 
 
 

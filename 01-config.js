@@ -171,7 +171,7 @@ const ROLE_STAGES = {
 };
 
 // All non-Client roles get full tab access
-const _FULL_TABS = ['tasks','pipeline','upcoming','library'];
+const _FULL_TABS = ['tasks','pipeline','library'];
 const ROLE_TABS = {
   'Admin':     _FULL_TABS,
   'Servicing': _FULL_TABS,
@@ -207,7 +207,7 @@ const STRIP_STAGES = [
   { label:'Requests',      stages:['awaiting brand input'], color: STAGE_META['awaiting brand input'].hex, tab:'tasks',    bucket:'requests' },
   { label:'Approval',      stages:['awaiting approval'],    color: STAGE_META['awaiting approval'].hex,    tab:'tasks',    bucket:'approval' },
   { label:'Ready',         stages:['ready'],                color: STAGE_META['ready'].hex,                tab:'tasks',    bucket:'ready', target:true },
-  { label:'Scheduled',     stages:['scheduled'],            color: STAGE_META['scheduled'].hex,            tab:'upcoming', bucket:null },
+  { label:'Scheduled',     stages:['scheduled'],            color: STAGE_META['scheduled'].hex,            tab:'pipeline', bucket:null },
   { label:'Published',     stages:['published'],            color: STAGE_META['published'].hex,            tab:'library',  bucket:null },
 ];
 

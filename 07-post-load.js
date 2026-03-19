@@ -231,8 +231,6 @@ function renderAll() {
     run('taskStageChips',     renderTaskStageChips);
   } else if (activeTab === 'pipeline') {
     run('pipeline',           renderPipeline);
-  } else if (activeTab === 'upcoming') {
-    run('upcoming',           renderUpcoming);
   } else if (activeTab === 'library') {
     run('library',            renderLibrary);
     run('filterDropdowns',    populateFilterDropdowns);
@@ -269,7 +267,6 @@ function updateStats() {
   setText('s-ready',     `${readyToSend}/${READY_TO_SEND_TARGET}`);
   // Legacy stats removed
   updateBadge('badge-tasks',    getMyTasks().length);
-  updateBadge('badge-upcoming', getUpcoming().length);
 }
 
 function setText(id, val) {
@@ -1050,64 +1047,6 @@ function _renderPipelineInner() {
     });
   }
 }
-
-function getUpcoming() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  return allPosts.filter(p => { const d = parseDate(p.targetDate); const s = (p.stage||'').toLowerCase(); return d && d >= today && !['published','archive','parked'].includes(s); }).sort((a,b) => parseDate(a.targetDate) - parseDate(b.targetDate));
-}
-
-function renderUpcoming() {
-  try { _renderUpcomingInner(); } catch(e) { console.error('[PCS] renderUpcoming crash:', e); }
-}
-function _renderUpcomingInner() {
-  // Consume date filter (set by runway click)
-  const activeFilter = window.pcsUpcomingFilter;
-  window.pcsUpcomingFilter = null;
-
-  const container = document.getElementById('upcoming-wrap');
-  if (!container) return;
-  let posts = getUpcoming();
-
-  // Apply date filter if present — show only posts matching that date
-  if (activeFilter && activeFilter.date) {
-    const filterDate = activeFilter.date;
-    filterDate.setHours(0, 0, 0, 0);
-    posts = posts.filter(p => {
-      const d = parseDate(p.targetDate);
-      return d && d.getTime() === filterDate.getTime();
-    });
-  }
-
-  _postLists['upcoming'] = posts;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const w7    = new Date(today); w7.setDate(w7.getDate()+7);
-
-  if (!posts.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">[date]</div><p>No upcoming posts scheduled.</p></div>`;
-    return;
-  }
-
-  const groups = {};
-  posts.forEach(p => {
-    const d   = parseDate(p.targetDate);
-    const key = d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` : 'undated';
-    if (!groups[key]) groups[key] = { date: d, posts: [] };
-    groups[key].posts.push(p);
-  });
-
-  container.innerHTML = Object.keys(groups).sort().map(dateKey => {
-    const g       = groups[dateKey];
-    const d       = g.date;
-    const isToday = d && d.getTime() === today.getTime();
-    const isSoon  = d && d <= w7;
-    const label   = isToday ? 'Today' : d ? formatWeekdayDateShort(dateKey) : 'NO DATE';
-    const hdrCls  = isToday ? 'today-hdr' : isSoon ? 'soon' : '';
-    const cards   = g.posts.map(p => buildPostCard(p, 'upcoming')).join('');
-    return `<div class="schedule-group"><div class="schedule-date-header ${hdrCls}">${label}</div><div class="row-list" style="gap:10px;padding-top:6px">${cards}</div></div>`;
-  }).join('');
-}
-
-
 
 
 function populateFilterDropdowns() {
