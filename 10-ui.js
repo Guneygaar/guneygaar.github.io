@@ -595,6 +595,51 @@ function closeFabMenu() {
   document.getElementById('fab-backdrop')?.classList.remove('open');
 }
 
+// -- Task Detail Modal --------------------------
+function openTaskModal(taskId) {
+  var task = (window.allTasks || []).find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) {
+    showToast('Task not found');
+    return;
+  }
+
+  var overlay = document.getElementById('task-detail-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'task-detail-overlay';
+    overlay.className = 'modal-overlay';
+    overlay.onclick = function(ev) { if (ev.target === overlay) closeTaskModal(); };
+    document.body.appendChild(overlay);
+  }
+
+  var created = task.created_at ? formatDate(task.created_at) : '—';
+  var due = task.due_date ? formatDateShort(task.due_date) : '';
+
+  overlay.innerHTML =
+    '<div class="modal-card task-detail-card">' +
+      '<div class="task-detail-header">' +
+        '<span class="task-detail-title">Task Details</span>' +
+        '<button class="btn-close-modal" onclick="closeTaskModal()">&times;</button>' +
+      '</div>' +
+      '<div class="task-detail-body">' +
+        '<div class="task-detail-msg">' + esc(task.message) + '</div>' +
+        '<div class="task-detail-meta">Assigned to: ' + esc(task.assigned_to || '—') + '</div>' +
+        '<div class="task-detail-meta">Created: ' + created + '</div>' +
+        (due ? '<div class="task-detail-meta">Due: ' + due + '</div>' : '') +
+      '</div>' +
+      '<div class="task-detail-actions">' +
+        '<button class="btn-modal-primary" onclick="markTaskDone(' + task.id + '); closeTaskModal();">✓ Mark as Done</button>' +
+      '</div>' +
+    '</div>';
+
+  overlay.classList.add('open');
+}
+
+function closeTaskModal() {
+  var overlay = document.getElementById('task-detail-overlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
 // -- Request Sheet ------------------------------
 function openRequestSheet() {
   const brief   = document.getElementById('req-sheet-brief');
