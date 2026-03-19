@@ -384,7 +384,7 @@ function _renderDashboardInner() {
   const approved_count = allPosts.filter(p => stg(p) === 'approved').length;
   const failed_publish_count = allPosts.filter(p => stg(p) === 'failed_publish').length;
 
-  // PIPELINE TOTAL — excludes 'in production' (WIP, not countable)
+  // PIPELINE TOTAL — excludes 'in production' (not countable)
   const pipeline_total = ready_count + awaiting_total + approved_count + runway_posts;
 
   // ═══════════════════════════════════════════════

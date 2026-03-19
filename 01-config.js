@@ -51,7 +51,7 @@ function toUiStage(dbStage) {
 
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
-  'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },
+  'in production':        { label: 'In Production', hex: '#f59e0b' },
   'ready':                { label: 'Ready',                hex: '#10b981' },
   'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
   'scheduled':            { label: 'Scheduled',            hex: '#06b6d4' },
