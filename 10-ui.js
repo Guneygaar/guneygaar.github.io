@@ -529,6 +529,12 @@ function _fabOnScroll() {
   _fabScrollTimer = setTimeout(() => fab.classList.remove('hidden'), 350);
 }
 
+function updateFabVisibility() {
+  var assignBtn = document.getElementById('fab-assign-task');
+  if (!assignBtn) return;
+  assignBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
+}
+
 function toggleFabMenu() {
   const sheet = document.getElementById('fab-menu-sheet');
   const backdrop = document.getElementById('fab-backdrop');
@@ -538,9 +544,8 @@ function toggleFabMenu() {
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
   if (reqBtn) reqBtn.style.display = '';
-  // Show "Assign Task" only for Admin — role only, no other conditions
-  const assignBtn = document.getElementById('fab-assign-task');
-  if (assignBtn) assignBtn.style.display = (window.effectiveRole === 'Admin') ? 'flex' : 'none';
+  // Role-only FAB visibility
+  updateFabVisibility();
 }
 
 function openAssignTaskFromFab() {

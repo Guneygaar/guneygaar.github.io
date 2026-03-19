@@ -252,32 +252,40 @@ async function markTaskDone(id) {
   }
 }
 
-document.addEventListener('click', function(e) {
-  const task = e.target.closest('.task-banner-item');
-  if (!task) return;
+if (!window._taskClickBound) {
+  window._taskClickBound = true;
 
-  // Ignore checkbox clicks
-  if (e.target.classList.contains('task-check')) return;
+  document.body.addEventListener('click', function(e) {
+    var task = e.target.closest('.task-banner-item');
+    if (!task) return;
 
-  const postId = task.dataset.postId;
+    // STRONG checkbox + label protection
+    if (
+      e.target.closest('.task-check') ||
+      e.target.type === 'checkbox' ||
+      e.target.tagName === 'LABEL'
+    ) return;
 
-  // GUARD 1 — Missing post_id
-  if (!postId) {
-    console.warn('[TASK] No post linked', task);
-    showToast('No post linked to this task');
-    return;
-  }
+    var postId = task.dataset.postId;
 
-  // GUARD 2 — openPCS existence
-  if (typeof openPCS !== 'function') {
-    console.error('[PCS] openPCS not available');
-    showToast('Unable to open post');
-    return;
-  }
+    // GUARD 1 — Missing post_id
+    if (!postId) {
+      console.warn('[TASK] No post linked', task);
+      showToast('No post linked to this task');
+      return;
+    }
 
-  console.log('[TASK → PCS]', postId);
-  openPCS(postId);
-});
+    // GUARD 2 — openPCS existence
+    if (typeof openPCS !== 'function') {
+      console.error('[PCS] openPCS missing');
+      showToast('Unable to open post');
+      return;
+    }
+
+    console.log('[TASK → PCS]', postId);
+    openPCS(postId);
+  });
+}
 
 document.addEventListener('change', function(e) {
   if (!e.target.classList.contains('task-check')) return;

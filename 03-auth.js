@@ -216,6 +216,8 @@ function activateRole(role) {
   }
   // Build the ⋮ menu contents (role-switch shown only for Admin)
   _buildUserMenu();
+  // Update FAB visibility after role change
+  setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 }
 
 // Escape failsafe — callable from console if UI is ever unreachable
