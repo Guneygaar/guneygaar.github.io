@@ -207,7 +207,7 @@ delete payload.postLink;
 if (postLink) {
   if (postLink.includes('linkedin.com')) {
     payload.linkedin_link = postLink;
-  } else if (postLink.includes('canva.com')) {
+  } else {
     payload.canva_link = postLink;
   }
 }

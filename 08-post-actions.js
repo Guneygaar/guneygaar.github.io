@@ -108,7 +108,7 @@ async function saveAdminEdit() {
   if (postLink) {
     if (postLink.includes('linkedin.com')) {
       _payload.linkedin_link = postLink;
-    } else if (postLink.includes('canva.com')) {
+    } else {
       _payload.canva_link = postLink;
     }
   }
@@ -660,14 +660,19 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
   // Pipeline is the sole stage control; no Next Stage chip here.
   const pencilStyle = 'style="font-size:12px;margin-left:6px;opacity:0.55;cursor:pointer;background:none;border:none;padding:2px"';
 
+  // URL-aware label for the design link (canva_link column may hold non-Canva URLs)
+  const designLabel = canvaUrl
+    ? (canvaUrl.includes('canva.com') ? 'Canva' : canvaUrl.includes('linkedin.com') ? 'LinkedIn' : 'Design')
+    : '';
+
   let buttons = '';
   if (canvaUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>
+      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">${designLabel} ↗</a>
       ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">✎</button>` : ''}
     </div>`;
   }
-  if (isPublished && linkedinUrl) {
+  if (linkedinUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
       <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>
       ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">✎</button>` : ''}
@@ -676,7 +681,7 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
   if (!canvaUrl && canEdit) {
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','canva')">+ Design</button>`;
   }
-  if (isPublished && !linkedinUrl && canEdit) {
+  if (!linkedinUrl && canEdit) {
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','linkedin')">+ LinkedIn</button>`;
   }
 
