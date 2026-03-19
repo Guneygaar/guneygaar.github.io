@@ -98,14 +98,6 @@ function stageStyle(raw) {
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
 
-// Stage → owner mapping (explicit, no derivation)
-const STAGE_OWNER = {
-  'in production':        'Pranav',
-  'ready':                'Chitra',
-  'awaiting approval':    'Client',
-  'awaiting brand input': 'Client',
-};
-
 // Read owner directly from post — no derivation
 function getPostOwner(post) {
   return (post?.owner || '').trim() || '—';
@@ -227,22 +219,18 @@ const STRIP_STAGES = [
 ];
 
 // Canonical owner list — used by dropdowns, validation, and grid
-const ALLOWED_OWNERS = ['Pranav', 'Chitra'];
+const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Client'];
 
 // ── Stage change interceptor — logs every .stage mutation ──
 function setStage(post, newStage, source) {
-  const newOwner = STAGE_OWNER[(newStage||'').toLowerCase().trim()] || null;
   console.log('STAGE CHANGE →', {
     id: post.id || post.post_id,
     from: post.stage,
     to: newStage,
-    owner: newOwner || post.owner,
     source,
     time: Date.now(),
-    stack: new Error().stack
   });
   post.stage = newStage;
-  if (newOwner) post.owner = newOwner;
 }
 window.setStage = setStage;
 
