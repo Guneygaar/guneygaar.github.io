@@ -56,7 +56,7 @@ function openAdminEdit(postId) {
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
   const aeComm   = _ae('ae-comments');  if (aeComm) aeComm.value = post.comments || '';
-  const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || '';
+  const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || post.linkedinUrl || '';
   const sel = _ae('ae-stage');
   if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
   const aeBtn = _ae('ae-save-btn');     if (aeBtn) aeBtn.dataset.postId = postId;
@@ -98,9 +98,22 @@ async function saveAdminEdit() {
   }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
-  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, updated_at: new Date().toISOString() };
+  // Defensive: remove any invalid field names that must never reach DB
+  delete _payload.post_link;
+  delete _payload.linkedin_url;
+  delete _payload.linkedinLink;
+  delete _payload.postLink;
+  // Route link to correct DB column based on URL content
+  if (postLink) {
+    if (postLink.includes('linkedin.com')) {
+      _payload.linkedin_link = postLink;
+    } else {
+      _payload.canva_link = postLink;
+    }
+  }
   console.log('[saveAdminEdit] VALIDATION PASSED');
-  console.log('[saveAdminEdit] PAYLOAD:', _payload);
+  console.log('FINAL PAYLOAD:', JSON.stringify(_payload, null, 2));
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
@@ -179,7 +192,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ post_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ canva_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -647,14 +660,19 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
   // Pipeline is the sole stage control; no Next Stage chip here.
   const pencilStyle = 'style="font-size:12px;margin-left:6px;opacity:0.55;cursor:pointer;background:none;border:none;padding:2px"';
 
+  // URL-aware label for the design link (canva_link column may hold non-Canva URLs)
+  const designLabel = canvaUrl
+    ? (canvaUrl.includes('canva.com') ? 'Canva' : canvaUrl.includes('linkedin.com') ? 'LinkedIn' : 'Design')
+    : '';
+
   let buttons = '';
   if (canvaUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">Canva ↗</a>
+      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">${designLabel} ↗</a>
       ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">✎</button>` : ''}
     </div>`;
   }
-  if (isPublished && linkedinUrl) {
+  if (linkedinUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
       <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>
       ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">✎</button>` : ''}
@@ -663,7 +681,7 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
   if (!canvaUrl && canEdit) {
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','canva')">+ Design</button>`;
   }
-  if (isPublished && !linkedinUrl && canEdit) {
+  if (!linkedinUrl && canEdit) {
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','linkedin')">+ LinkedIn</button>`;
   }
 
@@ -780,18 +798,28 @@ async function updatePost(postId, field, value) {
     location:      'location',
     format:        'format',
     targetDate:    'target_date',
-    postLink:      'post_link',
-    linkedinUrl:   'linkedin_url',
+    postLink:      'canva_link',
+    linkedinUrl:   'linkedin_link',
     comments:      'comments',
   }[field] || field;
 
+  // Guard: reject any legacy/invalid field names before they reach DB
+  const _blocked = ['post_link', 'linkedin_url', 'linkedinLink'];
+  if (_blocked.includes(dbField)) {
+    console.error('[updatePost] BLOCKED invalid DB field:', dbField, '(from UI field:', field + ')');
+    post._isSaving = false;
+    return;
+  }
+
   // Convert stage value to DB format before sending
   const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
+  const _writePayload = { [dbField]: wireValue, updated_at: new Date().toISOString() };
+  console.log('FINAL PAYLOAD:', JSON.stringify(_writePayload, null, 2));
 
   try {
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ [dbField]: wireValue, updated_at: new Date().toISOString() }),
+      body: JSON.stringify(_writePayload),
     });
     // Apply server truth — preserves the exact memory reference
     if (Array.isArray(rows) && rows[0]) {

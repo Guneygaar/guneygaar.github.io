@@ -25,14 +25,15 @@ async function showApprovalView(postId) {
     const stage   = (post.stage||'').toLowerCase().trim();
     const title   = getTitle(post);
     const comments= post.comments || '';
-    const postLink= post.postLink || '';
+    const postLink= getPostLink(post);
+    const linkLabel = getPostLinkLabel(post);
     const {hex, label: stageLabel} = stageStyle(post.stage);
     const relDate = getRelativeDate(post.targetDate);
 
     const alreadyApproved = stage === 'scheduled' || stage === 'published';
 
     const designBlock = postLink
-      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="approval-design-link">✏ Open Post in Design Tool ↗</a>`
+      ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="approval-design-link">✏ ${linkLabel} ↗</a>`
       : `<div class="approval-no-design">No design link attached yet.</div>`;
 
     const actionsBlock = alreadyApproved

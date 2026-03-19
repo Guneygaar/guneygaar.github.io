@@ -38,8 +38,8 @@ describe('normalise', () => {
     expect(normalise(rows)[0].targetDate).toBe('2025-03-15');
   });
 
-  it('maps post_link to postLink', () => {
-    const rows = [{ post_link: 'https://example.com' }];
+  it('maps canva_link to postLink', () => {
+    const rows = [{ canva_link: 'https://example.com' }];
     expect(normalise(rows)[0].postLink).toBe('https://example.com');
   });
 
