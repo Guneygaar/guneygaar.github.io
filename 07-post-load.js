@@ -968,9 +968,10 @@ function _renderPipelineInner() {
   const activeFilter = window.pcsPipelineFilter;
   window.pcsPipelineFilter = null;
 
+  const base = allPosts.filter(p => (p.stage || '').toLowerCase().trim() !== 'published');
   const source = activeFilter && Array.isArray(activeFilter)
-    ? allPosts.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
-    : allPosts;
+    ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
+    : base;
 
   // ── PRIORITY SORT: daysInStage DESC → targetDate ASC → created_at ASC ──
   function prioritySort(posts) {
