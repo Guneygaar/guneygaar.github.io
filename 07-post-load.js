@@ -478,14 +478,14 @@ function _renderDashboardInner() {
     </div>
 
     <div class="pc-board" data-nav="pranav">
-      <div class="pc-board-label">PRANAV</div>
+      <div class="pc-board-label">Pranav</div>
       <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
       <div class="pc-board-status">PIPELINE</div>
       <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}"${pranavAction === 'CREATE' ? ' data-nav="create"' : ''}>${pranavAction}</div>
     </div>
 
     <div class="pc-board" data-nav="chitra">
-      <div class="pc-board-label">CHITRA</div>
+      <div class="pc-board-label">Chitra</div>
       <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
       <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
@@ -816,8 +816,13 @@ function buildPostCard(p, listKey) {
   const dateStr = formatDateShort(p.targetDate);
   const isToday = d && d.toDateString() === new Date().toDateString();
 
+  // Role-based dimming: primary stages are bright, others are dimmed
+  const stageLC = stage.toLowerCase().trim();
+  const isPrimary = ROLE_PRIMARY_STAGES[effectiveRole]?.includes(stageLC);
+  const dimClass = isPrimary ? 'pc-primary' : 'pc-dim';
+
   return `
-    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
+    <div class="row-tile ${dimClass}" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
       <span class="row-date${isToday ? ' today' : ''}">${esc(dateStr)}</span>
       <span class="row-body">
         <span class="row-title">${esc(title)}</span>
@@ -970,7 +975,11 @@ function _renderPipelineInner() {
   const activeFilter = window.pcsPipelineFilter;
   window.pcsPipelineFilter = null;
 
-  const base = allPosts.filter(p => (p.stage || '').toLowerCase().trim() !== 'published');
+  // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
+  const base = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return PIPELINE_RENDER_ORDER.includes(s);
+  });
   const source = activeFilter && Array.isArray(activeFilter)
     ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
     : base;
@@ -1000,7 +1009,7 @@ function _renderPipelineInner() {
   const grouped = {};
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
   const stages = Object.keys(grouped).sort((a,b) => {
-    const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b);
+    const ia = PIPELINE_RENDER_ORDER.indexOf(a), ib = PIPELINE_RENDER_ORDER.indexOf(b);
     if (ia===-1 && ib===-1) return a.localeCompare(b);
     if (ia===-1) return 1; if (ib===-1) return -1;
     return ia - ib;
@@ -1052,9 +1061,13 @@ function _renderPipelineInner() {
 }
 
 
+function _toTitleCase(str) {
+  return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function populateFilterDropdowns() {
-  const _LIB_STAGES_DD = ['published','scheduled','parked','rejected'];
-  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].filter(s => _LIB_STAGES_DD.includes(s.toLowerCase().trim())).sort();
+  // Fixed order for library stage dropdown
+  const LIBRARY_STAGE_ORDER = ['scheduled','published','parked','rejected'];
   const owners  = ['PRANAV','CHITRA','CLIENT'];
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
@@ -1067,8 +1080,8 @@ function populateFilterDropdowns() {
   const curOwner  = ownerEl.value;
   const curPillar = pillarEl?.value || '';
 
-  stageEl.innerHTML  = `<option value="">Stage</option>`  + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
-  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  stageEl.innerHTML  = `<option value="">Stage</option>`  + LIBRARY_STAGE_ORDER.map(s=>`<option value="${esc(s)}">${esc(_toTitleCase(s))}</option>`).join('');
+  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(formatOwner(o))}</option>`).join('');
   if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(formatPillarDisplay(p))}</option>`).join('');
 
   stageEl.value  = curStage;

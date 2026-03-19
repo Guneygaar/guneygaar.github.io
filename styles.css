@@ -3153,6 +3153,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   scroll-margin-top: 16px;
 }
 
+/* Role-based dimming — primary stages bright, others dimmed */
+.row-tile.pc-primary { opacity: 1; }
+.row-tile.pc-dim     { opacity: 0.35; filter: grayscale(0.3); }
+
 .row-date {
   grid-column: 1;
   font-family: var(--font-mono, monospace);
