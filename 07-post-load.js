@@ -340,6 +340,41 @@ function flashScoreboard() {
   setTimeout(() => el.classList.remove('score-flash'), 350);
 }
 
+function getTopTask() {
+  const role = window.effectiveRole || '';
+  const email = localStorage.getItem('gbl_email') || '';
+
+  // 1. Assigned task (highest priority)
+  const assigned = (window.allTasks || []).find(t => {
+    if (t.done) return false;
+    const a = (t.assigned_to || '').toLowerCase();
+    return a === role.toLowerCase() || (email && a.includes(email.split('@')[0].toLowerCase()));
+  });
+  if (assigned) {
+    return { type: 'assigned', text: assigned.message || 'Complete assigned task', postId: assigned.post_id || null };
+  }
+
+  // 2. Awaiting Approval (follow-up needed)
+  const approval = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'awaiting approval');
+  if (approval) {
+    return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval), postId: getPostId(approval) };
+  }
+
+  // 3. Ready (needs to be sent)
+  const ready = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'ready');
+  if (ready) {
+    return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready), postId: getPostId(ready) };
+  }
+
+  // 4. In Production (execution needed)
+  const prod = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'in production');
+  if (prod) {
+    return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod), postId: getPostId(prod) };
+  }
+
+  return null;
+}
+
 // ═══════════════════════════════════════════════
 // Dashboard — Hero, Pipeline, Blockers
 // ═══════════════════════════════════════════════
@@ -404,6 +439,17 @@ function computeDelayMeta(posts) {
       unknownDelayCount: enrichedPosts.filter(p => p.delayType === 'unknown').length,
     }
   };
+}
+
+function _buildTopTaskHtml() {
+  if (window.effectiveRole === 'Client') return '';
+  const task = getTopTask();
+  if (!task) return '';
+  const onclick = task.postId ? ` data-nav="top-task" data-post-id="${esc(task.postId)}"` : '';
+  return `<div class="top-task"${onclick}>
+    <div class="top-task-label">DO THIS NOW</div>
+    <div class="top-task-text">${esc(task.text)}</div>
+  </div>`;
 }
 
 function renderDashboard() {
@@ -561,11 +607,21 @@ function _renderDashboardInner() {
       </div>
     </div>
 
+    ${_buildTopTaskHtml()}
+
   </div>`;
 
   // ═══════════════════════════════════════════════
   // CLICK DELEGATION
   // ═══════════════════════════════════════════════
+
+  const topTaskEl = el.querySelector('[data-nav="top-task"]');
+  if (topTaskEl) {
+    topTaskEl.addEventListener('click', () => {
+      const pid = topTaskEl.dataset.postId;
+      if (pid) openPCS(pid);
+    });
+  }
 
   el.querySelector('[data-nav="runway"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['scheduled']);

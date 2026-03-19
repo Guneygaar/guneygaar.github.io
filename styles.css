@@ -1066,6 +1066,32 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.5px;
 }
 
+/* ── Top Task ── */
+.top-task {
+  padding: 12px 14px;
+  margin-top: 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-md);
+  background: rgba(232, 195, 122, 0.06);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.top-task:active { transform: scale(0.98); }
+.top-task-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.top-task-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
 /* ═══════════════════════════════════════════════
    Legacy classes — hidden, kept for JS compat
 ═══════════════════════════════════════════════ */
