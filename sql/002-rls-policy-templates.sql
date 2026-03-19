@@ -1,0 +1,113 @@
+-- ═══════════════════════════════════════════════════════════════
+-- FIX 3 — RLS Policy Templates (NOT auto-applied)
+-- ═══════════════════════════════════════════════════════════════
+--
+-- STATUS: The posts table currently has NO user_id or workspace_id
+-- column. These policies CANNOT be applied until one is added.
+--
+-- This file provides ready-to-run SQL for BOTH patterns.
+-- Choose ONE when the schema is ready.
+--
+-- ═══════════════════════════════════════════════════════════════
+
+
+-- ─────────────────────────────────────────────────────────────
+-- OPTION A: Per-user isolation (user_id column)
+-- ─────────────────────────────────────────────────────────────
+-- Pre-requisite:
+--   ALTER TABLE posts ADD COLUMN user_id uuid REFERENCES auth.users(id);
+--   UPDATE posts SET user_id = '<your-admin-user-uuid>' WHERE user_id IS NULL;
+--   ALTER TABLE posts ALTER COLUMN user_id SET NOT NULL;
+--
+-- Then run:
+
+-- ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY posts_select_own ON posts
+--   FOR SELECT USING (auth.uid() = user_id);
+--
+-- CREATE POLICY posts_insert_own ON posts
+--   FOR INSERT WITH CHECK (auth.uid() = user_id);
+--
+-- CREATE POLICY posts_update_own ON posts
+--   FOR UPDATE USING (auth.uid() = user_id);
+--
+-- CREATE POLICY posts_delete_own ON posts
+--   FOR DELETE USING (auth.uid() = user_id);
+
+
+-- ─────────────────────────────────────────────────────────────
+-- OPTION B: Per-workspace isolation (workspace_id column)
+-- ─────────────────────────────────────────────────────────────
+-- Pre-requisite:
+--   CREATE TABLE IF NOT EXISTS workspace_members (
+--     workspace_id uuid NOT NULL,
+--     user_id      uuid NOT NULL REFERENCES auth.users(id),
+--     PRIMARY KEY (workspace_id, user_id)
+--   );
+--   ALTER TABLE posts ADD COLUMN workspace_id uuid;
+--   UPDATE posts SET workspace_id = '<your-workspace-uuid>' WHERE workspace_id IS NULL;
+--   ALTER TABLE posts ALTER COLUMN workspace_id SET NOT NULL;
+--
+-- Then run:
+
+-- ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY posts_select_workspace ON posts
+--   FOR SELECT USING (
+--     EXISTS (
+--       SELECT 1 FROM workspace_members wm
+--       WHERE wm.workspace_id = posts.workspace_id
+--         AND wm.user_id = auth.uid()
+--     )
+--   );
+--
+-- CREATE POLICY posts_insert_workspace ON posts
+--   FOR INSERT WITH CHECK (
+--     EXISTS (
+--       SELECT 1 FROM workspace_members wm
+--       WHERE wm.workspace_id = posts.workspace_id
+--         AND wm.user_id = auth.uid()
+--     )
+--   );
+--
+-- CREATE POLICY posts_update_workspace ON posts
+--   FOR UPDATE USING (
+--     EXISTS (
+--       SELECT 1 FROM workspace_members wm
+--       WHERE wm.workspace_id = posts.workspace_id
+--         AND wm.user_id = auth.uid()
+--     )
+--   );
+--
+-- CREATE POLICY posts_delete_workspace ON posts
+--   FOR DELETE USING (
+--     EXISTS (
+--       SELECT 1 FROM workspace_members wm
+--       WHERE wm.workspace_id = posts.workspace_id
+--         AND wm.user_id = auth.uid()
+--     )
+--   );
+
+
+-- ─────────────────────────────────────────────────────────────
+-- VERIFICATION (after applying either option):
+-- ─────────────────────────────────────────────────────────────
+--
+--   1. Confirm RLS is enabled:
+--      SELECT relname, relrowsecurity
+--      FROM pg_class WHERE relname = 'posts';
+--      -- relrowsecurity should be TRUE
+--
+--   2. Confirm policies exist:
+--      SELECT policyname, cmd, qual
+--      FROM pg_policies WHERE tablename = 'posts';
+--
+--   3. Test isolation:
+--      -- As user A: SELECT * FROM posts;  → should see only their posts
+--      -- As user B: SELECT * FROM posts;  → should see only their posts
+--
+--   4. IMPORTANT: service_role key bypasses RLS.
+--      Ensure frontend NEVER uses service_role key.
+--      Current code uses anon key (SUPABASE_KEY) — correct.
+-- ═══════════════════════════════════════════════════════════════

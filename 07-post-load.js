@@ -6,10 +6,9 @@ console.log("LOADED:", "07-post-load.js");
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // ── Central merge — the ONLY way to update allPosts from server data ──
-// Preserves _dirtyAt on posts with recent local changes (< 5s window).
+// Skips posts with _dirty === true (in-flight PATCH).
 // Never replaces allPosts blindly — always mutates existing objects in-place.
 function mergePosts(fresh) {
-  const now = Date.now();
   const map = new Map(allPosts.map(p => [getPostId(p), p]));
 
   fresh.forEach(fp => {
@@ -21,16 +20,13 @@ function mergePosts(fresh) {
       return;
     }
 
-    // Time-based protection: skip overwrite if local change happened < 5s ago
-    if (existing._dirtyAt && (now - existing._dirtyAt < 5000)) {
-      console.log('[PCS] MERGE SKIP (age=' + (now - existing._dirtyAt) + 'ms):', id, 'local=' + existing.stage, 'server=' + fp.stage);
+    // Skip overwrite while a PATCH is in-flight for this post
+    if (existing._dirty) {
+      console.log('[PCS] MERGE SKIP (dirty):', id, 'local=' + existing.stage, 'server=' + fp.stage);
       return;
     }
 
-    // Window expired or no local change — clean up and let server win
-    delete existing._dirty;
-    delete existing._dirtyAt;
-
+    // No in-flight write — let server win
     // Log stage change from poll merge BEFORE Object.assign overwrites it
     if (existing.stage !== fp.stage) {
       setStage(existing, fp.stage, 'poll_merge');
