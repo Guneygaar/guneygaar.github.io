@@ -68,6 +68,21 @@ function mergePosts(fresh) {
   cachedPosts = allPosts;
 }
 
+// ── Versioned load guard — prevents stale responses from overriding fresh data ──
+function _newPostsRequest() {
+  window._postsReqId += 1;
+  return window._postsReqId;
+}
+
+function _isStaleRequest(reqId) {
+  return reqId !== window._postsReqId;
+}
+
+function _commitPostsLoaded(source) {
+  window._postsLoaded = true;
+  window._postsSource = source;
+}
+
 function showLoadingSkeleton(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -76,21 +91,22 @@ function showLoadingSkeleton(containerId) {
 
 async function loadPosts() {
   showLoadingSkeleton('tasks-container');
+  const reqId = _newPostsRequest();
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
+    if (_isStaleRequest(reqId)) return;
     mergePosts(normalise(data));
-    window._postsLoaded = true;
-    window._postsSource = 'network';
+    _commitPostsLoaded('network');
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
   } catch (err) {
+    if (_isStaleRequest(reqId)) return;
     console.error('loadPosts:', err);
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      window._postsLoaded = true;
-      window._postsSource = 'cache';
+      _commitPostsLoaded('cache');
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -111,19 +127,20 @@ async function loadPosts() {
 }
 
 async function loadPostsForClient() {
+  const reqId = _newPostsRequest();
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    if (_isStaleRequest(reqId)) return;
     mergePosts(normalise(data));
-    window._postsLoaded = true;
-    window._postsSource = 'network';
+    _commitPostsLoaded('network');
     hideErrorBanner();
     renderClientView();
   } catch (err) {
+    if (_isStaleRequest(reqId)) return;
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      window._postsLoaded = true;
-      window._postsSource = 'cache';
+      _commitPostsLoaded('cache');
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
