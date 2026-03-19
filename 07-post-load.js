@@ -210,15 +210,43 @@ async function assignTask() {
 
 async function markTaskDone(id) {
   const el = document.getElementById(`task-item-${id}`);
-  if (el) el.style.opacity = '0.4';
+  const btn = el?.querySelector('.btn-task-done');
+
+  // Double-click guard
+  if (btn?.disabled) return;
+  if (btn) btn.disabled = true;
+
+  // Optimistic UI
+  if (el) el.classList.add('task-done');
+
   try {
     await apiFetch(`/tasks?id=eq.${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ done: true }),
     });
-    showToast('Task marked done OK', 'success');
-    await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); if (el) el.style.opacity = ''; }
+    console.log('[Task] Completed:', id);
+    showToast('\u2713 Task completed', 'success');
+    // UX delay — let user see the strike-through, then refresh everything
+    setTimeout(async () => {
+      try {
+        await loadTasks();
+        // Refresh posts → mergePosts → scheduleRender → updateStats (scoreboard)
+        const data = await apiFetch('/posts?select=*&order=id.desc');
+        mergePosts(normalise(data));
+        scheduleRender();
+        flashScoreboard();
+        console.log('[Task\u2192Scoreboard] Synced');
+      } catch (err) {
+        console.error('[Task\u2192Scoreboard] Sync failed:', err);
+      }
+    }, 600);
+  } catch (err) {
+    console.error('[Task] Failed:', err);
+    showToast('Failed - try again', 'error');
+    // Rollback
+    if (el) el.classList.remove('task-done');
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function deleteTask(id) {
@@ -302,6 +330,90 @@ function updateBadge(id, count) {
   if (el) { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; }
 }
 
+function flashScoreboard() {
+  const el = document.getElementById('pcs-dashboard');
+  if (!el) return;
+  el.classList.remove('score-flash');
+  // Force reflow so re-adding the class triggers animation
+  void el.offsetWidth;
+  el.classList.add('score-flash');
+  setTimeout(() => el.classList.remove('score-flash'), 350);
+}
+
+function _ttNorm(v) { return (v || '').toString().trim().toLowerCase(); }
+
+function _ttIsMine(task, role, emailPrefix) {
+  const a = _ttNorm(task.assigned_to);
+  return a === role || (emailPrefix && a.includes(emailPrefix));
+}
+
+function _ttOldestFirst(a, b) {
+  return new Date(a.created_at || a.createdAt || 0) - new Date(b.created_at || b.createdAt || 0);
+}
+
+function _ttByStage(stage) {
+  return allPosts
+    .filter(p => _ttNorm(p.stage) === stage)
+    .sort(_ttOldestFirst);
+}
+
+function _ttTruncate(str, n = 42) {
+  if (!str) return '';
+  return str.length > n ? str.slice(0, n) + '\u2026' : str;
+}
+
+function getTopTask() {
+  const postMap = Object.fromEntries(
+    allPosts.map(p => [getPostId(p), p])
+  );
+  function _ttPostTitle(postId) {
+    if (!postId) return '';
+    const p = postMap[postId];
+    return p ? getTitle(p) : '';
+  }
+
+  const role = _ttNorm(window.effectiveRole || '');
+  const email = localStorage.getItem('gbl_email') || '';
+  const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
+
+  // 1. ASSIGNED TASKS (highest priority for all roles)
+  const myTasks = (window.allTasks || [])
+    .filter(t => !t.done && _ttIsMine(t, role, emailPrefix))
+    .sort(_ttOldestFirst);
+  if (myTasks.length) {
+    const t = myTasks[0];
+    const msg = t.message || 'Complete assigned task';
+    const title = _ttPostTitle(t.post_id);
+    return { type: 'assigned', text: title ? msg + ' \u2014 ' + _ttTruncate(title) : msg, postId: t.post_id || null };
+  }
+
+  // 2. ROLE-BASED PRIORITY
+
+  if (role === 'pranav') {
+    const prod = _ttByStage('in production');
+    if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
+    return null;
+  }
+
+  if (role === 'chitra') {
+    const approval = _ttByStage('awaiting approval');
+    if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+    const ready = _ttByStage('ready');
+    if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+    return null;
+  }
+
+  // Admin — sees everything: approval → ready → production
+  const approval = _ttByStage('awaiting approval');
+  if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+  const ready = _ttByStage('ready');
+  if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+  const prod = _ttByStage('in production');
+  if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
+
+  return null;
+}
+
 // ═══════════════════════════════════════════════
 // Dashboard — Hero, Pipeline, Blockers
 // ═══════════════════════════════════════════════
@@ -366,6 +478,22 @@ function computeDelayMeta(posts) {
       unknownDelayCount: enrichedPosts.filter(p => p.delayType === 'unknown').length,
     }
   };
+}
+
+function _buildTopTaskHtml() {
+  if (window.effectiveRole === 'Client') return '';
+  const task = getTopTask();
+  if (!task) {
+    return `<div class="top-task top-task--empty">
+      <div class="top-task-label">STATUS</div>
+      <div class="top-task-text">No actions pending</div>
+    </div>`;
+  }
+  const attrs = task.postId ? ` data-nav="top-task" data-post-id="${esc(task.postId)}"` : '';
+  return `<div class="top-task"${attrs}>
+    <div class="top-task-label">DO THIS NOW</div>
+    <div class="top-task-text">${esc(task.text)}</div>
+  </div>`;
 }
 
 function renderDashboard() {
@@ -523,11 +651,21 @@ function _renderDashboardInner() {
       </div>
     </div>
 
+    ${_buildTopTaskHtml()}
+
   </div>`;
 
   // ═══════════════════════════════════════════════
   // CLICK DELEGATION
   // ═══════════════════════════════════════════════
+
+  const topTaskEl = el.querySelector('[data-nav="top-task"]');
+  if (topTaskEl) {
+    topTaskEl.addEventListener('click', () => {
+      const pid = topTaskEl.dataset.postId;
+      if (pid) openPCS(pid);
+    });
+  }
 
   el.querySelector('[data-nav="runway"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['scheduled']);
