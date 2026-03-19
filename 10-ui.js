@@ -376,7 +376,7 @@ function toggleFabMenu() {
   backdrop.classList.toggle('open', open);
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
-  if (reqBtn) reqBtn.style.display = currentRole === 'Creative' ? 'none' : '';
+  if (reqBtn) reqBtn.style.display = '';
 }
 
 function closeFabMenu() {

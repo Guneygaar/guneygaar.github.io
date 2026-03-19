@@ -248,15 +248,12 @@ function updateStats() {
   const today   = new Date(); today.setHours(0,0,0,0);
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
-  let creativeRequests=0;
   allPosts.forEach(p => {
     const stage = (p.stage||'').toLowerCase().trim();
     if (stage === 'published') published++;
     if (stage.includes('approval')) awaitingApproval++;
     if (!['published','archive'].includes(stage)) inPipeline++;
     if (stage === 'ready') readyToSend++;
-    if (stage === 'awaiting brand input') creativeRequests++;
-    // stage counter removed
     const d = parseDate(p.targetDate);
     if (d) {
       if (d > today && d <= weekEnd) dueWeek++;
@@ -270,9 +267,7 @@ function updateStats() {
   setText('s-week',      dueWeek);
   setText('s-overdue',   overdue);
   setText('s-ready',     `${readyToSend}/${READY_TO_SEND_TARGET}`);
-  setText('s-creative-requests',  creativeRequests);
-  // stat removed
-  setText('s-creative-gap',       `${readyToSend}/${READY_TO_SEND_TARGET}`);
+  // Legacy stats removed
   updateBadge('badge-tasks',    getMyTasks().length);
   updateBadge('badge-upcoming', getUpcoming().length);
 }
@@ -688,7 +683,7 @@ function closeParked() {
 function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
-  if (!['Servicing','Creative'].includes(currentRole)) { section.innerHTML = ''; return; }
+  if (currentRole === 'Client') { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('gbl_email') || '';
   const roleName = currentRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
@@ -740,23 +735,15 @@ function staleClass(days) {
 function getMyTasks() {
   const allowed = ROLE_STAGES[currentRole];
   if (!allowed) return allPosts;
-  const filtered = allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
-  if (currentRole === 'Creative') {
-    filtered.sort((a,b) => {
-      const ia = CREATIVE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
-      const ib = CREATIVE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
-      return (ia===-1?99:ia) - (ib===-1?99:ib);
-    });
-  }
-  return filtered;
+  return allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
 }
 
 function getNextPost() {
   const posts = getMyTasks();
   if (!posts.length) return null;
   return [...posts].sort((a,b) => {
-    const ia = NEXT_POST_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
-    const ib = NEXT_POST_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
+    const ia = STAGE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
+    const ib = STAGE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
     return (ia===-1?99:ia) - (ib===-1?99:ib);
   })[0] || null;
 }
@@ -777,10 +764,10 @@ function getRelativeDate(rawDate) {
 function renderNextPost() {
   const section = document.getElementById('next-post-section');
   if (!section) return;
-  if (!['Admin','Creative','Servicing'].includes(currentRole)) { section.innerHTML=''; return; }
+  if (currentRole === 'Client') { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
-    section.innerHTML = `<div class="hero-card"><div class="hero-label">${currentRole === 'Creative' ? 'Current Job' : 'Most Urgent Post'}</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
+    section.innerHTML = `<div class="hero-card"><div class="hero-label">Most Urgent Post</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
     return;
   }
   const id        = getPostId(post);
@@ -796,17 +783,17 @@ function renderNextPost() {
   const days      = daysInStage(post);
   const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
-  const canUpdate = ['Admin','Servicing'].includes(currentRole);
+  const canUpdate = currentRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
   if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
   else if (stageLC === 'in production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
   else if (stageLC === 'ready') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','awaiting approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','scheduled')`; }
   else if (stageLC === 'awaiting approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
   else { primaryLabel='Update Stage'; primaryAction=`openPCS('${esc(id)}')`; }
-  const heroLabel = currentRole === 'Creative' ? 'Current Job' : currentRole === 'Servicing' ? 'Needs Your Attention' : 'Most Urgent';
+  const heroLabel = 'Most Urgent';
   let staleNote = '';
-  if (stLabel && currentRole === 'Servicing') staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">[T] ${stLabel} in this stage</div>`;
-  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] Open in Canva ^</a>` : currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="${currentRole==='Admin' ? `openAdminEdit('${esc(id)}')` : `openPCS('${esc(id)}')`}" title="Edit post">...</button>` : ''}</div></div>`;
+  if (stLabel) staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">[T] ${stLabel} in this stage</div>`;
+  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] Open in Canva ^</a>` : (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${(stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="openPCS('${esc(id)}')" title="Edit post">...</button>` : ''}</div></div>`;
 }
 
 function toggleHeroComments(id, btn) {
@@ -934,7 +921,7 @@ function _renderTasksInner() {
   const stagesHtml = buckets.map(bucket => {
     const posts = allPosts
       .filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
-      .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+      .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
     _postLists[listKey] = posts;
     const count    = posts.length;
@@ -1268,10 +1255,10 @@ function renderClientApproved() {
   tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
 }
 
-// -- Fix 20: Creative Target Tracker ----------
+// -- Production Tracker ----------
 function renderCreativeTracker() {
   const section = document.getElementById('admin-insight-section');
-  if (!section || currentRole !== 'Creative') return;
+  if (!section || currentRole === 'Client') return;
   const now  = Date.now();
   const DAY  = 86400000;
   const weekAgo = now - 7 * DAY;

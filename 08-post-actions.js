@@ -397,7 +397,7 @@ function _renderPCS(postId) {
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
-  const canEdit     = ['Admin','Servicing'].includes(currentRole);
+  const canEdit     = currentRole !== 'Client';
   const dateValue   = isPublished ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
 
   // 3. Render into DOM
@@ -705,7 +705,7 @@ async function pcsSaveAttach(postId) {
     const isPublished = stageLC === 'published';
     const canvaUrl    = post.postLink || '';
     const linkedinUrl = post.linkedinUrl || '';
-    const canEdit = ['Admin','Servicing'].includes(currentRole);
+    const canEdit = currentRole !== 'Client';
     const el = document.getElementById('pcs-action-btn-wrap');
     if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
   }

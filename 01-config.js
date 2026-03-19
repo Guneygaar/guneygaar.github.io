@@ -170,45 +170,48 @@ function formatOwner(name) {
 
 // -------------------------------------------------------
 // ROLE & WORKFLOW CONFIG
+// Only 3 actors: Pranav, Chitra, Client
+// Legacy role names (Admin/Servicing/Creative) still flow from auth
+// but all map to the same unified config for non-Client users.
 // -------------------------------------------------------
 
+// All non-Client roles see all stages (null = no filter)
 const ROLE_STAGES = {
   'Admin':     null,
-  'Servicing': ['awaiting approval','ready','scheduled'],
-  'Creative':  ['in production','awaiting brand input'],
+  'Servicing': null,
+  'Creative':  null,
 };
 
+// All non-Client roles get full tab access
+const _FULL_TABS = ['tasks','pipeline','upcoming','library'];
 const ROLE_TABS = {
-  'Admin':     ['tasks','pipeline','upcoming','library'],
-  'Servicing': ['tasks','upcoming','library'],
-  'Creative':  ['tasks','library'],
+  'Admin':     _FULL_TABS,
+  'Servicing': _FULL_TABS,
+  'Creative':  _FULL_TABS,
   'Client':    [],
 };
 
+// All non-Client roles see the same stats
+const _FULL_STATS = ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'];
 const ROLE_STATS = {
-  'Admin':     ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'],
-  'Servicing': ['s-approval','s-ready','s-week'],
-  'Creative':  ['s-creative-requests','s-creative-gap'],
+  'Admin':     _FULL_STATS,
+  'Servicing': _FULL_STATS,
+  'Creative':  _FULL_STATS,
   'Client':    [],
 };
 
+// Unified task buckets — same for all non-Client roles
+const _UNIFIED_BUCKETS = [
+  { key:'production', label:'In Production',stages:['in production'] },
+  { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
+  { key:'ready',      label:'Ready',        stages:['ready'] },
+  { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
+  { key:'scheduled',  label:'Scheduled',    stages:['scheduled'] },
+];
 const ROLE_BUCKETS = {
-  Admin: [
-    { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
-    { key:'production', label:'In Production',stages:['in production'] },
-    { key:'ready',      label:'Ready',        stages:['ready'] },
-    { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
-    { key:'scheduled',  label:'Scheduled',    stages:['scheduled'] },
-  ],
-  Servicing: [
-    { key:'waiting',    label:'Waiting for Client', stages:['awaiting brand input','awaiting approval'] },
-    { key:'ready',      label:'Ready',               stages:['ready'] },
-    { key:'scheduled',  label:'Scheduled',           stages:['scheduled'] },
-  ],
-  Creative: [
-    { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
-    { key:'production', label:'In Production',stages:['in production'] },
-  ],
+  Admin:     _UNIFIED_BUCKETS,
+  Servicing: _UNIFIED_BUCKETS,
+  Creative:  _UNIFIED_BUCKETS,
 };
 
 const STRIP_STAGES = [
@@ -221,7 +224,7 @@ const STRIP_STAGES = [
 ];
 
 // Canonical owner list — used by dropdowns, validation, and grid
-const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Admin'];
+const ALLOWED_OWNERS = ['Pranav', 'Chitra'];
 
 // ── Stage change interceptor — logs every .stage mutation ──
 function setStage(post, newStage, source) {
@@ -237,5 +240,5 @@ function setStage(post, newStage, source) {
 }
 window.setStage = setStage;
 
-const CREATIVE_URGENCY  = ['awaiting brand input','in production'];
-const NEXT_POST_URGENCY = ['awaiting brand input','in production','ready','awaiting approval'];
+// Stage priority ordering for next-post selection
+const STAGE_URGENCY = ['awaiting brand input','in production','ready','awaiting approval'];
