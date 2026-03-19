@@ -1066,17 +1066,31 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.5px;
 }
 
-/* ── Retro Industrial Scoreboard ── */
+/* ══════════════════════════════════════════════════
+   RETRO INDUSTRIAL SCOREBOARD — CONSOLIDATED
+   Single source of truth. No duplicate selectors.
+══════════════════════════════════════════════════ */
 
-/* Outer frame — hardware casing */
+/* ── Global reset inside scoreboard ── */
+.pcs-scoreboard *,
+.pcs-scoreboard *::before,
+.pcs-scoreboard *::after {
+  border-radius: 0 !important;
+}
+
+/* ── 0. Outer Frame ── */
 .pcs-scoreboard {
   width: 100%;
   max-width: 420px;
   height: 100vh;
   margin: 0 auto;
-  border: 3px solid #2a2a2a;
   padding: 8px;
-  background: #0a0a0a;
+  border: 2px solid #2a2a2a;
+  background: linear-gradient(180deg, #0c0c0c, #050505);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 0 1px #3a3a3a,
+    inset 0 8px 20px rgba(0,0,0,0.9);
   font-family: 'Roboto Mono', monospace;
   color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
@@ -1084,10 +1098,10 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 
-/* Inner frame — device cavity */
+/* ── 0b. Inner Cavity ── */
 .sb-inner {
   border: 1px solid #3a3a3a;
-  background: #0a0a0a;
+  background: linear-gradient(180deg, #0c0c0c, #050505);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -1097,8 +1111,12 @@ a:hover { text-decoration: underline; }
 .sb-critical-panel {
   height: 96px;
   flex-shrink: 0;
-  background: #140909;
-  border-bottom: 1px solid #3a1a1a;
+  padding: 8px 6px;
+  background: linear-gradient(180deg, #3a0f0f 0%, #140707 100%);
+  border-bottom: 2px solid rgba(255,60,60,0.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,80,80,0.2),
+    inset 0 -4px 12px rgba(0,0,0,0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1111,7 +1129,8 @@ a:hover { text-decoration: underline; }
   letter-spacing: 2px;
   text-transform: uppercase;
   color: #FF3B30;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  line-height: 1.1;
 }
 .sb-critical-num {
   font-size: 48px;
@@ -1119,6 +1138,11 @@ a:hover { text-decoration: underline; }
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: #FF3B30;
+  letter-spacing: -1px;
+  text-shadow:
+    0 0 12px currentColor,
+    0 0 28px rgba(255,0,0,0.6);
+  filter: contrast(1.1) brightness(1.05);
 }
 
 /* ── 2. Main Scoreboard ── */
@@ -1130,17 +1154,43 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid #333;
 }
 .sb-divider {
-  background: #444;
   width: 4px;
+  background: linear-gradient(
+    180deg,
+    #111 0%,
+    #555 40%,
+    #999 50%,
+    #555 60%,
+    #111 100%
+  );
+  box-shadow:
+    inset 0 0 6px rgba(0,0,0,0.8),
+    0 0 4px rgba(255,255,255,0.08);
 }
 .sb-main-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 12px 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  background:
+    linear-gradient(180deg, #111 0%, #0a0a0a 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -2px 6px rgba(0,0,0,0.9);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.04);
+  border-right: 1px solid rgba(0,0,0,0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.9);
 }
 .sb-main-cell:active { opacity: 0.8; }
 .sb-main-label {
@@ -1149,13 +1199,19 @@ a:hover { text-decoration: underline; }
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: #888;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
+  line-height: 1.1;
 }
 .sb-main-num {
   font-size: 72px;
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -1px;
+  text-shadow:
+    0 0 8px currentColor,
+    0 0 16px rgba(0,0,0,0.8);
+  filter: contrast(1.2) brightness(1.1);
 }
 .sb-main-num.gold { color: #FFD700; }
 .sb-main-num.green { color: #00C853; }
@@ -1165,7 +1221,7 @@ a:hover { text-decoration: underline; }
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: #888;
-  margin-top: 12px;
+  margin-top: 4px;
 }
 
 /* ── 3. Client Strip ── */
@@ -1173,30 +1229,51 @@ a:hover { text-decoration: underline; }
   height: 120px;
   flex-shrink: 0;
   display: grid;
-  grid-template-columns: 1fr 1px 1fr;
+  grid-template-columns: 1fr 2px 1fr;
   border-bottom: 1px solid #333;
 }
 .sb-client-divider {
+  width: 2px;
   background: #444;
-  width: 1px;
 }
 .sb-client-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 10px 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.85;
+  background:
+    linear-gradient(180deg, #111 0%, #0a0a0a 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255,255,255,0.03) 0px,
+      rgba(255,255,255,0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -2px 6px rgba(0,0,0,0.9);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  border-left: 1px solid rgba(255,255,255,0.04);
+  border-right: 1px solid rgba(0,0,0,0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.9);
 }
 .sb-client-cell:active { opacity: 0.7; }
 .sb-client-num {
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: #FF3B30;
+  letter-spacing: -1px;
+  text-shadow:
+    0 0 6px currentColor,
+    0 0 12px rgba(0,0,0,0.6);
+  filter: contrast(1.1) brightness(1.05);
 }
 .sb-client-label {
   font-size: 12px;
@@ -1205,6 +1282,9 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: #888;
   margin-top: 8px;
+  margin-bottom: 4px;
+  line-height: 1.1;
+  opacity: 0.7;
 }
 
 /* ── 4. Task Bar ── */
@@ -1215,7 +1295,10 @@ a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
-  border-top: 1px solid #333;
+  background: linear-gradient(180deg, #090909, #030303);
+  border-top: 2px solid rgba(255,255,255,0.06);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,0.9);
 }
 .sb-task-content {
   flex: 1;
@@ -1228,6 +1311,7 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase;
   color: #888;
   margin-bottom: 4px;
+  line-height: 1.1;
 }
 .sb-task-text {
   font-size: 12px;
@@ -1260,163 +1344,6 @@ a:hover { text-decoration: underline; }
   -webkit-tap-highlight-color: transparent;
 }
 .sb-fab:active { opacity: 0.8; }
-
-/* ================================
-   PCS SCOREBOARD — MATERIAL PATCH v2
-   Machined metal + LED + depth
-================================ */
-
-/* 1. FRAME — outer casing surface */
-.pcs-scoreboard {
-  background:
-    linear-gradient(180deg, #0c0c0c, #050505);
-  border: 2px solid #2a2a2a;
-  box-shadow:
-    0 0 0 1px #000,
-    inset 0 0 0 1px #3a3a3a,
-    inset 0 8px 20px rgba(0,0,0,0.9);
-}
-
-/* 2. INNER CAVITY — clean vertical gradient */
-.pcs-scoreboard .sb-inner {
-  background: linear-gradient(180deg, #0c0c0c, #050505);
-}
-
-/* 3. PANEL SURFACES — inset machined depth */
-.sb-main-cell,
-.sb-client-cell {
-  background:
-    linear-gradient(180deg, #111 0%, #0a0a0a 100%),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,0.03) 0px,
-      rgba(255,255,255,0.03) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -2px 6px rgba(0,0,0,0.9);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-left: 1px solid rgba(255,255,255,0.04);
-  border-right: 1px solid rgba(0,0,0,0.6);
-  border-bottom: 1px solid rgba(0,0,0,0.9);
-}
-
-/* 4. CRITICAL PANEL — red depth override */
-.sb-critical-panel {
-  background:
-    linear-gradient(180deg, #3a0f0f 0%, #140707 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255,80,80,0.2),
-    inset 0 -4px 12px rgba(0,0,0,0.9);
-  border-bottom: 2px solid rgba(255,60,60,0.25);
-}
-
-/* 5. TASK BAR — inset console panel */
-.sb-task-bar {
-  background: linear-gradient(180deg, #090909, #030303);
-  border-top: 2px solid rgba(255,255,255,0.06);
-  box-shadow:
-    inset 0 2px 6px rgba(0,0,0,0.9);
-}
-
-/* 6. DIVIDER = MACHINED SPINE */
-.sb-divider {
-  width: 4px;
-  background: linear-gradient(
-    180deg,
-    #111 0%,
-    #555 40%,
-    #999 50%,
-    #555 60%,
-    #111 100%
-  );
-  box-shadow:
-    inset 0 0 6px rgba(0,0,0,0.8),
-    0 0 4px rgba(255,255,255,0.08);
-}
-
-/* Client divider — lighter spine */
-.sb-client-divider {
-  width: 2px;
-  background: #444;
-}
-
-/* 7. NUMBERS — tight LED glow */
-.sb-client-num {
-  letter-spacing: -1px;
-  text-shadow:
-    0 0 6px currentColor,
-    0 0 12px rgba(0,0,0,0.6);
-  filter: contrast(1.1) brightness(1.05);
-}
-.sb-main-num {
-  letter-spacing: -1px;
-  text-shadow:
-    0 0 8px currentColor,
-    0 0 16px rgba(0,0,0,0.8);
-  filter: contrast(1.2) brightness(1.1);
-}
-
-/* Critical number — stronger red LED */
-.sb-critical-num {
-  letter-spacing: -1px;
-  text-shadow:
-    0 0 12px currentColor,
-    0 0 28px rgba(255,0,0,0.6);
-  filter: contrast(1.1) brightness(1.05);
-}
-
-/* 8. COMPRESSION — device-tight spacing */
-.sb-critical-panel {
-  padding: 8px 6px;
-}
-
-.sb-main-cell {
-  padding: 12px 6px;
-}
-
-.sb-client-cell {
-  padding: 10px 6px;
-}
-
-.sb-main-label,
-.sb-client-label,
-.sb-task-label {
-  margin-bottom: 4px;
-  line-height: 1.1;
-}
-
-.sb-main-sub {
-  margin-top: 4px;
-}
-
-.sb-critical-label {
-  margin-bottom: 4px;
-  line-height: 1.1;
-}
-
-/* Client numbers — boosted for pressure */
-.sb-client-strip .sb-client-num {
-  font-size: 42px;
-}
-
-.sb-client-strip .sb-client-label {
-  opacity: 0.7;
-}
-
-/* Client strip grid — accommodate wider divider */
-.sb-client-strip {
-  grid-template-columns: 1fr 2px 1fr;
-}
-
-/* 9. KILL ALL SOFT UI */
-.pcs-scoreboard *,
-.pcs-scoreboard *::before,
-.pcs-scoreboard *::after {
-  border-radius: 0 !important;
-}
 
 /* ── Top Task (legacy compat) ── */
 .top-task { display: none; }
