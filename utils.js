@@ -100,14 +100,11 @@ function formatIST(ts) {
   });
 }
 
-// Resolve actor name for write paths — strict allowlist
-const _ALLOWED_ACTORS = ['Pranav', 'Chitra', 'Client'];
+// Resolve actor name for write paths — URL-path based, strict allowlist
 function resolveActor() {
-  const role = window.currentRole || '';
-  if (role === 'Creative')  return 'Pranav';
-  if (role === 'Admin')     return 'Chitra';
-  if (role === 'Servicing') return 'Chitra';
-  if (role === 'Client')    return 'Client';
-  console.warn('[PCS] resolveActor: unknown role "' + role + '" — defaulting to Client');
-  return 'Client';
+  const path = window.location.pathname.toLowerCase();
+  if (path.includes('client')) return 'Client';
+  if (path.includes('chitra') || path.includes('ops')) return 'Chitra';
+  if (path.includes('admin')) return 'Chitra';
+  return 'Pranav';
 }
