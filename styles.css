@@ -1193,6 +1193,30 @@ a:hover { text-decoration: underline; }
   border-right: 1px solid #2a2a2a;
 }
 
+/* ACTION STRIP */
+.pcs-scoreboard .sb-action {
+  margin-top: 12px;
+  padding: 14px;
+  font-size: 13px;
+  font-family: 'Roboto Mono', monospace;
+  letter-spacing: 1px;
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px solid #222;
+  color: #aaa;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+.pcs-scoreboard .sb-action:active {
+  transform: scale(0.98);
+  filter: brightness(1.15);
+}
+.pcs-scoreboard .sb-action:not([data-action]) {
+  cursor: default;
+  opacity: 0.5;
+}
+
 /* ── Top Task ── */
 .top-task {
   padding: 12px 14px;

@@ -610,6 +610,26 @@ function getScoreboardData() {
   }
 }
 
+function getScoreboardAction(data) {
+  try {
+    if (data.approval > 0) {
+      return { label: 'Review approvals', action: 'open-approval' };
+    }
+    if (data.input > 0) {
+      return { label: 'Provide input', action: 'open-input' };
+    }
+    if (data.dispatch > 0) {
+      return { label: 'Dispatch ready posts', action: 'open-ready' };
+    }
+    if (data.creation === 0) {
+      return { label: 'Start creating posts', action: 'open-production' };
+    }
+    return { label: 'System running normally', action: null };
+  } catch (e) {
+    return { label: 'No actions available', action: null };
+  }
+}
+
 function renderScoreboard() {
   try {
     var d = getScoreboardData();
@@ -644,6 +664,12 @@ function renderScoreboard() {
         '<div data-action="open-approval">AWAITING APPROVAL: ' + safe(d.approval) + '</div>' +
         '<div data-action="open-input">AWAITING INPUT: ' + safe(d.input) + '</div>' +
       '</div>' +
+      (function() {
+        var act = getScoreboardAction(d);
+        return '<div class="sb-action"' +
+          (act.action ? ' data-action="' + act.action + '"' : '') +
+          '>' + act.label + '</div>';
+      })() +
     '</section>';
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
