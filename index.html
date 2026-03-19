@@ -70,6 +70,34 @@
 </div>
 
 <!-- ══════════════════════════════════════════
+     GLOBAL ADMIN CONTROL MENU (visible in all views)
+══════════════════════════════════════════ -->
+<div id="global-admin-menu" class="gam-wrap" style="display:none">
+  <button class="gam-trigger" onclick="toggleGlobalAdminMenu()" title="Admin Controls">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+  </button>
+  <div class="gam-dropdown" id="gam-dropdown">
+    <div class="gam-section-label">Switch View</div>
+    <div class="gam-role-options" id="gam-role-options">
+      <button class="gam-role-btn" data-role="Admin" onclick="gamSwitchRole('Admin')">Admin</button>
+      <button class="gam-role-btn" data-role="Pranav" onclick="gamSwitchRole('Pranav')">Pranav</button>
+      <button class="gam-role-btn" data-role="Chitra" onclick="gamSwitchRole('Chitra')">Chitra</button>
+      <button class="gam-role-btn" data-role="Client" onclick="gamSwitchRole('Client')">Client</button>
+    </div>
+    <div class="gam-divider"></div>
+    <button class="gam-item" onclick="toggleTheme(); closeGlobalAdminMenu()">
+      ☀ Dark / Light
+    </button>
+    <button class="gam-item" onclick="loadPosts(); closeGlobalAdminMenu()">
+      ↺ Refresh
+    </button>
+    <button class="gam-item danger" onclick="logout()">
+      ↩ Sign Out
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      MAIN DASHBOARD  (Admin / Servicing / Creative)
 ══════════════════════════════════════════ -->
 <div id="dashboard-view">
