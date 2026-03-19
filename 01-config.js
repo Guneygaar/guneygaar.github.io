@@ -61,30 +61,23 @@ const STAGE_META = {
   'archive':              { label: 'Archive',              hex: '#64748b' },
 };
 
-// Canonical ordered list of active DB stage values (excludes archive)
-const STAGES_DB = [
-  'awaiting brand input',
+// Canonical stage order — single source of truth for all dropdowns and rendering
+const STAGE_ORDER = [
   'in production',
   'ready',
+  'awaiting brand input',
   'awaiting approval',
   'scheduled',
   'published',
-  'rejected',
   'parked',
+  'rejected',
 ];
 
-// Workflow order for pipeline display
-const PIPELINE_ORDER = [
-  'in production',
-  'awaiting brand input',
-  'ready',
-  'awaiting approval',
-  'scheduled',
-  'published',
-  'rejected',
-  'parked',
-  'archive',
-];
+// Active DB stages (same order, excludes archive)
+const STAGES_DB = STAGE_ORDER;
+
+// Pipeline order (includes archive at end)
+const PIPELINE_ORDER = [...STAGE_ORDER, 'archive'];
 
 // Backward-compatible aliases so nothing else needs changing
 const STAGE_COLORS  = STAGE_META;   // legacy alias
