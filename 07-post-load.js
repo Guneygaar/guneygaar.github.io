@@ -256,14 +256,27 @@ document.addEventListener('click', function(e) {
   const task = e.target.closest('.task-banner-item');
   if (!task) return;
 
-  // prevent checkbox triggering navigation
+  // Ignore checkbox clicks
   if (e.target.classList.contains('task-check')) return;
 
   const postId = task.dataset.postId;
-  if (!postId) return;
+
+  // GUARD 1 — Missing post_id
+  if (!postId) {
+    console.warn('[TASK] No post linked', task);
+    showToast('No post linked to this task');
+    return;
+  }
+
+  // GUARD 2 — openPCS existence
+  if (typeof openPCS !== 'function') {
+    console.error('[PCS] openPCS not available');
+    showToast('Unable to open post');
+    return;
+  }
 
   console.log('[TASK → PCS]', postId);
-  if (typeof openPCS === 'function') openPCS(postId);
+  openPCS(postId);
 });
 
 document.addEventListener('change', function(e) {

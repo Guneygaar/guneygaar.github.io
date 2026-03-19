@@ -546,6 +546,7 @@ function toggleFabMenu() {
 function openAssignTaskFromFab() {
   console.log('[FAB] Assign click', window._pcs?.postId);
 
+  // GUARD — must have open post
   if (!window._pcs?.postId) {
     showToast('Open a post first');
     return;
@@ -557,7 +558,12 @@ function openAssignTaskFromFab() {
   const text = prompt('Task description');
   if (!text) return;
 
-  _fabAssignTask(window._pcs.postId, assignee.trim(), text.trim());
+  try {
+    _fabAssignTask(window._pcs.postId, assignee.trim(), text.trim());
+  } catch (err) {
+    console.error('[FAB] Assign failed', err);
+    showToast('Failed to assign task');
+  }
 }
 
 async function _fabAssignTask(postId, assignee, message) {
