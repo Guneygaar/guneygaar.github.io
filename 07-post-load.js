@@ -478,14 +478,14 @@ function _renderDashboardInner() {
     </div>
 
     <div class="pc-board" data-nav="pranav">
-      <div class="pc-board-label">PRANAV</div>
+      <div class="pc-board-label">Pranav</div>
       <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
       <div class="pc-board-status">PIPELINE</div>
       <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}"${pranavAction === 'CREATE' ? ' data-nav="create"' : ''}>${pranavAction}</div>
     </div>
 
     <div class="pc-board" data-nav="chitra">
-      <div class="pc-board-label">CHITRA</div>
+      <div class="pc-board-label">Chitra</div>
       <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
       <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
@@ -1081,7 +1081,7 @@ function populateFilterDropdowns() {
   const curPillar = pillarEl?.value || '';
 
   stageEl.innerHTML  = `<option value="">Stage</option>`  + LIBRARY_STAGE_ORDER.map(s=>`<option value="${esc(s)}">${esc(_toTitleCase(s))}</option>`).join('');
-  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(formatOwner(o))}</option>`).join('');
   if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(formatPillarDisplay(p))}</option>`).join('');
 
   stageEl.value  = curStage;
