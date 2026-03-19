@@ -16,12 +16,9 @@ async function quickStage(postId, newStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
     const actor = resolveActor();
-    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
-    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
-    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify(patchBody),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response (includes DB-set status_changed_at)
@@ -131,7 +128,7 @@ async function submitClientChanges(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('in production'), owner: STAGE_OWNER['in production'], comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
@@ -548,12 +545,9 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
-    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
-    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
-    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify(patchBody),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -738,6 +732,10 @@ function _renderBackgroundViews() {
   try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
+function handleOwnerChange(postId, value) {
+  updatePost(postId, 'owner', value);
+}
+
 async function updatePost(postId, field, value) {
   // Sanitize pillar before any write — enforce lowercase
   if (field === 'contentPillar') value = sanitizePillar(value);
@@ -846,7 +844,11 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(post.owner))}</span>`)}
+        ${cell('Owner',    canEdit
+          ? `<select class="pcs-field-val" onchange="handleOwnerChange('${esc(id)}',this.value)">
+               ${OWNERS.map(o => `<option value="${esc(o)}" ${o === (post.owner||'') ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+             </select>`
+          : ro(formatOwner(post.owner)))}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}

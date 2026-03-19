@@ -51,7 +51,7 @@ function toUiStage(dbStage) {
 
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
-  'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },
+  'in production':        { label: 'In Production', hex: '#f59e0b' },
   'ready':                { label: 'Ready',                hex: '#10b981' },
   'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
   'scheduled':            { label: 'Scheduled',            hex: '#06b6d4' },
@@ -61,30 +61,23 @@ const STAGE_META = {
   'archive':              { label: 'Archive',              hex: '#64748b' },
 };
 
-// Canonical ordered list of active DB stage values (excludes archive)
-const STAGES_DB = [
-  'awaiting brand input',
+// Canonical stage order — single source of truth for all dropdowns and rendering
+const STAGE_ORDER = [
   'in production',
   'ready',
+  'awaiting brand input',
   'awaiting approval',
   'scheduled',
   'published',
-  'rejected',
   'parked',
+  'rejected',
 ];
 
-// Workflow order for pipeline display
-const PIPELINE_ORDER = [
-  'in production',
-  'awaiting brand input',
-  'ready',
-  'awaiting approval',
-  'scheduled',
-  'published',
-  'rejected',
-  'parked',
-  'archive',
-];
+// Active DB stages (same order, excludes archive)
+const STAGES_DB = STAGE_ORDER;
+
+// Pipeline order (includes archive at end)
+const PIPELINE_ORDER = [...STAGE_ORDER, 'archive'];
 
 // Backward-compatible aliases so nothing else needs changing
 const STAGE_COLORS  = STAGE_META;   // legacy alias
@@ -97,14 +90,6 @@ function stageStyle(raw) {
   const key = (raw || '').toLowerCase().trim();
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
-
-// Stage → owner mapping (explicit, no derivation)
-const STAGE_OWNER = {
-  'in production':        'Pranav',
-  'ready':                'Chitra',
-  'awaiting approval':    'Client',
-  'awaiting brand input': 'Client',
-};
 
 // Read owner directly from post — no derivation
 function getPostOwner(post) {
@@ -227,22 +212,18 @@ const STRIP_STAGES = [
 ];
 
 // Canonical owner list — used by dropdowns, validation, and grid
-const ALLOWED_OWNERS = ['Pranav', 'Chitra'];
+const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Client'];
 
 // ── Stage change interceptor — logs every .stage mutation ──
 function setStage(post, newStage, source) {
-  const newOwner = STAGE_OWNER[(newStage||'').toLowerCase().trim()] || null;
   console.log('STAGE CHANGE →', {
     id: post.id || post.post_id,
     from: post.stage,
     to: newStage,
-    owner: newOwner || post.owner,
     source,
     time: Date.now(),
-    stack: new Error().stack
   });
   post.stage = newStage;
-  if (newOwner) post.owner = newOwner;
 }
 window.setStage = setStage;
 
