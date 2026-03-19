@@ -563,32 +563,43 @@ function closeRequestSheet() {
 }
 
 async function submitRequestSheet() {
+  console.log('[REQUEST] Sheet submit clicked');
   const brief = document.getElementById('req-sheet-brief')?.value.trim();
-  if (!brief) { showToast('Please describe the request', 'error'); return; }
+  if (!brief) {
+    console.warn('[REQUEST] BLOCKED: missing brief');
+    showToast('Please describe the request', 'error');
+    return;
+  }
   const date  = document.getElementById('req-sheet-date')?.value  || null;
   const owner = document.getElementById('req-sheet-owner')?.value || null;
   const btn   = document.getElementById('req-sheet-submit');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending\u2026'; }
   try {
     const postId = 'REQ-' + Date.now();
+    const actor  = resolveActor();
+    const payload = {
+      post_id:     postId,
+      title:       brief.substring(0, 80),
+      stage:       toDbStage('awaiting brand input'),
+      owner:       owner || null,
+      comments:    brief,
+      target_date: date || null,
+      created_at:  new Date().toISOString(),
+      updated_at:  new Date().toISOString(),
+    };
+    console.log('[REQUEST] PAYLOAD:', payload);
     await apiFetch('/posts', {
       method: 'POST',
-      body: JSON.stringify({
-        post_id:    postId,
-        title:      brief.substring(0, 80),
-        stage:      'Awaiting Brand Input',
-        owner:      owner || null,
-        comments:   brief,
-        target_date: date || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }),
+      body: JSON.stringify(payload),
     });
+    console.log('[REQUEST] API SUCCESS');
+    await logActivity({ post_id: postId, actor_name: actor, actor_role: actor, action: 'New request: ' + brief.substring(0, 60) });
     closeRequestSheet();
-    showToast('Request created ✓', 'success');
+    showToast('Request created \u2713', 'success');
     await loadPosts();
-  } catch {
-    showToast('Failed — try again', 'error');
+  } catch (err) {
+    console.error('[REQUEST] API FAILED:', err);
+    showToast('Failed \u2014 try again', 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
   }
