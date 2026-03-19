@@ -1086,9 +1086,11 @@ a:hover { text-decoration: underline; }
   padding: 8px;
   border: 2px solid #222;
   background:
+    linear-gradient(180deg, rgba(0,0,0,0.4), transparent 30%),
+    linear-gradient(0deg, rgba(0,0,0,0.6), transparent 40%),
     radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
     linear-gradient(180deg, #0a0a0a, #040404);
-  background-size: 4px 4px, 100% 100%;
+  background-size: auto, auto, 4px 4px, 100% 100%;
   box-shadow:
     0 0 0 1px #000,
     inset 0 0 0 1px rgba(255,255,255,0.04),
@@ -1183,6 +1185,7 @@ a:hover { text-decoration: underline; }
     #555 60%,
     #111 100%
   );
+  opacity: 0.6;
   box-shadow:
     inset 0 0 8px rgba(0,0,0,0.9),
     0 0 6px rgba(255,215,0,0.2);
@@ -1197,6 +1200,7 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   background:
+    radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.015), transparent 40%),
     linear-gradient(180deg, rgba(255,255,255,0.03), transparent 20%),
     linear-gradient(0deg, rgba(0,0,0,0.6), transparent 30%),
@@ -1208,11 +1212,18 @@ a:hover { text-decoration: underline; }
       transparent 3px
     ),
     linear-gradient(180deg, #0e0e0e, #040404);
+  background-size: 6px 6px, auto, auto, auto, auto, 100% 100%;
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,0.03),
     inset 0 1px 0 rgba(255,255,255,0.06),
     inset 0 -10px 20px rgba(0,0,0,0.95);
   border: 1px solid rgba(255,255,255,0.05);
+}
+.sb-main-cell:first-child {
+  filter: contrast(1.05) brightness(1.02);
+}
+.sb-main-cell:last-child {
+  filter: brightness(0.96);
 }
 .sb-main-cell:active { opacity: 0.8; }
 .sb-main-label {
@@ -1267,8 +1278,9 @@ a:hover { text-decoration: underline; }
   padding: 10px 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  opacity: 0.85;
+  opacity: 0.78;
   background:
+    radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.015), transparent 40%),
     linear-gradient(180deg, rgba(255,255,255,0.03), transparent 20%),
     linear-gradient(0deg, rgba(0,0,0,0.6), transparent 30%),
@@ -1280,6 +1292,7 @@ a:hover { text-decoration: underline; }
       transparent 3px
     ),
     linear-gradient(180deg, #0b0b0b, #030303);
+  background-size: 6px 6px, auto, auto, auto, auto, 100% 100%;
   box-shadow:
     inset 0 0 0 1px rgba(255,255,255,0.03),
     inset 0 1px 0 rgba(255,255,255,0.06),
