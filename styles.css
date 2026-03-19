@@ -804,75 +804,213 @@ a:hover { text-decoration: underline; }
 ═══════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════
-   DASHBOARD — Pressure Interface
+   DASHBOARD — Scoreboard + Runway
+   Theme-aware: uses --text, --surface, --border tokens
 ═══════════════════════════════════════════════ */
 .pcs-dash-surface { padding: 0; }
 
-/* ── Root — centered column ── */
+/* ── Dashboard theme tokens ── */
+.pc-root {
+  --db-bg: var(--surface);
+  --db-text: var(--text);
+  --db-text2: var(--text2);
+  --db-text3: var(--text3);
+  --db-border: var(--border);
+  --db-critical: var(--c-red);
+  --db-warning: var(--c-amber);
+  --db-stable: var(--c-green);
+}
+
+/* ── Root — centered, full height ── */
 .pc-root {
   display: flex;
   flex-direction: column;
-  max-width: 420px;
+  gap: 0;
+  max-width: 520px;
+  width: 100%;
   margin: 0 auto;
-  padding: 32px 20px calc(24px + env(safe-area-inset-bottom, 0px));
-  background: #000000;
+  padding: 0 0 calc(24px + env(safe-area-inset-bottom, 0px));
+  background: var(--db-bg);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
   font-feature-settings: "tnum";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
 }
 
-/* ── Section block ── */
-.pc-section {
+/* ═══════════════════════════════════════════════
+   1. RUNWAY STRIP — full width, colored bar
+═══════════════════════════════════════════════ */
+.pc-runway-strip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
 }
-.pc-section:active { opacity: 0.7; }
+.pc-runway-strip:active { opacity: 0.8; }
 
-/* ── Label ── */
-.pc-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #ffffff;
-  opacity: 0.5;
-  margin-bottom: 8px;
-}
-
-/* ── Pending number — dominant ── */
-.pc-number {
+/* Runway number */
+.pc-runway-num {
   font-size: clamp(40px, 10vw, 56px);
   font-weight: 700;
-  color: #ffffff;
   line-height: 1;
   letter-spacing: -1px;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Divider ── */
-.pc-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 20px 0;
+/* Runway meta (state + sub) */
+.pc-runway-meta { flex: 1; }
+
+.pc-runway-state {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.pc-runway-sub {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+  margin-top: 2px;
 }
 
-/* ── Action text ── */
-.pc-action-text {
+/* Runway state colors */
+.pc-runway--critical {
+  background: var(--c-red-dim, rgba(220,38,38,0.10));
+  color: var(--db-critical);
+}
+.pc-runway--low {
+  background: var(--c-amber-dim, rgba(217,119,6,0.10));
+  color: var(--db-warning);
+}
+.pc-runway--stable {
+  background: var(--c-green-dim, rgba(5,150,105,0.10));
+  color: var(--db-stable);
+}
+
+/* ═══════════════════════════════════════════════
+   2. SCOREBOARD CARDS — Pranav & Chitra
+═══════════════════════════════════════════════ */
+.pc-board {
+  padding: 20px;
+  cursor: pointer;
+  border-top: 1px solid var(--db-border);
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px;
+}
+.pc-board:active { opacity: 0.7; }
+
+.pc-board-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--db-text3);
+  margin-bottom: 8px;
+}
+
+.pc-board-score {
+  font-size: clamp(36px, 9vw, 48px);
+  font-weight: 700;
+  color: var(--db-text);
+  line-height: 1;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.pc-board-target {
+  font-weight: 400;
+  color: var(--db-text3);
+}
+
+.pc-board-status {
+  font-size: 11px;
+  color: var(--db-text3);
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.pc-board-detail {
   font-size: 13px;
-  color: #ffffff;
-  opacity: 0.75;
+  color: var(--db-text2);
+  margin-bottom: 8px;
+}
+
+.pc-board-action {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-top: 10px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  min-height: 32px;
+  line-height: 20px;
+}
+.pc-board-action--warn {
+  background: var(--c-amber-dim, rgba(217,119,6,0.10));
+  color: var(--db-warning);
+}
+.pc-board-action--ok {
+  background: var(--c-green-dim, rgba(5,150,105,0.10));
+  color: var(--db-stable);
+}
+
+/* ═══════════════════════════════════════════════
+   3. CLIENT ROW — two cells side by side
+═══════════════════════════════════════════════ */
+.pc-client-row {
+  display: flex;
+  gap: 1px;
+  border-top: 1px solid var(--db-border);
+  background: var(--db-border);
+}
+
+.pc-client-cell {
+  flex: 1;
+  padding: 16px 20px;
+  background: var(--db-bg);
+  text-align: center;
+}
+.pc-client-cell--active {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pc-client-cell--active:active { opacity: 0.7; }
+
+.pc-client-num {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--db-text);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.pc-client-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--db-text3);
   margin-top: 6px;
+}
+
+.pc-client-action {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--db-warning);
+  margin-top: 8px;
   letter-spacing: 0.5px;
 }
 
-/* ── Legacy classes (hidden — kept for JS compat) ── */
+/* ═══════════════════════════════════════════════
+   Legacy classes — hidden, kept for JS compat
+═══════════════════════════════════════════════ */
 .sc-card, .sc-row, .sc-name, .sc-num, .sc-sep, .sc-gap, .sc-dot, .sc-ok,
-.pc-state, .pc-context, .pc-runway, .pc-headline, .pc-sub, .pc-ratio,
-.pc-ratio-val, .pc-ratio-sep, .pc-label-sep, .pc-client-strip,
-.pc-client-top, .pc-client-score, .pc-client-num, .pc-client-sep,
-.pc-client-action { display: none; }
+.pc-state, .pc-context, .pc-headline, .pc-sub, .pc-ratio,
+.pc-ratio-val, .pc-ratio-sep, .pc-label-sep, .pc-divider,
+.pc-number, .pc-action-text, .pc-section > .pc-label { display: none; }
 .pc-root > .pc-action { display: none; }
 
 

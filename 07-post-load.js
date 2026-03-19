@@ -363,319 +363,176 @@ function _renderDashboardInner() {
 
   function stg(p) { return (p.stage || '').toLowerCase().trim(); }
 
-  // ── UI LABEL (display only, does NOT affect logic) ──
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   const DAY = 86400000;
-  const monthLabel = MONTHS_LONG[now.getMonth()] + ' ' + now.getFullYear();
-  const fourteenDaysAgo = new Date(now.getTime() - 14 * DAY);
 
-  // ── PIPELINE FILTER ──
-  // Active stages only, AND touched within last 14 days
-  const ACTIVE_STAGES = new Set([
-    'awaiting brand input', 'in production', 'revisions needed',
-    'ready', 'awaiting approval', 'scheduled'
-  ]);
+  // ═══════════════════════════════════════════════
+  // SECTION 1 — LOCKED COUNTS (from allPosts, not filtered)
+  // ═══════════════════════════════════════════════
 
-  const filteredPosts = allPosts.filter(p => {
-    if (!ACTIVE_STAGES.has(stg(p))) return false;
-    const updated = p.updated_at || p.updatedAt;
-    const created = p.created_at || p.createdAt;
-    const ts = updated ? new Date(updated) : (created ? new Date(created) : null);
-    return ts && ts >= fourteenDaysAgo;
-  });
-
-  // ── COUNTS (from filteredPosts, never allPosts) ──
-  const productionPosts = filteredPosts.filter(p => stg(p) === 'in production');
-  const readyPosts      = filteredPosts.filter(p => stg(p) === 'ready');
-  const scheduledPosts  = filteredPosts.filter(p => stg(p) === 'scheduled');
-
-  // Published uses allPosts scoped to current month (display metric only)
-  const pubThisMonth = allPosts.filter(p => {
-    if (stg(p) !== 'published') return false;
+  // RUNWAY: count(posts WHERE status = 'scheduled' AND target_date >= today)
+  const scheduledFuture = allPosts.filter(p => {
+    if (stg(p) !== 'scheduled') return false;
     const d = parseDate(p.targetDate);
-    return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    return d && d >= now;
   });
+  const runway_posts = scheduledFuture.length;
 
-  const production = productionPosts.length;
-  const ready      = readyPosts.length;
-  const scheduled  = scheduledPosts.length;
-  const published  = pubThisMonth.length;
+  // PIPELINE COUNTS
+  const ready_count = allPosts.filter(p => stg(p) === 'ready').length;
+  const awaiting_approval_count = allPosts.filter(p => stg(p) === 'awaiting approval').length;
+  const awaiting_brand_count = allPosts.filter(p => stg(p) === 'awaiting brand input').length;
+  const awaiting_total = awaiting_approval_count + awaiting_brand_count;
 
-  // ── RUNWAY (consecutive posting days, smart start) ──
-  // Sunday (getDay() === 0) is NOT a posting day: skip, don't break, don't count
-  function isPostingDay(d) { return d.getDay() !== 0; }
-  function dayKey(d) {
-    return d.getFullYear() + '-' + String(d.getMonth()).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  // approved / failed_publish — stages don't exist in current DB schema
+  // If they're ever added, these counts will activate automatically
+  const approved_count = allPosts.filter(p => stg(p) === 'approved').length;
+  const failed_publish_count = allPosts.filter(p => stg(p) === 'failed_publish').length;
+
+  // PIPELINE TOTAL (per spec: ready + awaiting + approved + scheduled-future)
+  const pipeline_total = ready_count + awaiting_total + approved_count + runway_posts;
+
+  // ═══════════════════════════════════════════════
+  // SECTION 2 — RUNWAY STATE
+  // ═══════════════════════════════════════════════
+
+  let runwayState, runwayLabel;
+  if (runway_posts <= 7) {
+    runwayState = 'critical'; runwayLabel = 'CRITICAL';
+  } else if (runway_posts <= 10) {
+    runwayState = 'low'; runwayLabel = 'LOW';
+  } else {
+    runwayState = 'stable'; runwayLabel = 'STABLE';
   }
 
-  // Collect ALL future scheduled dates (no month restriction)
-  const futureDays = new Set();
-  allPosts.filter(p => stg(p) === 'scheduled').forEach(p => {
-    const d = parseDate(p.targetDate);
-    if (d && d >= now) futureDays.add(dayKey(d));
-  });
+  // ═══════════════════════════════════════════════
+  // SECTION 3 — PRANAV SCOREBOARD
+  // ═══════════════════════════════════════════════
 
-  // Determine start: today if it has content, else earliest future date
-  // If start lands on a non-posting day, advance to next posting day
-  let hard_runway = 0;
-  let nextGapDay = '';
-  let nextGapDate = null; // actual Date for click navigation
-  if (futureDays.size > 0) {
-    let start;
-    if (futureDays.has(dayKey(now))) {
-      start = new Date(now);
-    } else {
-      const sorted = Array.from(futureDays).sort();
-      const parts = sorted[0].split('-');
-      start = new Date(Number(parts[0]), Number(parts[1]), Number(parts[2]));
-    }
-    // H2: if start is a non-posting day, advance to next posting day
-    while (!isPostingDay(start)) start.setDate(start.getDate() + 1);
-    // Count consecutive posting days from start (H1: max 365 iterations)
-    const check = new Date(start);
-    let iterations = 0;
-    while (iterations++ < 365) {
-      if (!isPostingDay(check)) {
-        // Non-posting day: skip (no break, no count)
-        check.setDate(check.getDate() + 1);
-        continue;
-      }
-      if (!futureDays.has(dayKey(check))) break;
-      hard_runway++;
-      check.setDate(check.getDate() + 1);
-    }
-    // Next gap: first posting day with no content
-    if (hard_runway > 0) {
-      const dn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      nextGapDay = dn[check.getDay()];
-      nextGapDate = new Date(check); // store for click navigation
-    }
-  }
-  const soft_runway = Math.floor(ready * 0.7);
-
-  // getResponsibleOwner() is defined globally in 01-config.js
-
-  // ── PRESSURE BLOCKS (from enrichedPosts, read-only) ──
-  const { enrichedPosts } = computeDelayMeta(filteredPosts);
-  const delayed = enrichedPosts.filter(p => p.isDelayed && getResponsibleOwner(p));
-
-  // Group delayed posts by type → by owner (pressure strips)
-  function buildPressureRows(posts) {
-    if (!posts.length) return { rows: '', overflow: 0 };
-    const byOwner = {};
-    posts.forEach(p => {
-      const name = getResponsibleOwner(p) || 'UNKNOWN';
-      if (!byOwner[name]) byOwner[name] = { count: 0, maxH: 0 };
-      byOwner[name].count++;
-      if (p.delayHours > byOwner[name].maxH) byOwner[name].maxH = p.delayHours;
-    });
-    const sorted = Object.entries(byOwner).sort((a, b) => b[1].maxH - a[1].maxH);
-    const overflow = Math.max(0, sorted.length - 2);
-    const rows = sorted.slice(0, 2).map(([name, d]) => {
-      const days = Math.round(d.maxH / 24);
-      const sev = d.maxH > 72 ? 'pc-sev-high' : d.maxH > 36 ? 'pc-sev-mid' : 'pc-sev-low';
-      const edgeW = Math.min(6, Math.max(3, Math.round(d.maxH / 24)));
-      const ownerVal = name.charAt(0) + name.slice(1).toLowerCase();
-      return `<div class="pc-strip ${sev}" data-owner="${ownerVal.replace(/"/g, '&quot;')}" style="--edge-w:${edgeW}px">` +
-        `<span class="pc-name">${name}</span>` +
-        `<span class="pc-count">${d.count}</span>` +
-        `<span class="pc-delay">${days}d</span></div>`;
-    }).join('');
-    return { rows, overflow };
-  }
-
-  const internalDelayed = delayed.filter(p => p.delayType === 'internal');
-  const clientDelayed = delayed.filter(p => p.delayType === 'client');
-  const requestDelayed = delayed.filter(p => p.delayType === 'request');
-
-  // Priority: overdue > client > request (show ONE type only, no "STALE")
-  let pressureLabel = '';
-  let pressureSource = [];
-  if (internalDelayed.length) {
-    pressureLabel = 'IN PRODUCTION \u2014 NOT MOVING'; pressureSource = internalDelayed;
-  } else if (clientDelayed.length) {
-    pressureLabel = 'CLIENT \u2014 WAITING'; pressureSource = clientDelayed;
-  } else if (requestDelayed.length) {
-    pressureLabel = 'READY \u2014 NOT SENT'; pressureSource = requestDelayed;
-  }
-  const { rows: pressureRows, overflow: pressureOverflow } = buildPressureRows(pressureSource);
-
-  // ── PRESSURE INTENSITY LEVEL (deterministic, no scores) ──
-  let pressureLevel = 0;
-  if (hard_runway === 0) {
-    pressureLevel = 3;
-  } else if (clientDelayed.length > 0) {
-    pressureLevel = 2;
-  } else if (internalDelayed.length > 0) {
-    pressureLevel = 1;
-  }
-
-  // ── PRANAV PRODUCTION HEALTH (ready + scheduled vs target) ──
-  const invCount = ready + scheduled;
-  const invTarget = typeof READY_TO_SEND_TARGET !== 'undefined' ? READY_TO_SEND_TARGET : 30;
-  const invGap = Math.max(0, invTarget - invCount);
-  const invPct = Math.min(100, Math.round((invCount / invTarget) * 100));
-
-  // ── SCORECARD METRICS (from existing stage counts, read-only) ──
   const pranavTarget = 35;
-  const pranavCount = production + ready + scheduled;
-  const pranavGap = Math.max(0, pranavTarget - pranavCount);
-  const pranavSorted = pranavGap === 0;
+  const pranavAction = pipeline_total < pranavTarget ? 'CREATE' : 'HOLD';
 
-  const chitraTotal = production + ready; // pool available to Chitra
-  const chitraReady = ready; // what Chitra has moved to ready
-  const chitraGap = Math.max(0, production); // what Chitra hasn't sent yet
-  const chitraSorted = chitraGap === 0;
+  // ═══════════════════════════════════════════════
+  // SECTION 4 — CHITRA SCOREBOARD (PRIORITY ENGINE)
+  // ═══════════════════════════════════════════════
 
-  const clientPosts = filteredPosts.filter(p => {
+  // Aging: posts in awaiting stages >= 2 days
+  const agingThreshold = 2;
+  const awaitingAged = allPosts.filter(p => {
     const s = stg(p);
-    return s === 'awaiting approval' || s === 'awaiting brand input';
-  });
-  const clientPending = clientPosts.length;
-  const clientReceived = clientPending + scheduled;
-  const clientSorted = clientPending === 0;
+    if (s !== 'awaiting approval' && s !== 'awaiting brand input') return false;
+    const changed = p.status_changed_at || p.statusChangedAt || p.updated_at || p.updatedAt || p.created_at || p.createdAt;
+    if (!changed) return false;
+    const age = Math.floor((now.getTime() - new Date(changed).getTime()) / DAY);
+    return age >= agingThreshold;
+  }).length;
 
-  // ── TODAY CHECK (scheduled today OR published today) ──
-  const todayKey = dayKey(now);
-  const publishedToday = allPosts.some(p => {
-    if (stg(p) !== 'published') return false;
-    const d = parseDate(p.targetDate);
-    return d && dayKey(d) === todayKey;
-  });
-  const todayHasPost = futureDays.has(todayKey) || publishedToday;
+  let chitraAction, chitraContext, chitraFilter;
 
-  // ── STATE (single source, one message only) ──
-  // Sunday (non-posting day): skip failure check — no post expected
-  const todayIsPostingDay = isPostingDay(now);
-  let uiState, stateMsg, stateClass;
-  if (todayIsPostingDay && !todayHasPost) {
-    uiState = 'failure'; stateMsg = 'Runway broken'; stateClass = 'st-fail';
-  } else if (hard_runway <= 2) {
-    uiState = 'risk'; stateMsg = 'Runway will break soon'; stateClass = 'st-risk';
-  } else {
-    uiState = 'safe'; stateMsg = 'Sorted'; stateClass = 'st-safe';
-  }
-
-  // ── RUNWAY DISPLAY (state-consistent) ──
-  // Failure state: display 0 regardless of actual runway — today is the gap
-  const runwayDisplay = uiState === 'failure' ? 0 : hard_runway;
-  const runwayState = runwayDisplay === 0 ? 'rw-runway-crit'
-    : runwayDisplay <= 2 ? 'rw-runway-warn'
-    : '';
-
-  // ── CONTEXT LINE (state-driven, no contradiction) ──
-  let contextLine = '';
-  let contextClickable = false;
-  if (uiState === 'failure') {
-    contextLine = 'No posts for today';
-  } else if (uiState === 'risk' && nextGapDay) {
-    contextLine = `Breaks on ${nextGapDay}`;
-    contextClickable = !!nextGapDate;
-  } else if (uiState === 'safe' && nextGapDay) {
-    contextLine = `Clear till ${nextGapDay}`;
-    contextClickable = !!nextGapDate;
-  }
-
-  // ── ACTION LINE (scorecard-aligned priority) ──
-  let actionText = '';
-  let actionFilter = null;
-  if (ready > 0) {
-    actionText = `Chitra: Sort ${ready} post${ready !== 1 ? 's' : ''} for approval`;
-    actionFilter = ['ready'];
-  } else if (clientPending > 0) {
-    actionText = `Follow up on ${clientPending} approval${clientPending !== 1 ? 's' : ''}`;
-    actionFilter = ['awaiting approval', 'awaiting brand input'];
-  } else if (pranavGap > 0) {
-    actionText = `Pranav: Add ${pranavGap} post${pranavGap !== 1 ? 's' : ''}`;
-    actionFilter = ['in production', 'revisions needed'];
-  } else {
-    actionText = 'Stay sorted';
-    actionFilter = null;
-  }
-
-  // ── SCORECARD ROWS ──
-  function scRow(name, count, total, gap, gapLabel, sorted, navAttr) {
-    if (sorted) {
-      return `<div class="sc-row sc-sorted"><span class="sc-name">${name}</span><span class="sc-dot">\u2022</span><span class="sc-ok">Sorted</span></div>`;
+  if (failed_publish_count > 0) {
+    chitraAction = 'FIX PUBLISH';
+    chitraContext = `${failed_publish_count} failed`;
+    chitraFilter = ['failed_publish'];
+  } else if (approved_count > 0) {
+    chitraAction = 'SCHEDULE NOW';
+    chitraContext = `${approved_count} approved`;
+    chitraFilter = ['approved'];
+  } else if (awaiting_total > 0 && awaitingAged > 0) {
+    if (ready_count > 0) {
+      chitraAction = 'FOLLOW UP + SEND';
+      chitraContext = `${awaitingAged} aging, ${ready_count} ready`;
+      chitraFilter = ['awaiting approval', 'awaiting brand input', 'ready'];
+    } else {
+      chitraAction = 'FOLLOW UP';
+      chitraContext = `${awaitingAged} aging ${agingThreshold}d+`;
+      chitraFilter = ['awaiting approval', 'awaiting brand input'];
     }
-    return `<div class="sc-row sc-pending" ${navAttr}><span class="sc-name">${name}</span><span class="sc-num">${count}<span class="sc-sep"> / </span>${total}</span><div class="sc-gap">\u2193 ${gap} ${gapLabel}</div></div>`;
+  } else if (ready_count > 0) {
+    chitraAction = 'SEND FOR APPROVAL';
+    chitraContext = `${ready_count} ready`;
+    chitraFilter = ['ready'];
+  } else if (runway_posts < 7 && ready_count === 0 && approved_count === 0 && awaiting_total === 0) {
+    chitraAction = 'SYSTEM DRY \u2014 ESCALATE';
+    chitraContext = 'No posts in pipeline';
+    chitraFilter = null;
+  } else {
+    chitraAction = 'ALL CLEAR';
+    chitraContext = '';
+    chitraFilter = null;
   }
 
-  const clientRow = scRow('CLIENT', clientPending > 0 ? (clientReceived - clientPending) : 0, clientReceived || clientPending, clientPending, 'pending', clientSorted, 'data-nav="client"');
-  const pranavRow = scRow('PRANAV', pranavCount, pranavTarget, pranavGap, 'short', pranavSorted, 'data-nav="pranav"');
-  const chitraRow = scRow('CHITRA', chitraReady, chitraTotal || chitraReady, chitraGap, 'not sent', chitraSorted, 'data-nav="chitra"');
+  // ═══════════════════════════════════════════════
+  // SECTION 5 — CLIENT
+  // ═══════════════════════════════════════════════
 
-  // ── PENDING COUNTS (what's stuck per person) ──
-  const chitraPending = production; // posts in production not yet moved to ready
-  const pranavPending = pranavGap;  // posts short of 35 target
-  // clientPending already computed above
+  // Two separate counts per spec
+  const clientApprovalAction = awaiting_approval_count > 0 ? 'REVIEW NOW' : '';
+  // awaiting_brand_input is info only — no action
 
-  // ── ACTION TEXT (pressure-driven) ──
-  const chitraAction = chitraPending === 0 ? 'ALL CLEAR' : 'SEND FOR APPROVAL';
-  const pranavAction = pranavPending === 0 ? 'ON TARGET' : 'CREATE MORE';
-  const clientAction = clientPending === 0 ? 'ALL CLEAR' : 'REVIEW NOW';
+  // ═══════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════
 
-  // ── RENDER (pressure interface) ──
-  el.innerHTML = `<div class="pc-root ${uiState}" data-pressure="${pressureLevel}">
-    <div class="pc-section" data-nav="chitra">
-      <div class="pc-label">CHITRA</div>
-      <div class="pc-number">${chitraPending} PENDING</div>
-      <div class="pc-action-text">${chitraAction}</div>
+  el.innerHTML = `<div class="pc-root" data-runway="${runwayState}">
+
+    <div class="pc-runway-strip pc-runway--${runwayState}" data-nav="runway">
+      <div class="pc-runway-num">${runway_posts}</div>
+      <div class="pc-runway-meta">
+        <div class="pc-runway-state">${runwayLabel}</div>
+        <div class="pc-runway-sub">POSTS SCHEDULED</div>
+      </div>
     </div>
 
-    <div class="pc-divider"></div>
-
-    <div class="pc-section" data-nav="pranav">
-      <div class="pc-label">PRANAV</div>
-      <div class="pc-number">${pranavPending} PENDING</div>
-      <div class="pc-action-text">${pranavAction}</div>
+    <div class="pc-board" data-nav="pranav">
+      <div class="pc-board-label">PRANAV</div>
+      <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
+      <div class="pc-board-status">PIPELINE</div>
+      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}">${pranavAction}</div>
     </div>
 
-    <div class="pc-divider"></div>
-
-    <div class="pc-section" data-nav="client">
-      <div class="pc-label">CLIENT</div>
-      <div class="pc-number">${clientPending} PENDING</div>
-      <div class="pc-action-text">${clientAction}</div>
+    <div class="pc-board" data-nav="chitra">
+      <div class="pc-board-label">CHITRA</div>
+      <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
+      <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
+
+    <div class="pc-client-row">
+      <div class="pc-client-cell${awaiting_approval_count > 0 ? ' pc-client-cell--active' : ''}" data-nav="client">
+        <div class="pc-client-num">${awaiting_approval_count}</div>
+        <div class="pc-client-label">AWAITING APPROVAL</div>
+        ${clientApprovalAction ? `<div class="pc-client-action">${clientApprovalAction}</div>` : ''}
+      </div>
+      <div class="pc-client-cell">
+        <div class="pc-client-num">${awaiting_brand_count}</div>
+        <div class="pc-client-label">AWAITING INPUT</div>
+      </div>
+    </div>
+
   </div>`;
 
-  // ── CLICK DELEGATION ──
+  // ═══════════════════════════════════════════════
+  // CLICK DELEGATION
+  // ═══════════════════════════════════════════════
 
-  // Runway + context → upcoming with gap range
-  el.querySelectorAll('[data-nav="runway"]').forEach(r => {
-    r.addEventListener('click', () => {
-      if (nextGapDate) {
-        navigateWithFilter('upcoming', { from: new Date(), to: new Date(nextGapDate) });
-      } else {
-        goToTab('upcoming');
-      }
-    });
+  el.querySelector('[data-nav="runway"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['scheduled']);
   });
 
-  // CLIENT row → pipeline (awaiting stages)
-  el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['awaiting approval', 'awaiting brand input']);
-  });
-
-  // PRANAV row → pipeline (production stages)
   el.querySelector('[data-nav="pranav"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['in production', 'revisions needed']);
+    navigateWithFilter('pipeline', ['in production', 'revisions needed', 'awaiting brand input', 'ready']);
   });
 
-  // CHITRA row → pipeline (ready stage)
   el.querySelector('[data-nav="chitra"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['ready']);
-  });
-
-  // Action line → same as responsible role
-  el.querySelector('[data-nav="action"]')?.addEventListener('click', () => {
-    if (actionFilter) {
-      navigateWithFilter('pipeline', actionFilter);
+    if (chitraFilter) {
+      navigateWithFilter('pipeline', chitraFilter);
     } else {
       goToTab('pipeline');
     }
+  });
+
+  el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['awaiting approval']);
   });
 }
 
