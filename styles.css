@@ -1188,8 +1188,9 @@ a:hover { text-decoration: underline; }
   padding: 16px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0.85;
 }
-.sb-client-cell:active { opacity: 0.8; }
+.sb-client-cell:active { opacity: 0.7; }
 .sb-client-num {
   font-size: 36px;
   font-weight: 700;
