@@ -197,8 +197,17 @@ function switchTab(btn) {
 }
 
 function openPipelineSearch() {
-  console.log('Open Pipeline Search');
-  // Stub — search UI will be built in a future step
+  const overlay = document.getElementById('pipeline-search-overlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    const input = document.getElementById('pipeline-search-input');
+    if (input) { input.value = ''; input.focus(); }
+  }
+}
+
+function closePipelineSearch() {
+  const overlay = document.getElementById('pipeline-search-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 function switchClientTab(tab) {
