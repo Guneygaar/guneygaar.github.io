@@ -1098,6 +1098,7 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow: hidden;
 }
 
 /* LABEL */
@@ -1117,6 +1118,7 @@ a:hover { text-decoration: underline; }
   text-shadow: 0 0 4px currentColor;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  max-width: 100%;
   transition: transform 0.08s ease, filter 0.08s ease;
 }
 .pcs-scoreboard .gold { color: #FFD700; }
