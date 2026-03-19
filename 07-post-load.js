@@ -357,6 +357,12 @@ function _ttByStage(stage) {
     .sort(_ttOldestFirst);
 }
 
+function _ttPostTitle(postId) {
+  if (!postId) return '';
+  const p = allPosts.find(x => getPostId(x) === postId);
+  return p ? getTitle(p) : '';
+}
+
 function getTopTask() {
   const role = _ttNorm(window.effectiveRole || '');
   const email = localStorage.getItem('gbl_email') || '';
@@ -368,7 +374,9 @@ function getTopTask() {
     .sort(_ttOldestFirst);
   if (myTasks.length) {
     const t = myTasks[0];
-    return { type: 'assigned', text: t.message || 'Complete assigned task', postId: t.post_id || null };
+    const msg = t.message || 'Complete assigned task';
+    const postTitle = _ttPostTitle(t.post_id);
+    return { type: 'assigned', text: postTitle ? msg + ' \u2014 ' + postTitle : msg, postId: t.post_id || null };
   }
 
   // 2. ROLE-BASED PRIORITY
