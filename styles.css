@@ -1209,7 +1209,7 @@ a:hover { text-decoration: underline; }
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -1px;
+  letter-spacing: 1px;
   text-shadow:
     0 0 8px currentColor,
     0 0 16px rgba(0,0,0,0.8);
@@ -1280,7 +1280,7 @@ a:hover { text-decoration: underline; }
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: #FF3B30;
-  letter-spacing: -1px;
+  letter-spacing: 1px;
   text-shadow:
     0 0 6px currentColor,
     0 0 12px rgba(0,0,0,0.6);
