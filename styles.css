@@ -3379,14 +3379,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 50%;
   background: transparent;
   border: none;
-  color: var(--text2);
   opacity: 0.8;
-  cursor: pointer;
-  flex-shrink: 0;
-  margin-right: 4px;
+  position: relative;
+  z-index: 2;
 }
+.pipeline-search-btn svg { width: 18px; height: 18px; stroke: var(--text2); }
 .pipeline-search-btn:active { opacity: 1; }
-.pipeline-search-btn svg { width: 18px; height: 18px; }
+
+/* Pipeline search overlay */
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+}
+.search-container {
+  width: 90%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.search-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 16px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #444);
+  background: var(--surface1, #1a1a2e);
+  color: var(--text1, #fff);
+  outline: none;
+  box-sizing: border-box;
+}
+.search-input:focus { border-color: var(--c-blue, #5b8def); }
+.search-close-btn {
+  align-self: flex-end;
+  background: transparent;
+  border: 1px solid var(--border, #444);
+  color: var(--text2, #aaa);
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.search-close-btn:active { opacity: 0.7; }
 
 /* Notification red dot (replaces badge number) */
 .notif-dot {
