@@ -294,6 +294,28 @@ if (!window._taskClickBound) {
   });
 }
 
+// ── Scoreboard block click delegation ──
+if (!window._scoreboardClickBound) {
+  window._scoreboardClickBound = true;
+
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('.sb-block');
+    if (!el) return;
+
+    e.stopPropagation();
+
+    var action = el.dataset.action;
+
+    if (action === 'create-post') {
+      if (typeof openNewPostModal === 'function') openNewPostModal();
+    }
+
+    if (action === 'dispatch') {
+      if (typeof showToast === 'function') showToast('Dispatch flow coming soon');
+    }
+  });
+}
+
 document.addEventListener('change', function(e) {
   if (!e.target.classList.contains('task-check')) return;
   const taskId = e.target.dataset.taskId;
@@ -547,6 +569,115 @@ function _buildTopTaskHtml() {
   </div>`;
 }
 
+// ── LED Scoreboard ──────────────────────────────
+
+var TARGET_PRODUCTION = 35;
+var CRITICAL_THRESHOLD = 7;
+
+function getScoreboardData() {
+  try {
+    var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+
+    function safeStage(p) {
+      return (p && typeof p === 'object' && typeof p.stage === 'string')
+        ? p.stage.toLowerCase().trim() : '';
+    }
+
+    function safeCount(stage) {
+      return posts.filter(function(p) { return safeStage(p) === stage; }).length;
+    }
+
+    var now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    var scheduledCount = posts.filter(function(p) {
+      if (safeStage(p) !== 'scheduled') return false;
+      var d = typeof parseDate === 'function' ? parseDate(p.targetDate) : null;
+      return d && d >= now;
+    }).length;
+
+    var production = safeCount('in production');
+    var ready = safeCount('ready');
+    var approval = safeCount('awaiting approval');
+    var input = safeCount('awaiting brand input');
+
+    var pipelineTotal = ready + approval + input + scheduledCount;
+    var deficit = Math.max(0, TARGET_PRODUCTION - pipelineTotal);
+    var excess = Math.max(0, ready - approval);
+
+    function safeNum(n) { return Number.isFinite(n) ? n : 0; }
+
+    return {
+      pranav: {
+        production: safeNum(production),
+        ready: safeNum(ready),
+        deficit: safeNum(deficit),
+        pipeline: safeNum(pipelineTotal),
+        target: TARGET_PRODUCTION
+      },
+      chitra: {
+        approval: safeNum(approval),
+        ready: safeNum(ready),
+        excess: safeNum(excess)
+      },
+      client: {
+        approval: safeNum(approval),
+        input: safeNum(input)
+      },
+      system: {
+        scheduled: safeNum(scheduledCount),
+        critical: safeNum(scheduledCount) <= CRITICAL_THRESHOLD
+      }
+    };
+  } catch (err) {
+    console.error('[Scoreboard] Data error', err);
+    return { pranav: {}, chitra: {}, client: {}, system: {} };
+  }
+}
+
+function renderScoreboard() {
+  try {
+    var d = getScoreboardData();
+    if (!d || typeof d !== 'object') return '';
+
+    var pranav = d.pranav || {};
+    var chitra = d.chitra || {};
+    var client = d.client || {};
+    var system = d.system || {};
+
+    function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
+
+    return '<section class="pcs-scoreboard">' +
+      '<div class="sb-alert' + (system.critical ? ' on' : '') + '">' +
+        (system.critical
+          ? 'CRITICAL: ' + safe(system.scheduled) + ' POSTS'
+          : 'STABLE: ' + safe(system.scheduled) + ' SCHEDULED') +
+      '</div>' +
+      '<div class="sb-grid">' +
+        '<div class="sb-block" data-action="create-post">' +
+          '<div class="sb-label">PRANAV</div>' +
+          '<div class="sb-num gold">' + safe(pranav.production) + ':' + safe(pranav.ready) + '</div>' +
+          '<div class="sb-sub ' + (safe(pranav.deficit) > 0 ? 'red' : 'green') + '">' +
+            (safe(pranav.deficit) > 0 ? 'DEFICIT ' + safe(pranav.deficit) : 'ON TARGET') +
+          '</div>' +
+        '</div>' +
+        '<div class="sb-block" data-action="dispatch">' +
+          '<div class="sb-label">CHITRA</div>' +
+          '<div class="sb-num green">' + safe(chitra.approval) + ':' + safe(chitra.ready) + '</div>' +
+          '<div class="sb-sub green">EXCESS ' + safe(chitra.excess) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="sb-client">' +
+        '<div>AWAITING APPROVAL: ' + safe(client.approval) + '</div>' +
+        '<div>AWAITING INPUT: ' + safe(client.input) + '</div>' +
+      '</div>' +
+    '</section>';
+  } catch (err) {
+    console.error('[Scoreboard] Render error', err);
+    return '';
+  }
+}
+
 function renderDashboard() {
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
@@ -689,6 +820,8 @@ function _renderDashboardInner() {
       <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
       <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
+
+    ${renderScoreboard()}
 
     <div class="pc-client-row">
       <div class="pc-client-cell${awaiting_approval_count > 0 ? ' pc-client-cell--active' : ''}" data-nav="client">
