@@ -1157,8 +1157,9 @@ a:hover { text-decoration: underline; }
 /* SAFETY GUARDS */
 .pcs-scoreboard .sb-num {
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: unset;
+  min-width: 0;
 }
 .pcs-scoreboard .sb-num:active,
 .pcs-scoreboard .sb-btn:active {
