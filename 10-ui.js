@@ -321,28 +321,34 @@ function toggleNotifPanel(e) {
   if (open) { fetchAndRenderNotifications(); markAllNotificationsRead(); }
 }
 
-// Close notification panel on outside click
+// Unified notification listener: click-to-open post + outside-click-close
 document.addEventListener('click', function (e) {
   const panel = document.getElementById('notif-panel');
+  const btn = document.getElementById('notif-wrap');
+
+  // 1. Notification item click (priority)
+  const notifItem = e.target.closest('.notif-item');
+  if (notifItem) {
+    const postId = notifItem.dataset.postId;
+    if (postId) openPostFromNotification(postId);
+    return;
+  }
+
+  // 2. Outside click close
   if (!panel || !panel.classList.contains('open')) return;
-  const wrap = document.getElementById('notif-wrap');
-  if (wrap && wrap.contains(e.target)) return;
-  panel.classList.remove('open');
+  const insidePanel = panel.contains(e.target);
+  const clickedBtn = btn && btn.contains(e.target);
+  if (!insidePanel && !clickedBtn) {
+    panel.classList.remove('open');
+  }
 });
 
-// Click a notification → open that post
-document.addEventListener('click', function (e) {
-  const item = e.target.closest('.notif-item');
-  if (!item) return;
-  const postId = item.dataset.postId;
-  if (!postId) return;
-  // Close panel
+function openPostFromNotification(postId) {
   const panel = document.getElementById('notif-panel');
   if (panel) panel.classList.remove('open');
-  // Open post
   const post = getPostById(postId);
   if (post) openPCS(postId);
-});
+}
 
 // -- PCS Activity toggle -----------------------
 function togglePCSActivity() {
