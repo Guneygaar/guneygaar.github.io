@@ -90,12 +90,12 @@ function closeUserMenu() { document.getElementById('user-menu')?.classList.remov
 
 // -- Client menu -------------------------------
 function toggleClientMenu() {
-  const m = document.getElementById('client-user-menu');
+  const m = document.getElementById('client-menu');
   if (!m) return;
   const open = m.classList.toggle('open');
   if (open) setTimeout(() => document.addEventListener('click', closeClientMenu, { once: true }), 0);
 }
-function closeClientMenu() { document.getElementById('client-user-menu')?.classList.remove('open'); }
+function closeClientMenu() { document.getElementById('client-menu')?.classList.remove('open'); }
 
 // -- Global Admin Menu -------------------------
 function gamSwitchRole(role) {
