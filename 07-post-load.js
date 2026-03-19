@@ -611,36 +611,85 @@ function _buildTopTaskHtml() {
   </div>`;
 }
 
-// ── LED Scoreboard ──────────────────────────────
+// ── Scoreboard — Data + Render ──────────────────
 
-function getScoreboardData() {
-  try {
-    var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+// Safe stage normalization
+function _safeStage(p) {
+  if (!p || typeof p !== 'object') return '';
+  if (!p.stage || typeof p.stage !== 'string') return '';
+  return p.stage.toLowerCase().trim();
+}
 
-    var norm = function(s) { return (s || '').toLowerCase().trim(); };
+// Config — single source for all thresholds
+var SCOREBOARD_CONFIG = {
+  CREATION_TARGET: 35,
+  CRITICAL_THRESHOLD: 7
+};
 
-    var safeCount = function(stage) {
-      return posts.filter(function(p) { return p && typeof p === 'object' && norm(p.stage) === stage; }).length;
-    };
+// Single-pass count engine
+function getScoreboardCounts(posts) {
+  var counts = {
+    production: 0,
+    ready: 0,
+    approval: 0,
+    input: 0,
+    scheduled: 0
+  };
 
-    return {
-      creation: safeCount('in_production'),
-      dispatch: safeCount('ready'),
-      approval: safeCount('awaiting_approval'),
-      input: safeCount('awaiting_input'),
-      scheduled: safeCount('scheduled')
-    };
+  if (!Array.isArray(posts)) return counts;
 
-  } catch (e) {
-    console.error('[Scoreboard Data Error]', e);
-    return {
-      creation: 0,
-      dispatch: 0,
-      approval: 0,
-      input: 0,
-      scheduled: 0
-    };
+  for (var i = 0; i < posts.length; i++) {
+    var s = _safeStage(posts[i]);
+
+    if (s === 'in_production' || s === 'in production' || s === 'draft' || s === 'idea') {
+      counts.production++;
+    }
+    else if (s === 'ready') {
+      counts.ready++;
+    }
+    else if (s === 'awaiting_approval' || s === 'awaiting approval') {
+      counts.approval++;
+    }
+    else if (s === 'awaiting_input' || s === 'awaiting input' || s === 'awaiting_brand_input' || s === 'awaiting brand input') {
+      counts.input++;
+    }
+    else if (s === 'scheduled') {
+      counts.scheduled++;
+    }
   }
+
+  return counts;
+}
+
+// Final data model
+function getScoreboardData() {
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var c = getScoreboardCounts(posts);
+
+  var creationTarget = SCOREBOARD_CONFIG.CREATION_TARGET;
+  var creationGap = creationTarget - c.production;
+
+  console.log('[SCOREBOARD]', { counts: c, creationTarget: creationTarget, creationGap: creationGap });
+
+  return {
+    pranav: {
+      value: creationGap > 0 ? -creationGap : 0,
+      raw: c.production
+    },
+    chitra: {
+      value: c.ready,
+      raw: c.ready
+    },
+    client: {
+      approval: c.approval,
+      input: c.input
+    },
+    system: {
+      scheduled: c.scheduled,
+      threshold: SCOREBOARD_CONFIG.CRITICAL_THRESHOLD,
+      isCritical: c.scheduled <= SCOREBOARD_CONFIG.CRITICAL_THRESHOLD
+    }
+  };
 }
 
 function isPostsReady() {
@@ -654,61 +703,29 @@ function isPostsFresh() {
   return window._postsSource === 'network';
 }
 
-function getScoreboardAction(data) {
-  try {
-    if (!isPostsReady()) {
-      return { label: 'Loading posts\u2026', action: null, state: 'loading' };
-    }
-
-    if (isPostsReady() && !isPostsFresh()) {
-      return { label: 'Syncing latest\u2026', action: null, state: 'loading' };
-    }
-
-    var total =
-      data.creation +
-      data.dispatch +
-      data.approval +
-      data.input +
-      data.scheduled;
-
-    if (total === 0) {
-      return { label: 'No posts yet \u2014 start creating', action: 'open-production', state: 'empty' };
-    }
-
-    if (data.approval > 0) {
-      return { label: 'Review approvals', action: 'open-approval' };
-    }
-    if (data.input > 0) {
-      return { label: 'Provide input', action: 'open-input' };
-    }
-    if (data.dispatch > 0) {
-      return { label: 'Dispatch ready posts', action: 'open-ready' };
-    }
-    if (data.creation === 0) {
-      return { label: 'Start creating posts', action: 'open-production' };
-    }
-    return { label: 'System running normally', action: null, state: 'passive' };
-  } catch (e) {
-    return { label: 'Unavailable', action: null, state: 'error' };
-  }
-}
-
 function renderScoreboard() {
   try {
-    var d = getScoreboardData();
-    if (!d || typeof d !== 'object') return '';
+    var data = getScoreboardData();
+    if (!data || typeof data !== 'object') return '';
 
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
-    var scheduled = safe(d.scheduled);
-    var threshold = 7;
-    var isCritical = scheduled <= threshold;
-    var creation = safe(d.creation);
-    var dispatch = safe(d.dispatch);
-    var approval = safe(d.approval);
-    var input = safe(d.input);
-    var pranavVal = creation;
-    var chitraVal = dispatch;
+    var scheduled = safe(data.system.scheduled);
+    var threshold = safe(data.system.threshold);
+    var isCritical = data.system.isCritical;
+
+    var pranavVal = safe(data.pranav.value);
+    var chitraVal = safe(data.chitra.value);
+    var approval = safe(data.client.approval);
+    var input = safe(data.client.input);
+
+    // Pranav: show deficit as −N (value is already negative or 0)
+    var pranavDisplay = pranavVal < 0 ? '\u2212' + Math.abs(pranavVal) : '0';
+    // Chitra: show ready queue as +N
+    var chitraDisplay = chitraVal > 0 ? '+' + chitraVal : '0';
+    // Client: show pending as −N
+    var approvalDisplay = approval > 0 ? '\u2212' + approval : '0';
+    var inputDisplay = input > 0 ? '\u2212' + input : '0';
 
     // Top task for task bar
     var task = getTopTask();
@@ -728,31 +745,23 @@ function renderScoreboard() {
       '<div class="sb-main-grid sb-metal">' +
         '<div class="sb-main-cell" data-action="open-production">' +
           '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-num gold">' +
-            (pranavVal > 0 ? '\u2212' + pranavVal : '0') +
-          '</div>' +
+          '<div class="sb-main-num gold">' + pranavDisplay + '</div>' +
           '<div class="sb-main-sub">CREATE MORE</div>' +
         '</div>' +
         '<div class="sb-main-cell" data-action="open-ready">' +
           '<div class="sb-main-label">CHITRA</div>' +
-          '<div class="sb-main-num green">' +
-            (chitraVal > 0 ? '+' + chitraVal : '0') +
-          '</div>' +
+          '<div class="sb-main-num green">' + chitraDisplay + '</div>' +
           '<div class="sb-main-sub">DISPATCH NOW</div>' +
         '</div>' +
       '</div>' +
 
       '<div class="sb-client-strip sb-metal">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
-          '<div class="sb-client-num">' +
-            (approval > 0 ? '\u2212' + approval : '0') +
-          '</div>' +
+          '<div class="sb-client-num">' + approvalDisplay + '</div>' +
           '<div class="sb-client-label">APPROVAL DUE</div>' +
         '</div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
-          '<div class="sb-client-num">' +
-            (input > 0 ? '\u2212' + input : '0') +
-          '</div>' +
+          '<div class="sb-client-num">' + inputDisplay + '</div>' +
           '<div class="sb-client-label">INPUT DUE</div>' +
         '</div>' +
       '</div>' +
