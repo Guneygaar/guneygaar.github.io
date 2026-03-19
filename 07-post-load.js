@@ -705,25 +705,28 @@ function isPostsFresh() {
 
 function renderScoreboard() {
   try {
-    var data = getScoreboardData();
-    if (!data || typeof data !== 'object') return '';
+    var posts = window.allPosts;
+    if (!Array.isArray(posts)) return '';
 
-    function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
+    function norm(s) {
+      return (s || '').toLowerCase().replace(/[\s\-_]/g, '');
+    }
 
-    var scheduled = safe(data.system.scheduled);
-    var threshold = safe(data.system.threshold);
-    var isCritical = data.system.isCritical;
+    var TARGET_PRODUCTION = 35;
+    var production = 0, ready = 0, approval = 0, input = 0, scheduled = 0;
 
-    var pranavVal = safe(data.pranav.value);
-    var chitraVal = safe(data.chitra.value);
-    var approval = safe(data.client.approval);
-    var input = safe(data.client.input);
+    for (var i = 0; i < posts.length; i++) {
+      var st = norm(posts[i].stage);
+      if (st === 'inproduction') production++;
+      else if (st === 'ready') ready++;
+      else if (st === 'awaitingapproval') approval++;
+      else if (st === 'awaitinginput') input++;
+      else if (st === 'scheduled') scheduled++;
+    }
 
-    // Pranav: show deficit as −N (value is already negative or 0)
-    var pranavDisplay = pranavVal < 0 ? '\u2212' + Math.abs(pranavVal) : '0';
-    // Chitra: show ready queue as +N
-    var chitraDisplay = chitraVal > 0 ? '+' + chitraVal : '0';
-    // Client: show pending as −N
+    var gap = TARGET_PRODUCTION - production;
+    var pranavDisplay = gap > 0 ? '\u2212' + gap : '0';
+    var chitraDisplay = ready > 0 ? '+' + ready : '0';
     var approvalDisplay = approval > 0 ? '\u2212' + approval : '0';
     var inputDisplay = input > 0 ? '\u2212' + input : '0';
 
