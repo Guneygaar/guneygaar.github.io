@@ -195,7 +195,7 @@ title,
 owner,
 content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
-stage: stage || 'in production',
+stage: toDbStage(stage || 'in production'),
 target_date: date || null,
 comments: comments || null,
 post_link: postLink || null

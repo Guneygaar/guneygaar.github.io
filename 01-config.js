@@ -19,14 +19,44 @@ const CLIENT_REQUEST_FORM_URL = '';
 // DB values are lowercase. UI reads label/hex from STAGE_META.
 // -------------------------------------------------------
 
+// UI (internal) → DB (wire format) mapping
+const STAGE_MAP = {
+  'in production':        'in_production',
+  'awaiting brand input': 'awaiting_brand_input',
+  'ready':                'ready',
+  'awaiting approval':    'awaiting_approval',
+  'scheduled':            'scheduled',
+  'published':            'published',
+  'parked':               'parked',
+  'archive':              'archive',
+  'rejected':             'rejected',
+};
+
+// DB → UI reverse mapping (auto-generated)
+const STAGE_MAP_REV = Object.fromEntries(
+  Object.entries(STAGE_MAP).map(([ui, db]) => [db, ui])
+);
+
+// Convert UI stage label to DB wire value
+function toDbStage(uiStage) {
+  const key = (uiStage || '').toLowerCase().trim();
+  return STAGE_MAP[key] || key;
+}
+
+// Convert DB wire value to UI stage label
+function toUiStage(dbStage) {
+  const key = (dbStage || '').toLowerCase().trim();
+  return STAGE_MAP_REV[key] || key;
+}
+
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
-  'in production':        { label: 'In Production',        hex: '#f59e0b' },
-  'revisions needed':     { label: 'Revisions Needed',     hex: '#ef4444' },
+  'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },
   'ready':                { label: 'Ready',                hex: '#10b981' },
   'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
   'scheduled':            { label: 'Scheduled',            hex: '#06b6d4' },
   'published':            { label: 'Published',            hex: '#22c55e' },
+  'rejected':             { label: 'Rejected',             hex: '#ef4444' },
   'parked':               { label: 'Parked',               hex: '#64748b' },
   'archive':              { label: 'Archive',              hex: '#64748b' },
 };
@@ -35,23 +65,23 @@ const STAGE_META = {
 const STAGES_DB = [
   'awaiting brand input',
   'in production',
-  'revisions needed',
   'ready',
   'awaiting approval',
   'scheduled',
   'published',
+  'rejected',
   'parked',
 ];
 
 // Workflow order for pipeline display
 const PIPELINE_ORDER = [
   'in production',
-  'revisions needed',
   'awaiting brand input',
   'ready',
   'awaiting approval',
   'scheduled',
   'published',
+  'rejected',
   'parked',
   'archive',
 ];
@@ -68,16 +98,19 @@ function stageStyle(raw) {
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
 
-// Helper: derive responsible owner from stage (single source of truth)
-// PRANAV = production, CHITRA = scheduling, CLIENT = approval
-function getResponsibleOwner(post) {
-  const s = (post?.stage || '').toLowerCase().trim();
-  if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
-  if (s === 'ready') return 'CHITRA';
-  if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
-  return null; // scheduled, published, parked, unknown
+// Stage → owner mapping (explicit, no derivation)
+const STAGE_OWNER = {
+  'in production':        'Pranav',
+  'ready':                'Chitra',
+  'awaiting approval':    'Client',
+  'awaiting brand input': 'Client',
+};
+
+// Read owner directly from post — no derivation
+function getPostOwner(post) {
+  return (post?.owner || '').trim() || '—';
 }
-window.getResponsibleOwner = getResponsibleOwner;
+window.getPostOwner = getPostOwner;
 
 // -------------------------------------------------------
 // PILLAR SYSTEM
@@ -140,52 +173,52 @@ function formatOwner(name) {
 
 // -------------------------------------------------------
 // ROLE & WORKFLOW CONFIG
+// Only 3 actors: Pranav, Chitra, Client
+// Legacy role names (Admin/Servicing/Creative) still flow from auth
+// but all map to the same unified config for non-Client users.
 // -------------------------------------------------------
 
+// All non-Client roles see all stages (null = no filter)
 const ROLE_STAGES = {
   'Admin':     null,
-  'Servicing': ['awaiting approval','ready','scheduled'],
-  'Creative':  ['in production','revisions needed','awaiting brand input'],
+  'Servicing': null,
+  'Creative':  null,
 };
 
+// All non-Client roles get full tab access
+const _FULL_TABS = ['tasks','pipeline','upcoming','library'];
 const ROLE_TABS = {
-  'Admin':     ['tasks','pipeline','upcoming','library'],
-  'Servicing': ['tasks','upcoming','library'],
-  'Creative':  ['tasks','library'],
+  'Admin':     _FULL_TABS,
+  'Servicing': _FULL_TABS,
+  'Creative':  _FULL_TABS,
   'Client':    [],
 };
 
+// All non-Client roles see the same stats
+const _FULL_STATS = ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'];
 const ROLE_STATS = {
-  'Admin':     ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'],
-  'Servicing': ['s-approval','s-ready','s-week'],
-  'Creative':  ['s-creative-requests','s-creative-revisions','s-creative-gap'],
+  'Admin':     _FULL_STATS,
+  'Servicing': _FULL_STATS,
+  'Creative':  _FULL_STATS,
   'Client':    [],
 };
 
+// Unified task buckets — same for all non-Client roles
+const _UNIFIED_BUCKETS = [
+  { key:'production', label:'In Production',stages:['in production'] },
+  { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
+  { key:'ready',      label:'Ready',        stages:['ready'] },
+  { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
+  { key:'scheduled',  label:'Scheduled',    stages:['scheduled'] },
+];
 const ROLE_BUCKETS = {
-  Admin: [
-    { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
-    { key:'revisions',  label:'Revisions',    stages:['revisions needed'], warn:true },
-    { key:'production', label:'In Production',stages:['in production'] },
-    { key:'ready',      label:'Ready',        stages:['ready'] },
-    { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
-    { key:'scheduled',  label:'Scheduled',    stages:['scheduled'] },
-  ],
-  Servicing: [
-    { key:'waiting',    label:'Waiting for Client', stages:['awaiting brand input','awaiting approval'] },
-    { key:'ready',      label:'Ready',               stages:['ready'] },
-    { key:'scheduled',  label:'Scheduled',           stages:['scheduled'] },
-  ],
-  Creative: [
-    { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
-    { key:'production', label:'In Production',stages:['in production'] },
-    { key:'revisions',  label:'Revisions',    stages:['revisions needed'], warn:true },
-  ],
+  Admin:     _UNIFIED_BUCKETS,
+  Servicing: _UNIFIED_BUCKETS,
+  Creative:  _UNIFIED_BUCKETS,
 };
 
 const STRIP_STAGES = [
   { label:'In Production', stages:['in production'],        color: STAGE_META['in production'].hex,        tab:'tasks',    bucket:'production' },
-  { label:'Revisions',     stages:['revisions needed'],     color: STAGE_META['revisions needed'].hex,     tab:'tasks',    bucket:'revisions', warn:true },
   { label:'Requests',      stages:['awaiting brand input'], color: STAGE_META['awaiting brand input'].hex, tab:'tasks',    bucket:'requests' },
   { label:'Approval',      stages:['awaiting approval'],    color: STAGE_META['awaiting approval'].hex,    tab:'tasks',    bucket:'approval' },
   { label:'Ready',         stages:['ready'],                color: STAGE_META['ready'].hex,                tab:'tasks',    bucket:'ready', target:true },
@@ -194,21 +227,24 @@ const STRIP_STAGES = [
 ];
 
 // Canonical owner list — used by dropdowns, validation, and grid
-const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Admin'];
+const ALLOWED_OWNERS = ['Pranav', 'Chitra'];
 
 // ── Stage change interceptor — logs every .stage mutation ──
 function setStage(post, newStage, source) {
+  const newOwner = STAGE_OWNER[(newStage||'').toLowerCase().trim()] || null;
   console.log('STAGE CHANGE →', {
     id: post.id || post.post_id,
     from: post.stage,
     to: newStage,
+    owner: newOwner || post.owner,
     source,
     time: Date.now(),
     stack: new Error().stack
   });
   post.stage = newStage;
+  if (newOwner) post.owner = newOwner;
 }
 window.setStage = setStage;
 
-const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
-const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];
+// Stage priority ordering for next-post selection
+const STAGE_URGENCY = ['awaiting brand input','in production','ready','awaiting approval'];

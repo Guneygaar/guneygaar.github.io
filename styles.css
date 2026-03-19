@@ -952,6 +952,11 @@ a:hover { text-decoration: underline; }
   background: var(--c-amber-dim, rgba(217,119,6,0.10));
   color: var(--db-warning);
 }
+.pc-board-action[data-nav] {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pc-board-action[data-nav]:active { opacity: 0.7; }
 .pc-board-action--ok {
   background: var(--c-green-dim, rgba(5,150,105,0.10));
   color: var(--db-stable);
@@ -973,11 +978,13 @@ a:hover { text-decoration: underline; }
   background: var(--db-bg);
   text-align: center;
 }
-.pc-client-cell--active {
+.pc-client-cell--active,
+.pc-client-cell[data-nav] {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.pc-client-cell--active:active { opacity: 0.7; }
+.pc-client-cell--active:active,
+.pc-client-cell[data-nav]:active { opacity: 0.7; }
 
 .pc-client-num {
   font-size: 28px;
@@ -1815,18 +1822,18 @@ tr:hover td { background: var(--surface2); }
 }
 .btn-revise-outline:hover { border-color: var(--c-red); color: var(--c-red); }
 
-.revision-input-wrap {
+.change-input-wrap {
   display: none;
   margin-top: var(--sp-2);
 }
-.revision-input-wrap.open { display: block; }
+.change-input-wrap.active, .change-input-wrap.open { display: block; }
 
-.revision-textarea {
+.change-textarea {
   resize: vertical;
   min-height: 80px;
   font-size: 15px;
 }
-.btn-send-revision {
+.btn-send-changes {
   width: 100%;
   height: 40px;
   background: var(--c-red);
@@ -1841,7 +1848,7 @@ tr:hover td { background: var(--surface2); }
   gap: var(--sp-2);
   transition: var(--transition);
 }
-.btn-send-revision:hover { opacity: 0.88; }
+.btn-send-changes:hover { opacity: 0.88; }
 
 .approval-confirmed {
   display: none;
@@ -2002,7 +2009,7 @@ tr:hover td { background: var(--surface2); }
 }
 .approval-msg:not(:empty) { display: block; }
 .approval-msg.success { background: var(--c-green-dim); color: var(--c-green); border: 1px solid var(--c-green); }
-.approval-msg.revision { background: var(--c-amber-dim); color: var(--c-amber); border: 1px solid var(--c-amber); }
+.approval-msg.changes { background: var(--c-amber-dim); color: var(--c-amber); border: 1px solid var(--c-amber); }
 
 /* ═══════════════════════════════════════════════
    MODALS

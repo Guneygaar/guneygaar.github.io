@@ -16,14 +16,18 @@ async function quickStage(postId, newStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
     const actor = resolveActor();
+    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
+    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
+    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify(patchBody),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response (includes DB-set status_changed_at)
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
+      if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
     post._dirty = false;
@@ -45,7 +49,7 @@ function openAdminEdit(postId) {
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
   const aeTitle  = _ae('ae-title');     if (aeTitle) aeTitle.value = getTitle(post);
-  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = getResponsibleOwner(post) || '—';
+  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = post.owner || '—';
   const aePillar = _ae('ae-pillar');    if (aePillar) aePillar.value = post.contentPillar || '';
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
@@ -103,9 +107,10 @@ async function clientApprove(postId, btn) {
   if (alreadyApproved) { showToast('Already approved ✓', 'success'); return; }
   if (btn) btn.disabled = true;
   try {
+    // scheduled → owner remains unchanged (per ownership rules)
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
+      body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
@@ -115,22 +120,22 @@ async function clientApprove(postId, btn) {
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }
 
-function showRevisionInput(postId) {
-  const wrap = document.getElementById(`revision-wrap-${postId}`);
-  if (wrap) { wrap.classList.toggle('active'); document.getElementById(`revision-text-${postId}`)?.focus(); }
+function showChangeInput(postId) {
+  const wrap = document.getElementById(`change-wrap-${postId}`);
+  if (wrap) { wrap.classList.toggle('active'); document.getElementById(`change-text-${postId}`)?.focus(); }
 }
 
-async function submitClientRevision(postId) {
-  const text = (document.getElementById(`revision-text-${postId}`)?.value||'').trim();
+async function submitClientChanges(postId) {
+  const text = (document.getElementById(`change-text-${postId}`)?.value||'').trim();
   if (!text) { showToast('Please describe what you want changed', 'error'); return; }
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'revisions needed', comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), owner: STAGE_OWNER['in production'], comments: text, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision requested: ${text.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
-    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">↺ Revision sent — the team will take care of it.</div>`;
+    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent — the team will take care of it.</div>`;
     setTimeout(() => loadPostsForClient(), 1000);
   } catch { showToast('Failed — try again', 'error'); }
 }
@@ -139,7 +144,7 @@ async function clientAcknowledge(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'in production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged — sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
@@ -156,7 +161,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ post_link: url, stage: 'in production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -185,7 +190,7 @@ async function submitClientRequest() {
     const email  = localStorage.getItem('gbl_email') || 'Client';
     await apiFetch('/posts', {
       method: 'POST',
-      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().getDate()} ${MONTHS[new Date().getMonth()]}`, stage: 'awaiting brand input', owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().getDate()} ${MONTHS[new Date().getMonth()]}`, stage: toDbStage('awaiting brand input'), owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     });
     if (file) await uploadPostAsset(file, postId);
     await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: `New request: ${brief.substring(0,60)}` });
@@ -396,7 +401,7 @@ function _renderPCS(postId) {
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
-  const canEdit     = ['Admin','Servicing'].includes(currentRole);
+  const canEdit     = currentRole !== 'Client';
   const dateValue   = isPublished ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
 
   // 3. Render into DOM
@@ -444,7 +449,7 @@ function _updateSubtitle(post) {
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';
-  const parts = [pLabel, formatOwner(getResponsibleOwner(post)), dDisp];
+  const parts = [pLabel, formatOwner(post.owner), dDisp];
   el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
@@ -543,9 +548,12 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
+    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
+    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
+    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify(patchBody),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -553,6 +561,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
     // Apply server response (includes DB-set status_changed_at)
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
+      if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
     post._dirty = false;
@@ -598,7 +607,6 @@ function _buildStageProgress(stageLC) {
   // Normalise all variant/edge stages to a progress step
   const norm =
     (stageLC === 'awaiting brand input') ? 'in production'     :
-    (stageLC === 'revisions needed')     ? 'in production'     :
     (stageLC === 'draft')                ? 'in production'     :
     (stageLC === 'parked')               ? 'scheduled'         :
     (stageLC === 'archive')              ? 'published'         :
@@ -704,7 +712,7 @@ async function pcsSaveAttach(postId) {
     const isPublished = stageLC === 'published';
     const canvaUrl    = post.postLink || '';
     const linkedinUrl = post.linkedinUrl || '';
-    const canEdit = ['Admin','Servicing'].includes(currentRole);
+    const canEdit = currentRole !== 'Client';
     const el = document.getElementById('pcs-action-btn-wrap');
     if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
   }
@@ -755,10 +763,13 @@ async function updatePost(postId, field, value) {
     comments:      'comments',
   }[field] || field;
 
+  // Convert stage value to DB format before sending
+  const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
+
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ [dbField]: value || null, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ [dbField]: wireValue, updated_at: new Date().toISOString() }),
     });
     showToast('Saved', 'success');
     refreshSystemViews();
@@ -835,7 +846,7 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(getResponsibleOwner(post)))}</span>`)}
+        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(post.owner))}</span>`)}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}

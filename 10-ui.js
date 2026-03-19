@@ -135,7 +135,7 @@ function scrollToBucket(bucketKey) {
     // Find the bucket whose header text matches the key loosely
     for (const card of buckets) {
       const name = card.querySelector('.bucket-name')?.textContent?.toLowerCase() || '';
-      const keyMap = { production:'in production', revisions:'revision', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
+      const keyMap = { production:'in production', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
       const match = keyMap[bucketKey] || bucketKey;
       if (name.includes(match)) {
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -376,7 +376,7 @@ function toggleFabMenu() {
   backdrop.classList.toggle('open', open);
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
-  if (reqBtn) reqBtn.style.display = currentRole === 'Creative' ? 'none' : '';
+  if (reqBtn) reqBtn.style.display = '';
 }
 
 function closeFabMenu() {

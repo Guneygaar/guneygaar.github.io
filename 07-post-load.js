@@ -9,6 +9,9 @@ console.log("LOADED:", "07-post-load.js");
 // Skips posts with _dirty === true (in-flight PATCH).
 // Never replaces allPosts blindly — always mutates existing objects in-place.
 function mergePosts(fresh) {
+  // Normalize DB stage values → UI stage values on ingest
+  fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
+
   const map = new Map(allPosts.map(p => [getPostId(p), p]));
 
   fresh.forEach(fp => {
@@ -245,15 +248,12 @@ function updateStats() {
   const today   = new Date(); today.setHours(0,0,0,0);
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
-  let creativeRequests=0, creativeRevisions=0;
   allPosts.forEach(p => {
     const stage = (p.stage||'').toLowerCase().trim();
     if (stage === 'published') published++;
     if (stage.includes('approval')) awaitingApproval++;
     if (!['published','archive'].includes(stage)) inPipeline++;
     if (stage === 'ready') readyToSend++;
-    if (stage === 'awaiting brand input') creativeRequests++;
-    if (stage === 'revisions needed') creativeRevisions++;
     const d = parseDate(p.targetDate);
     if (d) {
       if (d > today && d <= weekEnd) dueWeek++;
@@ -267,9 +267,7 @@ function updateStats() {
   setText('s-week',      dueWeek);
   setText('s-overdue',   overdue);
   setText('s-ready',     `${readyToSend}/${READY_TO_SEND_TARGET}`);
-  setText('s-creative-requests',  creativeRequests);
-  setText('s-creative-revisions', creativeRevisions);
-  setText('s-creative-gap',       `${readyToSend}/${READY_TO_SEND_TARGET}`);
+  // Legacy stats removed
   updateBadge('badge-tasks',    getMyTasks().length);
   updateBadge('badge-upcoming', getUpcoming().length);
 }
@@ -386,7 +384,7 @@ function _renderDashboardInner() {
   const approved_count = allPosts.filter(p => stg(p) === 'approved').length;
   const failed_publish_count = allPosts.filter(p => stg(p) === 'failed_publish').length;
 
-  // PIPELINE TOTAL (per spec: ready + awaiting + approved + scheduled-future)
+  // PIPELINE TOTAL — excludes 'in production' (WIP, not countable)
   const pipeline_total = ready_count + awaiting_total + approved_count + runway_posts;
 
   // ═══════════════════════════════════════════════
@@ -484,7 +482,7 @@ function _renderDashboardInner() {
       <div class="pc-board-label">PRANAV</div>
       <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
       <div class="pc-board-status">PIPELINE</div>
-      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}">${pranavAction}</div>
+      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}"${pranavAction === 'CREATE' ? ' data-nav="create"' : ''}>${pranavAction}</div>
     </div>
 
     <div class="pc-board" data-nav="chitra">
@@ -499,7 +497,7 @@ function _renderDashboardInner() {
         <div class="pc-client-label">AWAITING APPROVAL</div>
         ${clientApprovalAction ? `<div class="pc-client-action">${clientApprovalAction}</div>` : ''}
       </div>
-      <div class="pc-client-cell">
+      <div class="pc-client-cell" data-nav="awaiting-input">
         <div class="pc-client-num">${awaiting_brand_count}</div>
         <div class="pc-client-label">AWAITING INPUT</div>
       </div>
@@ -516,7 +514,7 @@ function _renderDashboardInner() {
   });
 
   el.querySelector('[data-nav="pranav"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['in production', 'revisions needed', 'awaiting brand input', 'ready']);
+    navigateWithFilter('pipeline', ['in production', 'awaiting brand input', 'ready']);
   });
 
   el.querySelector('[data-nav="chitra"]')?.addEventListener('click', () => {
@@ -529,6 +527,15 @@ function _renderDashboardInner() {
 
   el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['awaiting approval']);
+  });
+
+  el.querySelector('[data-nav="awaiting-input"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['awaiting brand input']);
+  });
+
+  el.querySelector('[data-nav="create"]')?.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent bubbling to parent pranav tile
+    if (typeof openNewPostModal === 'function') openNewPostModal();
   });
 }
 
@@ -601,7 +608,7 @@ function renderAdminInsight() {
   }
   const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
   const stuckClient     = allPosts.filter(p => ['awaiting approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
-  const stuckReview     = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'revisions needed' && daysSince(p) >= 2);
+  // stuckReview removed — stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
   const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
@@ -610,7 +617,7 @@ function renderAdminInsight() {
   window._parkedPosts = parkedPosts;
 
   // Build pills for summary bar
-  const blockers = stuckProduction.length + stuckClient.length + stuckReview.length;
+  const blockers = stuckProduction.length + stuckClient.length;
   const blockPillClass = blockers === 0 ? 'green' : blockers >= 5 ? 'red' : 'amber';
   const readyPillClass = readyCount >= READY_TO_SEND_TARGET ? 'green' : readyCount >= READY_TO_SEND_TARGET * 0.5 ? 'amber' : 'red';
 
@@ -627,7 +634,6 @@ function renderAdminInsight() {
   const bottleneckRows = [
     stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow - ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
     stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting - ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
-    stuckReview.length ? `<div class="insight-flag"><span class="insight-flag-dot amber"></span>Revisions sitting - ${stuckReview.length} post${stuckReview.length>1?'s':''} unaddressed 2+ days</div>` : '',
   ].filter(Boolean).join('');
   const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
   const approved = allPosts.filter(p => ['awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
@@ -677,7 +683,7 @@ function closeParked() {
 function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
-  if (!['Servicing','Creative'].includes(currentRole)) { section.innerHTML = ''; return; }
+  if (currentRole === 'Client') { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('gbl_email') || '';
   const roleName = currentRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
@@ -729,23 +735,15 @@ function staleClass(days) {
 function getMyTasks() {
   const allowed = ROLE_STAGES[currentRole];
   if (!allowed) return allPosts;
-  const filtered = allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
-  if (currentRole === 'Creative') {
-    filtered.sort((a,b) => {
-      const ia = CREATIVE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
-      const ib = CREATIVE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
-      return (ia===-1?99:ia) - (ib===-1?99:ib);
-    });
-  }
-  return filtered;
+  return allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
 }
 
 function getNextPost() {
   const posts = getMyTasks();
   if (!posts.length) return null;
   return [...posts].sort((a,b) => {
-    const ia = NEXT_POST_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
-    const ib = NEXT_POST_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
+    const ia = STAGE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
+    const ib = STAGE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
     return (ia===-1?99:ia) - (ib===-1?99:ib);
   })[0] || null;
 }
@@ -766,10 +764,10 @@ function getRelativeDate(rawDate) {
 function renderNextPost() {
   const section = document.getElementById('next-post-section');
   if (!section) return;
-  if (!['Admin','Creative','Servicing'].includes(currentRole)) { section.innerHTML=''; return; }
+  if (currentRole === 'Client') { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
-    section.innerHTML = `<div class="hero-card"><div class="hero-label">${currentRole === 'Creative' ? 'Current Job' : 'Most Urgent Post'}</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
+    section.innerHTML = `<div class="hero-card"><div class="hero-label">Most Urgent Post</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
     return;
   }
   const id        = getPostId(post);
@@ -777,7 +775,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = formatOwner(getResponsibleOwner(post));
+  const owner     = formatOwner(post.owner);
   const pillar    = formatPillarDisplay(post.contentPillar);
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';
@@ -785,18 +783,17 @@ function renderNextPost() {
   const days      = daysInStage(post);
   const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
-  const canUpdate = ['Admin','Servicing'].includes(currentRole);
+  const canUpdate = currentRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
-  if (stageLC === 'revisions needed') { primaryLabel='Mark Revision Done'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='View Details'; secondaryAction=`openPCS('${esc(id)}')`; }
-  else if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
+  if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
   else if (stageLC === 'in production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
   else if (stageLC === 'ready') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','awaiting approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','scheduled')`; }
   else if (stageLC === 'awaiting approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
   else { primaryLabel='Update Stage'; primaryAction=`openPCS('${esc(id)}')`; }
-  const heroLabel = currentRole === 'Creative' ? 'Current Job' : currentRole === 'Servicing' ? 'Needs Your Attention' : 'Most Urgent';
+  const heroLabel = 'Most Urgent';
   let staleNote = '';
-  if (stLabel && currentRole === 'Servicing') staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">[T] ${stLabel} in this stage</div>`;
-  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] Open in Canva ^</a>` : currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${currentRole === 'Creative' && (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="${currentRole==='Admin' ? `openAdminEdit('${esc(id)}')` : `openPCS('${esc(id)}')`}" title="Edit post">...</button>` : ''}</div></div>`;
+  if (stLabel) staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">[T] ${stLabel} in this stage</div>`;
+  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] Open in Canva ^</a>` : (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${(stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="openPCS('${esc(id)}')" title="Edit post">...</button>` : ''}</div></div>`;
 }
 
 function toggleHeroComments(id, btn) {
@@ -924,7 +921,7 @@ function _renderTasksInner() {
   const stagesHtml = buckets.map(bucket => {
     const posts = allPosts
       .filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
-      .filter(p => currentRole !== 'Servicing' || !isSnoozed(getPostId(p)));
+      .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
     _postLists[listKey] = posts;
     const count    = posts.length;
@@ -1155,7 +1152,7 @@ function filterLibrary() {
   const filtered = allPosts.filter(p => {
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
-    if (owner  && (getResponsibleOwner(p)||'').toLowerCase() !== owner) return false;
+    if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
     if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
     if (date) {
       const d = parseDate(p.targetDate);
@@ -1241,7 +1238,7 @@ function _renderClientViewInner() {
         const waText      = encodeURIComponent(`LinkedIn post ready for review\n\nPreview and approve here:\n${approvalUrl}\n\nTakes 5 seconds.`);
         const waLink      = `https://wa.me/?text=${waText}`;
         const preview     = postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" style="display:block;width:100%;height:100px;background:var(--surface3);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;margin-bottom:var(--sp-3)">View Post Design ^</a>` : `<div class="approval-item-preview">No preview - review brief above</div>`;
-        return `<div class="client-approval-item" id="apv-item-${esc(id)}"><div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>${preview}<div class="approval-item-actions"><button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">OK Approve</button><button class="btn-revise-outline" onclick="showRevisionInput('${esc(id)}')">? Changes</button></div><div class="revision-input-wrap" id="revision-wrap-${esc(id)}"><textarea class="revision-textarea" id="revision-text-${esc(id)}" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea><button class="btn-send-revision" onclick="submitClientRevision('${esc(id)}')">Send Revision Request</button></div><div class="approval-confirmed" id="approved-confirm-${esc(id)}">OK Approved! The team has been notified.</div><a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Share on WhatsApp</a></div>`;
+        return `<div class="client-approval-item" id="apv-item-${esc(id)}"><div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>${preview}<div class="approval-item-actions"><button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">OK Approve</button><button class="btn-revise-outline" onclick="showChangeInput('${esc(id)}')">? Changes</button></div><div class="change-input-wrap" id="change-wrap-${esc(id)}"><textarea class="change-textarea" id="change-text-${esc(id)}" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea><button class="btn-send-changes" onclick="submitClientChanges('${esc(id)}')">Send Change Request</button></div><div class="approval-confirmed" id="approved-confirm-${esc(id)}">OK Approved! The team has been notified.</div><a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Share on WhatsApp</a></div>`;
       }).join('');
     }
   }
@@ -1258,16 +1255,16 @@ function renderClientApproved() {
   tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
 }
 
-// -- Fix 20: Creative Target Tracker ----------
+// -- Production Tracker ----------
 function renderCreativeTracker() {
   const section = document.getElementById('admin-insight-section');
-  if (!section || currentRole !== 'Creative') return;
+  if (!section || currentRole === 'Client') return;
   const now  = Date.now();
   const DAY  = 86400000;
   const weekAgo = now - 7 * DAY;
   const monthAgo = now - 30 * DAY;
   const myPosts = allPosts.filter(p => {
-    return getResponsibleOwner(p) === 'PRANAV';
+    return (p.owner||'').toLowerCase() === 'pranav';
   });
   const doneThisWeek = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
@@ -1279,7 +1276,7 @@ function renderCreativeTracker() {
     const t = new Date(p.updated_at || p.created_at).getTime();
     return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= monthAgo;
   }).length;
-  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting approval','scheduled','published','parked'].includes(s)) : ['in production','revisions needed','awaiting brand input'];
+  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting approval','scheduled','published','parked'].includes(s)) : ['in production','awaiting brand input'];
   const inProgress = myPosts.filter(p => _activeStages.includes((p.stage||'').toLowerCase().trim())).length;
   const WEEKLY_TARGET  = 5;
   const MONTHLY_TARGET = 20;
@@ -1330,10 +1327,8 @@ function _calNav(delta) {
   filterLibrary();
 }
 
-function normalizeOwner(owner, stage) {
-  // Stage-derived ownership — DB owner is ignored in UI
-  const derived = stage ? getResponsibleOwner({ stage }) : null;
-  return derived || '—';
+function normalizeOwner(owner) {
+  return (owner || '').trim() || '—';
 }
 
 function normalizePillar(pillar) {
