@@ -573,7 +573,7 @@ function renderPipelineStrip() {
 function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
-  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
@@ -598,7 +598,7 @@ function renderProductionMeter() {
 function renderAdminInsight() {
   const section = document.getElementById('admin-insight-section');
   if (!section) return;
-  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const now = Date.now();
   const DAY = 86400000;
   function daysSince(post) {
@@ -683,9 +683,9 @@ function closeParked() {
 function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
-  if (currentRole === 'Client') { section.innerHTML = ''; return; }
+  if (effectiveRole === 'Client') { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('gbl_email') || '';
-  const roleName = currentRole;
+  const roleName = effectiveRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
@@ -698,7 +698,7 @@ function renderTaskBanner() {
 function renderAdminTaskPanel() {
   const section = document.getElementById('admin-task-section');
   if (!section) return;
-  if (currentRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const openTasks = allTasks.filter(t => !t.done);
   const doneTasks = allTasks.filter(t => t.done).slice(0, 5);
   const openRows = openTasks.map(t => {
@@ -733,7 +733,7 @@ function staleClass(days) {
 }
 
 function getMyTasks() {
-  const allowed = ROLE_STAGES[currentRole];
+  const allowed = ROLE_STAGES[effectiveRole];
   if (!allowed) return allPosts;
   return allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
 }
@@ -764,7 +764,7 @@ function getRelativeDate(rawDate) {
 function renderNextPost() {
   const section = document.getElementById('next-post-section');
   if (!section) return;
-  if (currentRole === 'Client') { section.innerHTML=''; return; }
+  if (effectiveRole === 'Client') { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
     section.innerHTML = `<div class="hero-card"><div class="hero-label">Most Urgent Post</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
@@ -783,7 +783,7 @@ function renderNextPost() {
   const days      = daysInStage(post);
   const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
-  const canUpdate = currentRole !== 'Client';
+  const canUpdate = effectiveRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
   if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
   else if (stageLC === 'in production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
@@ -836,7 +836,7 @@ let _taskFilter = null; // null = show all, string = bucket key
 function renderTaskStageChips() {
   const el = document.getElementById('task-stage-chips');
   if (!el) return;
-  const buckets = ROLE_BUCKETS[currentRole];
+  const buckets = ROLE_BUCKETS[effectiveRole];
   if (!buckets || !buckets.length) { el.innerHTML = ''; return; }
 
   const chips = buckets.map(bucket => {
@@ -868,7 +868,7 @@ function filterTasksByChip(bucketKey) {
 function _renderFilteredTasks() {
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[currentRole];
+  const buckets = ROLE_BUCKETS[effectiveRole];
   if (!buckets) return;
 
   if (!_taskFilter) {
@@ -909,7 +909,7 @@ function _renderTasksInner() {
 
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[currentRole];
+  const buckets = ROLE_BUCKETS[effectiveRole];
   if (!buckets) {
     const posts = getMyTasks();
     _postLists['tasks'] = posts;
@@ -1258,7 +1258,7 @@ function renderClientApproved() {
 // -- Production Tracker ----------
 function renderCreativeTracker() {
   const section = document.getElementById('admin-insight-section');
-  if (!section || currentRole === 'Client') return;
+  if (!section || effectiveRole === 'Client') return;
   const now  = Date.now();
   const DAY  = 86400000;
   const weekAgo = now - 7 * DAY;
