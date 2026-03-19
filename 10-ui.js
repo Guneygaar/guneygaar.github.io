@@ -538,6 +538,41 @@ function toggleFabMenu() {
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
   if (reqBtn) reqBtn.style.display = '';
+  // Show "Assign Task" only for Admin
+  const assignBtn = document.getElementById('fab-assign-task');
+  if (assignBtn) assignBtn.style.display = (window.effectiveRole === 'Admin') ? '' : 'none';
+}
+
+function openAssignTaskFromFab() {
+  const postId = window._pcs?.postId;
+  if (!postId) {
+    showToast('Open a post first to assign a task', 'error');
+    return;
+  }
+  const assignee = prompt('Assign to (e.g. Pranav, Chitra):');
+  if (!assignee || !assignee.trim()) return;
+  const message = prompt('Task description:');
+  if (!message || !message.trim()) return;
+  _fabAssignTask(postId, assignee.trim(), message.trim());
+}
+
+async function _fabAssignTask(postId, assignee, message) {
+  try {
+    await apiFetch('/tasks', {
+      method: 'POST',
+      body: JSON.stringify({
+        assigned_to: assignee,
+        message: message,
+        post_id: postId,
+      }),
+    });
+    showToast('Task assigned OK', 'success');
+    await logActivity({ post_id: postId, actor_name: resolveActor(), actor_role: window.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
+    if (typeof loadTasks === 'function') loadTasks();
+  } catch (err) {
+    console.error('[AssignTask] FAILED:', err);
+    showToast('Failed to assign task', 'error');
+  }
 }
 
 function closeFabMenu() {
