@@ -86,3 +86,28 @@ function timeAgo(ts) {
   if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
   return `${Math.floor(diff/86400)}d ago`;
 }
+
+// IST display formatter — display-only, never mutates raw data
+function formatIST(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+
+// Resolve actor name for write paths — strict allowlist
+const _ALLOWED_ACTORS = ['Pranav', 'Chitra', 'Client'];
+function resolveActor() {
+  const role = window.currentRole || '';
+  if (role === 'Creative')  return 'Pranav';
+  if (role === 'Admin')     return 'Chitra';
+  if (role === 'Servicing') return 'Chitra';
+  if (role === 'Client')    return 'Client';
+  console.warn('[PCS] resolveActor: unknown role "' + role + '" — defaulting to Client');
+  return 'Client';
+}

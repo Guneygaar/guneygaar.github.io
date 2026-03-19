@@ -65,7 +65,7 @@ async function loadPosts() {
       cachedPosts.forEach(p => allPosts.push(p));
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
-        `Last updated: ${new Date().toLocaleTimeString()}`);
+        `Last updated: ${formatIST(new Date().toISOString())}`);
     } else {
       const tc = document.getElementById('tasks-container');
       if (tc) tc.innerHTML =

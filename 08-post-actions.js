@@ -15,9 +15,10 @@ async function quickStage(postId, newStage) {
   scheduleRender();
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
+    const actor = resolveActor();
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response (includes DB-set status_changed_at)
@@ -27,7 +28,7 @@ async function quickStage(postId, newStage) {
     }
     post._dirty = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` });
+    await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     post._dirty = false;
@@ -104,7 +105,7 @@ async function clientApprove(postId, btn) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
@@ -538,12 +539,13 @@ function _executeStageChange(postId, newStage) {
 
 async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   // ── DB WRITE — rollback ONLY if this fails ──
+  const actor = resolveActor();
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -573,7 +575,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // ── NON-CRITICAL — completely outside DB try/catch ──
-  try { logActivity({ post_id: postId, actor_name: localStorage.getItem('gbl_email') || currentRole, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
@@ -778,10 +780,11 @@ function _loadPCSActivity(postId, bodyEl) {
       }
       bodyEl.innerHTML = rows.map(r => {
         const ago = r.created_at ? timeAgo(r.created_at) : '';
+        const istTime = r.created_at ? formatIST(r.created_at) : '';
         return `<div class="pcs-activity-row">
           <span class="pcs-activity-who">${esc(r.actor_name || r.actor || 'System')}</span>
           <span class="pcs-activity-what">${esc(r.action || '')}</span>
-          <span class="pcs-activity-when">${esc(ago)}</span>
+          <span class="pcs-activity-when" title="${esc(istTime)}">${esc(ago)}</span>
         </div>`;
       }).join('');
     })
