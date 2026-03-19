@@ -1508,6 +1508,18 @@ a:hover { text-decoration: underline; }
   100% { transform: scale(1); }
 }
 
+/* -- Task Detail Modal -- */
+.task-detail-card { max-width: 440px; }
+.task-detail-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}
+.task-detail-title { font-size: 16px; font-weight: 700; color: var(--text1); }
+.task-detail-body { margin-bottom: var(--sp-4); }
+.task-detail-msg { font-size: 15px; color: var(--text1); line-height: 1.6; margin-bottom: var(--sp-3); }
+.task-detail-meta { font-size: 13px; color: var(--text3); margin-bottom: var(--sp-1); }
+.task-detail-actions { display: flex; justify-content: flex-end; }
+
 .score-flash { animation: scorePulse 0.3s ease; }
 @keyframes scorePulse {
   0%   { background: rgba(50, 215, 75, 0.15); }
@@ -3561,7 +3573,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: fixed;
   right: 16px;
   bottom: 152px;
-  z-index: 410;
+  z-index: 9999;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;

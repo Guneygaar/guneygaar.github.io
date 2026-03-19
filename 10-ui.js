@@ -529,6 +529,12 @@ function _fabOnScroll() {
   _fabScrollTimer = setTimeout(() => fab.classList.remove('hidden'), 350);
 }
 
+function updateFabVisibility() {
+  var assignBtn = document.getElementById('fab-assign-task');
+  if (!assignBtn) return;
+  assignBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
+}
+
 function toggleFabMenu() {
   const sheet = document.getElementById('fab-menu-sheet');
   const backdrop = document.getElementById('fab-backdrop');
@@ -538,25 +544,31 @@ function toggleFabMenu() {
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
   if (reqBtn) reqBtn.style.display = '';
-  // Show "Assign Task" only for Admin
-  const assignBtn = document.getElementById('fab-assign-task');
-  if (assignBtn) assignBtn.style.display = (window.effectiveRole === 'Admin') ? '' : 'none';
+  // Role-only FAB visibility
+  updateFabVisibility();
 }
 
 function openAssignTaskFromFab() {
-  console.log('[FAB] Assign Task clicked');
-  const postId = window._pcs?.postId;
-  if (!postId) {
-    console.warn('[FAB] No post open — blocked');
-    showToast('Open a post first to assign a task', 'error');
+  console.log('[FAB] Assign click', window._pcs?.postId);
+
+  // GUARD — must have open post
+  if (!window._pcs?.postId) {
+    showToast('Open a post first');
     return;
   }
-  console.log('[FAB] Post context:', postId);
-  const assignee = prompt('Assign to (e.g. Pranav, Chitra):');
-  if (!assignee || !assignee.trim()) return;
-  const message = prompt('Task description:');
-  if (!message || !message.trim()) return;
-  _fabAssignTask(postId, assignee.trim(), message.trim());
+
+  const assignee = prompt('Assign to (Pranav / Chitra)');
+  if (!assignee) return;
+
+  const text = prompt('Task description');
+  if (!text) return;
+
+  try {
+    _fabAssignTask(window._pcs.postId, assignee.trim(), text.trim());
+  } catch (err) {
+    console.error('[FAB] Assign failed', err);
+    showToast('Failed to assign task');
+  }
 }
 
 async function _fabAssignTask(postId, assignee, message) {
@@ -581,6 +593,51 @@ async function _fabAssignTask(postId, assignee, message) {
 function closeFabMenu() {
   document.getElementById('fab-menu-sheet')?.classList.remove('open');
   document.getElementById('fab-backdrop')?.classList.remove('open');
+}
+
+// -- Task Detail Modal --------------------------
+function openTaskModal(taskId) {
+  var task = (window.allTasks || []).find(function(t) { return String(t.id) === String(taskId); });
+  if (!task) {
+    showToast('Task not found');
+    return;
+  }
+
+  var overlay = document.getElementById('task-detail-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'task-detail-overlay';
+    overlay.className = 'modal-overlay';
+    overlay.onclick = function(ev) { if (ev.target === overlay) closeTaskModal(); };
+    document.body.appendChild(overlay);
+  }
+
+  var created = task.created_at ? formatDate(task.created_at) : '—';
+  var due = task.due_date ? formatDateShort(task.due_date) : '';
+
+  overlay.innerHTML =
+    '<div class="modal-card task-detail-card">' +
+      '<div class="task-detail-header">' +
+        '<span class="task-detail-title">Task Details</span>' +
+        '<button class="btn-close-modal" onclick="closeTaskModal()">&times;</button>' +
+      '</div>' +
+      '<div class="task-detail-body">' +
+        '<div class="task-detail-msg">' + esc(task.message) + '</div>' +
+        '<div class="task-detail-meta">Assigned to: ' + esc(task.assigned_to || '—') + '</div>' +
+        '<div class="task-detail-meta">Created: ' + created + '</div>' +
+        (due ? '<div class="task-detail-meta">Due: ' + due + '</div>' : '') +
+      '</div>' +
+      '<div class="task-detail-actions">' +
+        '<button class="btn-modal-primary" onclick="markTaskDone(' + task.id + '); closeTaskModal();">✓ Mark as Done</button>' +
+      '</div>' +
+    '</div>';
+
+  overlay.classList.add('open');
+}
+
+function closeTaskModal() {
+  var overlay = document.getElementById('task-detail-overlay');
+  if (overlay) overlay.classList.remove('open');
 }
 
 // -- Request Sheet ------------------------------
