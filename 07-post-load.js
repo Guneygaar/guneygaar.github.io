@@ -1196,7 +1196,7 @@ function _renderClientViewInner() {
     else {
       approvalItems.innerHTML = approvalPosts.map(p => {
         const id          = getPostId(p);
-        const postLink    = p.postLink || p.post_link || '';
+        const postLink    = p.postLink || p.canva_link || '';
         const approvalUrl = `${window.location.origin}/p/${id}`;
         const waText      = encodeURIComponent(`LinkedIn post ready for review\n\nPreview and approve here:\n${approvalUrl}\n\nTakes 5 seconds.`);
         const waLink      = `https://wa.me/?text=${waText}`;
@@ -1219,7 +1219,7 @@ function renderClientApproved() {
   const tbody = document.getElementById('client-approved-tbody');
   if (!tbody) return;
   if (!published.length) { tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">?</div><p>No published posts yet.</p></div></td></tr>`; return; }
-  tbody.innerHTML = published.map(p => { const link = p.postLink || p.post_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
+  tbody.innerHTML = published.map(p => { const link = p.postLink || p.canva_link || ''; return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
 }
 
 // -- Production Tracker ----------

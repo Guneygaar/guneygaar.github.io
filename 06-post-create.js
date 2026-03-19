@@ -201,9 +201,9 @@ comments: comments || null,
 // Route link to correct DB column based on URL content
 if (postLink) {
   if (postLink.includes('linkedin.com')) {
-    payload.linkedin_url = postLink;
-  } else {
-    payload.post_link = postLink;
+    payload.linkedin_link = postLink;
+  } else if (postLink.includes('canva.com')) {
+    payload.canva_link = postLink;
   }
 }
 console.log('[submitNewPost] VALIDATION PASSED');

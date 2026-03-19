@@ -102,9 +102,9 @@ async function saveAdminEdit() {
   // Route link to correct DB column based on URL content
   if (postLink) {
     if (postLink.includes('linkedin.com')) {
-      _payload.linkedin_url = postLink;
-    } else {
-      _payload.post_link = postLink;
+      _payload.linkedin_link = postLink;
+    } else if (postLink.includes('canva.com')) {
+      _payload.canva_link = postLink;
     }
   }
   console.log('[saveAdminEdit] VALIDATION PASSED');
@@ -187,7 +187,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ post_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ canva_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -788,8 +788,8 @@ async function updatePost(postId, field, value) {
     location:      'location',
     format:        'format',
     targetDate:    'target_date',
-    postLink:      'post_link',
-    linkedinUrl:   'linkedin_url',
+    postLink:      'canva_link',
+    linkedinUrl:   'linkedin_link',
     comments:      'comments',
   }[field] || field;
 
