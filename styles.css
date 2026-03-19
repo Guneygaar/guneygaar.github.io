@@ -1068,62 +1068,122 @@ a:hover { text-decoration: underline; }
 
 /* ── LED Scoreboard ── */
 .pcs-scoreboard {
-  background: #0a0a0a;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--r-lg);
-  padding: 14px 16px;
-  margin-top: 10px;
+  background: #0D0D0D;
+  padding: 20px;
+  margin-top: 8px;
   font-family: 'Roboto Mono', monospace;
 }
-.sb-alert {
+
+/* ALERT */
+.pcs-scoreboard .sb-alert {
   font-size: 11px;
   letter-spacing: 1.5px;
   color: #666;
   text-transform: uppercase;
   margin-bottom: 10px;
 }
-.sb-alert.on {
+.pcs-scoreboard .sb-alert.on {
   color: #ff3b30;
   text-shadow: 0 0 6px rgba(255,0,0,0.4);
 }
-.sb-grid {
+
+/* GRID */
+.pcs-scoreboard .sb-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.sb-block { padding: 4px 0; cursor: pointer; }
-.sb-block:active { transform: scale(0.98); }
-.sb-label {
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: rgba(255,255,255,0.4);
-  margin-bottom: 4px;
-}
-.sb-num {
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  line-height: 1.2;
-}
-.sb-num.gold { color: #FFD700; }
-.sb-num.green { color: #00C853; }
-.sb-sub {
-  font-size: 10px;
-  letter-spacing: 1px;
-  margin-top: 2px;
-}
-.sb-sub.red { color: #ff3b30; opacity: 0.8; }
-.sb-sub.green { color: #00C853; opacity: 0.7; }
-.sb-client {
+  gap: 20px;
   margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.pcs-scoreboard .sb-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+/* LABEL */
+.pcs-scoreboard .sb-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: #666;
+}
+
+/* NUMBERS — DOMINANT */
+.pcs-scoreboard .sb-num {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 4px currentColor;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  max-width: 100%;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+.pcs-scoreboard .gold { color: #FFD700; }
+.pcs-scoreboard .green { color: #00C853; }
+
+/* BUTTONS */
+.pcs-scoreboard .sb-btn {
+  width: 100%;
+  padding: 14px 12px;
+  margin-top: 6px;
+  border-radius: 0;
+  border: 1px solid transparent;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+.pcs-scoreboard .sb-btn.grey {
+  background: #1f1f1f;
+  border-color: #2a2a2a;
+  color: #FFD700;
+}
+.pcs-scoreboard .sb-btn.amber {
+  background: #FFB300;
+  color: #111;
+}
+
+/* INTERACTION */
+.pcs-scoreboard .sb-num:active,
+.pcs-scoreboard .sb-btn:active {
+  transform: scale(0.96);
+  filter: brightness(1.15);
+}
+
+/* SAFETY GUARDS */
+.pcs-scoreboard .sb-num {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+  min-width: 0;
+}
+.pcs-scoreboard .sb-num:active,
+.pcs-scoreboard .sb-btn:active {
+  will-change: transform, filter;
+}
+
+/* CLIENT SECTION */
+.pcs-scoreboard .sb-client {
+  margin-top: 16px;
+  display: flex;
+  background: #1a1a1a;
+}
+.pcs-scoreboard .sb-client > div {
+  flex: 1;
+  padding: 12px;
   font-size: 11px;
   letter-spacing: 1px;
   color: #00C853;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  text-align: center;
+}
+.pcs-scoreboard .sb-client > div:first-child {
+  border-right: 1px solid #2a2a2a;
 }
 
 /* ── Top Task ── */
