@@ -1471,11 +1471,13 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase; color: var(--accent); margin-bottom: var(--sp-2);
 }
 .task-banner-item {
-  position: relative; z-index: 1; pointer-events: auto;
+  position: relative; z-index: 5; pointer-events: auto;
   display: flex; align-items: center; justify-content: space-between;
   gap: var(--sp-3); padding: 12px 0;
   min-height: 48px;
   border-bottom: 1px solid rgba(232,195,122,0.15);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .task-banner-item * { pointer-events: auto; }
 .task-banner-item:last-child { border-bottom: none; }
@@ -1484,6 +1486,7 @@ a:hover { text-decoration: underline; }
 .task-check {
   width: 20px; height: 20px; flex-shrink: 0; cursor: pointer;
   accent-color: var(--accent);
+  pointer-events: auto; position: relative; z-index: 10;
 }
 .btn-task-done {
   background: none; border: 1px solid var(--accent); color: var(--accent);

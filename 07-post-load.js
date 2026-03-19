@@ -252,6 +252,12 @@ async function markTaskDone(id) {
   }
 }
 
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.task-banner-item')) {
+    console.log('[TASK TAP OK]', e.target);
+  }
+});
+
 document.addEventListener('change', function(e) {
   if (!e.target.classList.contains('task-check')) return;
   const taskId = e.target.dataset.taskId;
