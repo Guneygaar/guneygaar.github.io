@@ -1260,6 +1260,138 @@ a:hover { text-decoration: underline; }
 }
 .sb-fab:active { opacity: 0.8; }
 
+/* ================================
+   PCS SCOREBOARD — MATERIAL PATCH
+================================ */
+
+/* 1. GLOBAL SURFACE UPGRADE */
+.pcs-scoreboard,
+.pcs-scoreboard .sb-inner {
+  background:
+    linear-gradient(#0c0c0c, #090909),
+    repeating-linear-gradient(
+      0deg,
+      #0e0e0e 0px,
+      #0e0e0e 2px,
+      #0a0a0a 2px,
+      #0a0a0a 4px
+    );
+  position: relative;
+}
+
+/* Micro-noise layer */
+.pcs-scoreboard::before,
+.pcs-scoreboard .sb-inner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.6;
+}
+
+/* Inset lighting */
+.pcs-scoreboard,
+.pcs-scoreboard .sb-inner {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.05),
+    inset 0 -1px 0 rgba(0,0,0,0.7);
+}
+
+/* 2. PANEL DEPTH */
+.sb-critical-panel,
+.sb-main-grid,
+.sb-client-strip,
+.sb-task-bar {
+  position: relative;
+  background:
+    linear-gradient(#0d0d0d, #0a0a0a);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    inset 0 -1px 0 rgba(0,0,0,0.6);
+  border: 1px solid #1f1f1f;
+}
+
+/* 3. DIVIDER = MACHINED SPINE */
+.sb-divider {
+  width: 4px;
+  background: linear-gradient(
+    to right,
+    #1a1a1a,
+    #3f3f3f,
+    #1a1a1a
+  );
+  box-shadow:
+    inset 0 0 2px rgba(255,255,255,0.1),
+    inset 0 0 4px rgba(0,0,0,0.8);
+}
+
+.sb-client-divider {
+  width: 1px;
+  background: #3a3a3a;
+}
+
+/* 4. NUMBER PRESENCE (LED FEEL) */
+.sb-critical-num,
+.sb-main-num,
+.sb-client-num {
+  letter-spacing: -1px;
+  text-shadow:
+    0 0 6px currentColor,
+    0 0 12px rgba(255,255,255,0.06);
+}
+
+.sb-critical-panel .sb-critical-num {
+  text-shadow:
+    0 0 8px #FF3B30,
+    0 0 16px rgba(255,59,48,0.15);
+}
+
+/* 5. CRITICAL PANEL INTENSITY */
+.sb-critical-panel {
+  background: #120808;
+  border-bottom: 1px solid #3a1a1a;
+}
+
+/* 6. CLIENT PRESSURE BOOST */
+.sb-client-strip .sb-client-num {
+  font-size: 42px;
+}
+
+.sb-client-strip .sb-client-label {
+  opacity: 0.7;
+}
+
+/* 7. TASK BAR = CONSOLE MODE */
+.sb-task-bar {
+  letter-spacing: 0.5px;
+}
+
+/* 8. COMPRESSION */
+.sb-critical-panel,
+.sb-main-cell,
+.sb-client-cell {
+  padding: 8px 6px;
+}
+
+.sb-critical-label,
+.sb-main-label,
+.sb-client-label,
+.sb-task-label {
+  line-height: 1.1;
+}
+
+.sb-main-sub {
+  margin-top: 4px;
+}
+
+/* 9. REMOVE SOFT UI LEAKS */
+.pcs-scoreboard * {
+  border-radius: 0 !important;
+}
+
 /* ── Top Task (legacy compat) ── */
 .top-task { display: none; }
 .top-task-label, .top-task-text { display: none; }
