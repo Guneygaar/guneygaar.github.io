@@ -1186,6 +1186,10 @@ function _renderClientViewInner() {
 }
 
 function renderClientApproved() {
+  // Hide published section on Client home — still visible in Library
+  const pubSection = document.getElementById('client-published-section');
+  if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
+  if (pubSection) pubSection.style.display = '';
   const published = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='published');
   const label     = document.getElementById('client-approved-label');
   if (label) label.textContent = published.length;

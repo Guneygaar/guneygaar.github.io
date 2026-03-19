@@ -185,8 +185,6 @@ function logout() {
   stopRealtime();
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');
-  const bnav = document.getElementById('bottom-nav');
-  if (bnav) bnav.style.display = 'none';
   showLoginOverlay();
 }
 
@@ -204,9 +202,6 @@ function activateRole(role) {
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
   updateActionButton();
-  // Show bottom nav for ALL roles (it lives outside both views now)
-  const bnav = document.getElementById('bottom-nav');
-  if (bnav) bnav.style.display = '';
   if (effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();

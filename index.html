@@ -227,7 +227,7 @@
 </div>
 
 <!-- BOTTOM NAVIGATION (global — outside all views so it persists across roles) -->
-<nav class="bottom-nav" id="bottom-nav" style="display:none">
+<nav class="bottom-nav" id="bottom-nav">
   <button class="bnav-btn tab-btn active" data-tab="tasks" onclick="switchTab(this)">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     <span>My Tasks</span>
@@ -333,7 +333,7 @@
     </div>
 
     <!-- Previously published -->
-    <div class="client-section">
+    <div class="client-section" id="client-published-section">
       <div class="client-section-head">
         <div>
           <div class="client-section-title">Live on LinkedIn</div>
