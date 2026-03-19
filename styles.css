@@ -3369,6 +3369,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .app-icon-btn:active { background: var(--surface2); }
 
+/* Pipeline search icon */
+.pipeline-search-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  opacity: 0.8;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+.pipeline-search-btn:active { opacity: 1; }
+.pipeline-search-btn svg { width: 18px; height: 18px; }
+
 /* Notification red dot (replaces badge number) */
 .notif-dot {
   position: absolute;

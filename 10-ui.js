@@ -184,6 +184,9 @@ function switchTab(btn) {
   // Update header title
   const titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.textContent = _TAB_TITLES[tab] || tab;
+  // Show pipeline search icon only on Pipeline tab
+  const searchBtn = document.getElementById('pipeline-search-btn');
+  if (searchBtn) searchBtn.style.display = (tab === 'pipeline') ? 'flex' : 'none';
   // Reset task chip filter when leaving tasks tab
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
     window._taskFilter = null;
@@ -191,6 +194,11 @@ function switchTab(btn) {
   // Re-render the newly active tab with current data
   safeRender();
   _fabAttachScroll();
+}
+
+function openPipelineSearch() {
+  console.log('Open Pipeline Search');
+  // Stub — search UI will be built in a future step
 }
 
 function switchClientTab(tab) {
