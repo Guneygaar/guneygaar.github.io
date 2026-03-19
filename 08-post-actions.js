@@ -98,9 +98,17 @@ async function saveAdminEdit() {
   }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
-  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, updated_at: new Date().toISOString() };
+  // Route link to correct DB column based on URL content
+  if (postLink) {
+    if (postLink.includes('linkedin.com')) {
+      _payload.linkedin_url = postLink;
+    } else {
+      _payload.post_link = postLink;
+    }
+  }
   console.log('[saveAdminEdit] VALIDATION PASSED');
-  console.log('[saveAdminEdit] PAYLOAD:', _payload);
+  console.log('[saveAdminEdit] FINAL PAYLOAD:', JSON.stringify(_payload));
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',

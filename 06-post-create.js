@@ -197,10 +197,17 @@ location: location || null,
 stage: toDbStage(stage || 'in production'),
 target_date: date || null,
 comments: comments || null,
-post_link: postLink || null
 };
+// Route link to correct DB column based on URL content
+if (postLink) {
+  if (postLink.includes('linkedin.com')) {
+    payload.linkedin_url = postLink;
+  } else {
+    payload.post_link = postLink;
+  }
+}
 console.log('[submitNewPost] VALIDATION PASSED');
-console.log('[submitNewPost] PAYLOAD:', payload);
+console.log('[submitNewPost] FINAL PAYLOAD:', JSON.stringify(payload));
 
 try {
 
