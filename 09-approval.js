@@ -16,6 +16,7 @@ async function showApprovalView(postId) {
   try {
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}&select=*&limit=1`);
     const post = normalise(rows)[0];
+    if (post && post.stage) post.stage = toUiStage(post.stage);
     if (!post) {
       view.innerHTML = `<div class="approval-wrap"><div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:16px">🔍</div><div style="font-weight:700;font-size:20px;margin-bottom:8px;color:var(--text1)">Post not found</div><div style="color:var(--text3);font-size:14px">The link may have expired or the post ID is incorrect.<br>Post ID: <code>${esc(postId)}</code></div></div></div>`;
       return;

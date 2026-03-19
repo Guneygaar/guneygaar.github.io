@@ -19,6 +19,37 @@ const CLIENT_REQUEST_FORM_URL = '';
 // DB values are lowercase. UI reads label/hex from STAGE_META.
 // -------------------------------------------------------
 
+// UI (internal) → DB (wire format) mapping
+const STAGE_MAP = {
+  'in production':        'in_production',
+  'revisions needed':     'revisions_needed',
+  'awaiting brand input': 'awaiting_brand_input',
+  'ready':                'ready',
+  'awaiting approval':    'awaiting_approval',
+  'scheduled':            'scheduled',
+  'published':            'published',
+  'parked':               'parked',
+  'archive':              'archive',
+  'rejected':             'rejected',
+};
+
+// DB → UI reverse mapping (auto-generated)
+const STAGE_MAP_REV = Object.fromEntries(
+  Object.entries(STAGE_MAP).map(([ui, db]) => [db, ui])
+);
+
+// Convert UI stage label to DB wire value
+function toDbStage(uiStage) {
+  const key = (uiStage || '').toLowerCase().trim();
+  return STAGE_MAP[key] || key;
+}
+
+// Convert DB wire value to UI stage label
+function toUiStage(dbStage) {
+  const key = (dbStage || '').toLowerCase().trim();
+  return STAGE_MAP_REV[key] || key;
+}
+
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
   'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },

@@ -18,12 +18,13 @@ async function quickStage(postId, newStage) {
     const actor = resolveActor();
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response (includes DB-set status_changed_at)
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
+      if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
     post._dirty = false;
@@ -105,7 +106,7 @@ async function clientApprove(postId, btn) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
+      body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
@@ -126,7 +127,7 @@ async function submitClientRevision(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'revisions needed', comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('revisions needed'), comments: text, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
@@ -139,7 +140,7 @@ async function clientAcknowledge(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'in production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged — sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
@@ -156,7 +157,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ post_link: url, stage: 'in production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -185,7 +186,7 @@ async function submitClientRequest() {
     const email  = localStorage.getItem('gbl_email') || 'Client';
     await apiFetch('/posts', {
       method: 'POST',
-      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().getDate()} ${MONTHS[new Date().getMonth()]}`, stage: 'awaiting brand input', owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().getDate()} ${MONTHS[new Date().getMonth()]}`, stage: toDbStage('awaiting brand input'), owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     });
     if (file) await uploadPostAsset(file, postId);
     await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: `New request: ${brief.substring(0,60)}` });
@@ -545,7 +546,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: newStage, updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -553,6 +554,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
     // Apply server response (includes DB-set status_changed_at)
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
+      if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
     post._dirty = false;
@@ -755,10 +757,13 @@ async function updatePost(postId, field, value) {
     comments:      'comments',
   }[field] || field;
 
+  // Convert stage value to DB format before sending
+  const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
+
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ [dbField]: value || null, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ [dbField]: wireValue, updated_at: new Date().toISOString() }),
     });
     showToast('Saved', 'success');
     refreshSystemViews();

@@ -9,6 +9,9 @@ console.log("LOADED:", "07-post-load.js");
 // Skips posts with _dirty === true (in-flight PATCH).
 // Never replaces allPosts blindly — always mutates existing objects in-place.
 function mergePosts(fresh) {
+  // Normalize DB stage values → UI stage values on ingest
+  fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
+
   const map = new Map(allPosts.map(p => [getPostId(p), p]));
 
   fresh.forEach(fp => {
