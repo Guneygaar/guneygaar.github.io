@@ -1067,24 +1067,57 @@ a:hover { text-decoration: underline; }
 }
 
 /* ── LED Scoreboard ── */
+/* ── Scoreboard tokens (dark default) ── */
 .pcs-scoreboard {
-  background: #0D0D0D;
+  --sb-bg: #000;
+  --sb-surface: #0D0D0D;
+  --sb-text: #fff;
+  --sb-muted: #666;
+  --sb-border: #222;
+  --sb-border2: #2a2a2a;
+  --sb-surface2: #1a1a1a;
+  --sb-text-dim: #aaa;
+
+  --sb-creation: #FFD700;
+  --sb-dispatch: #00C853;
+  --sb-critical: #FF3B30;
+  --sb-glow: 4px;
+
+  background: var(--sb-surface);
   padding: 20px;
   margin-top: 8px;
   font-family: 'Roboto Mono', monospace;
+  color: var(--sb-text);
+}
+
+/* ── Light mode override ── */
+[data-theme="light"] .pcs-scoreboard {
+  --sb-bg: #F8F9FB;
+  --sb-surface: #FFFFFF;
+  --sb-text: #111;
+  --sb-muted: #777;
+  --sb-border: #E5E7EB;
+  --sb-border2: #D1D5DB;
+  --sb-surface2: #F3F4F6;
+  --sb-text-dim: #6B7280;
+
+  --sb-creation: #B58900;
+  --sb-dispatch: #0A8F3E;
+  --sb-critical: #D92D20;
+  --sb-glow: 0px;
 }
 
 /* ALERT */
 .pcs-scoreboard .sb-alert {
   font-size: 11px;
   letter-spacing: 1.5px;
-  color: #666;
+  color: var(--sb-muted);
   text-transform: uppercase;
   margin-bottom: 10px;
 }
 .pcs-scoreboard .sb-alert.on {
-  color: #ff3b30;
-  text-shadow: 0 0 6px rgba(255,0,0,0.4);
+  color: var(--sb-critical);
+  text-shadow: 0 0 6px currentColor;
 }
 
 /* GRID */
@@ -1105,7 +1138,7 @@ a:hover { text-decoration: underline; }
 .pcs-scoreboard .sb-label {
   font-size: 11px;
   letter-spacing: 2px;
-  color: #666;
+  color: var(--sb-muted);
 }
 
 /* NUMBERS — DOMINANT */
@@ -1115,43 +1148,17 @@ a:hover { text-decoration: underline; }
   letter-spacing: 1px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 4px currentColor;
+  text-shadow: 0 0 var(--sb-glow) currentColor;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   max-width: 100%;
   transition: transform 0.08s ease, filter 0.08s ease;
 }
-.pcs-scoreboard .gold { color: #FFD700; }
-.pcs-scoreboard .green { color: #00C853; }
-
-/* BUTTONS */
-.pcs-scoreboard .sb-btn {
-  width: 100%;
-  padding: 14px 12px;
-  margin-top: 6px;
-  border-radius: 0;
-  border: 1px solid transparent;
-  font-size: 12px;
-  letter-spacing: 1.5px;
-  font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease, filter 0.08s ease;
-}
-.pcs-scoreboard .sb-btn.grey {
-  background: #1f1f1f;
-  border-color: #2a2a2a;
-  color: #FFD700;
-}
-.pcs-scoreboard .sb-btn.amber {
-  background: #FFB300;
-  color: #111;
-}
+.pcs-scoreboard .gold { color: var(--sb-creation); }
+.pcs-scoreboard .green { color: var(--sb-dispatch); }
 
 /* INTERACTION */
-.pcs-scoreboard .sb-num:active,
-.pcs-scoreboard .sb-btn:active {
+.pcs-scoreboard .sb-num:active {
   transform: scale(0.96);
   filter: brightness(1.15);
 }
@@ -1163,8 +1170,7 @@ a:hover { text-decoration: underline; }
   text-overflow: unset;
   min-width: 0;
 }
-.pcs-scoreboard .sb-num:active,
-.pcs-scoreboard .sb-btn:active {
+.pcs-scoreboard .sb-num:active {
   will-change: transform, filter;
 }
 
@@ -1172,14 +1178,14 @@ a:hover { text-decoration: underline; }
 .pcs-scoreboard .sb-client {
   margin-top: 16px;
   display: flex;
-  background: #1a1a1a;
+  background: var(--sb-surface2);
 }
 .pcs-scoreboard .sb-client > div {
   flex: 1;
   padding: 12px;
   font-size: 11px;
   letter-spacing: 1px;
-  color: #00C853;
+  color: var(--sb-dispatch);
   text-align: center;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -1190,7 +1196,7 @@ a:hover { text-decoration: underline; }
   filter: brightness(1.15);
 }
 .pcs-scoreboard .sb-client > div:first-child {
-  border-right: 1px solid #2a2a2a;
+  border-right: 1px solid var(--sb-border2);
 }
 
 /* ACTION STRIP */
@@ -1202,8 +1208,8 @@ a:hover { text-decoration: underline; }
   letter-spacing: 1px;
   text-align: center;
   text-transform: uppercase;
-  border: 1px solid #222;
-  color: #aaa;
+  border: 1px solid var(--sb-border);
+  color: var(--sb-text-dim);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform 0.08s ease, filter 0.08s ease;
@@ -1222,7 +1228,7 @@ a:hover { text-decoration: underline; }
 }
 .pcs-scoreboard .sb-action.empty {
   opacity: 0.9;
-  border-color: #333;
+  border-color: var(--sb-border2);
   cursor: pointer;
 }
 .pcs-scoreboard .sb-action.error {
