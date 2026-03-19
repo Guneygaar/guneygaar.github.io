@@ -211,10 +211,12 @@ async function assignTask() {
 async function markTaskDone(id) {
   const el = document.getElementById(`task-item-${id}`);
   const btn = el?.querySelector('.btn-task-done');
+  const checkbox = el?.querySelector('.task-check');
 
   // Double-click guard
   if (btn?.disabled) return;
   if (btn) btn.disabled = true;
+  if (checkbox) checkbox.disabled = true;
 
   // Optimistic UI
   if (el) el.classList.add('task-done');
@@ -246,8 +248,15 @@ async function markTaskDone(id) {
     // Rollback
     if (el) el.classList.remove('task-done');
     if (btn) btn.disabled = false;
+    if (checkbox) { checkbox.disabled = false; checkbox.checked = false; }
   }
 }
+
+document.addEventListener('change', function(e) {
+  if (!e.target.classList.contains('task-check')) return;
+  const taskId = e.target.dataset.taskId;
+  if (taskId) markTaskDone(Number(taskId));
+});
 
 async function deleteTask(id) {
   try {
@@ -848,7 +857,7 @@ function renderTaskBanner() {
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
     const due = t.due_date ? `Due ${formatDateShort(t.due_date)}` : '';
-    return `<div class="task-banner-item" id="task-item-${t.id}"><div><div class="task-banner-msg">${esc(t.message)}</div>${due ? `<div class="task-banner-due">${due}</div>` : ''}</div><button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button></div>`;
+    return `<div class="task-banner-item" id="task-item-${t.id}"><input type="checkbox" class="task-check" data-task-id="${t.id}" /><div><div class="task-banner-msg">${esc(t.message)}</div>${due ? `<div class="task-banner-due">${due}</div>` : ''}</div><button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button></div>`;
   }).join('');
   section.innerHTML = `<div class="task-banner"><div class="task-banner-label">Your Tasks (${myTasks.length})</div>${rows}</div>`;
 }
