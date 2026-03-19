@@ -226,8 +226,19 @@ async function markTaskDone(id) {
     });
     console.log('[Task] Completed:', id);
     showToast('Task marked done OK', 'success');
-    // UX delay — let user see the strike-through before refresh
-    setTimeout(() => loadTasks(), 600);
+    // UX delay — let user see the strike-through, then refresh everything
+    setTimeout(async () => {
+      try {
+        await loadTasks();
+        // Refresh posts → mergePosts → scheduleRender → updateStats (scoreboard)
+        const data = await apiFetch('/posts?select=*&order=id.desc');
+        mergePosts(normalise(data));
+        scheduleRender();
+        console.log('[Task→Scoreboard] Synced');
+      } catch (err) {
+        console.error('[Task→Scoreboard] Sync failed:', err);
+      }
+    }, 600);
   } catch (err) {
     console.error('[Task] Failed:', err);
     showToast('Failed - try again', 'error');
