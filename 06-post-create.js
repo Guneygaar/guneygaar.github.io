@@ -198,6 +198,11 @@ stage: toDbStage(stage || 'in production'),
 target_date: date || null,
 comments: comments || null,
 };
+// Defensive: remove any invalid field names that must never reach DB
+delete payload.post_link;
+delete payload.linkedin_url;
+delete payload.linkedinLink;
+delete payload.postLink;
 // Route link to correct DB column based on URL content
 if (postLink) {
   if (postLink.includes('linkedin.com')) {
@@ -207,7 +212,7 @@ if (postLink) {
   }
 }
 console.log('[submitNewPost] VALIDATION PASSED');
-console.log('[submitNewPost] FINAL PAYLOAD:', JSON.stringify(payload));
+console.log('FINAL PAYLOAD:', JSON.stringify(payload, null, 2));
 
 try {
 

@@ -56,7 +56,7 @@ function openAdminEdit(postId) {
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
   const aeComm   = _ae('ae-comments');  if (aeComm) aeComm.value = post.comments || '';
-  const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || '';
+  const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || post.linkedinUrl || '';
   const sel = _ae('ae-stage');
   if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
   const aeBtn = _ae('ae-save-btn');     if (aeBtn) aeBtn.dataset.postId = postId;
@@ -99,6 +99,11 @@ async function saveAdminEdit() {
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
   const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, updated_at: new Date().toISOString() };
+  // Defensive: remove any invalid field names that must never reach DB
+  delete _payload.post_link;
+  delete _payload.linkedin_url;
+  delete _payload.linkedinLink;
+  delete _payload.postLink;
   // Route link to correct DB column based on URL content
   if (postLink) {
     if (postLink.includes('linkedin.com')) {
@@ -108,7 +113,7 @@ async function saveAdminEdit() {
     }
   }
   console.log('[saveAdminEdit] VALIDATION PASSED');
-  console.log('[saveAdminEdit] FINAL PAYLOAD:', JSON.stringify(_payload));
+  console.log('FINAL PAYLOAD:', JSON.stringify(_payload, null, 2));
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
