@@ -80,6 +80,7 @@ async function loadPosts() {
     const data = await apiFetch('/posts?select=*&order=id.desc');
     mergePosts(normalise(data));
     window._postsLoaded = true;
+    window._postsSource = 'network';
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
@@ -89,6 +90,7 @@ async function loadPosts() {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
       window._postsLoaded = true;
+      window._postsSource = 'cache';
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -113,6 +115,7 @@ async function loadPostsForClient() {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
     mergePosts(normalise(data));
     window._postsLoaded = true;
+    window._postsSource = 'network';
     hideErrorBanner();
     renderClientView();
   } catch (err) {
@@ -120,6 +123,7 @@ async function loadPostsForClient() {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
       window._postsLoaded = true;
+      window._postsSource = 'cache';
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -305,6 +309,14 @@ if (!window._scoreboardClickBound) {
   document.addEventListener('click', function(e) {
     var el = e.target.closest('[data-action]');
     if (!el || !el.closest('.pcs-scoreboard')) return;
+
+    // Guard: ignore clicks on non-actionable states
+    var actionEl = el.closest('.sb-action');
+    if (actionEl && (
+      actionEl.classList.contains('loading') ||
+      actionEl.classList.contains('passive') ||
+      actionEl.classList.contains('error')
+    )) return;
 
     e.stopPropagation();
 
@@ -621,10 +633,18 @@ function isPostsReady() {
   );
 }
 
+function isPostsFresh() {
+  return window._postsSource === 'network';
+}
+
 function getScoreboardAction(data) {
   try {
     if (!isPostsReady()) {
-      return { label: 'Loading data...', action: null, state: 'loading' };
+      return { label: 'Loading posts\u2026', action: null, state: 'loading' };
+    }
+
+    if (isPostsReady() && !isPostsFresh()) {
+      return { label: 'Syncing latest\u2026', action: null, state: 'loading' };
     }
 
     var total =
@@ -635,7 +655,7 @@ function getScoreboardAction(data) {
       data.scheduled;
 
     if (total === 0) {
-      return { label: 'No posts yet', action: 'open-production', state: 'empty' };
+      return { label: 'No posts yet \u2014 start creating', action: 'open-production', state: 'empty' };
     }
 
     if (data.approval > 0) {
