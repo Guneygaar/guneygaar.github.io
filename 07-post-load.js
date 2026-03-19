@@ -6,7 +6,7 @@ console.log("LOADED:", "07-post-load.js");
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // ── Central merge — the ONLY way to update allPosts from server data ──
-// Skips posts with _dirty === true (in-flight PATCH).
+// Skips posts with _isSaving === true (in-flight PATCH).
 // Never replaces allPosts blindly — always mutates existing objects in-place.
 function mergePosts(fresh) {
   // Normalize DB stage values → UI stage values on ingest
@@ -24,8 +24,8 @@ function mergePosts(fresh) {
     }
 
     // Skip overwrite while a PATCH is in-flight for this post
-    if (existing._dirty) {
-      console.log('[PCS] MERGE SKIP (dirty):', id, 'local=' + existing.stage, 'server=' + fp.stage);
+    if (existing._isSaving) {
+      console.log('[PCS] MERGE SKIP (_isSaving):', id, 'local=' + existing.stage, 'server=' + fp.stage);
       return;
     }
 

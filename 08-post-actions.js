@@ -7,10 +7,10 @@ async function quickStage(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const oldStage = post.stage;
   setStage(post, newStage, 'quickStage');
-  post._dirty = true;
+  post._isSaving = true;
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
@@ -27,12 +27,12 @@ async function quickStage(postId, newStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
-    post._dirty = false;
+    post._isSaving = false;
     setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
     showToast('Update failed — try again', 'error');
@@ -528,10 +528,10 @@ function _executeStageChange(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const previousStage = post.stage;
   setStage(post, newStage, '_executeStageChange');
-  post._dirty = true;
+  post._isSaving = true;
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // ── 2. Instant UI re-render (before DB) ──
@@ -562,7 +562,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
 
     // FINAL TRUTH RENDER
     _renderPCS(postId);
@@ -572,7 +572,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   } catch (err) {
     console.error('[PCS] DB WRITE FAILED:', postId, err);
 
-    post._dirty = false;
+    post._isSaving = false;
     setStage(post, previousStage, '_executeStageChange_rollback');
 
     _renderPCS(postId);
@@ -747,10 +747,10 @@ async function updatePost(postId, field, value) {
   const post = getPostById(postId);
   if (!post) return;
   // Block duplicate writes — if a PATCH is already in-flight, bail
-  if (post._dirty) return;
+  if (post._isSaving) return;
   const oldValue = post[field];
   post[field] = value;
-  post._dirty = true;
+  post._isSaving = true;
 
   // Sync subtitle immediately after optimistic update
   _updateSubtitle(post);
@@ -782,12 +782,12 @@ async function updatePost(postId, field, value) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    post._dirty = false;
+    post._isSaving = false;
     showToast('Saved', 'success');
     refreshSystemViews();
   } catch(e) {
     // Rollback optimistic update on failure
-    post._dirty = false;
+    post._isSaving = false;
     post[field] = oldValue;
     scheduleRender();
     showToast('Save failed', 'error');
