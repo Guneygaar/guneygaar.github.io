@@ -544,11 +544,14 @@ function toggleFabMenu() {
 }
 
 function openAssignTaskFromFab() {
+  console.log('[FAB] Assign Task clicked');
   const postId = window._pcs?.postId;
   if (!postId) {
+    console.warn('[FAB] No post open — blocked');
     showToast('Open a post first to assign a task', 'error');
     return;
   }
+  console.log('[FAB] Post context:', postId);
   const assignee = prompt('Assign to (e.g. Pranav, Chitra):');
   if (!assignee || !assignee.trim()) return;
   const message = prompt('Task description:');
