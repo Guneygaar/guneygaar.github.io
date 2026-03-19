@@ -742,8 +742,12 @@ async function updatePost(postId, field, value) {
 
   // Optimistic update in memory — store old value for rollback
   const post = getPostById(postId);
-  const oldValue = post ? post[field] : undefined;
-  if (post) post[field] = value;
+  if (!post) return;
+  // Block duplicate writes — if a PATCH is already in-flight, bail
+  if (post._dirty) return;
+  const oldValue = post[field];
+  post[field] = value;
+  post._dirty = true;
 
   // Sync subtitle immediately after optimistic update
   _updateSubtitle(post);
@@ -765,15 +769,23 @@ async function updatePost(postId, field, value) {
   const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
 
   try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+    const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ [dbField]: wireValue, updated_at: new Date().toISOString() }),
     });
+    // Apply server truth — preserves the exact memory reference
+    if (Array.isArray(rows) && rows[0]) {
+      const server = normalise(rows)[0];
+      if (server.stage) server.stage = toUiStage(server.stage);
+      Object.assign(post, server);
+    }
+    post._dirty = false;
     showToast('Saved', 'success');
     refreshSystemViews();
   } catch(e) {
     // Rollback optimistic update on failure
-    if (post) post[field] = oldValue;
+    post._dirty = false;
+    post[field] = oldValue;
     scheduleRender();
     showToast('Save failed', 'error');
   }
