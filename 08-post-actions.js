@@ -16,9 +16,12 @@ async function quickStage(postId, newStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
     const actor = resolveActor();
+    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
+    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
+    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify(patchBody),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response (includes DB-set status_changed_at)
@@ -46,7 +49,7 @@ function openAdminEdit(postId) {
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
   const aeTitle  = _ae('ae-title');     if (aeTitle) aeTitle.value = getTitle(post);
-  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = getResponsibleOwner(post) || '—';
+  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = post.owner || '—';
   const aePillar = _ae('ae-pillar');    if (aePillar) aePillar.value = post.contentPillar || '';
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
@@ -104,6 +107,7 @@ async function clientApprove(postId, btn) {
   if (alreadyApproved) { showToast('Already approved ✓', 'success'); return; }
   if (btn) btn.disabled = true;
   try {
+    // scheduled → owner remains unchanged (per ownership rules)
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString(), updated_by: 'Client' }),
@@ -127,7 +131,7 @@ async function submitClientChanges(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), owner: STAGE_OWNER['in production'], comments: text, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
@@ -445,7 +449,7 @@ function _updateSubtitle(post) {
     : '—';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || '—';
-  const parts = [pLabel, formatOwner(getResponsibleOwner(post)), dDisp];
+  const parts = [pLabel, formatOwner(post.owner), dDisp];
   el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
@@ -544,9 +548,12 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
+    const patchBody = { stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor };
+    const ownerForStage = STAGE_OWNER[(newStage||'').toLowerCase().trim()];
+    if (ownerForStage) patchBody.owner = ownerForStage;
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify(patchBody),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -839,7 +846,7 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(getResponsibleOwner(post)))}</span>`)}
+        ${cell('Owner',    `<span class="pcs-field-val-ro pcs-owner-val">${esc(formatOwner(post.owner))}</span>`)}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}

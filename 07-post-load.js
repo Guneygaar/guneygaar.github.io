@@ -775,7 +775,7 @@ function renderNextPost() {
   const stage     = post.stage || '';
   const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
-  const owner     = formatOwner(getResponsibleOwner(post));
+  const owner     = formatOwner(post.owner);
   const pillar    = formatPillarDisplay(post.contentPillar);
   const comments  = post.comments || '';
   const postLink  = post.postLink || '';
@@ -1152,7 +1152,7 @@ function filterLibrary() {
   const filtered = allPosts.filter(p => {
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
-    if (owner  && (getResponsibleOwner(p)||'').toLowerCase() !== owner) return false;
+    if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
     if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
     if (date) {
       const d = parseDate(p.targetDate);
@@ -1264,7 +1264,7 @@ function renderCreativeTracker() {
   const weekAgo = now - 7 * DAY;
   const monthAgo = now - 30 * DAY;
   const myPosts = allPosts.filter(p => {
-    return getResponsibleOwner(p) === 'PRANAV';
+    return (p.owner||'').toLowerCase() === 'pranav';
   });
   const doneThisWeek = myPosts.filter(p => {
     const stage = (p.stage||'').toLowerCase().trim();
@@ -1327,10 +1327,8 @@ function _calNav(delta) {
   filterLibrary();
 }
 
-function normalizeOwner(owner, stage) {
-  // Stage-derived ownership — DB owner is ignored in UI
-  const derived = stage ? getResponsibleOwner({ stage }) : null;
-  return derived || '—';
+function normalizeOwner(owner) {
+  return (owner || '').trim() || '—';
 }
 
 function normalizePillar(pillar) {
