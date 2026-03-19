@@ -225,7 +225,7 @@ async function markTaskDone(id) {
       body: JSON.stringify({ done: true }),
     });
     console.log('[Task] Completed:', id);
-    showToast('Task marked done OK', 'success');
+    showToast('\u2713 Task completed', 'success');
     // UX delay — let user see the strike-through, then refresh everything
     setTimeout(async () => {
       try {
@@ -234,9 +234,10 @@ async function markTaskDone(id) {
         const data = await apiFetch('/posts?select=*&order=id.desc');
         mergePosts(normalise(data));
         scheduleRender();
-        console.log('[Task→Scoreboard] Synced');
+        flashScoreboard();
+        console.log('[Task\u2192Scoreboard] Synced');
       } catch (err) {
-        console.error('[Task→Scoreboard] Sync failed:', err);
+        console.error('[Task\u2192Scoreboard] Sync failed:', err);
       }
     }, 600);
   } catch (err) {
@@ -327,6 +328,16 @@ function setText(id, val) {
 function updateBadge(id, count) {
   const el = document.getElementById(id);
   if (el) { el.textContent = count; el.style.display = count > 0 ? '' : 'none'; }
+}
+
+function flashScoreboard() {
+  const el = document.getElementById('pcs-dashboard');
+  if (!el) return;
+  el.classList.remove('score-flash');
+  // Force reflow so re-adding the class triggers animation
+  void el.offsetWidth;
+  el.classList.add('score-flash');
+  setTimeout(() => el.classList.remove('score-flash'), 350);
 }
 
 // ═══════════════════════════════════════════════
