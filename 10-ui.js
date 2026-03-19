@@ -169,6 +169,12 @@ const _TAB_TITLES = {
 };
 
 function switchTab(btn) {
+  // Ensure dashboard-view is visible (tab panels live there)
+  const dv = document.getElementById('dashboard-view');
+  if (dv && !dv.classList.contains('active')) {
+    dv.classList.add('active');
+    document.getElementById('client-view')?.classList.remove('active');
+  }
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
