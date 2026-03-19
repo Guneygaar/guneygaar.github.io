@@ -816,8 +816,13 @@ function buildPostCard(p, listKey) {
   const dateStr = formatDateShort(p.targetDate);
   const isToday = d && d.toDateString() === new Date().toDateString();
 
+  // Role-based dimming: primary stages are bright, others are dimmed
+  const stageLC = stage.toLowerCase().trim();
+  const isPrimary = ROLE_PRIMARY_STAGES[effectiveRole]?.includes(stageLC);
+  const dimClass = isPrimary ? 'pc-primary' : 'pc-dim';
+
   return `
-    <div class="row-tile" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
+    <div class="row-tile ${dimClass}" id="upc-${esc(id)}" data-post-id="${esc(id)}" data-list="${esc(listKey||'')}">
       <span class="row-date${isToday ? ' today' : ''}">${esc(dateStr)}</span>
       <span class="row-body">
         <span class="row-title">${esc(title)}</span>
@@ -970,7 +975,11 @@ function _renderPipelineInner() {
   const activeFilter = window.pcsPipelineFilter;
   window.pcsPipelineFilter = null;
 
-  const base = allPosts.filter(p => (p.stage || '').toLowerCase().trim() !== 'published');
+  // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
+  const base = allPosts.filter(p => {
+    const s = (p.stage || '').toLowerCase().trim();
+    return PIPELINE_RENDER_ORDER.includes(s);
+  });
   const source = activeFilter && Array.isArray(activeFilter)
     ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
     : base;
@@ -1000,7 +1009,7 @@ function _renderPipelineInner() {
   const grouped = {};
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
   const stages = Object.keys(grouped).sort((a,b) => {
-    const ia = PIPELINE_ORDER.indexOf(a), ib = PIPELINE_ORDER.indexOf(b);
+    const ia = PIPELINE_RENDER_ORDER.indexOf(a), ib = PIPELINE_RENDER_ORDER.indexOf(b);
     if (ia===-1 && ib===-1) return a.localeCompare(b);
     if (ia===-1) return 1; if (ib===-1) return -1;
     return ia - ib;
