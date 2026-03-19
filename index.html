@@ -659,6 +659,9 @@
 /* Global state — inline so it runs before any deferred script */
 window._modalOpen      = false;
 window._deferredRender = false;
+window._postsReqId     = 0;
+window._postsLoaded    = false;
+window._postsSource    = 'none';
 window.allPosts        = window.allPosts    || [];
 window.cachedPosts     = window.cachedPosts || [];
 window.currentRole     = window.currentRole || 'Admin';

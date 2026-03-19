@@ -68,6 +68,21 @@ function mergePosts(fresh) {
   cachedPosts = allPosts;
 }
 
+// ── Versioned load guard — prevents stale responses from overriding fresh data ──
+function _newPostsRequest() {
+  window._postsReqId += 1;
+  return window._postsReqId;
+}
+
+function _isStaleRequest(reqId) {
+  return reqId !== window._postsReqId;
+}
+
+function _commitPostsLoaded(source) {
+  window._postsLoaded = true;
+  window._postsSource = source;
+}
+
 function showLoadingSkeleton(containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -76,17 +91,22 @@ function showLoadingSkeleton(containerId) {
 
 async function loadPosts() {
   showLoadingSkeleton('tasks-container');
+  const reqId = _newPostsRequest();
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
+    if (_isStaleRequest(reqId)) return;
     mergePosts(normalise(data));
+    _commitPostsLoaded('network');
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
   } catch (err) {
+    if (_isStaleRequest(reqId)) return;
     console.error('loadPosts:', err);
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
+      _commitPostsLoaded('cache');
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -107,15 +127,20 @@ async function loadPosts() {
 }
 
 async function loadPostsForClient() {
+  const reqId = _newPostsRequest();
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    if (_isStaleRequest(reqId)) return;
     mergePosts(normalise(data));
+    _commitPostsLoaded('network');
     hideErrorBanner();
     renderClientView();
   } catch (err) {
+    if (_isStaleRequest(reqId)) return;
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
+      _commitPostsLoaded('cache');
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -302,22 +327,30 @@ if (!window._scoreboardClickBound) {
     var el = e.target.closest('[data-action]');
     if (!el || !el.closest('.pcs-scoreboard')) return;
 
+    // Guard: ignore clicks on non-actionable states
+    var actionEl = el.closest('.sb-action');
+    if (actionEl && (
+      actionEl.classList.contains('loading') ||
+      actionEl.classList.contains('passive') ||
+      actionEl.classList.contains('error')
+    )) return;
+
     e.stopPropagation();
 
     var action = el.dataset.action;
 
     switch (action) {
-      case 'create-post':
-        if (typeof openNewPostModal === 'function') openNewPostModal();
-        break;
-      case 'dispatch':
-        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']);
-        break;
       case 'open-production':
-        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['in production']);
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['in_production']);
         break;
       case 'open-ready':
         if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']);
+        break;
+      case 'open-approval':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_approval']);
+        break;
+      case 'open-input':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_input']);
         break;
       default:
         console.warn('[SB] Unknown action', action);
@@ -580,61 +613,83 @@ function _buildTopTaskHtml() {
 
 // ── LED Scoreboard ──────────────────────────────
 
-var TARGET_PRODUCTION = 35;
-var CRITICAL_THRESHOLD = 7;
-
 function getScoreboardData() {
   try {
     var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
 
-    function safeStage(p) {
-      return (p && typeof p === 'object' && typeof p.stage === 'string')
-        ? p.stage.toLowerCase().trim() : '';
-    }
+    var norm = function(s) { return (s || '').toLowerCase().trim(); };
 
-    function safeCount(stage) {
-      return posts.filter(function(p) { return safeStage(p) === stage; }).length;
-    }
-
-    var now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    var scheduledCount = posts.filter(function(p) {
-      if (safeStage(p) !== 'scheduled') return false;
-      var d = typeof parseDate === 'function' ? parseDate(p.targetDate) : null;
-      return d && d >= now;
-    }).length;
-
-    var production = safeCount('in production');
-    var ready = safeCount('ready');
-    var approval = safeCount('awaiting approval');
-    var input = safeCount('awaiting brand input');
-
-    var pipelineTotal = ready + approval + input + scheduledCount;
-
-    function safeNum(n) { return Number.isFinite(n) ? n : 0; }
+    var safeCount = function(stage) {
+      return posts.filter(function(p) { return p && typeof p === 'object' && norm(p.stage) === stage; }).length;
+    };
 
     return {
-      creation: {
-        value: safeNum(pipelineTotal),
-        target: TARGET_PRODUCTION
-      },
-      dispatch: {
-        value: safeNum(ready),
-        target: safeNum(ready)
-      },
-      client: {
-        approval: safeNum(approval),
-        input: safeNum(input)
-      },
-      system: {
-        scheduled: safeNum(scheduledCount),
-        critical: safeNum(scheduledCount) <= CRITICAL_THRESHOLD
-      }
+      creation: safeCount('in_production'),
+      dispatch: safeCount('ready'),
+      approval: safeCount('awaiting_approval'),
+      input: safeCount('awaiting_input'),
+      scheduled: safeCount('scheduled')
     };
-  } catch (err) {
-    console.error('[Scoreboard] Data error', err);
-    return {};
+
+  } catch (e) {
+    console.error('[Scoreboard Data Error]', e);
+    return {
+      creation: 0,
+      dispatch: 0,
+      approval: 0,
+      input: 0,
+      scheduled: 0
+    };
+  }
+}
+
+function isPostsReady() {
+  return (
+    Array.isArray(window.allPosts) &&
+    window._postsLoaded === true
+  );
+}
+
+function isPostsFresh() {
+  return window._postsSource === 'network';
+}
+
+function getScoreboardAction(data) {
+  try {
+    if (!isPostsReady()) {
+      return { label: 'Loading posts\u2026', action: null, state: 'loading' };
+    }
+
+    if (isPostsReady() && !isPostsFresh()) {
+      return { label: 'Syncing latest\u2026', action: null, state: 'loading' };
+    }
+
+    var total =
+      data.creation +
+      data.dispatch +
+      data.approval +
+      data.input +
+      data.scheduled;
+
+    if (total === 0) {
+      return { label: 'No posts yet \u2014 start creating', action: 'open-production', state: 'empty' };
+    }
+
+    if (data.approval > 0) {
+      return { label: 'Review approvals', action: 'open-approval' };
+    }
+    if (data.input > 0) {
+      return { label: 'Provide input', action: 'open-input' };
+    }
+    if (data.dispatch > 0) {
+      return { label: 'Dispatch ready posts', action: 'open-ready' };
+    }
+    if (data.creation === 0) {
+      return { label: 'Start creating posts', action: 'open-production' };
+    }
+    return { label: 'System running normally', action: null, state: 'passive' };
+  } catch (e) {
+    return { label: 'Unavailable', action: null, state: 'error' };
   }
 }
 
@@ -643,39 +698,43 @@ function renderScoreboard() {
     var d = getScoreboardData();
     if (!d || typeof d !== 'object') return '';
 
-    var c = d.creation || {};
-    var dp = d.dispatch || {};
-    var cl = d.client || {};
-    var sys = d.system || {};
-
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
+    var scheduled = safe(d.scheduled);
+    var isCritical = scheduled <= 7;
+
     return '<section class="pcs-scoreboard">' +
-      '<div class="sb-alert' + (sys.critical ? ' on' : '') + '">' +
-        (sys.critical
-          ? 'CRITICAL: ' + safe(sys.scheduled) + ' POSTS'
-          : 'STABLE: ' + safe(sys.scheduled) + ' SCHEDULED') +
+      '<div class="sb-alert' + (isCritical ? ' on' : '') + '">' +
+        (isCritical
+          ? 'CRITICAL: ' + scheduled + ' POSTS'
+          : 'STABLE: ' + scheduled + ' SCHEDULED') +
       '</div>' +
       '<div class="sb-grid">' +
         '<div class="sb-block">' +
           '<div class="sb-label">CREATION</div>' +
           '<div class="sb-num gold" data-action="open-production">' +
-            safe(c.value) + ' / ' + safe(c.target) +
+            safe(d.creation) +
           '</div>' +
-          '<button class="sb-btn grey" data-action="create-post">INITIATE DRAFT</button>' +
         '</div>' +
         '<div class="sb-block">' +
           '<div class="sb-label">DISPATCH</div>' +
           '<div class="sb-num green" data-action="open-ready">' +
-            safe(dp.value) + ' / ' + safe(dp.target) +
+            safe(d.dispatch) +
           '</div>' +
-          '<button class="sb-btn amber" data-action="dispatch">DISPATCH BATCH</button>' +
         '</div>' +
       '</div>' +
       '<div class="sb-client">' +
-        '<div>AWAITING APPROVAL: ' + safe(cl.approval) + '</div>' +
-        '<div>AWAITING INPUT: ' + safe(cl.input) + '</div>' +
+        '<div data-action="open-approval">AWAITING APPROVAL: ' + safe(d.approval) + '</div>' +
+        '<div data-action="open-input">AWAITING INPUT: ' + safe(d.input) + '</div>' +
       '</div>' +
+      (function() {
+        var act = getScoreboardAction(d);
+        var cls = 'sb-action';
+        if (act.state) cls += ' ' + act.state;
+        return '<div class="' + cls + '"' +
+          (act.action ? ' data-action="' + act.action + '"' : '') +
+          '>' + act.label + '</div>';
+      })() +
     '</section>';
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
