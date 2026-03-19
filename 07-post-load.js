@@ -1366,8 +1366,9 @@ function renderLibraryCalendar(posts) {
     const dayPosts = dayMap[key] || [];
 
     const first = dayPosts[0];
-    const pillar = first
-      ? getPillarShort(first.contentPillar)
+    const pillarFilterActive = !!(document.getElementById('filter-pillar')?.value);
+    const cellLabel = first
+      ? (pillarFilterActive ? getPillarShort(first.contentPillar) : getTitle(first))
       : '';
     const postId = first ? getPostId(first) : '';
     const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;
@@ -1378,7 +1379,7 @@ function renderLibraryCalendar(posts) {
 
     html += `<div class="pcs-cal-cell${todayClass}${hasPost}"${clickAttr}>`;
     html += `<div class="pcs-cal-date">${dayNum}</div>`;
-    if (pillar) html += `<div class="pcs-cal-pill">${esc(pillar)}</div>`;
+    if (cellLabel) html += `<div class="pcs-cal-pill">${esc(cellLabel)}</div>`;
     if (extra)  html += `<div class="pcs-cal-more">+${extra}</div>`;
     html += `</div>`;
   }
