@@ -1155,12 +1155,14 @@ a:hover { text-decoration: underline; }
 }
 
 /* SAFETY GUARDS */
-.pcs-scoreboard .sb-num,
-.pcs-scoreboard .sb-btn {
-  will-change: transform, filter;
-}
 .pcs-scoreboard .sb-num {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pcs-scoreboard .sb-num:active,
+.pcs-scoreboard .sb-btn:active {
+  will-change: transform, filter;
 }
 
 /* CLIENT SECTION */
