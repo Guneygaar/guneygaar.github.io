@@ -1273,14 +1273,14 @@ a:hover { text-decoration: underline; }
   text-shadow:
     0 0 6px currentColor,
     0 0 12px rgba(0,0,0,0.6);
-  filter: contrast(1.1) brightness(1.05);
+  filter: contrast(0.95) brightness(0.95);
 }
 .sb-client-label {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #9a9a9a;
   margin-top: 8px;
   margin-bottom: 4px;
   line-height: 1.1;
