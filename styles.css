@@ -1082,7 +1082,6 @@ a:hover { text-decoration: underline; }
 .pcs-scoreboard {
   width: 100%;
   max-width: 420px;
-  height: 100vh;
   margin: 0 auto;
   padding: 8px;
   border: 2px solid #2a2a2a;
@@ -1094,8 +1093,6 @@ a:hover { text-decoration: underline; }
   font-family: 'Roboto Mono', monospace;
   color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
-  box-sizing: border-box;
-  overflow: hidden;
 }
 
 /* ── 0b. Inner Cavity ── */
@@ -1104,7 +1101,6 @@ a:hover { text-decoration: underline; }
   background: linear-gradient(180deg, #0c0c0c, #050505);
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 /* ── 1. Critical Panel ── */
@@ -1127,7 +1123,7 @@ a:hover { text-decoration: underline; }
 .sb-critical-label {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: #FF3B30;
   margin-bottom: 4px;
@@ -1135,7 +1131,7 @@ a:hover { text-decoration: underline; }
 }
 .sb-critical-num {
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: #FF3B30;
@@ -1149,9 +1145,8 @@ a:hover { text-decoration: underline; }
 /* ── 2. Main Scoreboard ── */
 .sb-main-grid {
   height: 240px;
-  flex-shrink: 0;
   display: grid;
-  grid-template-columns: 1fr 4px 1fr;
+  grid-template-columns: 1fr 3px 1fr;
   border-bottom: 1px solid #333;
 }
 .sb-divider {
@@ -1229,7 +1224,6 @@ a:hover { text-decoration: underline; }
 /* ── 3. Client Strip ── */
 .sb-client-strip {
   height: 120px;
-  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr 2px 1fr;
   border-bottom: 1px solid #333;
@@ -1287,7 +1281,7 @@ a:hover { text-decoration: underline; }
   filter: contrast(0.95) brightness(0.95);
 }
 .sb-client-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
@@ -1301,7 +1295,6 @@ a:hover { text-decoration: underline; }
 /* ── 4. Task Bar ── */
 .sb-task-bar {
   height: 80px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1321,7 +1314,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #EAEAEA;
   margin-bottom: 4px;
   line-height: 1.1;
 }
@@ -1341,7 +1334,7 @@ a:hover { text-decoration: underline; }
   width: 48px;
   height: 48px;
   background: #C9A24A;
-  border: 1px solid #8a6f2c;
+  border: 1px solid #8a6d2a;
   border-radius: 0;
   color: #000;
   display: flex;
@@ -1351,7 +1344,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: 16px;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }

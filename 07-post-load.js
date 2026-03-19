@@ -74,13 +74,11 @@ function _newPostsRequest() {
   return window._postsReqId;
 }
 
-function _isStaleRequest(reqId) {
-  return reqId !== window._postsReqId;
-}
-
-function _commitPostsLoaded(source) {
+function _commitPostsResult(reqId, source) {
+  if (reqId !== window._postsReqId) return false;
   window._postsLoaded = true;
   window._postsSource = source;
+  return true;
 }
 
 function showLoadingSkeleton(containerId) {
@@ -94,19 +92,17 @@ async function loadPosts() {
   const reqId = _newPostsRequest();
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
-    if (_isStaleRequest(reqId)) return;
+    if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
-    _commitPostsLoaded('network');
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
   } catch (err) {
-    if (_isStaleRequest(reqId)) return;
     console.error('loadPosts:', err);
     if (cachedPosts.length) {
+      if (!_commitPostsResult(reqId, 'cache')) return;
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      _commitPostsLoaded('cache');
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -130,17 +126,15 @@ async function loadPostsForClient() {
   const reqId = _newPostsRequest();
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
-    if (_isStaleRequest(reqId)) return;
+    if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
-    _commitPostsLoaded('network');
     hideErrorBanner();
     renderClientView();
   } catch (err) {
-    if (_isStaleRequest(reqId)) return;
     if (cachedPosts.length) {
+      if (!_commitPostsResult(reqId, 'cache')) return;
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
-      _commitPostsLoaded('cache');
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -705,28 +699,25 @@ function isPostsFresh() {
 
 function renderScoreboard() {
   try {
-    var posts = window.allPosts;
-    if (!Array.isArray(posts)) return '';
+    var data = getScoreboardData();
+    if (!data || typeof data !== 'object') return '';
 
-    function norm(s) {
-      return (s || '').toLowerCase().replace(/[\s\-_]/g, '');
-    }
+    function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
-    var TARGET_PRODUCTION = 35;
-    var production = 0, ready = 0, approval = 0, input = 0, scheduled = 0;
+    var scheduled = safe(data.system.scheduled);
+    var threshold = safe(data.system.threshold);
+    var isCritical = data.system.isCritical;
 
-    for (var i = 0; i < posts.length; i++) {
-      var st = norm(posts[i].stage);
-      if (st === 'inproduction') production++;
-      else if (st === 'ready') ready++;
-      else if (st === 'awaitingapproval') approval++;
-      else if (st === 'awaitinginput') input++;
-      else if (st === 'scheduled') scheduled++;
-    }
+    var pranavVal = safe(data.pranav.value);
+    var chitraVal = safe(data.chitra.value);
+    var approval = safe(data.client.approval);
+    var input = safe(data.client.input);
 
-    var gap = TARGET_PRODUCTION - production;
-    var pranavDisplay = gap > 0 ? '\u2212' + gap : '0';
-    var chitraDisplay = ready > 0 ? '+' + ready : '0';
+    // Pranav: show deficit as −N (value is already negative or 0)
+    var pranavDisplay = pranavVal < 0 ? '\u2212' + Math.abs(pranavVal) : '0';
+    // Chitra: show ready queue as +N
+    var chitraDisplay = chitraVal > 0 ? '+' + chitraVal : '0';
+    // Client: show pending as −N
     var approvalDisplay = approval > 0 ? '\u2212' + approval : '0';
     var inputDisplay = input > 0 ? '\u2212' + input : '0';
 
