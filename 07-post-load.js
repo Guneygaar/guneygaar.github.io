@@ -239,7 +239,9 @@ function renderAll() {
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
-  if (ll) ll.textContent = `${allPosts.length} posts`;
+  const _libStages = ['published','scheduled','parked','rejected'];
+  const libCount = allPosts.filter(p => _libStages.includes((p.stage||'').toLowerCase().trim())).length;
+  if (ll) ll.textContent = `${libCount} posts`;
 }
 
 function updateStats() {
@@ -1051,7 +1053,8 @@ function _renderPipelineInner() {
 
 
 function populateFilterDropdowns() {
-  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].sort();
+  const _LIB_STAGES_DD = ['published','scheduled','parked','rejected'];
+  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].filter(s => _LIB_STAGES_DD.includes(s.toLowerCase().trim())).sort();
   const owners  = ['PRANAV','CHITRA','CLIENT'];
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
@@ -1089,7 +1092,11 @@ function filterLibrary() {
   const today  = new Date(); today.setHours(0,0,0,0);
   const week7  = new Date(today); week7.setDate(week7.getDate()+7);
 
+  // Library shows only archive-relevant stages
+  const _LIB_STAGES = ['published','scheduled','parked','rejected'];
+
   const filtered = allPosts.filter(p => {
+    if (!_LIB_STAGES.includes((p.stage||'').toLowerCase().trim())) return false;
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
     if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
