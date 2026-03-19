@@ -1077,6 +1077,14 @@ a:hover { text-decoration: underline; }
   transition: transform 0.15s ease;
 }
 .top-task:active { transform: scale(0.98); }
+.top-task--empty {
+  border-color: var(--border);
+  background: transparent;
+  cursor: default;
+}
+.top-task--empty:active { transform: none; }
+.top-task--empty .top-task-label { color: var(--text3); }
+.top-task--empty .top-task-text { color: var(--text3); font-weight: 500; }
 .top-task-label {
   font-size: 10px;
   font-weight: 800;

@@ -340,37 +340,60 @@ function flashScoreboard() {
   setTimeout(() => el.classList.remove('score-flash'), 350);
 }
 
+function _ttNorm(v) { return (v || '').toString().trim().toLowerCase(); }
+
+function _ttIsMine(task, role, emailPrefix) {
+  const a = _ttNorm(task.assigned_to);
+  return a === role || (emailPrefix && a.includes(emailPrefix));
+}
+
+function _ttOldestFirst(a, b) {
+  return new Date(a.created_at || a.createdAt || 0) - new Date(b.created_at || b.createdAt || 0);
+}
+
+function _ttByStage(stage) {
+  return allPosts
+    .filter(p => _ttNorm(p.stage) === stage)
+    .sort(_ttOldestFirst);
+}
+
 function getTopTask() {
-  const role = window.effectiveRole || '';
+  const role = _ttNorm(window.effectiveRole || '');
   const email = localStorage.getItem('gbl_email') || '';
+  const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
-  // 1. Assigned task (highest priority)
-  const assigned = (window.allTasks || []).find(t => {
-    if (t.done) return false;
-    const a = (t.assigned_to || '').toLowerCase();
-    return a === role.toLowerCase() || (email && a.includes(email.split('@')[0].toLowerCase()));
-  });
-  if (assigned) {
-    return { type: 'assigned', text: assigned.message || 'Complete assigned task', postId: assigned.post_id || null };
+  // 1. ASSIGNED TASKS (highest priority for all roles)
+  const myTasks = (window.allTasks || [])
+    .filter(t => !t.done && _ttIsMine(t, role, emailPrefix))
+    .sort(_ttOldestFirst);
+  if (myTasks.length) {
+    const t = myTasks[0];
+    return { type: 'assigned', text: t.message || 'Complete assigned task', postId: t.post_id || null };
   }
 
-  // 2. Awaiting Approval (follow-up needed)
-  const approval = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'awaiting approval');
-  if (approval) {
-    return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval), postId: getPostId(approval) };
+  // 2. ROLE-BASED PRIORITY
+
+  if (role === 'pranav') {
+    const prod = _ttByStage('in production');
+    if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
+    return null;
   }
 
-  // 3. Ready (needs to be sent)
-  const ready = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'ready');
-  if (ready) {
-    return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready), postId: getPostId(ready) };
+  if (role === 'chitra') {
+    const approval = _ttByStage('awaiting approval');
+    if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+    const ready = _ttByStage('ready');
+    if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+    return null;
   }
 
-  // 4. In Production (execution needed)
-  const prod = allPosts.find(p => (p.stage || '').toLowerCase().trim() === 'in production');
-  if (prod) {
-    return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod), postId: getPostId(prod) };
-  }
+  // Admin — sees everything: approval → ready → production
+  const approval = _ttByStage('awaiting approval');
+  if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+  const ready = _ttByStage('ready');
+  if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+  const prod = _ttByStage('in production');
+  if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
 
   return null;
 }
@@ -444,9 +467,14 @@ function computeDelayMeta(posts) {
 function _buildTopTaskHtml() {
   if (window.effectiveRole === 'Client') return '';
   const task = getTopTask();
-  if (!task) return '';
-  const onclick = task.postId ? ` data-nav="top-task" data-post-id="${esc(task.postId)}"` : '';
-  return `<div class="top-task"${onclick}>
+  if (!task) {
+    return `<div class="top-task top-task--empty">
+      <div class="top-task-label">STATUS</div>
+      <div class="top-task-text">No actions pending</div>
+    </div>`;
+  }
+  const attrs = task.postId ? ` data-nav="top-task" data-post-id="${esc(task.postId)}"` : '';
+  return `<div class="top-task"${attrs}>
     <div class="top-task-label">DO THIS NOW</div>
     <div class="top-task-text">${esc(task.text)}</div>
   </div>`;
