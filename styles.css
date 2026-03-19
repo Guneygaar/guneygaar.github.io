@@ -952,6 +952,11 @@ a:hover { text-decoration: underline; }
   background: var(--c-amber-dim, rgba(217,119,6,0.10));
   color: var(--db-warning);
 }
+.pc-board-action[data-nav] {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.pc-board-action[data-nav]:active { opacity: 0.7; }
 .pc-board-action--ok {
   background: var(--c-green-dim, rgba(5,150,105,0.10));
   color: var(--db-stable);
@@ -973,11 +978,13 @@ a:hover { text-decoration: underline; }
   background: var(--db-bg);
   text-align: center;
 }
-.pc-client-cell--active {
+.pc-client-cell--active,
+.pc-client-cell[data-nav] {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.pc-client-cell--active:active { opacity: 0.7; }
+.pc-client-cell--active:active,
+.pc-client-cell[data-nav]:active { opacity: 0.7; }
 
 .pc-client-num {
   font-size: 28px;

@@ -484,7 +484,7 @@ function _renderDashboardInner() {
       <div class="pc-board-label">PRANAV</div>
       <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
       <div class="pc-board-status">PIPELINE</div>
-      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}">${pranavAction}</div>
+      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}"${pranavAction === 'CREATE' ? ' data-nav="create"' : ''}>${pranavAction}</div>
     </div>
 
     <div class="pc-board" data-nav="chitra">
@@ -499,7 +499,7 @@ function _renderDashboardInner() {
         <div class="pc-client-label">AWAITING APPROVAL</div>
         ${clientApprovalAction ? `<div class="pc-client-action">${clientApprovalAction}</div>` : ''}
       </div>
-      <div class="pc-client-cell">
+      <div class="pc-client-cell" data-nav="awaiting-input">
         <div class="pc-client-num">${awaiting_brand_count}</div>
         <div class="pc-client-label">AWAITING INPUT</div>
       </div>
@@ -529,6 +529,15 @@ function _renderDashboardInner() {
 
   el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['awaiting approval']);
+  });
+
+  el.querySelector('[data-nav="awaiting-input"]')?.addEventListener('click', () => {
+    navigateWithFilter('pipeline', ['awaiting brand input']);
+  });
+
+  el.querySelector('[data-nav="create"]')?.addEventListener('click', (e) => {
+    e.stopPropagation(); // prevent bubbling to parent pranav tile
+    if (typeof openNewPostModal === 'function') openNewPostModal();
   });
 }
 
