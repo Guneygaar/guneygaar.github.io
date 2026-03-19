@@ -259,9 +259,11 @@ function _notifTitle(postId) {
 }
 
 // -- Notifications -----------------------------
+let _notifCache = [];   // cached fetched notifications
+
 async function fetchUnreadCount() {
   try {
-    const data = await apiFetch('/activity_log?select=id&read=eq.false&limit=20');
+    const data = await apiFetch('/activity_log?select=id&read=eq.false&limit=50');
     _unreadCount = Array.isArray(data) ? data.length : 0;
     renderNotificationBadge();
   } catch {}
@@ -270,28 +272,43 @@ async function fetchUnreadCount() {
 async function fetchAndRenderNotifications() {
   const list = document.getElementById('notif-list');
   if (!list) return;
-  list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading…</div>';
+  list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading\u2026</div>';
   try {
     const data = await apiFetch('/activity_log?select=*&order=created_at.desc&limit=30');
     if (!Array.isArray(data) || !data.length) {
       list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">No activity yet.</div>';
+      _notifCache = [];
       return;
     }
-    list.innerHTML = data.map(n => {
-      const actor  = _notifActor(n.actor);
-      const action = _notifAction(n.action);
-      const title  = _notifTitle(n.post_id);
-      const time   = _notifTime(n.created_at);
-      return `
-      <div class="notif-item ${n.read ? '' : 'unread'}" data-post-id="${esc(n.post_id || '')}">
-        <div class="notif-primary">${esc(actor)} ${esc(action)}</div>
-        <div class="notif-secondary">${esc(title)}</div>
-        <div class="notif-ts">${esc(time)}</div>
-      </div>`;
-    }).join('');
+    _notifCache = data;
+    // Sort: unread first, then by created_at desc
+    const sorted = [...data].sort((a, b) => {
+      const au = a.read ? 1 : 0, bu = b.read ? 1 : 0;
+      if (au !== bu) return au - bu;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+    _renderNotifList(sorted, list);
   } catch {
     list.innerHTML = '<div style="padding:16px;color:var(--c-red);text-align:center">Could not load.</div>';
   }
+}
+
+function _renderNotifList(data, list) {
+  _unreadCount = data.filter(n => !n.read).length;
+  renderNotificationBadge();
+  list.innerHTML = data.map(n => {
+    const actor  = _notifActor(n.actor);
+    const action = _notifAction(n.action);
+    const title  = _notifTitle(n.post_id);
+    const time   = _notifTime(n.created_at);
+    const unread = n.read ? '' : ' unread';
+    return `
+    <div class="notif-item${unread}" data-post-id="${esc(n.post_id || '')}" data-notif-id="${esc(n.id || '')}">
+      <div class="notif-primary">${esc(actor)} ${esc(action)}</div>
+      <div class="notif-secondary">${esc(title)}</div>
+      <div class="notif-ts">${esc(time)}</div>
+    </div>`;
+  }).join('');
 }
 
 async function markAllNotificationsRead() {
@@ -301,16 +318,23 @@ async function markAllNotificationsRead() {
       body: JSON.stringify({ read: true }),
     });
     _unreadCount = 0;
+    _notifCache.forEach(n => n.read = true);
     renderNotificationBadge();
-    fetchAndRenderNotifications();
+    const list = document.getElementById('notif-list');
+    if (list && _notifCache.length) _renderNotifList(_notifCache, list);
   } catch {}
 }
 
 function renderNotificationBadge() {
   const b = document.getElementById('notif-badge');
   if (!b) return;
-  // notif-badge is now a red dot - just show/hide
-  b.style.display = _unreadCount > 0 ? '' : 'none';
+  if (_unreadCount > 0) {
+    b.style.display = '';
+    b.textContent = _unreadCount > 9 ? '9+' : _unreadCount;
+  } else {
+    b.style.display = 'none';
+    b.textContent = '';
+  }
 }
 
 function toggleNotifPanel(e) {
@@ -318,7 +342,7 @@ function toggleNotifPanel(e) {
   const panel = document.getElementById('notif-panel');
   if (!panel) return;
   const open = panel.classList.toggle('open');
-  if (open) { fetchAndRenderNotifications(); markAllNotificationsRead(); }
+  if (open) fetchAndRenderNotifications();
 }
 
 // Unified notification listener: click-to-open post + outside-click-close
@@ -330,7 +354,8 @@ document.addEventListener('click', function (e) {
   const notifItem = e.target.closest('.notif-item');
   if (notifItem) {
     const postId = notifItem.dataset.postId;
-    if (postId) openPostFromNotification(postId);
+    const notifId = notifItem.dataset.notifId;
+    if (postId) openPostFromNotification(postId, notifId, notifItem);
     return;
   }
 
@@ -343,11 +368,35 @@ document.addEventListener('click', function (e) {
   }
 });
 
-function openPostFromNotification(postId) {
+function openPostFromNotification(postId, notifId, el) {
+  // Mark this notification read immediately (UI + DB)
+  if (el) el.classList.remove('unread');
+  if (notifId) {
+    const cached = _notifCache.find(n => String(n.id) === String(notifId));
+    if (cached) cached.read = true;
+    _unreadCount = _notifCache.filter(n => !n.read).length;
+    renderNotificationBadge();
+    // Fire-and-forget DB update for this single notification
+    apiFetch('/activity_log?id=eq.' + notifId, {
+      method: 'PATCH',
+      body: JSON.stringify({ read: true }),
+    }).catch(() => {});
+  }
+  // Close panel
   const panel = document.getElementById('notif-panel');
   if (panel) panel.classList.remove('open');
+  // Open post + flash
   const post = getPostById(postId);
-  if (post) openPCS(postId);
+  if (post) {
+    openPCS(postId);
+    setTimeout(() => {
+      const card = document.querySelector('.pcs-card');
+      if (card) {
+        card.classList.add('flash-highlight');
+        card.addEventListener('animationend', () => card.classList.remove('flash-highlight'), { once: true });
+      }
+    }, 80);
+  }
 }
 
 // -- PCS Activity toggle -----------------------
