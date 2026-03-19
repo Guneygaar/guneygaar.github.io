@@ -701,40 +701,70 @@ function renderScoreboard() {
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
     var scheduled = safe(d.scheduled);
-    var isCritical = scheduled <= 7;
+    var threshold = 7;
+    var isCritical = scheduled <= threshold;
+    var creation = safe(d.creation);
+    var dispatch = safe(d.dispatch);
+    var approval = safe(d.approval);
+    var input = safe(d.input);
+    var pranavVal = creation;
+    var chitraVal = dispatch;
 
-    return '<section class="pcs-scoreboard">' +
-      '<div class="sb-alert' + (isCritical ? ' on' : '') + '">' +
-        (isCritical
-          ? 'CRITICAL: ' + scheduled + ' POSTS'
-          : 'STABLE: ' + scheduled + ' SCHEDULED') +
-      '</div>' +
-      '<div class="sb-grid">' +
-        '<div class="sb-block">' +
-          '<div class="sb-label">CREATION</div>' +
-          '<div class="sb-num gold" data-action="open-production">' +
-            safe(d.creation) +
-          '</div>' +
-        '</div>' +
-        '<div class="sb-block">' +
-          '<div class="sb-label">DISPATCH</div>' +
-          '<div class="sb-num green" data-action="open-ready">' +
-            safe(d.dispatch) +
-          '</div>' +
+    // Top task for task bar
+    var task = getTopTask();
+    var taskText = task ? task.text : 'No actions pending';
+    var taskPostId = task && task.postId ? task.postId : '';
+    var taskAttrs = taskPostId ? ' data-nav="top-task" data-post-id="' + esc(taskPostId) + '"' : '';
+
+    return '<section class="pcs-scoreboard sb-metal">' +
+
+      '<div class="sb-critical-panel sb-metal">' +
+        '<div class="sb-critical-label">SCHEDULED</div>' +
+        '<div class="sb-critical-num ' + (isCritical ? 'critical' : 'stable') + '">' +
+          scheduled + ' / ' + threshold +
         '</div>' +
       '</div>' +
-      '<div class="sb-client">' +
-        '<div data-action="open-approval">AWAITING APPROVAL: ' + safe(d.approval) + '</div>' +
-        '<div data-action="open-input">AWAITING INPUT: ' + safe(d.input) + '</div>' +
+
+      '<div class="sb-main-grid sb-metal">' +
+        '<div class="sb-main-cell" data-action="open-production">' +
+          '<div class="sb-main-label">PRANAV</div>' +
+          '<div class="sb-main-num gold">' +
+            (pranavVal > 0 ? '\u2212' + pranavVal : '0') +
+          '</div>' +
+          '<div class="sb-main-sub">CREATE MORE</div>' +
+        '</div>' +
+        '<div class="sb-main-cell" data-action="open-ready">' +
+          '<div class="sb-main-label">CHITRA</div>' +
+          '<div class="sb-main-num green">' +
+            (chitraVal > 0 ? '+' + chitraVal : '0') +
+          '</div>' +
+          '<div class="sb-main-sub">DISPATCH NOW</div>' +
+        '</div>' +
       '</div>' +
-      (function() {
-        var act = getScoreboardAction(d);
-        var cls = 'sb-action';
-        if (act.state) cls += ' ' + act.state;
-        return '<div class="' + cls + '"' +
-          (act.action ? ' data-action="' + act.action + '"' : '') +
-          '>' + act.label + '</div>';
-      })() +
+
+      '<div class="sb-client-strip sb-metal">' +
+        '<div class="sb-client-cell" data-action="open-approval">' +
+          '<div class="sb-client-num">' +
+            (approval > 0 ? '\u2212' + approval : '0') +
+          '</div>' +
+          '<div class="sb-client-label">APPROVAL DUE</div>' +
+        '</div>' +
+        '<div class="sb-client-cell" data-action="open-input">' +
+          '<div class="sb-client-num">' +
+            (input > 0 ? '\u2212' + input : '0') +
+          '</div>' +
+          '<div class="sb-client-label">INPUT DUE</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="sb-task-bar sb-metal"' + taskAttrs + '>' +
+        '<div class="sb-task-content">' +
+          '<div class="sb-task-label">TASK</div>' +
+          '<div class="sb-task-text">' + esc(taskText) + '</div>' +
+        '</div>' +
+        '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
+      '</div>' +
+
     '</section>';
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
@@ -807,31 +837,7 @@ function _renderDashboardInner() {
   // ═══════════════════════════════════════════════
 
   el.innerHTML = `<div class="pc-root" data-runway="${runwayState}">
-
-    <div class="pc-runway-strip pc-runway--${runwayState}" data-nav="runway">
-      <div class="pc-runway-num">${runway_posts}</div>
-      <div class="pc-runway-meta">
-        <div class="pc-runway-state">${runwayLabel}</div>
-        <div class="pc-runway-sub">POSTS SCHEDULED</div>
-      </div>
-    </div>
-
     ${renderScoreboard()}
-
-    <div class="pc-client-row">
-      <div class="pc-client-cell${awaiting_approval_count > 0 ? ' pc-client-cell--active' : ''}" data-nav="client">
-        <div class="pc-client-num">${awaiting_approval_count}</div>
-        <div class="pc-client-label">AWAITING APPROVAL</div>
-        ${clientApprovalAction ? `<div class="pc-client-action">${clientApprovalAction}</div>` : ''}
-      </div>
-      <div class="pc-client-cell" data-nav="awaiting-input">
-        <div class="pc-client-num">${awaiting_brand_count}</div>
-        <div class="pc-client-label">AWAITING INPUT</div>
-      </div>
-    </div>
-
-    ${_buildTopTaskHtml()}
-
   </div>`;
 
   // ═══════════════════════════════════════════════
@@ -845,18 +851,6 @@ function _renderDashboardInner() {
       if (pid) openPCS(pid);
     });
   }
-
-  el.querySelector('[data-nav="runway"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['scheduled']);
-  });
-
-  el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['awaiting approval']);
-  });
-
-  el.querySelector('[data-nav="awaiting-input"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['awaiting brand input']);
-  });
 
 }
 
