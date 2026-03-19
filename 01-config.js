@@ -170,13 +170,15 @@ const ROLE_STAGES = {
   'Creative':  null,
 };
 
-// All non-Client roles get full tab access
+// All roles get full tab access
 const _FULL_TABS = ['tasks','pipeline','library'];
 const ROLE_TABS = {
   'Admin':     _FULL_TABS,
   'Servicing': _FULL_TABS,
   'Creative':  _FULL_TABS,
-  'Client':    [],
+  'Pranav':    _FULL_TABS,
+  'Chitra':    _FULL_TABS,
+  'Client':    _FULL_TABS,
 };
 
 // All non-Client roles see the same stats
