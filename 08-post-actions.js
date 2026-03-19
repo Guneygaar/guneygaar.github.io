@@ -68,9 +68,14 @@ function closeAdminEdit() {
 }
 
 async function saveAdminEdit() {
+  console.log('[saveAdminEdit] SAVE CLICKED');
   const _ae = id => document.getElementById(id);
   const postId   = _ae('ae-save-btn')?.dataset?.postId;
-  if (!postId) return;
+  if (!postId) {
+    console.error('[saveAdminEdit] BLOCKED: no postId on ae-save-btn dataset');
+    showToast('Save failed — post not found', 'error');
+    return;
+  }
   const title    = (_ae('ae-title')?.value || '').trim();
   const owner    = _ae('ae-owner')?.value || '';
   const pillar   = _ae('ae-pillar')?.value || '';
@@ -79,23 +84,28 @@ async function saveAdminEdit() {
   const date     = _ae('ae-date')?.value || '';
   const comments = (_ae('ae-comments')?.value || '').trim();
   const postLink = (_ae('ae-postlink')?.value || '').trim();
-  if (!title) { showToast('Title is required', 'error'); return; }
+  if (!title) {
+    console.warn('[saveAdminEdit] BLOCKED: title empty');
+    showToast('Title is required', 'error');
+    return;
+  }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
+  console.log('[saveAdminEdit] VALIDATION PASSED');
+  console.log('[saveAdminEdit] PAYLOAD:', _payload);
   try {
-    const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, post_link: postLink||null, updated_at: new Date().toISOString() };
-    console.log('[saveAdminEdit] FORM STAGE:', stage, '→ DB STAGE:', toDbStage(stage));
-    console.log('[saveAdminEdit] PAYLOAD BEFORE SEND:', _payload);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify(_payload),
     });
-    console.log('[saveAdminEdit] SAVE OK for', postId);
+    console.log('[saveAdminEdit] API SUCCESS for', postId);
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
     showToast('Post saved ✓', 'success');
   } catch (err) {
+    console.error('[saveAdminEdit] API FAILED:', err);
     showToast('Save failed — try again', 'error');
     if (btn) btn.disabled = false;
   }

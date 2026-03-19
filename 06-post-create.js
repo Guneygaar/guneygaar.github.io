@@ -156,6 +156,7 @@ _drainDeferredRender();
 }
 
 async function submitNewPost() {
+console.log('[submitNewPost] SAVE CLICKED');
 
 const _s = id => document.getElementById(id);
 const title    = (_s('npm-title')?.value || '').trim();
@@ -168,12 +169,14 @@ const comments = (_s('npm-comments')?.value || '').trim();
 const postLink = (_s('npm-postlink')?.value || '').trim();
 
 if (!title) {
+console.warn('[submitNewPost] BLOCKED: title empty');
 showToast('Post title is required', 'error');
 _s('npm-title')?.focus();
 return;
 }
 
 if (!owner) {
+console.warn('[submitNewPost] BLOCKED: owner empty');
 showToast('Owner is required', 'error');
 _s('npm-owner')?.focus();
 return;
@@ -185,11 +188,7 @@ const savingMsg = _s('npm-saving');
 if (submitBtn) submitBtn.disabled = true;
 if (savingMsg) savingMsg.classList.add('active');
 
-try {
-
-await apiFetch('/posts', {
-method: 'POST',
-body: JSON.stringify({
+const payload = {
 post_id: 'POST-' + Date.now(),
 title,
 owner,
@@ -199,9 +198,18 @@ stage: toDbStage(stage || 'in production'),
 target_date: date || null,
 comments: comments || null,
 post_link: postLink || null
-})
+};
+console.log('[submitNewPost] VALIDATION PASSED');
+console.log('[submitNewPost] PAYLOAD:', payload);
+
+try {
+
+await apiFetch('/posts', {
+method: 'POST',
+body: JSON.stringify(payload)
 });
 
+console.log('[submitNewPost] API SUCCESS');
 clearDraft();
 stopDraftAutosave();
 
@@ -215,7 +223,7 @@ showToast('Post created OK', 'success');
 
 } catch (err) {
 
-console.error('submitNewPost:', err);
+console.error('[submitNewPost] API FAILED:', err);
 
 saveDraft();
 
