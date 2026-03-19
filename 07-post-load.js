@@ -733,21 +733,21 @@ function renderScoreboard() {
     var taskPostId = task && task.postId ? task.postId : '';
     var taskAttrs = taskPostId ? ' data-nav="top-task" data-post-id="' + esc(taskPostId) + '"' : '';
 
-    return '<section class="pcs-scoreboard sb-metal">' +
+    return '<section class="pcs-scoreboard">' +
+      '<div class="sb-inner">' +
 
-      '<div class="sb-critical-panel sb-metal">' +
-        '<div class="sb-critical-label">SCHEDULED</div>' +
-        '<div class="sb-critical-num ' + (isCritical ? 'critical' : 'stable') + '">' +
-          scheduled + ' / ' + threshold +
-        '</div>' +
+      '<div class="sb-critical-panel">' +
+        '<div class="sb-critical-label">CRITICAL</div>' +
+        '<div class="sb-critical-num">' + scheduled + '</div>' +
       '</div>' +
 
-      '<div class="sb-main-grid sb-metal">' +
+      '<div class="sb-main-grid">' +
         '<div class="sb-main-cell" data-action="open-production">' +
           '<div class="sb-main-label">PRANAV</div>' +
           '<div class="sb-main-num gold">' + pranavDisplay + '</div>' +
           '<div class="sb-main-sub">CREATE MORE</div>' +
         '</div>' +
+        '<div class="sb-divider"></div>' +
         '<div class="sb-main-cell" data-action="open-ready">' +
           '<div class="sb-main-label">CHITRA</div>' +
           '<div class="sb-main-num green">' + chitraDisplay + '</div>' +
@@ -755,18 +755,19 @@ function renderScoreboard() {
         '</div>' +
       '</div>' +
 
-      '<div class="sb-client-strip sb-metal">' +
+      '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
           '<div class="sb-client-num">' + approvalDisplay + '</div>' +
           '<div class="sb-client-label">APPROVAL DUE</div>' +
         '</div>' +
+        '<div class="sb-client-divider"></div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
           '<div class="sb-client-num">' + inputDisplay + '</div>' +
           '<div class="sb-client-label">INPUT DUE</div>' +
         '</div>' +
       '</div>' +
 
-      '<div class="sb-task-bar sb-metal"' + taskAttrs + '>' +
+      '<div class="sb-task-bar"' + taskAttrs + '>' +
         '<div class="sb-task-content">' +
           '<div class="sb-task-label">TASK</div>' +
           '<div class="sb-task-text">' + esc(taskText) + '</div>' +
@@ -774,6 +775,7 @@ function renderScoreboard() {
         '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
       '</div>' +
 
+      '</div>' +
     '</section>';
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
