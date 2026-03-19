@@ -22,7 +22,6 @@ const CLIENT_REQUEST_FORM_URL = '';
 // UI (internal) → DB (wire format) mapping
 const STAGE_MAP = {
   'in production':        'in_production',
-  'revisions needed':     'revisions_needed',
   'awaiting brand input': 'awaiting_brand_input',
   'ready':                'ready',
   'awaiting approval':    'awaiting_approval',
@@ -53,11 +52,11 @@ function toUiStage(dbStage) {
 const STAGE_META = {
   'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
   'in production':        { label: 'In Production (WIP)', hex: '#f59e0b' },
-  'revisions needed':     { label: 'Revisions Needed',     hex: '#ef4444' },
   'ready':                { label: 'Ready',                hex: '#10b981' },
   'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
   'scheduled':            { label: 'Scheduled',            hex: '#06b6d4' },
   'published':            { label: 'Published',            hex: '#22c55e' },
+  'rejected':             { label: 'Rejected',             hex: '#ef4444' },
   'parked':               { label: 'Parked',               hex: '#64748b' },
   'archive':              { label: 'Archive',              hex: '#64748b' },
 };
@@ -66,23 +65,23 @@ const STAGE_META = {
 const STAGES_DB = [
   'awaiting brand input',
   'in production',
-  'revisions needed',
   'ready',
   'awaiting approval',
   'scheduled',
   'published',
+  'rejected',
   'parked',
 ];
 
 // Workflow order for pipeline display
 const PIPELINE_ORDER = [
   'in production',
-  'revisions needed',
   'awaiting brand input',
   'ready',
   'awaiting approval',
   'scheduled',
   'published',
+  'rejected',
   'parked',
   'archive',
 ];
@@ -103,7 +102,7 @@ function stageStyle(raw) {
 // PRANAV = production, CHITRA = scheduling, CLIENT = approval
 function getResponsibleOwner(post) {
   const s = (post?.stage || '').toLowerCase().trim();
-  if (s === 'in production' || s === 'revisions needed') return 'PRANAV';
+  if (s === 'in production') return 'PRANAV';
   if (s === 'ready') return 'CHITRA';
   if (s === 'awaiting approval' || s === 'awaiting brand input') return 'CLIENT';
   return null; // scheduled, published, parked, unknown
@@ -176,7 +175,7 @@ function formatOwner(name) {
 const ROLE_STAGES = {
   'Admin':     null,
   'Servicing': ['awaiting approval','ready','scheduled'],
-  'Creative':  ['in production','revisions needed','awaiting brand input'],
+  'Creative':  ['in production','awaiting brand input'],
 };
 
 const ROLE_TABS = {
@@ -189,14 +188,13 @@ const ROLE_TABS = {
 const ROLE_STATS = {
   'Admin':     ['s-published','s-approval','s-pipeline','s-ready','s-week','s-total','s-overdue'],
   'Servicing': ['s-approval','s-ready','s-week'],
-  'Creative':  ['s-creative-requests','s-creative-revisions','s-creative-gap'],
+  'Creative':  ['s-creative-requests','s-creative-gap'],
   'Client':    [],
 };
 
 const ROLE_BUCKETS = {
   Admin: [
     { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
-    { key:'revisions',  label:'Revisions',    stages:['revisions needed'], warn:true },
     { key:'production', label:'In Production',stages:['in production'] },
     { key:'ready',      label:'Ready',        stages:['ready'] },
     { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
@@ -210,13 +208,11 @@ const ROLE_BUCKETS = {
   Creative: [
     { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
     { key:'production', label:'In Production',stages:['in production'] },
-    { key:'revisions',  label:'Revisions',    stages:['revisions needed'], warn:true },
   ],
 };
 
 const STRIP_STAGES = [
   { label:'In Production', stages:['in production'],        color: STAGE_META['in production'].hex,        tab:'tasks',    bucket:'production' },
-  { label:'Revisions',     stages:['revisions needed'],     color: STAGE_META['revisions needed'].hex,     tab:'tasks',    bucket:'revisions', warn:true },
   { label:'Requests',      stages:['awaiting brand input'], color: STAGE_META['awaiting brand input'].hex, tab:'tasks',    bucket:'requests' },
   { label:'Approval',      stages:['awaiting approval'],    color: STAGE_META['awaiting approval'].hex,    tab:'tasks',    bucket:'approval' },
   { label:'Ready',         stages:['ready'],                color: STAGE_META['ready'].hex,                tab:'tasks',    bucket:'ready', target:true },
@@ -241,5 +237,5 @@ function setStage(post, newStage, source) {
 }
 window.setStage = setStage;
 
-const CREATIVE_URGENCY  = ['revisions needed','awaiting brand input','in production'];
-const NEXT_POST_URGENCY = ['revisions needed','awaiting brand input','in production','ready','awaiting approval'];
+const CREATIVE_URGENCY  = ['awaiting brand input','in production'];
+const NEXT_POST_URGENCY = ['awaiting brand input','in production','ready','awaiting approval'];

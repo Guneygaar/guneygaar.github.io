@@ -63,7 +63,7 @@
     <div id="apv-preview" class="apv-preview">Fetching post details…</div>
     <div class="approval-actions">
       <button class="btn-approve" onclick="submitApproval('approved')">✓ Approve</button>
-      <button class="btn-revise"  onclick="submitApproval('revision')">↺ Request Revision</button>
+      <button class="btn-revise"  onclick="submitApproval('changes')">↺ Request Changes</button>
     </div>
     <div id="apv-msg" class="approval-msg"></div>
   </div>
@@ -225,7 +225,7 @@
   <span class="stat-pill" style="display:none"><span class="stat-num" id="s-overdue"></span></span>
   <span class="stat-pill" style="display:none"><span class="stat-num" id="s-ready"></span><span id="pill-ready"></span></span>
   <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-requests"></span></span>
-  <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-revisions"></span><span id="pill-creative-revisions"></span></span>
+  <!-- stat pill removed -->
   <span class="stat-pill" style="display:none"><span class="stat-num" id="s-creative-gap"></span><span id="pill-creative-gap"></span></span>
 </div>
 
@@ -398,7 +398,7 @@
         <select id="npm-stage" onchange="saveDraftDebounced()">
           <option value="in production">In Production</option>
           <option value="awaiting brand input">Awaiting Brand Input</option>
-          <option value="revisions needed">Revisions Needed</option>
+          <option value="rejected">Rejected</option>
           <option value="ready">Ready</option>
           <option value="awaiting approval">Awaiting Approval</option>
           <option value="scheduled">Scheduled</option>
@@ -454,7 +454,7 @@
       <select id="ae-stage" style="font-size:15px;height:44px">
         <option>In Production</option>
         <option>Awaiting Brand Input</option>
-        <option>Revisions Needed</option>
+        <option>Rejected</option>
         <option>Ready to Send</option>
         <option>Sent for Approval</option>
         <option>Awaiting Approval</option>

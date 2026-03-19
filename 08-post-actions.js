@@ -116,22 +116,22 @@ async function clientApprove(postId, btn) {
   } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
 }
 
-function showRevisionInput(postId) {
-  const wrap = document.getElementById(`revision-wrap-${postId}`);
-  if (wrap) { wrap.classList.toggle('active'); document.getElementById(`revision-text-${postId}`)?.focus(); }
+function showChangeInput(postId) {
+  const wrap = document.getElementById(`change-wrap-${postId}`);
+  if (wrap) { wrap.classList.toggle('active'); document.getElementById(`change-text-${postId}`)?.focus(); }
 }
 
-async function submitClientRevision(postId) {
-  const text = (document.getElementById(`revision-text-${postId}`)?.value||'').trim();
+async function submitClientChanges(postId) {
+  const text = (document.getElementById(`change-text-${postId}`)?.value||'').trim();
   if (!text) { showToast('Please describe what you want changed', 'error'); return; }
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('revisions needed'), comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision requested: ${text.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
-    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">↺ Revision sent — the team will take care of it.</div>`;
+    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent — the team will take care of it.</div>`;
     setTimeout(() => loadPostsForClient(), 1000);
   } catch { showToast('Failed — try again', 'error'); }
 }
@@ -600,7 +600,6 @@ function _buildStageProgress(stageLC) {
   // Normalise all variant/edge stages to a progress step
   const norm =
     (stageLC === 'awaiting brand input') ? 'in production'     :
-    (stageLC === 'revisions needed')     ? 'in production'     :
     (stageLC === 'draft')                ? 'in production'     :
     (stageLC === 'parked')               ? 'scheduled'         :
     (stageLC === 'archive')              ? 'published'         :

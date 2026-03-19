@@ -39,11 +39,11 @@ async function showApprovalView(postId) {
       ? `<div class="approval-already-approved"><span>✓</span> This post has already been approved</div>`
       : `<div class="approval-actions">
            <button class="btn-approve-green" onclick="submitApproval('approved','${esc(postId)}',this)" style="font-size:16px;padding:14px 28px">✓ Approve This Post</button>
-           <button class="btn-revise-outline" onclick="submitApproval('revision','${esc(postId)}',this)" style="font-size:16px;padding:14px 28px">↺ Request Changes</button>
+           <button class="btn-revise-outline" onclick="submitApproval('changes','${esc(postId)}',this)" style="font-size:16px;padding:14px 28px">↺ Request Changes</button>
          </div>
-         <div class="revision-input-wrap" id="approval-revision-wrap">
-           <textarea class="revision-textarea" id="approval-revision-text" placeholder="Describe what you'd like changed… be as specific as possible." rows="4"></textarea>
-           <button class="btn-send-revision" onclick="submitApproval('revision_submit','${esc(postId)}',this)">Send Revision Request →</button>
+         <div class="change-input-wrap" id="approval-change-wrap">
+           <textarea class="change-textarea" id="approval-change-text" placeholder="Describe what you'd like changed… be as specific as possible." rows="4"></textarea>
+           <button class="btn-send-changes" onclick="submitApproval('changes_submit','${esc(postId)}',this)">Send Change Request →</button>
          </div>
          <div id="approval-confirmation" style="display:none;text-align:center;padding:24px;color:var(--c-green);font-size:16px;font-weight:600"></div>`;
 
@@ -71,26 +71,26 @@ async function showApprovalView(postId) {
 }
 
 async function submitApproval(type, postId, btn) {
-  if (type === 'revision') {
-    document.getElementById('approval-revision-wrap')?.classList.add('active');
-    document.getElementById('approval-revision-text')?.focus();
+  if (type === 'changes') {
+    document.getElementById('approval-change-wrap')?.classList.add('active');
+    document.getElementById('approval-change-text')?.focus();
     return;
   }
 
-  if (type === 'revision_submit') {
-    const text = (document.getElementById('approval-revision-text')?.value||'').trim();
+  if (type === 'changes_submit') {
+    const text = (document.getElementById('approval-change-text')?.value||'').trim();
     if (!text) { showToast('Please describe what you\'d like changed', 'error'); return; }
     if (btn) btn.disabled = true;
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'revisions needed', comments: text, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
       });
-      await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Revision: ${text.substring(0,80)}` });
+      await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
       const c = document.getElementById('approval-confirmation');
-      if (c) { c.style.display = ''; c.textContent = '↺ Revision request sent — the team will review it.'; }
+      if (c) { c.style.display = ''; c.textContent = 'Changes sent — the team will review it.'; }
       document.querySelector('.approval-actions')?.remove();
-      document.getElementById('approval-revision-wrap')?.remove();
+      document.getElementById('approval-change-wrap')?.remove();
     } catch { showToast('Failed — try again', 'error'); if (btn) btn.disabled = false; }
     return;
   }
@@ -106,7 +106,7 @@ async function submitApproval(type, postId, btn) {
       const c = document.getElementById('approval-confirmation');
       if (c) { c.style.display = ''; c.textContent = '✓ Approved! The team has been notified.'; }
       document.querySelector('.approval-actions')?.remove();
-      document.getElementById('approval-revision-wrap')?.remove();
+      document.getElementById('approval-change-wrap')?.remove();
     } catch { showToast('Failed — try again', 'error'); if (btn) btn.disabled = false; }
   }
 }
