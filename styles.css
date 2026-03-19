@@ -623,7 +623,7 @@ a:hover { text-decoration: underline; }
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  min-width: 160px;
+  min-width: 180px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
@@ -651,42 +651,8 @@ a:hover { text-decoration: underline; }
 /* ═══════════════════════════════════════════════
    GLOBAL ADMIN MENU (fixed, all views)
 ═══════════════════════════════════════════════ */
-.gam-wrap {
-  position: fixed;
-  top: 10px;
-  right: 12px;
-  z-index: 9999;
-}
-.gam-trigger {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface);
-  border: 1.5px solid var(--border2);
-  box-shadow: var(--shadow-lift);
-  color: var(--text);
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-.gam-trigger:hover { background: var(--surface2); }
-.gam-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  min-width: 180px;
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-lift);
-  overflow: hidden;
-  padding: var(--sp-1) 0;
-}
-.gam-dropdown.open { display: block; }
-.gam-section-label {
+/* User-menu inline role-switch (replaces floating GAM) */
+.um-section-label {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -694,13 +660,13 @@ a:hover { text-decoration: underline; }
   color: var(--text3);
   padding: 8px 14px 4px;
 }
-.gam-role-options {
+.um-role-options {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   padding: 4px 12px 8px;
 }
-.gam-role-btn {
+.um-role-btn {
   font-size: 12px;
   padding: 4px 10px;
   border-radius: 999px;
@@ -710,31 +676,17 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-.gam-role-btn:hover { background: var(--surface2); }
-.gam-role-btn.active {
+.um-role-btn:hover { background: var(--surface2); }
+.um-role-btn.active {
   background: var(--c-blue);
   color: #fff;
   border-color: var(--c-blue);
 }
-.gam-divider {
+.um-divider {
   height: 1px;
   background: var(--border);
   margin: var(--sp-1) 0;
 }
-.gam-item {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--text);
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-.gam-item:hover { background: var(--surface2); }
-.gam-item.danger { color: var(--c-red); }
 
 /* ═══════════════════════════════════════════════
    PIPELINE STRIP

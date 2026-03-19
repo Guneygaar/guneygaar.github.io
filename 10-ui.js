@@ -98,13 +98,6 @@ function toggleClientMenu() {
 function closeClientMenu() { document.getElementById('client-user-menu')?.classList.remove('open'); }
 
 // -- Global Admin Menu -------------------------
-function toggleGlobalAdminMenu() {
-  const m = document.getElementById('gam-dropdown');
-  if (!m) return;
-  const open = m.classList.toggle('open');
-  if (open) setTimeout(() => document.addEventListener('click', closeGlobalAdminMenu, { once: true }), 0);
-}
-function closeGlobalAdminMenu() { document.getElementById('gam-dropdown')?.classList.remove('open'); }
 function gamSwitchRole(role) {
   localStorage.setItem('pcs_role_preview', role);
   location.reload();
