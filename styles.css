@@ -1066,6 +1066,65 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.5px;
 }
 
+/* ── LED Scoreboard ── */
+.pcs-scoreboard {
+  background: #0a0a0a;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  margin-top: 10px;
+  font-family: 'Roboto Mono', monospace;
+}
+.sb-alert {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.sb-alert.on {
+  color: #ff3b30;
+  text-shadow: 0 0 6px rgba(255,0,0,0.4);
+}
+.sb-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.sb-block { padding: 4px 0; }
+.sb-label {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+.sb-num {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  line-height: 1.2;
+}
+.sb-num.gold { color: #FFD700; }
+.sb-num.green { color: #00C853; }
+.sb-sub {
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+.sb-sub.red { color: #ff3b30; opacity: 0.8; }
+.sb-sub.green { color: #00C853; opacity: 0.7; }
+.sb-client {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #00C853;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* ── Top Task ── */
 .top-task {
   padding: 12px 14px;

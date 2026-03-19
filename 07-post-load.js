@@ -547,6 +547,97 @@ function _buildTopTaskHtml() {
   </div>`;
 }
 
+// ── LED Scoreboard ──────────────────────────────
+
+function getScoreboardData() {
+  var posts = window.allPosts || [];
+  var tasks = window.allTasks || [];
+
+  function stg(p) { return (p.stage || '').toLowerCase().trim(); }
+
+  var now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  var scheduledCount = posts.filter(function(p) {
+    if (stg(p) !== 'scheduled') return false;
+    var d = parseDate(p.targetDate);
+    return d && d >= now;
+  }).length;
+
+  var readyCount = posts.filter(function(p) { return stg(p) === 'ready'; }).length;
+  var inProductionCount = posts.filter(function(p) { return stg(p) === 'in production'; }).length;
+  var awaitingApproval = posts.filter(function(p) { return stg(p) === 'awaiting approval'; }).length;
+  var awaitingBrand = posts.filter(function(p) { return stg(p) === 'awaiting brand input'; }).length;
+  var approvedCount = posts.filter(function(p) { return stg(p) === 'approved'; }).length;
+
+  var pranavTarget = 35;
+  var pipelineTotal = readyCount + awaitingApproval + awaitingBrand + approvedCount + scheduledCount;
+  var pranavDeficit = Math.max(0, pranavTarget - pipelineTotal);
+
+  var chitraExcess = Math.max(0, readyCount - awaitingApproval);
+
+  var openTasks = tasks.filter(function(t) { return !t.done; }).length;
+
+  return {
+    pranav: {
+      production: inProductionCount,
+      ready: readyCount,
+      deficit: pranavDeficit,
+      pipeline: pipelineTotal,
+      target: pranavTarget
+    },
+    chitra: {
+      approval: awaitingApproval,
+      ready: readyCount,
+      excess: chitraExcess
+    },
+    client: {
+      approval: awaitingApproval,
+      input: awaitingBrand
+    },
+    system: {
+      scheduled: scheduledCount,
+      critical: scheduledCount <= 7,
+      openTasks: openTasks
+    }
+  };
+}
+
+function renderScoreboard() {
+  var d = getScoreboardData();
+
+  var pranav = d.pranav;
+  var chitra = d.chitra;
+  var client = d.client;
+  var system = d.system;
+
+  return '<section class="pcs-scoreboard">' +
+    '<div class="sb-alert' + (system.critical ? ' on' : '') + '">' +
+      (system.critical
+        ? 'CRITICAL: ' + system.scheduled + ' POSTS'
+        : 'STABLE: ' + system.scheduled + ' SCHEDULED') +
+    '</div>' +
+    '<div class="sb-grid">' +
+      '<div class="sb-block">' +
+        '<div class="sb-label">PRANAV</div>' +
+        '<div class="sb-num gold">' + pranav.production + ':' + pranav.ready + '</div>' +
+        '<div class="sb-sub ' + (pranav.deficit > 0 ? 'red' : 'green') + '">' +
+          (pranav.deficit > 0 ? 'DEFICIT ' + pranav.deficit : 'ON TARGET') +
+        '</div>' +
+      '</div>' +
+      '<div class="sb-block">' +
+        '<div class="sb-label">CHITRA</div>' +
+        '<div class="sb-num green">' + chitra.approval + ':' + chitra.ready + '</div>' +
+        '<div class="sb-sub green">EXCESS ' + chitra.excess + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sb-client">' +
+      '<div>AWAITING APPROVAL: ' + client.approval + '</div>' +
+      '<div>AWAITING INPUT: ' + client.input + '</div>' +
+    '</div>' +
+  '</section>';
+}
+
 function renderDashboard() {
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
@@ -689,6 +780,8 @@ function _renderDashboardInner() {
       <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
       <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
+
+    ${renderScoreboard()}
 
     <div class="pc-client-row">
       <div class="pc-client-cell${awaiting_approval_count > 0 ? ' pc-client-cell--active' : ''}" data-nav="client">
