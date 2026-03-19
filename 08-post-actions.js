@@ -732,6 +732,10 @@ function _renderBackgroundViews() {
   try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
 }
 
+function handleOwnerChange(postId, value) {
+  updatePost(postId, 'owner', value);
+}
+
 async function updatePost(postId, field, value) {
   // Sanitize pillar before any write — enforce lowercase
   if (field === 'contentPillar') value = sanitizePillar(value);
@@ -840,7 +844,11 @@ function _buildInfoGrid(post, canEdit, id) {
     <div class="pcs-section">
       <div class="pcs-grid">
         ${cell('Stage',    stageSel)}
-        ${cell('Owner',    canEdit ? sel('owner', OWNERS, post.owner||'', 'owner') : ro(formatOwner(post.owner)))}
+        ${cell('Owner',    canEdit
+          ? `<select class="pcs-field-val" onchange="handleOwnerChange('${esc(id)}',this.value)">
+               ${OWNERS.map(o => `<option value="${esc(o)}" ${o === (post.owner||'') ? 'selected' : ''}>${esc(o)}</option>`).join('')}
+             </select>`
+          : ro(formatOwner(post.owner)))}
         ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
