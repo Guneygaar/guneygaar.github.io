@@ -3561,7 +3561,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: fixed;
   right: 16px;
   bottom: 152px;
-  z-index: 410;
+  z-index: 9999;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;

@@ -538,25 +538,26 @@ function toggleFabMenu() {
   // Show/hide request button based on role
   const reqBtn = document.getElementById('fab-request-btn');
   if (reqBtn) reqBtn.style.display = '';
-  // Show "Assign Task" only for Admin
+  // Show "Assign Task" only for Admin — role only, no other conditions
   const assignBtn = document.getElementById('fab-assign-task');
-  if (assignBtn) assignBtn.style.display = (window.effectiveRole === 'Admin') ? '' : 'none';
+  if (assignBtn) assignBtn.style.display = (window.effectiveRole === 'Admin') ? 'flex' : 'none';
 }
 
 function openAssignTaskFromFab() {
-  console.log('[FAB] Assign Task clicked');
-  const postId = window._pcs?.postId;
-  if (!postId) {
-    console.warn('[FAB] No post open — blocked');
-    showToast('Open a post first to assign a task', 'error');
+  console.log('[FAB] Assign click', window._pcs?.postId);
+
+  if (!window._pcs?.postId) {
+    showToast('Open a post first');
     return;
   }
-  console.log('[FAB] Post context:', postId);
-  const assignee = prompt('Assign to (e.g. Pranav, Chitra):');
-  if (!assignee || !assignee.trim()) return;
-  const message = prompt('Task description:');
-  if (!message || !message.trim()) return;
-  _fabAssignTask(postId, assignee.trim(), message.trim());
+
+  const assignee = prompt('Assign to (Pranav / Chitra)');
+  if (!assignee) return;
+
+  const text = prompt('Task description');
+  if (!text) return;
+
+  _fabAssignTask(window._pcs.postId, assignee.trim(), text.trim());
 }
 
 async function _fabAssignTask(postId, assignee, message) {

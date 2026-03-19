@@ -650,7 +650,7 @@
   <button class="fab-menu-item" onclick="openNewPostModal(); closeFabMenu()">
     <span class="fab-menu-icon">✏</span> Create Post
   </button>
-  <button class="fab-menu-item" id="fab-assign-task" onclick="event.stopPropagation(); closeFabMenu(); openAssignTaskFromFab()" style="display:none">
+  <button class="fab-menu-item" id="fab-assign-task" onclick="event.stopPropagation(); closeFabMenu(); setTimeout(() => openAssignTaskFromFab(), 50)" style="display:none">
     <span class="fab-menu-icon">📌</span> Assign Task
   </button>
 </div>

@@ -253,9 +253,17 @@ async function markTaskDone(id) {
 }
 
 document.addEventListener('click', function(e) {
-  if (e.target.closest('.task-banner-item')) {
-    console.log('[TASK TAP OK]', e.target);
-  }
+  const task = e.target.closest('.task-banner-item');
+  if (!task) return;
+
+  // prevent checkbox triggering navigation
+  if (e.target.classList.contains('task-check')) return;
+
+  const postId = task.dataset.postId;
+  if (!postId) return;
+
+  console.log('[TASK → PCS]', postId);
+  if (typeof openPCS === 'function') openPCS(postId);
 });
 
 document.addEventListener('change', function(e) {
@@ -863,7 +871,7 @@ function renderTaskBanner() {
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
     const due = t.due_date ? `Due ${formatDateShort(t.due_date)}` : '';
-    return `<div class="task-banner-item" id="task-item-${t.id}"><input type="checkbox" class="task-check" data-task-id="${t.id}" /><div><div class="task-banner-msg">${esc(t.message)}</div>${due ? `<div class="task-banner-due">${due}</div>` : ''}</div><button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button></div>`;
+    return `<div class="task-banner-item" id="task-item-${t.id}" data-post-id="${t.post_id || ''}"><input type="checkbox" class="task-check" data-task-id="${t.id}" /><div><div class="task-banner-msg">${esc(t.message)}</div>${due ? `<div class="task-banner-due">${due}</div>` : ''}</div><button class="btn-task-done" onclick="markTaskDone(${t.id})">Mark Done</button></div>`;
   }).join('');
   section.innerHTML = `<div class="task-banner"><div class="task-banner-label">Your Tasks (${myTasks.length})</div>${rows}</div>`;
 }
