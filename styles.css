@@ -581,6 +581,7 @@ a:hover { text-decoration: underline; }
   padding: var(--sp-3) var(--sp-4);
   border-bottom: 1px solid var(--border);
   transition: background var(--transition-fast);
+  cursor: pointer;
 }
 .notif-item:hover { background: var(--surface2); }
 .notif-item.unread { background: var(--accent-dim); }

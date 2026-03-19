@@ -283,7 +283,7 @@ async function fetchAndRenderNotifications() {
       const title  = _notifTitle(n.post_id);
       const time   = _notifTime(n.created_at);
       return `
-      <div class="notif-item ${n.read ? '' : 'unread'}">
+      <div class="notif-item ${n.read ? '' : 'unread'}" data-post-id="${esc(n.post_id || '')}">
         <div class="notif-primary">${esc(actor)} ${esc(action)}</div>
         <div class="notif-secondary">${esc(title)}</div>
         <div class="notif-ts">${esc(time)}</div>
@@ -313,12 +313,36 @@ function renderNotificationBadge() {
   b.style.display = _unreadCount > 0 ? '' : 'none';
 }
 
-function toggleNotifPanel() {
+function toggleNotifPanel(e) {
+  if (e) e.stopPropagation();
   const panel = document.getElementById('notif-panel');
   if (!panel) return;
   const open = panel.classList.toggle('open');
   if (open) { fetchAndRenderNotifications(); markAllNotificationsRead(); }
 }
+
+// Close notification panel on outside click
+document.addEventListener('click', function (e) {
+  const panel = document.getElementById('notif-panel');
+  if (!panel || !panel.classList.contains('open')) return;
+  const wrap = document.getElementById('notif-wrap');
+  if (wrap && wrap.contains(e.target)) return;
+  panel.classList.remove('open');
+});
+
+// Click a notification → open that post
+document.addEventListener('click', function (e) {
+  const item = e.target.closest('.notif-item');
+  if (!item) return;
+  const postId = item.dataset.postId;
+  if (!postId) return;
+  // Close panel
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.remove('open');
+  // Open post
+  const post = getPostById(postId);
+  if (post) openPCS(postId);
+});
 
 // -- PCS Activity toggle -----------------------
 function togglePCSActivity() {
