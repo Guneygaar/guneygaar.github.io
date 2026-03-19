@@ -803,13 +803,23 @@ async function updatePost(postId, field, value) {
     comments:      'comments',
   }[field] || field;
 
+  // Guard: reject any legacy/invalid field names before they reach DB
+  const _blocked = ['post_link', 'linkedin_url', 'linkedinLink'];
+  if (_blocked.includes(dbField)) {
+    console.error('[updatePost] BLOCKED invalid DB field:', dbField, '(from UI field:', field + ')');
+    post._isSaving = false;
+    return;
+  }
+
   // Convert stage value to DB format before sending
   const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
+  const _writePayload = { [dbField]: wireValue, updated_at: new Date().toISOString() };
+  console.log('FINAL PAYLOAD:', JSON.stringify(_writePayload, null, 2));
 
   try {
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ [dbField]: wireValue, updated_at: new Date().toISOString() }),
+      body: JSON.stringify(_writePayload),
     });
     // Apply server truth — preserves the exact memory reference
     if (Array.isArray(rows) && rows[0]) {
