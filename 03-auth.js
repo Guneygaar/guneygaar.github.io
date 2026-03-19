@@ -238,16 +238,10 @@ function _showGlobalAdminMenu() {
 }
 
 function applyRoleVisibility() {
-  const allowedTabs = ROLE_TABS[effectiveRole] || [];
+  // All roles see all tabs — no role-based filtering
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
-    btn.style.display = allowedTabs.includes(btn.dataset.tab) ? '' : 'none';
+    btn.style.display = '';
   });
-  const activePanelId = document.querySelector('.tab-panel.active')?.id;
-  const activeTab = activePanelId ? activePanelId.replace('panel-', '') : '';
-  if (!allowedTabs.includes(activeTab) && allowedTabs.length > 0) {
-    const firstBtn = document.querySelector(`.tab-btn[data-tab="${allowedTabs[0]}"]`);
-    if (firstBtn) switchTab(firstBtn);
-  }
   updateActionButton();
 }
 
