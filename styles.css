@@ -1091,7 +1091,7 @@ a:hover { text-decoration: underline; }
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
-.sb-block { padding: 4px 0; }
+.sb-block { padding: 4px 0; cursor: pointer; }
 .sb-label {
   font-size: 10px;
   letter-spacing: 1.5px;
