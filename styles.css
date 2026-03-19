@@ -1072,38 +1072,34 @@ a:hover { text-decoration: underline; }
 .pcs-scoreboard {
   width: 100%;
   max-width: 420px;
-  height: 100vh;
   margin: 0 auto;
-  border: 3px solid #2a2a2a;
+  border: 2px solid #2a2a2a;
   padding: 8px;
-  background: #0a0a0a;
+  background: #0b0b0b;
   font-family: 'Roboto Mono', monospace;
   color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
-  box-sizing: border-box;
-  overflow: hidden;
 }
 
-/* Inner frame — device cavity */
+/* Inner frame — panel face */
 .sb-inner {
   border: 1px solid #3a3a3a;
-  background:
+  background-color: #0D0D0D;
+  background-image:
     repeating-linear-gradient(
       0deg,
-      #0e0e0e,
-      #0e0e0e 2px,
-      #0c0c0c 2px,
-      #0c0c0c 4px
+      rgba(255,255,255,0.02) 0px,
+      rgba(255,255,255,0.02) 1px,
+      transparent 1px,
+      transparent 3px
     );
   display: flex;
   flex-direction: column;
-  height: 100%;
 }
 
 /* ── 1. Critical Panel ── */
 .sb-critical-panel {
-  height: 96px;
-  flex-shrink: 0;
+  height: 100px;
   background: #140909;
   border-bottom: 1px solid #3a1a1a;
   display: flex;
@@ -1115,14 +1111,14 @@ a:hover { text-decoration: underline; }
 .sb-critical-label {
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: #FF3B30;
   margin-bottom: 8px;
 }
 .sb-critical-num {
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: #FF3B30;
@@ -1131,14 +1127,13 @@ a:hover { text-decoration: underline; }
 /* ── 2. Main Scoreboard ── */
 .sb-main-grid {
   height: 240px;
-  flex-shrink: 0;
   display: grid;
-  grid-template-columns: 1fr 4px 1fr;
+  grid-template-columns: 1fr 3px 1fr;
   border-bottom: 1px solid #333;
 }
 .sb-divider {
   background: #444;
-  width: 4px;
+  width: 3px;
 }
 .sb-main-cell {
   display: flex;
@@ -1155,7 +1150,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #EAEAEA;
   margin-bottom: 12px;
 }
 .sb-main-num {
@@ -1171,14 +1166,13 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #EAEAEA;
   margin-top: 12px;
 }
 
 /* ── 3. Client Strip ── */
 .sb-client-strip {
   height: 120px;
-  flex-shrink: 0;
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
   border-bottom: 1px solid #333;
@@ -1205,22 +1199,21 @@ a:hover { text-decoration: underline; }
   color: #FF3B30;
 }
 .sb-client-label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #EAEAEA;
   margin-top: 8px;
 }
 
 /* ── 4. Task Bar ── */
 .sb-task-bar {
   height: 80px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 16px;
   border-top: 1px solid #333;
 }
 .sb-task-content {
@@ -1232,7 +1225,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #888;
+  color: #EAEAEA;
   margin-bottom: 4px;
 }
 .sb-task-text {
@@ -1251,7 +1244,7 @@ a:hover { text-decoration: underline; }
   width: 48px;
   height: 48px;
   background: #C9A24A;
-  border: 1px solid #8a6f2c;
+  border: 1px solid #8a6d2a;
   border-radius: 0;
   color: #000;
   display: flex;
@@ -1261,7 +1254,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
-  margin-left: 12px;
+  margin-left: 16px;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
