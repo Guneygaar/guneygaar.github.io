@@ -3522,6 +3522,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-bottom: 1px solid var(--border);
   text-align: left;
   width: 100%;
+  pointer-events: auto;
+  cursor: pointer;
 }
 .fab-menu-item:last-child { border-bottom: none; }
 .fab-menu-item:active { background: var(--surface2); }
