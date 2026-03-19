@@ -239,8 +239,8 @@ function renderAll() {
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
-  const _libStages = ['published','scheduled','parked','rejected'];
-  const libCount = allPosts.filter(p => _libStages.includes((p.stage||'').toLowerCase().trim())).length;
+  const _libDefault = ['scheduled','published'];
+  const libCount = allPosts.filter(p => _libDefault.includes((p.stage||'').toLowerCase().trim())).length;
   if (ll) ll.textContent = `${libCount} posts`;
 }
 
@@ -1092,11 +1092,14 @@ function filterLibrary() {
   const today  = new Date(); today.setHours(0,0,0,0);
   const week7  = new Date(today); week7.setDate(week7.getDate()+7);
 
-  // Library shows only archive-relevant stages
-  const _LIB_STAGES = ['published','scheduled','parked','rejected'];
+  // Library archive stages (dropdown shows all 4; default view shows only 2)
+  const _LIB_STAGES_ALL     = ['published','scheduled','parked','rejected'];
+  const _LIB_STAGES_DEFAULT = ['scheduled','published'];
+  // When user picks a specific stage, show that; otherwise default to scheduled+published
+  const _allowedStages = stage ? _LIB_STAGES_ALL : _LIB_STAGES_DEFAULT;
 
   const filtered = allPosts.filter(p => {
-    if (!_LIB_STAGES.includes((p.stage||'').toLowerCase().trim())) return false;
+    if (!_allowedStages.includes((p.stage||'').toLowerCase().trim())) return false;
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
     if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
