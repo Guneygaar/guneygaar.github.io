@@ -1092,6 +1092,7 @@ a:hover { text-decoration: underline; }
   gap: 16px;
 }
 .sb-block { padding: 4px 0; cursor: pointer; }
+.sb-block:active { transform: scale(0.98); }
 .sb-label {
   font-size: 10px;
   letter-spacing: 1.5px;
