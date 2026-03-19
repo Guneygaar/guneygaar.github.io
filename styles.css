@@ -1471,13 +1471,23 @@ a:hover { text-decoration: underline; }
   text-transform: uppercase; color: var(--accent); margin-bottom: var(--sp-2);
 }
 .task-banner-item {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: var(--sp-3); padding: var(--sp-2) 0;
+  position: relative; z-index: 5; pointer-events: auto;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); padding: 12px 0;
+  min-height: 48px;
   border-bottom: 1px solid rgba(232,195,122,0.15);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
+.task-banner-item * { pointer-events: auto; }
 .task-banner-item:last-child { border-bottom: none; }
 .task-banner-msg { font-size: 14px; color: var(--text1); line-height: 1.5; flex: 1; }
 .task-banner-due { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.task-check {
+  width: 20px; height: 20px; flex-shrink: 0; cursor: pointer;
+  accent-color: var(--accent);
+  pointer-events: auto; position: relative; z-index: 10;
+}
 .btn-task-done {
   background: none; border: 1px solid var(--accent); color: var(--accent);
   border-radius: var(--r-pill); font-size: 11px; font-weight: 700;
@@ -1490,6 +1500,7 @@ a:hover { text-decoration: underline; }
 .task-done { animation: taskComplete 0.25s ease; }
 .task-done .task-banner-msg { text-decoration: line-through; opacity: 0.5; }
 .task-done .btn-task-done { opacity: 0.3; pointer-events: none; }
+.task-done .task-check { opacity: 0.3; pointer-events: none; }
 
 @keyframes taskComplete {
   0%   { transform: scale(1); }
