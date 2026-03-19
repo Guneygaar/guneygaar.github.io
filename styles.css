@@ -1091,8 +1091,7 @@ a:hover { text-decoration: underline; }
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
-.sb-block { padding: 4px 0; cursor: pointer; }
-.sb-block:active { transform: scale(0.98); }
+.sb-block { padding: 4px 0; }
 .sb-label {
   font-size: 10px;
   letter-spacing: 1.5px;
@@ -1107,13 +1106,28 @@ a:hover { text-decoration: underline; }
 }
 .sb-num.gold { color: #FFD700; }
 .sb-num.green { color: #00C853; }
-.sb-sub {
-  font-size: 10px;
+.sb-num,
+.sb-btn { cursor: pointer; }
+.sb-num:active,
+.sb-btn:active { transform: scale(0.96); }
+.sb-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  font-size: 12px;
   letter-spacing: 1px;
-  margin-top: 2px;
+  border-radius: 4px;
+  font-family: 'Roboto Mono', monospace;
 }
-.sb-sub.red { color: #ff3b30; opacity: 0.8; }
-.sb-sub.green { color: #00C853; opacity: 0.7; }
+.sb-btn.grey {
+  background: #222;
+  color: #FFD700;
+}
+.sb-btn.amber {
+  background: #FFB300;
+  color: #000;
+}
 .sb-client {
   margin-top: 12px;
   padding-top: 10px;

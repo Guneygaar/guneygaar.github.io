@@ -299,19 +299,28 @@ if (!window._scoreboardClickBound) {
   window._scoreboardClickBound = true;
 
   document.addEventListener('click', function(e) {
-    var el = e.target.closest('.sb-block');
-    if (!el) return;
+    var el = e.target.closest('[data-action]');
+    if (!el || !el.closest('.pcs-scoreboard')) return;
 
     e.stopPropagation();
 
     var action = el.dataset.action;
 
-    if (action === 'create-post') {
-      if (typeof openNewPostModal === 'function') openNewPostModal();
-    }
-
-    if (action === 'dispatch') {
-      if (typeof showToast === 'function') showToast('Dispatch flow coming soon');
+    switch (action) {
+      case 'create-post':
+        if (typeof openNewPostModal === 'function') openNewPostModal();
+        break;
+      case 'dispatch':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']);
+        break;
+      case 'open-production':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['in production']);
+        break;
+      case 'open-ready':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']);
+        break;
+      default:
+        console.warn('[SB] Unknown action', action);
     }
   });
 }
@@ -602,23 +611,17 @@ function getScoreboardData() {
     var input = safeCount('awaiting brand input');
 
     var pipelineTotal = ready + approval + input + scheduledCount;
-    var deficit = Math.max(0, TARGET_PRODUCTION - pipelineTotal);
-    var excess = Math.max(0, ready - approval);
 
     function safeNum(n) { return Number.isFinite(n) ? n : 0; }
 
     return {
-      pranav: {
-        production: safeNum(production),
-        ready: safeNum(ready),
-        deficit: safeNum(deficit),
-        pipeline: safeNum(pipelineTotal),
+      creation: {
+        value: safeNum(pipelineTotal),
         target: TARGET_PRODUCTION
       },
-      chitra: {
-        approval: safeNum(approval),
-        ready: safeNum(ready),
-        excess: safeNum(excess)
+      dispatch: {
+        value: safeNum(ready),
+        target: safeNum(ready)
       },
       client: {
         approval: safeNum(approval),
@@ -631,7 +634,7 @@ function getScoreboardData() {
     };
   } catch (err) {
     console.error('[Scoreboard] Data error', err);
-    return { pranav: {}, chitra: {}, client: {}, system: {} };
+    return {};
   }
 }
 
@@ -640,36 +643,38 @@ function renderScoreboard() {
     var d = getScoreboardData();
     if (!d || typeof d !== 'object') return '';
 
-    var pranav = d.pranav || {};
-    var chitra = d.chitra || {};
-    var client = d.client || {};
-    var system = d.system || {};
+    var c = d.creation || {};
+    var dp = d.dispatch || {};
+    var cl = d.client || {};
+    var sys = d.system || {};
 
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
     return '<section class="pcs-scoreboard">' +
-      '<div class="sb-alert' + (system.critical ? ' on' : '') + '">' +
-        (system.critical
-          ? 'CRITICAL: ' + safe(system.scheduled) + ' POSTS'
-          : 'STABLE: ' + safe(system.scheduled) + ' SCHEDULED') +
+      '<div class="sb-alert' + (sys.critical ? ' on' : '') + '">' +
+        (sys.critical
+          ? 'CRITICAL: ' + safe(sys.scheduled) + ' POSTS'
+          : 'STABLE: ' + safe(sys.scheduled) + ' SCHEDULED') +
       '</div>' +
       '<div class="sb-grid">' +
-        '<div class="sb-block" data-action="create-post">' +
-          '<div class="sb-label">PRANAV</div>' +
-          '<div class="sb-num gold">' + safe(pranav.production) + ':' + safe(pranav.ready) + '</div>' +
-          '<div class="sb-sub ' + (safe(pranav.deficit) > 0 ? 'red' : 'green') + '">' +
-            (safe(pranav.deficit) > 0 ? 'DEFICIT ' + safe(pranav.deficit) : 'ON TARGET') +
+        '<div class="sb-block">' +
+          '<div class="sb-label">CREATION</div>' +
+          '<div class="sb-num gold" data-action="open-production">' +
+            safe(c.value) + ' / ' + safe(c.target) +
           '</div>' +
+          '<button class="sb-btn grey" data-action="create-post">INITIATE DRAFT</button>' +
         '</div>' +
-        '<div class="sb-block" data-action="dispatch">' +
-          '<div class="sb-label">CHITRA</div>' +
-          '<div class="sb-num green">' + safe(chitra.approval) + ':' + safe(chitra.ready) + '</div>' +
-          '<div class="sb-sub green">EXCESS ' + safe(chitra.excess) + '</div>' +
+        '<div class="sb-block">' +
+          '<div class="sb-label">DISPATCH</div>' +
+          '<div class="sb-num green" data-action="open-ready">' +
+            safe(dp.value) + ' / ' + safe(dp.target) +
+          '</div>' +
+          '<button class="sb-btn amber" data-action="dispatch">DISPATCH BATCH</button>' +
         '</div>' +
       '</div>' +
       '<div class="sb-client">' +
-        '<div>AWAITING APPROVAL: ' + safe(client.approval) + '</div>' +
-        '<div>AWAITING INPUT: ' + safe(client.input) + '</div>' +
+        '<div>AWAITING APPROVAL: ' + safe(cl.approval) + '</div>' +
+        '<div>AWAITING INPUT: ' + safe(cl.input) + '</div>' +
       '</div>' +
     '</section>';
   } catch (err) {
@@ -731,63 +736,7 @@ function _renderDashboardInner() {
   }
 
   // ═══════════════════════════════════════════════
-  // SECTION 3 — PRANAV SCOREBOARD
-  // ═══════════════════════════════════════════════
-
-  const pranavTarget = 35;
-  const pranavAction = pipeline_total < pranavTarget ? 'CREATE' : 'HOLD';
-
-  // ═══════════════════════════════════════════════
-  // SECTION 4 — CHITRA SCOREBOARD (PRIORITY ENGINE)
-  // ═══════════════════════════════════════════════
-
-  // Aging: posts in awaiting stages >= 2 days
-  const agingThreshold = 2;
-  const awaitingAged = allPosts.filter(p => {
-    const s = stg(p);
-    if (s !== 'awaiting approval' && s !== 'awaiting brand input') return false;
-    const changed = p.status_changed_at || p.statusChangedAt || p.updated_at || p.updatedAt || p.created_at || p.createdAt;
-    if (!changed) return false;
-    const age = Math.floor((now.getTime() - new Date(changed).getTime()) / DAY);
-    return age >= agingThreshold;
-  }).length;
-
-  let chitraAction, chitraContext, chitraFilter;
-
-  if (failed_publish_count > 0) {
-    chitraAction = 'FIX PUBLISH';
-    chitraContext = `${failed_publish_count} failed`;
-    chitraFilter = ['failed_publish'];
-  } else if (approved_count > 0) {
-    chitraAction = 'SCHEDULE NOW';
-    chitraContext = `${approved_count} approved`;
-    chitraFilter = ['approved'];
-  } else if (awaiting_total > 0 && awaitingAged > 0) {
-    if (ready_count > 0) {
-      chitraAction = 'FOLLOW UP + SEND';
-      chitraContext = `${awaitingAged} aging, ${ready_count} ready`;
-      chitraFilter = ['awaiting approval', 'awaiting brand input', 'ready'];
-    } else {
-      chitraAction = 'FOLLOW UP';
-      chitraContext = `${awaitingAged} aging ${agingThreshold}d+`;
-      chitraFilter = ['awaiting approval', 'awaiting brand input'];
-    }
-  } else if (ready_count > 0) {
-    chitraAction = 'SEND FOR APPROVAL';
-    chitraContext = `${ready_count} ready`;
-    chitraFilter = ['ready'];
-  } else if (runway_posts < 7 && ready_count === 0 && approved_count === 0 && awaiting_total === 0) {
-    chitraAction = 'SYSTEM DRY \u2014 ESCALATE';
-    chitraContext = 'No posts in pipeline';
-    chitraFilter = null;
-  } else {
-    chitraAction = 'ALL CLEAR';
-    chitraContext = '';
-    chitraFilter = null;
-  }
-
-  // ═══════════════════════════════════════════════
-  // SECTION 5 — CLIENT
+  // SECTION 3 — CLIENT
   // ═══════════════════════════════════════════════
 
   // Two separate counts per spec
@@ -806,19 +755,6 @@ function _renderDashboardInner() {
         <div class="pc-runway-state">${runwayLabel}</div>
         <div class="pc-runway-sub">POSTS SCHEDULED</div>
       </div>
-    </div>
-
-    <div class="pc-board" data-nav="pranav">
-      <div class="pc-board-label">Pranav</div>
-      <div class="pc-board-score">${pipeline_total}<span class="pc-board-target"> / ${pranavTarget}</span></div>
-      <div class="pc-board-status">PIPELINE</div>
-      <div class="pc-board-action pc-board-action--${pranavAction === 'CREATE' ? 'warn' : 'ok'}"${pranavAction === 'CREATE' ? ' data-nav="create"' : ''}>${pranavAction}</div>
-    </div>
-
-    <div class="pc-board" data-nav="chitra">
-      <div class="pc-board-label">Chitra</div>
-      <div class="pc-board-detail">${chitraContext || '\u2014'}</div>
-      <div class="pc-board-action pc-board-action--${chitraAction === 'ALL CLEAR' ? 'ok' : 'warn'}">${chitraAction}</div>
     </div>
 
     ${renderScoreboard()}
@@ -855,18 +791,6 @@ function _renderDashboardInner() {
     navigateWithFilter('pipeline', ['scheduled']);
   });
 
-  el.querySelector('[data-nav="pranav"]')?.addEventListener('click', () => {
-    navigateWithFilter('pipeline', ['in production', 'awaiting brand input', 'ready']);
-  });
-
-  el.querySelector('[data-nav="chitra"]')?.addEventListener('click', () => {
-    if (chitraFilter) {
-      navigateWithFilter('pipeline', chitraFilter);
-    } else {
-      goToTab('pipeline');
-    }
-  });
-
   el.querySelector('[data-nav="client"]')?.addEventListener('click', () => {
     navigateWithFilter('pipeline', ['awaiting approval']);
   });
@@ -875,10 +799,6 @@ function _renderDashboardInner() {
     navigateWithFilter('pipeline', ['awaiting brand input']);
   });
 
-  el.querySelector('[data-nav="create"]')?.addEventListener('click', (e) => {
-    e.stopPropagation(); // prevent bubbling to parent pranav tile
-    if (typeof openNewPostModal === 'function') openNewPostModal();
-  });
 }
 
 /* Legacy stubs — keep function names callable so renderAll doesn't error */
