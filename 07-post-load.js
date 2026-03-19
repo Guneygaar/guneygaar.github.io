@@ -357,13 +357,21 @@ function _ttByStage(stage) {
     .sort(_ttOldestFirst);
 }
 
-function _ttPostTitle(postId) {
-  if (!postId) return '';
-  const p = allPosts.find(x => getPostId(x) === postId);
-  return p ? getTitle(p) : '';
+function _ttTruncate(str, n = 42) {
+  if (!str) return '';
+  return str.length > n ? str.slice(0, n) + '\u2026' : str;
 }
 
 function getTopTask() {
+  const postMap = Object.fromEntries(
+    allPosts.map(p => [getPostId(p), p])
+  );
+  function _ttPostTitle(postId) {
+    if (!postId) return '';
+    const p = postMap[postId];
+    return p ? getTitle(p) : '';
+  }
+
   const role = _ttNorm(window.effectiveRole || '');
   const email = localStorage.getItem('gbl_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
@@ -375,8 +383,8 @@ function getTopTask() {
   if (myTasks.length) {
     const t = myTasks[0];
     const msg = t.message || 'Complete assigned task';
-    const postTitle = _ttPostTitle(t.post_id);
-    return { type: 'assigned', text: postTitle ? msg + ' \u2014 ' + postTitle : msg, postId: t.post_id || null };
+    const title = _ttPostTitle(t.post_id);
+    return { type: 'assigned', text: title ? msg + ' \u2014 ' + _ttTruncate(title) : msg, postId: t.post_id || null };
   }
 
   // 2. ROLE-BASED PRIORITY
