@@ -295,17 +295,26 @@ if (!window._taskClickBound) {
 }
 
 // ── Scoreboard block click delegation ──
-document.addEventListener('click', function(e) {
-  var el = e.target.closest('.sb-block');
-  if (!el) return;
-  var action = el.dataset.action;
-  if (action === 'create-post') {
-    if (typeof openNewPostModal === 'function') openNewPostModal();
-  }
-  if (action === 'dispatch') {
-    if (typeof showToast === 'function') showToast('Dispatch flow coming soon');
-  }
-});
+if (!window._scoreboardClickBound) {
+  window._scoreboardClickBound = true;
+
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('.sb-block');
+    if (!el) return;
+
+    e.stopPropagation();
+
+    var action = el.dataset.action;
+
+    if (action === 'create-post') {
+      if (typeof openNewPostModal === 'function') openNewPostModal();
+    }
+
+    if (action === 'dispatch') {
+      if (typeof showToast === 'function') showToast('Dispatch flow coming soon');
+    }
+  });
+}
 
 document.addEventListener('change', function(e) {
   if (!e.target.classList.contains('task-check')) return;
