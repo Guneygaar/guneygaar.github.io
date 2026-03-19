@@ -1212,9 +1212,13 @@ a:hover { text-decoration: underline; }
   transform: scale(0.98);
   filter: brightness(1.15);
 }
-.pcs-scoreboard .sb-action:not([data-action]) {
+.pcs-scoreboard .sb-action.is-loading {
+  opacity: 0.6;
   cursor: default;
+}
+.pcs-scoreboard .sb-action.is-passive {
   opacity: 0.5;
+  cursor: default;
 }
 
 /* ── Top Task ── */

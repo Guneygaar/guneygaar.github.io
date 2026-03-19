@@ -610,8 +610,16 @@ function getScoreboardData() {
   }
 }
 
+function isPostsReady() {
+  return Array.isArray(window.allPosts);
+}
+
 function getScoreboardAction(data) {
   try {
+    if (!isPostsReady()) {
+      return { label: 'Loading data...', action: null, loading: true };
+    }
+
     if (data.approval > 0) {
       return { label: 'Review approvals', action: 'open-approval' };
     }
@@ -626,7 +634,7 @@ function getScoreboardAction(data) {
     }
     return { label: 'System running normally', action: null };
   } catch (e) {
-    return { label: 'No actions available', action: null };
+    return { label: 'Unavailable', action: null };
   }
 }
 
@@ -666,7 +674,10 @@ function renderScoreboard() {
       '</div>' +
       (function() {
         var act = getScoreboardAction(d);
-        return '<div class="sb-action"' +
+        var cls = 'sb-action';
+        if (act.loading) cls += ' is-loading';
+        else if (!act.action) cls += ' is-passive';
+        return '<div class="' + cls + '"' +
           (act.action ? ' data-action="' + act.action + '"' : '') +
           '>' + act.label + '</div>';
       })() +
