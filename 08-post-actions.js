@@ -210,28 +210,46 @@ function scrollToNewRequest() {
 }
 
 async function submitClientRequest() {
-  const brief = document.getElementById('client-req-brief')?.value.trim();
-  if (!brief) { showToast('Please describe what you need', 'error'); return; }
-  const btn  = document.getElementById('client-req-submit');
-  const fileInput = document.getElementById('client-req-file');
-  const file = fileInput?.files[0] || null;
+  console.log('[REQUEST] Client submit clicked');
+  const brief = document.getElementById('req-topic')?.value.trim();
+  if (!brief) {
+    console.warn('[REQUEST] BLOCKED: missing brief');
+    showToast('Please describe what you need', 'error');
+    return;
+  }
+  const btn       = document.getElementById('req-submit-btn');
+  const fileInput = document.getElementById('req-file');
+  const file      = fileInput?.files[0] || null;
   if (btn) btn.disabled = true;
   try {
     const postId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('gbl_email') || 'Client';
+    const payload = {
+      post_id:     postId,
+      title:       'Client Request \u2014 ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
+      stage:       toDbStage('awaiting brand input'),
+      owner:       email,
+      comments:    brief,
+      created_at:  new Date().toISOString(),
+      updated_at:  new Date().toISOString(),
+    };
+    console.log('[REQUEST] PAYLOAD:', payload);
     await apiFetch('/posts', {
       method: 'POST',
-      body: JSON.stringify({ post_id: postId, title: `Client Request — ${new Date().getDate()} ${MONTHS[new Date().getMonth()]}`, stage: toDbStage('awaiting brand input'), owner: email, comments: brief, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+      body: JSON.stringify(payload),
     });
+    console.log('[REQUEST] API SUCCESS');
     if (file) await uploadPostAsset(file, postId);
-    await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: `New request: ${brief.substring(0,60)}` });
-    if (document.getElementById('client-req-brief')) document.getElementById('client-req-brief').value = '';
+    await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    const topicEl = document.getElementById('req-topic');
+    if (topicEl) topicEl.value = '';
     if (fileInput) fileInput.value = '';
     if (btn) btn.disabled = false;
-    showToast('Request sent ✓ The team will be in touch.', 'success');
+    showToast('Request sent \u2713 The team will be in touch.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
   } catch (err) {
-    showToast('Failed — try again', 'error');
+    console.error('[REQUEST] API FAILED:', err);
+    showToast('Failed \u2014 try again', 'error');
     if (btn) btn.disabled = false;
   }
 }
