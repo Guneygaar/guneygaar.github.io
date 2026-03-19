@@ -1061,9 +1061,13 @@ function _renderPipelineInner() {
 }
 
 
+function _toTitleCase(str) {
+  return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function populateFilterDropdowns() {
-  const _LIB_STAGES_DD = ['published','scheduled','parked','rejected'];
-  const stages  = [...new Set(allPosts.map(p=>p.stage||'').filter(Boolean))].filter(s => _LIB_STAGES_DD.includes(s.toLowerCase().trim())).sort();
+  // Fixed order for library stage dropdown
+  const LIBRARY_STAGE_ORDER = ['scheduled','published','parked','rejected'];
   const owners  = ['PRANAV','CHITRA','CLIENT'];
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
@@ -1076,7 +1080,7 @@ function populateFilterDropdowns() {
   const curOwner  = ownerEl.value;
   const curPillar = pillarEl?.value || '';
 
-  stageEl.innerHTML  = `<option value="">Stage</option>`  + stages.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
+  stageEl.innerHTML  = `<option value="">Stage</option>`  + LIBRARY_STAGE_ORDER.map(s=>`<option value="${esc(s)}">${esc(_toTitleCase(s))}</option>`).join('');
   ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
   if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(formatPillarDisplay(p))}</option>`).join('');
 
