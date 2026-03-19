@@ -79,6 +79,7 @@ async function loadPosts() {
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
     mergePosts(normalise(data));
+    window._postsLoaded = true;
     hideErrorBanner();
     scheduleRender();
     showToast(`${allPosts.length} posts loaded`, 'success');
@@ -87,6 +88,7 @@ async function loadPosts() {
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
+      window._postsLoaded = true;
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -110,12 +112,14 @@ async function loadPostsForClient() {
   try {
     const data  = await apiFetch('/posts?select=*&order=created_at.desc');
     mergePosts(normalise(data));
+    window._postsLoaded = true;
     hideErrorBanner();
     renderClientView();
   } catch (err) {
     if (cachedPosts.length) {
       allPosts.length = 0;
       cachedPosts.forEach(p => allPosts.push(p));
+      window._postsLoaded = true;
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -611,13 +615,27 @@ function getScoreboardData() {
 }
 
 function isPostsReady() {
-  return Array.isArray(window.allPosts);
+  return (
+    Array.isArray(window.allPosts) &&
+    window._postsLoaded === true
+  );
 }
 
 function getScoreboardAction(data) {
   try {
     if (!isPostsReady()) {
-      return { label: 'Loading data...', action: null, loading: true };
+      return { label: 'Loading data...', action: null, state: 'loading' };
+    }
+
+    var total =
+      data.creation +
+      data.dispatch +
+      data.approval +
+      data.input +
+      data.scheduled;
+
+    if (total === 0) {
+      return { label: 'No posts yet', action: 'open-production', state: 'empty' };
     }
 
     if (data.approval > 0) {
@@ -632,9 +650,9 @@ function getScoreboardAction(data) {
     if (data.creation === 0) {
       return { label: 'Start creating posts', action: 'open-production' };
     }
-    return { label: 'System running normally', action: null };
+    return { label: 'System running normally', action: null, state: 'passive' };
   } catch (e) {
-    return { label: 'Unavailable', action: null };
+    return { label: 'Unavailable', action: null, state: 'error' };
   }
 }
 
@@ -675,8 +693,7 @@ function renderScoreboard() {
       (function() {
         var act = getScoreboardAction(d);
         var cls = 'sb-action';
-        if (act.loading) cls += ' is-loading';
-        else if (!act.action) cls += ' is-passive';
+        if (act.state) cls += ' ' + act.state;
         return '<div class="' + cls + '"' +
           (act.action ? ' data-action="' + act.action + '"' : '') +
           '>' + act.label + '</div>';

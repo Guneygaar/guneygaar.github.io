@@ -1212,12 +1212,21 @@ a:hover { text-decoration: underline; }
   transform: scale(0.98);
   filter: brightness(1.15);
 }
-.pcs-scoreboard .sb-action.is-loading {
+.pcs-scoreboard .sb-action.loading {
   opacity: 0.6;
   cursor: default;
 }
-.pcs-scoreboard .sb-action.is-passive {
+.pcs-scoreboard .sb-action.passive {
   opacity: 0.5;
+  cursor: default;
+}
+.pcs-scoreboard .sb-action.empty {
+  opacity: 0.9;
+  border-color: #333;
+  cursor: pointer;
+}
+.pcs-scoreboard .sb-action.error {
+  opacity: 0.4;
   cursor: default;
 }
 
