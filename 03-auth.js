@@ -214,8 +214,8 @@ function activateRole(role) {
     startRealtime();
     fetchUnreadCount();
   }
-  // Admin-only: inject role preview switcher — always uses currentRole
-  if (currentRole === 'Admin') _injectRolePreview();
+  // Admin-only: show global admin control menu — always uses currentRole
+  if (currentRole === 'Admin') _showGlobalAdminMenu();
 }
 
 // Escape failsafe — callable from console if UI is ever unreachable
@@ -224,36 +224,17 @@ window.resetRolePreview = function() {
   location.reload();
 };
 
-function _injectRolePreview() {
-  // Avoid duplicate injection
-  if (document.getElementById('role-preview')) return;
-  // Find the active view's header — dashboard or client topbar
-  const header = document.querySelector('#dashboard-view .app-header-right')
-              || document.querySelector('#client-view .topbar');
-  if (!header) return;
-  const wrap = document.createElement('div');
-  wrap.id = 'role-preview-wrap';
-  wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-right:8px;font-size:12px;color:var(--text3)';
-  wrap.innerHTML = `<label for="role-preview" style="opacity:0.7">View as</label>
-    <select id="role-preview" style="font-size:12px;padding:2px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text1);cursor:pointer">
-      <option value="Admin">Admin</option>
-      <option value="Pranav">Pranav</option>
-      <option value="Chitra">Chitra</option>
-      <option value="Client">Client</option>
-    </select>`;
-  // For client topbar, insert before the spacer; for dashboard, prepend
-  const spacer = header.querySelector('.topbar-spacer');
-  if (spacer) {
-    spacer.after(wrap);
-  } else {
-    header.prepend(wrap);
-  }
-  const sel = document.getElementById('role-preview');
-  sel.value = effectiveRole;
-  sel.onchange = function() {
-    localStorage.setItem('pcs_role_preview', this.value);
-    location.reload();
-  };
+function _showGlobalAdminMenu() {
+  const menu = document.getElementById('global-admin-menu');
+  if (!menu) return;
+  menu.style.display = '';
+  // Highlight the active role button
+  menu.querySelectorAll('.gam-role-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.role === effectiveRole);
+  });
+  // Hide per-view 3-dot menus (global menu supersedes them)
+  document.getElementById('user-menu-wrap')?.style.setProperty('display', 'none');
+  document.getElementById('client-menu-wrap')?.style.setProperty('display', 'none');
 }
 
 function applyRoleVisibility() {
