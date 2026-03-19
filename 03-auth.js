@@ -214,8 +214,8 @@ function activateRole(role) {
     startRealtime();
     fetchUnreadCount();
   }
-  // Admin-only: show global admin control menu — always uses currentRole
-  if (currentRole === 'Admin') _showGlobalAdminMenu();
+  // Build the ⋮ menu contents (role-switch shown only for Admin)
+  _buildUserMenu();
 }
 
 // Escape failsafe — callable from console if UI is ever unreachable
@@ -224,17 +224,28 @@ window.resetRolePreview = function() {
   location.reload();
 };
 
-function _showGlobalAdminMenu() {
-  const menu = document.getElementById('global-admin-menu');
+function _buildUserMenu() {
+  const menu = document.getElementById('user-menu');
   if (!menu) return;
-  menu.style.display = '';
-  // Highlight the active role button
-  menu.querySelectorAll('.gam-role-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.role === effectiveRole);
-  });
-  // Hide per-view 3-dot menus (global menu supersedes them)
-  document.getElementById('user-menu-wrap')?.style.setProperty('display', 'none');
-  document.getElementById('client-menu-wrap')?.style.setProperty('display', 'none');
+  let html = '';
+  // Role-switch section (Admin only)
+  if (currentRole === 'Admin') {
+    const roles = ['Admin', 'Pranav', 'Chitra', 'Client'];
+    html += '<div class="um-section-label">View</div>';
+    html += '<div class="um-role-options">';
+    roles.forEach(r => {
+      const active = r === effectiveRole ? ' active' : '';
+      html += `<button class="um-role-btn${active}" onclick="gamSwitchRole('${r}')">${r}</button>`;
+    });
+    html += '</div><div class="um-divider"></div>';
+  }
+  // Preferences
+  html += '<div class="um-section-label">Preferences</div>';
+  html += '<button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()"><span id="theme-icon">\u2600</span> Dark / Light</button>';
+  html += '<button class="user-menu-item" id="btn-refresh" onclick="loadPosts(); closeUserMenu()">\u21BA Refresh</button>';
+  html += '<div class="um-divider"></div>';
+  html += '<button class="user-menu-item danger" onclick="logout()">\u21A9 Sign Out</button>';
+  menu.innerHTML = html;
 }
 
 function applyRoleVisibility() {
