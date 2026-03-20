@@ -458,23 +458,9 @@ async function openTimeline(postId, title) {
   list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading...</div>';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  try {
-    const data = await apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=30`);
-    if (!Array.isArray(data) || !data.length) {
-      list.innerHTML = '<div style="color:var(--text3);padding:12px 0;font-size:13px">No activity recorded yet.</div>';
-      return;
-    }
-    list.innerHTML = data.map(e => `
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
-          <div class="timeline-action">${esc(e.action||'')}</div>
-          <div class="timeline-meta" title="${esc(formatIST(e.created_at))}">${esc(e.actor||'Unknown')} . ${timeAgo(e.created_at)}</div>
-        </div>
-      </div>`).join('');
-  } catch {
-    list.innerHTML = '<div style="color:var(--c-red);font-size:13px">Could not load history.</div>';
-  }
+  // READ from activity_log removed - activity_log contains system noise.
+  // Use notifications table for user-facing messages instead.
+  list.innerHTML = '<div style="color:var(--text3);padding:12px 0;font-size:13px">No activity recorded yet.</div>';
 }
 function closeTimeline() {
   document.getElementById('timeline-overlay')?.classList.remove('open');

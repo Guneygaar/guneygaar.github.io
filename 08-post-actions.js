@@ -868,24 +868,9 @@ async function updatePost(postId, field, value) {
 }
 
 function _loadPCSActivity(postId, bodyEl) {
-  apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=25`)
-    .then(rows => {
-      if (_pcs.postId !== postId) return; // stale response  -  discard
-      if (!rows || !rows.length) {
-        bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
-        return;
-      }
-      bodyEl.innerHTML = rows.map(r => {
-        const ago = r.created_at ? timeAgo(r.created_at) : '';
-        const istTime = r.created_at ? formatIST(r.created_at) : '';
-        return `<div class="pcs-activity-row">
-          <span class="pcs-activity-who">${esc(r.actor || 'System')}</span>
-          <span class="pcs-activity-what">${esc(r.action || '')}</span>
-          <span class="pcs-activity-when" title="${esc(istTime)}">${esc(ago)}</span>
-        </div>`;
-      }).join('');
-    })
-    .catch(() => { bodyEl.innerHTML = '<div class="pcs-activity-empty">Could not load.</div>'; });
+  // READ from activity_log removed - activity_log contains system noise.
+  // Use notifications table for user-facing messages instead.
+  bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
 }
 
 function _buildInfoGrid(post, canEdit, id) {
