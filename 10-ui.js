@@ -543,16 +543,13 @@ function updateFabVisibility() {
 }
 
 function toggleFabMenu() {
-  const sheet = document.getElementById('fab-menu-sheet');
-  const backdrop = document.getElementById('fab-backdrop');
-  if (!sheet) return;
-  const open = sheet.classList.toggle('open');
-  backdrop.classList.toggle('open', open);
-  // Show/hide request button based on role
-  const reqBtn = document.getElementById('fab-request-btn');
-  if (reqBtn) reqBtn.style.display = '';
-  // Role-only FAB visibility
-  updateFabVisibility();
+  var fab = document.getElementById('fab');
+  var menu = document.getElementById('fab-menu');
+  var backdrop = document.getElementById('fab-backdrop');
+  if (!menu) return;
+  var isOpen = menu.classList.toggle('open');
+  if (fab) fab.classList.toggle('open', isOpen);
+  if (backdrop) backdrop.classList.toggle('open', isOpen);
 }
 
 function openAssignTaskFromFab() {
@@ -598,9 +595,39 @@ async function _fabAssignTask(postId, assignee, message) {
 }
 
 function closeFabMenu() {
-  document.getElementById('fab-menu-sheet')?.classList.remove('open');
-  document.getElementById('fab-backdrop')?.classList.remove('open');
+  var fab = document.getElementById('fab');
+  var menu = document.getElementById('fab-menu');
+  var backdrop = document.getElementById('fab-backdrop');
+  if (fab) fab.classList.remove('open');
+  if (menu) menu.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
 }
+
+// -- FAB menu wiring (runs once on DOMContentLoaded) --
+document.addEventListener('DOMContentLoaded', function() {
+  var backdrop = document.getElementById('fab-backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeFabMenu);
+
+  var createPost = document.getElementById('fab-create-post');
+  if (createPost) createPost.addEventListener('click', function() {
+    closeFabMenu();
+    if (typeof openNewPostModal === 'function') openNewPostModal();
+    else console.log('[FAB] Create Post clicked');
+  });
+
+  var createReq = document.getElementById('fab-create-request');
+  if (createReq) createReq.addEventListener('click', function() {
+    closeFabMenu();
+    if (typeof openRequestSheet === 'function') openRequestSheet();
+    else console.log('[FAB] Create Request clicked');
+  });
+
+  var assignTask = document.getElementById('fab-assign-task');
+  if (assignTask) assignTask.addEventListener('click', function() {
+    closeFabMenu();
+    console.log('[FAB] Assign Task clicked');
+  });
+});
 
 // -- Task Detail Modal --------------------------
 function openTaskModal(taskId) {
