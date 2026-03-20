@@ -336,7 +336,7 @@ if (!window._scoreboardClickBound) {
         if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_approval']);
         break;
       case 'open-input':
-        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_input']);
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_brand_input']);
         break;
       default:
         console.warn('[SB] Unknown action', action);
@@ -390,7 +390,7 @@ function renderAll() {
   const ll = document.getElementById('library-label');
   if (pl) pl.textContent = `${allPosts.length} posts`;
   const _libDefault = ['scheduled','published'];
-  const libCount = allPosts.filter(p => _libDefault.includes((p.stage||'').toLowerCase().trim())).length;
+  const libCount = allPosts.filter(p => _libDefault.includes(p.stage || '')).length;
   if (ll) ll.textContent = `${libCount} posts`;
 }
 
@@ -399,10 +399,10 @@ function updateStats() {
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
   allPosts.forEach(p => {
-    const stage = (p.stage||'').toLowerCase().trim();
+    const stage = p.stage || '';
     if (stage === 'published') published++;
-    if (stage.includes('approval')) awaitingApproval++;
-    if (!['published','archive'].includes(stage)) inPipeline++;
+    if (stage === 'awaiting_approval') awaitingApproval++;
+    if (!['published','parked','rejected'].includes(stage)) inPipeline++;
     if (stage === 'ready') readyToSend++;
     const d = parseDate(p.targetDate);
     if (d) {
@@ -417,7 +417,6 @@ function updateStats() {
   setText('s-week',      dueWeek);
   setText('s-overdue',   overdue);
   setText('s-ready',     `${readyToSend}/${READY_TO_SEND_TARGET}`);
-  // Legacy stats removed
   updateBadge('badge-tasks',    getMyTasks().length);
 }
 
@@ -454,7 +453,7 @@ function _ttOldestFirst(a, b) {
 
 function _ttByStage(stage) {
   return allPosts
-    .filter(p => _ttNorm(p.stage) === stage)
+    .filter(p => (p.stage || '') === stage)
     .sort(_ttOldestFirst);
 }
 
@@ -491,26 +490,26 @@ function getTopTask() {
   // 2. ROLE-BASED PRIORITY
 
   if (role === 'pranav') {
-    const prod = _ttByStage('in production');
-    if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
+    const prod = _ttByStage('in_production');
+    if (prod.length) return { type: 'production', text: 'Create post -- ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
     return null;
   }
 
   if (role === 'chitra') {
-    const approval = _ttByStage('awaiting approval');
-    if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+    const approval = _ttByStage('awaiting_approval');
+    if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
     const ready = _ttByStage('ready');
-    if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+    if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
     return null;
   }
 
   // Admin  -  sees everything: approval -> ready -> production
-  const approval = _ttByStage('awaiting approval');
-  if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
+  const approval = _ttByStage('awaiting_approval');
+  if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
   const ready = _ttByStage('ready');
-  if (ready.length) return { type: 'ready', text: 'Send for approval \u2014 ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
-  const prod = _ttByStage('in production');
-  if (prod.length) return { type: 'production', text: 'Create post \u2014 ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
+  if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
+  const prod = _ttByStage('in_production');
+  if (prod.length) return { type: 'production', text: 'Create post -- ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
 
   return null;
 }
@@ -523,10 +522,10 @@ function computeDelayMeta(posts) {
   const now = Date.now();
   const HOUR = 3600000;
   // Stages that require status_changed_at for delay computation
-  const needsStatusTs = new Set(['in production', 'scheduled', 'awaiting approval']);
+  const needsStatusTs = new Set(['in_production', 'scheduled', 'awaiting_approval']);
 
   const enrichedPosts = posts.map(p => {
-    const s = (p.stage || '').toLowerCase().trim();
+    const s = p.stage || '';
     const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
     const createdAt = p.created_at || p.createdAt;
 
@@ -539,7 +538,7 @@ function computeDelayMeta(posts) {
     // request delay: uses created_at (when the request was made)
     // internal/client delay: uses status_changed_at (when it entered this stage)
     let ref = 0;
-    if (s === 'awaiting brand input') {
+    if (s === 'awaiting_brand_input') {
       ref = createdAt ? new Date(createdAt).getTime() : 0;
     } else {
       const changedAt = p.status_changed_at || p.statusChangedAt;
@@ -555,11 +554,11 @@ function computeDelayMeta(posts) {
     let isDelayed = false;
     let isCritical = false;
 
-    if (s === 'awaiting brand input' && hours > 24) {
+    if (s === 'awaiting_brand_input' && hours > 24) {
       delayType = 'request'; isDelayed = true;
-    } else if ((s === 'in production' || s === 'scheduled') && hours > 72) {
+    } else if ((s === 'in_production' || s === 'scheduled') && hours > 72) {
       delayType = 'internal'; isDelayed = true;
-    } else if (s === 'awaiting approval' && hours > 72) {
+    } else if (s === 'awaiting_approval' && hours > 72) {
       delayType = 'client'; isDelayed = true;
       if (hours > 120) isCritical = true;
     }
@@ -599,49 +598,34 @@ function _buildTopTaskHtml() {
 
 // -- Scoreboard  -  Data + Render ------------------
 
-// Safe stage normalization
+// Safe stage accessor
 function _safeStage(p) {
   if (!p || typeof p !== 'object') return '';
-  if (!p.stage || typeof p.stage !== 'string') return '';
-  return p.stage.toLowerCase().trim();
+  return p.stage || '';
 }
 
 // Config  -  single source for all thresholds
 var SCOREBOARD_CONFIG = {
-  CREATION_TARGET: 35,
+  MONTHLY_TARGET: 35,
   CRITICAL_THRESHOLD: 7
 };
 
 // Single-pass count engine
 function getScoreboardCounts(posts) {
   var counts = {
-    production: 0,
+    in_production: 0,
     ready: 0,
-    approval: 0,
-    input: 0,
-    scheduled: 0
+    awaiting_approval: 0,
+    awaiting_brand_input: 0,
+    scheduled: 0,
+    published: 0
   };
 
   if (!Array.isArray(posts)) return counts;
 
   for (var i = 0; i < posts.length; i++) {
     var s = _safeStage(posts[i]);
-
-    if (s === 'in_production' || s === 'in production' || s === 'draft' || s === 'idea') {
-      counts.production++;
-    }
-    else if (s === 'ready') {
-      counts.ready++;
-    }
-    else if (s === 'awaiting_approval' || s === 'awaiting approval') {
-      counts.approval++;
-    }
-    else if (s === 'awaiting_input' || s === 'awaiting input' || s === 'awaiting_brand_input' || s === 'awaiting brand input') {
-      counts.input++;
-    }
-    else if (s === 'scheduled') {
-      counts.scheduled++;
-    }
+    if (counts.hasOwnProperty(s)) counts[s]++;
   }
 
   return counts;
@@ -651,31 +635,61 @@ function getScoreboardCounts(posts) {
 function getScoreboardData() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
   var c = getScoreboardCounts(posts);
+  var MONTHLY_TARGET = SCOREBOARD_CONFIG.MONTHLY_TARGET;
 
-  var creationTarget = SCOREBOARD_CONFIG.CREATION_TARGET;
-  var creationGap = creationTarget - c.production;
+  // FIX 6: Runway = scheduled posts with target_date >= today
+  var todayStr = new Date().toISOString().split('T')[0];
+  var runwayPosts = posts.filter(function(p) {
+    return p.stage === 'scheduled' && p.target_date && p.target_date >= todayStr;
+  });
+  var runwayCount = runwayPosts.length;
 
-  console.log('[SCOREBOARD]', { counts: c, creationTarget: creationTarget, creationGap: creationGap });
+  // FIX 7: Pranav = posts in system vs target
+  var inSystemPosts = posts.filter(function(p) {
+    return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
+  });
+  var pranavDeficit = inSystemPosts.length - MONTHLY_TARGET;
+
+  // FIX 8: Chitra = posts needing dispatch
+  var threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  var threeDaysAgoStr = threeDaysAgo.toISOString();
+  var chitraPosts = posts.filter(function(p) {
+    return ['ready', 'awaiting_approval', 'awaiting_brand_input'].includes(p.stage);
+  });
+  var chitraCount = chitraPosts.length;
+  var chitraOverdue = chitraPosts.filter(function(p) {
+    return p.stage !== 'ready' && p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+  }).length;
+
+  // FIX 9: Approval = awaiting_approval within 3 days
+  var approvalCount = posts.filter(function(p) {
+    return p.stage === 'awaiting_approval' && p.status_changed_at && new Date(p.status_changed_at) >= threeDaysAgo;
+  }).length;
+
+  // FIX 10: Input = awaiting_brand_input within 3 days
+  var inputCount = posts.filter(function(p) {
+    return p.stage === 'awaiting_brand_input' && p.status_changed_at && new Date(p.status_changed_at) >= threeDaysAgo;
+  }).length;
+
+  console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit });
 
   return {
+    runway: {
+      count: runwayCount
+    },
     pranav: {
-      value: creationGap > 0 ? -creationGap : 0,
-      raw: c.production
+      deficit: pranavDeficit,
+      inSystem: inSystemPosts.length,
+      target: MONTHLY_TARGET
     },
     chitra: {
-      value: c.ready,
-      raw: c.ready,
-      ready: c.ready,
-      total: c.production + c.ready
+      count: chitraCount,
+      overdue: chitraOverdue
     },
     client: {
-      approval: c.approval,
-      input: c.input
-    },
-    system: {
-      scheduled: c.scheduled,
-      threshold: SCOREBOARD_CONFIG.CRITICAL_THRESHOLD,
-      isCritical: c.scheduled <= SCOREBOARD_CONFIG.CRITICAL_THRESHOLD
+      approval: approvalCount,
+      input: inputCount
     }
   };
 }
@@ -698,31 +712,33 @@ function renderScoreboard() {
 
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
-    var scheduled = safe(data.system.scheduled);
-    var isCritical = data.system.isCritical;
+    // FIX 6: Runway
+    var runwayCount = safe(data.runway.count);
+    var runwayColor, runwayStatus;
+    if (runwayCount <= 6)       { runwayColor = 'crit'; runwayStatus = 'CRITICAL'; }
+    else if (runwayCount <= 14) { runwayColor = 'warn'; runwayStatus = 'MODERATE'; }
+    else if (runwayCount <= 21) { runwayColor = 'ok';   runwayStatus = 'GOOD'; }
+    else                        { runwayColor = 'ok';   runwayStatus = 'ON TRACK'; }
 
-    var pranavVal = safe(data.pranav.value);
-    var pranavRaw = safe(data.pranav.raw);
-    var chitraVal = safe(data.chitra.value);
+    // FIX 7: Pranav
+    var pranavDeficit = safe(data.pranav.deficit);
+    var pranavInSystem = safe(data.pranav.inSystem);
+    var pranavTarget = safe(data.pranav.target);
+    var pranavNumColor = pranavDeficit < 0 ? 'var(--red)' : pranavDeficit === 0 ? 'var(--amber)' : 'var(--green)';
+    var pranavDisplay = pranavDeficit > 0 ? '+' + pranavDeficit : String(pranavDeficit);
+
+    // FIX 8: Chitra
+    var chitraCount = safe(data.chitra.count);
+    var chitraOverdue = safe(data.chitra.overdue);
+
+    // FIX 9-10: Client
     var approval = safe(data.client.approval);
     var input = safe(data.client.input);
-    var creationTarget = SCOREBOARD_CONFIG.CREATION_TARGET;
 
-    // Runway state
-    var runwayColor = 'amber';
-    var runwayStatus = 'RUNNING LOW';
-    if (scheduled <= 7) { runwayColor = 'red'; runwayStatus = 'CRITICAL'; }
-    else if (scheduled > 20) { runwayColor = 'green'; runwayStatus = 'HEALTHY'; }
-
-    // Pranav creation gap
-    var pranavGap = creationTarget - pranavRaw;
-    if (pranavGap < 0) pranavGap = 0;
-    var pranavDone = pranavRaw;
-
-    // Dot bars
+    // Dot bar helpers
     function dotBar(filled, total, filledColor) {
       var dots = '';
-      var max = Math.min(total, 28);
+      var max = Math.min(total, 21);
       var f = Math.min(filled, max);
       for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
       for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
@@ -731,7 +747,7 @@ function renderScoreboard() {
 
     function smallDotBar(filled, total, filledColor) {
       var dots = '';
-      var max = Math.min(total, 15);
+      var max = Math.min(total, 20);
       var f = Math.min(filled, max);
       for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
       for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
@@ -747,21 +763,7 @@ function renderScoreboard() {
       return '<div class="client-cell-dots">' + dots + '</div>';
     }
 
-    // Overdue count for Chitra
-    var overdueCount = 0;
-    if (Array.isArray(window.allPosts)) {
-      var now = new Date(); now.setHours(0,0,0,0);
-      for (var i = 0; i < allPosts.length; i++) {
-        var p = allPosts[i];
-        var s = (p.stage || '').toLowerCase().trim();
-        if (s === 'ready') {
-          var d = parseDate(p.targetDate);
-          if (d && d < now) overdueCount++;
-        }
-      }
-    }
-
-    // Top tasks
+    // FIX 11: Do This Now
     var tasks = _buildDoThisNowItems();
 
     var html = '';
@@ -772,9 +774,9 @@ function renderScoreboard() {
     html += '<span class="dash-section-label">RUNWAY</span>';
     html += '<span class="status-badge status-badge--' + runwayColor + '"><span class="status-badge-dot"></span>' + runwayStatus + '</span>';
     html += '</div>';
-    html += '<div class="dash-big-num dash-big-num--' + runwayColor + '" id="runway-count">' + scheduled + '</div>';
-    html += '<div class="dash-descriptor">posts scheduled from today &middot; target ' + creationTarget + '</div>';
-    html += dotBar(scheduled, creationTarget, 'var(--' + runwayColor + ')');
+    html += '<div class="dash-big-num dash-big-num--' + (runwayColor === 'crit' ? 'red' : runwayColor === 'warn' ? 'amber' : 'green') + '" id="runway-count">' + runwayCount + '</div>';
+    html += '<div class="dash-descriptor">posts scheduled from today</div>';
+    html += dotBar(runwayCount, 21, 'var(--amber)');
     html += '</div>';
 
     /* -- PRANAV SECTION -- */
@@ -785,12 +787,11 @@ function renderScoreboard() {
     html += '</div>';
     html += '<div class="person-body">';
     html += '<div class="person-left">';
-    html += '<div class="dash-medium-num" style="color:var(--amber)">' + pranavGap + '</div>';
-    html += smallDotBar(pranavDone, 20, 'var(--amber)');
+    html += '<div class="dash-medium-num" style="color:' + pranavNumColor + '">' + pranavDisplay + '</div>';
+    html += smallDotBar(Math.min(pranavInSystem, 20), 20, 'var(--amber)');
     html += '</div>';
     html += '<div class="person-right">';
-    html += '<div class="person-right-title">posts short of target</div>';
-    html += '<div class="person-right-sub">' + pranavDone + ' done &middot; needs ' + creationTarget + '</div>';
+    html += '<div class="person-right-title">' + pranavInSystem + ' of ' + pranavTarget + ' in system</div>';
     html += '</div>';
     html += '</div>';
     html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-production" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'in_production\'])">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
@@ -804,15 +805,15 @@ function renderScoreboard() {
     html += '</div>';
     html += '<div class="person-body">';
     html += '<div class="person-left">';
-    html += '<div class="dash-medium-num" style="color:var(--green)">' + chitraVal + '</div>';
-    html += smallDotBar(chitraVal, 20, 'var(--green)');
+    html += '<div class="dash-medium-num" style="color:var(--green)">' + chitraCount + '</div>';
+    html += smallDotBar(chitraCount, 20, 'var(--green)');
     html += '</div>';
     html += '<div class="person-right">';
     html += '<div class="person-right-title">posts to dispatch</div>';
-    if (overdueCount > 0) {
-      html += '<div class="person-right-sub" style="color:var(--red)">' + overdueCount + ' overdue</div>';
+    if (chitraOverdue > 0) {
+      html += '<div class="person-right-sub" style="color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:0.1em">' + chitraOverdue + ' overdue</div>';
     } else {
-      html += '<div class="person-right-sub">all on schedule</div>';
+      html += '<div class="person-right-sub" style="color:var(--muted)">all moving</div>';
     }
     html += '</div>';
     html += '</div>';
@@ -833,7 +834,7 @@ function renderScoreboard() {
     // Input cell
     html += '<div class="client-cell" data-action="open-input">';
     html += '<div class="client-cell-label">INPUT DUE</div>';
-    html += '<div class="client-cell-num">' + input + '</div>';
+    html += '<div class="client-cell-num' + (input > 0 ? ' client-cell-num--red' : '') + '">' + input + '</div>';
     html += '<div class="client-cell-sub">input missing</div>';
     html += clientDots(input, 5, 'var(--red)');
     html += '</div>';
@@ -855,68 +856,93 @@ function renderScoreboard() {
 
 function _buildDoThisNowItems() {
   var items = [];
+  var todayStr = new Date().toISOString().split('T')[0];
+  var threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  // Gather actionable posts by priority
-  var stages = [
-    { stage: 'awaiting approval', label: 'FOLLOW UP', color: 'var(--red)' },
-    { stage: 'ready', label: 'DISPATCH', color: 'var(--amber)' },
-    { stage: 'in production', label: 'CREATE', color: 'var(--amber)' },
-    { stage: 'awaiting brand input', label: 'INPUT', color: 'var(--amber)' }
-  ];
-
-  for (var s = 0; s < stages.length; s++) {
-    var cfg = stages[s];
-    var posts = allPosts.filter(function(p) {
-      return (p.stage || '').toLowerCase().trim() === cfg.stage;
-    }).sort(function(a, b) {
-      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-    });
-    for (var p = 0; p < Math.min(posts.length, 2); p++) {
-      var post = posts[p];
-      var days = daysInStage(post);
-      var owner = formatOwner(post.owner);
-      var ageText = days !== null && days > 0 ? days + 'd' : 'new';
-      items.push({
-        title: getTitle(post),
-        meta: owner + ' &middot; ' + ageText + ' &middot; ' + cfg.label,
-        postId: getPostId(post),
-        color: cfg.color
-      });
+  // 1. Manual tasks first
+  var manualTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).slice(0, 5);
+  for (var t = 0; t < manualTasks.length; t++) {
+    var task = manualTasks[t];
+    var dueStr = task.due_date ? formatDateShort(task.due_date) : '';
+    var metaStr = (task.assigned_to || 'UNASSIGNED') + (dueStr ? ' &middot; ' + dueStr : '');
+    // Urgency based on due_date
+    var urgency = 1;
+    var urgColor = 'var(--muted2)';
+    if (task.due_date) {
+      if (task.due_date < todayStr) { urgency = 3; urgColor = 'var(--red)'; }
+      else if (task.due_date === todayStr) { urgency = 2; urgColor = 'var(--amber)'; }
+      else { urgency = 1; urgColor = 'var(--amber)'; }
     }
-    if (items.length >= 5) break;
+    items.push({
+      title: task.message || 'Task',
+      meta: metaStr,
+      postId: task.post_id || '',
+      color: 'var(--gold)',
+      urgency: urgency,
+      urgColor: urgColor
+    });
   }
 
-  // Also include assigned tasks
-  var myTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).slice(0, 2);
-  for (var t = 0; t < myTasks.length && items.length < 7; t++) {
+  // 2. Auto-generated: overdue client posts
+  var overdueClientPosts = allPosts.filter(function(p) {
+    return ['awaiting_approval', 'awaiting_brand_input'].includes(p.stage) &&
+      p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+  }).sort(function(a, b) {
+    return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
+  });
+  for (var c = 0; c < overdueClientPosts.length && items.length < 7; c++) {
+    var op = overdueClientPosts[c];
+    var daysOverdue = Math.floor((new Date() - new Date(op.status_changed_at)) / (1000*60*60*24));
+    var stageLabel = (STAGE_META[op.stage] || {}).label || op.stage;
     items.push({
-      title: myTasks[t].message || 'Task',
-      meta: (myTasks[t].assigned_to || 'UNASSIGNED') + ' &middot; TASK',
-      postId: myTasks[t].post_id || '',
-      color: 'var(--gold)'
+      title: 'Chase ' + getTitle(op) + ' -- ' + stageLabel,
+      meta: 'Day ' + daysOverdue + ' &middot; no response',
+      postId: getPostId(op),
+      color: 'var(--red)',
+      urgency: 3,
+      urgColor: 'var(--red)',
+      metaRed: true
+    });
+  }
+
+  // 3. Auto: Pranav deficit
+  var inSystemCount = allPosts.filter(function(p) {
+    return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
+  }).length;
+  var pranavDeficitAuto = inSystemCount - 35;
+  if (pranavDeficitAuto < 0 && items.length < 8) {
+    items.push({
+      title: pranavDeficitAuto + ' posts needed -- build now',
+      meta: 'Pranav &middot; monthly target 35',
+      postId: '',
+      color: 'var(--amber)',
+      urgency: 3,
+      urgColor: 'var(--amber)'
     });
   }
 
   if (!items.length) {
-    return '<div style="color:var(--muted);font-family:var(--sans);font-size:13px;padding:14px 0">No actions pending</div>';
+    return '<div style="color:var(--green);font-family:var(--mono);font-size:13px;padding:14px 0">&rarr; All clear</div>';
   }
 
   var html = '';
   for (var i = 0; i < items.length; i++) {
     var item = items[i];
     var attrs = item.postId ? ' data-post-id="' + esc(item.postId) + '" data-list="" style="cursor:pointer"' : '';
-    // Urgency dots: 3 filled for high, 2 for medium, 1 for low
-    var urgency = i < 2 ? 3 : i < 4 ? 2 : 1;
+    var urg = item.urgency || 1;
+    var uc = item.urgColor || item.color;
     var dots = '';
     for (var d = 0; d < 3; d++) {
-      var dotColor = d < urgency ? item.color : 'var(--muted2)';
+      var dotColor = d < urg ? uc : 'var(--muted2)';
       dots += '<span class="do-now-dot" style="background:' + dotColor + '"></span>';
     }
+    var metaStyle = item.metaRed ? ' style="color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase"' : '';
     html += '<div class="do-now-item"' + attrs + '>';
-    html += '<span class="do-now-arrow">&rarr;</span>';
+    html += '<span class="do-now-arrow" style="color:' + item.color + '">&rarr;</span>';
     html += '<div class="do-now-content">';
     html += '<div class="do-now-title">' + esc(item.title) + '</div>';
-    html += '<div class="do-now-meta">' + item.meta + '</div>';
+    html += '<div class="do-now-meta"' + metaStyle + '>' + item.meta + '</div>';
     html += '</div>';
     html += '<div class="do-now-dots">' + dots + '</div>';
     html += '</div>';
@@ -952,7 +978,7 @@ function renderPipelineStrip() {
   return;
   const html = STRIP_STAGES.map((group) => {
     const count = allPosts.filter(p =>
-      group.stages.includes((p.stage||'').toLowerCase().trim())
+      group.stages.includes(p.stage || '')
     ).length;
     let cClass = '';
     if (group.target) cClass = count < READY_TO_SEND_TARGET ? ' warn' : ' ok';
@@ -969,7 +995,7 @@ function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
   if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
-  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready').length;
+  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
   const isOk = gap === 0;
@@ -1001,14 +1027,14 @@ function renderAdminInsight() {
     if (!t) return 0;
     return Math.floor((now - new Date(t).getTime()) / DAY);
   }
-  const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
-  const stuckClient     = allPosts.filter(p => ['awaiting approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
+  const stuckProduction = allPosts.filter(p => p.stage === 'in_production' && daysSince(p) >= 3);
+  const stuckClient     = allPosts.filter(p => ['awaiting_approval','awaiting_brand_input'].includes(p.stage || '') && daysSince(p) >= 3);
   // stuckReview removed  -  stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
-  const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const readyCount = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='ready').length;
-  const parkedPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() !== 'published' && daysSince(p) >= 7);
+  const published = allPosts.filter(p => p.stage === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
+  const parkedPosts = allPosts.filter(p => p.stage !== 'published' && daysSince(p) >= 7);
   window._parkedPosts = parkedPosts;
 
   // Build pills for summary bar
@@ -1031,7 +1057,7 @@ function renderAdminInsight() {
     stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting - ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
   ].filter(Boolean).join('');
   const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
-  const approved = allPosts.filter(p => ['awaiting approval','scheduled','published'].includes((p.stage||'').toLowerCase().trim()) && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const approved = allPosts.filter(p => ['awaiting_approval','scheduled','published'].includes(p.stage || '') && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
 
   const body = document.getElementById('insights-body');
   if (body) {
@@ -1113,7 +1139,7 @@ function daysInStage(post) {
 function staleLabel(days, stageName) {
   if (days === null || days < 3) return null;
   if (stageName) {
-    const key = stageName.toLowerCase().trim();
+    const key = stageName;
     const meta = (typeof STAGE_META !== 'undefined') ? STAGE_META[key] : null;
     const short = meta ? meta.label : stageName;
     return `${days}d in ${short}`;
@@ -1130,15 +1156,15 @@ function staleClass(days) {
 function getMyTasks() {
   const allowed = ROLE_STAGES[effectiveRole];
   if (!allowed) return allPosts;
-  return allPosts.filter(p => allowed.includes((p.stage||'').toLowerCase().trim()));
+  return allPosts.filter(p => allowed.includes(p.stage || ''));
 }
 
 function getNextPost() {
   const posts = getMyTasks();
   if (!posts.length) return null;
   return [...posts].sort((a,b) => {
-    const ia = STAGE_URGENCY.indexOf((a.stage||'').toLowerCase().trim());
-    const ib = STAGE_URGENCY.indexOf((b.stage||'').toLowerCase().trim());
+    const ia = STAGE_URGENCY.indexOf(a.stage || '');
+    const ib = STAGE_URGENCY.indexOf(b.stage || '');
     return (ia===-1?99:ia) - (ib===-1?99:ib);
   })[0] || null;
 }
@@ -1168,7 +1194,6 @@ function renderNextPost() {
   const id        = getPostId(post);
   const title     = getTitle(post);
   const stage     = post.stage || '';
-  const stageLC   = stage.toLowerCase().trim();
   const { hex, label: stageLabel } = stageStyle(stage);
   const owner     = formatOwner(post.owner);
   const pillar    = formatPillarDisplay(post.contentPillar);
@@ -1181,15 +1206,15 @@ function renderNextPost() {
   const stCls     = staleClass(days);
   const canUpdate = effectiveRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
-  if (stageLC === 'awaiting brand input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
-  else if (stageLC === 'in production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting approval')`; }
-  else if (stageLC === 'ready') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','awaiting approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','scheduled')`; }
-  else if (stageLC === 'awaiting approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
+  if (stage === 'awaiting_brand_input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in_production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
+  else if (stage === 'in_production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
+  else if (stage === 'ready') { primaryLabel='Send for Approval'; primaryAction=`quickStage('${esc(id)}','awaiting_approval')`; secondaryLabel='Mark Scheduled'; secondaryAction=`quickStage('${esc(id)}','scheduled')`; }
+  else if (stage === 'awaiting_approval') { primaryLabel='Mark Scheduled'; primaryAction=`quickStage('${esc(id)}','scheduled')`; secondaryLabel='Copy Approval Link'; secondaryAction=`copyApprovalLink('${window.location.origin}/p/${esc(id)}')`; }
   else { primaryLabel='Update Stage'; primaryAction=`openPCS('${esc(id)}')`; }
   const heroLabel = 'Most Urgent';
   let staleNote = '';
   if (stLabel) staleNote = `<div style="font-size:12px;color:var(--${stCls==='red'?'c-red':'c-amber'});margin-bottom:var(--sp-3);font-weight:600">[T] ${stLabel} in this stage</div>`;
-  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] ${linkLabel} ^</a>` : (stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${(stageLC === 'in production' || stageLC === 'awaiting brand input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="openPCS('${esc(id)}')" title="Edit post">...</button>` : ''}</div></div>`;
+  section.innerHTML = `<div class="hero-card"><div class="hero-label">${heroLabel}</div><div class="hero-title">${esc(title)}</div><div class="hero-meta"><span class="tag tag-stage" style="background:${hex}22;color:${hex}">${esc(stageLabel)}</span>${pillar ? `<span class="tag tag-pillar">${esc(pillar)}</span>` : ''}${owner!=='-' ? `<span class="tag tag-owner">${esc(owner)}</span>` : ''}${relDate ? `<span class="tag tag-date ${relDate.cls}">${relDate.text}</span>` : ''}${stLabel ? `<span class="stale-badge ${stCls}">${stLabel}</span>` : ''}</div>${staleNote}${comments ? `<div class="hero-comments" id="hero-comments-${esc(id)}">${esc(comments)}</div>${comments.length > 120 ? `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button><button class="btn-zen" onclick="openZen('${esc(title)}','${esc(comments)}')">[sq] Zen Mode - expand brief</button>` : `<button class="hero-read-more" onclick="toggleHeroComments('${esc(id)}', this)">Read more</button>`}` : ''}${postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="hero-design-link">[edit] ${linkLabel} ^</a>` : (stage === 'in_production' || stage === 'awaiting_brand_input') ? `<div class="hero-no-design">[!] No design link - add one below</div>` : ''}<div class="hero-actions"><button class="btn-hero-primary" onclick="${primaryAction}">${primaryLabel}</button>${(stage === 'in_production' || stage === 'awaiting_brand_input') ? `<button class="btn-flag" onclick="flagIssue('${esc(id)}')">[flag] Flag Issue</button>` : secondaryLabel === 'Copy Approval Link' ? `<button class="btn-hero-ghost" onclick="${secondaryAction}" style="flex:1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:5px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Copy Approval Link</button>` : secondaryLabel ? `<button class="btn-hero-ghost" onclick="${secondaryAction}">${secondaryLabel}</button>` : ''}${canUpdate ? `<button class="btn-hero-more" onclick="openPCS('${esc(id)}')" title="Edit post">...</button>` : ''}</div></div>`;
 }
 
 function toggleHeroComments(id, btn) {
@@ -1231,13 +1256,15 @@ function buildPostCard(p, listKey) {
 
 // -- Pipeline card builder ----------------------
 function _pipelineStageKey(stage) {
-  var s = (stage || '').toLowerCase().trim();
-  if (s === 'in production') return 'production';
+  var s = stage || '';
+  if (s === 'in_production') return 'production';
   if (s === 'ready') return 'ready';
-  if (s === 'awaiting brand input') return 'input';
-  if (s === 'awaiting approval') return 'approval';
+  if (s === 'awaiting_brand_input') return 'input';
+  if (s === 'awaiting_approval') return 'approval';
   if (s === 'scheduled') return 'scheduled';
   if (s === 'published') return 'published';
+  if (s === 'parked') return 'parked';
+  if (s === 'rejected') return 'rejected';
   return '';
 }
 
@@ -1253,7 +1280,8 @@ function buildPipelineCard(p, listKey) {
   var today = new Date();
   today.setHours(0,0,0,0);
   var isToday = d && d.toDateString() === today.toDateString();
-  var isOverdue = d && !isToday && d < today;
+  var _noOverdueStages = ['published', 'parked', 'rejected'];
+  var isOverdue = d && !isToday && d < today && _noOverdueStages.indexOf(stage) === -1;
 
   var cardCls = 'post-card';
   if (isOverdue) cardCls += ' overdue';
@@ -1274,7 +1302,9 @@ function buildPipelineCard(p, listKey) {
   else if (sk === 'input')  { badgeCls += ' cl-input'; badgeText = 'Cl'; }
   else if (sk === 'approval') { badgeCls += ' cl-approval'; badgeText = 'Cl'; }
   else if (sk === 'scheduled') { badgeCls += ' sched'; badgeText = 'Ch'; }
-  else if (sk === 'published') { badgeCls += ' pub'; badgeText = '\u2713'; }
+  else if (sk === 'published') { badgeCls += ' pub'; badgeText = 'ok'; }
+  else if (sk === 'parked') { badgeCls += ' parked'; badgeText = 'P'; }
+  else if (sk === 'rejected') { badgeCls += ' rejected'; badgeText = 'X'; }
 
   // Status dot
   var dotCls = 'status-dot';
@@ -1295,25 +1325,29 @@ function buildPipelineCard(p, listKey) {
 
 // -- Pipeline chip count updater ----------------
 function updatePipelineChipCounts() {
-  var container = document.getElementById('pipeline-container');
-  if (!container) return;
-  var stageMap = { production: 0, ready: 0, input: 0, approval: 0, scheduled: 0, published: 0 };
-  var total = 0;
-  var hdrs = container.querySelectorAll('.group-hdr');
-  for (var i = 0; i < hdrs.length; i++) {
-    var label = hdrs[i].querySelector('.group-label');
-    var count = hdrs[i].querySelector('.group-count');
-    if (!label || !count) continue;
-    var sk = label.getAttribute('data-stage') || '';
-    var n = parseInt(count.textContent, 10) || 0;
-    if (stageMap.hasOwnProperty(sk)) { stageMap[sk] = n; total += n; }
-  }
-  var allEl = document.getElementById('chip-count-all');
-  if (allEl) allEl.textContent = total || '0';
-  var keys = Object.keys(stageMap);
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var stageCounts = {
+    all:                  posts.length,
+    in_production:        posts.filter(function(p) { return p.stage === 'in_production'; }).length,
+    ready:                posts.filter(function(p) { return p.stage === 'ready'; }).length,
+    awaiting_approval:    posts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
+    awaiting_brand_input: posts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
+    scheduled:            posts.filter(function(p) { return p.stage === 'scheduled'; }).length,
+    published:            posts.filter(function(p) { return p.stage === 'published'; }).length,
+    parked:               posts.filter(function(p) { return p.stage === 'parked'; }).length,
+    rejected:             posts.filter(function(p) { return p.stage === 'rejected'; }).length,
+  };
+  // Map DB stage keys to chip element short keys
+  var chipMap = {
+    all: 'all', in_production: 'production', ready: 'ready',
+    awaiting_approval: 'approval', awaiting_brand_input: 'input',
+    scheduled: 'scheduled', published: 'published', parked: 'parked', rejected: 'rejected'
+  };
+  var keys = Object.keys(stageCounts);
   for (var k = 0; k < keys.length; k++) {
-    var el = document.getElementById('chip-count-' + keys[k]);
-    if (el) el.textContent = stageMap[keys[k]];
+    var chipKey = chipMap[keys[k]] || keys[k];
+    var el = document.getElementById('chip-count-' + chipKey);
+    if (el) el.textContent = stageCounts[keys[k]];
   }
 }
 
@@ -1328,7 +1362,7 @@ function renderTaskStageChips() {
 
   const chips = buckets.map(bucket => {
     const count = allPosts.filter(p =>
-      bucket.stages.includes((p.stage||'').toLowerCase().trim())
+      bucket.stages.includes(p.stage || '')
     ).length;
     const active = _taskFilter === bucket.key ? ' chip-active' : '';
     // Find color from STRIP_STAGES
@@ -1368,7 +1402,7 @@ function _renderFilteredTasks() {
   if (!bucket) { renderTasks(); return; }
 
   const posts = allPosts.filter(p =>
-    bucket.stages.includes((p.stage||'').toLowerCase().trim())
+    bucket.stages.includes(p.stage || '')
   );
   const listKey = `tasks-${bucket.key}`;
   _postLists[listKey] = posts;
@@ -1407,7 +1441,7 @@ function _renderTasksInner() {
   }
   const stagesHtml = buckets.map(bucket => {
     const posts = allPosts
-      .filter(p => bucket.stages.includes((p.stage||'').toLowerCase().trim()))
+      .filter(p => bucket.stages.includes(p.stage || ''))
       .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
     _postLists[listKey] = posts;
@@ -1460,11 +1494,10 @@ function _renderPipelineInner() {
 
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
   const base = allPosts.filter(p => {
-    const s = (p.stage || '').toLowerCase().trim();
-    return PIPELINE_RENDER_ORDER.includes(s);
+    return PIPELINE_RENDER_ORDER.includes(p.stage || '');
   });
   const source = activeFilter && Array.isArray(activeFilter)
-    ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
+    ? base.filter(p => activeFilter.includes(p.stage || ''))
     : base;
 
   // -- PRIORITY SORT: daysInStage DESC -> targetDate ASC -> created_at ASC --
@@ -1484,9 +1517,9 @@ function _renderPipelineInner() {
   const emptyMsg = {};
   if (activeFilter) {
     const key = activeFilter.sort().join(',');
-    if (key.includes('in production')) emptyMsg.default = 'Nothing in production \u2014 create new posts';
-    else if (key.includes('ready')) emptyMsg.default = 'Nothing ready \u2014 wait or push production';
-    else if (key.includes('awaiting approval')) emptyMsg.default = 'Nothing pending \u2014 you\u2019re clear';
+    if (key.includes('in_production')) emptyMsg.default = 'Nothing in production -- create new posts';
+    else if (key.includes('ready')) emptyMsg.default = 'Nothing ready -- wait or push production';
+    else if (key.includes('awaiting_approval')) emptyMsg.default = 'Nothing pending -- you are clear';
   }
 
   const grouped = {};
@@ -1555,7 +1588,7 @@ function _toTitleCase(str) {
 function populateFilterDropdowns() {
   // Fixed order for library stage dropdown
   const LIBRARY_STAGE_ORDER = ['scheduled','published','parked','rejected'];
-  const owners  = ['PRANAV','CHITRA','CLIENT'];
+  const owners  = ['Pranav','Chitra','Client'];
   const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
 
   const stageEl  = document.getElementById('filter-stage');
@@ -1578,8 +1611,8 @@ function populateFilterDropdowns() {
 
 function filterLibrary() {
   const query  = (document.getElementById('search-input')?.value||'').toLowerCase();
-  const stage  = (document.getElementById('filter-stage')?.value||'').toLowerCase();
-  const owner  = (document.getElementById('filter-owner')?.value||'').toLowerCase();
+  const stage  = (document.getElementById('filter-stage')?.value||'');
+  const owner  = (document.getElementById('filter-owner')?.value||'');
   const pillar = (document.getElementById('filter-pillar')?.value||'').toLowerCase();
   const date   = (document.getElementById('filter-date')?.value||'');
 
@@ -1599,10 +1632,10 @@ function filterLibrary() {
   const _allowedStages = stage ? _LIB_STAGES_ALL : _LIB_STAGES_DEFAULT;
 
   const filtered = allPosts.filter(p => {
-    if (!_allowedStages.includes((p.stage||'').toLowerCase().trim())) return false;
+    if (!_allowedStages.includes(p.stage || '')) return false;
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
-    if (stage  && (p.stage||'').toLowerCase() !== stage) return false;
-    if (owner  && (p.owner||'').toLowerCase() !== owner) return false;
+    if (stage  && (p.stage || '') !== stage) return false;
+    if (owner  && (p.owner || '') !== owner) return false;
     if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
     if (date) {
       const d = parseDate(p.targetDate);
@@ -1628,13 +1661,15 @@ function renderLibrary() {
 }
 
 function _libStageDotColor(stage) {
-  var sk = _pipelineStageKey(stage);
-  if (sk === 'production') return 'var(--amber)';
-  if (sk === 'ready')      return 'var(--green)';
-  if (sk === 'input')      return 'var(--purple)';
-  if (sk === 'approval')   return 'var(--red)';
-  if (sk === 'scheduled')  return 'var(--cyan)';
-  if (sk === 'published')  return 'var(--muted)';
+  var s = stage || '';
+  if (s === 'in_production')        return 'var(--amber)';
+  if (s === 'ready')                return 'var(--green)';
+  if (s === 'awaiting_approval')    return 'var(--red)';
+  if (s === 'awaiting_brand_input') return 'var(--purple)';
+  if (s === 'scheduled')            return 'var(--cyan)';
+  if (s === 'published')            return 'var(--muted)';
+  if (s === 'parked')               return 'var(--muted2)';
+  if (s === 'rejected')             return 'var(--red)';
   return 'var(--muted)';
 }
 
@@ -1694,11 +1729,13 @@ function renderLibraryRows(posts) {
   var thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); thisMonthEnd.setHours(23,59,59,999);
   var nextMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0); nextMonthEnd.setHours(23,59,59,999);
 
+  var _noOverdueStages = ['published','parked','rejected'];
   var groups = { overdue: [], thisWeek: [], nextWeek: [], laterMonth: [], nextMonth: [], later: [], noDate: [] };
   posts.forEach(function(p) {
     var d = parseDate(p.targetDate);
     if (!d) { groups.noDate.push(p); return; }
-    if (d < today) { groups.overdue.push(p); return; }
+    if (d < today && !_noOverdueStages.includes(p.stage || '')) { groups.overdue.push(p); return; }
+    if (d < today) { groups.thisWeek.push(p); return; }
     if (d < day7) { groups.thisWeek.push(p); return; }
     if (d < day14) { groups.nextWeek.push(p); return; }
     if (d <= thisMonthEnd) { groups.laterMonth.push(p); return; }
@@ -1731,7 +1768,7 @@ function renderClientView() {
   try { _renderClientViewInner(); } catch(e) { console.error('[PCS] renderClientView crash:', e); }
 }
 function _renderClientViewInner() {
-  const inputPosts = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'awaiting brand input');
+  const inputPosts = allPosts.filter(p => p.stage === 'awaiting_brand_input');
   const inputCount = document.getElementById('client-input-count');
   if (inputCount) inputCount.textContent = inputPosts.length;
   const inputItems = document.getElementById('client-input-items');
@@ -1748,7 +1785,7 @@ function _renderClientViewInner() {
       }).join('');
     }
   }
-  const approvalPosts = allPosts.filter(p => { const s = (p.stage||'').toLowerCase().trim(); return s === 'awaiting approval'; });
+  const approvalPosts = allPosts.filter(p => p.stage === 'awaiting_approval');
   const approvalCount = document.getElementById('client-approval-count');
   if (approvalCount) approvalCount.textContent = approvalPosts.length;
   const approvalItems = document.getElementById('client-approval-items');
@@ -1774,7 +1811,7 @@ function renderClientApproved() {
   const pubSection = document.getElementById('client-published-section');
   if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
   if (pubSection) pubSection.style.display = '';
-  const published = allPosts.filter(p=>(p.stage||'').toLowerCase().trim()==='published');
+  const published = allPosts.filter(p => p.stage === 'published');
   const label     = document.getElementById('client-approved-label');
   if (label) label.textContent = published.length;
   const tbody = document.getElementById('client-approved-tbody');
@@ -1795,17 +1832,17 @@ function renderCreativeTracker() {
     return (p.owner||'').toLowerCase() === 'pranav';
   });
   const doneThisWeek = myPosts.filter(p => {
-    const stage = (p.stage||'').toLowerCase().trim();
+    const stage = p.stage || '';
     const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= weekAgo;
+    return ['ready','awaiting_approval','scheduled','published'].includes(stage) && t >= weekAgo;
   }).length;
   const doneThisMonth = myPosts.filter(p => {
-    const stage = (p.stage||'').toLowerCase().trim();
+    const stage = p.stage || '';
     const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready','awaiting approval','scheduled','published'].includes(stage) && t >= monthAgo;
+    return ['ready','awaiting_approval','scheduled','published'].includes(stage) && t >= monthAgo;
   }).length;
-  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting approval','scheduled','published','parked'].includes(s)) : ['in production','awaiting brand input'];
-  const inProgress = myPosts.filter(p => _activeStages.includes((p.stage||'').toLowerCase().trim())).length;
+  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting_approval','scheduled','published','parked'].includes(s)) : ['in_production','awaiting_brand_input'];
+  const inProgress = myPosts.filter(p => _activeStages.includes(p.stage || '')).length;
   const WEEKLY_TARGET  = 5;
   const MONTHLY_TARGET = 20;
   const weekPct  = Math.min(100, Math.round((doneThisWeek / WEEKLY_TARGET) * 100));
@@ -1897,7 +1934,7 @@ function renderLibraryCalendar(posts) {
   var statSched = 0, statReady = 0, statLate = 0;
   Object.keys(dayMap).forEach(function(k) {
     dayMap[k].forEach(function(p) {
-      var s = (p.stage || '').toLowerCase().trim();
+      var s = p.stage || '';
       if (s === 'scheduled') statSched++;
       else if (s === 'ready') statReady++;
       var pd = parseDate(p.targetDate);

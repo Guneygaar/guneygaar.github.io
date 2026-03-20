@@ -66,14 +66,13 @@ function normalise(rows) {
   return rows.map(r => ({
     ...r,
     title:         r.title          || '',
-    stage:         r.stage          || '',
+    stage:         (r.stage || '').toLowerCase().trim().replace(/\s+/g, '_'),
     owner:         r.owner          || '',
     contentPillar: (r.content_pillar || '').toLowerCase().trim(),
     location:      r.location       || '',
     targetDate:    r.target_date    || '',
     postLink:      r.canva_link     || '',
     linkedinUrl:   r.linkedin_link  || '',
-    publishedDate: r.published_date || '',
     comments:      r.comments       || '',
     format:        r.format         || '',
     post_id:       r.post_id        || r.id || '',
@@ -98,14 +97,14 @@ async function uploadPostAsset(file, postId) {
   return `${SUPABASE_URL}/storage/v1/object/public/post-assets/${filename}`;
 }
 
-async function logActivity({ post_id, actor_name, actor_role, action }) {
+async function logActivity({ post_id, actor, actor_role, action }) {
   try {
     await apiFetch('/activity_log', {
       method: 'POST',
       body: JSON.stringify({
-        post_id:    post_id    || null,
-        actor:      actor_name || 'Unknown',
-        action:     action     || '',
+        post_id:    post_id || null,
+        actor:      actor   || 'Unknown',
+        action:     action  || '',
         created_at: new Date().toISOString(),
       }),
     });

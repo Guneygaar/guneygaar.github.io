@@ -29,7 +29,7 @@ async function quickStage(postId, newStage) {
     }
     post._isSaving = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
+    await logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     post._isSaving = false;
@@ -120,7 +120,7 @@ async function saveAdminEdit() {
       body: JSON.stringify(_payload),
     });
     console.log('[saveAdminEdit] API SUCCESS for', postId);
-    await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
+    await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
     showToast('Post saved ok', 'success');
@@ -134,16 +134,16 @@ async function saveAdminEdit() {
 async function clientApprove(postId, btn) {
   const post = getPostById(postId);
   if (!post) return;
-  const alreadyApproved = (post.stage||'').toLowerCase().trim() === 'scheduled';
+  const alreadyApproved = (post.stage||'') === 'scheduled';
   if (alreadyApproved) { showToast('Already approved ok', 'success'); return; }
   if (btn) btn.disabled = true;
   try {
     // scheduled -> owner remains unchanged (per ownership rules)
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString(), updated_by: 'Client' }),
+      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
     setStage(post, 'scheduled', 'clientApprove');
@@ -162,9 +162,9 @@ async function submitClientChanges(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
     if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent  -  the team will take care of it.</div>`;
     setTimeout(() => loadPostsForClient(), 1000);
@@ -175,9 +175,9 @@ async function clientAcknowledge(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
+    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
   } catch { showToast('Failed  -  try again', 'error'); }
@@ -192,9 +192,9 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ canva_link: url, stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ canva_link: url, stage: 'in_production', updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
+    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
     if (confirmEl) confirmEl.innerHTML = `<div style="color:var(--c-green);font-size:13px;margin-top:var(--sp-2)">ok File uploaded! The team has been notified.</div>`;
     if (label) label.textContent = '^ Upload Here';
@@ -226,8 +226,8 @@ async function submitClientRequest() {
     const email  = localStorage.getItem('gbl_email') || 'Client';
     const payload = {
       post_id:     postId,
-      title:       'Client Request \u2014 ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
-      stage:       toDbStage('awaiting brand input'),
+      title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
+      stage:       'awaiting_brand_input',
       owner:       email,
       comments:    brief,
       created_at:  new Date().toISOString(),
@@ -240,16 +240,16 @@ async function submitClientRequest() {
     });
     console.log('[REQUEST] API SUCCESS');
     if (file) await uploadPostAsset(file, postId);
-    await logActivity({ post_id: postId, actor_name: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
     if (fileInput) fileInput.value = '';
     if (btn) btn.disabled = false;
-    showToast('Request sent \u2713 The team will be in touch.', 'success');
+    showToast('Request sent - The team will be in touch.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
   } catch (err) {
     console.error('[REQUEST] API FAILED:', err);
-    showToast('Failed \u2014 try again', 'error');
+    showToast('Failed - try again', 'error');
     if (btn) btn.disabled = false;
   }
 }
@@ -267,7 +267,7 @@ async function flagIssue(postId) {
       method: 'PATCH',
       body: JSON.stringify({ comments: `! ${msg}`, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Issue flagged: ${msg.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor: currentRole, actor_role: currentRole, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
     await loadPosts();
   } catch { showToast('Failed  -  try again', 'error'); }
@@ -279,7 +279,7 @@ async function nudgeClient(postId, title, targetDate) {
   const msg       = encodeURIComponent(`Hi! Just a quick note  -  we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
   const waLink    = `https://wa.me/?text=${msg}`;
   window.open(waLink, '_blank');
-  await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Client nudged after ${days}d` });
+  await logActivity({ post_id: postId, actor: currentRole, actor_role: currentRole, action: `Client nudged after ${days}d` });
 }
 
 async function copyCaption(postId) {
@@ -300,7 +300,7 @@ async function deletePost(postId) {
   if (btn) btn.disabled = true;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
-    await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
+    await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
     const idx = allPosts.findIndex(p => getPostId(p) === postId);
     if (idx !== -1) allPosts.splice(idx, 1);
@@ -445,13 +445,13 @@ function _renderPCS(postId) {
   // 2. Compute derived state
   const id          = getPostId(post);
   const title       = getTitle(post);
-  const stageLC     = (post.stage || '').toLowerCase().trim();
+  const stageLC     = post.stage || '';
   console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
   const canEdit     = effectiveRole !== 'Client';
-  const dateValue   = isPublished ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
+  const dateValue   = post.targetDate || '';
 
   // 3. Render into DOM
   const elTitle    = document.getElementById('pcs-topbar-title');
@@ -497,17 +497,18 @@ function _renderPCS(postId) {
 function _updateSubtitle(post) {
   const el = document.getElementById('pcs-subtitle');
   if (!el || !post) return;
-  const stLC = (post.stage || '').toLowerCase().trim();
+  const stLC = post.stage || '';
   const isPub = stLC === 'published';
   const pLabel = post.contentPillar
     ? getPillarShort(post.contentPillar)
     : ' - ';
-  const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
+  const dVal = post.targetDate || '';
   const dDisp = formatDate(dVal) || ' - ';
   var parts = [esc(pLabel), esc(formatOwner(post.owner)), esc(dDisp)];
   var html = parts.join('<span class="pc-sub-dot"></span>');
-  // Overdue badge
-  if (!isPub && dVal) {
+  // Overdue badge (exclude published/parked/rejected)
+  var _noOverdue = ['published', 'parked', 'rejected'];
+  if (_noOverdue.indexOf(stLC) === -1 && dVal) {
     var td = parseDate(dVal);
     var now = new Date(); now.setHours(0,0,0,0);
     if (td && td < now) {
@@ -558,8 +559,8 @@ function changeStage(newStage) {
   if (!postId) return;
   const post = getPostById(postId);
   if (!post) return;
-  const current = (post.stage || '').toLowerCase().trim();
-  if (current === newStage.toLowerCase().trim()) return; // same stage
+  const current = post.stage || '';
+  if (current === newStage) return; // same stage
 
   _showStageConfirm(postId, newStage);
 }
@@ -645,7 +646,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
-  try { logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
@@ -659,18 +660,17 @@ function triggerStageConfirmation() {
 
 function _buildStageProgress(stageLC) {
   const steps = [
-    { key: 'in production',     label: 'Production' },
-    { key: 'ready',             label: 'Ready' },
-    { key: 'awaiting approval', label: 'Approval' },
-    { key: 'scheduled',         label: 'Scheduled' },
-    { key: 'published',         label: 'Published' },
+    { key: 'in_production',      label: 'Production' },
+    { key: 'ready',              label: 'Ready' },
+    { key: 'awaiting_approval',  label: 'Approval' },
+    { key: 'scheduled',          label: 'Scheduled' },
+    { key: 'published',          label: 'Published' },
   ];
-  // Normalise all variant/edge stages to a progress step
+  // Normalise variant stages to a progress step
   const norm =
-    (stageLC === 'awaiting brand input') ? 'in production'     :
-    (stageLC === 'draft')                ? 'in production'     :
+    (stageLC === 'awaiting_brand_input') ? 'in_production'     :
     (stageLC === 'parked')               ? 'scheduled'         :
-    (stageLC === 'archive')              ? 'published'         :
+    (stageLC === 'rejected')             ? 'in_production'     :
     stageLC;
 
   const activeIdx = steps.findIndex(function(s) { return s.key === norm; });
@@ -769,7 +769,7 @@ async function pcsSaveAttach(postId) {
   // Re-render design section with updated links
   const post = getPostById(postId);
   if (post) {
-    const stageLC     = (post.stage || '').toLowerCase().trim();
+    const stageLC     = post.stage || '';
     const isPublished = stageLC === 'published';
     const canvaUrl    = post.postLink || '';
     const linkedinUrl = post.linkedinUrl || '';
@@ -879,7 +879,7 @@ function _loadPCSActivity(postId, bodyEl) {
         const ago = r.created_at ? timeAgo(r.created_at) : '';
         const istTime = r.created_at ? formatIST(r.created_at) : '';
         return `<div class="pcs-activity-row">
-          <span class="pcs-activity-who">${esc(r.actor_name || r.actor || 'System')}</span>
+          <span class="pcs-activity-who">${esc(r.actor || 'System')}</span>
           <span class="pcs-activity-what">${esc(r.action || '')}</span>
           <span class="pcs-activity-when" title="${esc(istTime)}">${esc(ago)}</span>
         </div>`;
@@ -893,18 +893,18 @@ function _buildInfoGrid(post, canEdit, id) {
   var OWNERS   = ALLOWED_OWNERS;
   var FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
 
-  var stageLC     = (post.stage || '').toLowerCase().trim();
+  var stageLC     = post.stage || '';
   var isPublished = stageLC === 'published';
   var dateLabel   = isPublished ? 'Published Date' : 'Target Date';
   var dateValue   = isPublished
-    ? (post.publishedDate || post.targetDate || '')
+    ? (post.targetDate || '')
     : (post.targetDate || '');
 
   // Stage color class
   var stageColorCls = '';
-  if (stageLC === 'in production' || stageLC === 'draft' || stageLC === 'awaiting brand input') stageColorCls = ' pc-meta-val--production';
+  if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') stageColorCls = ' pc-meta-val--production';
   else if (stageLC === 'ready') stageColorCls = ' pc-meta-val--ready';
-  else if (stageLC === 'awaiting approval') stageColorCls = ' pc-meta-val--approval';
+  else if (stageLC === 'awaiting_approval') stageColorCls = ' pc-meta-val--approval';
   else if (stageLC === 'scheduled') stageColorCls = ' pc-meta-val--scheduled';
   else if (stageLC === 'published') stageColorCls = ' pc-meta-val--published';
 
@@ -984,16 +984,16 @@ function _buildNotes(post, canEdit, id) {
 }
 
 // -- Stage advance button (FIX 7) --
-var _ADVANCE_SEQ = ['in production', 'ready', 'awaiting approval', 'scheduled', 'published'];
+var _ADVANCE_SEQ = ['in_production', 'ready', 'awaiting_approval', 'scheduled', 'published'];
 var _ADVANCE_LABELS = {
   'ready': 'Move to Ready',
-  'awaiting approval': 'Move to Approval',
+  'awaiting_approval': 'Move to Approval',
   'scheduled': 'Move to Scheduled',
   'published': 'Move to Published'
 };
 var _ADVANCE_CLS = {
   'ready': 'to-ready',
-  'awaiting approval': 'to-approval',
+  'awaiting_approval': 'to-approval',
   'scheduled': 'to-scheduled',
   'published': 'to-published'
 };
@@ -1006,9 +1006,9 @@ function _renderAdvanceButton(stageLC) {
 
   // Normalise variant stages
   var norm = stageLC;
-  if (stageLC === 'awaiting brand input' || stageLC === 'draft') norm = 'in production';
+  if (stageLC === 'awaiting_brand_input') norm = 'in_production';
   if (stageLC === 'parked') norm = 'scheduled';
-  if (stageLC === 'archive') norm = 'published';
+  if (stageLC === 'rejected') norm = 'in_production';
 
   var idx = _ADVANCE_SEQ.indexOf(norm);
   if (idx < 0 || idx >= _ADVANCE_SEQ.length - 1) {

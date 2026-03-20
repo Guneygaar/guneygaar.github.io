@@ -141,7 +141,7 @@ function scrollToBucket(bucketKey) {
     // Find the bucket whose header text matches the key loosely
     for (const card of buckets) {
       const name = card.querySelector('.bucket-name')?.textContent?.toLowerCase() || '';
-      const keyMap = { production:'in production', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
+      const keyMap = { production:'in_production', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
       const match = keyMap[bucketKey] || bucketKey;
       if (name.includes(match)) {
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -279,7 +279,7 @@ async function fetchUnreadCount() {
 async function fetchAndRenderNotifications() {
   const list = document.getElementById('notif-list');
   if (!list) return;
-  list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading\u2026</div>';
+  list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading...</div>';
   try {
     const data = await apiFetch('/activity_log?select=*&order=created_at.desc&limit=30');
     if (!Array.isArray(data) || !data.length) {
@@ -586,7 +586,7 @@ async function _fabAssignTask(postId, assignee, message) {
       }),
     });
     showToast('Task assigned OK', 'success');
-    await logActivity({ post_id: postId, actor_name: resolveActor(), actor_role: window.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
+    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
     if (typeof loadTasks === 'function') loadTasks();
   } catch (err) {
     console.error('[AssignTask] FAILED:', err);
@@ -709,7 +709,7 @@ async function submitRequestSheet() {
     const payload = {
       post_id:     postId,
       title:       brief.substring(0, 80),
-      stage:       toDbStage('awaiting brand input'),
+      stage:       'awaiting_brand_input',
       owner:       owner || null,
       comments:    brief,
       target_date: date || null,
@@ -722,7 +722,7 @@ async function submitRequestSheet() {
       body: JSON.stringify(payload),
     });
     console.log('[REQUEST] API SUCCESS');
-    await logActivity({ post_id: postId, actor_name: actor, actor_role: actor, action: 'New request: ' + brief.substring(0, 60) });
+    await logActivity({ post_id: postId, actor: actor, actor_role: actor, action: 'New request: ' + brief.substring(0, 60) });
     closeRequestSheet();
     showToast('Request created \u2713', 'success');
     await loadPosts();
