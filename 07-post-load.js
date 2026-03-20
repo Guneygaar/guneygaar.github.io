@@ -34,6 +34,13 @@ function closePipelineSearch() {
   if (input) input.value = '';
 }
 
+function openSearchResult(postId) {
+  closePipelineSearch();
+  setTimeout(function() {
+    openPCS(postId);
+  }, 50);
+}
+
 function handlePipelineSearch(query) {
   var results = document.getElementById('pipeline-search-results');
   var empty = document.getElementById('pipeline-search-empty');
@@ -92,7 +99,7 @@ function handlePipelineSearch(query) {
     var badgeLabel = stageDisplayMap[p.stage] || p.stage;
     var badgeClass = 'badge-' + p.stage;
     var pillar = p.contentPillar || '';
-    return '<div class="pipeline-search-result-item" onclick="closePipelineSearch(); openPCS(\'' + p.id + '\')">' +
+    return '<div class="pipeline-search-result-item" onclick="openSearchResult(\'' + p.id + '\')">' +
       '<div class="result-stage-dot" style="background:' + color + '"></div>' +
       '<div class="pipeline-result-body">' +
         '<div class="pipeline-result-title">' + highlighted + '</div>' +
@@ -2589,7 +2596,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!_pipelineSearchOpen) return;
     var bar = document.getElementById('pipeline-search-bar');
     var trigger = document.getElementById('pipeline-search-trigger');
-    if (bar && !bar.contains(e.target) && trigger && !trigger.contains(e.target)) {
+    var resultsEl = document.getElementById('pipeline-search-results');
+    if (bar && !bar.contains(e.target) &&
+        trigger && !trigger.contains(e.target) &&
+        (!resultsEl || !resultsEl.contains(e.target))) {
       closePipelineSearch();
     }
   });
