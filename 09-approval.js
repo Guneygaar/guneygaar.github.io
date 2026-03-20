@@ -51,7 +51,7 @@ async function showApprovalView(postId) {
     view.innerHTML = `
       <div class="approval-wrap">
         <div class="approval-header">
-          <div class="approval-logo">GBL Content</div>
+          <div class="approval-logo">Hinglish</div>
           <div class="approval-subtitle">Post Review & Approval</div>
         </div>
         <div class="approval-card">

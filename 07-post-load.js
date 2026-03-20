@@ -486,7 +486,7 @@ function getTopTask() {
   }
 
   const role = _ttNorm(window.effectiveRole || '');
-  const email = localStorage.getItem('gbl_email') || '';
+  const email = localStorage.getItem('hinglish_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
   // 1. ASSIGNED TASKS (highest priority for all roles)
@@ -1131,7 +1131,7 @@ function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
   if (effectiveRole === 'Client') { section.innerHTML = ''; return; }
-  const email    = localStorage.getItem('gbl_email') || '';
+  const email    = localStorage.getItem('hinglish_email') || '';
   const roleName = effectiveRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }

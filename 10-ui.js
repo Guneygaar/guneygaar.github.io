@@ -72,10 +72,10 @@ function showToast(msg, type = 'success') {
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.dataset.theme = next;
-  localStorage.setItem('gbl_theme', next);
+  localStorage.setItem('hinglish_theme', next);
 }
 (function applyTheme() {
-  const saved = localStorage.getItem('gbl_theme') || 'light';
+  const saved = localStorage.getItem('hinglish_theme') || 'light';
   document.documentElement.dataset.theme = saved;
 })();
 

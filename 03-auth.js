@@ -73,7 +73,7 @@ window.sendMagicLink = async function sendMagicLink() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error_description || err.msg || 'Could not send code');
     }
-    localStorage.setItem('gbl_pending_email', email);
+    localStorage.setItem('hinglish_pending_email', email);
     document.getElementById('login-email-step')?.classList.remove('active');
     const codeStep = document.getElementById('login-code-step');
     if (codeStep) {
@@ -91,7 +91,7 @@ window.sendMagicLink = async function sendMagicLink() {
 };
 
 window.verifyOTPCode = async function verifyOTPCode() {
-  const email = localStorage.getItem('gbl_pending_email') || '';
+  const email = localStorage.getItem('hinglish_pending_email') || '';
   const code  = (document.getElementById('login-code-input')?.value || '').trim();
   if (!code || code.length < 6) {
     const el = document.getElementById('login-code-error');
@@ -120,7 +120,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
     if (!accessToken) throw new Error('No token returned');
     localStorage.setItem('sb_access_token', accessToken);
     if (refreshToken) localStorage.setItem('sb_refresh_token', refreshToken);
-    localStorage.removeItem('gbl_pending_email');
+    localStorage.removeItem('hinglish_pending_email');
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
     if (errEl) errEl.textContent = err.message || 'Incorrect code - try again.';
@@ -142,8 +142,8 @@ async function resolveRoleFromToken(accessToken, email) {
       if (el) el.textContent = `No role found for ${email}. Ask your admin.`;
       return;
     }
-    localStorage.setItem('gbl_role', role);
-    localStorage.setItem('gbl_email', email);
+    localStorage.setItem('hinglish_role', role);
+    localStorage.setItem('hinglish_email', email);
     const overlay = document.getElementById('login-overlay');
     if (overlay) overlay.classList.add('hidden');
     activateRole(role);
@@ -176,12 +176,12 @@ async function handleMagicLinkToken(accessToken, _retried) {
 }
 
 function logout() {
-  localStorage.removeItem('gbl_role');
-  localStorage.removeItem('gbl_email');
-  localStorage.removeItem('gbl_token');
+  localStorage.removeItem('hinglish_role');
+  localStorage.removeItem('hinglish_email');
+  localStorage.removeItem('hinglish_token');
   localStorage.removeItem('sb_access_token');
   localStorage.removeItem('sb_refresh_token');
-  localStorage.removeItem('gbl_pending_email');
+  localStorage.removeItem('hinglish_pending_email');
   stopRealtime();
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');

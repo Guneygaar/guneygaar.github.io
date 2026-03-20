@@ -120,7 +120,7 @@ The router determines which view loads. A bug here = blank screen.
 |---|---|
 | `/p/POST-123` path | Calls `showApprovalView('POST-123')` |
 | `?approve=POST-123` param | Calls `showApprovalView('POST-123')` |
-| `?action=viewApproval&ref=POST-123-gbl` | Strips `-gbl` suffix, calls approval view |
+| `?action=viewApproval&ref=POST-123-hinglish` | Strips `-hinglish` suffix, calls approval view |
 | Hash contains `access_token` | Stores refresh token, calls `handleMagicLinkToken` |
 | Saved role + valid token | Calls `activateRole` |
 | No saved session | Shows login overlay |
