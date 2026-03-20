@@ -1080,21 +1080,21 @@ a:hover { text-decoration: underline; }
   --color-led-green: #00e040;
   --color-led-white: #e8e8e8;
   --color-gold-accent: #c8a84b;
-  --color-panel-border: #2a2a2a;
   --font-led: 'Share Tech Mono', monospace;
   --font-label: 'Rajdhani', sans-serif;
 }
 
 /* ====================================================
-   0a. OUTER FRAME - JPEG/SVG background image approach
-   The frame image IS the metal housing. No CSS borders.
+   0a. OUTER FRAME
+   The frame image IS the metal housing.
+   SVG fallback; swap to frame.jpg for photorealistic.
 ==================================================== */
 .pcs-scoreboard {
   position: relative;
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: 420 / 640;
   background-image: url('/assets/frame.svg');
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -1102,34 +1102,31 @@ a:hover { text-decoration: underline; }
   font-family: var(--font-label);
   color: var(--color-led-white);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-/* ::before reserved for future use */
-.pcs-scoreboard::before {
-  content: none;
-}
-/* ::after reserved for future use */
-.pcs-scoreboard::after {
-  content: none;
-}
+.pcs-scoreboard::before,
+.pcs-scoreboard::after { content: none; }
 
 /* ====================================================
-   0b. INNER CONTENT WRAPPER - positioned inside
-   the frame's screen cutout area
+   0b. INNER CONTENT WRAPPER
+   Positioned inside the frame's screen cutout.
+   SVG cutout: x=24 y=32 w=372 h=576 in 420x640
+   = left 5.71%, top 5%, right 5.71%, bottom 5%
 ==================================================== */
 .sb-inner {
   position: absolute;
-  top: 7%;
-  left: 5%;
-  right: 5%;
-  bottom: 6%;
+  top: 5%;
+  left: 5.71%;
+  right: 5.71%;
+  bottom: 5%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   background: var(--color-bg);
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
-/* Noise grain surface texture overlay */
+/* Noise grain surface texture */
 .sb-inner::after {
   content: '';
   position: absolute;
@@ -1140,17 +1137,16 @@ a:hover { text-decoration: underline; }
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 160px 160px;
   mix-blend-mode: overlay;
+  border-radius: 4px;
 }
 
 /* ====================================================
-   LED DOT-MATRIX TEXTURE
-   Overlays a pixel grid on all number displays
+   LED DOT-MATRIX TEXTURE (all number displays)
 ==================================================== */
 .sb-critical-num,
 .sb-main-num,
-.sb-client-num {
-  position: relative;
-}
+.sb-client-num { position: relative; }
+
 .sb-critical-num::after,
 .sb-main-num::after,
 .sb-client-num::after {
@@ -1159,25 +1155,18 @@ a:hover { text-decoration: underline; }
   inset: -4px -8px;
   pointer-events: none;
   background:
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.35) 3px,
-      rgba(0,0,0,0.35) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.3) 3px,
-      rgba(0,0,0,0.3) 4px
-    );
+    repeating-linear-gradient(0deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.35) 3px, rgba(0,0,0,0.35) 4px),
+    repeating-linear-gradient(90deg,
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.3) 3px, rgba(0,0,0,0.3) 4px);
   border-radius: 2px;
 }
 
 /* ====================================================
-   1. CRITICAL BANNER - horizontal: number LEFT, text RIGHT
+   1. CRITICAL BANNER
+   Horizontal: big number LEFT, text column RIGHT
 ==================================================== */
 .sb-critical-panel {
   flex-shrink: 0;
@@ -1185,32 +1174,31 @@ a:hover { text-decoration: underline; }
   flex-direction: row;
   align-items: center;
   gap: clamp(8px, 2vw, 14px);
-  padding: clamp(8px, 2vw, 14px) clamp(10px, 2.5vw, 18px);
-  background: radial-gradient(ellipse at center, #2a0000 0%, #0d0000 70%);
-  border-bottom: 2px solid #cc2200;
-  box-shadow: inset 0 0 30px rgba(204,34,0,0.3);
+  padding: clamp(10px, 2.5vw, 16px) clamp(12px, 3vw, 18px);
+  background: radial-gradient(ellipse at 30% 50%, #2a0000 0%, #0d0000 70%);
+  border-bottom: 2px solid var(--color-red-alert);
+  box-shadow: inset 0 0 30px rgba(204,34,0,0.25);
 }
 .sb-critical-num {
   font-family: var(--font-led);
-  font-size: clamp(36px, 12vw, 56px);
+  font-size: clamp(36px, 10vw, 52px);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--color-red-alert);
   letter-spacing: 2px;
   flex-shrink: 0;
-  text-shadow:
-    0 0 10px var(--color-red-alert),
-    0 0 25px rgba(204,34,0,0.65);
+  text-shadow: 0 0 10px var(--color-red-alert), 0 0 25px rgba(204,34,0,0.6);
 }
 .sb-critical-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
+  min-width: 0;
 }
 .sb-critical-label {
   font-family: var(--font-label);
-  font-size: clamp(13px, 3.5vw, 18px);
+  font-size: clamp(12px, 3.2vw, 16px);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1219,40 +1207,72 @@ a:hover { text-decoration: underline; }
 }
 .sb-critical-sub {
   font-family: var(--font-label);
-  font-size: clamp(9px, 2.2vw, 12px);
+  font-size: clamp(8px, 2vw, 11px);
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-red-alert);
-  opacity: 0.85;
+  opacity: 0.7;
   line-height: 1.1;
 }
 
 /* ====================================================
-   2. MAIN SCOREBOARD GRID
-   Labels INSIDE cells, gold divider between
+   2. MAIN SECTION
+   Metallic header strip with labels ABOVE the cells
 ==================================================== */
+.sb-main-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Metallic header strip */
+.sb-main-header {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: clamp(4px, 1vw, 7px) clamp(12px, 3vw, 18px);
+  background: linear-gradient(180deg,
+    #1a1a1a 0%, #2a2a2a 25%, #363636 50%, #2a2a2a 75%, #1a1a1a 100%);
+  border-top: 1px solid #4a4a4a;
+  border-bottom: 1px solid #4a4a4a;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    inset 0 -1px 0 rgba(0,0,0,0.6);
+}
+.sb-main-label {
+  font-family: var(--font-label);
+  font-size: clamp(12px, 3.2vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-led-white);
+  line-height: 1;
+}
+
+/* Number panels grid */
 .sb-main-grid {
   display: grid;
   grid-template-columns: 1fr 5px 1fr;
   flex: 1;
+  min-height: 0;
 }
 
-/* GOLD GLOWING vertical divider */
+/* Gold glowing vertical divider */
 .sb-divider {
   width: 5px;
-  background: linear-gradient(
-    180deg,
-    rgba(200,168,75,0.1) 0%,
-    var(--color-gold-accent) 10%,
+  background: linear-gradient(180deg,
+    rgba(200,168,75,0.05) 0%,
+    var(--color-gold-accent) 8%,
     #f5d76e 50%,
-    var(--color-gold-accent) 90%,
-    rgba(200,168,75,0.1) 100%
-  );
+    var(--color-gold-accent) 92%,
+    rgba(200,168,75,0.05) 100%);
   box-shadow:
     0 0 10px rgba(200,168,75,0.6),
-    0 0 20px rgba(200,168,75,0.3),
-    0 0 4px rgba(200,168,75,0.8);
+    0 0 20px rgba(200,168,75,0.25),
+    0 0 4px rgba(245,215,110,0.8);
 }
 
 /* Main operator cells */
@@ -1260,32 +1280,20 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: clamp(8px, 2.5vw, 14px);
+  justify-content: center;
+  gap: clamp(4px, 1vw, 8px);
+  padding: clamp(10px, 2.5vw, 18px) clamp(6px, 1.5vw, 12px);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  background: #0e0e0e;
-  outline: 1px dotted rgba(120,120,120,0.3);
-  outline-offset: -5px;
+  background: #0c0c0c;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
 }
 .sb-main-cell:active { opacity: 0.8; }
 
-/* Operator name labels INSIDE cells */
-.sb-main-label {
-  font-family: var(--font-label);
-  font-size: clamp(11px, 2.8vw, 14px);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #cccccc;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
-/* LED numbers */
+/* LED numbers - main panels */
 .sb-main-num {
   font-family: var(--font-led);
-  font-size: clamp(56px, 16vw, 76px);
+  font-size: clamp(52px, 15vw, 72px);
   font-weight: 400;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -1293,18 +1301,14 @@ a:hover { text-decoration: underline; }
 }
 .sb-main-num.gold {
   color: var(--color-led-yellow);
-  text-shadow:
-    0 0 10px var(--color-led-yellow),
-    0 0 28px rgba(245,196,0,0.5);
+  text-shadow: 0 0 10px var(--color-led-yellow), 0 0 28px rgba(245,196,0,0.45);
 }
 .sb-main-num.green {
   color: var(--color-led-green);
-  text-shadow:
-    0 0 10px var(--color-led-green),
-    0 0 28px rgba(0,224,64,0.5);
+  text-shadow: 0 0 10px var(--color-led-green), 0 0 28px rgba(0,224,64,0.45);
 }
 
-/* Fraction display (e.g. /14) */
+/* Fraction display (/14) */
 .sb-fraction {
   font-size: 0.45em;
   letter-spacing: 1px;
@@ -1312,12 +1316,11 @@ a:hover { text-decoration: underline; }
   vertical-align: super;
 }
 
-/* LED dot indicators - 4 circular dots */
+/* LED dot indicators (4 circles) */
 .led-dots {
   display: flex;
   gap: 6px;
   justify-content: center;
-  margin: 6px 0;
 }
 .led-dots span {
   width: 6px;
@@ -1325,77 +1328,68 @@ a:hover { text-decoration: underline; }
   border-radius: 50%;
   display: block;
 }
-.led-dots span.gold { background: var(--color-led-yellow); }
-.led-dots span.green { background: var(--color-led-green); }
+.led-dots span.gold { background: var(--color-led-yellow); box-shadow: 0 0 3px var(--color-led-yellow); }
+.led-dots span.green { background: var(--color-led-green); box-shadow: 0 0 3px var(--color-led-green); }
 .led-dots span.dim { background: #444; }
 
 /* Action buttons - bordered, no fill */
 .sb-main-sub {
   font-family: var(--font-label);
-  font-size: clamp(10px, 2.5vw, 12px);
+  font-size: clamp(9px, 2.2vw, 12px);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   background: transparent;
-  padding: clamp(4px, 1vw, 6px) clamp(10px, 2.5vw, 14px);
+  padding: clamp(3px, 0.8vw, 5px) clamp(8px, 2vw, 14px);
   line-height: 1;
 }
 .sb-main-sub.gold {
   color: var(--color-led-yellow);
-  border: 2px solid var(--color-led-yellow);
-  box-shadow: 0 0 8px rgba(245,196,0,0.25);
+  border: 1.5px solid var(--color-led-yellow);
+  box-shadow: 0 0 6px rgba(245,196,0,0.2);
 }
 .sb-main-sub.green {
   color: var(--color-led-green);
-  border: 2px solid var(--color-led-green);
-  box-shadow: 0 0 8px rgba(0,224,64,0.25);
+  border: 1.5px solid var(--color-led-green);
+  box-shadow: 0 0 6px rgba(0,224,64,0.2);
 }
 
 /* ====================================================
-   3. CLIENT SECTION LABEL - metallic strip with rivets
+   3. CLIENT SECTION LABEL - metallic strip
 ==================================================== */
 .sb-section-label {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2.5vw, 16px);
+  gap: clamp(8px, 2vw, 14px);
   font-family: var(--font-label);
-  font-size: clamp(11px, 2.8vw, 13px);
+  font-size: clamp(10px, 2.5vw, 13px);
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--color-led-white);
-  padding: clamp(5px, 1.2vw, 8px) 0;
+  padding: clamp(4px, 1vw, 7px) 0;
   background: linear-gradient(180deg,
-    #1e1e1e 0%,
-    #2a2a2a 30%,
-    #333 50%,
-    #2a2a2a 70%,
-    #1e1e1e 100%
-  );
-  border-top: 1px solid #444;
-  border-bottom: 1px solid #444;
+    #1a1a1a 0%, #2a2a2a 25%, #363636 50%, #2a2a2a 75%, #1a1a1a 100%);
+  border-top: 1px solid #4a4a4a;
+  border-bottom: 1px solid #4a4a4a;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.5);
-  flex-shrink: 0;
+    inset 0 1px 0 rgba(255,255,255,0.07),
+    inset 0 -1px 0 rgba(0,0,0,0.6);
 }
-/* Decorative rivet dashes */
 .sb-rivet-row {
   display: inline-block;
-  width: 50px;
+  width: 40px;
   height: 3px;
-  background: repeating-linear-gradient(
-    90deg,
-    #555 0px, #555 3px,
-    transparent 3px, transparent 8px
-  );
-  opacity: 0.4;
+  background: repeating-linear-gradient(90deg,
+    #555 0px, #555 3px, transparent 3px, transparent 8px);
+  opacity: 0.35;
   border-radius: 1px;
 }
 
 /* ====================================================
-   4. CLIENT GRID - number, dots, label
+   4. CLIENT GRID
 ==================================================== */
 .sb-client-strip {
   display: grid;
@@ -1409,35 +1403,36 @@ a:hover { text-decoration: underline; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: clamp(8px, 2.5vw, 14px);
+  justify-content: center;
+  gap: clamp(4px, 1vw, 8px);
+  padding: clamp(8px, 2vw, 14px) clamp(6px, 1.5vw, 10px);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  background: #0e0e0e;
-  outline: 1px dotted rgba(120,120,120,0.3);
-  outline-offset: -5px;
+  background: #0c0c0c;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
 }
 .sb-client-cell:active { opacity: 0.7; }
 
 .sb-client-num {
   font-family: var(--font-led);
-  font-size: clamp(34px, 10vw, 46px);
+  font-size: clamp(30px, 9vw, 44px);
   font-weight: 400;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--color-led-white);
   letter-spacing: 3px;
-  text-shadow: 0 0 6px rgba(232,232,232,0.3);
+  text-shadow: 0 0 6px rgba(232,232,232,0.25);
 }
-/* Client labels - bordered button style */
+
+/* Client labels - bordered box */
 .sb-client-label {
   font-family: var(--font-label);
-  font-size: clamp(10px, 2.5vw, 12px);
+  font-size: clamp(9px, 2.2vw, 12px);
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #999;
-  padding: clamp(3px, 0.8vw, 5px) clamp(8px, 2vw, 12px);
+  padding: clamp(3px, 0.7vw, 5px) clamp(8px, 2vw, 14px);
   border: 1px solid #444;
   border-radius: 2px;
   line-height: 1;
@@ -1447,20 +1442,19 @@ a:hover { text-decoration: underline; }
    5. DO THIS NOW BAR
 ==================================================== */
 .sb-task-bar {
+  flex-shrink: 0;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 10px;
-  padding: clamp(8px, 2vw, 12px) clamp(10px, 2.5vw, 16px);
-  background: #0e0e0e;
-  border-top: 1px solid #333;
-  flex-shrink: 0;
+  gap: 8px;
+  padding: clamp(8px, 2vw, 12px) clamp(10px, 2.5vw, 14px);
+  background: #0c0c0c;
+  border-top: 1px solid #2a2a2a;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.8);
 }
 .sb-task-content {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
 }
 .sb-task-label {
   font-family: var(--font-label);
@@ -1482,7 +1476,6 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
   line-height: 1.3;
 }
-/* Inline trailing dots (3 green circles) */
 .sb-task-dots {
   display: inline-flex;
   gap: 4px;
@@ -1502,21 +1495,20 @@ a:hover { text-decoration: underline; }
 }
 .sb-task-bar[data-nav]:active { opacity: 0.8; }
 
-/* FAB - single instance, inside DO THIS NOW bar, pushed right */
+/* FAB - single instance, pushed right */
 .sb-fab {
-  width: clamp(40px, 9vw, 52px);
-  height: clamp(40px, 9vw, 52px);
+  width: clamp(36px, 8vw, 46px);
+  height: clamp(36px, 8vw, 46px);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #d4a84b, #8a6a1a);
-  box-shadow:
-    0 0 10px rgba(196,168,75,0.5),
-    0 3px 6px rgba(0,0,0,0.6);
+  box-shadow: 0 0 10px rgba(196,168,75,0.4), 0 3px 6px rgba(0,0,0,0.6);
   border: 2px solid var(--color-gold-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
+  font-weight: 700;
   color: #fff;
   flex-shrink: 0;
   margin-left: auto;

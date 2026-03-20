@@ -766,20 +766,24 @@ function renderScoreboard() {
         '</div>' +
       '</div>' +
 
-      /* -- 2. Main Grid (labels inside cells, gold divider) -- */
-      '<div class="sb-main-grid">' +
-        '<div class="sb-main-cell" data-action="open-production">' +
-          '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-num gold">' + pranavPad + '</div>' +
-          goldDots +
-          '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
+      /* -- 2. Main section: metallic header strip + grid -- */
+      '<div class="sb-main-section">' +
+        '<div class="sb-main-header">' +
+          '<span class="sb-main-label">PRANAV</span>' +
+          '<span class="sb-main-label">CHITRA</span>' +
         '</div>' +
-        '<div class="sb-divider"></div>' +
-        '<div class="sb-main-cell" data-action="open-ready">' +
-          '<div class="sb-main-label">CHITRA</div>' +
-          '<div class="sb-main-num green">' + chitraFraction + '</div>' +
-          greenDots +
-          '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
+        '<div class="sb-main-grid">' +
+          '<div class="sb-main-cell" data-action="open-production">' +
+            '<div class="sb-main-num gold">' + pranavPad + '</div>' +
+            goldDots +
+            '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
+          '</div>' +
+          '<div class="sb-divider"></div>' +
+          '<div class="sb-main-cell" data-action="open-ready">' +
+            '<div class="sb-main-num green">' + chitraFraction + '</div>' +
+            greenDots +
+            '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
 
@@ -790,7 +794,7 @@ function renderScoreboard() {
         '<span class="sb-rivet-row"></span>' +
       '</div>' +
 
-      /* -- 4. Client Grid (label, number, dots, button) -- */
+      /* -- 4. Client Grid (number, dots, bordered label) -- */
       '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
           '<div class="sb-client-num">' + approvalPad + '</div>' +
