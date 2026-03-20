@@ -599,7 +599,7 @@ function _ttFailedPublish() {
     .sort(function(a, b) { return (a.target_date || '') < (b.target_date || '') ? -1 : 1; });
 }
 
-// B-01 FIX: Check if awaiting_approval posts are aging (≥ 2 days in stage)
+// B-01 FIX: Check if awaiting_approval posts are aging ( 2 days in stage)
 function _ttAgingAwaiting() {
   var twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
@@ -624,10 +624,10 @@ function getTopTask() {
   const email = localStorage.getItem('hinglish_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
-  // B-02 FIX: PRIORITY 1 — Failed publish (scheduled post past target_date) is same-day emergency
+  // B-02 FIX: PRIORITY 1  Failed publish (scheduled post past target_date) is same-day emergency
   const failedPub = _ttFailedPublish();
   if (failedPub.length) {
-    return { type: 'failed_publish', text: 'FIX PUBLISH — ' + getTitle(failedPub[0]), postId: getPostId(failedPub[0]) };
+    return { type: 'failed_publish', text: 'FIX PUBLISH  ' + getTitle(failedPub[0]), postId: getPostId(failedPub[0]) };
   }
 
   // 2. ASSIGNED TASKS (high priority for all roles)
@@ -661,7 +661,7 @@ function getTopTask() {
       return { type: 'approval', text: 'Follow up only -- ' + getTitle(agingAwaiting[0]), postId: getPostId(agingAwaiting[0]) };
     }
 
-    // Non-aging awaiting_approval — schedule/send first
+    // Non-aging awaiting_approval  schedule/send first
     const approval = _ttByStage('awaiting_approval');
     if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
     if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
@@ -965,7 +965,7 @@ function renderScoreboard() {
       html += '<span class="status-badge status-badge--crit"><span class="status-badge-dot"></span>EMERGENCY</span>';
       html += '</div>';
       html += '<div class="dash-big-num dash-big-num--red">' + failedPublishCount + '</div>';
-      html += '<div class="dash-descriptor" style="color:var(--red)">scheduled post' + (failedPublishCount !== 1 ? 's' : '') + ' missed target date — fix before sending new content</div>';
+      html += '<div class="dash-descriptor" style="color:var(--red)">scheduled post' + (failedPublishCount !== 1 ? 's' : '') + ' missed target date  fix before sending new content</div>';
       html += '</div>';
     }
 
@@ -1018,7 +1018,7 @@ function renderScoreboard() {
     }
     html += '</div>';
     html += '</div>';
-    // B-01 FIX: Chitra button label reflects available actions — only say SEND when ready > 0
+    // B-01 FIX: Chitra button label reflects available actions  only say SEND when ready > 0
     var chitraBtnLabel = readyCount > 0 ? 'SEND NOW' : (chitraOverdue > 0 ? 'FOLLOW UP' : 'VIEW ALL');
     html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-chitra" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\'])">&rarr;&nbsp;&nbsp;&nbsp;' + chitraBtnLabel + '</button>';
     html += '</div>';
@@ -1063,14 +1063,14 @@ function _buildDoThisNowItems() {
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  // B-02 FIX: PRIORITY 0 — Failed publish items (scheduled posts past target_date)
+  // B-02 FIX: PRIORITY 0  Failed publish items (scheduled posts past target_date)
   var failedPub = _ttFailedPublish();
   for (var fp = 0; fp < failedPub.length && items.length < 3; fp++) {
     var fpPost = failedPub[fp];
     var daysMissed = Math.floor((new Date(todayStr) - new Date(fpPost.target_date)) / (1000*60*60*24));
     items.push({
-      title: 'FIX PUBLISH — ' + getTitle(fpPost),
-      meta: 'Missed by ' + daysMissed + ' day' + (daysMissed !== 1 ? 's' : '') + ' · revenue at risk',
+      title: 'FIX PUBLISH  ' + getTitle(fpPost),
+      meta: 'Missed by ' + daysMissed + ' day' + (daysMissed !== 1 ? 's' : '') + '  revenue at risk',
       postId: getPostId(fpPost),
       color: 'var(--red)',
       urgency: 3,
@@ -1119,7 +1119,7 @@ function _buildDoThisNowItems() {
     var op = overdueApprovalPosts[c];
     var daysOverdue = Math.floor((new Date() - new Date(op.status_changed_at)) / (1000*60*60*24));
     items.push({
-      title: 'Chase client — ' + getTitle(op),
+      title: 'Chase client  ' + getTitle(op),
       meta: 'Day ' + daysOverdue + ' &middot; awaiting approval',
       postId: getPostId(op),
       color: 'var(--red)',
@@ -1128,7 +1128,7 @@ function _buildDoThisNowItems() {
       metaRed: true
     });
   }
-  // B-04 FIX: awaiting_brand_input shown as informational — brand/legal team action, not client approver
+  // B-04 FIX: awaiting_brand_input shown as informational  brand/legal team action, not client approver
   var overdueBrandPosts = allPosts.filter(function(p) {
     return p.stage === 'awaiting_brand_input' &&
       p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
@@ -1139,7 +1139,7 @@ function _buildDoThisNowItems() {
     var bp = overdueBrandPosts[bi];
     var daysBrandOverdue = Math.floor((new Date() - new Date(bp.status_changed_at)) / (1000*60*60*24));
     items.push({
-      title: 'Brand input pending — ' + getTitle(bp),
+      title: 'Brand input pending  ' + getTitle(bp),
       meta: 'Day ' + daysBrandOverdue + ' &middot; waiting on brand team',
       postId: getPostId(bp),
       color: 'var(--purple)',
@@ -1150,7 +1150,7 @@ function _buildDoThisNowItems() {
 
   // 3. Auto: Pranav deficit
   // B-03 FIX: Only fire "system dry" / deficit alert when there are no awaiting posts in pipeline.
-  // If posts are awaiting_approval or awaiting_brand_input, the pipeline is not dry — it's blocked on
+  // If posts are awaiting_approval or awaiting_brand_input, the pipeline is not dry  it's blocked on
   // client/brand review. Escalating to Pranav to create more would be a misdirected action.
   var inSystemCount = allPosts.filter(function(p) {
     return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
