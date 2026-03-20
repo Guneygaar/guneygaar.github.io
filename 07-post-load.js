@@ -1372,6 +1372,35 @@ function updatePipelineChipCounts() {
   }
 }
 
+// -- Pipeline stage chip click handler ----------
+function filterPipelineByChip(stage) {
+  var strip = document.getElementById('stage-strip');
+  if (!strip) return;
+  var chips = strip.querySelectorAll('.stage-chip');
+  chips.forEach(function(c) { c.classList.remove('active'); });
+  var clicked = strip.querySelector('.stage-chip[data-stage="' + stage + '"]');
+  if (clicked) clicked.classList.add('active');
+  if (stage === 'all') {
+    window.pcsPipelineFilter = null;
+  } else {
+    window.pcsPipelineFilter = [stage];
+  }
+  renderPipeline();
+}
+
+// Wire pipeline stage chip clicks
+document.addEventListener('DOMContentLoaded', function() {
+  var strip = document.getElementById('stage-strip');
+  if (strip) {
+    strip.addEventListener('click', function(e) {
+      var chip = e.target.closest('.stage-chip');
+      if (!chip) return;
+      var stage = chip.dataset.stage;
+      if (stage) filterPipelineByChip(stage);
+    });
+  }
+});
+
 // -- Task stage chip filter ---------------------
 let _taskFilter = null; // null = show all, string = bucket key
 
