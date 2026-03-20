@@ -408,12 +408,12 @@ function openPostFromNotification(postId, notifId, el) {
 
 // -- PCS Activity toggle -----------------------
 function togglePCSActivity() {
-  const body = document.getElementById('pcs-activity-body');
-  const section = document.getElementById('pcs-history-section');
+  var body = document.getElementById('pcs-activity-body');
   if (!body) return;
-  const isOpen = body.style.display !== 'none';
+  var isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
-  if (section) section.classList.toggle('expanded', !isOpen);
+  var trigger = document.getElementById('pc-activity-trigger');
+  if (trigger) trigger.classList.toggle('expanded', !isOpen);
 }
 
 // -- Zen mode ----------------------------------
