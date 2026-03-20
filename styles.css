@@ -5495,7 +5495,25 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   pointer-events: none;
   transition: opacity 0.15s;
 }
-#pipeline-hdr { overflow: hidden; position: relative; }
+.hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px 9px;
+  position: relative;
+  overflow: hidden;
+}
+.hdr-title {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+.hdr-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .pipeline-search-results {
   display: none;
