@@ -3805,6 +3805,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   top: 0;
   z-index: 100;
   background: var(--bg);
+  overflow: hidden;
 }
 .app-header-title {
   font-family: var(--mono);
@@ -5485,34 +5486,15 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .pipeline-search-cancel:hover { color: var(--text2); }
 
-#pipeline-hdr.searching #pipeline-hdr-title {
+.app-header.searching .app-header-title {
   opacity: 0;
   transform: translateX(-20px);
   transition: opacity 0.15s, transform 0.15s;
 }
-#pipeline-hdr.searching #pipeline-hdr-icons {
+.app-header.searching .app-header-right {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
-}
-.hdr {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px 9px;
-  position: relative;
-  overflow: hidden;
-}
-.hdr-title {
-  font-family: var(--mono);
-  font-size: 13px;
-  color: var(--text);
-  font-weight: 500;
-}
-.hdr-icons {
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .pipeline-search-results {
