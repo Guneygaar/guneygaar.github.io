@@ -166,6 +166,7 @@ const _TAB_TITLES = {
   tasks: null,
   pipeline: 'Pipeline',
   library: 'Library',
+  updates: 'Updates',
 };
 
 function switchTab(btn) {
@@ -193,6 +194,8 @@ function switchTab(btn) {
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
     window._taskFilter = null;
   }
+  // Load notifications when switching to updates tab
+  if (tab === 'updates') { loadNotifications(); }
   // Re-render the newly active tab with current data
   safeRender();
   _fabAttachScroll();
@@ -255,142 +258,254 @@ function _notifTitle(postId) {
   return post?.title || 'Untitled Post';
 }
 
-// -- Notifications -----------------------------
-let _notifCache = [];   // cached fetched notifications
+// -- Notifications (Updates Tab) ---------------
+var _notifFilter = 'all';
+var _notifData = [];
 
-async function fetchUnreadCount() {
+async function loadNotifications() {
   try {
-    const data = await apiFetch('/notifications?select=id&read=eq.false&limit=50');
-    _unreadCount = Array.isArray(data) ? data.length : 0;
-    renderNotificationBadge();
-  } catch {}
-}
+    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var currentName = resolveActor() || 'there';
 
-async function fetchAndRenderNotifications() {
-  const list = document.getElementById('notif-list');
-  if (!list) return;
-  list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading...</div>';
-  try {
-    const data = await apiFetch('/notifications?select=id,type,message,read,created_at&order=created_at.desc&limit=20');
-    if (!Array.isArray(data) || !data.length) {
-      list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">No notifications yet.</div>';
-      _notifCache = [];
-      return;
-    }
-    _notifCache = data;
-    // Sort: unread first, then by created_at desc
-    const sorted = [...data].sort((a, b) => {
-      const au = a.read ? 1 : 0, bu = b.read ? 1 : 0;
-      if (au !== bu) return au - bu;
-      return new Date(b.created_at) - new Date(a.created_at);
-    });
-    _renderNotifList(sorted, list);
-  } catch {
-    list.innerHTML = '<div style="padding:16px;color:var(--c-red);text-align:center">Could not load.</div>';
+    var data = await apiFetch('/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(currentRole) + '&order=created_at.desc&limit=50');
+
+    if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
+
+    _notifData = data;
+    renderNotifications(currentName, currentRole);
+    updateNotifBadge();
+  } catch(e) {
+    console.error('loadNotifications error:', e);
   }
 }
 
-function _renderNotifList(data, list) {
-  _unreadCount = data.filter(n => !n.read).length;
-  renderNotificationBadge();
-  list.innerHTML = data.map(n => {
-    const time   = _notifTime(n.created_at);
-    const unread = n.read ? '' : ' unread';
-    const dot    = n.read ? '' : '<span class="notif-dot"></span>';
-    return `
-    <div class="notif-item${unread}" data-notif-id="${esc(n.id || '')}">
-      ${dot}
-      <div class="notif-primary">${esc(n.message || '')}</div>
-      <div class="notif-ts">${esc(time)}</div>
-    </div>`;
-  }).join('');
+function renderNotifications(name, role) {
+  var notifs = _notifData;
+
+  var nameEl = document.getElementById('notif-name');
+  var roleEl = document.getElementById('notif-role');
+  if (nameEl) nameEl.textContent = name;
+  if (roleEl) roleEl.textContent = role;
+
+  var unread = notifs.filter(function(n) { return !n.read; });
+  var urgent = notifs.filter(function(n) { return !n.read && ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
+  var newItems = notifs.filter(function(n) { return !n.read && n.type === 'ready'; });
+  var infoItems = notifs.filter(function(n) { return !n.read && ['scheduled','published','in_production'].includes(n.type); });
+  var total = unread.length;
+
+  var attEl = document.getElementById('notif-attention');
+  if (attEl) {
+    if (total === 0) {
+      attEl.innerHTML = 'Everything is up to date';
+    } else {
+      attEl.innerHTML = '<strong>' + total + '</strong> ' + (total === 1 ? 'thing needs' : 'things need') + ' your attention';
+    }
+  }
+
+  var bdEl = document.getElementById('notif-breakdown');
+  if (bdEl) {
+    if (total === 0) {
+      bdEl.innerHTML = '<span class="bk-allclear">All clear</span>';
+    } else {
+      var parts = [];
+      if (urgent.length > 0)
+        parts.push('<span class="bk-item bk-urgent" onclick="setNotifFilter(\'action\', document.querySelectorAll(\'.nftab\')[1])">'
+          + urgent.length + ' urgent</span>');
+      if (newItems.length > 0)
+        parts.push('<span class="bk-item bk-new" onclick="setNotifFilter(\'unread\', document.querySelectorAll(\'.nftab\')[2])">'
+          + newItems.length + ' new</span>');
+      if (infoItems.length > 0)
+        parts.push('<span class="bk-item bk-info" onclick="setNotifFilter(\'info\', document.querySelectorAll(\'.nftab\')[3])">'
+          + infoItems.length + ' ' + (infoItems.length === 1 ? 'update' : 'updates') + '</span>');
+      if (unread.length > 0)
+        parts.push('<span class="bk-item bk-unread">'
+          + unread.length + ' unread</span>');
+      bdEl.innerHTML = parts.join('<span class="bk-sep">&#183;</span>');
+    }
+  }
+
+  var badgeAll = document.getElementById('nftab-badge-all');
+  var badgeUnread = document.getElementById('nftab-badge-unread');
+  if (badgeAll) { badgeAll.textContent = notifs.length; badgeAll.style.display = notifs.length ? '' : 'none'; }
+  if (badgeUnread) { badgeUnread.textContent = unread.length; badgeUnread.style.display = unread.length ? '' : 'none'; }
+
+  var filtered = notifs;
+  if (_notifFilter === 'action') filtered = notifs.filter(function(n) { return ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
+  if (_notifFilter === 'unread') filtered = notifs.filter(function(n) { return !n.read; });
+  if (_notifFilter === 'info') filtered = notifs.filter(function(n) { return ['scheduled','published','in_production','stage_change'].includes(n.type); });
+
+  var scroll = document.getElementById('notif-list-scroll');
+  var empty = document.getElementById('notif-empty');
+  if (!scroll) return;
+
+  if (filtered.length === 0) {
+    scroll.innerHTML = '';
+    if (empty) empty.classList.add('visible');
+    return;
+  }
+  if (empty) empty.classList.remove('visible');
+
+  var today = new Date().toDateString();
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  var yesterdayStr = yesterday.toDateString();
+
+  var groups = { Today: [], Yesterday: [], Earlier: [] };
+  filtered.forEach(function(n) {
+    var d = new Date(n.created_at).toDateString();
+    if (d === today) groups.Today.push(n);
+    else if (d === yesterdayStr) groups.Yesterday.push(n);
+    else groups.Earlier.push(n);
+  });
+
+  var typeIcon = {
+    'awaiting_approval':    { icon: '!',  cls: 'nic-red' },
+    'awaiting_brand_input': { icon: '?',  cls: 'nic-amber' },
+    'ready':                { icon: 'R',  cls: 'nic-green' },
+    'in_production':        { icon: 'P',  cls: 'nic-amber' },
+    'scheduled':            { icon: 'S',  cls: 'nic-cyan' },
+    'published':            { icon: 'ok', cls: 'nic-green' },
+    'rejected':             { icon: 'X',  cls: 'nic-red' },
+    'parked':               { icon: '--',  cls: 'nic-muted' },
+    'stage_change':         { icon: '->', cls: 'nic-gold' },
+  };
+
+  var typeBorder = {
+    'awaiting_approval':    'ntype-chase',
+    'awaiting_brand_input': 'ntype-deficit',
+    'ready':                'ntype-ready',
+    'scheduled':            'ntype-scheduled',
+    'published':            'ntype-published',
+    'stage_change':         'ntype-info',
+    'in_production':        'ntype-info',
+  };
+
+  function getContext(n) {
+    var d = new Date(n.created_at);
+    var timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    if (n.type === 'awaiting_approval') return { text: 'Awaiting client approval - ' + timeStr, urgent: true };
+    if (n.type === 'awaiting_brand_input') return { text: 'Waiting for brand input - ' + timeStr, urgent: true };
+    if (n.type === 'ready') return { text: 'Ready to dispatch - ' + timeStr, urgent: false };
+    if (n.type === 'published') return { text: 'Published - ' + timeStr, urgent: false };
+    if (n.type === 'scheduled') return { text: 'Scheduled - ' + timeStr, urgent: false };
+    if (n.type === 'in_production') return { text: 'In production - ' + timeStr, urgent: false };
+    return { text: timeStr, urgent: false };
+  }
+
+  function getActions(n) {
+    if (n.type === 'awaiting_approval') return [
+      { label: 'Chase Client', cls: 'nab-red', action: 'chase', id: n.id },
+      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+    ];
+    if (n.type === 'ready') return [
+      { label: 'Send for Approval', cls: 'nab-green', action: 'approve', id: n.id },
+      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+    ];
+    if (n.type === 'awaiting_brand_input') return [
+      { label: 'Chase Input', cls: 'nab-amber', action: 'chase', id: n.id },
+      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+    ];
+    if (n.type === 'scheduled' || n.type === 'published' || n.type === 'stage_change') return [
+      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+    ];
+    return [];
+  }
+
+  function formatTime(created_at) {
+    var d = new Date(created_at);
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  var html = '';
+  ['Today','Yesterday','Earlier'].forEach(function(day) {
+    if (!groups[day] || groups[day].length === 0) return;
+    html += '<div class="notif-day-label">' + day + '</div>';
+    groups[day].forEach(function(n) {
+      var ic = typeIcon[n.type] || { icon: '', cls: 'nic-muted' };
+      var bc = typeBorder[n.type] || 'ntype-info';
+      var ctx = getContext(n);
+      var actions = getActions(n);
+      var actHtml = actions.map(function(a) {
+        return '<button class="notif-action-btn ' + a.cls + '" onclick="handleNotifAction(\'' + a.action + '\',\'' + (n.post_id||'') + '\',' + n.id + ',event)">' + a.label + '</button>';
+      }).join('');
+
+      html += '<div class="notif-item ' + bc + ' ' + (n.read ? '' : 'unread') + '" onclick="openNotifItem(' + n.id + ',\'' + (n.post_id||'') + '\')">';
+      html += '<div class="notif-icon-circle ' + ic.cls + '">' + ic.icon + '</div>';
+      html += '<div class="notif-body">';
+      html += '<div class="notif-msg">' + (n.message || '') + '</div>';
+      html += '<div class="notif-ctx ' + (ctx.urgent ? 'ctx-urgent' : '') + '">' + ctx.text + '</div>';
+      if (actHtml) html += '<div class="notif-action-row">' + actHtml + '</div>';
+      html += '</div>';
+      html += '<div class="notif-right">';
+      html += '<div class="notif-time">' + formatTime(n.created_at) + '</div>';
+      if (!n.read) html += '<div class="notif-unread-dot"></div>';
+      html += '</div>';
+      html += '</div>';
+    });
+  });
+
+  scroll.innerHTML = html;
+}
+
+function setNotifFilter(filter, btn) {
+  _notifFilter = filter;
+  document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+  var currentName = resolveActor() || 'there';
+  renderNotifications(currentName, currentRole);
+}
+
+async function openNotifItem(id, postId) {
+  await markNotifRead(id);
+  if (postId) openPCS(postId);
+}
+
+async function handleNotifAction(action, postId, notifId, event) {
+  event.stopPropagation();
+  await markNotifRead(notifId);
+  if (action === 'view' && postId) { openPCS(postId); return; }
+  if (action === 'chase' && postId) {
+    var post = (window.allPosts || []).find(function(p) { return p.post_id === postId || p.id === postId; });
+    var title = post ? post.title : 'this post';
+    var msg = 'Hi! Following up on ' + title + ' sent for approval. Please review when you get a chance.';
+    if (navigator.clipboard) { navigator.clipboard.writeText(msg); }
+    showChaseToast('-> Copied to clipboard');
+    return;
+  }
+  if (action === 'approve' && postId) { openPCS(postId); return; }
+}
+
+async function markNotifRead(id) {
+  try {
+    _notifData = _notifData.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; });
+    updateNotifBadge();
+    await apiFetch('/notifications?id=eq.' + id, {
+      method: 'PATCH',
+      body: JSON.stringify({ read: true }),
+    });
+  } catch(e) { console.error('markNotifRead error:', e); }
 }
 
 async function markAllNotificationsRead() {
   try {
+    _notifData = _notifData.map(function(n) { return Object.assign({}, n, { read: true }); });
+    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var currentName = resolveActor() || 'there';
+    renderNotifications(currentName, currentRole);
+    updateNotifBadge();
     await apiFetch('/notifications?read=eq.false', {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
     });
-    _unreadCount = 0;
-    _notifCache.forEach(n => n.read = true);
-    renderNotificationBadge();
-    const list = document.getElementById('notif-list');
-    if (list && _notifCache.length) _renderNotifList(_notifCache, list);
-  } catch {}
+  } catch(e) { console.error('markAllRead error:', e); }
 }
 
-function renderNotificationBadge() {
-  const b = document.getElementById('notif-badge');
-  if (!b) return;
-  if (_unreadCount > 0) {
-    b.style.display = '';
-    b.textContent = _unreadCount > 9 ? '9+' : _unreadCount;
-  } else {
-    b.style.display = 'none';
-    b.textContent = '';
-  }
-}
-
-function toggleNotifPanel(e) {
-  if (e) e.stopPropagation();
-  const panel = document.getElementById('notif-panel');
-  if (!panel) return;
-  const open = panel.classList.toggle('open');
-  if (open) fetchAndRenderNotifications();
-}
-
-// Unified notification listener: click-to-open post + outside-click-close
-document.addEventListener('click', function (e) {
-  const panel = document.getElementById('notif-panel');
-  const btn = document.getElementById('notif-wrap');
-
-  // 1. Notification item click (priority)
-  const notifItem = e.target.closest('.notif-item');
-  if (notifItem) {
-    const postId = notifItem.dataset.postId;
-    const notifId = notifItem.dataset.notifId;
-    if (postId) openPostFromNotification(postId, notifId, notifItem);
-    return;
-  }
-
-  // 2. Outside click close
-  if (!panel || !panel.classList.contains('open')) return;
-  const insidePanel = panel.contains(e.target);
-  const clickedBtn = btn && btn.contains(e.target);
-  if (!insidePanel && !clickedBtn) {
-    panel.classList.remove('open');
-  }
-});
-
-function openPostFromNotification(postId, notifId, el) {
-  // Mark this notification read immediately (UI + DB)
-  if (el) el.classList.remove('unread');
-  if (notifId) {
-    const cached = _notifCache.find(n => String(n.id) === String(notifId));
-    if (cached) cached.read = true;
-    _unreadCount = _notifCache.filter(n => !n.read).length;
-    renderNotificationBadge();
-    // Fire-and-forget DB update for this single notification
-    apiFetch('/notifications?id=eq.' + notifId, {
-      method: 'PATCH',
-      body: JSON.stringify({ read: true }),
-    }).catch(() => {});
-  }
-  // Close panel
-  const panel = document.getElementById('notif-panel');
-  if (panel) panel.classList.remove('open');
-  // Open post + flash
-  const post = getPostById(postId);
-  if (post) {
-    openPCS(postId);
-    setTimeout(() => {
-      const card = document.querySelector('.pcs-card');
-      if (card) {
-        card.classList.add('flash-highlight');
-        card.addEventListener('animationend', () => card.classList.remove('flash-highlight'), { once: true });
-      }
-    }, 80);
+function updateNotifBadge() {
+  var unread = _notifData.filter(function(n) { return !n.read; }).length;
+  var badge = document.getElementById('notif-nav-badge');
+  if (badge) {
+    badge.textContent = unread;
+    badge.style.display = unread > 0 ? '' : 'none';
   }
 }
 
