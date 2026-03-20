@@ -722,7 +722,7 @@ function renderScoreboard() {
     // Dot bars
     function dotBar(filled, total, filledColor) {
       var dots = '';
-      var max = Math.min(total, 35);
+      var max = Math.min(total, 28);
       var f = Math.min(filled, max);
       for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
       for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
@@ -731,7 +731,7 @@ function renderScoreboard() {
 
     function smallDotBar(filled, total, filledColor) {
       var dots = '';
-      var max = Math.min(total, 20);
+      var max = Math.min(total, 15);
       var f = Math.min(filled, max);
       for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
       for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
@@ -767,7 +767,7 @@ function renderScoreboard() {
     var html = '';
 
     /* -- RUNWAY SECTION -- */
-    html += '<div class="dash-section" style="padding:30px 20px 26px">';
+    html += '<div class="dash-section">';
     html += '<div class="dash-section-header">';
     html += '<span class="dash-section-label">RUNWAY</span>';
     html += '<span class="status-badge status-badge--' + runwayColor + '"><span class="status-badge-dot"></span>' + runwayStatus + '</span>';
@@ -820,28 +820,28 @@ function renderScoreboard() {
     html += '</div>';
 
     /* -- CLIENT SECTION -- */
-    html += '<div class="dash-section" style="padding:18px 20px">';
+    html += '<div class="dash-section">';
     html += '<div class="dash-section-label" style="margin-bottom:10px">CLIENT</div>';
     html += '<div class="client-grid">';
     // Approval cell
     html += '<div class="client-cell" data-action="open-approval">';
     html += '<div class="client-cell-label">APPROVAL</div>';
     html += '<div class="client-cell-num' + (approval > 0 ? ' client-cell-num--red' : '') + '">' + approval + '</div>';
-    html += '<div class="client-cell-sub">pending sign-off</div>';
+    html += '<div class="client-cell-sub">awaiting client</div>';
     html += clientDots(approval, 5, 'var(--red)');
     html += '</div>';
     // Input cell
     html += '<div class="client-cell" data-action="open-input">';
     html += '<div class="client-cell-label">INPUT DUE</div>';
     html += '<div class="client-cell-num">' + input + '</div>';
-    html += '<div class="client-cell-sub">brief pending</div>';
+    html += '<div class="client-cell-sub">input missing</div>';
     html += clientDots(input, 5, 'var(--red)');
     html += '</div>';
     html += '</div>';
     html += '</div>';
 
     /* -- DO THIS NOW SECTION -- */
-    html += '<div class="dash-section" style="padding:18px 20px;padding-bottom:80px;border-bottom:none">';
+    html += '<div class="dash-section" style="border-bottom:none">';
     html += '<div class="dash-section-label" style="margin-bottom:10px">DO THIS NOW</div>';
     html += tasks;
     html += '</div>';

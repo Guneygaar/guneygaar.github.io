@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Load 01-config.js — execute as plain script
+// Load 01-config.js  execute as plain script
 const configSrc = readFileSync(resolve(__dirname, '..', '01-config.js'), 'utf8');
 
 function loadConfig() {
@@ -21,7 +21,7 @@ function loadConfig() {
 
 const config = loadConfig();
 
-// ─── stageStyle ─────────────────────────────────
+//  stageStyle 
 describe('stageStyle', () => {
   it('returns correct hex and label for known stage', () => {
     const s = config.stageStyle('in production');
@@ -49,7 +49,7 @@ describe('stageStyle', () => {
   });
 });
 
-// ─── Config integrity ───────────────────────────
+//  Config integrity 
 describe('config integrity', () => {
   it('STAGE_META keys match STAGES_DB entries (plus archive)', () => {
     const metaKeys = Object.keys(config.STAGE_META);
@@ -124,7 +124,7 @@ describe('config integrity', () => {
   });
 });
 
-// ─── Pillar helpers ─────────────────────────────
+//  Pillar helpers 
 describe('formatPillarDisplay', () => {
   it('returns Capital Case for known pillar', () => {
     expect(config.formatPillarDisplay('leadership')).toBe('Leadership');
@@ -165,7 +165,7 @@ describe('getPillarShort', () => {
   });
 });
 
-// ─── sanitizePillar ─────────────────────────────
+//  sanitizePillar 
 describe('sanitizePillar', () => {
   it('lowercases and trims input', () => {
     expect(config.sanitizePillar('Leadership')).toBe('leadership');
@@ -186,7 +186,7 @@ describe('sanitizePillar', () => {
   });
 });
 
-// ─── Pillar system lockdown ─────────────────────
+//  Pillar system lockdown 
 describe('pillar system lockdown', () => {
   it('PILLAR_DISPLAY keys exactly match PILLARS_DB', () => {
     expect(Object.keys(config.PILLAR_DISPLAY).sort()).toEqual([...config.PILLARS_DB].sort());
