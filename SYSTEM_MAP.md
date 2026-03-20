@@ -1,4 +1,4 @@
-# System Map — GBL Content Ops
+# System Map — Hinglish Ops
 
 Architecture reference for the entire codebase. Vanilla JavaScript, no framework, no bundler, Supabase backend.
 
@@ -36,7 +36,7 @@ Every file depends on the ones above it. All share a single global scope (no mod
 User enters email
   → sendMagicLink()
     → POST /auth/v1/otp { email, create_user: false }
-    → stores email in localStorage('gbl_pending_email')
+    → stores email in localStorage('hinglish_pending_email')
     → shows code input step
 
 User enters 6-digit OTP
@@ -47,7 +47,7 @@ User enters 6-digit OTP
 
 resolveRoleFromToken(token, email)
   → GET /rest/v1/user_roles?email=eq.{email}&select=role&limit=1
-  → stores role in localStorage('gbl_role'), email in localStorage('gbl_email')
+  → stores role in localStorage('hinglish_role'), email in localStorage('hinglish_email')
   → calls activateRole(role)
 ```
 
@@ -71,11 +71,11 @@ Called from:
 |-----|--------|---------|
 | `sb_access_token` | `verifyOTPCode`, `refreshSession` | Supabase JWT |
 | `sb_refresh_token` | `verifyOTPCode`, `refreshSession` | Refresh token for silent renewal |
-| `gbl_role` | `resolveRoleFromToken` | User role (Admin/Servicing/Creative/Client) |
-| `gbl_email` | `resolveRoleFromToken` | User email |
-| `gbl_pending_email` | `sendMagicLink` | Temp: email awaiting OTP verification |
-| `gbl_theme` | `toggleTheme` | dark/light preference |
-| `gbl_new_post_draft` | `saveDraft` | Draft post JSON (expires after 24h) |
+| `hinglish_role` | `resolveRoleFromToken` | User role (Admin/Servicing/Creative/Client) |
+| `hinglish_email` | `resolveRoleFromToken` | User email |
+| `hinglish_pending_email` | `sendMagicLink` | Temp: email awaiting OTP verification |
+| `hinglish_theme` | `toggleTheme` | dark/light preference |
+| `hinglish_new_post_draft` | `saveDraft` | Draft post JSON (expires after 24h) |
 | `snooze_{postId}` | `confirmSnooze` | Snooze expiry timestamp |
 
 ### Role Activation
@@ -114,7 +114,7 @@ _startRouter()
   │    → showApprovalView(postId)                    [public, no auth]
   │
   ├─ ?action=viewApproval&ref={postId} query param?
-  │    → showApprovalView(postId, strip -gbl suffix) [public, no auth]
+  │    → showApprovalView(postId, strip -hinglish suffix) [public, no auth]
   │
   ├─ Hash contains access_token? (magic link callback)
   │    → store refresh_token

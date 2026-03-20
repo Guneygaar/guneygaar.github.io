@@ -223,7 +223,7 @@ async function submitClientRequest() {
   if (btn) btn.disabled = true;
   try {
     const postId = 'REQ-' + Date.now();
-    const email  = localStorage.getItem('gbl_email') || 'Client';
+    const email  = localStorage.getItem('hinglish_email') || 'Client';
     const payload = {
       post_id:     postId,
       title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],

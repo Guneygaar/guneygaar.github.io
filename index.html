@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>GBL · Content Ops</title>
+<title>Hinglish Ops</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
  <link rel="stylesheet" href="styles.css?v=20260315">
@@ -16,39 +16,62 @@
 ══════════════════════════════════════════ -->
 <div id="login-overlay" class="hidden">
   <div class="login-card">
-    <div class="login-logo">GBL <span>Ops</span></div>
-    <div class="login-tagline">Content Command Console</div>
+
+    <!-- Top strip -->
+    <div class="login-top-strip">
+      <span class="login-gold-dot"></span>
+      <span>Hinglish Agency</span>
+    </div>
+
+    <!-- Brand name -->
+    <div class="login-brand">Hinglish <span>Ops</span></div>
+
+    <!-- Brand subtitle -->
+    <div class="login-subtitle">Content Command Console</div>
 
     <!-- Step 1: Email entry -->
     <div id="login-email-step" class="login-step active">
-      <div class="login-label" style="margin-bottom:var(--sp-4)">Enter your work email to sign in</div>
-      <div class="form-field">
-        <input type="email" id="login-email-input" placeholder="you@gblcommunications.com"
-          style="font-size:16px;text-align:center"
-          onkeydown="if(event.key==='Enter')sendMagicLink()">
-      </div>
-      <button class="btn-modal-primary" style="width:100%;margin-top:var(--sp-2)" onclick="sendMagicLink()">
-        Send Code →
+      <label class="login-form-label" for="login-email-input">Work Email</label>
+      <input type="email" id="login-email-input" class="login-input" placeholder="you@hinglish.agency"
+        onkeydown="if(event.key==='Enter')sendMagicLink()">
+      <button class="login-submit-btn" onclick="sendMagicLink()">
+        <span>Send Code</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
       </button>
-      <div class="login-error" id="login-error" style="margin-top:var(--sp-3)"></div>
+      <div class="login-error" id="login-error"></div>
     </div>
 
-    <!-- Step 2: Check email -->
+    <!-- Step 2: OTP confirmation -->
     <div id="login-code-step" class="login-step">
-  <div style="font-size:40px;text-align:center;margin-bottom:var(--sp-4)">📩</div>
-  <div class="login-label" style="text-align:center;margin-bottom:var(--sp-2)">Check your email</div>
-  <div style="font-size:14px;color:var(--text3);text-align:center;margin-bottom:var(--sp-4)">
-    We sent a 6-digit code to<br>
-    <strong id="login-code-email-display" style="color:var(--text1)"></strong>
+      <div class="login-otp-confirm">
+        <div class="login-otp-arrow">&rarr;</div>
+        <div class="login-otp-info">
+          <div class="login-otp-line1">Code sent to <span id="login-code-email-display"></span></div>
+          <div class="login-otp-line2">Check your inbox &middot; valid for 10 minutes only</div>
+        </div>
+      </div>
+      <input type="number" id="login-code-input" class="login-input" placeholder="Enter 6-digit code"
+        style="letter-spacing:8px;text-align:center;margin-top:12px"
+        onkeydown="if(event.key==='Enter')verifyOTPCode()">
+      <div class="login-error" id="login-code-error"></div>
+      <button id="login-verify-code-btn" class="login-submit-btn" style="margin-top:8px" onclick="verifyOTPCode()">
+        <span>Verify</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+      <button class="login-back-btn" onclick="backToEmail()">&larr; Use a different email</button>
+    </div>
+
+    <!-- Bottom strip -->
+    <div class="login-bottom-strip">
+      <div class="login-bottom-dots">
+        <span class="login-dot login-dot--gold"></span>
+        <span class="login-dot"></span>
+        <span class="login-dot"></span>
+      </div>
+      <span class="login-bottom-label">Internal Tool</span>
+    </div>
+
   </div>
-  <input type="number" id="login-code-input" placeholder="Enter 6-digit code"
-    style="width:100%;padding:var(--sp-3);font-size:20px;text-align:center;letter-spacing:8px;border-radius:var(--r-md);border:1px solid var(--border);background:var(--surface2);color:var(--text1);margin-bottom:var(--sp-3)"
-    onkeydown="if(event.key==='Enter')verifyOTPCode()">
-  <div class="login-error" id="login-code-error" style="margin-bottom:var(--sp-2)"></div>
-  <button id="login-verify-code-btn" class="btn-modal-primary" style="width:100%" onclick="verifyOTPCode()">Verify →</button>
-  <button class="btn-modal-ghost" style="width:100%;margin-top:var(--sp-3)" onclick="backToEmail()">← Use a different email</button>
-</div>
- </div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -56,7 +79,7 @@
 ══════════════════════════════════════════ -->
 <div id="approval-view">
   <div class="apv-card">
-    <div class="apv-brand">GBL <span>Ops</span> · Approval Request</div>
+    <div class="apv-brand">Hinglish <span>Ops</span> &middot; Approval Request</div>
     <div id="apv-title" class="apv-title">Loading…</div>
     <div id="apv-meta"  class="apv-meta"></div>
     <div id="apv-design-wrap"></div>
@@ -265,7 +288,7 @@
 
   <!-- Client topbar -->
   <header class="topbar">
-    <div class="topbar-brand">GBL <span>Ops</span></div>
+    <div class="topbar-brand">Hinglish <span>Ops</span></div>
     <div class="topbar-spacer"></div>
     <button class="btn-primary-action" onclick="scrollToNewRequest()">+ New Request</button>
     <div class="user-menu-wrap" id="client-menu-wrap">

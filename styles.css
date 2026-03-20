@@ -223,36 +223,189 @@ a:hover { text-decoration: underline; }
   inset: 0;
   z-index: 1000;
   background: var(--bg);
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-5);
+  padding: 24px;
 }
 #login-overlay.hidden { display: none !important; }
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 360px;
   background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-xl);
-  padding: var(--sp-7) var(--sp-6);
-  box-shadow: var(--shadow-lift);
+  border: 1px dotted var(--dotline);
+  padding: 32px 28px 28px;
 }
 
-.login-logo {
-  font-family: var(--font-display);
-  font-size: 28px;
+.login-top-strip {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px dotted var(--dotline);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.login-gold-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.7;
+}
+
+.login-brand {
+  font-family: var(--sans);
+  font-size: 26px;
   font-weight: 600;
   color: var(--text);
-  letter-spacing: -0.5px;
-  margin-bottom: var(--sp-1);
+  letter-spacing: -0.3px;
+  line-height: 1.1;
+  margin-bottom: 4px;
 }
-.login-logo span { color: var(--accent); }
+.login-brand span { color: var(--gold); }
 
-.login-tagline {
+.login-subtitle {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 28px;
+}
+
+.login-form-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.login-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px dotted rgba(255,255,255,0.12);
+  border-radius: 0;
+  padding: 12px 14px;
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  margin-bottom: 10px;
+}
+.login-input:focus {
+  border-color: rgba(200,168,75,0.4);
+}
+
+.login-submit-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: 1px dotted rgba(200,168,75,0.4);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.login-submit-btn:hover {
+  background: var(--gold-bg);
+}
+
+.login-otp-confirm {
+  display: none;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dotted var(--dotline);
+  flex-direction: row;
+  gap: 10px;
+}
+.login-step.active .login-otp-confirm {
+  display: flex;
+}
+.login-otp-arrow {
+  font-family: var(--mono);
+  color: var(--gold);
   font-size: 13px;
-  color: var(--text2);
-  margin-bottom: var(--sp-6);
+  line-height: 1.4;
+}
+.login-otp-info { flex: 1; }
+.login-otp-line1 {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.login-otp-line1 span { color: var(--gold); }
+.login-otp-line2 {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.login-back-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: none;
+  border: none;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+.login-back-btn:hover { color: var(--text); }
+
+.login-bottom-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px dotted var(--dotline);
+}
+.login-bottom-dots {
+  display: flex;
+  gap: 5px;
+}
+.login-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted2);
+}
+.login-dot--gold {
+  background: var(--gold);
+  opacity: 0.5;
+}
+.login-bottom-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--muted2);
+  text-transform: uppercase;
 }
 
 .login-step { display: none; }

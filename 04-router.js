@@ -14,7 +14,7 @@ async function _startRouter() {
 
   if (approveShort) { showApprovalView(approveShort); return; }
   if (action === 'viewApproval' && ref) {
-    showApprovalView(ref.replace(/-gbl$/i, '')); return;
+    showApprovalView(ref.replace(/-hinglish$/i, '')); return;
   }
 
   const hash = window.location.hash;
@@ -30,7 +30,7 @@ async function _startRouter() {
   }
 
   const savedToken   = localStorage.getItem('sb_access_token');
-  const savedRole    = localStorage.getItem('gbl_role');
+  const savedRole    = localStorage.getItem('hinglish_role');
   const refreshToken = localStorage.getItem('sb_refresh_token');
 
   if (savedRole && (savedToken || refreshToken)) {
