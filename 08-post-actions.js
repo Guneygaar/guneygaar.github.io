@@ -475,7 +475,13 @@ function _renderPCS(postId) {
   _updateSubtitle(post);
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
   if (elDesign)   elDesign.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
-  if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + `<input type="hidden" id="pcs-post-id" value="${esc(id)}">`;
+  if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
+
+  // Stage advance button
+  _renderAdvanceButton(stageLC);
+
+  // Activity count
+  _renderActivityCount(id);
 
   // 5. Load activity asynchronously
   if (elActivity) {
@@ -498,8 +504,17 @@ function _updateSubtitle(post) {
     : ' - ';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
   const dDisp = formatDate(dVal) || ' - ';
-  const parts = [pLabel, formatOwner(post.owner), dDisp];
-  el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
+  var parts = [esc(pLabel), esc(formatOwner(post.owner)), esc(dDisp)];
+  var html = parts.join('<span class="pc-sub-dot"></span>');
+  // Overdue badge
+  if (!isPub && dVal) {
+    var td = parseDate(dVal);
+    var now = new Date(); now.setHours(0,0,0,0);
+    if (td && td < now) {
+      html += '<span class="pc-sub-dot"></span><span class="pc-overdue-badge">Overdue</span>';
+    }
+  }
+  el.innerHTML = html;
 }
 
 // -- Inline title editing --------------
@@ -658,61 +673,56 @@ function _buildStageProgress(stageLC) {
     (stageLC === 'archive')              ? 'published'         :
     stageLC;
 
-  const activeIdx = steps.findIndex(s => s.key === norm);
+  const activeIdx = steps.findIndex(function(s) { return s.key === norm; });
 
-  const html = steps.map((s, i) => {
-    const isDone    = activeIdx !== -1 && i < activeIdx;
-    const isCurrent = i === activeIdx;
-    const dotCls = isDone ? 'pipeline-dot completed' : isCurrent ? 'pipeline-dot active' : 'pipeline-dot pending';
-    return `<div class="pipeline-stage">
-      <div class="${dotCls}"></div>
-      <div class="pipeline-label">${s.label}</div>
-    </div>`;
+  var html = steps.map(function(s, i) {
+    var isDone    = activeIdx !== -1 && i < activeIdx;
+    var isCurrent = i === activeIdx;
+    var dotCls = isDone ? 'pc-pipe-dot done' : isCurrent ? 'pc-pipe-dot current' : 'pc-pipe-dot future';
+    var lblCls = isDone ? 'pc-pipe-lbl done' : isCurrent ? 'pc-pipe-lbl current' : 'pc-pipe-lbl future';
+    return '<div class="pc-pipe-step">' +
+      '<div class="' + dotCls + '"></div>' +
+      '<div class="' + lblCls + '">' + s.label + '</div>' +
+    '</div>';
   }).join('');
 
-  return `<div class="pipeline-container">${html}</div>`;
+  return '<div class="pc-pipeline">' + html + '</div>';
 }
 
 function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
-  // Design section  -  each link gets its own button + pencil edit icon.
-  // Pipeline is the sole stage control; no Next Stage chip here.
-  const pencilStyle = 'style="font-size:12px;margin-left:6px;opacity:0.55;cursor:pointer;background:none;border:none;padding:2px"';
-
-  // URL-aware label for the design link (canva_link column may hold non-Canva URLs)
-  const designLabel = canvaUrl
+  // URL-aware label for the design link
+  var designLabel = canvaUrl
     ? (canvaUrl.includes('canva.com') ? 'Canva' : canvaUrl.includes('linkedin.com') ? 'LinkedIn' : 'Design')
     : '';
 
-  let buttons = '';
+  var links = '';
   if (canvaUrl) {
-    buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">${designLabel} [ext]</a>
-      ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">[edit]</button>` : ''}
-    </div>`;
+    links += '<a href="' + esc(canvaUrl) + '" target="_blank" rel="noopener" class="pc-action-link canva" onclick="closePCS()">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+      esc(designLabel) + '</a>';
   }
   if (linkedinUrl) {
-    buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn [ext]</a>
-      ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">[edit]</button>` : ''}
-    </div>`;
+    links += '<a href="' + esc(linkedinUrl) + '" target="_blank" rel="noopener" class="pc-action-link linkedin" onclick="closePCS()">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+      'LinkedIn</a>';
   }
   if (!canvaUrl && canEdit) {
-    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','canva')">+ Design</button>`;
+    links += '<button class="pc-action-link canva" onclick="_pcsEditLink(\'' + esc(postId) + '\',\'canva\')">+ Design</button>';
   }
   if (!linkedinUrl && canEdit) {
-    buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','linkedin')">+ LinkedIn</button>`;
+    links += '<button class="pc-action-link linkedin" onclick="_pcsEditLink(\'' + esc(postId) + '\',\'linkedin\')">LinkedIn</button>';
   }
 
-  // Attach URL editor  -  inline, aligned to primary button width
-  const attachRow = canEdit
-    ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
-        <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste link...">
-        <button class="pcs-attach-save" onclick="pcsSaveAttach('${esc(postId)}')">Save</button>
-      </div>
-      <button class="pcs-attach-cancel" id="pcs-attach-cancel-${esc(postId)}" style="display:none" onclick="pcsCloseAttach('${esc(postId)}')">Cancel</button>`
+  // Attach URL editor
+  var attachRow = canEdit
+    ? '<div class="pcs-attach-row" id="pcs-attach-row-' + esc(postId) + '" style="display:none">' +
+        '<input type="url" class="pcs-attach-input" id="pcs-attach-input-' + esc(postId) + '" placeholder="Paste link...">' +
+        '<button class="pcs-attach-save" onclick="pcsSaveAttach(\'' + esc(postId) + '\')">Save</button>' +
+      '</div>' +
+      '<button class="pcs-attach-cancel" id="pcs-attach-cancel-' + esc(postId) + '" style="display:none" onclick="pcsCloseAttach(\'' + esc(postId) + '\')">Cancel</button>'
     : '';
 
-  return `<div class="pcs-design-stack">${buttons}${attachRow}</div>`;
+  return '<div class="pc-actions-block">' + links + attachRow + '</div>';
 }
 
 function _pcsEditLink(postId, target) {
@@ -879,77 +889,157 @@ function _loadPCSActivity(postId, bodyEl) {
 }
 
 function _buildInfoGrid(post, canEdit, id) {
-  const LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
-  const OWNERS   = ALLOWED_OWNERS;
-  const FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
+  var LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
+  var OWNERS   = ALLOWED_OWNERS;
+  var FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
 
-  const stageLC     = (post.stage || '').toLowerCase().trim();
-  const isPublished = stageLC === 'published';
-  const dateLabel   = isPublished ? 'Published Date' : 'Target Date';
-  const dateValue   = isPublished
+  var stageLC     = (post.stage || '').toLowerCase().trim();
+  var isPublished = stageLC === 'published';
+  var dateLabel   = isPublished ? 'Published Date' : 'Target Date';
+  var dateValue   = isPublished
     ? (post.publishedDate || post.targetDate || '')
     : (post.targetDate || '');
-  const { hex } = stageStyle(post.stage);
 
-  const sel = (field, opts, val, dbField, displayMap) =>
-    `<select class="pcs-field-val" ${canEdit ? `onchange="updatePost('${esc(id)}','${dbField||field}',this.value)"` : 'disabled'}>
-       ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(displayMap ? (displayMap[o] || o) : o)}</option>`).join('')}
-     </select>`;
+  // Stage color class
+  var stageColorCls = '';
+  if (stageLC === 'in production' || stageLC === 'draft' || stageLC === 'awaiting brand input') stageColorCls = ' pc-meta-val--production';
+  else if (stageLC === 'ready') stageColorCls = ' pc-meta-val--ready';
+  else if (stageLC === 'awaiting approval') stageColorCls = ' pc-meta-val--approval';
+  else if (stageLC === 'scheduled') stageColorCls = ' pc-meta-val--scheduled';
+  else if (stageLC === 'published') stageColorCls = ' pc-meta-val--published';
 
-  const ro = val => `<span class="pcs-field-val-ro">${esc(val || ' - ')}</span>`;
+  // Overdue date class
+  var dateColorCls = '';
+  if (!isPublished && dateValue) {
+    var td = parseDate(dateValue);
+    var now = new Date(); now.setHours(0,0,0,0);
+    if (td && td < now) dateColorCls = ' pc-meta-val--overdue';
+  }
 
-  // Stage selector uses unified changeStage() with confirmation
-  const stageSel = canEdit
-    ? `<select class="pcs-field-val" onchange="changeStage(this.value)">
-         ${STAGES_DB.map(o => `<option value="${esc(o)}" ${o === (post.stage||'') ? 'selected' : ''}>${esc(STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o)}</option>`).join('')}
-       </select>`
-    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || ' - ')}</span>`;
+  function mkSel(field, opts, val, dbField, displayMap) {
+    var options = opts.map(function(o) {
+      var label = displayMap ? (displayMap[o] || o) : o;
+      return '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(label) + '</option>';
+    }).join('');
+    return '<select' + (canEdit ? ' onchange="updatePost(\'' + esc(id) + '\',\'' + (dbField||field) + '\',this.value)"' : ' disabled') + '>' + options + '</select>';
+  }
 
-  // Date field  -  full click area with 44px minimum tap target
-  const dateInput = canEdit
-    ? `<label class="pcs-date-tap"><span class="pcs-date-text">${esc(displayDate(dateValue))}</span><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
-             onchange="this.closest('.pcs-date-tap').querySelector('.pcs-date-text').textContent=displayDate(this.value);updatePost('${esc(id)}','targetDate',this.value)" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;color:transparent;background:transparent;border:none"><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></label>`
-    : `<div class="pcs-date-tap"><span class="pcs-date-text">${esc(formatDate(dateValue) || ' - ')}</span><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`;
+  function mkRo(val) { return '<span>' + esc(val || ' - ') + '</span>'; }
 
-  const cell = (label, content) =>
-    `<div class="pcs-field">
-       <div class="pcs-field-label">${label}</div>
-       <div class="pcs-value-shell">${content}</div>
-     </div>`;
+  // Stage selector
+  var stageSel = canEdit
+    ? (function() {
+        var opts = STAGES_DB.map(function(o) {
+          var dl = STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o;
+          return '<option value="' + esc(o) + '"' + (o === (post.stage||'') ? ' selected' : '') + '>' + esc(dl) + '</option>';
+        }).join('');
+        return '<select onchange="changeStage(this.value)">' + opts + '</select>';
+      })()
+    : '<span>' + esc(stageStyle(post.stage).label || post.stage || ' - ') + '</span>';
 
-  return `
-    <div class="pcs-info-divider"></div>
-    <div class="pcs-section">
-      <div class="pcs-grid">
-        ${cell('Stage',    stageSel)}
-        ${cell('Owner',    canEdit
-          ? `<select class="pcs-field-val" onchange="handleOwnerChange('${esc(id)}',this.value)">
-               ${OWNERS.map(o => `<option value="${esc(o)}" ${o === (post.owner||'') ? 'selected' : ''}>${esc(o)}</option>`).join('')}
-             </select>`
-          : ro(formatOwner(post.owner)))}
-        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || ' - '))}
-        ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
-        ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
-        ${cell(dateLabel,  dateInput)}
-      </div>
-    </div>`;
+  // Date field
+  var dateInput = canEdit
+    ? '<label class="pcs-date-tap"><span class="pcs-date-text">' + esc(displayDate(dateValue)) + '</span>' +
+      '<input type="date" class="pcs-date-input-native" value="' + esc(dateValue) + '"' +
+      ' onchange="this.closest(\'.pcs-date-tap\').querySelector(\'.pcs-date-text\').textContent=displayDate(this.value);updatePost(\'' + esc(id) + '\',\'targetDate\',this.value)"' +
+      ' style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer"></label>'
+    : '<span>' + esc(formatDate(dateValue) || ' - ') + '</span>';
+
+  function cell(label, content, extraCls) {
+    return '<div class="pc-meta-cell">' +
+      '<div class="pc-meta-lbl">' + label + '</div>' +
+      '<div class="pc-meta-val' + (extraCls || '') + '">' + content + '</div>' +
+    '</div>';
+  }
+
+  return '<div class="pc-meta-block"><div class="pc-meta-grid">' +
+    cell('Stage', stageSel, stageColorCls) +
+    cell('Owner', canEdit
+      ? (function() {
+          var opts = OWNERS.map(function(o) {
+            return '<option value="' + esc(o) + '"' + (o === (post.owner||'') ? ' selected' : '') + '>' + esc(o) + '</option>';
+          }).join('');
+          return '<select onchange="handleOwnerChange(\'' + esc(id) + '\',this.value)">' + opts + '</select>';
+        })()
+      : mkRo(formatOwner(post.owner))) +
+    cell('Pillar', canEdit ? mkSel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : mkRo(formatPillarDisplay(post.contentPillar) || ' - ')) +
+    cell('Location', canEdit ? mkSel('location', LOCS, post.location||'', 'location') : mkRo(post.location)) +
+    cell('Format', canEdit ? mkSel('format', FORMATS, post.format||'', 'format') : mkRo(post.format)) +
+    cell(dateLabel, dateInput, dateColorCls) +
+  '</div></div>';
 }
 
 function _buildNotes(post, canEdit, id) {
   if (!canEdit && !post.comments) return '';
 
-  // Notes  -  reduced default height, auto-expand
-  const notesInput = canEdit
-    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption..." rows="2"
-                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                 onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
-    : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');
+  var notesInput = canEdit
+    ? '<textarea class="pc-notes-area" placeholder="Brief or caption..."' +
+      ' onblur="updatePost(\'' + esc(id) + '\',\'comments\',this.value)">' + esc(post.comments || '') + '</textarea>'
+    : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
 
-  return `
-    <div class="pcs-section pcs-notes-section">
-      <div class="pcs-section-label">Notes</div>
-      ${notesInput || '<div class="pcs-activity-empty">No notes.</div>'}
-    </div>`;
+  return '<div class="pc-notes-block">' +
+    '<div class="pc-notes-lbl">Notes</div>' +
+    (notesInput || '<div class="pcs-activity-empty">No notes.</div>') +
+  '</div>';
+}
+
+// -- Stage advance button (FIX 7) --
+var _ADVANCE_SEQ = ['in production', 'ready', 'awaiting approval', 'scheduled', 'published'];
+var _ADVANCE_LABELS = {
+  'ready': 'Move to Ready',
+  'awaiting approval': 'Move to Approval',
+  'scheduled': 'Move to Scheduled',
+  'published': 'Move to Published'
+};
+var _ADVANCE_CLS = {
+  'ready': 'to-ready',
+  'awaiting approval': 'to-approval',
+  'scheduled': 'to-scheduled',
+  'published': 'to-published'
+};
+
+function _renderAdvanceButton(stageLC) {
+  var block = document.getElementById('pc-advance-block');
+  var btn = document.getElementById('pc-advance-btn');
+  var label = document.getElementById('pc-advance-label');
+  if (!block || !btn || !label) return;
+
+  // Normalise variant stages
+  var norm = stageLC;
+  if (stageLC === 'awaiting brand input' || stageLC === 'draft') norm = 'in production';
+  if (stageLC === 'parked') norm = 'scheduled';
+  if (stageLC === 'archive') norm = 'published';
+
+  var idx = _ADVANCE_SEQ.indexOf(norm);
+  if (idx < 0 || idx >= _ADVANCE_SEQ.length - 1) {
+    // Already published or unknown - hide
+    block.style.display = 'none';
+    return;
+  }
+
+  var nextStage = _ADVANCE_SEQ[idx + 1];
+  label.textContent = _ADVANCE_LABELS[nextStage] || ('Move to ' + nextStage);
+
+  // Remove old color classes
+  btn.className = 'pc-advance-btn';
+  var cls = _ADVANCE_CLS[nextStage];
+  if (cls) btn.classList.add(cls);
+
+  btn.onclick = function() { changeStage(nextStage); };
+  block.style.display = '';
+}
+
+// -- Activity count (FIX 9) --
+function _renderActivityCount(postId) {
+  var countEl = document.getElementById('pc-activity-count');
+  if (!countEl) return;
+  countEl.textContent = '';
+  // Attempt to count from already-loaded activity body
+  var body = document.getElementById('pcs-activity-body');
+  if (body && body.dataset.loadedFor === postId) {
+    var rows = body.querySelectorAll('.pcs-activity-row');
+    if (rows.length) countEl.textContent = rows.length;
+  }
 }
 
 function _removePcsConfirm() {

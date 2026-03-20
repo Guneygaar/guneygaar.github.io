@@ -634,41 +634,46 @@
      POST CONTROL SCREEN
 ══════════════════════════════════════════ -->
 <div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
-  <div id="pcs-screen">
+  <div id="pcs-screen" class="pc-sheet">
 
-    <!-- Header: close (left) | delete (right), centered title + metadata -->
-    <div class="pcs-header">
-      <button class="pcs-close-btn" onclick="closePCS()" aria-label="Close">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    <!-- Topbar: X left, trash right — outside scroll -->
+    <div class="pc-topbar">
+      <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <button class="pcs-edit-btn" id="pcs-edit-btn" onclick="openAdminEdit(window._pcs?.postId)" aria-label="Edit">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <button class="pc-icon-btn danger" onclick="pcsConfirmDelete()" aria-label="Delete">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
       </button>
-      <button class="pcs-delete-btn" onclick="pcsConfirmDelete()" aria-label="Delete">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-      </button>
-      <div class="pcs-header-center">
-        <div class="pcs-title" id="pcs-topbar-title"></div>
-        <div class="pcs-subtitle" id="pcs-subtitle"></div>
-      </div>
     </div>
 
     <!-- Scrollable content -->
-    <div class="pcs-scroll" id="pcs-scroll">
+    <div class="pc-scroll-body" id="pcs-scroll">
+      <!-- Title block -->
+      <div class="pc-title-block" id="pcs-title-block">
+        <div class="pc-title" id="pcs-topbar-title"></div>
+        <div class="pc-subtitle" id="pcs-subtitle"></div>
+      </div>
       <!-- Pipeline progress -->
       <div class="pcs-body-section" id="pcs-progress-wrap"></div>
       <!-- Tool card (Design/LinkedIn) -->
       <div class="pcs-body-section" id="pcs-action-btn-wrap"></div>
       <!-- Information grid + Notes -->
       <div class="pcs-body-section" id="pcs-fields"></div>
-      <!-- Activity (collapsed by default) -->
-      <div class="pcs-body-section pcs-activity-section" id="pcs-history-section">
-        <button class="pcs-activity-toggle" id="pcs-activity-toggle" onclick="togglePCSActivity()">
-          <span>Activity</span>
-          <svg class="pcs-activity-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <!-- Stage advance button -->
+      <div class="pc-advance-block" id="pc-advance-block" style="display:none">
+        <button class="pc-advance-btn" id="pc-advance-btn">
+          <span class="pc-advance-arrow">&rarr;</span>
+          <span class="pc-advance-label" id="pc-advance-label">Move to Next</span>
         </button>
-        <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
       </div>
+      <!-- Activity link -->
+      <div class="pc-activity-row" id="pc-activity-trigger" onclick="togglePCSActivity()">
+        <div class="pc-act-arrow">&rarr;</div>
+        <div class="pc-act-lbl">Activity</div>
+        <div class="pc-act-count" id="pc-activity-count"></div>
+      </div>
+      <!-- Activity body (collapsed) -->
+      <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
     </div>
 
   </div>
