@@ -529,7 +529,7 @@ function _fabAttachScroll() {
 }
 
 function _fabOnScroll() {
-  const fab = document.getElementById('fab');
+  const fab = document.getElementById('main-fab-btn');
   if (!fab) return;
   fab.classList.add('hidden');
   clearTimeout(_fabScrollTimer);
