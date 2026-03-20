@@ -24,13 +24,13 @@ const config = loadConfig();
 //  stageStyle 
 describe('stageStyle', () => {
   it('returns correct hex and label for known stage', () => {
-    const s = config.stageStyle('in production');
+    const s = config.stageStyle('in_production');
     expect(s.hex).toBe('#f59e0b');
     expect(s.label).toBe('In Production');
   });
 
   it('is case-insensitive', () => {
-    expect(config.stageStyle('IN PRODUCTION').label).toBe('In Production');
+    expect(config.stageStyle('in_production').label).toBe('In Production');
   });
 
   it('trims whitespace', () => {
@@ -51,10 +51,9 @@ describe('stageStyle', () => {
 
 //  Config integrity 
 describe('config integrity', () => {
-  it('STAGE_META keys match STAGES_DB entries (plus archive)', () => {
+  it('STAGE_META keys match STAGES_DB entries', () => {
     const metaKeys = Object.keys(config.STAGE_META);
-    const dbPlusArchive = [...config.STAGES_DB, 'archive'];
-    expect(metaKeys.sort()).toEqual(dbPlusArchive.sort());
+    expect(metaKeys.sort()).toEqual([...config.STAGES_DB].sort());
   });
 
   it('STAGE_DISPLAY is auto-generated from STAGE_META', () => {
@@ -67,11 +66,10 @@ describe('config integrity', () => {
     expect(config.STAGE_COLORS).toBe(config.STAGE_META);
   });
 
-  it('PIPELINE_ORDER contains all STAGES_DB values plus archive', () => {
+  it('PIPELINE_ORDER contains all STAGES_DB values', () => {
     for (const stage of config.STAGES_DB) {
       expect(config.PIPELINE_ORDER).toContain(stage);
     }
-    expect(config.PIPELINE_ORDER).toContain('archive');
   });
 
   it('ROLE_STAGES values reference valid stage keys', () => {

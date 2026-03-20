@@ -329,6 +329,15 @@ if (!window._scoreboardClickBound) {
       case 'open-production':
         if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['in_production']);
         break;
+      case 'open-pranav':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled']);
+        break;
+      case 'open-chitra':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready', 'awaiting_approval', 'awaiting_brand_input']);
+        break;
+      case 'open-runway':
+        if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['scheduled']);
+        break;
       case 'open-ready':
         if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']);
         break;
@@ -659,17 +668,26 @@ function getScoreboardData() {
   });
   var chitraCount = chitraPosts.length;
   var chitraOverdue = chitraPosts.filter(function(p) {
-    return p.stage !== 'ready' && p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+    return p.stage !== 'ready' &&
+      p.status_changed_at !== null &&
+      p.status_changed_at !== undefined &&
+      new Date(p.status_changed_at) < threeDaysAgo;
   }).length;
 
   // FIX 9: Approval = awaiting_approval within 3 days
   var approvalCount = posts.filter(function(p) {
-    return p.stage === 'awaiting_approval' && p.status_changed_at && new Date(p.status_changed_at) >= threeDaysAgo;
+    return p.stage === 'awaiting_approval' && (
+      !p.status_changed_at ||
+      new Date(p.status_changed_at) >= threeDaysAgo
+    );
   }).length;
 
   // FIX 10: Input = awaiting_brand_input within 3 days
   var inputCount = posts.filter(function(p) {
-    return p.stage === 'awaiting_brand_input' && p.status_changed_at && new Date(p.status_changed_at) >= threeDaysAgo;
+    return p.stage === 'awaiting_brand_input' && (
+      !p.status_changed_at ||
+      new Date(p.status_changed_at) >= threeDaysAgo
+    );
   }).length;
 
   console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit });
@@ -769,43 +787,43 @@ function renderScoreboard() {
     var html = '';
 
     /* -- RUNWAY SECTION -- */
-    html += '<div class="dash-section">';
+    html += '<div class="dash-section" data-action="open-runway">';
     html += '<div class="dash-section-header">';
     html += '<span class="dash-section-label">RUNWAY</span>';
     html += '<span class="status-badge status-badge--' + runwayColor + '"><span class="status-badge-dot"></span>' + runwayStatus + '</span>';
     html += '</div>';
-    html += '<div class="dash-big-num dash-big-num--' + (runwayColor === 'crit' ? 'red' : runwayColor === 'warn' ? 'amber' : 'green') + '" id="runway-count">' + runwayCount + '</div>';
+    html += '<div class="dash-big-num dash-big-num--' + (runwayColor === 'crit' ? 'red' : runwayColor === 'warn' ? 'amber' : 'green') + ' sb-tappable" id="runway-count" data-action="open-runway">' + runwayCount + '</div>';
     html += '<div class="dash-descriptor">posts scheduled from today</div>';
     html += dotBar(runwayCount, 21, 'var(--amber)');
     html += '</div>';
 
     /* -- PRANAV SECTION -- */
-    html += '<div class="dash-section" data-action="open-production">';
+    html += '<div class="dash-section" data-action="open-pranav">';
     html += '<div class="dash-section-header">';
     html += '<span class="dash-section-label" style="font-size:11px">PRANAV</span>';
     html += '<span class="dash-section-meta">Creative &middot; Inventory</span>';
     html += '</div>';
     html += '<div class="person-body">';
     html += '<div class="person-left">';
-    html += '<div class="dash-medium-num" style="color:' + pranavNumColor + '">' + pranavDisplay + '</div>';
+    html += '<div class="dash-medium-num sb-tappable" style="color:' + pranavNumColor + '" data-action="open-pranav">' + pranavDisplay + '</div>';
     html += smallDotBar(Math.min(pranavInSystem, 20), 20, 'var(--amber)');
     html += '</div>';
     html += '<div class="person-right">';
     html += '<div class="person-right-title">' + pranavInSystem + ' of ' + pranavTarget + ' in system</div>';
     html += '</div>';
     html += '</div>';
-    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-production" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'in_production\'])">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
+    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-pranav" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\',\'scheduled\'])">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
     html += '</div>';
 
     /* -- CHITRA SECTION -- */
-    html += '<div class="dash-section" data-action="open-ready">';
+    html += '<div class="dash-section" data-action="open-chitra">';
     html += '<div class="dash-section-header">';
     html += '<span class="dash-section-label" style="font-size:11px">CHITRA</span>';
     html += '<span class="dash-section-meta">Servicing &middot; Dispatch</span>';
     html += '</div>';
     html += '<div class="person-body">';
     html += '<div class="person-left">';
-    html += '<div class="dash-medium-num" style="color:var(--green)">' + chitraCount + '</div>';
+    html += '<div class="dash-medium-num sb-tappable" style="color:var(--green)" data-action="open-chitra">' + chitraCount + '</div>';
     html += smallDotBar(chitraCount, 20, 'var(--green)');
     html += '</div>';
     html += '<div class="person-right">';
@@ -817,7 +835,7 @@ function renderScoreboard() {
     }
     html += '</div>';
     html += '</div>';
-    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-ready" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\'])">&rarr;&nbsp;&nbsp;&nbsp;SEND NOW</button>';
+    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-chitra" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\'])">&rarr;&nbsp;&nbsp;&nbsp;SEND NOW</button>';
     html += '</div>';
 
     /* -- CLIENT SECTION -- */
@@ -827,14 +845,14 @@ function renderScoreboard() {
     // Approval cell
     html += '<div class="client-cell" data-action="open-approval">';
     html += '<div class="client-cell-label">APPROVAL</div>';
-    html += '<div class="client-cell-num' + (approval > 0 ? ' client-cell-num--red' : '') + '">' + approval + '</div>';
+    html += '<div class="client-cell-num sb-tappable' + (approval > 0 ? ' client-cell-num--red' : '') + '" data-action="open-approval">' + approval + '</div>';
     html += '<div class="client-cell-sub">awaiting client</div>';
     html += clientDots(approval, 5, 'var(--red)');
     html += '</div>';
     // Input cell
     html += '<div class="client-cell" data-action="open-input">';
     html += '<div class="client-cell-label">INPUT DUE</div>';
-    html += '<div class="client-cell-num' + (input > 0 ? ' client-cell-num--red' : '') + '">' + input + '</div>';
+    html += '<div class="client-cell-num sb-tappable' + (input > 0 ? ' client-cell-num--red' : '') + '" data-action="open-input">' + input + '</div>';
     html += '<div class="client-cell-sub">input missing</div>';
     html += clientDots(input, 5, 'var(--red)');
     html += '</div>';
