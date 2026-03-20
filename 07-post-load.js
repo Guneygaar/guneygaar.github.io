@@ -1284,6 +1284,16 @@ function buildPostCard(p, listKey) {
 
 
 // -- Pipeline card builder ----------------------
+function showChaseToast(msg) {
+  var toast = document.getElementById('chase-toast');
+  if (!toast) return;
+  toast.textContent = msg || '-> Copied to clipboard';
+  toast.classList.add('visible');
+  setTimeout(function() {
+    toast.classList.remove('visible');
+  }, 1800);
+}
+
 function _pipelineStageKey(stage) {
   var s = stage || '';
   if (s === 'in_production') return 'production';
@@ -1339,6 +1349,23 @@ function buildPipelineCard(p, listKey) {
   var dotCls = 'status-dot';
   if (sk) dotCls += ' sd-' + sk;
 
+  // Chase button for awaiting_approval posts waiting >= 3 days
+  var chaseHtml = '';
+  if (stage === 'awaiting_approval') {
+    var now = new Date();
+    var changed = p.status_changed_at ? new Date(p.status_changed_at) : null;
+    var daysWaiting = changed ? Math.floor((now - changed) / (1000*60*60*24)) : 0;
+    if (daysWaiting >= 3) {
+      var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'recently';
+      var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance \uD83D\uDE4F';
+      chaseHtml = '<div class="chase-btn" onclick="event.stopPropagation(); copyChase(\'' + encodeURIComponent(chaseMsg) + '\')">' +
+        '<span class="chase-arrow">-></span>' +
+        '<span class="chase-label">Chase</span>' +
+        '<span class="chase-days">' + daysWaiting + 'd</span>' +
+        '</div>';
+    }
+  }
+
   return '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
     '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
     '<span class="pc-body">' +
@@ -1349,6 +1376,7 @@ function buildPipelineCard(p, listKey) {
       '<span class="' + badgeCls + '">' + badgeText + '</span>' +
       '<span class="' + dotCls + '"></span>' +
     '</span>' +
+    chaseHtml +
   '</div>';
 }
 
@@ -1727,12 +1755,27 @@ function _renderPipelineInner() {
     var selectBtn = (stage === 'ready')
       ? '<button class="batch-select-btn" id="batch-select-btn" onclick="toggleBatchMode()">Select</button>'
       : '';
+    // Chase All button for awaiting_approval group
+    var chaseAllBtn = '';
+    if (stage === 'awaiting_approval') {
+      var nowCA = new Date();
+      var threeDaysAgoCA = new Date();
+      threeDaysAgoCA.setDate(threeDaysAgoCA.getDate() - 3);
+      var overdueCount = posts.filter(function(p) {
+        if (!p.status_changed_at) return true;
+        return new Date(p.status_changed_at) < threeDaysAgoCA;
+      }).length;
+      if (overdueCount >= 1) {
+        chaseAllBtn = '<button class="chase-all-btn" onclick="chaseAll()" id="chase-all-btn">Chase All</button>';
+      }
+    }
     return `
       <div class="group-hdr">
-        <span class="group-label" data-stage="${esc(sk)}">${esc(label)}</span>
+        <div class="group-label ${esc(stage)}">${esc(label)}</div>
         <div style="display:flex;align-items:center;gap:8px">
           ${selectBtn}
-          <span class="group-count">${posts.length}</span>
+          ${chaseAllBtn}
+          <div class="group-count">${posts.length}</div>
         </div>
       </div>
       <div class="row-list post-list">
@@ -2309,3 +2352,72 @@ document.addEventListener('DOMContentLoaded', function() {
     executeBatchAction('awaiting_brand_input');
   });
 });
+
+// ===============================================
+// Chase functions
+// ===============================================
+function copyChase(encodedMsg) {
+  var msg = decodeURIComponent(encodedMsg);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(function() {
+      showChaseToast('-> Copied to clipboard');
+    }).catch(function() {
+      fallbackCopy(msg);
+    });
+  } else {
+    fallbackCopy(msg);
+  }
+}
+
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try {
+    document.execCommand('copy');
+    showChaseToast('-> Copied to clipboard');
+  } catch(e) {
+    showChaseToast('-> Copy failed');
+  }
+  document.body.removeChild(ta);
+}
+
+function chaseAll() {
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var now = new Date();
+  var threeDaysAgo = new Date();
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+  var overduePosts = posts.filter(function(p) {
+    if (p.stage !== 'awaiting_approval') return false;
+    if (!p.status_changed_at) return true;
+    return new Date(p.status_changed_at) < threeDaysAgo;
+  });
+
+  if (overduePosts.length === 0) return;
+
+  var lines = overduePosts.map(function(p) {
+    var sentDate = 'recently';
+    if (p.status_changed_at) {
+      var d = new Date(p.status_changed_at);
+      sentDate = d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+    }
+    return '- ' + (p.title || 'Untitled') + ' (sent ' + sentDate + ')';
+  });
+
+  var msg = 'Hi! Following up on ' + overduePosts.length + ' posts awaiting approval:\n' + lines.join('\n') + '\nPlease review when you get a chance \uD83D\uDE4F';
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(msg).then(function() {
+      showChaseToast('-> ' + overduePosts.length + ' posts copied');
+    }).catch(function() {
+      fallbackCopy(msg);
+    });
+  } else {
+    fallbackCopy(msg);
+  }
+}
