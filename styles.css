@@ -1084,20 +1084,14 @@ a:hover { text-decoration: underline; }
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
-  padding: 28px 18px 18px 18px;
-  border: 3px solid #333;
-  border-radius: 12px;
+  padding: 32px 22px 24px 22px;
+  border: none;
+  border-radius: 14px;
   background:
-    radial-gradient(rgba(255,255,255,0.012) 1px, transparent 1px),
-    linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 8%, #111 20%, #0a0a0a 80%, #111 92%, #1a1a1a 100%);
-  background-size: 4px 4px, 100% 100%;
+    url('/assets/industrial-frame.svg') center / 100% 100% no-repeat;
   box-shadow:
-    0 0 0 1px #000,
-    0 0 0 4px #1a1a1a,
-    0 0 0 5px #000,
-    inset 0 2px 4px rgba(255,255,255,0.08),
-    inset 0 -2px 4px rgba(0,0,0,0.5),
-    0 8px 30px rgba(0,0,0,0.8);
+    0 6px 24px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(0,0,0,0.9);
   font-family: 'Roboto Mono', monospace;
   color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
@@ -1105,27 +1099,24 @@ a:hover { text-decoration: underline; }
 .pcs-scoreboard::before {
   content: "";
   position: absolute;
-  inset: 6px;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 6px;
-  background: linear-gradient(180deg, #0e0e0e, #060606);
+  inset: 0;
+  border-radius: 14px;
   box-shadow:
-    inset 0 4px 12px rgba(0,0,0,0.95),
-    inset 0 -4px 12px rgba(0,0,0,0.95),
-    inset 0 0 0 1px rgba(0,0,0,0.8);
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(255,255,255,0.04);
   z-index: 0;
   pointer-events: none;
 }
 .pcs-scoreboard::after {
   content: "";
   position: absolute;
-  inset: 12px;
-  border-radius: 4px;
+  inset: 20px 18px;
+  border-radius: 6px;
   box-shadow:
-    inset 0 8px 20px rgba(0,0,0,0.9),
-    inset 0 -8px 20px rgba(0,0,0,0.9),
-    inset 4px 0 12px rgba(0,0,0,0.6),
-    inset -4px 0 12px rgba(0,0,0,0.6);
+    inset 0 6px 16px rgba(0,0,0,0.95),
+    inset 0 -6px 16px rgba(0,0,0,0.95),
+    inset 4px 0 10px rgba(0,0,0,0.7),
+    inset -4px 0 10px rgba(0,0,0,0.7);
   z-index: 0;
   pointer-events: none;
 }
@@ -1136,14 +1127,15 @@ a:hover { text-decoration: underline; }
 
 /* ── 0b. Inner Cavity ── */
 .sb-inner {
-  border: 1px solid rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.03);
   border-radius: 4px;
-  background:
-    linear-gradient(180deg, #080808, #030303);
-  background-size: 100% 100%;
+  background: #050505;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-shadow:
+    inset 0 2px 8px rgba(0,0,0,0.9),
+    inset 0 -2px 8px rgba(0,0,0,0.9);
 }
 
 /* ── 1. Critical Panel ── */
@@ -1152,15 +1144,11 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   padding: 8px 6px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%),
-    radial-gradient(circle at 50% 50%, rgba(255,0,0,0.3), transparent 65%),
-    linear-gradient(180deg, #1e0808, #0e0404);
+    radial-gradient(circle at 50% 50%, rgba(255,0,0,0.25), #100000);
   border: 1px solid rgba(255,255,255,0.04);
-  border-bottom: 1px solid rgba(255,60,60,0.12);
+  border-bottom: 1px solid rgba(255,60,60,0.1);
   box-shadow:
-    inset 0 1px 3px rgba(255,255,255,0.04),
-    inset 0 -16px 24px rgba(0,0,0,0.95),
-    inset 0 0 8px rgba(255,0,0,0.15);
+    inset 0 0 20px rgba(0,0,0,0.9);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1217,16 +1205,11 @@ a:hover { text-decoration: underline; }
   padding: 12px 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%),
-    linear-gradient(0deg, rgba(0,0,0,0.5), transparent 30%),
-    linear-gradient(180deg, #0c0c0c, #040404);
-  background-size: auto, auto, 100% 100%;
-  background-clip: padding-box;
+  background: #080808;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    inset 0 -10px 18px rgba(0,0,0,0.9);
-  border: 1px solid rgba(255,255,255,0.06);
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    inset 0 -8px 14px rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.05);
 }
 .sb-main-cell:first-child {
   filter: contrast(1.05) brightness(1.02);
@@ -1289,16 +1272,11 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   opacity: 0.75;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%),
-    linear-gradient(0deg, rgba(0,0,0,0.5), transparent 30%),
-    linear-gradient(180deg, #0a0a0a, #030303);
-  background-size: auto, auto, 100% 100%;
-  background-clip: padding-box;
+  background: #060606;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    inset 0 -10px 18px rgba(0,0,0,0.9);
-  border: 1px solid rgba(255,255,255,0.06);
+    inset 0 1px 0 rgba(255,255,255,0.03),
+    inset 0 -8px 14px rgba(0,0,0,0.85);
+  border: 1px solid rgba(255,255,255,0.05);
   filter: brightness(0.9) contrast(0.9);
 }
 .sb-client-cell:active { opacity: 0.7; }
@@ -1342,17 +1320,10 @@ a:hover { text-decoration: underline; }
   justify-content: space-between;
   padding: 0 12px;
   letter-spacing: 0.5px;
-  background:
-    radial-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.015), transparent 40%),
-    linear-gradient(180deg, rgba(255,255,255,0.02), transparent 20%),
-    linear-gradient(0deg, rgba(0,0,0,0.4), transparent 30%),
-    linear-gradient(180deg, #060606, #020202);
-  background-size: 6px 6px, auto, auto, 100% 100%;
+  background: #060606;
   border-top: 1px solid rgba(255,255,255,0.04);
   box-shadow:
-    inset 0 2px 6px rgba(0,0,0,0.8),
-    inset 0 -4px 10px rgba(0,0,0,0.9);
+    inset 0 2px 6px rgba(0,0,0,0.8);
 }
 .sb-task-content {
   flex: 1;
