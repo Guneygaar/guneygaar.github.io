@@ -881,6 +881,25 @@ a:hover { text-decoration: underline; }
 .status-badge--green { color: var(--green); border-color: var(--green); }
 .status-badge--green .status-badge-dot { background: var(--green); }
 
+.status-badge--crit {
+  color: var(--red);
+  border-color: rgba(255,75,75,0.5);
+  background: var(--red-bg);
+  animation: criticalPulse 1.4s ease-in-out infinite;
+}
+.status-badge--crit .status-badge-dot { background: var(--red); }
+
+@keyframes criticalPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 6px rgba(255,75,75,0.4);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 14px rgba(255,75,75,0.8);
+  }
+}
+
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Big numbers */
@@ -894,6 +913,8 @@ a:hover { text-decoration: underline; }
 .dash-big-num--amber { color: var(--amber); }
 .dash-big-num--red { color: var(--red); }
 .dash-big-num--green { color: var(--green); }
+
+.sb-tappable { cursor: pointer; }
 
 .dash-medium-num {
   font-family: var(--mono);
@@ -3212,55 +3233,60 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .stage-strip {
   display: flex;
-  gap: 8px;
-  padding: 14px 20px;
+  gap: 6px;
+  padding: 12px 16px;
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1px dotted var(--dotline);
-  border-top: none;
-  border-left: none;
-  border-right: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
   -webkit-overflow-scrolling: touch;
-  white-space: nowrap;
-  min-width: 0;
-  width: 100%;
+  flex-wrap: nowrap;
 }
 .stage-strip::-webkit-scrollbar { display: none; }
 
 .stage-chip {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
-  border: 1px dotted;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  min-width: 72px;
   transition: background 0.15s;
-  font-family: var(--mono);
-  background: none;
 }
+.stage-chip:hover { background: var(--surface2); }
 .stage-chip.active { border-style: solid; }
+.stage-chip.active.all { border-color: rgba(255,255,255,0.3); background: var(--surface2); }
+.stage-chip.active.in_production { border-color: var(--amber); background: var(--amber-bg); }
+.stage-chip.active.ready { border-color: var(--green); background: var(--green-bg); }
+.stage-chip.active.awaiting_approval { border-color: var(--red); background: var(--red-bg); }
+.stage-chip.active.awaiting_brand_input { border-color: var(--purple); background: var(--purple-bg); }
+.stage-chip.active.scheduled { border-color: var(--cyan); background: var(--cyan-bg); }
+.stage-chip.active.published { border-color: var(--muted); }
+.stage-chip.active.parked { border-color: var(--muted); }
+.stage-chip.active.rejected { border-color: var(--red); }
 
 .stage-chip[data-stage="all"]        { color: #BBBBBB; border-color: rgba(255,255,255,0.2); }
 .stage-chip[data-stage="production"] { color: var(--amber); border-color: rgba(246,166,35,0.35); }
-.stage-chip[data-stage="production"].active { background: var(--amber-bg); }
+.stage-chip[data-stage="production"].active { background: var(--amber-bg); border-color: var(--amber); }
 .stage-chip[data-stage="ready"]      { color: var(--green); border-color: rgba(62,207,142,0.35); }
-.stage-chip[data-stage="ready"].active { background: var(--green-bg); }
+.stage-chip[data-stage="ready"].active { background: var(--green-bg); border-color: var(--green); }
 .stage-chip[data-stage="input"]      { color: var(--purple); border-color: rgba(155,135,245,0.35); }
-.stage-chip[data-stage="input"].active { background: var(--purple-bg); }
+.stage-chip[data-stage="input"].active { background: var(--purple-bg); border-color: var(--purple); }
 .stage-chip[data-stage="approval"]   { color: var(--red); border-color: rgba(255,75,75,0.35); }
-.stage-chip[data-stage="approval"].active { background: var(--red-bg); }
+.stage-chip[data-stage="approval"].active { background: var(--red-bg); border-color: var(--red); }
 .stage-chip[data-stage="scheduled"]  { color: var(--cyan); border-color: rgba(34,211,238,0.35); }
-.stage-chip[data-stage="scheduled"].active { background: var(--cyan-bg); }
+.stage-chip[data-stage="scheduled"].active { background: var(--cyan-bg); border-color: var(--cyan); }
 .stage-chip[data-stage="published"]  { color: var(--muted); border-color: var(--muted2); }
 
-.chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.chip-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; }
-.chip-count { font-size: 9px; font-weight: 700; background: rgba(255,255,255,0.07); padding: 1px 5px; min-width: 18px; text-align: center; }
+.chip-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.chip-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; }
+.chip-count { font-family: var(--mono); font-size: 16px; font-weight: 700; line-height: 1; }
 
 /* ═══════════════════════════════════════════════
    PIPELINE GROUP HEADER
