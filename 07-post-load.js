@@ -8,7 +8,7 @@ var _pipelineSearchOpen = false;
 
 function openPipelineSearch() {
   _pipelineSearchOpen = true;
-  var hdr = document.getElementById('pipeline-hdr');
+  var hdr = document.querySelector('.app-header');
   var bar = document.getElementById('pipeline-search-bar');
   if (hdr) hdr.classList.add('searching');
   if (bar) bar.classList.add('open');
@@ -20,7 +20,7 @@ function openPipelineSearch() {
 
 function closePipelineSearch() {
   _pipelineSearchOpen = false;
-  var hdr = document.getElementById('pipeline-hdr');
+  var hdr = document.querySelector('.app-header');
   var bar = document.getElementById('pipeline-search-bar');
   var results = document.getElementById('pipeline-search-results');
   var empty = document.getElementById('pipeline-search-empty');

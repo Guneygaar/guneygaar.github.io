@@ -184,6 +184,9 @@ function switchTab(btn) {
   // Update header title
   const titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.textContent = (tab === 'tasks') ? _getHeaderDate() : (_TAB_TITLES[tab] || tab);
+  // Show/hide pipeline search trigger based on active tab
+  var searchTrigger = document.getElementById('pipeline-search-trigger');
+  if (searchTrigger) searchTrigger.style.display = (tab === 'pipeline') ? '' : 'none';
   // Close pipeline search when leaving pipeline tab
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
   // Reset task chip filter when leaving tasks tab
