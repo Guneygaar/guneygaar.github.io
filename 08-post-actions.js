@@ -18,10 +18,10 @@ async function quickStage(postId, newStage) {
     const actor = resolveActor();
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
-    // Apply server response (includes DB-set status_changed_at)
+    // Apply server response
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
       if (server.stage) server.stage = toUiStage(server.stage);
@@ -141,7 +141,7 @@ async function clientApprove(postId, btn) {
     // scheduled -> owner remains unchanged (per ownership rules)
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), updated_by: 'Client' }),
+      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
@@ -162,7 +162,7 @@ async function submitClientChanges(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
@@ -175,7 +175,7 @@ async function clientAcknowledge(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
@@ -192,7 +192,7 @@ async function handleClientUpload(input, postId) {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ canva_link: url, stage: 'in_production', updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ canva_link: url, stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
@@ -615,12 +615,12 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
 
-    // Apply server response (includes DB-set status_changed_at)
+    // Apply server response
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
       if (server.stage) server.stage = toUiStage(server.stage);
