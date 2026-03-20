@@ -239,21 +239,21 @@
   <!-- legacy stat pills removed -->
 </div>
 
-<!-- BOTTOM NAVIGATION (global — outside all views so it persists across roles) -->
+<!-- BOTTOM NAVIGATION (global -- outside all views so it persists across roles) -->
 <nav class="bottom-nav" id="bottom-nav">
-  <button class="bnav-btn tab-btn active" data-tab="tasks" onclick="switchTab(this)">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    <span>My Tasks</span>
-    <span class="bnav-badge" id="badge-tasks" style="display:none"></span>
-  </button>
-  <button class="bnav-btn tab-btn" data-tab="pipeline" onclick="switchTab(this)">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-    <span>Pipeline</span>
-  </button>
-  <button class="bnav-btn tab-btn" data-tab="library" onclick="switchTab(this)">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span>Library</span>
-  </button>
+  <div class="nav-item tab-btn active" data-tab="tasks" onclick="switchTab(this)">
+    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="nav-label">My Tasks</span>
+    <span class="nav-badge" id="badge-tasks" style="display:none"></span>
+  </div>
+  <div class="nav-item tab-btn" data-tab="pipeline" onclick="switchTab(this)">
+    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    <span class="nav-label">Pipeline</span>
+  </div>
+  <div class="nav-item tab-btn" data-tab="library" onclick="switchTab(this)">
+    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span class="nav-label">Library</span>
+  </div>
 </nav>
 
 <!-- ══════════════════════════════════════════
@@ -683,18 +683,35 @@
 <!-- ══════════════════════════════════════════
      FAB — body level so fixed positioning is never clipped
 ══════════════════════════════════════════ -->
-<button class="fab" id="fab" onclick="toggleFabMenu()">+</button>
-<div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
-<div class="fab-menu-sheet" id="fab-menu-sheet">
-  <button class="fab-menu-item" id="fab-request-btn" onclick="openRequestSheet(); closeFabMenu()">
-    <span class="fab-menu-icon">📋</span> Create Request
-  </button>
-  <button class="fab-menu-item" onclick="openNewPostModal(); closeFabMenu()">
-    <span class="fab-menu-icon">✏</span> Create Post
-  </button>
-  <button class="fab-menu-item" id="fab-assign-task" onclick="event.stopPropagation(); closeFabMenu(); setTimeout(() => requestAnimationFrame(() => openAssignTaskFromFab()), 0)" style="display:none">
-    <span class="fab-menu-icon">📌</span> Assign Task
-  </button>
+<button class="fab" id="fab" onclick="toggleFabMenu()"><span class="fab-icon">+</span></button>
+
+<div class="fab-backdrop" id="fab-backdrop"></div>
+
+<div class="fab-menu" id="fab-menu">
+  <div class="fab-option fab-post" id="fab-create-post">
+    <div class="fab-option-label">Create Post</div>
+    <div class="fab-option-dot">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="15" height="15">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+      </svg>
+    </div>
+  </div>
+  <div class="fab-option fab-request" id="fab-create-request">
+    <div class="fab-option-label">Create Request</div>
+    <div class="fab-option-dot">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="15" height="15">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/>
+      </svg>
+    </div>
+  </div>
+  <div class="fab-option fab-task" id="fab-assign-task">
+    <div class="fab-option-label">Assign Task</div>
+    <div class="fab-option-dot">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="15" height="15">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+      </svg>
+    </div>
+  </div>
 </div>
 
 <script>
