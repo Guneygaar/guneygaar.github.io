@@ -1601,7 +1601,7 @@ function _renderPipelineInner() {
         <span class="group-label" data-stage="${esc(sk)}">${esc(label)}</span>
         <span class="group-count">${posts.length}</span>
       </div>
-      <div class="row-list">
+      <div class="row-list post-list">
         ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
       </div>`;
   }).join('');

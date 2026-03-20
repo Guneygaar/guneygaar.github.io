@@ -60,9 +60,9 @@ const PIPELINE_ORDER = [...STAGE_ORDER];
 const PIPELINE_RENDER_ORDER = [
   'awaiting_approval',
   'awaiting_brand_input',
-  'in_production',
-  'ready',
   'scheduled',
+  'ready',
+  'in_production',
 ];
 
 // Backward-compatible aliases
