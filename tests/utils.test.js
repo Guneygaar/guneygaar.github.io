@@ -14,7 +14,7 @@ function loadUtils() {
 
 const { getTitle, getPostId, parseDate, formatDate, esc, timeAgo } = loadUtils();
 
-// ─── getTitle ───────────────────────────────────
+//  getTitle 
 describe('getTitle', () => {
   it('returns title when present', () => {
     expect(getTitle({ title: 'My Post' })).toBe('My Post');
@@ -33,7 +33,7 @@ describe('getTitle', () => {
   });
 });
 
-// ─── getPostId ──────────────────────────────────
+//  getPostId 
 describe('getPostId', () => {
   it('returns post_id when present', () => {
     expect(getPostId({ post_id: 'POST-1' })).toBe('POST-1');
@@ -48,7 +48,7 @@ describe('getPostId', () => {
   });
 });
 
-// ─── parseDate ──────────────────────────────────
+//  parseDate 
 describe('parseDate', () => {
   it('returns null for null/undefined/empty', () => {
     expect(parseDate(null)).toBeNull();
@@ -67,7 +67,7 @@ describe('parseDate', () => {
   });
 });
 
-// ─── formatDate ─────────────────────────────────
+//  formatDate 
 describe('formatDate', () => {
   it('returns null for null input', () => {
     expect(formatDate(null)).toBeNull();
@@ -86,7 +86,7 @@ describe('formatDate', () => {
   });
 });
 
-// ─── esc ────────────────────────────────────────
+//  esc 
 describe('esc', () => {
   it('escapes ampersand', () => {
     expect(esc('a&b')).toBe('a&amp;b');
@@ -116,7 +116,7 @@ describe('esc', () => {
   });
 });
 
-// ─── timeAgo ────────────────────────────────────
+//  timeAgo 
 describe('timeAgo', () => {
   beforeEach(() => {
     vi.useFakeTimers();
