@@ -1104,7 +1104,7 @@ a:hover { text-decoration: underline; }
 .sb-inner {
   border: 1px solid rgba(255,255,255,0.05);
   background:
-    linear-gradient(180deg, #0a0a0a, #050505);
+    linear-gradient(180deg, #090909, #040404);
   background-size: 3px 3px, auto, 100% 100%;
   display: flex;
   flex-direction: column;
@@ -1116,7 +1116,7 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   padding: 8px 6px;
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.06), transparent 30%),
+    linear-gradient(180deg, rgba(255,255,255,0.05), transparent 35%),
     repeating-linear-gradient(
       90deg,
       rgba(255,255,255,0.02) 0px,
@@ -1130,8 +1130,8 @@ a:hover { text-decoration: underline; }
   border-bottom: 2px solid rgba(255,60,60,0.15);
   box-shadow:
     inset 0 2px 6px rgba(255,255,255,0.05),
-    inset 0 -20px 30px rgba(0,0,0,0.95),
-    inset 0 0 12px rgba(255,0,0,0.25);
+    inset 0 -24px 32px rgba(0,0,0,0.95),
+    inset 0 0 10px rgba(255,0,0,0.2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1171,11 +1171,11 @@ a:hover { text-decoration: underline; }
   width: 4px;
   background: linear-gradient(
     180deg,
-    #111 0%,
-    #777 50%,
-    #111 100%
+    #1a1a1a 0%,
+    #6a6a6a 50%,
+    #1a1a1a 100%
   );
-  opacity: 0.9;
+  opacity: 1;
   box-shadow:
     inset 0 0 10px rgba(0,0,0,0.9);
 }
@@ -1202,9 +1202,11 @@ a:hover { text-decoration: underline; }
     ),
     linear-gradient(180deg, #0e0e0e, #040404);
   background-size: 6px 6px, auto, auto, auto, auto, 100% 100%;
+  background-clip: padding-box;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -12px 18px rgba(0,0,0,0.95);
+    inset 0 0 0 1px rgba(255,255,255,0.025),
+    inset 0 2px 4px rgba(255,255,255,0.04),
+    inset 0 -14px 22px rgba(0,0,0,0.95);
   border: 1px solid rgba(255,255,255,0.08);
 }
 .sb-main-cell:first-child {
@@ -1228,9 +1230,11 @@ a:hover { text-decoration: underline; }
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  -webkit-font-smoothing: none;
   letter-spacing: 1px;
   text-shadow:
-    0 0 6px currentColor;
+    0 0 4px currentColor;
   filter: contrast(1.25) brightness(1.05);
 }
 .sb-main-num.gold { color: #FFD700; }
@@ -1280,9 +1284,11 @@ a:hover { text-decoration: underline; }
     ),
     linear-gradient(180deg, #0b0b0b, #030303);
   background-size: 6px 6px, auto, auto, auto, auto, 100% 100%;
+  background-clip: padding-box;
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -12px 18px rgba(0,0,0,0.95);
+    inset 0 0 0 1px rgba(255,255,255,0.025),
+    inset 0 2px 4px rgba(255,255,255,0.04),
+    inset 0 -14px 22px rgba(0,0,0,0.95);
   border: 1px solid rgba(255,255,255,0.08);
   filter: brightness(0.9) contrast(0.9);
 }
