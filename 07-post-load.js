@@ -3,6 +3,108 @@
 =============================================== */
 console.log("LOADED:", "07-post-load.js");
 
+// -- Pipeline search state --
+var _pipelineSearchOpen = false;
+
+function openPipelineSearch() {
+  _pipelineSearchOpen = true;
+  var hdr = document.getElementById('pipeline-hdr');
+  var bar = document.getElementById('pipeline-search-bar');
+  if (hdr) hdr.classList.add('searching');
+  if (bar) bar.classList.add('open');
+  setTimeout(function() {
+    var input = document.getElementById('pipeline-search-input');
+    if (input) input.focus();
+  }, 200);
+}
+
+function closePipelineSearch() {
+  _pipelineSearchOpen = false;
+  var hdr = document.getElementById('pipeline-hdr');
+  var bar = document.getElementById('pipeline-search-bar');
+  var results = document.getElementById('pipeline-search-results');
+  var empty = document.getElementById('pipeline-search-empty');
+  var container = document.getElementById('pipeline-container');
+  var input = document.getElementById('pipeline-search-input');
+  if (hdr) hdr.classList.remove('searching');
+  if (bar) bar.classList.remove('open');
+  if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
+  if (empty) empty.classList.remove('visible');
+  if (container) container.classList.remove('search-dimmed');
+  if (input) input.value = '';
+}
+
+function handlePipelineSearch(query) {
+  var results = document.getElementById('pipeline-search-results');
+  var empty = document.getElementById('pipeline-search-empty');
+  var container = document.getElementById('pipeline-container');
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+
+  var pipelineStages = ['awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
+  var pipelinePosts = posts.filter(function(p) { return pipelineStages.indexOf(p.stage) > -1; });
+
+  if (!query || query.trim() === '') {
+    if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
+    if (empty) empty.classList.remove('visible');
+    if (container) container.classList.remove('search-dimmed');
+    return;
+  }
+
+  if (container) container.classList.add('search-dimmed');
+  var q = query.toLowerCase().trim();
+
+  var stageDisplayMap = {
+    'awaiting_approval': 'Approval',
+    'awaiting_brand_input': 'Input',
+    'scheduled': 'Scheduled',
+    'ready': 'Ready',
+    'in_production': 'Production'
+  };
+  var stageColorMap = {
+    'awaiting_approval': '#FF4B4B',
+    'awaiting_brand_input': '#9b87f5',
+    'scheduled': '#22D3EE',
+    'ready': '#3ECF8E',
+    'in_production': '#F6A623'
+  };
+
+  var matches = pipelinePosts.filter(function(p) {
+    return (p.title && p.title.toLowerCase().indexOf(q) > -1) ||
+           (p.content_pillar && p.content_pillar.toLowerCase().indexOf(q) > -1) ||
+           (p.owner && p.owner.toLowerCase().indexOf(q) > -1);
+  });
+
+  if (matches.length === 0) {
+    if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
+    if (empty) empty.classList.add('visible');
+    return;
+  }
+
+  if (empty) empty.classList.remove('visible');
+
+  var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  var html = matches.map(function(p) {
+    var highlighted = (p.title || '').replace(
+      new RegExp('(' + escaped + ')', 'gi'),
+      '<mark>$1</mark>'
+    );
+    var color = stageColorMap[p.stage] || '#555';
+    var badgeLabel = stageDisplayMap[p.stage] || p.stage;
+    var badgeClass = 'badge-' + p.stage;
+    var pillar = p.content_pillar || '';
+    return '<div class="pipeline-search-result-item" onclick="closePipelineSearch(); openPCS(\'' + p.id + '\')">' +
+      '<div class="result-stage-dot" style="background:' + color + '"></div>' +
+      '<div class="pipeline-result-body">' +
+        '<div class="pipeline-result-title">' + highlighted + '</div>' +
+        '<div class="pipeline-result-meta">' + pillar + '</div>' +
+      '</div>' +
+      '<span class="result-stage-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
+    '</div>';
+  }).join('');
+
+  if (results) { results.innerHTML = html; results.classList.add('visible'); }
+}
+
 // -- Batch selection state --
 var _batchMode = false;
 var _batchSelected = new Set();

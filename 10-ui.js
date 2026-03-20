@@ -184,9 +184,8 @@ function switchTab(btn) {
   // Update header title
   const titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.textContent = (tab === 'tasks') ? _getHeaderDate() : (_TAB_TITLES[tab] || tab);
-  // Show pipeline search icon only on Pipeline tab
-  const searchBtn = document.getElementById('pipeline-search-btn');
-  if (searchBtn) searchBtn.style.display = (tab === 'pipeline') ? 'flex' : 'none';
+  // Close pipeline search when leaving pipeline tab
+  if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
   // Reset task chip filter when leaving tasks tab
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
     window._taskFilter = null;
@@ -196,19 +195,7 @@ function switchTab(btn) {
   _fabAttachScroll();
 }
 
-function openPipelineSearch() {
-  const overlay = document.getElementById('pipeline-search-overlay');
-  if (overlay) {
-    overlay.style.display = 'flex';
-    const input = document.getElementById('pipeline-search-input');
-    if (input) { input.value = ''; input.focus(); }
-  }
-}
-
-function closePipelineSearch() {
-  const overlay = document.getElementById('pipeline-search-overlay');
-  if (overlay) overlay.style.display = 'none';
-}
+/* openPipelineSearch / closePipelineSearch / handlePipelineSearch moved to 07-post-load.js */
 
 function switchClientTab(tab) {
   document.querySelectorAll('.client-tab-btn').forEach(b => b.classList.remove('active'));

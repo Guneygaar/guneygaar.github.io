@@ -5404,3 +5404,177 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   opacity: 0.7;
 }
 .chase-all-btn:hover { opacity: 1; }
+
+/* ── Pipeline Expandable Search ── */
+.search-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s;
+}
+.search-icon-btn:hover { color: var(--text2); }
+
+.pipeline-search-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px 0 12px;
+  background: var(--bg);
+  transform: translateX(100%);
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.15s;
+  pointer-events: none;
+}
+.pipeline-search-bar.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+.pipeline-search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--text);
+  caret-color: var(--gold);
+}
+.pipeline-search-input::placeholder { color: var(--muted); font-size: 14px; }
+
+.pipeline-search-underline {
+  position: absolute;
+  bottom: 0;
+  left: 16px;
+  right: 16px;
+  height: 1px;
+  background: var(--dotline);
+  overflow: hidden;
+}
+.pipeline-search-underline::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gold);
+  transition: left 0.3s ease;
+}
+.pipeline-search-bar.open .pipeline-search-underline::after { left: 0; }
+
+.pipeline-search-cancel {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0 4px 0 0;
+  white-space: nowrap;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.pipeline-search-cancel:hover { color: var(--text2); }
+
+#pipeline-hdr.searching #pipeline-hdr-title {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+#pipeline-hdr.searching #pipeline-hdr-icons {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+#pipeline-hdr { overflow: hidden; position: relative; }
+
+.pipeline-search-results {
+  display: none;
+  flex-direction: column;
+  border-bottom: 1px dotted var(--dotline);
+}
+.pipeline-search-results.visible { display: flex; }
+
+.pipeline-search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--dotline);
+  transition: background 0.15s;
+}
+.pipeline-search-result-item:last-child { border-bottom: none; }
+.pipeline-search-result-item:hover { background: var(--surface2); }
+
+.result-stage-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pipeline-result-body { flex: 1; min-width: 0; }
+.pipeline-result-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.pipeline-result-title mark {
+  background: rgba(200,168,75,0.25);
+  color: var(--gold);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+.pipeline-result-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.result-stage-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.badge-awaiting_approval { color: var(--red); background: rgba(255,75,75,0.1); }
+.badge-awaiting_brand_input { color: var(--purple); background: rgba(155,135,245,0.1); }
+.badge-scheduled { color: var(--cyan); background: rgba(34,211,238,0.1); }
+.badge-ready { color: var(--green); background: rgba(62,207,142,0.1); }
+.badge-in_production { color: var(--amber); background: rgba(246,166,35,0.1); }
+
+.pipeline-search-empty {
+  display: none;
+  padding: 20px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  text-align: center;
+  border-bottom: 1px dotted var(--dotline);
+}
+.pipeline-search-empty.visible { display: block; }
+
+#pipeline-container.search-dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
