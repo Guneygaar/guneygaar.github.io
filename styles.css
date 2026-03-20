@@ -3293,8 +3293,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .stage-chip.active.awaiting_brand_input .chip-count { color: var(--purple); }
 .stage-chip.active.scheduled { border-color: var(--cyan); background: rgba(34,211,238,0.07); }
 .stage-chip.active.scheduled .chip-count { color: var(--cyan); }
-.stage-chip.active.published { border-color: var(--muted); }
-.stage-chip.active.published .chip-count { color: var(--text2); }
 
 /* Inactive count colors dimmed */
 .stage-chip.in_production .chip-count { color: var(--amber); opacity: 0.5; }
@@ -3314,7 +3312,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .group-label[data-stage="input"]      { color: var(--purple); }
 .group-label[data-stage="approval"]   { color: var(--red); }
 .group-label[data-stage="scheduled"]  { color: var(--cyan); }
-.group-label[data-stage="published"]  { color: var(--muted); }
 .group-count { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); background: var(--surface2); border: 1px solid var(--muted2); padding: 2px 8px; }
 
 /* ═══════════════════════════════════════════════
@@ -3358,7 +3355,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .resp-badge.cl-input   { background: var(--purple-bg); border: 1px solid rgba(155,135,245,0.35); color: var(--purple); }
 .resp-badge.cl-approval{ background: var(--red-bg); border: 1px solid rgba(255,75,75,0.35); color: var(--red); }
 .resp-badge.sched      { background: var(--cyan-bg); border: 1px solid rgba(34,211,238,0.35); color: var(--cyan); }
-.resp-badge.pub        { background: rgba(85,85,85,0.08); border: 1px solid var(--muted2); color: var(--muted); }
 
 .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .status-dot.sd-ready      { background: var(--green); }
