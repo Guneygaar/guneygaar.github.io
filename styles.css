@@ -3386,82 +3386,144 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ═══════════════════════════════════════════════
-   PIPELINE STAGE STRIP
+   PERSON STRIP
 ═══════════════════════════════════════════════ */
+.person-strip {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px dotted var(--dotline);
+}
+.person-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 9px 6px 8px;
+  cursor: pointer;
+  border-right: 1px dotted var(--dotline);
+  border-bottom: 2px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+.person-btn:last-child { border-right: none; }
+.person-btn:hover { background: var(--surface2); }
+.person-num {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  line-height: 1;
+  transition: color 0.15s;
+}
+.person-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.person-btn.active.client { border-bottom-color: var(--red); background: rgba(255,75,75,0.04); }
+.person-btn.active.chitra { border-bottom-color: var(--green); background: rgba(62,207,142,0.04); }
+.person-btn.active.pranav { border-bottom-color: var(--amber); background: rgba(246,166,35,0.04); }
+.person-btn.active.client .person-num,
+.person-btn.active.client .person-label { color: var(--red); }
+.person-btn.active.chitra .person-num,
+.person-btn.active.chitra .person-label { color: var(--green); }
+.person-btn.active.pranav .person-num,
+.person-btn.active.pranav .person-label { color: var(--amber); }
 
+/* ═══════════════════════════════════════════════
+   STAGE CHIPS -- Monday weight
+═══════════════════════════════════════════════ */
 .stage-strip {
   display: flex;
-  gap: 4px;
-  padding: 10px 10px;
-  overflow-x: hidden;
+  gap: 8px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
   border-bottom: 1px dotted var(--dotline);
+  -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
-  width: 100%;
 }
+.stage-strip::-webkit-scrollbar { display: none; }
 
 .stage-chip {
   display: flex;
   flex-direction: column;
-  padding: 7px 0 7px 8px;
-  background: #0d0d0d;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-left: 2px solid transparent;
-  border-radius: 5px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 14px 14px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  flex: 1;
-  min-width: 0;
+  flex-shrink: 0;
+  min-height: 80px;
+  gap: 10px;
+  border: none;
+  border-top: 3px solid transparent;
+  background: #141414;
+  transition: background 0.15s;
   width: auto;
-  gap: 4px;
-  transition: border-color 0.15s, background 0.15s;
+  min-width: 80px;
 }
-.stage-chip:hover { background: #141414; }
+.stage-chip:hover { background: #1c1c1c; }
 
 .chip-count {
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1;
-  color: var(--text2);
-  opacity: 0.45;
-  flex: none;
+  letter-spacing: -1px;
+  opacity: 0.4;
 }
-
 .chip-label {
   font-family: var(--mono);
-  font-size: 6px;
-  letter-spacing: 0.08em;
+  font-size: 7px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--muted);
   font-weight: 500;
-  flex: none;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  flex: none;
 }
 
-/* Inactive left border hints */
-.stage-chip.all { border-left-color: rgba(255,255,255,0.12); }
-.stage-chip.awaiting_approval { border-left-color: rgba(255,75,75,0.2); }
-.stage-chip.awaiting_brand_input { border-left-color: rgba(155,135,245,0.2); }
-.stage-chip.scheduled { border-left-color: rgba(34,211,238,0.2); }
-.stage-chip.ready { border-left-color: rgba(62,207,142,0.2); }
-.stage-chip.in_production { border-left-color: rgba(246,166,35,0.2); }
+/* Inactive chip colors */
+.stage-chip.all { border-top-color: rgba(255,255,255,0.2); }
+.stage-chip.all .chip-count { color: var(--text2); }
+.stage-chip.awaiting_approval { border-top-color: rgba(255,75,75,0.4); }
+.stage-chip.awaiting_approval .chip-count { color: var(--red); }
+.stage-chip.awaiting_brand_input { border-top-color: rgba(155,135,245,0.4); }
+.stage-chip.awaiting_brand_input .chip-count { color: var(--purple); }
+.stage-chip.scheduled { border-top-color: rgba(34,211,238,0.4); }
+.stage-chip.scheduled .chip-count { color: var(--cyan); }
+.stage-chip.ready { border-top-color: rgba(62,207,142,0.4); }
+.stage-chip.ready .chip-count { color: var(--green); }
+.stage-chip.in_production { border-top-color: rgba(246,166,35,0.4); }
+.stage-chip.in_production .chip-count { color: var(--amber); }
 
-/* Active states — color only, no size change */
-.stage-chip.active { background: #141414; }
-.stage-chip.active.all { border-left-color: rgba(255,255,255,0.5); }
-.stage-chip.active.all .chip-count { color: var(--text); opacity: 1; }
-.stage-chip.active.awaiting_approval { border-left-color: var(--red); }
-.stage-chip.active.awaiting_approval .chip-count { color: var(--red); opacity: 1; }
-.stage-chip.active.awaiting_brand_input { border-left-color: var(--purple); }
-.stage-chip.active.awaiting_brand_input .chip-count { color: var(--purple); opacity: 1; }
-.stage-chip.active.scheduled { border-left-color: var(--cyan); }
-.stage-chip.active.scheduled .chip-count { color: var(--cyan); opacity: 1; }
-.stage-chip.active.ready { border-left-color: var(--green); }
-.stage-chip.active.ready .chip-count { color: var(--green); opacity: 1; }
-.stage-chip.active.in_production { border-left-color: var(--amber); }
-.stage-chip.active.in_production .chip-count { color: var(--amber); opacity: 1; }
+/* Active chip -- full background fill */
+.stage-chip.active .chip-count { opacity: 1; }
+.stage-chip.active .chip-label { opacity: 0.85; }
+.stage-chip.active.all { background: #2a2a2a; border-top-color: rgba(255,255,255,0.7); }
+.stage-chip.active.all .chip-count { color: var(--text); }
+.stage-chip.active.all .chip-label { color: var(--text2); }
+.stage-chip.active.awaiting_approval { background: rgba(255,75,75,0.15); border-top-color: var(--red); }
+.stage-chip.active.awaiting_approval .chip-count { color: var(--red); }
+.stage-chip.active.awaiting_approval .chip-label { color: var(--red); }
+.stage-chip.active.awaiting_brand_input { background: rgba(155,135,245,0.15); border-top-color: var(--purple); }
+.stage-chip.active.awaiting_brand_input .chip-count { color: var(--purple); }
+.stage-chip.active.awaiting_brand_input .chip-label { color: var(--purple); }
+.stage-chip.active.scheduled { background: rgba(34,211,238,0.12); border-top-color: var(--cyan); }
+.stage-chip.active.scheduled .chip-count { color: var(--cyan); }
+.stage-chip.active.scheduled .chip-label { color: var(--cyan); }
+.stage-chip.active.ready { background: rgba(62,207,142,0.12); border-top-color: var(--green); }
+.stage-chip.active.ready .chip-count { color: var(--green); }
+.stage-chip.active.ready .chip-label { color: var(--green); }
+.stage-chip.active.in_production { background: rgba(246,166,35,0.12); border-top-color: var(--amber); }
+.stage-chip.active.in_production .chip-count { color: var(--amber); }
+.stage-chip.active.in_production .chip-label { color: var(--amber); }
 
 /* ═══════════════════════════════════════════════
    PIPELINE GROUP HEADER

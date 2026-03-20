@@ -7,6 +7,9 @@ console.log("LOADED:", "07-post-load.js");
 var _batchMode = false;
 var _batchSelected = new Set();
 
+// -- Person filter state --
+var _activePerson = null;
+
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
@@ -1376,6 +1379,40 @@ function updatePipelineChipCounts() {
   }
 }
 
+// -- Person strip count updater ------------------
+function updatePersonStripCounts() {
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var clientCount = posts.filter(function(p) {
+    return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
+  }).length;
+  var chitraCount = posts.filter(function(p) {
+    return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
+  }).length;
+  var pranavCount = posts.filter(function(p) {
+    return p.stage === 'in_production';
+  }).length;
+  var clientEl = document.getElementById('person-num-client');
+  var chitraEl = document.getElementById('person-num-chitra');
+  var pranavEl = document.getElementById('person-num-pranav');
+  if (clientEl) clientEl.textContent = clientCount;
+  if (chitraEl) chitraEl.textContent = chitraCount;
+  if (pranavEl) pranavEl.textContent = pranavCount;
+}
+
+// -- Person filter handler -----------------------
+function filterPipelineByPerson(person) {
+  if (_activePerson === person) {
+    _activePerson = null;
+    document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
+  } else {
+    _activePerson = person;
+    document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
+    var btn = document.getElementById('person-btn-' + person);
+    if (btn) btn.classList.add('active');
+  }
+  renderPipeline();
+}
+
 // -- Pipeline stage chip click handler ----------
 function filterPipelineByChip(stage) {
   var strip = document.getElementById('stage-strip');
@@ -1627,9 +1664,19 @@ function _renderPipelineInner() {
   const base = allPosts.filter(p => {
     return PIPELINE_RENDER_ORDER.includes(p.stage || '');
   });
-  const source = activeFilter && Array.isArray(activeFilter)
+  var stageFiltered = activeFilter && Array.isArray(activeFilter)
     ? base.filter(p => activeFilter.includes(p.stage || ''))
     : base;
+
+  // -- Person filter --
+  var source = stageFiltered;
+  if (_activePerson === 'client') {
+    source = stageFiltered.filter(function(p) { return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
+  } else if (_activePerson === 'chitra') {
+    source = stageFiltered.filter(function(p) { return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
+  } else if (_activePerson === 'pranav') {
+    source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
+  }
 
   // -- PRIORITY SORT: daysInStage DESC -> targetDate ASC -> created_at ASC --
   function prioritySort(posts) {
@@ -1699,6 +1746,7 @@ function _renderPipelineInner() {
 
   // -- Update chip counts from rendered group headers --
   updatePipelineChipCounts();
+  updatePersonStripCounts();
 
   // -- GLOBAL EMPTY STATE (filtered view with no results) --
   if (activeFilter && stages.length === 0) {
