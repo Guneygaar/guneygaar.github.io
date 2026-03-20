@@ -591,6 +591,25 @@ function _ttTruncate(str, n = 42) {
   return str.length > n ? str.slice(0, n) + '\u2026' : str;
 }
 
+// B-02 FIX: Detect failed_publish = scheduled posts whose target_date is in the past
+function _ttFailedPublish() {
+  var todayStr = new Date().toISOString().split('T')[0];
+  return allPosts
+    .filter(function(p) { return p.stage === 'scheduled' && p.target_date && p.target_date < todayStr; })
+    .sort(function(a, b) { return (a.target_date || '') < (b.target_date || '') ? -1 : 1; });
+}
+
+// B-01 FIX: Check if awaiting_approval posts are aging (≥ 2 days in stage)
+function _ttAgingAwaiting() {
+  var twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  return allPosts.filter(function(p) {
+    return p.stage === 'awaiting_approval' &&
+      p.status_changed_at &&
+      new Date(p.status_changed_at) < twoDaysAgo;
+  });
+}
+
 function getTopTask() {
   const postMap = Object.fromEntries(
     allPosts.map(p => [getPostId(p), p])
@@ -605,7 +624,13 @@ function getTopTask() {
   const email = localStorage.getItem('hinglish_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
-  // 1. ASSIGNED TASKS (highest priority for all roles)
+  // B-02 FIX: PRIORITY 1 — Failed publish (scheduled post past target_date) is same-day emergency
+  const failedPub = _ttFailedPublish();
+  if (failedPub.length) {
+    return { type: 'failed_publish', text: 'FIX PUBLISH — ' + getTitle(failedPub[0]), postId: getPostId(failedPub[0]) };
+  }
+
+  // 2. ASSIGNED TASKS (high priority for all roles)
   const myTasks = (window.allTasks || [])
     .filter(t => !t.done && _ttIsMine(t, role, emailPrefix))
     .sort(_ttOldestFirst);
@@ -616,7 +641,7 @@ function getTopTask() {
     return { type: 'assigned', text: title ? msg + ' \u2014 ' + _ttTruncate(title) : msg, postId: t.post_id || null };
   }
 
-  // 2. ROLE-BASED PRIORITY
+  // 3. ROLE-BASED PRIORITY
 
   if (role === 'pranav') {
     const prod = _ttByStage('in_production');
@@ -625,14 +650,25 @@ function getTopTask() {
   }
 
   if (role === 'chitra') {
+    const ready = _ttByStage('ready');
+    const agingAwaiting = _ttAgingAwaiting();
+
+    // B-01 FIX: When aging awaiting exists, distinguish between FOLLOW UP + SEND vs FOLLOW UP ONLY
+    if (agingAwaiting.length && ready.length) {
+      return { type: 'approval', text: 'Follow up + Send -- ' + getTitle(agingAwaiting[0]), postId: getPostId(agingAwaiting[0]) };
+    }
+    if (agingAwaiting.length && !ready.length) {
+      return { type: 'approval', text: 'Follow up only -- ' + getTitle(agingAwaiting[0]), postId: getPostId(agingAwaiting[0]) };
+    }
+
+    // Non-aging awaiting_approval — schedule/send first
     const approval = _ttByStage('awaiting_approval');
     if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
-    const ready = _ttByStage('ready');
     if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
     return null;
   }
 
-  // Admin  -  sees everything: approval -> ready -> production
+  // Admin  -  sees everything: failed_publish already handled above, then approval -> ready -> production
   const approval = _ttByStage('awaiting_approval');
   if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
   const ready = _ttByStage('ready');
@@ -810,9 +846,19 @@ function getScoreboardData() {
     );
   }).length;
 
-  console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit });
+  // B-02 FIX: Count failed_publish (scheduled posts past target_date)
+  var failedPublishCount = posts.filter(function(p) {
+    return p.stage === 'scheduled' && p.target_date && p.target_date < todayStr;
+  }).length;
+
+  // B-01 FIX: Count ready posts for Chitra context-aware action
+  var readyCount = c.ready || 0;
+
+  console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit, failedPublish: failedPublishCount });
 
   return {
+    failedPublish: failedPublishCount,
+    readyCount: readyCount,
     runway: {
       count: runwayCount
     },
@@ -901,10 +947,27 @@ function renderScoreboard() {
       return '<div class="client-cell-dots">' + dots + '</div>';
     }
 
+    // B-02 FIX: Failed publish count
+    var failedPublishCount = safe(data.failedPublish);
+    // B-01 FIX: Ready count for Chitra button context
+    var readyCount = safe(data.readyCount);
+
     // FIX 11: Do This Now
     var tasks = _buildDoThisNowItems();
 
     var html = '';
+
+    /* -- B-02 FIX: FAILED PUBLISH ALERT (highest priority, shown first) -- */
+    if (failedPublishCount > 0) {
+      html += '<div class="dash-section" style="background:rgba(255,75,75,0.08);border:1px solid rgba(255,75,75,0.3);border-radius:var(--r-md)">';
+      html += '<div class="dash-section-header">';
+      html += '<span class="dash-section-label" style="color:var(--red)">PUBLISH FAILED</span>';
+      html += '<span class="status-badge status-badge--crit"><span class="status-badge-dot"></span>EMERGENCY</span>';
+      html += '</div>';
+      html += '<div class="dash-big-num dash-big-num--red">' + failedPublishCount + '</div>';
+      html += '<div class="dash-descriptor" style="color:var(--red)">scheduled post' + (failedPublishCount !== 1 ? 's' : '') + ' missed target date — fix before sending new content</div>';
+      html += '</div>';
+    }
 
     /* -- RUNWAY SECTION -- */
     html += '<div class="dash-section" data-action="open-runway">';
@@ -955,7 +1018,9 @@ function renderScoreboard() {
     }
     html += '</div>';
     html += '</div>';
-    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-chitra" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\'])">&rarr;&nbsp;&nbsp;&nbsp;SEND NOW</button>';
+    // B-01 FIX: Chitra button label reflects available actions — only say SEND when ready > 0
+    var chitraBtnLabel = readyCount > 0 ? 'SEND NOW' : (chitraOverdue > 0 ? 'FOLLOW UP' : 'VIEW ALL');
+    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-chitra" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\'])">&rarr;&nbsp;&nbsp;&nbsp;' + chitraBtnLabel + '</button>';
     html += '</div>';
 
     /* -- CLIENT SECTION -- */
@@ -998,6 +1063,22 @@ function _buildDoThisNowItems() {
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
+  // B-02 FIX: PRIORITY 0 — Failed publish items (scheduled posts past target_date)
+  var failedPub = _ttFailedPublish();
+  for (var fp = 0; fp < failedPub.length && items.length < 3; fp++) {
+    var fpPost = failedPub[fp];
+    var daysMissed = Math.floor((new Date(todayStr) - new Date(fpPost.target_date)) / (1000*60*60*24));
+    items.push({
+      title: 'FIX PUBLISH — ' + getTitle(fpPost),
+      meta: 'Missed by ' + daysMissed + ' day' + (daysMissed !== 1 ? 's' : '') + ' · revenue at risk',
+      postId: getPostId(fpPost),
+      color: 'var(--red)',
+      urgency: 3,
+      urgColor: 'var(--red)',
+      metaRed: true
+    });
+  }
+
   // 1. Manual tasks first (sorted by due_date ascending)
   var manualTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).sort(function(a, b) {
     var ad = a.due_date || '9999-12-31';
@@ -1027,19 +1108,19 @@ function _buildDoThisNowItems() {
   }
 
   // 2. Auto-generated: overdue client posts
-  var overdueClientPosts = allPosts.filter(function(p) {
-    return ['awaiting_approval', 'awaiting_brand_input'].includes(p.stage) &&
+  // B-04 FIX: Split awaiting_approval (actionable chase) from awaiting_brand_input (informational)
+  var overdueApprovalPosts = allPosts.filter(function(p) {
+    return p.stage === 'awaiting_approval' &&
       p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
   }).sort(function(a, b) {
     return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
   });
-  for (var c = 0; c < overdueClientPosts.length && items.length < 7; c++) {
-    var op = overdueClientPosts[c];
+  for (var c = 0; c < overdueApprovalPosts.length && items.length < 7; c++) {
+    var op = overdueApprovalPosts[c];
     var daysOverdue = Math.floor((new Date() - new Date(op.status_changed_at)) / (1000*60*60*24));
-    var stageLabel = (STAGE_META[op.stage] || {}).label || op.stage;
     items.push({
-      title: 'Chase ' + getTitle(op) + ' -- ' + stageLabel,
-      meta: 'Day ' + daysOverdue + ' &middot; no response',
+      title: 'Chase client — ' + getTitle(op),
+      meta: 'Day ' + daysOverdue + ' &middot; awaiting approval',
       postId: getPostId(op),
       color: 'var(--red)',
       urgency: 3,
@@ -1047,13 +1128,38 @@ function _buildDoThisNowItems() {
       metaRed: true
     });
   }
+  // B-04 FIX: awaiting_brand_input shown as informational — brand/legal team action, not client approver
+  var overdueBrandPosts = allPosts.filter(function(p) {
+    return p.stage === 'awaiting_brand_input' &&
+      p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+  }).sort(function(a, b) {
+    return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
+  });
+  for (var bi = 0; bi < overdueBrandPosts.length && items.length < 8; bi++) {
+    var bp = overdueBrandPosts[bi];
+    var daysBrandOverdue = Math.floor((new Date() - new Date(bp.status_changed_at)) / (1000*60*60*24));
+    items.push({
+      title: 'Brand input pending — ' + getTitle(bp),
+      meta: 'Day ' + daysBrandOverdue + ' &middot; waiting on brand team',
+      postId: getPostId(bp),
+      color: 'var(--purple)',
+      urgency: 2,
+      urgColor: 'var(--amber)'
+    });
+  }
 
   // 3. Auto: Pranav deficit
+  // B-03 FIX: Only fire "system dry" / deficit alert when there are no awaiting posts in pipeline.
+  // If posts are awaiting_approval or awaiting_brand_input, the pipeline is not dry — it's blocked on
+  // client/brand review. Escalating to Pranav to create more would be a misdirected action.
   var inSystemCount = allPosts.filter(function(p) {
     return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
   }).length;
+  var awaitingTotal = allPosts.filter(function(p) {
+    return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
+  }).length;
   var pranavDeficitAuto = inSystemCount - 35;
-  if (pranavDeficitAuto < 0 && items.length < 8) {
+  if (pranavDeficitAuto < 0 && awaitingTotal === 0 && items.length < 8) {
     items.push({
       title: pranavDeficitAuto + ' posts needed -- build now',
       meta: 'Pranav &middot; monthly target 35',
