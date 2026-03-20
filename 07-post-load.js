@@ -35,6 +35,7 @@ function closePipelineSearch() {
 }
 
 function openSearchResult(postId) {
+  console.log('openSearchResult fired with:', postId);
   closePipelineSearch();
   setTimeout(function() {
     openPCS(postId);
@@ -99,7 +100,7 @@ function handlePipelineSearch(query) {
     var badgeLabel = stageDisplayMap[p.stage] || p.stage;
     var badgeClass = 'badge-' + p.stage;
     var pillar = p.contentPillar || '';
-    return '<div class="pipeline-search-result-item" onclick="openSearchResult(\'' + p.id + '\')">' +
+    return '<div class="pipeline-search-result-item" onclick="openSearchResult(\'' + (p.post_id || p.id) + '\')">' +
       '<div class="result-stage-dot" style="background:' + color + '"></div>' +
       '<div class="pipeline-result-body">' +
         '<div class="pipeline-result-title">' + highlighted + '</div>' +
