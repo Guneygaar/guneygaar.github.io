@@ -19,80 +19,54 @@ const CLIENT_REQUEST_FORM_URL = '';
 // DB values are lowercase. UI reads label/hex from STAGE_META.
 // -------------------------------------------------------
 
-// UI (internal) -> DB (wire format) mapping
-const STAGE_MAP = {
-  'in production':        'in_production',
-  'awaiting brand input': 'awaiting_brand_input',
-  'ready':                'ready',
-  'awaiting approval':    'awaiting_approval',
-  'scheduled':            'scheduled',
-  'published':            'published',
-  'parked':               'parked',
-  'archive':              'archive',
-  'rejected':             'rejected',
-};
-
-// DB -> UI reverse mapping (auto-generated)
-const STAGE_MAP_REV = Object.fromEntries(
-  Object.entries(STAGE_MAP).map(([ui, db]) => [db, ui])
-);
-
-// Convert UI stage label to DB wire value
-function toDbStage(uiStage) {
-  const key = (uiStage || '').toLowerCase().trim();
-  return STAGE_MAP[key] || key;
-}
-
-// Convert DB wire value to UI stage label
-function toUiStage(dbStage) {
-  const key = (dbStage || '').toLowerCase().trim();
-  return STAGE_MAP_REV[key] || key;
-}
+// Stage strings are DB-format everywhere. No UI/DB split.
+// Legacy helpers kept as identity functions for compatibility.
+function toDbStage(s) { return (s || '').toLowerCase().trim().replace(/\s+/g, '_'); }
+function toUiStage(s) { return (s || '').toLowerCase().trim().replace(/\s+/g, '_'); }
 
 const STAGE_META = {
-  'awaiting brand input': { label: 'Awaiting Brand Input', hex: '#8b5cf6' },
-  'in production':        { label: 'In Production', hex: '#f59e0b' },
-  'ready':                { label: 'Ready',                hex: '#10b981' },
-  'awaiting approval':    { label: 'Awaiting Approval',    hex: '#3b82f6' },
-  'scheduled':            { label: 'Scheduled',            hex: '#06b6d4' },
-  'published':            { label: 'Published',            hex: '#22c55e' },
-  'rejected':             { label: 'Rejected',             hex: '#ef4444' },
-  'parked':               { label: 'Parked',               hex: '#64748b' },
-  'archive':              { label: 'Archive',              hex: '#64748b' },
+  'in_production':        { label: 'In Production',    hex: '#f59e0b' },
+  'ready':                { label: 'Ready',            hex: '#10b981' },
+  'awaiting_approval':    { label: 'Awaiting Approval',hex: '#3b82f6' },
+  'awaiting_brand_input': { label: 'Awaiting Input',   hex: '#8b5cf6' },
+  'scheduled':            { label: 'Scheduled',        hex: '#06b6d4' },
+  'published':            { label: 'Published',        hex: '#22c55e' },
+  'parked':               { label: 'Parked',           hex: '#64748b' },
+  'rejected':             { label: 'Rejected',         hex: '#ef4444' },
 };
 
 // Canonical stage order  -  single source of truth for all dropdowns and rendering
 const STAGE_ORDER = [
-  'in production',
+  'in_production',
   'ready',
-  'awaiting brand input',
-  'awaiting approval',
+  'awaiting_brand_input',
+  'awaiting_approval',
   'scheduled',
   'published',
   'parked',
   'rejected',
 ];
 
-// Active DB stages (same order, excludes archive)
+// Active DB stages (same order)
 const STAGES_DB = STAGE_ORDER;
 
-// Pipeline order (includes archive at end)
-const PIPELINE_ORDER = [...STAGE_ORDER, 'archive'];
+// Pipeline order
+const PIPELINE_ORDER = [...STAGE_ORDER];
 
 // REMOVED: Role-based dimming disabled  -  all posts fully visible to all roles
 // const ROLE_PRIMARY_STAGES = { ... };
 
 // Pipeline RENDER order  -  visual pipeline excludes parked/rejected (they live in Library only)
 const PIPELINE_RENDER_ORDER = [
-  'in production',
+  'in_production',
   'ready',
-  'awaiting brand input',
-  'awaiting approval',
+  'awaiting_brand_input',
+  'awaiting_approval',
   'scheduled',
 ];
 
-// Backward-compatible aliases so nothing else needs changing
-const STAGE_COLORS  = STAGE_META;   // legacy alias
+// Backward-compatible aliases
+const STAGE_COLORS  = STAGE_META;
 const STAGE_DISPLAY = Object.fromEntries(
   Object.entries(STAGE_META).map(([k, v]) => [k, v.label])
 );
@@ -162,10 +136,10 @@ function getPillarShort(p) {
   return PILLAR_SHORT[key] || key;
 }
 
-// Display-only owner formatter (internal values stay UPPERCASE)
+// Display-only owner formatter
 function formatOwner(name) {
-  if (!name) return '\u2014';
-  return name.charAt(0) + name.slice(1).toLowerCase();
+  if (!name) return '--';
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
 
 // -------------------------------------------------------
@@ -204,10 +178,10 @@ const ROLE_STATS = {
 
 // Unified task buckets  -  same for all non-Client roles
 const _UNIFIED_BUCKETS = [
-  { key:'production', label:'In Production',stages:['in production'] },
-  { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
+  { key:'production', label:'In Production',stages:['in_production'] },
+  { key:'requests',   label:'Requests',     stages:['awaiting_brand_input'] },
   { key:'ready',      label:'Ready',        stages:['ready'] },
-  { key:'approval',   label:'For Approval', stages:['awaiting approval'] },
+  { key:'approval',   label:'For Approval', stages:['awaiting_approval'] },
   { key:'scheduled',  label:'Scheduled',    stages:['scheduled'] },
 ];
 const ROLE_BUCKETS = {
@@ -217,9 +191,9 @@ const ROLE_BUCKETS = {
 };
 
 const STRIP_STAGES = [
-  { label:'In Production', stages:['in production'],        color: STAGE_META['in production'].hex,        tab:'tasks',    bucket:'production' },
-  { label:'Requests',      stages:['awaiting brand input'], color: STAGE_META['awaiting brand input'].hex, tab:'tasks',    bucket:'requests' },
-  { label:'Approval',      stages:['awaiting approval'],    color: STAGE_META['awaiting approval'].hex,    tab:'tasks',    bucket:'approval' },
+  { label:'In Production', stages:['in_production'],        color: STAGE_META['in_production'].hex,        tab:'tasks',    bucket:'production' },
+  { label:'Requests',      stages:['awaiting_brand_input'], color: STAGE_META['awaiting_brand_input'].hex, tab:'tasks',    bucket:'requests' },
+  { label:'Approval',      stages:['awaiting_approval'],    color: STAGE_META['awaiting_approval'].hex,    tab:'tasks',    bucket:'approval' },
   { label:'Ready',         stages:['ready'],                color: STAGE_META['ready'].hex,                tab:'tasks',    bucket:'ready', target:true },
   { label:'Scheduled',     stages:['scheduled'],            color: STAGE_META['scheduled'].hex,            tab:'pipeline', bucket:null },
   { label:'Published',     stages:['published'],            color: STAGE_META['published'].hex,            tab:'library',  bucket:null },
@@ -242,4 +216,4 @@ function setStage(post, newStage, source) {
 window.setStage = setStage;
 
 // Stage priority ordering for next-post selection
-const STAGE_URGENCY = ['awaiting brand input','in production','ready','awaiting approval'];
+const STAGE_URGENCY = ['awaiting_brand_input','in_production','ready','awaiting_approval'];

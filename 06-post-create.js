@@ -50,7 +50,7 @@ if (_npm('npm-title'))    _npm('npm-title').value    = d.title    || '';
 if (_npm('npm-pillar'))   _npm('npm-pillar').value   = d.pillar   || '';
 if (_npm('npm-location')) _npm('npm-location').value = d.location || '';
 if (_npm('npm-owner'))    _npm('npm-owner').value    = d.owner    || '';
-if (_npm('npm-stage'))    _npm('npm-stage').value    = d.stage    || 'in production';
+if (_npm('npm-stage'))    _npm('npm-stage').value    = d.stage    || 'in_production';
 if (_npm('npm-date'))     _npm('npm-date').value     = d.date     || '';
 if (_npm('npm-comments')) _npm('npm-comments').value = d.comments || '';
 if (_npm('npm-postlink')) _npm('npm-postlink').value = d.postLink || '';
@@ -125,7 +125,7 @@ const _np = id => document.getElementById(id);
 if (_np('npm-pillar'))   _np('npm-pillar').value   = '';
 if (_np('npm-location')) _np('npm-location').value = '';
 if (_np('npm-owner'))    _np('npm-owner').value    = '';
-if (_np('npm-stage'))    _np('npm-stage').value    = 'in production';
+if (_np('npm-stage'))    _np('npm-stage').value    = 'in_production';
 if (_np('npm-date'))     _np('npm-date').value     = '';
 }
 
@@ -194,7 +194,7 @@ title,
 owner,
 content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
-stage: toDbStage(stage || 'in production'),
+stage: toDbStage(stage || 'in_production'),
 target_date: date || null,
 comments: comments || null,
 };

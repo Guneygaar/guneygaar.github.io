@@ -85,9 +85,9 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: toDbStage('in production'), comments: text, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString() }),
       });
-      await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
       const c = document.getElementById('approval-confirmation');
       if (c) { c.style.display = ''; c.textContent = 'Changes sent  -  the team will review it.'; }
       document.querySelector('.approval-actions')?.remove();
@@ -101,9 +101,9 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
       });
-      await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
       const c = document.getElementById('approval-confirmation');
       if (c) { c.style.display = ''; c.textContent = 'ok Approved! The team has been notified.'; }
       document.querySelector('.approval-actions')?.remove();
