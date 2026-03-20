@@ -416,7 +416,7 @@ function updateStats() {
     const d = parseDate(p.targetDate);
     if (d) {
       if (d > today && d <= weekEnd) dueWeek++;
-      if (d < today && stage !== 'published') overdue++;
+      if (d < today && !['published','parked','rejected'].includes(stage)) overdue++;
     }
   });
   setText('s-total',     allPosts.length);
@@ -1705,7 +1705,7 @@ function _buildLibCard(p) {
   var dateStr = formatDateShort(p.targetDate);
   var today = new Date(); today.setHours(0,0,0,0);
   var isToday = d && d.toDateString() === today.toDateString();
-  var isOverdue = d && !isToday && d < today;
+  var isOverdue = d && !isToday && d < today && !['published','parked','rejected'].includes(stage);
 
   var cardCls = 'lib-card';
   if (isOverdue) cardCls += ' overdue';
