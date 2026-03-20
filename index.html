@@ -142,41 +142,42 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
-    <div class="stage-strip" id="pipeline-stage-strip">
-      <div class="stage-chip active" data-stage="all">
-        <div class="chip-dot"></div>
+    <div class="stage-strip" id="stage-strip">
+      <div class="stage-chip active all" data-stage="all">
+        <div class="chip-count" id="chip-count-all">0</div>
         <div class="chip-label">All</div>
-        <div class="chip-count" id="chip-count-all">&mdash;</div>
       </div>
-      <div class="stage-chip" data-stage="production">
-        <div class="chip-dot"></div>
+      <div class="stage-chip in_production" data-stage="in_production">
+        <div class="chip-count" id="chip-count-in_production">0</div>
         <div class="chip-label">Production</div>
-        <div class="chip-count" id="chip-count-production">&mdash;</div>
       </div>
-      <div class="stage-chip" data-stage="ready">
-        <div class="chip-dot"></div>
+      <div class="stage-chip ready" data-stage="ready">
+        <div class="chip-count" id="chip-count-ready">0</div>
         <div class="chip-label">Ready</div>
-        <div class="chip-count" id="chip-count-ready">&mdash;</div>
       </div>
-      <div class="stage-chip" data-stage="input">
-        <div class="chip-dot"></div>
-        <div class="chip-label">Input</div>
-        <div class="chip-count" id="chip-count-input">&mdash;</div>
-      </div>
-      <div class="stage-chip" data-stage="approval">
-        <div class="chip-dot"></div>
+      <div class="stage-chip awaiting_approval" data-stage="awaiting_approval">
+        <div class="chip-count" id="chip-count-awaiting_approval">0</div>
         <div class="chip-label">Approval</div>
-        <div class="chip-count" id="chip-count-approval">&mdash;</div>
       </div>
-      <div class="stage-chip" data-stage="scheduled">
-        <div class="chip-dot"></div>
+      <div class="stage-chip awaiting_brand_input" data-stage="awaiting_brand_input">
+        <div class="chip-count" id="chip-count-awaiting_brand_input">0</div>
+        <div class="chip-label">Input</div>
+      </div>
+      <div class="stage-chip scheduled" data-stage="scheduled">
+        <div class="chip-count" id="chip-count-scheduled">0</div>
         <div class="chip-label">Scheduled</div>
-        <div class="chip-count" id="chip-count-scheduled">&mdash;</div>
       </div>
-      <div class="stage-chip" data-stage="published">
-        <div class="chip-dot"></div>
+      <div class="stage-chip published" data-stage="published">
+        <div class="chip-count" id="chip-count-published">0</div>
         <div class="chip-label">Published</div>
-        <div class="chip-count" id="chip-count-published">&mdash;</div>
+      </div>
+      <div class="stage-chip parked" data-stage="parked">
+        <div class="chip-count" id="chip-count-parked">0</div>
+        <div class="chip-label">Parked</div>
+      </div>
+      <div class="stage-chip rejected" data-stage="rejected">
+        <div class="chip-count" id="chip-count-rejected">0</div>
+        <div class="chip-label">Rejected</div>
       </div>
     </div>
     <div class="dash-body">
