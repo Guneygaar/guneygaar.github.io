@@ -3240,6 +3240,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-bottom: 1px dotted var(--dotline);
   -webkit-overflow-scrolling: touch;
   flex-wrap: nowrap;
+  width: 100%;
 }
 .stage-strip::-webkit-scrollbar { display: none; }
 
@@ -3624,7 +3625,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ═══════════════════════════════════════════════
    ACTION BAR (persistent, above bottom nav)
 ═══════════════════════════════════════════════ */
-.action-bar {
+.fab {
   position: fixed;
   bottom: 74px;
   right: max(20px, calc(50% - 175px));
@@ -3641,6 +3642,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   z-index: 200;
   transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.2s;
 }
+.action-bar { display: none; }
 .fab:hover { background: #F0F0F0; }
 .fab.open { transform: rotate(45deg); background: #EFEFEF; }
 .fab:active { transform: scale(0.94); }
@@ -4614,7 +4616,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   padding: 0 20px 14px;
   border-bottom: 1px dotted var(--dotline);
 }
-.pc-title {
+.pc-title-block .pc-title {
   font-size: 26px;
   font-weight: 700;
   color: var(--text);
@@ -4622,8 +4624,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   line-height: 1.1;
   margin-bottom: 5px;
 }
-.pc-title.pcs-title--editable { cursor: text; }
-.pc-title.pcs-title--editable:hover { background: var(--surface2); border-radius: 8px; }
+.pc-title-block .pc-title.pcs-title--editable { cursor: text; }
+.pc-title-block .pc-title.pcs-title--editable:hover { background: var(--surface2); border-radius: 8px; }
 .pc-subtitle {
   font-family: var(--mono);
   font-size: 10px;
