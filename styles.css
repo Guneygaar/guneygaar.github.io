@@ -4917,7 +4917,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 =============================================== */
 .batch-bar {
   position: fixed;
-  bottom: 74px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
@@ -4955,10 +4955,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 .batch-btn {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 8px 14px;
+  padding: 7px 10px;
   border: 1px dotted;
   background: transparent;
   cursor: pointer;
