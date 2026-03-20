@@ -155,8 +155,15 @@ function scrollToBucket(bucketKey) {
   }, 80);
 }
 
+function _getHeaderDate() {
+  var d = new Date();
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
 const _TAB_TITLES = {
-  tasks: 'My Tasks',
+  tasks: null,
   pipeline: 'Pipeline',
   library: 'Library',
 };
@@ -176,7 +183,7 @@ function switchTab(btn) {
   if (panel) panel.classList.add('active');
   // Update header title
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl) titleEl.textContent = _TAB_TITLES[tab] || tab;
+  if (titleEl) titleEl.textContent = (tab === 'tasks') ? _getHeaderDate() : (_TAB_TITLES[tab] || tab);
   // Show pipeline search icon only on Pipeline tab
   const searchBtn = document.getElementById('pipeline-search-btn');
   if (searchBtn) searchBtn.style.display = (tab === 'pipeline') ? 'flex' : 'none';
@@ -703,7 +710,7 @@ async function submitRequestSheet() {
 // Attach FAB scroll on initial load
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
-  // Set initial header title
+  // Set initial header title to date
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl && !titleEl.textContent) titleEl.textContent = 'My Tasks';
+  if (titleEl && !titleEl.textContent) titleEl.textContent = _getHeaderDate();
 });
