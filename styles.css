@@ -1071,14 +1071,6 @@ a:hover { text-decoration: underline; }
    Single source of truth. No duplicate selectors.
 ══════════════════════════════════════════════════ */
 
-/* ── Global reset inside scoreboard ── */
-.pcs-scoreboard *,
-.pcs-scoreboard *::before,
-.pcs-scoreboard *::after {
-  border-radius: 0 !important;
-}
-
-/* ── 0. Outer Frame ── */
 /* ── Scoreboard Design Tokens ── */
 .pcs-scoreboard {
   --color-bg: #0a0a0a;
@@ -1153,68 +1145,77 @@ a:hover { text-decoration: underline; }
     inset 0 -2px 8px rgba(0,0,0,0.95);
 }
 
-/* ── 1. Critical Panel (LED Alert Banner) ── */
+/* ── 1. Critical Banner (horizontal: number LEFT, text RIGHT) ── */
 .sb-critical-panel {
-  height: 96px;
   flex-shrink: 0;
-  padding: 8px 6px;
+  padding: clamp(10px, 2.5vw, 16px) clamp(12px, 3vw, 18px);
   background:
-    radial-gradient(ellipse at 50% 50%, rgba(204,34,0,0.25), transparent 70%),
+    radial-gradient(ellipse at 30% 50%, rgba(204,34,0,0.3), transparent 70%),
     #1a0000;
   border: 1px solid var(--color-panel-border);
   border-bottom: 2px solid var(--color-red-alert);
+  border-radius: 4px;
   box-shadow:
     inset 0 0 20px rgba(0,0,0,0.9),
     inset 0 2px 8px rgba(0,0,0,0.8);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-.sb-critical-label {
-  font-family: var(--font-label);
-  font-size: clamp(12px, 3vw, 14px);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-red-alert);
-  margin-bottom: 4px;
-  line-height: 1.1;
+  gap: clamp(8px, 2vw, 14px);
 }
 .sb-critical-num {
   font-family: var(--font-led);
-  font-size: clamp(40px, 10vw, 48px);
+  font-size: clamp(42px, 11vw, 54px);
   font-weight: 400;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   color: var(--color-red-alert);
   letter-spacing: 2px;
   text-shadow:
-    0 0 8px var(--color-red-alert),
-    0 0 20px rgba(204,34,0,0.5);
+    0 0 10px var(--color-red-alert),
+    0 0 24px rgba(204,34,0,0.6);
+  flex-shrink: 0;
+}
+.sb-critical-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sb-critical-label {
+  font-family: var(--font-label);
+  font-size: clamp(13px, 3.5vw, 16px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-red-alert);
+  line-height: 1.1;
+}
+.sb-critical-sub {
+  font-family: var(--font-label);
+  font-size: clamp(11px, 2.8vw, 13px);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(204,34,0,0.7);
+  line-height: 1.1;
 }
 
-/* ── 2. Main Scoreboard ── */
+/* ── 2. Main Scoreboard Grid ── */
 .sb-main-grid {
-  height: 240px;
   display: grid;
-  grid-template-columns: 1fr 3px 1fr;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  grid-template-columns: 1fr 4px 1fr;
 }
 .sb-divider {
   width: 4px;
   background: linear-gradient(
     180deg,
     #1a1a1a 0%,
-    var(--color-steel) 20%,
+    var(--color-steel) 15%,
     #666 50%,
-    var(--color-steel) 80%,
+    var(--color-steel) 85%,
     #1a1a1a 100%
   );
-  opacity: 1;
-  box-shadow:
-    inset 0 0 6px rgba(0,0,0,0.8);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
 }
 .sb-main-cell {
   position: relative;
@@ -1222,67 +1223,106 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 12px 6px;
+  padding: clamp(14px, 3.5vw, 20px) 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   background: #111;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.8);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
   border: 1px solid var(--color-panel-border);
   border-radius: 4px;
 }
-.sb-main-cell:first-child {
-  filter: none;
-}
-.sb-main-cell:last-child {
-  filter: none;
-}
 .sb-main-cell:active { opacity: 0.8; }
+
 .sb-main-label {
   font-family: var(--font-label);
-  font-size: clamp(12px, 3vw, 14px);
+  font-size: clamp(13px, 3.5vw, 16px);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-led-white);
-  margin-bottom: 4px;
+  margin-bottom: clamp(4px, 1vw, 8px);
   line-height: 1.1;
 }
 .sb-main-num {
   font-family: var(--font-led);
-  font-size: clamp(56px, 16vw, 72px);
+  font-size: clamp(56px, 16vw, 76px);
   font-weight: 400;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 2px;
+  letter-spacing: 4px;
   text-shadow:
-    0 0 8px currentColor,
-    0 0 20px currentColor;
-  filter: none;
+    0 0 10px currentColor,
+    0 0 28px currentColor;
 }
 .sb-main-num.gold { color: var(--color-led-yellow); }
 .sb-main-num.green { color: var(--color-led-green); }
+
+/* Fraction display (e.g. /14) */
+.sb-fraction {
+  font-size: 0.45em;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  vertical-align: super;
+}
+
+/* Dot indicators */
+.sb-dots {
+  font-size: clamp(6px, 1.5vw, 8px);
+  letter-spacing: 4px;
+  margin-top: clamp(4px, 1vw, 8px);
+  margin-bottom: clamp(4px, 1vw, 8px);
+  color: #333;
+}
+.sb-dots.gold { color: var(--color-led-yellow); text-shadow: 0 0 4px var(--color-led-yellow); }
+.sb-dots.green { color: var(--color-led-green); text-shadow: 0 0 4px var(--color-led-green); }
+.sb-dots.dim { color: #444; }
+
+/* Action buttons (INITIATE DRAFT, DISPATCH READY) */
 .sb-main-sub {
   font-family: var(--font-label);
   font-size: clamp(10px, 2.5vw, 12px);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: currentColor;
-  margin-top: 8px;
-  padding: 3px 10px;
-  border: 1px solid currentColor;
+  background: transparent;
+  padding: clamp(3px, 0.8vw, 5px) clamp(8px, 2vw, 14px);
   border-radius: 2px;
-  box-shadow: 0 0 8px currentColor;
+}
+.sb-main-sub.gold {
+  color: var(--color-led-yellow);
+  border: 1px solid var(--color-led-yellow);
+  box-shadow: 0 0 8px rgba(245,196,0,0.4);
+  clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px);
+}
+.sb-main-sub.green {
+  color: var(--color-led-green);
+  border: 1px solid var(--color-led-green);
+  box-shadow: 0 0 8px rgba(0,224,64,0.4);
   clip-path: polygon(6px 0%, calc(100% - 6px) 0%, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0% calc(100% - 6px), 0% 6px);
 }
 
-/* ── 3. Client Strip ── */
+/* ── 3. CLIENT Section Label ── */
+.sb-section-label {
+  font-family: var(--font-label);
+  font-size: clamp(11px, 2.8vw, 13px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--color-led-white);
+  padding: clamp(4px, 1vw, 6px) 0;
+  background: linear-gradient(180deg, #222 0%, #333 50%, #222 100%);
+  border-top: 1px solid var(--color-panel-border);
+  border-bottom: 1px solid var(--color-panel-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.06),
+    inset 0 -1px 0 rgba(0,0,0,0.4);
+}
+
+/* ── 4. Client Grid ── */
 .sb-client-strip {
-  height: 120px;
   display: grid;
   grid-template-columns: 1fr 2px 1fr;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .sb-client-divider {
   width: 2px;
@@ -1295,38 +1335,25 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px 6px;
+  padding: clamp(10px, 2.5vw, 16px) 6px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  opacity: 1;
   background: #111;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.8);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
   border: 1px solid var(--color-panel-border);
   border-radius: 4px;
-  filter: none;
 }
 .sb-client-cell:active { opacity: 0.7; }
-.sb-main-cell::after,
-.sb-client-cell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: 4px;
-  box-shadow: none;
-}
+
 .sb-client-num {
   font-family: var(--font-led);
-  font-size: clamp(32px, 9vw, 42px);
+  font-size: clamp(34px, 10vw, 46px);
   font-weight: 400;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--color-led-white);
-  letter-spacing: 2px;
-  text-shadow:
-    0 0 6px rgba(232,232,232,0.5);
-  filter: none;
+  letter-spacing: 3px;
+  text-shadow: 0 0 6px rgba(232,232,232,0.4);
 }
 .sb-client-label {
   font-family: var(--font-label);
@@ -1334,26 +1361,24 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #9a9a9a;
-  margin-top: 8px;
-  margin-bottom: 4px;
+  color: #999;
+  margin-top: clamp(4px, 1vw, 6px);
+  padding: clamp(2px, 0.5vw, 4px) clamp(8px, 2vw, 12px);
+  border: 1px solid var(--color-panel-border);
+  border-radius: 2px;
   line-height: 1.1;
-  opacity: 0.85;
 }
 
-/* ── 4. Task Bar (DO THIS NOW) ── */
+/* ── 5. DO THIS NOW Bar ── */
 .sb-task-bar {
-  height: 80px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
-  letter-spacing: 0.5px;
+  padding: clamp(10px, 2.5vw, 14px) clamp(10px, 2.5vw, 14px);
   background: #111;
   border: 1px solid var(--color-panel-border);
   border-radius: 4px;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.8);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
 }
 .sb-task-content {
   flex: 1;
@@ -1366,13 +1391,13 @@ a:hover { text-decoration: underline; }
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-gold-accent);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   line-height: 1.1;
 }
 .sb-task-text {
   font-family: var(--font-label);
   font-size: clamp(12px, 3vw, 14px);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-led-white);
   white-space: nowrap;
   overflow: hidden;
@@ -1383,6 +1408,8 @@ a:hover { text-decoration: underline; }
   -webkit-tap-highlight-color: transparent;
 }
 .sb-task-bar[data-nav]:active { opacity: 0.8; }
+
+/* FAB circular gold button */
 .sb-fab {
   width: 44px;
   height: 44px;
@@ -1397,7 +1424,7 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   cursor: pointer;
   flex-shrink: 0;
-  margin-left: 16px;
+  margin-left: clamp(10px, 2.5vw, 16px);
   padding: 0;
   -webkit-tap-highlight-color: transparent;
   outline: none;
@@ -1411,7 +1438,6 @@ a:hover { text-decoration: underline; }
 /* ── Responsive: narrow screens ── */
 @media (max-width: 399px) {
   .sb-client-strip {
-    height: auto;
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
   }

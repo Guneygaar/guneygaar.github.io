@@ -672,7 +672,9 @@ function getScoreboardData() {
     },
     chitra: {
       value: c.ready,
-      raw: c.ready
+      raw: c.ready,
+      ready: c.ready,
+      total: c.production + c.ready
     },
     client: {
       approval: c.approval,
@@ -727,44 +729,72 @@ function renderScoreboard() {
     var taskPostId = task && task.postId ? task.postId : '';
     var taskAttrs = taskPostId ? ' data-nav="top-task" data-post-id="' + esc(taskPostId) + '"' : '';
 
+    // Zero-pad helper for LED display
+    function pad2(n) { var s = String(Math.abs(n)); return s.length < 2 ? '0' + s : s; }
+
+    var pranavPad = pad2(pranavDisplay.replace(/[^0-9]/g, '') || '0');
+    var chitraPad = pad2(chitraDisplay.replace(/[^0-9]/g, '') || '0');
+    var approvalPad = pad2(approvalDisplay.replace(/[^0-9]/g, '') || '0');
+    var inputPad = pad2(inputDisplay.replace(/[^0-9]/g, '') || '0');
+
+    // Chitra shows fraction: ready / total
+    var chitraTotal = safe(data.chitra.total);
+    var chitraFraction = chitraTotal > 0
+      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction">/' + chitraTotal + '</span>'
+      : chitraPad;
+
     return '<section class="pcs-scoreboard">' +
       '<div class="sb-inner">' +
 
+      /* ── 1. Critical Banner (horizontal: number LEFT, text RIGHT) ── */
       '<div class="sb-critical-panel">' +
-        '<div class="sb-critical-label">CRITICAL</div>' +
         '<div class="sb-critical-num">' + scheduled + '</div>' +
+        '<div class="sb-critical-text">' +
+          '<div class="sb-critical-label">CRITICAL:' + scheduled + '</div>' +
+          '<div class="sb-critical-sub">POSTS SCHEDULED</div>' +
+        '</div>' +
       '</div>' +
 
+      /* ── 2. Main Grid (two operator panels) ── */
       '<div class="sb-main-grid">' +
         '<div class="sb-main-cell" data-action="open-production">' +
           '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-num gold">' + pranavDisplay + '</div>' +
-          '<div class="sb-main-sub">CREATE MORE</div>' +
+          '<div class="sb-main-num gold">' + pranavPad + '</div>' +
+          '<div class="sb-dots gold">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-main-sub gold">INITIATE DRAFT</div>' +
         '</div>' +
         '<div class="sb-divider"></div>' +
         '<div class="sb-main-cell" data-action="open-ready">' +
           '<div class="sb-main-label">CHITRA</div>' +
-          '<div class="sb-main-num green">' + chitraDisplay + '</div>' +
-          '<div class="sb-main-sub">DISPATCH NOW</div>' +
+          '<div class="sb-main-num green">' + chitraFraction + '</div>' +
+          '<div class="sb-dots green">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-main-sub green">DISPATCH READY</div>' +
         '</div>' +
       '</div>' +
 
+      /* ── 3. CLIENT section label bar ── */
+      '<div class="sb-section-label">CLIENT</div>' +
+
+      /* ── 4. Client Grid (two metric panels) ── */
       '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
-          '<div class="sb-client-num">' + approvalDisplay + '</div>' +
-          '<div class="sb-client-label">APPROVAL DUE</div>' +
+          '<div class="sb-client-num">' + approvalPad + '</div>' +
+          '<div class="sb-dots dim">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-client-label">APPROVAL</div>' +
         '</div>' +
         '<div class="sb-client-divider"></div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
-          '<div class="sb-client-num">' + inputDisplay + '</div>' +
-          '<div class="sb-client-label">INPUT DUE</div>' +
+          '<div class="sb-client-num">' + inputPad + '</div>' +
+          '<div class="sb-dots dim">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-client-label">INPUT</div>' +
         '</div>' +
       '</div>' +
 
+      /* ── 5. DO THIS NOW bar ── */
       '<div class="sb-task-bar"' + taskAttrs + '>' +
         '<div class="sb-task-content">' +
-          '<div class="sb-task-label">TASK</div>' +
-          '<div class="sb-task-text">' + esc(taskText) + '</div>' +
+          '<div class="sb-task-label">DO THIS NOW</div>' +
+          '<div class="sb-task-text">' + esc(taskText) + ' &nbsp;\u2026</div>' +
         '</div>' +
         '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
       '</div>' +
