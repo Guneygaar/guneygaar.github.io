@@ -186,35 +186,42 @@
 
   <!-- TAB: LIBRARY -->
   <div class="tab-panel" id="panel-library">
-    <!-- Row 1: Search + view toggle -->
-    <div class="lib-search-bar">
-      <input type="text" id="search-input" class="lib-search-input" placeholder="Search posts…" oninput="filterLibrary()">
-      <div class="lib-view-toggle">
-        <button class="lib-view-btn active" data-view="list"     onclick="switchLibraryView(this)">List</button>
-        <button class="lib-view-btn"        data-view="calendar" onclick="switchLibraryView(this)">Cal</button>
+    <!-- Unified search + filter block -->
+    <div class="search-block">
+      <!-- Row 1: search + view toggle -->
+      <div class="search-row">
+        <div class="search-box" onclick="document.getElementById('search-input').focus()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" class="search-input-real" placeholder="Search posts..." oninput="filterLibrary()">
+        </div>
+        <div class="search-divider"></div>
+        <div class="view-toggle">
+          <button class="vt-btn active" id="btn-list" data-view="list" onclick="switchLibraryView(this)">List</button>
+          <button class="vt-btn" id="btn-cal" data-view="calendar" onclick="switchLibraryView(this)">Cal</button>
+        </div>
+      </div>
+      <!-- Row 2: filters -->
+      <div class="filter-row">
+        <select id="filter-stage" class="filter-chip" onchange="filterLibrary()">
+          <option value="">Stage</option>
+        </select>
+        <select id="filter-owner" class="filter-chip" onchange="filterLibrary()">
+          <option value="">Owner</option>
+        </select>
+        <select id="filter-pillar" class="filter-chip" onchange="filterLibrary()">
+          <option value="">Pillar</option>
+        </select>
+        <select id="filter-date" class="filter-chip" onchange="filterLibrary()">
+          <option value="">Date</option>
+          <option value="past">Past</option>
+          <option value="today">Today</option>
+          <option value="week">This week</option>
+          <option value="future">Future</option>
+          <option value="none">No date</option>
+        </select>
       </div>
     </div>
-    <!-- Row 2: Filter chips -->
-    <div class="lib-filter-row" id="lib-filter-row">
-      <select id="filter-stage" class="lib-filter-chip" onchange="filterLibrary()">
-        <option value="">Stage</option>
-      </select>
-      <select id="filter-owner" class="lib-filter-chip" onchange="filterLibrary()">
-        <option value="">Owner</option>
-      </select>
-      <select id="filter-pillar" class="lib-filter-chip" onchange="filterLibrary()">
-        <option value="">Pillar</option>
-      </select>
-      <select id="filter-date" class="lib-filter-chip" onchange="filterLibrary()">
-        <option value="">Date</option>
-        <option value="past">Past</option>
-        <option value="today">Today</option>
-        <option value="week">This week</option>
-        <option value="future">Future</option>
-        <option value="none">No date</option>
-      </select>
-    </div>
-    <!-- Row 3: Content -->
+    <!-- Content -->
     <div class="dash-body" id="library-content">
       <div id="library-list-view"></div>
       <div id="library-calendar-view" style="display:none"></div>

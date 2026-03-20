@@ -1627,29 +1627,103 @@ function renderLibrary() {
   } catch(e) { console.error('[PCS] renderLibrary crash:', e); }
 }
 
+function _libStageDotColor(stage) {
+  var sk = _pipelineStageKey(stage);
+  if (sk === 'production') return 'var(--amber)';
+  if (sk === 'ready')      return 'var(--green)';
+  if (sk === 'input')      return 'var(--purple)';
+  if (sk === 'approval')   return 'var(--red)';
+  if (sk === 'scheduled')  return 'var(--cyan)';
+  if (sk === 'published')  return 'var(--muted)';
+  return 'var(--muted)';
+}
+
+function _buildLibCard(p) {
+  var id    = getPostId(p);
+  var title = getTitle(p);
+  var pillar = getPillarShort(p.contentPillar);
+  var owner  = formatOwner(p.owner || '');
+  var stage  = p.stage || '';
+
+  var d = parseDate(p.targetDate);
+  var dateStr = formatDateShort(p.targetDate);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var isToday = d && d.toDateString() === today.toDateString();
+  var isOverdue = d && !isToday && d < today;
+
+  var cardCls = 'lib-card';
+  if (isOverdue) cardCls += ' overdue';
+  if (isToday) cardCls += ' today';
+
+  var dateCls = 'lib-date';
+  if (isOverdue) dateCls += ' overdue';
+  else if (isToday) dateCls += ' today';
+
+  var dateDisplay = dateStr || '-- --';
+
+  var metaParts = [];
+  if (pillar) metaParts.push(esc(pillar));
+  if (owner && owner !== ' - ') metaParts.push(esc(owner));
+  var metaHtml = metaParts.join('<span class="lib-meta-dot"></span>');
+
+  var dotColor = _libStageDotColor(stage);
+
+  return '<div class="' + cardCls + '" data-post-id="' + esc(id) + '" data-list="library">' +
+    '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
+    '<div class="lib-body">' +
+      '<div class="lib-title">' + esc(title) + '</div>' +
+      (metaHtml ? '<div class="lib-meta">' + metaHtml + '</div>' : '') +
+    '</div>' +
+    '<span class="lib-stage-dot" style="background:' + dotColor + '"></span>' +
+  '</div>';
+}
+
 function renderLibraryRows(posts) {
-  const listView = document.getElementById('library-list-view');
+  var listView = document.getElementById('library-list-view');
   if (!listView) return;
-  posts = posts.slice().sort((a, b) => (parseDate(b.targetDate) || 0) - (parseDate(a.targetDate) || 0));
+  posts = posts.slice().sort(function(a, b) { return (parseDate(a.targetDate) || new Date(9999,0)) - (parseDate(b.targetDate) || new Date(9999,0)); });
   _postLists['library'] = posts;
   if (!posts.length) {
-    listView.innerHTML = `<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>`;
+    listView.innerHTML = '<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>';
     return;
   }
 
-  // Group posts by month
-  const groups = {};
-  posts.forEach(p => {
-    const d = parseDate(p.targetDate);
-    const key = d ? formatMonthYear(p.targetDate) : 'No Date';
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(p);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var day7 = new Date(today); day7.setDate(day7.getDate() + 7);
+  var day14 = new Date(today); day14.setDate(day14.getDate() + 14);
+  var thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); thisMonthEnd.setHours(23,59,59,999);
+  var nextMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0); nextMonthEnd.setHours(23,59,59,999);
+
+  var groups = { overdue: [], thisWeek: [], nextWeek: [], laterMonth: [], nextMonth: [], later: [], noDate: [] };
+  posts.forEach(function(p) {
+    var d = parseDate(p.targetDate);
+    if (!d) { groups.noDate.push(p); return; }
+    if (d < today) { groups.overdue.push(p); return; }
+    if (d < day7) { groups.thisWeek.push(p); return; }
+    if (d < day14) { groups.nextWeek.push(p); return; }
+    if (d <= thisMonthEnd) { groups.laterMonth.push(p); return; }
+    if (d <= nextMonthEnd) { groups.nextMonth.push(p); return; }
+    groups.later.push(p);
   });
 
-  let html = '';
-  for (const [month, group] of Object.entries(groups)) {
-    html += `<div class="pcs-month-group"><div class="pcs-library-month"><span class="pcs-month-label">${esc(month)}</span><span class="pcs-month-count">${group.length} post${group.length === 1 ? '' : 's'}</span></div><div class="row-list">${group.map(p => buildPostCard(p, 'library')).join('')}</div></div>`;
-  }
+  var order = [
+    { key: 'overdue', label: 'Overdue', dot: 'var(--red)', countCls: ' style="color:var(--red)"' },
+    { key: 'thisWeek', label: 'This Week', dot: '', countCls: '' },
+    { key: 'nextWeek', label: 'Next Week', dot: '', countCls: '' },
+    { key: 'laterMonth', label: 'Later This Month', dot: '', countCls: '' },
+    { key: 'nextMonth', label: 'Next Month', dot: '', countCls: '' },
+    { key: 'later', label: 'Later', dot: '', countCls: '' },
+    { key: 'noDate', label: 'No Date', dot: '', countCls: '' }
+  ];
+
+  var html = '';
+  order.forEach(function(g) {
+    var arr = groups[g.key];
+    if (!arr.length) return;
+    var dotHtml = g.dot ? '<span class="time-label-dot" style="background:' + g.dot + '"></span>' : '';
+    html += '<div class="time-label"><span class="time-label-text">' + dotHtml + g.label + '</span><span class="time-label-count"' + g.countCls + '>' + arr.length + '</span></div>';
+    html += arr.map(function(p) { return _buildLibCard(p); }).join('');
+  });
   listView.innerHTML = html;
 }
 
@@ -1758,7 +1832,7 @@ function renderCreativeTracker() {
 let _currentLibraryView = 'list';
 
 function switchLibraryView(btn) {
-  document.querySelectorAll('.lib-view-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _currentLibraryView = btn.dataset.view;
 
@@ -1791,88 +1865,192 @@ function normalizePillar(pillar) {
 }
 
 function groupPostsByDay(posts, month, year) {
-  const map = {};
-  posts.forEach(p => {
-    const d = parseDate(p.targetDate);
+  var map = {};
+  posts.forEach(function(p) {
+    var d = parseDate(p.targetDate);
     if (!d || d.getMonth() !== month || d.getFullYear() !== year) return;
-    const s = (p.stage || '').toLowerCase().trim();
-    if (s !== 'published' && s !== 'scheduled') return;
-    const key = p.targetDate;
+    var key = p.targetDate;
     if (!map[key]) map[key] = [];
     map[key].push(p);
   });
   return map;
 }
 
+var _calDayMap = {}; // stored for drawer access
+
 function renderLibraryCalendar(posts) {
-  const container = document.getElementById('library-calendar-view');
+  var container = document.getElementById('library-calendar-view');
   if (!container) return;
   posts = posts || allPosts;
 
-  const dayMap = groupPostsByDay(posts, _calMonth, _calYear);
-  const monthLabel = MONTHS_LONG[_calMonth] + ' ' + _calYear;
+  var dayMap = groupPostsByDay(posts, _calMonth, _calYear);
+  _calDayMap = dayMap;
+  var monthLabel = MONTHS[_calMonth] + ' ' + _calYear;
 
-  // Grid: first day of month and total days
-  const firstDay = new Date(_calYear, _calMonth, 1).getDay(); // 0=Sun
-  const daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
-  const totalCells = firstDay + daysInMonth <= 35 ? 35 : 42;
+  var firstDay = new Date(_calYear, _calMonth, 1).getDay();
+  var numDays = new Date(_calYear, _calMonth + 1, 0).getDate();
+  var totalCells = firstDay + numDays <= 35 ? 35 : 42;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  var today = new Date(); today.setHours(0,0,0,0);
 
-  // Header
-  let html = `<div class="pcs-cal-header">
-    <span class="pcs-cal-title">${esc(monthLabel)}</span>
-    <span class="pcs-cal-nav">
-      <button class="pcs-cal-nav-btn" onclick="_calNav(-1)">&lsaquo;</button>
-      <button class="pcs-cal-nav-btn" onclick="_calNav(1)">&rsaquo;</button>
-    </span>
-  </div>`;
-
-  // Day-of-week labels
-  html += `<div class="pcs-cal-grid pcs-cal-dow">`;
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(d => {
-    html += `<div class="pcs-cal-dow-label">${d}</div>`;
+  // Count stats for month bar
+  var statSched = 0, statReady = 0, statLate = 0;
+  Object.keys(dayMap).forEach(function(k) {
+    dayMap[k].forEach(function(p) {
+      var s = (p.stage || '').toLowerCase().trim();
+      if (s === 'scheduled') statSched++;
+      else if (s === 'ready') statReady++;
+      var pd = parseDate(p.targetDate);
+      if (pd && pd < today) statLate++;
+    });
   });
-  html += `</div>`;
 
-  // Cells
-  html += `<div class="pcs-cal-grid">`;
-  for (let i = 0; i < totalCells; i++) {
-    const dayNum = i - firstDay + 1;
-    if (i < firstDay || dayNum > daysInMonth) {
-      html += `<div class="pcs-cal-cell pcs-cal-cell-empty"></div>`;
+  // Month bar
+  var html = '<div class="month-bar">' +
+    '<div class="month-nav">' +
+      '<button class="month-arrow" id="cal-prev" onclick="_calNav(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>' +
+      '<div class="month-title" id="cal-month-title">' + esc(monthLabel) + '</div>' +
+      '<button class="month-arrow" id="cal-next" onclick="_calNav(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></button>' +
+    '</div>' +
+    '<div class="month-stats" id="month-stats">' +
+      '<div class="mstat-pill sched" title="Scheduled"><div class="mstat-dot"></div><span id="stat-sched">' + statSched + '</span></div>' +
+      '<div class="mstat-pill ready" title="Ready"><div class="mstat-dot"></div><span id="stat-ready">' + statReady + '</span></div>' +
+      '<div class="mstat-pill late" title="Overdue"><div class="mstat-dot"></div><span id="stat-late">' + statLate + '</span></div>' +
+    '</div>' +
+  '</div>';
+
+  // DOW header
+  html += '<div class="pcs-cal-grid pcs-cal-dow">';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
+    html += '<div class="pcs-cal-dow-label">' + d + '</div>';
+  });
+  html += '</div>';
+
+  // Cells with dots
+  html += '<div class="pcs-cal-grid" id="cal-grid">';
+  for (var i = 0; i < totalCells; i++) {
+    var dayNum = i - firstDay + 1;
+    if (i < firstDay || dayNum > numDays) {
+      html += '<div class="cal-cell-empty"></div>';
       continue;
     }
 
-    const dd = String(dayNum).padStart(2, '0');
-    const mm = String(_calMonth + 1).padStart(2, '0');
-    const key = `${_calYear}-${mm}-${dd}`;
-    const cellDate = new Date(_calYear, _calMonth, dayNum);
-    const isToday = cellDate.getTime() === today.getTime();
-    const dayPosts = dayMap[key] || [];
+    var dd = String(dayNum).padStart(2, '0');
+    var mm = String(_calMonth + 1).padStart(2, '0');
+    var key = _calYear + '-' + mm + '-' + dd;
+    var cellDate = new Date(_calYear, _calMonth, dayNum);
+    var isToday = cellDate.getTime() === today.getTime();
+    var dayPosts = dayMap[key] || [];
 
-    const first = dayPosts[0];
-    const pillarFilterActive = !!(document.getElementById('filter-pillar')?.value);
-    const cellLabel = first
-      ? (pillarFilterActive ? getPillarShort(first.contentPillar) : getTitle(first))
-      : '';
-    const postId = first ? getPostId(first) : '';
-    const extra = dayPosts.length > 1 ? dayPosts.length - 1 : 0;
+    var cellCls = 'cal-cell';
+    if (isToday) cellCls += ' today';
 
-    const clickAttr = postId ? ` data-post-id="${esc(postId)}" data-list="library"` : '';
-    const todayClass = isToday ? ' pcs-cal-today' : '';
-    const hasPost = dayPosts.length ? ' pcs-cal-has-post' : '';
+    html += '<div class="' + cellCls + '" data-cal-date="' + key + '">';
+    html += '<div class="cc-num">' + dayNum + '</div>';
 
-    html += `<div class="pcs-cal-cell${todayClass}${hasPost}"${clickAttr}>`;
-    html += `<div class="pcs-cal-date">${dayNum}</div>`;
-    if (cellLabel) html += `<div class="pcs-cal-pill">${esc(cellLabel)}</div>`;
-    if (extra)  html += `<div class="pcs-cal-more">+${extra}</div>`;
-    html += `</div>`;
+    if (dayPosts.length) {
+      html += '<div class="cc-dots">';
+      var maxDots = Math.min(dayPosts.length, 6);
+      for (var j = 0; j < maxDots; j++) {
+        var dotColor = _libStageDotColor(dayPosts[j].stage);
+        html += '<span class="cc-dot" style="background:' + dotColor + '"></span>';
+      }
+      html += '</div>';
+      if (dayPosts.length > 6) {
+        html += '<div class="cc-overflow">+' + (dayPosts.length - 6) + '</div>';
+      }
+    }
+
+    html += '</div>';
   }
-  html += `</div>`;
+  html += '</div>';
+
+  // Day drawer
+  html += '<div class="day-drawer" id="day-drawer">' +
+    '<div class="drawer-hdr">' +
+      '<div class="drawer-date" id="drawer-date">Select a day</div>' +
+      '<div class="drawer-close" id="drawer-close">x close</div>' +
+    '</div>' +
+    '<div id="drawer-posts"></div>' +
+  '</div>';
 
   container.innerHTML = html;
+
+  // Wire up cell clicks for drawer
+  var grid = document.getElementById('cal-grid');
+  if (grid) {
+    grid.addEventListener('click', function(e) {
+      var cell = e.target.closest('.cal-cell');
+      if (!cell) return;
+      var dateKey = cell.getAttribute('data-cal-date');
+      if (!dateKey) return;
+      _openDayDrawer(dateKey, cell);
+    });
+  }
+
+  // Wire up drawer close
+  var closeBtn = document.getElementById('drawer-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() { _closeDayDrawer(); });
+  }
+}
+
+function _stagePillClass(stage) {
+  var sk = _pipelineStageKey(stage);
+  if (sk === 'production') return 's-prod';
+  if (sk === 'ready')      return 's-ready';
+  if (sk === 'input')      return 's-input';
+  if (sk === 'approval')   return 's-appr';
+  if (sk === 'scheduled')  return 's-sched';
+  return '';
+}
+
+function _openDayDrawer(dateKey, cell) {
+  // Deselect previous
+  var prev = document.querySelector('.cal-cell.selected');
+  if (prev) prev.classList.remove('selected');
+  cell.classList.add('selected');
+
+  var drawer = document.getElementById('day-drawer');
+  var dateEl = document.getElementById('drawer-date');
+  var postsEl = document.getElementById('drawer-posts');
+  if (!drawer || !postsEl) return;
+
+  var d = parseDate(dateKey);
+  if (dateEl) dateEl.textContent = d ? (d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : dateKey;
+
+  var posts = _calDayMap[dateKey] || [];
+  if (!posts.length) {
+    postsEl.innerHTML = '<div class="drawer-empty">No posts on this day</div>';
+  } else {
+    postsEl.innerHTML = posts.map(function(p) {
+      var id = getPostId(p);
+      var dotColor = _libStageDotColor(p.stage);
+      var owner = formatOwner(p.owner || '');
+      var pillar = getPillarShort(p.contentPillar);
+      var stLabel = stageStyle(p.stage).label;
+      var stCls = _stagePillClass(p.stage);
+      var html = '<div class="drawer-post" data-post-id="' + esc(id) + '" data-list="library">' +
+        '<span class="drawer-stage-dot" style="background:' + dotColor + '"></span>' +
+        '<div>' +
+          '<div class="drawer-post-title">' + esc(getTitle(p)) + '</div>' +
+          '<div class="drawer-post-meta">';
+      if (owner && owner !== ' - ') html += '<span class="meta-pill owner">' + esc(owner) + '</span>';
+      if (pillar) html += '<span class="meta-pill pillar">' + esc(pillar) + '</span>';
+      if (stLabel) html += '<span class="meta-pill ' + stCls + '">' + esc(stLabel) + '</span>';
+      html += '</div></div></div>';
+      return html;
+    }).join('');
+  }
+
+  drawer.classList.add('open');
+}
+
+function _closeDayDrawer() {
+  var drawer = document.getElementById('day-drawer');
+  if (drawer) drawer.classList.remove('open');
+  var prev = document.querySelector('.cal-cell.selected');
+  if (prev) prev.classList.remove('selected');
 }
 
 // ===============================================
