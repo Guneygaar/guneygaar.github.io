@@ -5,7 +5,7 @@ console.log("LOADED:", "07-post-load.js");
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
-// ── Unified link helpers — SINGLE SOURCE OF TRUTH for link display ──
+// -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
 function getPostLink(post) {
   return post.postLink || post.linkedinUrl || '';
 }
@@ -26,11 +26,11 @@ function getPostLinkLabel(post) {
   return '';
 }
 
-// ── Central merge — the ONLY way to update allPosts from server data ──
+// -- Central merge  -  the ONLY way to update allPosts from server data --
 // Skips posts with _isSaving === true (in-flight PATCH).
-// Never replaces allPosts blindly — always mutates existing objects in-place.
+// Never replaces allPosts blindly  -  always mutates existing objects in-place.
 function mergePosts(fresh) {
-  // Normalize DB stage values → UI stage values on ingest
+  // Normalize DB stage values -> UI stage values on ingest
   fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
 
   const map = new Map(allPosts.map(p => [getPostId(p), p]));
@@ -50,7 +50,7 @@ function mergePosts(fresh) {
       return;
     }
 
-    // No in-flight write — let server win
+    // No in-flight write  -  let server win
     // Log stage change from poll merge BEFORE Object.assign overwrites it
     if (existing.stage !== fp.stage) {
       setStage(existing, fp.stage, 'poll_merge');
@@ -62,13 +62,13 @@ function mergePosts(fresh) {
   const freshIds = new Set(fresh.map(p => getPostId(p)));
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
-  // Mutate in-place — preserve the single array reference
+  // Mutate in-place  -  preserve the single array reference
   allPosts.length = 0;
   map.forEach(p => allPosts.push(p));
   cachedPosts = allPosts;
 }
 
-// ── Versioned load guard — prevents stale responses from overriding fresh data ──
+// -- Versioned load guard  -  prevents stale responses from overriding fresh data --
 function _newPostsRequest() {
   window._postsReqId += 1;
   return window._postsReqId;
@@ -161,10 +161,10 @@ function _postsFingerprint(posts) {
 function startRealtime() {
   if (_realtimeTimer) return;
 
-  // Data polling — every 15 seconds (was 8s; reduces API calls & DOM churn)
+  // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
   _realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
-    // Skip poll while user is in a modal — they'll get fresh data on close
+    // Skip poll while user is in a modal  -  they'll get fresh data on close
     if (window._modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
@@ -179,14 +179,14 @@ function startRealtime() {
     }
   }, 15000);
 
-  // Proactive token refresh — every 50 minutes
+  // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
   if (!_tokenRefreshTimer) {
     _tokenRefreshTimer = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       const newToken = await refreshSession();
       if (!newToken) {
-        console.warn('Background token refresh failed — user may need to re-login');
+        console.warn('Background token refresh failed  -  user may need to re-login');
       }
     }, 50 * 60 * 1000); // 50 minutes
   }
@@ -247,11 +247,11 @@ async function markTaskDone(id) {
     });
     console.log('[Task] Completed:', id);
     showToast('\u2713 Task completed', 'success');
-    // UX delay — let user see the strike-through, then refresh everything
+    // UX delay  -  let user see the strike-through, then refresh everything
     setTimeout(async () => {
       try {
         await loadTasks();
-        // Refresh posts → mergePosts → scheduleRender → updateStats (scoreboard)
+        // Refresh posts -> mergePosts -> scheduleRender -> updateStats (scoreboard)
         const data = await apiFetch('/posts?select=*&order=id.desc');
         mergePosts(normalise(data));
         scheduleRender();
@@ -289,31 +289,31 @@ if (!window._taskClickBound) {
     var taskId = task.dataset.taskId;
     var postId = task.dataset.postId;
 
-    // GUARD — invalid task
+    // GUARD  -  invalid task
     if (!taskId) {
       showToast('Invalid task');
       return;
     }
 
-    // CASE 1 — POST TASK → open PCS
+    // CASE 1  -  POST TASK -> open PCS
     if (postId) {
       if (typeof openPCS !== 'function') {
         console.error('[PCS] openPCS missing');
         showToast('Unable to open post');
         return;
       }
-      console.log('[TASK → PCS]', postId);
+      console.log('[TASK -> PCS]', postId);
       openPCS(postId);
       return;
     }
 
-    // CASE 2 — INSTRUCTION TASK → open modal
-    console.log('[TASK → MODAL]', taskId);
+    // CASE 2  -  INSTRUCTION TASK -> open modal
+    console.log('[TASK -> MODAL]', taskId);
     openTaskModal(taskId);
   });
 }
 
-// ── Scoreboard block click delegation ──
+// -- Scoreboard block click delegation --
 if (!window._scoreboardClickBound) {
   window._scoreboardClickBound = true;
 
@@ -372,7 +372,7 @@ function renderAll() {
   run('updateStats',        updateStats);
   run('roleVisibility',     applyRoleVisibility);
 
-  // Active tab detection — only render the visible tab
+  // Active tab detection  -  only render the visible tab
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
 
   // Tasks tab widgets (always needed when tasks visible)
@@ -512,7 +512,7 @@ function getTopTask() {
     return null;
   }
 
-  // Admin — sees everything: approval → ready → production
+  // Admin  -  sees everything: approval -> ready -> production
   const approval = _ttByStage('awaiting approval');
   if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
   const ready = _ttByStage('ready');
@@ -523,9 +523,9 @@ function getTopTask() {
   return null;
 }
 
-// ═══════════════════════════════════════════════
-// Dashboard — Hero, Pipeline, Blockers
-// ═══════════════════════════════════════════════
+// ===============================================
+// Dashboard  -  Hero, Pipeline, Blockers
+// ===============================================
 
 function computeDelayMeta(posts) {
   const now = Date.now();
@@ -538,7 +538,7 @@ function computeDelayMeta(posts) {
     const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
     const createdAt = p.created_at || p.createdAt;
 
-    // If this stage needs status_changed_at and it's missing → unknown
+    // If this stage needs status_changed_at and it's missing -> unknown
     if (needsStatusTs.has(s) && !hasStatusTimestamp) {
       return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
     }
@@ -605,7 +605,7 @@ function _buildTopTaskHtml() {
   </div>`;
 }
 
-// ── Scoreboard — Data + Render ──────────────────
+// -- Scoreboard  -  Data + Render ------------------
 
 // Safe stage normalization
 function _safeStage(p) {
@@ -614,7 +614,7 @@ function _safeStage(p) {
   return p.stage.toLowerCase().trim();
 }
 
-// Config — single source for all thresholds
+// Config  -  single source for all thresholds
 var SCOREBOARD_CONFIG = {
   CREATION_TARGET: 35,
   CRITICAL_THRESHOLD: 7
@@ -715,11 +715,11 @@ function renderScoreboard() {
     var approval = safe(data.client.approval);
     var input = safe(data.client.input);
 
-    // Pranav: show deficit as −N (value is already negative or 0)
+    // Pranav: show deficit as -N (value is already negative or 0)
     var pranavDisplay = pranavVal < 0 ? '\u2212' + Math.abs(pranavVal) : '0';
     // Chitra: show ready queue as +N
     var chitraDisplay = chitraVal > 0 ? '+' + chitraVal : '0';
-    // Client: show pending as −N
+    // Client: show pending as -N
     var approvalDisplay = approval > 0 ? '\u2212' + approval : '0';
     var inputDisplay = input > 0 ? '\u2212' + input : '0';
 
@@ -743,71 +743,75 @@ function renderScoreboard() {
     var approvalLabel = approval > 0 ? 'APPROVAL DUE' : 'APPROVAL';
     var inputLabel = input > 0 ? 'INPUT DUE' : 'INPUT';
 
-    // Chitra fraction: ready|total
+    // Chitra fraction: ready/total
     var chitraTotal = safe(data.chitra.total);
     var chitraFraction = chitraTotal > 0
-      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction"><span class="sb-pipe">|</span>' + chitraTotal + '</span>'
+      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction">/' + chitraTotal + '</span>'
       : chitraPad;
+
+    // LED dot helper: 4 dot spans
+    var goldDots = '<div class="led-dots"><span class="gold"></span><span class="gold"></span><span class="gold"></span><span class="gold"></span></div>';
+    var greenDots = '<div class="led-dots"><span class="green"></span><span class="green"></span><span class="green"></span><span class="green"></span></div>';
+    var dimDots = '<div class="led-dots"><span class="dim"></span><span class="dim"></span><span class="dim"></span><span class="dim"></span></div>';
 
     return '<section class="pcs-scoreboard">' +
       '<div class="sb-inner">' +
 
-      /* ── 1. Critical Banner (centered stacked, dashed red border) ── */
+      /* -- 1. Critical Banner (horizontal: number LEFT, text RIGHT) -- */
       '<div class="sb-critical-panel">' +
-        '<div class="sb-critical-box">' +
-          '<div class="sb-critical-label">CRITICAL</div>' +
-          '<div class="sb-critical-num">' + scheduled + '</div>' +
+        '<div class="sb-critical-num">' + scheduled + '</div>' +
+        '<div class="sb-critical-text">' +
+          '<div class="sb-critical-label">CRITICAL:' + scheduled + '</div>' +
+          '<div class="sb-critical-sub">POSTS SCHEDULED</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 2. Main section: header strip + grid ── */
-      '<div class="sb-main-section">' +
-        /* Metallic header strip with labels */
-        '<div class="sb-main-header">' +
+      /* -- 2. Main Grid (labels inside cells, gold divider) -- */
+      '<div class="sb-main-grid">' +
+        '<div class="sb-main-cell" data-action="open-production">' +
           '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-label">CHITRA</div>' +
+          '<div class="sb-main-num gold">' + pranavPad + '</div>' +
+          goldDots +
+          '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
         '</div>' +
-        /* Number panels with gold divider */
-        '<div class="sb-main-grid">' +
-          '<div class="sb-main-cell" data-action="open-production">' +
-            '<div class="sb-main-num gold">' + pranavPad + '</div>' +
-            '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
-          '</div>' +
-          '<div class="sb-divider"></div>' +
-          '<div class="sb-main-cell" data-action="open-ready">' +
-            '<div class="sb-main-num green">' + chitraFraction + '</div>' +
-            '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
-          '</div>' +
+        '<div class="sb-divider"></div>' +
+        '<div class="sb-main-cell" data-action="open-ready">' +
+          '<div class="sb-main-label">CHITRA</div>' +
+          '<div class="sb-main-num green">' + chitraFraction + '</div>' +
+          greenDots +
+          '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 3. CLIENT section label bar ── */
+      /* -- 3. CLIENT section label bar -- */
       '<div class="sb-section-label">' +
         '<span class="sb-rivet-row"></span>' +
         '<span>CLIENT</span>' +
         '<span class="sb-rivet-row"></span>' +
       '</div>' +
 
-      /* ── 4. Client Grid (number → label → dots) ── */
+      /* -- 4. Client Grid (label, number, dots, button) -- */
       '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
           '<div class="sb-client-num">' + approvalPad + '</div>' +
+          dimDots +
           '<div class="sb-client-label">' + approvalLabel + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
         '</div>' +
         '<div class="sb-client-divider"></div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
           '<div class="sb-client-num">' + inputPad + '</div>' +
+          dimDots +
           '<div class="sb-client-label">' + inputLabel + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 5. NEXT ACTION bar ── */
+      /* -- 5. DO THIS NOW bar with single FAB -- */
       '<div class="sb-task-bar"' + taskAttrs + '>' +
         '<div class="sb-task-content">' +
-          '<div class="sb-task-label">NEXT ACTION</div>' +
-          '<div class="sb-task-text">' + esc(taskText) + ' <span class="sb-task-dots">\u25CF \u25CF \u25CF</span></div>' +
+          '<div class="sb-task-label">DO THIS NOW</div>' +
+          '<div class="sb-task-text">' + esc(taskText) +
+            ' <span class="sb-task-dots"><span></span><span></span><span></span></span>' +
+          '</div>' +
         '</div>' +
         '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
       '</div>' +
@@ -833,9 +837,9 @@ function _renderDashboardInner() {
   now.setHours(0, 0, 0, 0);
   const DAY = 86400000;
 
-  // ═══════════════════════════════════════════════
-  // SECTION 1 — LOCKED COUNTS (from allPosts, not filtered)
-  // ═══════════════════════════════════════════════
+  // ===============================================
+  // SECTION 1  -  LOCKED COUNTS (from allPosts, not filtered)
+  // ===============================================
 
   // RUNWAY: count(posts WHERE status = 'scheduled' AND target_date >= today)
   const scheduledFuture = allPosts.filter(p => {
@@ -851,17 +855,17 @@ function _renderDashboardInner() {
   const awaiting_brand_count = allPosts.filter(p => stg(p) === 'awaiting brand input').length;
   const awaiting_total = awaiting_approval_count + awaiting_brand_count;
 
-  // approved / failed_publish — stages don't exist in current DB schema
+  // approved / failed_publish  -  stages don't exist in current DB schema
   // If they're ever added, these counts will activate automatically
   const approved_count = allPosts.filter(p => stg(p) === 'approved').length;
   const failed_publish_count = allPosts.filter(p => stg(p) === 'failed_publish').length;
 
-  // PIPELINE TOTAL — excludes 'in production' (not countable)
+  // PIPELINE TOTAL  -  excludes 'in production' (not countable)
   const pipeline_total = ready_count + awaiting_total + approved_count + runway_posts;
 
-  // ═══════════════════════════════════════════════
-  // SECTION 2 — RUNWAY STATE
-  // ═══════════════════════════════════════════════
+  // ===============================================
+  // SECTION 2  -  RUNWAY STATE
+  // ===============================================
 
   let runwayState, runwayLabel;
   if (runway_posts <= 7) {
@@ -872,25 +876,25 @@ function _renderDashboardInner() {
     runwayState = 'stable'; runwayLabel = 'STABLE';
   }
 
-  // ═══════════════════════════════════════════════
-  // SECTION 3 — CLIENT
-  // ═══════════════════════════════════════════════
+  // ===============================================
+  // SECTION 3  -  CLIENT
+  // ===============================================
 
   // Two separate counts per spec
   const clientApprovalAction = awaiting_approval_count > 0 ? 'REVIEW NOW' : '';
-  // awaiting_brand_input is info only — no action
+  // awaiting_brand_input is info only  -  no action
 
-  // ═══════════════════════════════════════════════
+  // ===============================================
   // RENDER
-  // ═══════════════════════════════════════════════
+  // ===============================================
 
   el.innerHTML = `<div class="pc-root" data-runway="${runwayState}">
     ${renderScoreboard()}
   </div>`;
 
-  // ═══════════════════════════════════════════════
+  // ===============================================
   // CLICK DELEGATION
-  // ═══════════════════════════════════════════════
+  // ===============================================
 
   const topTaskEl = el.querySelector('[data-nav="top-task"]');
   if (topTaskEl) {
@@ -902,7 +906,7 @@ function _renderDashboardInner() {
 
 }
 
-/* Legacy stubs — keep function names callable so renderAll doesn't error */
+/* Legacy stubs  -  keep function names callable so renderAll doesn't error */
 function renderDashHero() {}
 function renderDashPipeline() {}
 function renderDashBlockers() {}
@@ -971,7 +975,7 @@ function renderAdminInsight() {
   }
   const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
   const stuckClient     = allPosts.filter(p => ['awaiting approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
-  // stuckReview removed — stage no longer exists
+  // stuckReview removed  -  stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
   const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
@@ -1181,7 +1185,7 @@ function buildPostCard(p, listKey) {
   const dateStr = formatDateShort(p.targetDate);
   const isToday = d && d.toDateString() === new Date().toDateString();
 
-  // All posts fully visible — no role-based dimming
+  // All posts fully visible  -  no role-based dimming
   const dimClass = 'pc-primary';
 
   return `
@@ -1347,7 +1351,7 @@ function _renderPipelineInner() {
     ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
     : base;
 
-  // ── PRIORITY SORT: daysInStage DESC → targetDate ASC → created_at ASC ──
+  // -- PRIORITY SORT: daysInStage DESC -> targetDate ASC -> created_at ASC --
   function prioritySort(posts) {
     return posts.slice().sort((a, b) => {
       const dA = daysInStage(a) || 0, dB = daysInStage(b) || 0;
@@ -1360,7 +1364,7 @@ function _renderPipelineInner() {
     });
   }
 
-  // ── ROLE-SPECIFIC EMPTY STATES ──
+  // -- ROLE-SPECIFIC EMPTY STATES --
   const emptyMsg = {};
   if (activeFilter) {
     const key = activeFilter.sort().join(',');
@@ -1406,13 +1410,13 @@ function _renderPipelineInner() {
   if (!container) return;
   container.innerHTML = html;
 
-  // ── GLOBAL EMPTY STATE (filtered view with no results) ──
+  // -- GLOBAL EMPTY STATE (filtered view with no results) --
   if (activeFilter && stages.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">\u2713</div><p>${emptyMsg.default || 'Nothing here \u2014 you\u2019re clear'}</p></div>`;
     return;
   }
 
-  // ── AUTO-SCROLL to first focused card ──
+  // -- AUTO-SCROLL to first focused card --
   if (activeFilter) {
     requestAnimationFrame(() => {
       const focus = container.querySelector('.pc-focus');
@@ -1572,7 +1576,7 @@ function _renderClientViewInner() {
 }
 
 function renderClientApproved() {
-  // Hide published section on Client home — still visible in Library
+  // Hide published section on Client home  -  still visible in Library
   const pubSection = document.getElementById('client-published-section');
   if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
   if (pubSection) pubSection.style.display = '';
@@ -1658,7 +1662,7 @@ function _calNav(delta) {
 }
 
 function normalizeOwner(owner) {
-  return (owner || '').trim() || '—';
+  return (owner || '').trim() || ' - ';
 }
 
 function normalizePillar(pillar) {
@@ -1751,11 +1755,11 @@ function renderLibraryCalendar(posts) {
   container.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════
+// ===============================================
 // Event delegation for card clicks
-// Single document-level listener — survives ALL innerHTML replacements.
+// Single document-level listener  -  survives ALL innerHTML replacements.
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
-// ═══════════════════════════════════════════════
+// ===============================================
 (document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
   var card = e.target.closest('[data-post-id]');
   if (!card) return;

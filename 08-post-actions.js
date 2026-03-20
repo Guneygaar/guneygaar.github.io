@@ -1,12 +1,12 @@
-/* ═══════════════════════════════════════════════
-   08-post-actions.js — Stage updates & modals
-═══════════════════════════════════════════════ */
+/* ===============================================
+   08-post-actions.js  -  Stage updates & modals
+=============================================== */
 console.log("LOADED:", "08-post-actions.js");
 
 async function quickStage(postId, newStage) {
   const post = getPostById(postId);
   if (!post) return;
-  // Block duplicate writes — if a PATCH is already in-flight, bail
+  // Block duplicate writes  -  if a PATCH is already in-flight, bail
   if (post._isSaving) return;
   const oldStage = post.stage;
   setStage(post, newStage, 'quickStage');
@@ -29,13 +29,13 @@ async function quickStage(postId, newStage) {
     }
     post._isSaving = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` });
+    await logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     post._isSaving = false;
     setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
-    showToast('Update failed — try again', 'error');
+    showToast('Update failed  -  try again', 'error');
   }
 }
 
@@ -51,7 +51,7 @@ function openAdminEdit(postId) {
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
   const aeTitle  = _ae('ae-title');     if (aeTitle) aeTitle.value = getTitle(post);
-  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = post.owner || '—';
+  const aeOwner  = _ae('ae-owner');     if (aeOwner) aeOwner.value = post.owner || ' - ';
   const aePillar = _ae('ae-pillar');    if (aePillar) aePillar.value = post.contentPillar || '';
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
@@ -80,7 +80,7 @@ async function saveAdminEdit() {
   console.log('[saveAdminEdit] SAVE postId:', postId);
   if (!postId) {
     console.error('[saveAdminEdit] BLOCKED: no postId on ae-save-btn dataset');
-    showToast('Save failed — post not found', 'error');
+    showToast('Save failed  -  post not found', 'error');
     return;
   }
   const title    = (_ae('ae-title')?.value || '').trim();
@@ -123,10 +123,10 @@ async function saveAdminEdit() {
     await logActivity({ post_id: postId, actor_name: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
-    showToast('Post saved ✓', 'success');
+    showToast('Post saved ok', 'success');
   } catch (err) {
     console.error('[saveAdminEdit] API FAILED:', err);
-    showToast('Save failed — try again', 'error');
+    showToast('Save failed  -  try again', 'error');
     if (btn) btn.disabled = false;
   }
 }
@@ -135,20 +135,20 @@ async function clientApprove(postId, btn) {
   const post = getPostById(postId);
   if (!post) return;
   const alreadyApproved = (post.stage||'').toLowerCase().trim() === 'scheduled';
-  if (alreadyApproved) { showToast('Already approved ✓', 'success'); return; }
+  if (alreadyApproved) { showToast('Already approved ok', 'success'); return; }
   if (btn) btn.disabled = true;
   try {
-    // scheduled → owner remains unchanged (per ownership rules)
+    // scheduled -> owner remains unchanged (per ownership rules)
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: toDbStage('scheduled'), updated_at: new Date().toISOString(), updated_by: 'Client' }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved — moved to Scheduled' });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('active');
     setStage(post, 'scheduled', 'clientApprove');
     setTimeout(() => loadPostsForClient(), 1200);
-  } catch { if (btn) btn.disabled = false; showToast('Failed — try again', 'error'); }
+  } catch { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); }
 }
 
 function showChangeInput(postId) {
@@ -166,9 +166,9 @@ async function submitClientChanges(postId) {
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
     const item = document.getElementById(`apv-item-${postId}`);
-    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent — the team will take care of it.</div>`;
+    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent  -  the team will take care of it.</div>`;
     setTimeout(() => loadPostsForClient(), 1000);
-  } catch { showToast('Failed — try again', 'error'); }
+  } catch { showToast('Failed  -  try again', 'error'); }
 }
 
 async function clientAcknowledge(postId) {
@@ -177,17 +177,17 @@ async function clientAcknowledge(postId) {
       method: 'PATCH',
       body: JSON.stringify({ stage: toDbStage('in production'), updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged — sending via WhatsApp' });
+    await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
     showToast('Got it! The team has been notified.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
-  } catch { showToast('Failed — try again', 'error'); }
+  } catch { showToast('Failed  -  try again', 'error'); }
 }
 
 async function handleClientUpload(input, postId) {
   const file = input.files[0];
   if (!file) return;
   const label = document.getElementById(`upload-label-${postId}`);
-  if (label) label.textContent = 'Uploading…';
+  if (label) label.textContent = 'Uploading...';
   try {
     const url = await uploadPostAsset(file, postId);
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
@@ -196,12 +196,12 @@ async function handleClientUpload(input, postId) {
     });
     await logActivity({ post_id: postId, actor_name: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
     const confirmEl = document.getElementById(`upload-confirm-${postId}`);
-    if (confirmEl) confirmEl.innerHTML = `<div style="color:var(--c-green);font-size:13px;margin-top:var(--sp-2)">✓ File uploaded! The team has been notified.</div>`;
-    if (label) label.textContent = '↑ Upload Here';
+    if (confirmEl) confirmEl.innerHTML = `<div style="color:var(--c-green);font-size:13px;margin-top:var(--sp-2)">ok File uploaded! The team has been notified.</div>`;
+    if (label) label.textContent = '^ Upload Here';
     setTimeout(() => loadPostsForClient(), 1000);
   } catch (err) {
-    if (label) label.textContent = '↑ Upload Here';
-    showToast('Upload failed — try again', 'error');
+    if (label) label.textContent = '^ Upload Here';
+    showToast('Upload failed  -  try again', 'error');
   }
 }
 
@@ -265,18 +265,18 @@ async function flagIssue(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ comments: `⚑ ${msg}`, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ comments: `! ${msg}`, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Issue flagged: ${msg.substring(0,80)}` });
-    showToast('Issue flagged — team has been notified', 'success');
+    showToast('Issue flagged  -  team has been notified', 'success');
     await loadPosts();
-  } catch { showToast('Failed — try again', 'error'); }
+  } catch { showToast('Failed  -  try again', 'error'); }
 }
 
 async function nudgeClient(postId, title, targetDate) {
   const days      = daysInStage(getPostById(postId));
   const dateInfo  = targetDate ? `\n\nTarget date: ${formatDate(targetDate)}` : '';
-  const msg       = encodeURIComponent(`Hi! Just a quick note — we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
+  const msg       = encodeURIComponent(`Hi! Just a quick note  -  we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
   const waLink    = `https://wa.me/?text=${msg}`;
   window.open(waLink, '_blank');
   await logActivity({ post_id: postId, actor_name: currentRole, actor_role: currentRole, action: `Client nudged after ${days}d` });
@@ -287,11 +287,11 @@ async function copyCaption(postId) {
   if (!post || !post.comments) { showToast('No caption found', 'error'); return; }
   try {
     await navigator.clipboard.writeText(post.comments);
-    showToast('Caption copied ✓', 'success');
-  } catch { showToast('Could not copy — try manually', 'error'); }
+    showToast('Caption copied ok', 'success');
+  } catch { showToast('Could not copy  -  try manually', 'error'); }
 }
 
-// ── Delete post (Admin only) ──────────────────
+// -- Delete post (Admin only) ------------------
 async function deletePost(postId) {
   const post = getPostById(postId);
   const title = post ? getTitle(post) : postId;
@@ -307,14 +307,14 @@ async function deletePost(postId) {
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {
-    showToast('Delete failed — try again', 'error');
+    showToast('Delete failed  -  try again', 'error');
     if (btn) btn.disabled = false;
   }
 }
 
-// ═══════════════════════════════════════════════
-// PCS — Post Control Screen
-// ═══════════════════════════════════════════════
+// ===============================================
+// PCS  -  Post Control Screen
+// ===============================================
 
 const _pcs = {
   postId:  null,
@@ -323,11 +323,11 @@ const _pcs = {
   idx:     0,
 };
 let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
-let _pcsEditingTarget = null; // 'canva' | 'linkedin' — which link the attach input saves to
+let _pcsEditingTarget = null; // 'canva' | 'linkedin'  -  which link the attach input saves to
 
 function openPCS(postId, listKey) {
-  // Cancel any deferred forcePCSReset from a previous closePCS() —
-  // without this, a rapid close→open reopens the sheet, then the
+  // Cancel any deferred forcePCSReset from a previous closePCS()  - 
+  // without this, a rapid close->open reopens the sheet, then the
   // stale timer fires 300ms later and nukes it back to hidden.
   if (_pcsCloseTimer) { clearTimeout(_pcsCloseTimer); _pcsCloseTimer = null; }
 
@@ -347,12 +347,12 @@ function openPCS(postId, listKey) {
   if (!overlay) return;
   var screen = document.getElementById('pcs-screen');
 
-  // 1. Clear every inline style — no stale transform/transition/opacity
+  // 1. Clear every inline style  -  no stale transform/transition/opacity
   if (screen) {
     screen.style.cssText = '';
   }
 
-  // 2. Show the overlay WITHOUT .open — screen sits at translateY(100%)
+  // 2. Show the overlay WITHOUT .open  -  screen sits at translateY(100%)
   //    via the base CSS rule, which is our desired starting position.
   overlay.classList.remove('open');
   overlay.style.display       = 'flex';
@@ -364,18 +364,18 @@ function openPCS(postId, listKey) {
   try {
     _renderPCS(postId);
   } catch (err) {
-    console.error('[PCS] openPCS failed — cleaning up:', err);
+    console.error('[PCS] openPCS failed  -  cleaning up:', err);
     forcePCSReset();
     return;
   }
 
   // 3. Force Safari to commit the current computed transform (translateY(100%))
   //    before we add .open. Reading getComputedStyle().transform forces both
-  //    style resolution AND layout — more reliable than offsetHeight on
+  //    style resolution AND layout  -  more reliable than offsetHeight on
   //    Mobile Safari, which can skip style recalc in some DOM states.
   if (screen) { void getComputedStyle(screen).transform; }
 
-  // 4. Now add .open — CSS transition animates translateY(100%) → translateY(0).
+  // 4. Now add .open  -  CSS transition animates translateY(100%) -> translateY(0).
   //    No inline transform needed. The CSS rules handle everything.
   overlay.classList.add('open');
 }
@@ -391,16 +391,16 @@ function closePCS() {
   }, 300);
 }
 
-// ═══════════════════════════════════════════════
-// forcePCSReset — single authoritative cleanup
+// ===============================================
+// forcePCSReset  -  single authoritative cleanup
 // Tears down ALL PCS visual state, compositing layers,
 // and event-capturing surfaces. Safe to call multiple times.
-// ═══════════════════════════════════════════════
+// ===============================================
 function forcePCSReset() {
   var screen  = document.getElementById('pcs-screen');
   var overlay = document.getElementById('pcs-overlay');
 
-  // 1. Nuke ALL inline styles on screen — catches any stale transform,
+  // 1. Nuke ALL inline styles on screen  -  catches any stale transform,
   //    transition, opacity, or anything else set by any code path
   if (screen) {
     screen.style.cssText = '';
@@ -460,7 +460,7 @@ function _renderPCS(postId) {
   const elFields   = document.getElementById('pcs-fields');
   const elActivity = document.getElementById('pcs-activity-body');
 
-  // Title — inline editable on tap
+  // Title  -  inline editable on tap
   if (elTitle) {
     elTitle.textContent = title;
     if (canEdit) {
@@ -481,13 +481,13 @@ function _renderPCS(postId) {
   if (elActivity) {
     if (elActivity.dataset.loadedFor !== id) {
       elActivity.dataset.loadedFor = id;
-      elActivity.innerHTML = '<div class="pcs-activity-loading">Loading…</div>';
+      elActivity.innerHTML = '<div class="pcs-activity-loading">Loading...</div>';
       _loadPCSActivity(id, elActivity);
     }
   }
 }
 
-// ── Subtitle sync (single source of truth) ──────────────
+// -- Subtitle sync (single source of truth) --------------
 function _updateSubtitle(post) {
   const el = document.getElementById('pcs-subtitle');
   if (!el || !post) return;
@@ -495,17 +495,17 @@ function _updateSubtitle(post) {
   const isPub = stLC === 'published';
   const pLabel = post.contentPillar
     ? getPillarShort(post.contentPillar)
-    : '—';
+    : ' - ';
   const dVal = isPub ? (post.publishedDate || post.targetDate || '') : (post.targetDate || '');
-  const dDisp = formatDate(dVal) || '—';
+  const dDisp = formatDate(dVal) || ' - ';
   const parts = [pLabel, formatOwner(post.owner), dDisp];
   el.innerHTML = parts.map(p => `<span>${esc(p)}</span>`).join('<span class="pcs-subtitle-sep">\u00b7</span>');
 }
 
-// ── Inline title editing ──────────────
+// -- Inline title editing --------------
 function _pcsTitleEdit(el, postId) {
   if (el.querySelector('input')) return; // already editing
-  // Close other interactive layers — only one at a time
+  // Close other interactive layers  -  only one at a time
   _removePcsConfirm();
   pcsCloseAttach(postId);
   const current = el.textContent;
@@ -537,7 +537,7 @@ function _pcsTitleEdit(el, postId) {
   });
 }
 
-// ── Unified stage change with confirmation ──
+// -- Unified stage change with confirmation --
 function changeStage(newStage) {
   const postId = _pcs.postId;
   if (!postId) return;
@@ -551,7 +551,7 @@ function changeStage(newStage) {
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
-  // Close any open attach editor — only one interactive layer at a time
+  // Close any open attach editor  -  only one interactive layer at a time
   if (_pcs.postId) pcsCloseAttach(_pcs.postId);
   const displayName = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[newStage]) || newStage;
   const overlay = document.createElement('div');
@@ -572,27 +572,27 @@ function _showStageConfirm(postId, newStage) {
 function _executeStageChange(postId, newStage) {
   _removePcsConfirm();
 
-  // ── 1. Optimistic local state update ──
+  // -- 1. Optimistic local state update --
   const post = getPostById(postId);
   if (!post) return;
-  // Block duplicate writes — if a PATCH is already in-flight, bail
+  // Block duplicate writes  -  if a PATCH is already in-flight, bail
   if (post._isSaving) return;
   const previousStage = post.stage;
   setStage(post, newStage, '_executeStageChange');
   post._isSaving = true;
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
-  // ── 2. Instant UI re-render (before DB) ──
+  // -- 2. Instant UI re-render (before DB) --
   _renderPCS(postId);
   triggerStageConfirmation();
   _renderBackgroundViews();
 
-  // ── 3. Async DB persistence — isolated from side effects ──
+  // -- 3. Async DB persistence  -  isolated from side effects --
   _executeStageChangeAsync(post, postId, newStage, previousStage);
 }
 
 async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
-  // ── DB WRITE — rollback ONLY if this fails ──
+  // -- DB WRITE  -  rollback ONLY if this fails --
   const actor = resolveActor();
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
@@ -625,12 +625,12 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
     _renderPCS(postId);
     _renderBackgroundViews();
-    showToast('Update failed — rolled back', 'error');
-    return; // STOP — do not run side effects
+    showToast('Update failed  -  rolled back', 'error');
+    return; // STOP  -  do not run side effects
   }
 
-  // ── NON-CRITICAL — completely outside DB try/catch ──
-  try { logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage → ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  // -- NON-CRITICAL  -  completely outside DB try/catch --
+  try { logActivity({ post_id: postId, actor_name: actor, actor_role: currentRole, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
@@ -674,7 +674,7 @@ function _buildStageProgress(stageLC) {
 }
 
 function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
-  // Design section — each link gets its own button + pencil edit icon.
+  // Design section  -  each link gets its own button + pencil edit icon.
   // Pipeline is the sole stage control; no Next Stage chip here.
   const pencilStyle = 'style="font-size:12px;margin-left:6px;opacity:0.55;cursor:pointer;background:none;border:none;padding:2px"';
 
@@ -686,14 +686,14 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
   let buttons = '';
   if (canvaUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">${designLabel} ↗</a>
-      ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">✎</button>` : ''}
+      <a href="${esc(canvaUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--canva" onclick="closePCS()">${designLabel} [ext]</a>
+      ${canEdit ? `<button class="pcs-link-edit pcs-edit-canva" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','canva')">[edit]</button>` : ''}
     </div>`;
   }
   if (linkedinUrl) {
     buttons += `<div class="pcs-link-group" style="display:inline-flex;align-items:center">
-      <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn ↗</a>
-      ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">✎</button>` : ''}
+      <a href="${esc(linkedinUrl)}" target="_blank" rel="noopener" class="pcs-action-chip pcs-action-chip--linkedin" onclick="closePCS()">LinkedIn [ext]</a>
+      ${canEdit ? `<button class="pcs-link-edit pcs-edit-linkedin" ${pencilStyle} onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'" onclick="_pcsEditLink('${esc(postId)}','linkedin')">[edit]</button>` : ''}
     </div>`;
   }
   if (!canvaUrl && canEdit) {
@@ -703,7 +703,7 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
     buttons += `<button class="pcs-action-chip pcs-action-chip--secondary" onclick="_pcsEditLink('${esc(postId)}','linkedin')">+ LinkedIn</button>`;
   }
 
-  // Attach URL editor — inline, aligned to primary button width
+  // Attach URL editor  -  inline, aligned to primary button width
   const attachRow = canEdit
     ? `<div class="pcs-attach-row" id="pcs-attach-row-${esc(postId)}" style="display:none">
         <input type="url" class="pcs-attach-input" id="pcs-attach-input-${esc(postId)}" placeholder="Paste link...">
@@ -722,7 +722,7 @@ function _pcsEditLink(postId, target) {
   if (!row) return;
   row.style.display = 'flex';
   if (cancel) cancel.style.display = '';
-  // Close any confirm overlay first — only one interactive layer at a time
+  // Close any confirm overlay first  -  only one interactive layer at a time
   _removePcsConfirm();
   const input = document.getElementById(`pcs-attach-input-${postId}`);
   if (input) {
@@ -735,7 +735,7 @@ function _pcsEditLink(postId, target) {
   }
 }
 
-// Legacy alias — attach toggle used in _showStageConfirm guard
+// Legacy alias  -  attach toggle used in _showStageConfirm guard
 function pcsToggleAttach(postId) { _pcsEditLink(postId, _pcsEditingTarget || 'canva'); }
 
 function pcsCloseAttach(postId) {
@@ -750,7 +750,7 @@ async function pcsSaveAttach(postId) {
   const input = document.getElementById(`pcs-attach-input-${postId}`);
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
-  // Save to the field that matches the editing target — never infer from stage
+  // Save to the field that matches the editing target  -  never infer from stage
   const field = _pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
   await updatePost(postId, field, url);
   // Clear editing state and hide attach row (auto-disappear)
@@ -770,7 +770,7 @@ async function pcsSaveAttach(postId) {
 }
 
 function refreshSystemViews() {
-  // Only render the active tab — no need to rebuild hidden containers
+  // Only render the active tab  -  no need to rebuild hidden containers
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
   try {
     if (activeTab === 'tasks')    renderTasks();
@@ -783,7 +783,7 @@ function refreshSystemViews() {
 function _renderBackgroundViews() {
   try { renderDashboard(); } catch(e) { console.error('renderDashboard:', e); }
   // refreshSystemViews renders the active tab (pipeline/tasks/library).
-  // Pipeline filter is preserved — refreshSystemViews calls renderPipeline which
+  // Pipeline filter is preserved  -  refreshSystemViews calls renderPipeline which
   // reads window.pcsPipelineFilter directly. Single render, no duplicates.
   try { refreshSystemViews(); } catch(e) { console.error('refreshSystemViews:', e); }
 }
@@ -793,13 +793,13 @@ function handleOwnerChange(postId, value) {
 }
 
 async function updatePost(postId, field, value) {
-  // Sanitize pillar before any write — enforce lowercase
+  // Sanitize pillar before any write  -  enforce lowercase
   if (field === 'contentPillar') value = sanitizePillar(value);
 
-  // Optimistic update in memory — store old value for rollback
+  // Optimistic update in memory  -  store old value for rollback
   const post = getPostById(postId);
   if (!post) return;
-  // Block duplicate writes — if a PATCH is already in-flight, bail
+  // Block duplicate writes  -  if a PATCH is already in-flight, bail
   if (post._isSaving) return;
   const oldValue = post[field];
   post[field] = value;
@@ -839,7 +839,7 @@ async function updatePost(postId, field, value) {
       method: 'PATCH',
       body: JSON.stringify(_writePayload),
     });
-    // Apply server truth — preserves the exact memory reference
+    // Apply server truth  -  preserves the exact memory reference
     if (Array.isArray(rows) && rows[0]) {
       const server = normalise(rows)[0];
       if (server.stage) server.stage = toUiStage(server.stage);
@@ -860,7 +860,7 @@ async function updatePost(postId, field, value) {
 function _loadPCSActivity(postId, bodyEl) {
   apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=25`)
     .then(rows => {
-      if (_pcs.postId !== postId) return; // stale response — discard
+      if (_pcs.postId !== postId) return; // stale response  -  discard
       if (!rows || !rows.length) {
         bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
         return;
@@ -896,20 +896,20 @@ function _buildInfoGrid(post, canEdit, id) {
        ${opts.map(o => `<option value="${esc(o)}" ${o === val ? 'selected' : ''}>${esc(displayMap ? (displayMap[o] || o) : o)}</option>`).join('')}
      </select>`;
 
-  const ro = val => `<span class="pcs-field-val-ro">${esc(val || '—')}</span>`;
+  const ro = val => `<span class="pcs-field-val-ro">${esc(val || ' - ')}</span>`;
 
   // Stage selector uses unified changeStage() with confirmation
   const stageSel = canEdit
     ? `<select class="pcs-field-val" onchange="changeStage(this.value)">
          ${STAGES_DB.map(o => `<option value="${esc(o)}" ${o === (post.stage||'') ? 'selected' : ''}>${esc(STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o)}</option>`).join('')}
        </select>`
-    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || '—')}</span>`;
+    : `<span class="pcs-field-val-ro" style="color:${hex}">${esc(stageStyle(post.stage).label || post.stage || ' - ')}</span>`;
 
-  // Date field — full click area with 44px minimum tap target
+  // Date field  -  full click area with 44px minimum tap target
   const dateInput = canEdit
     ? `<label class="pcs-date-tap"><span class="pcs-date-text">${esc(displayDate(dateValue))}</span><input type="date" class="pcs-field-val pcs-date-input-native" value="${esc(dateValue)}"
              onchange="this.closest('.pcs-date-tap').querySelector('.pcs-date-text').textContent=displayDate(this.value);updatePost('${esc(id)}','targetDate',this.value)" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;color:transparent;background:transparent;border:none"><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></label>`
-    : `<div class="pcs-date-tap"><span class="pcs-date-text">${esc(formatDate(dateValue) || '—')}</span><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`;
+    : `<div class="pcs-date-tap"><span class="pcs-date-text">${esc(formatDate(dateValue) || ' - ')}</span><svg class="pcs-date-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>`;
 
   const cell = (label, content) =>
     `<div class="pcs-field">
@@ -927,7 +927,7 @@ function _buildInfoGrid(post, canEdit, id) {
                ${OWNERS.map(o => `<option value="${esc(o)}" ${o === (post.owner||'') ? 'selected' : ''}>${esc(o)}</option>`).join('')}
              </select>`
           : ro(formatOwner(post.owner)))}
-        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || '—'))}
+        ${cell('Pillar',   canEdit ? sel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : ro(formatPillarDisplay(post.contentPillar) || ' - '))}
         ${cell('Location', canEdit ? sel('location', LOCS, post.location||'', 'location') : ro(post.location))}
         ${cell('Format',   canEdit ? sel('format', FORMATS, post.format||'', 'format') : ro(post.format))}
         ${cell(dateLabel,  dateInput)}
@@ -938,9 +938,9 @@ function _buildInfoGrid(post, canEdit, id) {
 function _buildNotes(post, canEdit, id) {
   if (!canEdit && !post.comments) return '';
 
-  // Notes — reduced default height, auto-expand
+  // Notes  -  reduced default height, auto-expand
   const notesInput = canEdit
-    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption…" rows="2"
+    ? `<div class="pcs-notes-box"><textarea class="pcs-notes-input" placeholder="Brief or caption..." rows="2"
                  oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
                  onblur="updatePost('${esc(id)}','comments',this.value)">${esc(post.comments || '')}</textarea></div>`
     : (post.comments ? `<div class="pcs-notes-box"><div class="pcs-notes-ro">${esc(post.comments)}</div></div>` : '');

@@ -110,7 +110,7 @@ function goToTab(tabName) {
 }
 
 /**
- * Standard navigation handler — sets filter BEFORE tab switch so the
+ * Standard navigation handler  -  sets filter BEFORE tab switch so the
  * target render function consumes it on the same frame.
  *   tab:    'pipeline'
  *   filter: string[] of stages
@@ -225,7 +225,7 @@ function _notifAction(action) {
   if (!action) return 'updated';
   const a = action.toLowerCase();
   if (a.includes('stage') || a.includes('moved')) {
-    const m = action.match(/→\s*(.+)/);
+    const m = action.match(/->\s*(.+)/);
     if (m) return 'moved to ' + m[1].trim();
     return 'changed stage';
   }
@@ -463,7 +463,7 @@ async function openTimeline(postId, title) {
   if (_tt) _tt.textContent = title || postId;
   const list = document.getElementById('timeline-list');
   if (!list) return;
-  list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading…</div>';
+  list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading...</div>';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
   try {
@@ -477,7 +477,7 @@ async function openTimeline(postId, title) {
         <div class="timeline-dot"></div>
         <div class="timeline-content">
           <div class="timeline-action">${esc(e.action||'')}</div>
-          <div class="timeline-meta" title="${esc(formatIST(e.created_at))}">${esc(e.actor||'Unknown')} · ${timeAgo(e.created_at)}</div>
+          <div class="timeline-meta" title="${esc(formatIST(e.created_at))}">${esc(e.actor||'Unknown')} . ${timeAgo(e.created_at)}</div>
         </div>
       </div>`).join('');
   } catch {
@@ -492,8 +492,8 @@ function closeTimeline() {
 // -- Approval link -----------------------------
 function copyApprovalLink(url) {
   navigator.clipboard.writeText(url).then(
-    () => showToast('Approval link copied ✓', 'success'),
-    () => showToast('Could not copy — try manually', 'error')
+    () => showToast('Approval link copied ok', 'success'),
+    () => showToast('Could not copy  -  try manually', 'error')
   );
 }
 
@@ -551,7 +551,7 @@ function toggleFabMenu() {
 function openAssignTaskFromFab() {
   console.log('[FAB] Assign click', window._pcs?.postId);
 
-  // GUARD — must have open post
+  // GUARD  -  must have open post
   if (!window._pcs?.postId) {
     showToast('Open a post first');
     return;
@@ -612,7 +612,7 @@ function openTaskModal(taskId) {
     document.body.appendChild(overlay);
   }
 
-  var created = task.created_at ? formatDate(task.created_at) : '—';
+  var created = task.created_at ? formatDate(task.created_at) : ' - ';
   var due = task.due_date ? formatDateShort(task.due_date) : '';
 
   overlay.innerHTML =
@@ -623,12 +623,12 @@ function openTaskModal(taskId) {
       '</div>' +
       '<div class="task-detail-body">' +
         '<div class="task-detail-msg">' + esc(task.message) + '</div>' +
-        '<div class="task-detail-meta">Assigned to: ' + esc(task.assigned_to || '—') + '</div>' +
+        '<div class="task-detail-meta">Assigned to: ' + esc(task.assigned_to || ' - ') + '</div>' +
         '<div class="task-detail-meta">Created: ' + created + '</div>' +
         (due ? '<div class="task-detail-meta">Due: ' + due + '</div>' : '') +
       '</div>' +
       '<div class="task-detail-actions">' +
-        '<button class="btn-modal-primary" onclick="markTaskDone(' + task.id + '); closeTaskModal();">✓ Mark as Done</button>' +
+        '<button class="btn-modal-primary" onclick="markTaskDone(' + task.id + '); closeTaskModal();">ok Mark as Done</button>' +
       '</div>' +
     '</div>';
 

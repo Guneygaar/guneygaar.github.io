@@ -4,7 +4,7 @@
 =============================================== */
 console.log("LOADED:", "01-config.js");
 
-// Global modal state — must exist before any other script runs
+// Global modal state  -  must exist before any other script runs
 if (window._modalOpen === undefined)      window._modalOpen = false;
 if (window._deferredRender === undefined) window._deferredRender = false;
 
@@ -19,7 +19,7 @@ const CLIENT_REQUEST_FORM_URL = '';
 // DB values are lowercase. UI reads label/hex from STAGE_META.
 // -------------------------------------------------------
 
-// UI (internal) → DB (wire format) mapping
+// UI (internal) -> DB (wire format) mapping
 const STAGE_MAP = {
   'in production':        'in_production',
   'awaiting brand input': 'awaiting_brand_input',
@@ -32,7 +32,7 @@ const STAGE_MAP = {
   'rejected':             'rejected',
 };
 
-// DB → UI reverse mapping (auto-generated)
+// DB -> UI reverse mapping (auto-generated)
 const STAGE_MAP_REV = Object.fromEntries(
   Object.entries(STAGE_MAP).map(([ui, db]) => [db, ui])
 );
@@ -61,7 +61,7 @@ const STAGE_META = {
   'archive':              { label: 'Archive',              hex: '#64748b' },
 };
 
-// Canonical stage order — single source of truth for all dropdowns and rendering
+// Canonical stage order  -  single source of truth for all dropdowns and rendering
 const STAGE_ORDER = [
   'in production',
   'ready',
@@ -79,10 +79,10 @@ const STAGES_DB = STAGE_ORDER;
 // Pipeline order (includes archive at end)
 const PIPELINE_ORDER = [...STAGE_ORDER, 'archive'];
 
-// REMOVED: Role-based dimming disabled — all posts fully visible to all roles
+// REMOVED: Role-based dimming disabled  -  all posts fully visible to all roles
 // const ROLE_PRIMARY_STAGES = { ... };
 
-// Pipeline RENDER order — visual pipeline excludes parked/rejected (they live in Library only)
+// Pipeline RENDER order  -  visual pipeline excludes parked/rejected (they live in Library only)
 const PIPELINE_RENDER_ORDER = [
   'in production',
   'ready',
@@ -103,9 +103,9 @@ function stageStyle(raw) {
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
 
-// Read owner directly from post — no derivation
+// Read owner directly from post  -  no derivation
 function getPostOwner(post) {
-  return (post?.owner || '').trim() || '—';
+  return (post?.owner || '').trim() || ' - ';
 }
 window.getPostOwner = getPostOwner;
 
@@ -148,14 +148,14 @@ function sanitizePillar(p) {
   return (p || '').toLowerCase().trim();
 }
 
-// Formatter: DB value → Capital Case display label (for dropdowns)
+// Formatter: DB value -> Capital Case display label (for dropdowns)
 function formatPillarDisplay(p) {
   if (!p) return '';
   const key = sanitizePillar(p);
   return PILLAR_DISPLAY[key] || key.charAt(0).toUpperCase() + key.slice(1);
 }
 
-// Formatter: DB value → short label (for subtitles / tight UI)
+// Formatter: DB value -> short label (for subtitles / tight UI)
 function getPillarShort(p) {
   if (!p) return '';
   const key = sanitizePillar(p);
@@ -202,7 +202,7 @@ const ROLE_STATS = {
   'Client':    [],
 };
 
-// Unified task buckets — same for all non-Client roles
+// Unified task buckets  -  same for all non-Client roles
 const _UNIFIED_BUCKETS = [
   { key:'production', label:'In Production',stages:['in production'] },
   { key:'requests',   label:'Requests',     stages:['awaiting brand input'] },
@@ -225,12 +225,12 @@ const STRIP_STAGES = [
   { label:'Published',     stages:['published'],            color: STAGE_META['published'].hex,            tab:'library',  bucket:null },
 ];
 
-// Canonical owner list — used by dropdowns, validation, and grid
+// Canonical owner list  -  used by dropdowns, validation, and grid
 const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Client'];
 
-// ── Stage change interceptor — logs every .stage mutation ──
+// -- Stage change interceptor  -  logs every .stage mutation --
 function setStage(post, newStage, source) {
-  console.log('STAGE CHANGE →', {
+  console.log('STAGE CHANGE ->', {
     id: post.id || post.post_id,
     from: post.stage,
     to: newStage,

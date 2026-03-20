@@ -1,5 +1,5 @@
 /* ===============================================
-   utils.js — Shared pure utility functions
+   utils.js  -  Shared pure utility functions
    Loaded after 02-session.js, before everything else.
 =============================================== */
 
@@ -28,28 +28,28 @@ const MONTHS_LONG = [
 ];
 const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-// "D Mon" — no year
+// "D Mon"  -  no year
 function formatDateShort(raw) {
   const d = parseDate(raw);
   if (!d) return '';
   return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
-// "Mon YYYY" — for group headers
+// "Mon YYYY"  -  for group headers
 function formatMonthYear(raw) {
   const d = parseDate(raw);
   if (!d) return 'No Date';
   return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// "Month YYYY" — for calendar headers
+// "Month YYYY"  -  for calendar headers
 function formatMonthYearLong(raw) {
   const d = parseDate(raw);
   if (!d) return 'No Date';
   return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// "DAY D Mon" uppercased — for schedule date headers
+// "DAY D Mon" uppercased  -  for schedule date headers
 function formatWeekdayDateShort(raw) {
   const d = parseDate(raw);
   if (!d) return 'NO DATE';
@@ -66,7 +66,7 @@ function formatDate(raw) {
 }
 
 function displayDate(raw) {
-  return formatDate(raw) || '—';
+  return formatDate(raw) || ' - ';
 }
 
 function esc(str) {
@@ -87,7 +87,7 @@ function timeAgo(ts) {
   return `${Math.floor(diff/86400)}d ago`;
 }
 
-// IST display formatter — display-only, never mutates raw data
+// IST display formatter  -  display-only, never mutates raw data
 function formatIST(ts) {
   if (!ts) return '';
   return new Date(ts).toLocaleString('en-IN', {
@@ -100,7 +100,7 @@ function formatIST(ts) {
   });
 }
 
-// Resolve actor name for write paths — URL-path based, strict allowlist
+// Resolve actor name for write paths  -  URL-path based, strict allowlist
 function resolveActor() {
   const path = window.location.pathname.toLowerCase();
   if (path.includes('client')) return 'Client';
