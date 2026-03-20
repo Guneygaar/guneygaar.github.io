@@ -3,6 +3,10 @@
 =============================================== */
 console.log("LOADED:", "07-post-load.js");
 
+// -- Batch selection state --
+var _batchMode = false;
+var _batchSelected = new Set();
+
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
@@ -1332,7 +1336,7 @@ function buildPipelineCard(p, listKey) {
   var dotCls = 'status-dot';
   if (sk) dotCls += ' sd-' + sk;
 
-  return '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'') + '">' +
+  return '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
     '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
     '<span class="pc-body">' +
       '<span class="pc-title">' + esc(title) + '</span>' +
@@ -1534,6 +1538,83 @@ function toggleStageOverflow(btn, totalHidden) {
   }
 }
 
+// ===============================================
+// Batch selection mode for Ready group
+// ===============================================
+function toggleBatchMode() {
+  _batchMode = !_batchMode;
+  _batchSelected.clear();
+
+  var btn = document.getElementById('batch-select-btn');
+  var bar = document.getElementById('batch-bar');
+
+  if (btn) btn.classList.toggle('active', _batchMode);
+  if (bar) bar.style.display = _batchMode ? 'flex' : 'none';
+
+  document.querySelectorAll('.post-card[data-stage="ready"]').forEach(function(card) {
+    if (_batchMode) {
+      card.classList.add('batch-mode');
+      var cb = document.createElement('div');
+      cb.className = 'batch-checkbox';
+      cb.setAttribute('data-batch-cb', '1');
+      card.insertBefore(cb, card.firstChild);
+    } else {
+      card.classList.remove('batch-mode', 'batch-selected');
+      var existing = card.querySelector('[data-batch-cb]');
+      if (existing) existing.remove();
+    }
+  });
+
+  updateBatchCount();
+}
+
+function toggleBatchCard(postId, cardEl) {
+  if (!_batchMode) return;
+  if (_batchSelected.has(postId)) {
+    _batchSelected.delete(postId);
+    cardEl.classList.remove('batch-selected');
+  } else {
+    _batchSelected.add(postId);
+    cardEl.classList.add('batch-selected');
+  }
+  updateBatchCount();
+}
+
+function updateBatchCount() {
+  var countEl = document.getElementById('batch-count');
+  if (countEl) countEl.textContent = _batchSelected.size;
+}
+
+async function executeBatchAction(targetStage) {
+  if (_batchSelected.size === 0) return;
+
+  var ids = Array.from(_batchSelected);
+  var now = new Date().toISOString();
+  var dbStage = toDbStage(targetStage);
+  var actor = resolveActor();
+
+  try {
+    // PostgREST IN filter: post_id=in.(id1,id2,...)
+    var inList = ids.map(function(id) { return encodeURIComponent(id); }).join(',');
+    await apiFetch('/posts?post_id=in.(' + inList + ')', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        stage: dbStage,
+        status_changed_at: now,
+        updated_at: now,
+        updated_by: actor
+      }),
+    });
+
+    toggleBatchMode();
+    loadPosts();
+
+  } catch (err) {
+    console.error('Batch action error:', err);
+    showToast('Batch update failed - try again', 'error');
+  }
+}
+
 function renderPipeline() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
 }
@@ -1596,10 +1677,16 @@ function _renderPipelineInner() {
       }
       return card;
     }).join('');
+    var selectBtn = (stage === 'ready')
+      ? '<button class="batch-select-btn" id="batch-select-btn" onclick="toggleBatchMode()">Select</button>'
+      : '';
     return `
       <div class="group-hdr">
         <span class="group-label" data-stage="${esc(sk)}">${esc(label)}</span>
-        <span class="group-count">${posts.length}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${selectBtn}
+          <span class="group-count">${posts.length}</span>
+        </div>
       </div>
       <div class="row-list post-list">
         ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
@@ -2151,9 +2238,26 @@ function _closeDayDrawer() {
   var postId  = card.dataset.postId;
   var listKey = card.dataset.list || '';
   if (!postId) return;
+  // Batch mode intercept: clicking a ready card toggles selection
+  if (_batchMode && card.dataset.stage === 'ready') {
+    toggleBatchCard(postId, card);
+    return;
+  }
   // Parked overlay rows also need to close the parked sheet
   if (card.dataset.closeParked) {
     try { closeParked(); } catch (_) {}
   }
   openPCS(postId, listKey);
+});
+
+// -- Wire batch action bar buttons --
+document.addEventListener('DOMContentLoaded', function() {
+  var approvalBtn = document.getElementById('batch-approval-btn');
+  if (approvalBtn) approvalBtn.addEventListener('click', function() {
+    executeBatchAction('awaiting_approval');
+  });
+  var inputBtn = document.getElementById('batch-input-btn');
+  if (inputBtn) inputBtn.addEventListener('click', function() {
+    executeBatchAction('awaiting_brand_input');
+  });
 });
