@@ -70,7 +70,7 @@ function handlePipelineSearch(query) {
 
   var matches = pipelinePosts.filter(function(p) {
     return (p.title && p.title.toLowerCase().indexOf(q) > -1) ||
-           (p.content_pillar && p.content_pillar.toLowerCase().indexOf(q) > -1) ||
+           (p.contentPillar && p.contentPillar.toLowerCase().indexOf(q) > -1) ||
            (p.owner && p.owner.toLowerCase().indexOf(q) > -1);
   });
 
@@ -91,7 +91,7 @@ function handlePipelineSearch(query) {
     var color = stageColorMap[p.stage] || '#555';
     var badgeLabel = stageDisplayMap[p.stage] || p.stage;
     var badgeClass = 'badge-' + p.stage;
-    var pillar = p.content_pillar || '';
+    var pillar = p.contentPillar || '';
     return '<div class="pipeline-search-result-item" onclick="closePipelineSearch(); openPCS(\'' + p.id + '\')">' +
       '<div class="result-stage-dot" style="background:' + color + '"></div>' +
       '<div class="pipeline-result-body">' +
@@ -2477,6 +2477,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var inputBtn = document.getElementById('batch-input-btn');
   if (inputBtn) inputBtn.addEventListener('click', function() {
     executeBatchAction('awaiting_brand_input');
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!_pipelineSearchOpen) return;
+    var bar = document.getElementById('pipeline-search-bar');
+    var trigger = document.getElementById('pipeline-search-trigger');
+    if (bar && !bar.contains(e.target) && trigger && !trigger.contains(e.target)) {
+      closePipelineSearch();
+    }
   });
 });
 
