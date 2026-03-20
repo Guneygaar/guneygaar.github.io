@@ -10,6 +10,17 @@ var _batchSelected = new Set();
 // -- Person filter state --
 var _activePerson = null;
 
+// -- Group collapse state (persists across re-renders) --
+var _collapsedGroups = {};
+
+function togglePipelineGroup(stage) {
+  _collapsedGroups[stage] = !_collapsedGroups[stage];
+  var section = document.getElementById('group-section-' + stage);
+  if (section) {
+    section.classList.toggle('collapsed', !!_collapsedGroups[stage]);
+  }
+}
+
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
@@ -1725,24 +1736,39 @@ function _renderPipelineInner() {
       return card;
     }).join('');
     var selectBtn = (stage === 'ready')
-      ? '<button class="batch-select-btn" id="batch-select-btn" onclick="toggleBatchMode()">Select</button>'
+      ? '<button class="batch-select-btn" id="batch-select-btn" onclick="event.stopPropagation();toggleBatchMode()">Select</button>'
       : '';
     return `
-      <div class="group-hdr">
-        <span class="group-label" data-stage="${esc(sk)}">${esc(label)}</span>
-        <div style="display:flex;align-items:center;gap:8px">
+      <div class="group-section" id="group-section-${esc(stage)}" data-stage="${esc(stage)}">
+      <div class="group-hdr" onclick="togglePipelineGroup('${esc(stage)}')">
+        <div class="group-hdr-left">
+          <span class="group-chevron">&#9660;</span>
+          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}">${esc(label)}</div>
+        </div>
+        <div class="group-hdr-right" style="display:flex;align-items:center;gap:8px">
           ${selectBtn}
-          <span class="group-count">${posts.length}</span>
+          <div class="group-count">${posts.length}</div>
         </div>
       </div>
-      <div class="row-list post-list">
-        ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
+      <div class="group-post-list">
+        <div class="row-list post-list">
+          ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
+        </div>
+      </div>
       </div>`;
   }).join('');
 
   const container = document.getElementById('pipeline-container');
   if (!container) return;
   container.innerHTML = html;
+
+  // -- Restore collapsed state across re-renders --
+  Object.keys(_collapsedGroups).forEach(function(stage) {
+    if (_collapsedGroups[stage]) {
+      var section = document.getElementById('group-section-' + stage);
+      if (section) section.classList.add('collapsed');
+    }
+  });
 
   // -- Update chip counts from rendered group headers --
   updatePipelineChipCounts();

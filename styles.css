@@ -3561,6 +3561,79 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .group-label[data-stage="scheduled"]  { color: var(--cyan); }
 .group-count { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); background: var(--surface2); border: 1px solid var(--muted2); padding: 2px 8px; }
 
+/* ── Group collapse/expand ── */
+.group-section { }
+
+.group-hdr {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.group-hdr:hover { background: rgba(255,255,255,0.02); }
+.group-hdr:active { background: rgba(255,255,255,0.04); }
+
+.group-hdr-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.group-chevron {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.2s, color 0.15s;
+  display: inline-block;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.group-hdr:hover .group-chevron { color: var(--text2); }
+.group-section.collapsed .group-chevron { transform: rotate(-90deg); }
+
+.group-section.collapsed .group-hdr {
+  border-bottom: 1px dotted var(--dotline);
+  margin-bottom: 0;
+}
+
+.group-post-list {
+  overflow: hidden;
+  max-height: 2000px;
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s, margin 0.2s;
+}
+.group-section.collapsed .group-post-list {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0 !important;
+}
+
+.group-section.collapsed .group-count { color: var(--text); }
+.group-section.collapsed[data-stage="awaiting_approval"] .group-count {
+  color: var(--red);
+  border-color: rgba(255,75,75,0.3);
+  background: rgba(255,75,75,0.06);
+}
+.group-section.collapsed[data-stage="ready"] .group-count {
+  color: var(--green);
+  border-color: rgba(62,207,142,0.3);
+  background: rgba(62,207,142,0.06);
+}
+.group-section.collapsed[data-stage="awaiting_brand_input"] .group-count {
+  color: var(--purple);
+  border-color: rgba(155,135,245,0.3);
+  background: rgba(155,135,245,0.06);
+}
+.group-section.collapsed[data-stage="scheduled"] .group-count {
+  color: var(--cyan);
+  border-color: rgba(34,211,238,0.3);
+  background: rgba(34,211,238,0.06);
+}
+.group-section.collapsed[data-stage="in_production"] .group-count {
+  color: var(--amber);
+  border-color: rgba(246,166,35,0.3);
+  background: rgba(246,166,35,0.06);
+}
+
 /* ═══════════════════════════════════════════════
    PIPELINE POST CARD
 ═══════════════════════════════════════════════ */
