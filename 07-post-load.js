@@ -737,6 +737,12 @@ function renderScoreboard() {
     var approvalPad = pad2(approvalDisplay.replace(/[^0-9]/g, '') || '0');
     var inputPad = pad2(inputDisplay.replace(/[^0-9]/g, '') || '0');
 
+    // Dynamic button labels
+    var pranavLabel = pranavVal < 0 ? 'CREATE MORE' : 'INITIATE DRAFT';
+    var chitraLabel = chitraVal > 0 ? 'DISPATCH NOW' : 'DISPATCH READY';
+    var approvalLabel = approval > 0 ? 'APPROVAL DUE' : 'APPROVAL';
+    var inputLabel = input > 0 ? 'INPUT DUE' : 'INPUT';
+
     // Chitra fraction: ready|total
     var chitraTotal = safe(data.chitra.total);
     var chitraFraction = chitraTotal > 0
@@ -754,50 +760,54 @@ function renderScoreboard() {
         '</div>' +
       '</div>' +
 
-      /* ── 2. Main Grid (two operator panels with gold divider) ── */
-      '<div class="sb-main-grid">' +
-        '<div class="sb-main-cell" data-action="open-production">' +
+      /* ── 2. Main section: header strip + grid ── */
+      '<div class="sb-main-section">' +
+        /* Metallic header strip with labels */
+        '<div class="sb-main-header">' +
           '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-num gold">' + pranavPad + '</div>' +
-          '<div class="sb-dots gold">\u25CF \u25CF \u25CF \u25CB</div>' +
-          '<div class="sb-main-sub gold">INITIATE DRAFT</div>' +
-        '</div>' +
-        '<div class="sb-divider"></div>' +
-        '<div class="sb-main-cell" data-action="open-ready">' +
           '<div class="sb-main-label">CHITRA</div>' +
-          '<div class="sb-main-num green">' + chitraFraction + '</div>' +
-          '<div class="sb-dots green">\u25CF \u25CF \u25CF \u25CB</div>' +
-          '<div class="sb-main-sub green">DISPATCH READY</div>' +
+        '</div>' +
+        /* Number panels with gold divider */
+        '<div class="sb-main-grid">' +
+          '<div class="sb-main-cell" data-action="open-production">' +
+            '<div class="sb-main-num gold">' + pranavPad + '</div>' +
+            '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
+          '</div>' +
+          '<div class="sb-divider"></div>' +
+          '<div class="sb-main-cell" data-action="open-ready">' +
+            '<div class="sb-main-num green">' + chitraFraction + '</div>' +
+            '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 3. CLIENT section label bar with decorative rivets ── */
+      /* ── 3. CLIENT section label bar ── */
       '<div class="sb-section-label">' +
-        '<span class="sb-rivet-row">\u25CF \u25CF \u25CF \u25CF \u25CF \u25CF</span>' +
+        '<span class="sb-rivet-row"></span>' +
         '<span>CLIENT</span>' +
-        '<span class="sb-rivet-row">\u25CF \u25CF \u25CF \u25CF \u25CF \u25CF</span>' +
+        '<span class="sb-rivet-row"></span>' +
       '</div>' +
 
-      /* ── 4. Client Grid (two metric panels) ── */
+      /* ── 4. Client Grid (number → label → dots) ── */
       '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
           '<div class="sb-client-num">' + approvalPad + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF \u25CB</div>' +
-          '<div class="sb-client-label">APPROVAL</div>' +
+          '<div class="sb-client-label">' + approvalLabel + '</div>' +
+          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
         '</div>' +
         '<div class="sb-client-divider"></div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
           '<div class="sb-client-num">' + inputPad + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF \u25CB</div>' +
-          '<div class="sb-client-label">INPUT</div>' +
+          '<div class="sb-client-label">' + inputLabel + '</div>' +
+          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 5. DO THIS NOW bar with bottom rivets ── */
+      /* ── 5. NEXT ACTION bar ── */
       '<div class="sb-task-bar"' + taskAttrs + '>' +
         '<div class="sb-task-content">' +
-          '<div class="sb-task-label">DO THIS NOW</div>' +
-          '<div class="sb-task-text">' + esc(taskText) + ' &nbsp;\u2026</div>' +
+          '<div class="sb-task-label">NEXT ACTION</div>' +
+          '<div class="sb-task-text">' + esc(taskText) + ' <span class="sb-task-dots">\u25CF \u25CF \u25CF</span></div>' +
         '</div>' +
         '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
       '</div>' +
