@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 640" preserveAspectRatio="none">
+  <defs>
+    <!-- Brushed metal noise -->
+    <filter id="noise" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" seed="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="saturate" values="0" in="n" result="grey"/>
+      <feBlend in="SourceGraphic" in2="grey" mode="multiply"/>
+    </filter>
+    <!-- Outer frame gradient (top to bottom bevel) -->
+    <linearGradient id="frameGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4a4a4a"/>
+      <stop offset="4%" stop-color="#3a3a3a"/>
+      <stop offset="15%" stop-color="#2a2a2a"/>
+      <stop offset="50%" stop-color="#222"/>
+      <stop offset="85%" stop-color="#2a2a2a"/>
+      <stop offset="96%" stop-color="#3a3a3a"/>
+      <stop offset="100%" stop-color="#4a4a4a"/>
+    </linearGradient>
+    <!-- Side bevel highlight -->
+    <linearGradient id="sideHL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.12)"/>
+      <stop offset="8%" stop-color="rgba(255,255,255,0.04)"/>
+      <stop offset="50%" stop-color="rgba(255,255,255,0)"/>
+      <stop offset="92%" stop-color="rgba(255,255,255,0.02)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.08)"/>
+    </linearGradient>
+    <!-- Top bevel highlight -->
+    <linearGradient id="topHL" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="30%" stop-color="rgba(255,255,255,0.02)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </linearGradient>
+    <!-- Inner edge shadow -->
+    <linearGradient id="innerTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <linearGradient id="innerBot" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <linearGradient id="innerLeft" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <linearGradient id="innerRight" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0%" stop-color="#000"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </linearGradient>
+    <!-- Corner bolt gradient -->
+    <radialGradient id="bolt">
+      <stop offset="0%" stop-color="#555"/>
+      <stop offset="40%" stop-color="#444"/>
+      <stop offset="60%" stop-color="#333"/>
+      <stop offset="100%" stop-color="#222"/>
+    </radialGradient>
+    <!-- Screw slot -->
+    <linearGradient id="screwSlot" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111"/>
+      <stop offset="50%" stop-color="#222"/>
+      <stop offset="100%" stop-color="#111"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer black edge -->
+  <rect x="0" y="0" width="420" height="640" rx="14" fill="#0a0a0a"/>
+
+  <!-- Main frame body -->
+  <rect x="2" y="2" width="416" height="636" rx="12" fill="url(#frameGrad)" filter="url(#noise)"/>
+
+  <!-- Side highlight overlay -->
+  <rect x="2" y="2" width="416" height="636" rx="12" fill="url(#sideHL)"/>
+
+  <!-- Top bevel highlight -->
+  <rect x="2" y="2" width="416" height="80" rx="12" fill="url(#topHL)"/>
+
+  <!-- Outer edge lines -->
+  <rect x="1" y="1" width="418" height="638" rx="13" fill="none" stroke="#000" stroke-width="1.5"/>
+  <rect x="4" y="4" width="412" height="632" rx="10" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+
+  <!-- Inner channel groove (where screen sits) -->
+  <rect x="18" y="26" width="384" height="588" rx="6" fill="#050505"/>
+  <rect x="18" y="26" width="384" height="588" rx="6" fill="none" stroke="#111" stroke-width="2"/>
+  <rect x="19" y="27" width="382" height="586" rx="5" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>
+
+  <!-- Inner edge shadows (depth) -->
+  <rect x="18" y="26" width="384" height="20" rx="6" fill="url(#innerTop)" opacity="0.8"/>
+  <rect x="18" y="594" width="384" height="20" rx="6" fill="url(#innerBot)" opacity="0.7"/>
+  <rect x="18" y="26" width="14" height="588" fill="url(#innerLeft)" opacity="0.5"/>
+  <rect x="388" y="26" width="14" height="588" fill="url(#innerRight)" opacity="0.5"/>
+
+  <!-- Corner bolts - top left -->
+  <circle cx="28" cy="14" r="4" fill="url(#bolt)"/>
+  <circle cx="28" cy="14" r="4" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="25.5" y1="14" x2="30.5" y2="14" stroke="url(#screwSlot)" stroke-width="1.2"/>
+
+  <!-- Corner bolts - top right -->
+  <circle cx="392" cy="14" r="4" fill="url(#bolt)"/>
+  <circle cx="392" cy="14" r="4" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="389.5" y1="14" x2="394.5" y2="14" stroke="url(#screwSlot)" stroke-width="1.2"/>
+
+  <!-- Corner bolts - bottom left -->
+  <circle cx="28" cy="626" r="4" fill="url(#bolt)"/>
+  <circle cx="28" cy="626" r="4" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="25.5" y1="626" x2="30.5" y2="626" stroke="url(#screwSlot)" stroke-width="1.2"/>
+
+  <!-- Corner bolts - bottom right -->
+  <circle cx="392" cy="626" r="4" fill="url(#bolt)"/>
+  <circle cx="392" cy="626" r="4" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+  <line x1="389.5" y1="626" x2="394.5" y2="626" stroke="url(#screwSlot)" stroke-width="1.2"/>
+
+  <!-- Mid bolts - left -->
+  <circle cx="10" cy="320" r="3.5" fill="url(#bolt)"/>
+  <circle cx="10" cy="320" r="3.5" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+  <line x1="7.5" y1="320" x2="12.5" y2="320" stroke="url(#screwSlot)" stroke-width="1"/>
+
+  <!-- Mid bolts - right -->
+  <circle cx="410" cy="320" r="3.5" fill="url(#bolt)"/>
+  <circle cx="410" cy="320" r="3.5" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+  <line x1="407.5" y1="320" x2="412.5" y2="320" stroke="url(#screwSlot)" stroke-width="1"/>
+
+  <!-- Frame seam lines (horizontal) -->
+  <line x1="16" y1="24" x2="404" y2="24" stroke="#111" stroke-width="0.5"/>
+  <line x1="16" y1="25" x2="404" y2="25" stroke="rgba(255,255,255,0.04)" stroke-width="0.3"/>
+  <line x1="16" y1="616" x2="404" y2="616" stroke="#111" stroke-width="0.5"/>
+  <line x1="16" y1="617" x2="404" y2="617" stroke="rgba(255,255,255,0.04)" stroke-width="0.3"/>
+
+  <!-- Frame seam lines (vertical) -->
+  <line x1="16" y1="26" x2="16" y2="614" stroke="#111" stroke-width="0.5"/>
+  <line x1="17" y1="26" x2="17" y2="614" stroke="rgba(255,255,255,0.03)" stroke-width="0.3"/>
+  <line x1="404" y1="26" x2="404" y2="614" stroke="#111" stroke-width="0.5"/>
+  <line x1="403" y1="26" x2="403" y2="614" stroke="rgba(255,255,255,0.03)" stroke-width="0.3"/>
+
+  <!-- Status LEDs top-left -->
+  <circle cx="36" cy="14" r="2" fill="#3a1a1a"/>
+  <circle cx="36" cy="14" r="1.2" fill="#661a1a" opacity="0.8"/>
+  <circle cx="44" cy="14" r="2" fill="#3a3a1a"/>
+  <circle cx="44" cy="14" r="1.2" fill="#66661a" opacity="0.8"/>
+  <circle cx="52" cy="14" r="2" fill="#1a3a1a"/>
+  <circle cx="52" cy="14" r="1.2" fill="#1a661a" opacity="0.8"/>
+</svg>
