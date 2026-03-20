@@ -3129,8 +3129,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .row-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 8px 16px var(--sp-4);
+  gap: 1px;
+  padding: 0 10px;
+}
+.post-list {
+  gap: 1px;
+  padding: 0 10px;
+  margin-bottom: 4px;
 }
 
 .pcs-library-month {
@@ -3249,23 +3254,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 12px 14px;
-  background: var(--surface2);
-  border: 1.5px solid transparent;
-  border-radius: 8px;
+  padding: 10px 12px;
+  background: #161616;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid transparent;
+  border-radius: 6px;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
-  min-width: 80px;
+  min-width: 76px;
   width: auto;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.15s;
 }
-.stage-chip:hover { background: #222; }
+.stage-chip:hover { background: #1e1e1e; }
 
 .chip-count {
   font-family: var(--mono);
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1;
   color: var(--text2);
@@ -3281,34 +3287,32 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* Active states */
-.stage-chip.active { border-left-width: 3px; }
-.stage-chip.active.all { border-color: rgba(255,255,255,0.25); background: #1e1e1e; }
+.stage-chip.active { background: #1e1e1e; }
+.stage-chip.active.all { border-left-color: rgba(255,255,255,0.4); }
 .stage-chip.active.all .chip-count { color: var(--text); }
-.stage-chip.active.in_production { border-color: var(--amber); background: rgba(246,166,35,0.07); }
-.stage-chip.active.in_production .chip-count { color: var(--amber); }
-.stage-chip.active.in_production .chip-label { color: var(--amber); opacity: 0.7; }
-.stage-chip.active.ready { border-color: var(--green); background: rgba(62,207,142,0.07); }
-.stage-chip.active.ready .chip-count { color: var(--green); }
-.stage-chip.active.ready .chip-label { color: var(--green); opacity: 0.7; }
-.stage-chip.active.awaiting_approval { border-color: var(--red); background: rgba(255,75,75,0.07); }
+.stage-chip.active.awaiting_approval { border-left-color: var(--red); background: rgba(255,75,75,0.06); }
 .stage-chip.active.awaiting_approval .chip-count { color: var(--red); }
-.stage-chip.active.awaiting_brand_input { border-color: var(--purple); background: rgba(155,135,245,0.07); }
+.stage-chip.active.awaiting_brand_input { border-left-color: var(--purple); background: rgba(155,135,245,0.06); }
 .stage-chip.active.awaiting_brand_input .chip-count { color: var(--purple); }
-.stage-chip.active.scheduled { border-color: var(--cyan); background: rgba(34,211,238,0.07); }
+.stage-chip.active.scheduled { border-left-color: var(--cyan); background: rgba(34,211,238,0.06); }
 .stage-chip.active.scheduled .chip-count { color: var(--cyan); }
+.stage-chip.active.ready { border-left-color: var(--green); background: rgba(62,207,142,0.06); }
+.stage-chip.active.ready .chip-count { color: var(--green); }
+.stage-chip.active.in_production { border-left-color: var(--amber); background: rgba(246,166,35,0.06); }
+.stage-chip.active.in_production .chip-count { color: var(--amber); }
 
 /* Inactive count colors dimmed */
-.stage-chip.in_production .chip-count { color: var(--amber); opacity: 0.5; }
-.stage-chip.ready .chip-count { color: var(--green); opacity: 0.5; }
-.stage-chip.awaiting_approval .chip-count { color: var(--red); opacity: 0.5; }
-.stage-chip.awaiting_brand_input .chip-count { color: var(--purple); opacity: 0.5; }
-.stage-chip.scheduled .chip-count { color: var(--cyan); opacity: 0.5; }
+.stage-chip.awaiting_approval .chip-count { color: var(--red); opacity: 0.4; }
+.stage-chip.awaiting_brand_input .chip-count { color: var(--purple); opacity: 0.4; }
+.stage-chip.scheduled .chip-count { color: var(--cyan); opacity: 0.4; }
+.stage-chip.ready .chip-count { color: var(--green); opacity: 0.4; }
+.stage-chip.in_production .chip-count { color: var(--amber); opacity: 0.4; }
 
 /* ═══════════════════════════════════════════════
    PIPELINE GROUP HEADER
 ═══════════════════════════════════════════════ */
 
-.group-hdr { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 10px; }
+.group-hdr { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px 6px; }
 .group-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; }
 .group-label[data-stage="production"] { color: var(--amber); }
 .group-label[data-stage="ready"]      { color: var(--green); }
@@ -3325,7 +3329,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 9px 12px;
   background: var(--surface);
   border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px;
