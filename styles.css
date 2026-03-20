@@ -4911,3 +4911,118 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   padding: 2px 8px;
   border: 1px dotted var(--muted2);
 }
+
+/* ===============================================
+   BATCH APPROVAL BAR
+=============================================== */
+.batch-bar {
+  position: fixed;
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 448px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--surface2);
+  border: 1px dotted var(--dotline);
+  border-radius: 8px;
+  z-index: 150;
+  backdrop-filter: blur(12px);
+}
+
+.batch-bar-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text2);
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.batch-bar-count span {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.batch-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.batch-btn {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border: 1px dotted;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.batch-btn-input {
+  color: var(--purple);
+  border-color: rgba(155,135,245,0.4);
+}
+.batch-btn-input:hover { background: rgba(155,135,245,0.08); }
+
+.batch-btn-approval {
+  color: var(--green);
+  border-color: rgba(62,207,142,0.4);
+}
+.batch-btn-approval:hover { background: rgba(62,207,142,0.08); }
+
+.batch-select-btn {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px dotted rgba(255,255,255,0.2);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.batch-select-btn.active {
+  color: var(--text);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.post-card.batch-mode { cursor: pointer; }
+.post-card.batch-selected {
+  border-color: rgba(62,207,142,0.4);
+  background: rgba(62,207,142,0.04);
+}
+
+.batch-checkbox {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--muted);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.post-card.batch-selected .batch-checkbox {
+  background: var(--green);
+  border-color: var(--green);
+}
+.batch-checkbox::after {
+  content: '';
+  width: 8px;
+  height: 5px;
+  border-left: 1.5px solid #000;
+  border-bottom: 1.5px solid #000;
+  transform: rotate(-45deg) translateY(-1px);
+  opacity: 0;
+}
+.post-card.batch-selected .batch-checkbox::after { opacity: 1; }
