@@ -1348,22 +1348,21 @@ function buildPipelineCard(p, listKey) {
 // -- Pipeline chip count updater ----------------
 function updatePipelineChipCounts() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var pipelinePosts = posts.filter(function(p) {
+    return !['published', 'parked', 'rejected'].includes(p.stage);
+  });
   var stageCounts = {
-    all:                  posts.length,
-    in_production:        posts.filter(function(p) { return p.stage === 'in_production'; }).length,
-    ready:                posts.filter(function(p) { return p.stage === 'ready'; }).length,
-    awaiting_approval:    posts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
-    awaiting_brand_input: posts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
-    scheduled:            posts.filter(function(p) { return p.stage === 'scheduled'; }).length,
-    published:            posts.filter(function(p) { return p.stage === 'published'; }).length,
-    parked:               posts.filter(function(p) { return p.stage === 'parked'; }).length,
-    rejected:             posts.filter(function(p) { return p.stage === 'rejected'; }).length,
+    all:                  pipelinePosts.length,
+    in_production:        pipelinePosts.filter(function(p) { return p.stage === 'in_production'; }).length,
+    ready:                pipelinePosts.filter(function(p) { return p.stage === 'ready'; }).length,
+    awaiting_approval:    pipelinePosts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
+    awaiting_brand_input: pipelinePosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
+    scheduled:            pipelinePosts.filter(function(p) { return p.stage === 'scheduled'; }).length,
   };
-  // Map DB stage keys to chip element short keys
   var chipMap = {
     all: 'all', in_production: 'in_production', ready: 'ready',
     awaiting_approval: 'awaiting_approval', awaiting_brand_input: 'awaiting_brand_input',
-    scheduled: 'scheduled', published: 'published', parked: 'parked', rejected: 'rejected'
+    scheduled: 'scheduled'
   };
   var keys = Object.keys(stageCounts);
   for (var k = 0; k < keys.length; k++) {
