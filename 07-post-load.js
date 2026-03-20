@@ -812,7 +812,7 @@ function renderScoreboard() {
     html += '<div class="person-right-title">' + pranavInSystem + ' of ' + pranavTarget + ' in system</div>';
     html += '</div>';
     html += '</div>';
-    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-pranav" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\',\'scheduled\'])">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
+    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-pranav" onclick="event.stopPropagation();if(typeof openNewPostModal===\'function\')openNewPostModal()">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
     html += '</div>';
 
     /* -- CHITRA SECTION -- */
@@ -1361,8 +1361,8 @@ function updatePipelineChipCounts() {
   };
   // Map DB stage keys to chip element short keys
   var chipMap = {
-    all: 'all', in_production: 'production', ready: 'ready',
-    awaiting_approval: 'approval', awaiting_brand_input: 'input',
+    all: 'all', in_production: 'in_production', ready: 'ready',
+    awaiting_approval: 'awaiting_approval', awaiting_brand_input: 'awaiting_brand_input',
     scheduled: 'scheduled', published: 'published', parked: 'parked', rejected: 'rejected'
   };
   var keys = Object.keys(stageCounts);
