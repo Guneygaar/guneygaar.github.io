@@ -737,60 +737,63 @@ function renderScoreboard() {
     var approvalPad = pad2(approvalDisplay.replace(/[^0-9]/g, '') || '0');
     var inputPad = pad2(inputDisplay.replace(/[^0-9]/g, '') || '0');
 
-    // Chitra shows fraction: ready / total
+    // Chitra fraction: ready|total
     var chitraTotal = safe(data.chitra.total);
     var chitraFraction = chitraTotal > 0
-      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction">/' + chitraTotal + '</span>'
+      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction"><span class="sb-pipe">|</span>' + chitraTotal + '</span>'
       : chitraPad;
 
     return '<section class="pcs-scoreboard">' +
       '<div class="sb-inner">' +
 
-      /* ── 1. Critical Banner (horizontal: number LEFT, text RIGHT) ── */
+      /* ── 1. Critical Banner (centered stacked, dashed red border) ── */
       '<div class="sb-critical-panel">' +
-        '<div class="sb-critical-num">' + scheduled + '</div>' +
-        '<div class="sb-critical-text">' +
-          '<div class="sb-critical-label">CRITICAL:' + scheduled + '</div>' +
-          '<div class="sb-critical-sub">POSTS SCHEDULED</div>' +
+        '<div class="sb-critical-box">' +
+          '<div class="sb-critical-label">CRITICAL</div>' +
+          '<div class="sb-critical-num">' + scheduled + '</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 2. Main Grid (two operator panels) ── */
+      /* ── 2. Main Grid (two operator panels with gold divider) ── */
       '<div class="sb-main-grid">' +
         '<div class="sb-main-cell" data-action="open-production">' +
           '<div class="sb-main-label">PRANAV</div>' +
           '<div class="sb-main-num gold">' + pranavPad + '</div>' +
-          '<div class="sb-dots gold">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-dots gold">\u25CF \u25CF \u25CF \u25CB</div>' +
           '<div class="sb-main-sub gold">INITIATE DRAFT</div>' +
         '</div>' +
         '<div class="sb-divider"></div>' +
         '<div class="sb-main-cell" data-action="open-ready">' +
           '<div class="sb-main-label">CHITRA</div>' +
           '<div class="sb-main-num green">' + chitraFraction + '</div>' +
-          '<div class="sb-dots green">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-dots green">\u25CF \u25CF \u25CF \u25CB</div>' +
           '<div class="sb-main-sub green">DISPATCH READY</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 3. CLIENT section label bar ── */
-      '<div class="sb-section-label">CLIENT</div>' +
+      /* ── 3. CLIENT section label bar with decorative rivets ── */
+      '<div class="sb-section-label">' +
+        '<span class="sb-rivet-row">\u25CF \u25CF \u25CF \u25CF \u25CF \u25CF</span>' +
+        '<span>CLIENT</span>' +
+        '<span class="sb-rivet-row">\u25CF \u25CF \u25CF \u25CF \u25CF \u25CF</span>' +
+      '</div>' +
 
       /* ── 4. Client Grid (two metric panels) ── */
       '<div class="sb-client-strip">' +
         '<div class="sb-client-cell" data-action="open-approval">' +
           '<div class="sb-client-num">' + approvalPad + '</div>' +
-          '<div class="sb-dots dim">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-dots dim">\u25CF \u25CF \u25CF \u25CB</div>' +
           '<div class="sb-client-label">APPROVAL</div>' +
         '</div>' +
         '<div class="sb-client-divider"></div>' +
         '<div class="sb-client-cell" data-action="open-input">' +
           '<div class="sb-client-num">' + inputPad + '</div>' +
-          '<div class="sb-dots dim">\u25CF\u25CF\u25CF\u25CB</div>' +
+          '<div class="sb-dots dim">\u25CF \u25CF \u25CF \u25CB</div>' +
           '<div class="sb-client-label">INPUT</div>' +
         '</div>' +
       '</div>' +
 
-      /* ── 5. DO THIS NOW bar ── */
+      /* ── 5. DO THIS NOW bar with bottom rivets ── */
       '<div class="sb-task-bar"' + taskAttrs + '>' +
         '<div class="sb-task-content">' +
           '<div class="sb-task-label">DO THIS NOW</div>' +
