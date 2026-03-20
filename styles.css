@@ -739,6 +739,16 @@ a:hover { text-decoration: underline; }
   font-size: 13px;
 }
 
+.notif-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  display: inline-block;
+  margin-left: auto;
+}
+
 /* User menu */
 .user-menu-wrap { position: relative; }
 .user-menu {

@@ -260,7 +260,7 @@ let _notifCache = [];   // cached fetched notifications
 
 async function fetchUnreadCount() {
   try {
-    const data = await apiFetch('/activity_log?select=id&read=eq.false&limit=50');
+    const data = await apiFetch('/notifications?select=id&read=eq.false&limit=50');
     _unreadCount = Array.isArray(data) ? data.length : 0;
     renderNotificationBadge();
   } catch {}
@@ -271,9 +271,9 @@ async function fetchAndRenderNotifications() {
   if (!list) return;
   list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">Loading...</div>';
   try {
-    const data = await apiFetch('/activity_log?select=*&order=created_at.desc&limit=30');
+    const data = await apiFetch('/notifications?select=id,type,message,read,created_at&order=created_at.desc&limit=20');
     if (!Array.isArray(data) || !data.length) {
-      list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">No activity yet.</div>';
+      list.innerHTML = '<div style="padding:16px;color:var(--text3);text-align:center">No notifications yet.</div>';
       _notifCache = [];
       return;
     }
@@ -294,15 +294,13 @@ function _renderNotifList(data, list) {
   _unreadCount = data.filter(n => !n.read).length;
   renderNotificationBadge();
   list.innerHTML = data.map(n => {
-    const actor  = _notifActor(n.actor);
-    const action = _notifAction(n.action);
-    const title  = _notifTitle(n.post_id);
     const time   = _notifTime(n.created_at);
     const unread = n.read ? '' : ' unread';
+    const dot    = n.read ? '' : '<span class="notif-dot"></span>';
     return `
-    <div class="notif-item${unread}" data-post-id="${esc(n.post_id || '')}" data-notif-id="${esc(n.id || '')}">
-      <div class="notif-primary">${esc(actor)} ${esc(action)}</div>
-      <div class="notif-secondary">${esc(title)}</div>
+    <div class="notif-item${unread}" data-notif-id="${esc(n.id || '')}">
+      ${dot}
+      <div class="notif-primary">${esc(n.message || '')}</div>
       <div class="notif-ts">${esc(time)}</div>
     </div>`;
   }).join('');
@@ -310,7 +308,7 @@ function _renderNotifList(data, list) {
 
 async function markAllNotificationsRead() {
   try {
-    await apiFetch('/activity_log?read=eq.false', {
+    await apiFetch('/notifications?read=eq.false', {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
     });
@@ -374,7 +372,7 @@ function openPostFromNotification(postId, notifId, el) {
     _unreadCount = _notifCache.filter(n => !n.read).length;
     renderNotificationBadge();
     // Fire-and-forget DB update for this single notification
-    apiFetch('/activity_log?id=eq.' + notifId, {
+    apiFetch('/notifications?id=eq.' + notifId, {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
     }).catch(() => {});
@@ -463,23 +461,9 @@ async function openTimeline(postId, title) {
   list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading...</div>';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  try {
-    const data = await apiFetch(`/activity_log?post_id=eq.${encodeURIComponent(postId)}&order=created_at.desc&limit=30`);
-    if (!Array.isArray(data) || !data.length) {
-      list.innerHTML = '<div style="color:var(--text3);padding:12px 0;font-size:13px">No activity recorded yet.</div>';
-      return;
-    }
-    list.innerHTML = data.map(e => `
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
-          <div class="timeline-action">${esc(e.action||'')}</div>
-          <div class="timeline-meta" title="${esc(formatIST(e.created_at))}">${esc(e.actor||'Unknown')} . ${timeAgo(e.created_at)}</div>
-        </div>
-      </div>`).join('');
-  } catch {
-    list.innerHTML = '<div style="color:var(--c-red);font-size:13px">Could not load history.</div>';
-  }
+  // READ from activity_log removed - activity_log contains system noise.
+  // Use notifications table for user-facing messages instead.
+  list.innerHTML = '<div style="color:var(--text3);padding:12px 0;font-size:13px">No activity recorded yet.</div>';
 }
 function closeTimeline() {
   document.getElementById('timeline-overlay')?.classList.remove('open');
