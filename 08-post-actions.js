@@ -987,9 +987,9 @@ function _buildNotes(post, canEdit, id) {
 var _ADVANCE_SEQ = ['in_production', 'ready', 'awaiting_approval', 'scheduled', 'published'];
 var _ADVANCE_LABELS = {
   'ready': 'Move to Ready',
-  'awaiting_approval': 'Move to Approval',
-  'scheduled': 'Move to Scheduled',
-  'published': 'Move to Published'
+  'awaiting_approval': 'Send for Approval',
+  'scheduled': 'Mark Scheduled',
+  'published': 'Mark Published'
 };
 var _ADVANCE_CLS = {
   'ready': 'to-ready',
@@ -1004,15 +1004,24 @@ function _renderAdvanceButton(stageLC) {
   var label = document.getElementById('pc-advance-label');
   if (!block || !btn || !label) return;
 
-  // Normalise variant stages
-  var norm = stageLC;
-  if (stageLC === 'awaiting_brand_input') norm = 'in_production';
-  if (stageLC === 'parked') norm = 'scheduled';
-  if (stageLC === 'rejected') norm = 'in_production';
+  // Hide advance for terminal/special stages
+  if (stageLC === 'published' || stageLC === 'parked' || stageLC === 'rejected') {
+    block.style.display = 'none';
+    return;
+  }
 
-  var idx = _ADVANCE_SEQ.indexOf(norm);
+  // awaiting_brand_input skips ahead to scheduled
+  if (stageLC === 'awaiting_brand_input') {
+    label.textContent = 'Mark Scheduled';
+    btn.className = 'pc-advance-btn';
+    btn.classList.add('to-scheduled');
+    btn.onclick = function() { changeStage('scheduled'); };
+    block.style.display = '';
+    return;
+  }
+
+  var idx = _ADVANCE_SEQ.indexOf(stageLC);
   if (idx < 0 || idx >= _ADVANCE_SEQ.length - 1) {
-    // Already published or unknown - hide
     block.style.display = 'none';
     return;
   }

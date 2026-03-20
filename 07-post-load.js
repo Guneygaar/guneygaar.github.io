@@ -860,8 +860,12 @@ function _buildDoThisNowItems() {
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-  // 1. Manual tasks first
-  var manualTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).slice(0, 5);
+  // 1. Manual tasks first (sorted by due_date ascending)
+  var manualTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).sort(function(a, b) {
+    var ad = a.due_date || '9999-12-31';
+    var bd = b.due_date || '9999-12-31';
+    return ad < bd ? -1 : ad > bd ? 1 : 0;
+  }).slice(0, 5);
   for (var t = 0; t < manualTasks.length; t++) {
     var task = manualTasks[t];
     var dueStr = task.due_date ? formatDateShort(task.due_date) : '';
