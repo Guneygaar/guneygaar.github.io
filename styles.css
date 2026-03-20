@@ -3217,7 +3217,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1px dotted var(--dotline);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
   -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
+  min-width: 0;
+  width: 100%;
 }
 .stage-strip::-webkit-scrollbar { display: none; }
 
@@ -3569,6 +3578,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .nav-item .nav-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); transition: color 0.15s; }
 .nav-item.active .nav-icon { color: var(--text); }
 .nav-item.active .nav-label { color: var(--text); }
+.nav-item.active { border-bottom: none; border-bottom-color: transparent; background: none; text-decoration: none; color: inherit; }
 
 .nav-badge { position: absolute; top: 8px; right: calc(50% - 20px); background: var(--red); color: #fff; font-family: var(--mono); font-size: 7px; font-weight: 700; padding: 1px 4px; border-radius: 8px; min-width: 14px; text-align: center; border: 1.5px solid var(--bg); }
 
