@@ -119,6 +119,10 @@
   --green-bg: rgba(62,207,142,0.08);
   --amber:    #F6A623;
   --amber-bg: rgba(246,166,35,0.08);
+  --cyan:     #22D3EE;
+  --cyan-bg:  rgba(34,211,238,0.08);
+  --purple:   #9b87f5;
+  --purple-bg:rgba(155,135,245,0.08);
 
   /* Semantic tokens — dark-only design */
   --text-primary: #FFFFFF;
@@ -3209,6 +3213,118 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .row-action {
   display: none;
 }
+
+/* ═══════════════════════════════════════════════
+   PIPELINE STAGE STRIP
+═══════════════════════════════════════════════ */
+
+.stage-strip {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px dotted var(--dotline);
+  -webkit-overflow-scrolling: touch;
+}
+.stage-strip::-webkit-scrollbar { display: none; }
+
+.stage-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px dotted;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  font-family: var(--mono);
+  background: none;
+}
+.stage-chip.active { border-style: solid; }
+
+.stage-chip[data-stage="all"]        { color: #BBBBBB; border-color: rgba(255,255,255,0.2); }
+.stage-chip[data-stage="production"] { color: var(--amber); border-color: rgba(246,166,35,0.35); }
+.stage-chip[data-stage="production"].active { background: var(--amber-bg); }
+.stage-chip[data-stage="ready"]      { color: var(--green); border-color: rgba(62,207,142,0.35); }
+.stage-chip[data-stage="ready"].active { background: var(--green-bg); }
+.stage-chip[data-stage="input"]      { color: var(--purple); border-color: rgba(155,135,245,0.35); }
+.stage-chip[data-stage="input"].active { background: var(--purple-bg); }
+.stage-chip[data-stage="approval"]   { color: var(--red); border-color: rgba(255,75,75,0.35); }
+.stage-chip[data-stage="approval"].active { background: var(--red-bg); }
+.stage-chip[data-stage="scheduled"]  { color: var(--cyan); border-color: rgba(34,211,238,0.35); }
+.stage-chip[data-stage="scheduled"].active { background: var(--cyan-bg); }
+.stage-chip[data-stage="published"]  { color: var(--muted); border-color: var(--muted2); }
+
+.chip-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.chip-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; }
+.chip-count { font-size: 9px; font-weight: 700; background: rgba(255,255,255,0.07); padding: 1px 5px; min-width: 18px; text-align: center; }
+
+/* ═══════════════════════════════════════════════
+   PIPELINE GROUP HEADER
+═══════════════════════════════════════════════ */
+
+.group-hdr { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px 10px; }
+.group-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; }
+.group-label[data-stage="production"] { color: var(--amber); }
+.group-label[data-stage="ready"]      { color: var(--green); }
+.group-label[data-stage="input"]      { color: var(--purple); }
+.group-label[data-stage="approval"]   { color: var(--red); }
+.group-label[data-stage="scheduled"]  { color: var(--cyan); }
+.group-label[data-stage="published"]  { color: var(--muted); }
+.group-count { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); background: var(--surface2); border: 1px solid var(--muted2); padding: 2px 8px; }
+
+/* ═══════════════════════════════════════════════
+   PIPELINE POST CARD
+═══════════════════════════════════════════════ */
+
+.post-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.post-card.overdue::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--red); }
+.post-card.due-today::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); }
+
+.pc-date { font-family: var(--mono); font-size: 10px; min-width: 40px; flex-shrink: 0; color: var(--muted); }
+.pc-date.overdue { color: var(--red); }
+.pc-date.today   { color: var(--gold); }
+.pc-date.nodate  { color: var(--muted2); }
+
+.pc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pc-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-meta { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+
+.pc-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIBILITY BADGE + STATUS DOT
+═══════════════════════════════════════════════ */
+
+.resp-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 8px; font-weight: 700; flex-shrink: 0; }
+.resp-badge.p          { background: var(--amber-bg); border: 1px solid rgba(246,166,35,0.35); color: var(--amber); }
+.resp-badge.ch         { background: var(--green-bg); border: 1px solid rgba(62,207,142,0.35); color: var(--green); }
+.resp-badge.cl-input   { background: var(--purple-bg); border: 1px solid rgba(155,135,245,0.35); color: var(--purple); }
+.resp-badge.cl-approval{ background: var(--red-bg); border: 1px solid rgba(255,75,75,0.35); color: var(--red); }
+.resp-badge.sched      { background: var(--cyan-bg); border: 1px solid rgba(34,211,238,0.35); color: var(--cyan); }
+.resp-badge.pub        { background: rgba(85,85,85,0.08); border: 1px solid var(--muted2); color: var(--muted); }
+
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.sd-ready      { background: var(--green); }
+.status-dot.sd-production { background: var(--amber); }
+.status-dot.sd-input      { background: var(--purple); }
+.status-dot.sd-approval   { background: var(--red); }
+.status-dot.sd-scheduled  { background: var(--cyan); }
+.status-dot.sd-published  { background: var(--muted); }
 
 /* ═══════════════════════════════════════════════
    UPC — Universal Post Card

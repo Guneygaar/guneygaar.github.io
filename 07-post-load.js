@@ -1229,6 +1229,94 @@ function buildPostCard(p, listKey) {
 }
 
 
+// -- Pipeline card builder ----------------------
+function _pipelineStageKey(stage) {
+  var s = (stage || '').toLowerCase().trim();
+  if (s === 'in production') return 'production';
+  if (s === 'ready') return 'ready';
+  if (s === 'awaiting brand input') return 'input';
+  if (s === 'awaiting approval') return 'approval';
+  if (s === 'scheduled') return 'scheduled';
+  if (s === 'published') return 'published';
+  return '';
+}
+
+function buildPipelineCard(p, listKey) {
+  var id     = getPostId(p);
+  var title  = getTitle(p);
+  var stage  = p.stage || '';
+  var pillar = getPillarShort(p.contentPillar);
+  var sk     = _pipelineStageKey(stage);
+
+  var d = parseDate(p.targetDate);
+  var dateStr = formatDateShort(p.targetDate);
+  var today = new Date();
+  today.setHours(0,0,0,0);
+  var isToday = d && d.toDateString() === today.toDateString();
+  var isOverdue = d && !isToday && d < today;
+
+  var cardCls = 'post-card';
+  if (isOverdue) cardCls += ' overdue';
+  if (isToday) cardCls += ' due-today';
+
+  var dateCls = 'pc-date';
+  if (isOverdue) dateCls += ' overdue';
+  else if (isToday) dateCls += ' today';
+  else if (!d) dateCls += ' nodate';
+
+  var dateDisplay = dateStr || '-- --';
+
+  // Responsibility badge
+  var badgeCls = 'resp-badge';
+  var badgeText = '';
+  if (sk === 'production')  { badgeCls += ' p'; badgeText = 'P'; }
+  else if (sk === 'ready')  { badgeCls += ' ch'; badgeText = 'Ch'; }
+  else if (sk === 'input')  { badgeCls += ' cl-input'; badgeText = 'Cl'; }
+  else if (sk === 'approval') { badgeCls += ' cl-approval'; badgeText = 'Cl'; }
+  else if (sk === 'scheduled') { badgeCls += ' sched'; badgeText = 'Ch'; }
+  else if (sk === 'published') { badgeCls += ' pub'; badgeText = '\u2713'; }
+
+  // Status dot
+  var dotCls = 'status-dot';
+  if (sk) dotCls += ' sd-' + sk;
+
+  return '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'') + '">' +
+    '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
+    '<span class="pc-body">' +
+      '<span class="pc-title">' + esc(title) + '</span>' +
+      (pillar ? '<span class="pc-meta">' + esc(pillar) + '</span>' : '') +
+    '</span>' +
+    '<span class="pc-right">' +
+      '<span class="' + badgeCls + '">' + badgeText + '</span>' +
+      '<span class="' + dotCls + '"></span>' +
+    '</span>' +
+  '</div>';
+}
+
+// -- Pipeline chip count updater ----------------
+function updatePipelineChipCounts() {
+  var container = document.getElementById('pipeline-container');
+  if (!container) return;
+  var stageMap = { production: 0, ready: 0, input: 0, approval: 0, scheduled: 0, published: 0 };
+  var total = 0;
+  var hdrs = container.querySelectorAll('.group-hdr');
+  for (var i = 0; i < hdrs.length; i++) {
+    var label = hdrs[i].querySelector('.group-label');
+    var count = hdrs[i].querySelector('.group-count');
+    if (!label || !count) continue;
+    var sk = label.getAttribute('data-stage') || '';
+    var n = parseInt(count.textContent, 10) || 0;
+    if (stageMap.hasOwnProperty(sk)) { stageMap[sk] = n; total += n; }
+  }
+  var allEl = document.getElementById('chip-count-all');
+  if (allEl) allEl.textContent = total || '0';
+  var keys = Object.keys(stageMap);
+  for (var k = 0; k < keys.length; k++) {
+    var el = document.getElementById('chip-count-' + keys[k]);
+    if (el) el.textContent = stageMap[keys[k]];
+  }
+}
+
 // -- Task stage chip filter ---------------------
 let _taskFilter = null; // null = show all, string = bucket key
 
@@ -1415,22 +1503,23 @@ function _renderPipelineInner() {
     const posts   = prioritySort(grouped[stage]);
     const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
     _postLists[listKey] = posts;
-    const { hex, label } = stageStyle(stage);
+    const { label } = stageStyle(stage);
+    const sk = _pipelineStageKey(stage);
     const cards = posts.map((p, i) => {
-      const card = buildPostCard(p, listKey);
+      const card = buildPipelineCard(p, listKey);
       if (isFirstCard && activeFilter) {
         isFirstCard = false;
-        return card.replace('class="row-tile"', 'class="row-tile pc-focus"');
+        return card.replace('class="post-card', 'class="post-card pc-focus');
       }
       return card;
     }).join('');
     return `
-      <div class="pstage-header">
-        <span class="pstage-name" style="color:${hex}">${esc(label)}</span>
-        <span class="pstage-badge">${posts.length}</span>
+      <div class="group-hdr">
+        <span class="group-label" data-stage="${esc(sk)}">${esc(label)}</span>
+        <span class="group-count">${posts.length}</span>
       </div>
       <div class="row-list">
-        ${cards || `<div class="pstage-empty">${emptyMsg.default || 'Empty'}</div>`}
+        ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
       </div>`;
   }).join('');
 
@@ -1438,16 +1527,19 @@ function _renderPipelineInner() {
   if (!container) return;
   container.innerHTML = html;
 
+  // -- Update chip counts from rendered group headers --
+  updatePipelineChipCounts();
+
   // -- GLOBAL EMPTY STATE (filtered view with no results) --
   if (activeFilter && stages.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">\u2713</div><p>${emptyMsg.default || 'Nothing here \u2014 you\u2019re clear'}</p></div>`;
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u2713</div><p>' + (emptyMsg.default || 'Nothing here -- you are clear') + '</p></div>';
     return;
   }
 
   // -- AUTO-SCROLL to first focused card --
   if (activeFilter) {
-    requestAnimationFrame(() => {
-      const focus = container.querySelector('.pc-focus');
+    requestAnimationFrame(function() {
+      var focus = container.querySelector('.pc-focus');
       if (focus) {
         focus.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }

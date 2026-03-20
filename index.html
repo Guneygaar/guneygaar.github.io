@@ -142,6 +142,43 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
+    <div class="stage-strip" id="pipeline-stage-strip">
+      <div class="stage-chip active" data-stage="all">
+        <div class="chip-dot"></div>
+        <div class="chip-label">All</div>
+        <div class="chip-count" id="chip-count-all">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="production">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Production</div>
+        <div class="chip-count" id="chip-count-production">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="ready">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Ready</div>
+        <div class="chip-count" id="chip-count-ready">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="input">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Input</div>
+        <div class="chip-count" id="chip-count-input">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="approval">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Approval</div>
+        <div class="chip-count" id="chip-count-approval">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="scheduled">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Scheduled</div>
+        <div class="chip-count" id="chip-count-scheduled">&mdash;</div>
+      </div>
+      <div class="stage-chip" data-stage="published">
+        <div class="chip-dot"></div>
+        <div class="chip-label">Published</div>
+        <div class="chip-count" id="chip-count-published">&mdash;</div>
+      </div>
+    </div>
     <div class="dash-body">
       <div id="pipeline-container"></div>
     </div>
