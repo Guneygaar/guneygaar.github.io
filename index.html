@@ -104,10 +104,6 @@
   <header class="app-header">
     <span class="app-header-title" id="app-header-title"></span>
     <div class="app-header-right">
-      <!-- Pipeline search (visible only on Pipeline tab) -->
-      <button class="pipeline-search-btn" id="pipeline-search-btn" onclick="openPipelineSearch()" title="Search" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="16.65" y1="16.65" x2="21" y2="21"></line></svg>
-      </button>
       <!-- Notification bell (internal roles only) -->
       <div class="notif-wrap" id="notif-wrap">
         <button class="app-icon-btn" onclick="toggleNotifPanel()" title="Notifications">
@@ -165,6 +161,35 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
+    <div class="hdr" id="pipeline-hdr">
+      <div class="hdr-title" id="pipeline-hdr-title">Pipeline</div>
+      <div class="hdr-icons" id="pipeline-hdr-icons">
+        <button class="search-icon-btn" id="pipeline-search-trigger" onclick="openPipelineSearch()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="pipeline-search-bar" id="pipeline-search-bar">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px;color:var(--muted);flex-shrink:0">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/>
+        </svg>
+        <input
+          class="pipeline-search-input"
+          id="pipeline-search-input"
+          type="text"
+          placeholder="Search posts..."
+          oninput="handlePipelineSearch(this.value)"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+        />
+        <button class="pipeline-search-cancel" onclick="closePipelineSearch()">Cancel</button>
+        <div class="pipeline-search-underline"></div>
+      </div>
+    </div>
+    <div class="pipeline-search-results" id="pipeline-search-results"></div>
+    <div class="pipeline-search-empty" id="pipeline-search-empty">No posts found</div>
     <div class="person-strip" id="person-strip">
       <div class="person-btn client" id="person-btn-client" data-person="client" onclick="filterPipelineByPerson('client')">
         <div class="person-num" id="person-num-client">0</div>
@@ -776,13 +801,6 @@ window.allTasks        = window.allTasks    || [];
 <script src="03-auth.js?v=20260315" defer></script>
 <script src="05-api.js?v=20260315" defer></script>
 <script src="10-ui.js?v=20260315" defer></script>
-<!-- Pipeline search overlay -->
-<div id="pipeline-search-overlay" class="search-overlay" style="display:none;">
-  <div class="search-container">
-    <input type="text" placeholder="Search posts..." class="search-input" id="pipeline-search-input" autofocus />
-    <button class="search-close-btn" onclick="closePipelineSearch()">Close</button>
-  </div>
-</div>
 
 <script src="06-post-create.js?v=20260315" defer></script>
 <script src="07-post-load.js?v=20260315" defer></script>
