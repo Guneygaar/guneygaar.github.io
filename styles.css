@@ -157,7 +157,7 @@
 ═══════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 
 body {
   font-family: var(--sans);
@@ -784,6 +784,10 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
 }
 
 /* Tab panels fill remaining height and scroll internally */
@@ -824,14 +828,15 @@ a:hover { text-decoration: underline; }
 .pcs-dash-surface { padding: 0; }
 
 .dash-section {
-  padding: 22px 20px 20px;
+  padding: 20px 20px 18px;
   border-bottom: 1px dotted var(--dotline);
 }
 
 .dash-section-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
+  width: 100%;
   margin-bottom: 12px;
 }
 
@@ -840,13 +845,15 @@ a:hover { text-decoration: underline; }
   font-size: 9px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
 }
 
 .dash-section-meta {
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
+  text-align: right;
+  flex-shrink: 0;
 }
 
 /* Status badge */
@@ -854,30 +861,33 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 5px 12px;
   border: 1px dotted;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   border-radius: 2px;
 }
 .status-badge-dot {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
 }
 .status-badge--amber { color: var(--amber); border-color: var(--amber); }
 .status-badge--amber .status-badge-dot { background: var(--amber); }
-.status-badge--red { color: var(--red); border-color: var(--red); }
+.status-badge--red { color: var(--red); border-color: var(--red); animation: blink 1.4s ease-in-out infinite; }
 .status-badge--red .status-badge-dot { background: var(--red); }
 .status-badge--green { color: var(--green); border-color: var(--green); }
 .status-badge--green .status-badge-dot { background: var(--green); }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 /* Big numbers */
 .dash-big-num {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 96px;
+  font-size: clamp(88px, 24vw, 120px);
   line-height: 0.9;
   letter-spacing: -4px;
 }
@@ -888,7 +898,7 @@ a:hover { text-decoration: underline; }
 .dash-medium-num {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 72px;
+  font-size: clamp(56px, 16vw, 72px);
   line-height: 0.9;
   letter-spacing: -3px;
 }
@@ -903,9 +913,11 @@ a:hover { text-decoration: underline; }
 /* Dot bar */
 .dot-bar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
   gap: 4px;
   margin-top: 10px;
+  max-width: 100%;
 }
 .dot-bar-dot {
   width: 9px;
@@ -989,13 +1001,13 @@ a:hover { text-decoration: underline; }
   font-size: 9px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
   margin-bottom: 6px;
 }
 .client-cell-num {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 44px;
+  font-size: clamp(36px, 10vw, 48px);
   line-height: 1;
 }
 .client-cell-num--red { color: var(--red); }
@@ -1007,8 +1019,11 @@ a:hover { text-decoration: underline; }
 }
 .client-cell-dots {
   display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
   gap: 3px;
   margin-top: 6px;
+  max-width: 100%;
 }
 .client-cell-dot {
   width: 6px;
@@ -1052,9 +1067,12 @@ a:hover { text-decoration: underline; }
 }
 .do-now-dots {
   display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
   gap: 3px;
   align-items: center;
   flex-shrink: 0;
+  max-width: 100%;
 }
 .do-now-dot {
   width: 6px;
@@ -3414,7 +3432,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 20px 16px;
+  padding: 14px 20px 12px;
   border-bottom: 1px dotted var(--dotline);
   flex-shrink: 0;
   position: sticky;
@@ -3555,10 +3573,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .nav-badge { position: absolute; top: 8px; right: calc(50% - 20px); background: var(--red); color: #fff; font-family: var(--mono); font-size: 7px; font-weight: 700; padding: 1px 4px; border-radius: 8px; min-width: 14px; text-align: center; border: 1.5px solid var(--bg); }
 
 /* ═══════════════════════════════════════════════
-   FAB
+   ACTION BAR (persistent, above bottom nav)
 ═══════════════════════════════════════════════ */
-
-.fab {
+.action-bar {
   position: fixed;
   bottom: 74px;
   right: max(20px, calc(50% - 175px));
@@ -3604,6 +3621,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .fab-post:hover .fab-option-label    { color: var(--green);  border-color: rgba(62,207,142,0.3); }
 .fab-request:hover .fab-option-label { color: var(--amber);  border-color: rgba(246,166,35,0.3); }
 .fab-task:hover .fab-option-label    { color: var(--purple); border-color: rgba(155,135,245,0.3); }
+
+@media (min-width: 481px) {
+  .fab-menu-sheet {
+    right: calc(50% - 240px + 16px);
+  }
+}
 
 /* ═══════════════════════════════════════════════
    REQUEST SHEET
