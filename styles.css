@@ -152,7 +152,7 @@
 ═══════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
 
 body {
   font-family: var(--sans);
@@ -779,6 +779,10 @@ a:hover { text-decoration: underline; }
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
 }
 
 /* Tab panels fill remaining height and scroll internally */
@@ -872,7 +876,7 @@ a:hover { text-decoration: underline; }
 .dash-big-num {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 96px;
+  font-size: clamp(64px, 20vw, 96px);
   line-height: 0.9;
   letter-spacing: -4px;
 }
@@ -883,7 +887,7 @@ a:hover { text-decoration: underline; }
 .dash-medium-num {
   font-family: var(--mono);
   font-weight: 700;
-  font-size: 72px;
+  font-size: clamp(48px, 15vw, 72px);
   line-height: 0.9;
   letter-spacing: -3px;
 }
@@ -901,6 +905,7 @@ a:hover { text-decoration: underline; }
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 10px;
+  max-width: 100%;
 }
 .dot-bar-dot {
   width: 9px;
@@ -1002,8 +1007,10 @@ a:hover { text-decoration: underline; }
 }
 .client-cell-dots {
   display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   margin-top: 6px;
+  max-width: 100%;
 }
 .client-cell-dot {
   width: 6px;
@@ -1047,9 +1054,11 @@ a:hover { text-decoration: underline; }
 }
 .do-now-dots {
   display: flex;
+  flex-wrap: wrap;
   gap: 3px;
   align-items: center;
   flex-shrink: 0;
+  max-width: 100%;
 }
 .do-now-dot {
   width: 6px;
@@ -3421,6 +3430,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-top: 1px solid var(--border);
   display: flex;
   align-items: stretch;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .bnav-btn {
@@ -3494,6 +3505,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transform: translateY(16px) scale(0.9);
   opacity: 0;
   pointer-events: none;
+}
+
+/* FAB + menu: center within 480px container on desktop */
+@media (min-width: 481px) {
+  .fab {
+    right: calc(50% - 240px + 16px);
+  }
+  .fab-menu-sheet {
+    right: calc(50% - 240px + 16px);
+  }
 }
 
 /* FAB menu */
