@@ -214,13 +214,13 @@ function activateRole(role) {
     startRealtime();
     fetchUnreadCount();
   }
-  // Build the ⋮ menu contents (role-switch shown only for Admin)
+  // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 }
 
-// Escape failsafe — callable from console if UI is ever unreachable
+// Escape failsafe  -  callable from console if UI is ever unreachable
 window.resetRolePreview = function() {
   localStorage.removeItem('pcs_role_preview');
   location.reload();
@@ -251,7 +251,7 @@ function _buildUserMenu() {
 }
 
 function applyRoleVisibility() {
-  // All roles see all tabs — no role-based filtering
+  // All roles see all tabs  -  no role-based filtering
   document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
     btn.style.display = '';
   });

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>GBL · Content Ops</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Roboto+Mono:wght@400;700&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
  <link rel="stylesheet" href="styles.css?v=20260315">
 
 </head>
@@ -79,13 +79,13 @@
 
   <!-- HEADER -->
   <header class="app-header">
-    <span class="app-header-title" id="app-header-title">My Tasks</span>
+    <span class="app-header-title" id="app-header-title"></span>
     <div class="app-header-right">
       <!-- Pipeline search (visible only on Pipeline tab) -->
       <button class="pipeline-search-btn" id="pipeline-search-btn" onclick="openPipelineSearch()" title="Search" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="16.65" y1="16.65" x2="21" y2="21"></line></svg>
       </button>
-      <!-- Notification bell (internal roles only — not shown in client-view) -->
+      <!-- Notification bell (internal roles only) -->
       <div class="notif-wrap" id="notif-wrap">
         <button class="app-icon-btn" onclick="toggleNotifPanel()" title="Notifications">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -639,9 +639,7 @@
 <!-- ══════════════════════════════════════════
      FAB — body level so fixed positioning is never clipped
 ══════════════════════════════════════════ -->
-<button class="fab" id="fab" onclick="toggleFabMenu()">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-</button>
+<button class="fab" id="fab" onclick="toggleFabMenu()">+</button>
 <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
 <div class="fab-menu-sheet" id="fab-menu-sheet">
   <button class="fab-menu-item" id="fab-request-btn" onclick="openRequestSheet(); closeFabMenu()">

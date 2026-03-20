@@ -5,7 +5,7 @@ console.log("LOADED:", "07-post-load.js");
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
-// ── Unified link helpers — SINGLE SOURCE OF TRUTH for link display ──
+// -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
 function getPostLink(post) {
   return post.postLink || post.linkedinUrl || '';
 }
@@ -26,11 +26,11 @@ function getPostLinkLabel(post) {
   return '';
 }
 
-// ── Central merge — the ONLY way to update allPosts from server data ──
+// -- Central merge  -  the ONLY way to update allPosts from server data --
 // Skips posts with _isSaving === true (in-flight PATCH).
-// Never replaces allPosts blindly — always mutates existing objects in-place.
+// Never replaces allPosts blindly  -  always mutates existing objects in-place.
 function mergePosts(fresh) {
-  // Normalize DB stage values → UI stage values on ingest
+  // Normalize DB stage values -> UI stage values on ingest
   fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
 
   const map = new Map(allPosts.map(p => [getPostId(p), p]));
@@ -50,7 +50,7 @@ function mergePosts(fresh) {
       return;
     }
 
-    // No in-flight write — let server win
+    // No in-flight write  -  let server win
     // Log stage change from poll merge BEFORE Object.assign overwrites it
     if (existing.stage !== fp.stage) {
       setStage(existing, fp.stage, 'poll_merge');
@@ -62,13 +62,13 @@ function mergePosts(fresh) {
   const freshIds = new Set(fresh.map(p => getPostId(p)));
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
-  // Mutate in-place — preserve the single array reference
+  // Mutate in-place  -  preserve the single array reference
   allPosts.length = 0;
   map.forEach(p => allPosts.push(p));
   cachedPosts = allPosts;
 }
 
-// ── Versioned load guard — prevents stale responses from overriding fresh data ──
+// -- Versioned load guard  -  prevents stale responses from overriding fresh data --
 function _newPostsRequest() {
   window._postsReqId += 1;
   return window._postsReqId;
@@ -161,10 +161,10 @@ function _postsFingerprint(posts) {
 function startRealtime() {
   if (_realtimeTimer) return;
 
-  // Data polling — every 15 seconds (was 8s; reduces API calls & DOM churn)
+  // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
   _realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
-    // Skip poll while user is in a modal — they'll get fresh data on close
+    // Skip poll while user is in a modal  -  they'll get fresh data on close
     if (window._modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
@@ -179,14 +179,14 @@ function startRealtime() {
     }
   }, 15000);
 
-  // Proactive token refresh — every 50 minutes
+  // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
   if (!_tokenRefreshTimer) {
     _tokenRefreshTimer = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       const newToken = await refreshSession();
       if (!newToken) {
-        console.warn('Background token refresh failed — user may need to re-login');
+        console.warn('Background token refresh failed  -  user may need to re-login');
       }
     }, 50 * 60 * 1000); // 50 minutes
   }
@@ -247,11 +247,11 @@ async function markTaskDone(id) {
     });
     console.log('[Task] Completed:', id);
     showToast('\u2713 Task completed', 'success');
-    // UX delay — let user see the strike-through, then refresh everything
+    // UX delay  -  let user see the strike-through, then refresh everything
     setTimeout(async () => {
       try {
         await loadTasks();
-        // Refresh posts → mergePosts → scheduleRender → updateStats (scoreboard)
+        // Refresh posts -> mergePosts -> scheduleRender -> updateStats (scoreboard)
         const data = await apiFetch('/posts?select=*&order=id.desc');
         mergePosts(normalise(data));
         scheduleRender();
@@ -289,45 +289,37 @@ if (!window._taskClickBound) {
     var taskId = task.dataset.taskId;
     var postId = task.dataset.postId;
 
-    // GUARD — invalid task
+    // GUARD  -  invalid task
     if (!taskId) {
       showToast('Invalid task');
       return;
     }
 
-    // CASE 1 — POST TASK → open PCS
+    // CASE 1  -  POST TASK -> open PCS
     if (postId) {
       if (typeof openPCS !== 'function') {
         console.error('[PCS] openPCS missing');
         showToast('Unable to open post');
         return;
       }
-      console.log('[TASK → PCS]', postId);
+      console.log('[TASK -> PCS]', postId);
       openPCS(postId);
       return;
     }
 
-    // CASE 2 — INSTRUCTION TASK → open modal
-    console.log('[TASK → MODAL]', taskId);
+    // CASE 2  -  INSTRUCTION TASK -> open modal
+    console.log('[TASK -> MODAL]', taskId);
     openTaskModal(taskId);
   });
 }
 
-// ── Scoreboard block click delegation ──
+// -- Scoreboard block click delegation --
 if (!window._scoreboardClickBound) {
   window._scoreboardClickBound = true;
 
   document.addEventListener('click', function(e) {
     var el = e.target.closest('[data-action]');
-    if (!el || !el.closest('.pcs-scoreboard')) return;
-
-    // Guard: ignore clicks on non-actionable states
-    var actionEl = el.closest('.sb-action');
-    if (actionEl && (
-      actionEl.classList.contains('loading') ||
-      actionEl.classList.contains('passive') ||
-      actionEl.classList.contains('error')
-    )) return;
+    if (!el || !el.closest('#pcs-dashboard')) return;
 
     e.stopPropagation();
 
@@ -372,7 +364,7 @@ function renderAll() {
   run('updateStats',        updateStats);
   run('roleVisibility',     applyRoleVisibility);
 
-  // Active tab detection — only render the visible tab
+  // Active tab detection  -  only render the visible tab
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
 
   // Tasks tab widgets (always needed when tasks visible)
@@ -512,7 +504,7 @@ function getTopTask() {
     return null;
   }
 
-  // Admin — sees everything: approval → ready → production
+  // Admin  -  sees everything: approval -> ready -> production
   const approval = _ttByStage('awaiting approval');
   if (approval.length) return { type: 'approval', text: 'Follow up \u2014 ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
   const ready = _ttByStage('ready');
@@ -523,9 +515,9 @@ function getTopTask() {
   return null;
 }
 
-// ═══════════════════════════════════════════════
-// Dashboard — Hero, Pipeline, Blockers
-// ═══════════════════════════════════════════════
+// ===============================================
+// Dashboard  -  Hero, Pipeline, Blockers
+// ===============================================
 
 function computeDelayMeta(posts) {
   const now = Date.now();
@@ -538,7 +530,7 @@ function computeDelayMeta(posts) {
     const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
     const createdAt = p.created_at || p.createdAt;
 
-    // If this stage needs status_changed_at and it's missing → unknown
+    // If this stage needs status_changed_at and it's missing -> unknown
     if (needsStatusTs.has(s) && !hasStatusTimestamp) {
       return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
     }
@@ -605,7 +597,7 @@ function _buildTopTaskHtml() {
   </div>`;
 }
 
-// ── Scoreboard — Data + Render ──────────────────
+// -- Scoreboard  -  Data + Render ------------------
 
 // Safe stage normalization
 function _safeStage(p) {
@@ -614,7 +606,7 @@ function _safeStage(p) {
   return p.stage.toLowerCase().trim();
 }
 
-// Config — single source for all thresholds
+// Config  -  single source for all thresholds
 var SCOREBOARD_CONFIG = {
   CREATION_TARGET: 35,
   CRITICAL_THRESHOLD: 7
@@ -707,117 +699,229 @@ function renderScoreboard() {
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
     var scheduled = safe(data.system.scheduled);
-    var threshold = safe(data.system.threshold);
     var isCritical = data.system.isCritical;
 
     var pranavVal = safe(data.pranav.value);
+    var pranavRaw = safe(data.pranav.raw);
     var chitraVal = safe(data.chitra.value);
     var approval = safe(data.client.approval);
     var input = safe(data.client.input);
+    var creationTarget = SCOREBOARD_CONFIG.CREATION_TARGET;
 
-    // Pranav: show deficit as −N (value is already negative or 0)
-    var pranavDisplay = pranavVal < 0 ? '\u2212' + Math.abs(pranavVal) : '0';
-    // Chitra: show ready queue as +N
-    var chitraDisplay = chitraVal > 0 ? '+' + chitraVal : '0';
-    // Client: show pending as −N
-    var approvalDisplay = approval > 0 ? '\u2212' + approval : '0';
-    var inputDisplay = input > 0 ? '\u2212' + input : '0';
+    // Runway state
+    var runwayColor = 'amber';
+    var runwayStatus = 'RUNNING LOW';
+    if (scheduled <= 7) { runwayColor = 'red'; runwayStatus = 'CRITICAL'; }
+    else if (scheduled > 20) { runwayColor = 'green'; runwayStatus = 'HEALTHY'; }
 
-    // Top task for task bar
-    var task = getTopTask();
-    var taskText = task ? task.text : 'No actions pending';
-    var taskPostId = task && task.postId ? task.postId : '';
-    var taskAttrs = taskPostId ? ' data-nav="top-task" data-post-id="' + esc(taskPostId) + '"' : '';
+    // Pranav creation gap
+    var pranavGap = creationTarget - pranavRaw;
+    if (pranavGap < 0) pranavGap = 0;
+    var pranavDone = pranavRaw;
 
-    // Zero-pad helper for LED display
-    function pad2(n) { var s = String(Math.abs(n)); return s.length < 2 ? '0' + s : s; }
+    // Dot bars
+    function dotBar(filled, total, filledColor) {
+      var dots = '';
+      var max = Math.min(total, 35);
+      var f = Math.min(filled, max);
+      for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
+      for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
+      return '<div class="dot-bar">' + dots + '</div>';
+    }
 
-    var pranavPad = pad2(pranavDisplay.replace(/[^0-9]/g, '') || '0');
-    var chitraPad = pad2(chitraDisplay.replace(/[^0-9]/g, '') || '0');
-    var approvalPad = pad2(approvalDisplay.replace(/[^0-9]/g, '') || '0');
-    var inputPad = pad2(inputDisplay.replace(/[^0-9]/g, '') || '0');
+    function smallDotBar(filled, total, filledColor) {
+      var dots = '';
+      var max = Math.min(total, 20);
+      var f = Math.min(filled, max);
+      for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
+      for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
+      return '<div class="dot-bar dot-bar--small">' + dots + '</div>';
+    }
 
-    // Dynamic button labels
-    var pranavLabel = pranavVal < 0 ? 'CREATE MORE' : 'INITIATE DRAFT';
-    var chitraLabel = chitraVal > 0 ? 'DISPATCH NOW' : 'DISPATCH READY';
-    var approvalLabel = approval > 0 ? 'APPROVAL DUE' : 'APPROVAL';
-    var inputLabel = input > 0 ? 'INPUT DUE' : 'INPUT';
+    function clientDots(filled, total, color) {
+      var dots = '';
+      var max = Math.min(total, 5);
+      var f = Math.min(filled, max);
+      for (var i = 0; i < f; i++) dots += '<span class="client-cell-dot client-cell-dot--filled" style="background:' + color + '"></span>';
+      for (var j = f; j < max; j++) dots += '<span class="client-cell-dot client-cell-dot--empty"></span>';
+      return '<div class="client-cell-dots">' + dots + '</div>';
+    }
 
-    // Chitra fraction: ready|total
-    var chitraTotal = safe(data.chitra.total);
-    var chitraFraction = chitraTotal > 0
-      ? pad2(safe(data.chitra.ready)) + '<span class="sb-fraction"><span class="sb-pipe">|</span>' + chitraTotal + '</span>'
-      : chitraPad;
+    // Overdue count for Chitra
+    var overdueCount = 0;
+    if (Array.isArray(window.allPosts)) {
+      var now = new Date(); now.setHours(0,0,0,0);
+      for (var i = 0; i < allPosts.length; i++) {
+        var p = allPosts[i];
+        var s = (p.stage || '').toLowerCase().trim();
+        if (s === 'ready') {
+          var d = parseDate(p.targetDate);
+          if (d && d < now) overdueCount++;
+        }
+      }
+    }
 
-    return '<section class="pcs-scoreboard">' +
-      '<div class="sb-inner">' +
+    // Top tasks
+    var tasks = _buildDoThisNowItems();
 
-      /* ── 1. Critical Banner (centered stacked, dashed red border) ── */
-      '<div class="sb-critical-panel">' +
-        '<div class="sb-critical-box">' +
-          '<div class="sb-critical-label">CRITICAL</div>' +
-          '<div class="sb-critical-num">' + scheduled + '</div>' +
-        '</div>' +
-      '</div>' +
+    var html = '';
 
-      /* ── 2. Main section: header strip + grid ── */
-      '<div class="sb-main-section">' +
-        /* Metallic header strip with labels */
-        '<div class="sb-main-header">' +
-          '<div class="sb-main-label">PRANAV</div>' +
-          '<div class="sb-main-label">CHITRA</div>' +
-        '</div>' +
-        /* Number panels with gold divider */
-        '<div class="sb-main-grid">' +
-          '<div class="sb-main-cell" data-action="open-production">' +
-            '<div class="sb-main-num gold">' + pranavPad + '</div>' +
-            '<div class="sb-main-sub gold">' + pranavLabel + '</div>' +
-          '</div>' +
-          '<div class="sb-divider"></div>' +
-          '<div class="sb-main-cell" data-action="open-ready">' +
-            '<div class="sb-main-num green">' + chitraFraction + '</div>' +
-            '<div class="sb-main-sub green">' + chitraLabel + '</div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
+    /* -- RUNWAY SECTION -- */
+    html += '<div class="dash-section" style="padding:30px 20px 26px">';
+    html += '<div class="dash-section-header">';
+    html += '<span class="dash-section-label">RUNWAY</span>';
+    html += '<span class="status-badge status-badge--' + runwayColor + '"><span class="status-badge-dot"></span>' + runwayStatus + '</span>';
+    html += '</div>';
+    html += '<div class="dash-big-num dash-big-num--' + runwayColor + '" id="runway-count">' + scheduled + '</div>';
+    html += '<div class="dash-descriptor">posts scheduled from today &middot; target ' + creationTarget + '</div>';
+    html += dotBar(scheduled, creationTarget, 'var(--' + runwayColor + ')');
+    html += '</div>';
 
-      /* ── 3. CLIENT section label bar ── */
-      '<div class="sb-section-label">' +
-        '<span class="sb-rivet-row"></span>' +
-        '<span>CLIENT</span>' +
-        '<span class="sb-rivet-row"></span>' +
-      '</div>' +
+    /* -- PRANAV SECTION -- */
+    html += '<div class="dash-section" data-action="open-production">';
+    html += '<div class="dash-section-header">';
+    html += '<span class="dash-section-label" style="font-size:11px">PRANAV</span>';
+    html += '<span class="dash-section-meta">Creative &middot; Inventory</span>';
+    html += '</div>';
+    html += '<div class="person-body">';
+    html += '<div class="person-left">';
+    html += '<div class="dash-medium-num" style="color:var(--amber)">' + pranavGap + '</div>';
+    html += smallDotBar(pranavDone, 20, 'var(--amber)');
+    html += '</div>';
+    html += '<div class="person-right">';
+    html += '<div class="person-right-title">posts short of target</div>';
+    html += '<div class="person-right-sub">' + pranavDone + ' done &middot; needs ' + creationTarget + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-production" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'in_production\'])">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
+    html += '</div>';
 
-      /* ── 4. Client Grid (number → label → dots) ── */
-      '<div class="sb-client-strip">' +
-        '<div class="sb-client-cell" data-action="open-approval">' +
-          '<div class="sb-client-num">' + approvalPad + '</div>' +
-          '<div class="sb-client-label">' + approvalLabel + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
-        '</div>' +
-        '<div class="sb-client-divider"></div>' +
-        '<div class="sb-client-cell" data-action="open-input">' +
-          '<div class="sb-client-num">' + inputPad + '</div>' +
-          '<div class="sb-client-label">' + inputLabel + '</div>' +
-          '<div class="sb-dots dim">\u25CF \u25CF \u25CF</div>' +
-        '</div>' +
-      '</div>' +
+    /* -- CHITRA SECTION -- */
+    html += '<div class="dash-section" data-action="open-ready">';
+    html += '<div class="dash-section-header">';
+    html += '<span class="dash-section-label" style="font-size:11px">CHITRA</span>';
+    html += '<span class="dash-section-meta">Servicing &middot; Dispatch</span>';
+    html += '</div>';
+    html += '<div class="person-body">';
+    html += '<div class="person-left">';
+    html += '<div class="dash-medium-num" style="color:var(--green)">' + chitraVal + '</div>';
+    html += smallDotBar(chitraVal, 20, 'var(--green)');
+    html += '</div>';
+    html += '<div class="person-right">';
+    html += '<div class="person-right-title">posts to dispatch</div>';
+    if (overdueCount > 0) {
+      html += '<div class="person-right-sub" style="color:var(--red)">' + overdueCount + ' overdue</div>';
+    } else {
+      html += '<div class="person-right-sub">all on schedule</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-ready" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\'])">&rarr;&nbsp;&nbsp;&nbsp;SEND NOW</button>';
+    html += '</div>';
 
-      /* ── 5. NEXT ACTION bar ── */
-      '<div class="sb-task-bar"' + taskAttrs + '>' +
-        '<div class="sb-task-content">' +
-          '<div class="sb-task-label">NEXT ACTION</div>' +
-          '<div class="sb-task-text">' + esc(taskText) + ' <span class="sb-task-dots">\u25CF \u25CF \u25CF</span></div>' +
-        '</div>' +
-        '<button class="sb-fab" onclick="event.stopPropagation();toggleFabMenu()">+</button>' +
-      '</div>' +
+    /* -- CLIENT SECTION -- */
+    html += '<div class="dash-section" style="padding:18px 20px">';
+    html += '<div class="dash-section-label" style="margin-bottom:10px">CLIENT</div>';
+    html += '<div class="client-grid">';
+    // Approval cell
+    html += '<div class="client-cell" data-action="open-approval">';
+    html += '<div class="client-cell-label">APPROVAL</div>';
+    html += '<div class="client-cell-num' + (approval > 0 ? ' client-cell-num--red' : '') + '">' + approval + '</div>';
+    html += '<div class="client-cell-sub">pending sign-off</div>';
+    html += clientDots(approval, 5, 'var(--red)');
+    html += '</div>';
+    // Input cell
+    html += '<div class="client-cell" data-action="open-input">';
+    html += '<div class="client-cell-label">INPUT DUE</div>';
+    html += '<div class="client-cell-num">' + input + '</div>';
+    html += '<div class="client-cell-sub">brief pending</div>';
+    html += clientDots(input, 5, 'var(--red)');
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
 
-      '</div>' +
-    '</section>';
+    /* -- DO THIS NOW SECTION -- */
+    html += '<div class="dash-section" style="padding:18px 20px;padding-bottom:80px;border-bottom:none">';
+    html += '<div class="dash-section-label" style="margin-bottom:10px">DO THIS NOW</div>';
+    html += tasks;
+    html += '</div>';
+
+    return html;
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
     return '';
   }
+}
+
+function _buildDoThisNowItems() {
+  var items = [];
+
+  // Gather actionable posts by priority
+  var stages = [
+    { stage: 'awaiting approval', label: 'FOLLOW UP', color: 'var(--red)' },
+    { stage: 'ready', label: 'DISPATCH', color: 'var(--amber)' },
+    { stage: 'in production', label: 'CREATE', color: 'var(--amber)' },
+    { stage: 'awaiting brand input', label: 'INPUT', color: 'var(--amber)' }
+  ];
+
+  for (var s = 0; s < stages.length; s++) {
+    var cfg = stages[s];
+    var posts = allPosts.filter(function(p) {
+      return (p.stage || '').toLowerCase().trim() === cfg.stage;
+    }).sort(function(a, b) {
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+    for (var p = 0; p < Math.min(posts.length, 2); p++) {
+      var post = posts[p];
+      var days = daysInStage(post);
+      var owner = formatOwner(post.owner);
+      var ageText = days !== null && days > 0 ? days + 'd' : 'new';
+      items.push({
+        title: getTitle(post),
+        meta: owner + ' &middot; ' + ageText + ' &middot; ' + cfg.label,
+        postId: getPostId(post),
+        color: cfg.color
+      });
+    }
+    if (items.length >= 5) break;
+  }
+
+  // Also include assigned tasks
+  var myTasks = (window.allTasks || []).filter(function(t) { return !t.done; }).slice(0, 2);
+  for (var t = 0; t < myTasks.length && items.length < 7; t++) {
+    items.push({
+      title: myTasks[t].message || 'Task',
+      meta: (myTasks[t].assigned_to || 'UNASSIGNED') + ' &middot; TASK',
+      postId: myTasks[t].post_id || '',
+      color: 'var(--gold)'
+    });
+  }
+
+  if (!items.length) {
+    return '<div style="color:var(--muted);font-family:var(--sans);font-size:13px;padding:14px 0">No actions pending</div>';
+  }
+
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var attrs = item.postId ? ' data-post-id="' + esc(item.postId) + '" data-list="" style="cursor:pointer"' : '';
+    // Urgency dots: 3 filled for high, 2 for medium, 1 for low
+    var urgency = i < 2 ? 3 : i < 4 ? 2 : 1;
+    var dots = '';
+    for (var d = 0; d < 3; d++) {
+      var dotColor = d < urgency ? item.color : 'var(--muted2)';
+      dots += '<span class="do-now-dot" style="background:' + dotColor + '"></span>';
+    }
+    html += '<div class="do-now-item"' + attrs + '>';
+    html += '<span class="do-now-arrow">&rarr;</span>';
+    html += '<div class="do-now-content">';
+    html += '<div class="do-now-title">' + esc(item.title) + '</div>';
+    html += '<div class="do-now-meta">' + item.meta + '</div>';
+    html += '</div>';
+    html += '<div class="do-now-dots">' + dots + '</div>';
+    html += '</div>';
+  }
+  return html;
 }
 
 function renderDashboard() {
@@ -827,82 +931,10 @@ function _renderDashboardInner() {
   const el = document.getElementById('pcs-dashboard');
   if (!el) return;
 
-  function stg(p) { return (p.stage || '').toLowerCase().trim(); }
-
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const DAY = 86400000;
-
-  // ═══════════════════════════════════════════════
-  // SECTION 1 — LOCKED COUNTS (from allPosts, not filtered)
-  // ═══════════════════════════════════════════════
-
-  // RUNWAY: count(posts WHERE status = 'scheduled' AND target_date >= today)
-  const scheduledFuture = allPosts.filter(p => {
-    if (stg(p) !== 'scheduled') return false;
-    const d = parseDate(p.targetDate);
-    return d && d >= now;
-  });
-  const runway_posts = scheduledFuture.length;
-
-  // PIPELINE COUNTS
-  const ready_count = allPosts.filter(p => stg(p) === 'ready').length;
-  const awaiting_approval_count = allPosts.filter(p => stg(p) === 'awaiting approval').length;
-  const awaiting_brand_count = allPosts.filter(p => stg(p) === 'awaiting brand input').length;
-  const awaiting_total = awaiting_approval_count + awaiting_brand_count;
-
-  // approved / failed_publish — stages don't exist in current DB schema
-  // If they're ever added, these counts will activate automatically
-  const approved_count = allPosts.filter(p => stg(p) === 'approved').length;
-  const failed_publish_count = allPosts.filter(p => stg(p) === 'failed_publish').length;
-
-  // PIPELINE TOTAL — excludes 'in production' (not countable)
-  const pipeline_total = ready_count + awaiting_total + approved_count + runway_posts;
-
-  // ═══════════════════════════════════════════════
-  // SECTION 2 — RUNWAY STATE
-  // ═══════════════════════════════════════════════
-
-  let runwayState, runwayLabel;
-  if (runway_posts <= 7) {
-    runwayState = 'critical'; runwayLabel = 'CRITICAL';
-  } else if (runway_posts <= 10) {
-    runwayState = 'low'; runwayLabel = 'LOW';
-  } else {
-    runwayState = 'stable'; runwayLabel = 'STABLE';
-  }
-
-  // ═══════════════════════════════════════════════
-  // SECTION 3 — CLIENT
-  // ═══════════════════════════════════════════════
-
-  // Two separate counts per spec
-  const clientApprovalAction = awaiting_approval_count > 0 ? 'REVIEW NOW' : '';
-  // awaiting_brand_input is info only — no action
-
-  // ═══════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════
-
-  el.innerHTML = `<div class="pc-root" data-runway="${runwayState}">
-    ${renderScoreboard()}
-  </div>`;
-
-  // ═══════════════════════════════════════════════
-  // CLICK DELEGATION
-  // ═══════════════════════════════════════════════
-
-  const topTaskEl = el.querySelector('[data-nav="top-task"]');
-  if (topTaskEl) {
-    topTaskEl.addEventListener('click', () => {
-      const pid = topTaskEl.dataset.postId;
-      if (pid) openPCS(pid);
-    });
-  }
-
+  el.innerHTML = renderScoreboard();
 }
 
-/* Legacy stubs — keep function names callable so renderAll doesn't error */
+/* Legacy stubs  -  keep function names callable so renderAll doesn't error */
 function renderDashHero() {}
 function renderDashPipeline() {}
 function renderDashBlockers() {}
@@ -971,7 +1003,7 @@ function renderAdminInsight() {
   }
   const stuckProduction = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'in production' && daysSince(p) >= 3);
   const stuckClient     = allPosts.filter(p => ['awaiting approval','awaiting brand input'].includes((p.stage||'').toLowerCase().trim()) && daysSince(p) >= 3);
-  // stuckReview removed — stage no longer exists
+  // stuckReview removed  -  stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
   const published = allPosts.filter(p => (p.stage||'').toLowerCase().trim() === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
@@ -1181,7 +1213,7 @@ function buildPostCard(p, listKey) {
   const dateStr = formatDateShort(p.targetDate);
   const isToday = d && d.toDateString() === new Date().toDateString();
 
-  // All posts fully visible — no role-based dimming
+  // All posts fully visible  -  no role-based dimming
   const dimClass = 'pc-primary';
 
   return `
@@ -1347,7 +1379,7 @@ function _renderPipelineInner() {
     ? base.filter(p => activeFilter.includes((p.stage || '').toLowerCase().trim()))
     : base;
 
-  // ── PRIORITY SORT: daysInStage DESC → targetDate ASC → created_at ASC ──
+  // -- PRIORITY SORT: daysInStage DESC -> targetDate ASC -> created_at ASC --
   function prioritySort(posts) {
     return posts.slice().sort((a, b) => {
       const dA = daysInStage(a) || 0, dB = daysInStage(b) || 0;
@@ -1360,7 +1392,7 @@ function _renderPipelineInner() {
     });
   }
 
-  // ── ROLE-SPECIFIC EMPTY STATES ──
+  // -- ROLE-SPECIFIC EMPTY STATES --
   const emptyMsg = {};
   if (activeFilter) {
     const key = activeFilter.sort().join(',');
@@ -1406,13 +1438,13 @@ function _renderPipelineInner() {
   if (!container) return;
   container.innerHTML = html;
 
-  // ── GLOBAL EMPTY STATE (filtered view with no results) ──
+  // -- GLOBAL EMPTY STATE (filtered view with no results) --
   if (activeFilter && stages.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">\u2713</div><p>${emptyMsg.default || 'Nothing here \u2014 you\u2019re clear'}</p></div>`;
     return;
   }
 
-  // ── AUTO-SCROLL to first focused card ──
+  // -- AUTO-SCROLL to first focused card --
   if (activeFilter) {
     requestAnimationFrame(() => {
       const focus = container.querySelector('.pc-focus');
@@ -1572,7 +1604,7 @@ function _renderClientViewInner() {
 }
 
 function renderClientApproved() {
-  // Hide published section on Client home — still visible in Library
+  // Hide published section on Client home  -  still visible in Library
   const pubSection = document.getElementById('client-published-section');
   if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
   if (pubSection) pubSection.style.display = '';
@@ -1658,7 +1690,7 @@ function _calNav(delta) {
 }
 
 function normalizeOwner(owner) {
-  return (owner || '').trim() || '—';
+  return (owner || '').trim() || ' - ';
 }
 
 function normalizePillar(pillar) {
@@ -1751,11 +1783,11 @@ function renderLibraryCalendar(posts) {
   container.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════
+// ===============================================
 // Event delegation for card clicks
-// Single document-level listener — survives ALL innerHTML replacements.
+// Single document-level listener  -  survives ALL innerHTML replacements.
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
-// ═══════════════════════════════════════════════
+// ===============================================
 (document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
