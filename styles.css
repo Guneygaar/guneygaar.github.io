@@ -1080,6 +1080,7 @@ a:hover { text-decoration: underline; }
 
 /* ── 0. Outer Frame ── */
 .pcs-scoreboard {
+  position: relative;
   width: 100%;
   max-width: 420px;
   margin: 0 auto;
@@ -1098,6 +1099,33 @@ a:hover { text-decoration: underline; }
   font-family: 'Roboto Mono', monospace;
   color: #EAEAEA;
   -webkit-font-smoothing: antialiased;
+}
+.pcs-scoreboard::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 2px solid #2a2a2a;
+  background: linear-gradient(180deg, #1a1a1a, #0d0d0d);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 2px 6px rgba(255,255,255,0.05),
+    inset 0 -8px 20px rgba(0,0,0,0.9);
+  z-index: 0;
+  pointer-events: none;
+}
+.pcs-scoreboard::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  box-shadow:
+    inset 0 10px 30px rgba(0,0,0,0.9),
+    inset 0 -10px 30px rgba(0,0,0,0.9);
+  z-index: 0;
+  pointer-events: none;
+}
+.pcs-scoreboard > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── 0b. Inner Cavity ── */
