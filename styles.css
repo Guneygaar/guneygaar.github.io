@@ -5763,8 +5763,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 .notif-item {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
-  padding: 13px 20px 13px 24px;
+  padding: 11px 16px;
   border-bottom: 1px dotted var(--muted2);
   cursor: pointer;
   transition: background 0.15s;
@@ -5791,19 +5792,24 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-body { flex: 1; min-width: 0; }
 
 .notif-msg {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.35;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  line-height: 1.4;
   margin-bottom: 3px;
 }
-.notif-msg .actor { font-weight:600; color:var(--text); }
-.notif-item.unread .notif-msg { font-weight: 600; }
+.notif-item.unread .notif-msg { color: var(--text); }
+.notif-msg .actor { font-weight: 600; color: var(--text); }
 
 .notif-meta {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 5px;
 }
 
