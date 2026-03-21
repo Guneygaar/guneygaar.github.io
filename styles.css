@@ -5320,24 +5320,20 @@ label.pcs-date-tap:active { transform: scale(0.98); }
    Calendar, Board, Post-Card Overlay
    ============================================= */
 
-/* --- Header bar --- */
-.lib-hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 12px; }
-.lib-hdr-left { display: flex; align-items: center; gap: 14px; }
-.lib-hdr-title { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); }
+/* --- Header bar (row 1: title + icons) --- */
+.lib-hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 10px; }
+.lib-hdr-title { font-family: 'DM Sans', var(--sans); font-size: 22px; font-weight: 700; color: var(--text); margin: 0; }
 .lib-hdr-right { display: flex; align-items: center; gap: 8px; }
-
-/* --- View toggle (List / Calendar / Board) --- */
-.lib-view-toggle { display: flex; gap: 0; }
-.lib-vt { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 10px; background: none; border: 1px dotted var(--muted2); color: var(--muted); cursor: pointer; }
-.lib-vt:first-child { border-radius: 3px 0 0 3px; }
-.lib-vt:last-child  { border-radius: 0 3px 3px 0; }
-.lib-vt + .lib-vt    { border-left: none; }
-.lib-vt.active { background: var(--surface); color: var(--text); border-color: var(--text2); }
-
-/* --- Filter button & dot --- */
-.lib-filter-btn { background: none; border: 1px dotted var(--muted2); padding: 6px 8px; cursor: pointer; color: var(--muted); display: flex; align-items: center; position: relative; }
-.lib-filter-dot { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); position: absolute; top: 4px; right: 4px; }
+.lib-icon-btn { background: none; border: none; padding: 6px; cursor: pointer; color: var(--muted); display: flex; align-items: center; position: relative; }
+.lib-icon-btn:hover { color: var(--text); }
+.lib-filter-dot { display: none; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); position: absolute; top: 2px; right: 2px; }
 .lib-filter-dot.active { display: block; }
+
+/* --- View tabs (row 2: full-width, gold underline) --- */
+.lib-tabs-row { display: flex; border-bottom: 1px solid var(--muted2); }
+.lib-vt { flex: 1; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 10px 0; background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer; text-align: center; transition: color 0.15s, border-color 0.15s; }
+.lib-vt:hover { color: var(--text2); }
+.lib-vt.active { color: var(--text); border-bottom-color: var(--gold); }
 
 /* --- Active filter strip --- */
 .lib-active-strip { display: none; padding: 6px 20px; overflow-x: auto; white-space: nowrap; }
@@ -5366,8 +5362,17 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-tab-body { display: block; }
 .lib-hidden { display: none !important; }
 
-/* --- Pillar bar (progress segments) --- */
-.lib-pb-seg { transition: opacity 0.2s; }
+/* --- Pillar bar section (between tabs and list) --- */
+.lib-pillar-bar-section { padding: 12px 20px 8px; }
+.lib-pillar-bar { height: 6px; display: flex; border-radius: 3px; overflow: hidden; margin-bottom: 8px; background: var(--muted2); }
+.lib-pillar-labels { display: flex; flex-wrap: wrap; gap: 10px; }
+.lib-pb-seg { height: 100%; transition: opacity 0.2s; }
+.lib-pb-leadership    { background: var(--cyan); }
+.lib-pb-innovation    { background: var(--purple); }
+.lib-pb-sustainability{ background: var(--green); }
+.lib-pb-inclusivity   { background: var(--amber); }
+.lib-pb-label { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lib-pb-dot { width: 6px; height: 6px; border-radius: 50%; }
 .lib-dimmed { opacity: 0.15; }
 
 /* =============================================
@@ -5386,7 +5391,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-month-content { /* collapsible wrapper */ }
 .lib-month-content.collapsed { display: none; }
 
-.lib-pace-line { font-family: var(--mono); font-size: 9px; color: var(--muted); padding: 4px 20px 8px; letter-spacing: 0.04em; }
+.lib-pace-line { display: flex; align-items: center; gap: 10px; padding: 6px 20px 8px; }
+.lib-pace-bar { flex: 1; height: 1px; border-top: 1px dotted var(--muted2); }
+.lib-pace-txt { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; }
 
 /* Post row */
 .lib-post-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
@@ -5394,7 +5401,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-item { /* generic filterable item marker */ }
 
 /* Colour bar */
-.lib-bar { width: 3px; min-height: 36px; border-radius: 2px; flex-shrink: 0; background: var(--muted2); }
+.lib-bar { width: 4px; min-height: 36px; border-radius: 2px; flex-shrink: 0; background: var(--muted2); }
 .lib-bar-pub  { background: var(--green); }
 .lib-bar-park { background: var(--amber); }
 .lib-bar-rej  { background: var(--red); }
@@ -5402,11 +5409,13 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 .lib-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .lib-p-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
-.lib-p-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lib-p-title { font-family: 'DM Sans', var(--sans); font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-p-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
 
-/* Impressions badge */
-.lib-p-imp { font-family: var(--mono); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; white-space: nowrap; }
+/* Right side: impressions */
+.lib-p-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; margin-left: auto; }
+.lib-p-imp { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; white-space: nowrap; }
+.lib-p-imp-lbl { font-family: var(--mono); font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .lib-imp-best   { color: var(--gold); background: rgba(255,215,0,0.12); }
 .lib-imp-normal { color: var(--green); background: var(--green-bg); }
 .lib-imp-nodata { color: var(--muted); }
