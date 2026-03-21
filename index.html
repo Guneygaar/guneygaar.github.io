@@ -539,90 +539,115 @@
      NEW POST MODAL
 ══════════════════════════════════════════ -->
 <div class="modal-overlay" id="new-post-overlay" onclick="closeNewPostModal(event)">
-  <div class="modal-card">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">New Post</div>
-      <button class="modal-close" onclick="closeNewPostModal()">✕</button>
+  <div class="new-post-sheet" id="new-post-sheet">
+    <div class="nps-handle"></div>
+    <div class="nps-color-strip" id="nps-color-strip"></div>
+
+    <div class="nps-hdr">
+      <div class="nps-title">New Post</div>
+      <button class="nps-close" id="nps-close-btn">&#x2715;</button>
     </div>
 
-    <div class="form-field">
-      <label class="form-label-sm">Post Title <span style="color:var(--c-red)">*</span></label>
-      <input type="text" id="npm-title" placeholder="What's this post about?" oninput="saveDraftDebounced()">
+    <div class="nps-body">
+
+      <div class="nps-title-field">
+        <div class="nps-field-label">
+          Post Title <span class="nps-req">*</span>
+        </div>
+        <input class="nps-title-input" type="text"
+          id="new-post-title"
+          placeholder="What's this post about?">
+      </div>
+
+      <div class="nps-grid">
+
+        <div class="nps-cell">
+          <div class="nps-field-label">
+            Owner <span class="nps-req">*</span>
+          </div>
+          <select class="nps-select" id="new-post-owner">
+            <option value="">Assign to...</option>
+            <option value="Pranav">Pranav</option>
+            <option value="Chitra">Chitra</option>
+            <option value="Client">Client</option>
+          </select>
+        </div>
+
+        <div class="nps-cell">
+          <div class="nps-field-label">Stage</div>
+          <select class="nps-select" id="new-post-stage">
+            <option value="in_production">In Production</option>
+            <option value="ready">Ready</option>
+            <option value="awaiting_approval">Awaiting Approval</option>
+            <option value="awaiting_brand_input">Awaiting Input</option>
+            <option value="scheduled">Scheduled</option>
+            <option value="parked">Parked</option>
+          </select>
+        </div>
+
+        <div class="nps-cell">
+          <div class="nps-field-label">Pillar</div>
+          <select class="nps-select" id="new-post-pillar">
+            <option value="">Select...</option>
+            <option value="Lead">Leadership</option>
+            <option value="Innov">Innovation</option>
+            <option value="Sustain">Sustainability</option>
+            <option value="Incl">Inclusivity</option>
+            <option value="Events">Events</option>
+            <option value="Announce">Announcements</option>
+            <option value="Growth">Growth</option>
+          </select>
+        </div>
+
+        <div class="nps-cell">
+          <div class="nps-field-label">Format</div>
+          <select class="nps-select" id="new-post-format">
+            <option value="">Select...</option>
+            <option value="Creative">Creative</option>
+            <option value="Photo">Photo</option>
+            <option value="Carousel">Carousel</option>
+            <option value="Video">Video</option>
+            <option value="Text">Text</option>
+          </select>
+        </div>
+
+        <div class="nps-cell">
+          <div class="nps-field-label">Location</div>
+          <select class="nps-select" id="new-post-location">
+            <option value="">Select...</option>
+            <option value="Mumbai">Mumbai</option>
+            <option value="Sakarwadi">Sakarwadi</option>
+            <option value="Sameerwadi">Sameerwadi</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div class="nps-cell">
+          <div class="nps-field-label">Target Date</div>
+          <input class="nps-date" type="date" id="new-post-date">
+        </div>
+
+      </div>
+
+      <div class="nps-full">
+        <div class="nps-field-label">Link</div>
+        <input class="nps-text" type="url" id="new-post-link"
+          placeholder="Canva &#xb7; LinkedIn &#xb7; Google Drive">
+      </div>
+
+      <div class="nps-full">
+        <div class="nps-field-label">Brief / Comments</div>
+        <textarea class="nps-textarea" id="new-post-comments"
+          placeholder="Brief, caption, or notes..."></textarea>
+      </div>
+
     </div>
 
-    <div class="form-row">
-      <div class="form-field">
-        <label class="form-label-sm">Content Pillar</label>
-       <select id="npm-pillar">
-<option value="">Select pillar</option>
-<option value="leadership">Leadership</option>
-<option value="innovation">Innovation</option>
-<option value="sustainability">Sustainability</option>
-<option value="inclusivity">Inclusivity</option>
-<option value="events">Events</option>
-<option value="announcements">Announcements</option>
-<option value="growth">Growth</option>
-</select>
-      </div>
-      <div class="form-field">
-        <label class="form-label-sm">Location</label>
-        <select id="npm-location" onchange="saveDraftDebounced()">
-          <option value="">Select location</option>
-          <option>Mumbai</option>
-          <option>Sakarwadi</option>
-          <option>Sameerwadi</option>
-          <option>Other</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field">
-        <label class="form-label-sm">Owner <span style="color:var(--c-red)">*</span></label>
-        <select id="npm-owner" onchange="saveDraftDebounced()">
-          <option value="">Assign to…</option>
-          <option>Chitra</option>
-          <option>Pranav</option>
-        </select>
-      </div>
-      <div class="form-field">
-        <label class="form-label-sm">Stage</label>
-        <select id="npm-stage" onchange="saveDraftDebounced()">
-          <option value="in production">In Production</option>
-          <option value="awaiting brand input">Awaiting Brand Input</option>
-          <option value="rejected">Rejected</option>
-          <option value="ready">Ready</option>
-          <option value="awaiting approval">Awaiting Approval</option>
-          <option value="scheduled">Scheduled</option>
-          <option value="published">Published</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field">
-        <label class="form-label-sm">Target Date</label>
-        <input type="date" id="npm-date" onchange="saveDraftDebounced()">
-      </div>
-      <div class="form-field">
-        <label class="form-label-sm">Link</label>
-        <input type="url" id="npm-postlink" placeholder="Canva / LinkedIn / Google Drive" oninput="saveDraftDebounced()">
-      </div>
-    </div>
-
-    <div class="form-field">
-      <label class="form-label-sm">Brief / Comments</label>
-      <textarea id="npm-comments" rows="3" placeholder="Brief, caption, or notes…" oninput="saveDraftDebounced()"></textarea>
-    </div>
-
-    <div class="modal-footer">
-      <div>
-        <span class="saving-msg" id="npm-saving">Saving…</span>
-        <span class="draft-status" id="npm-draft-status"></span>
-      </div>
-      <button class="btn-modal-ghost" onclick="closeNewPostModal()">Cancel</button>
-      <button class="btn-modal-primary" id="npm-submit-btn" onclick="submitNewPost()">Create Post</button>
+    <div class="nps-footer">
+      <button class="nps-btn-cancel" id="nps-cancel-btn">Cancel</button>
+      <button class="nps-btn-create" id="nps-create-btn" disabled>
+        &#x2192; Create Post
+      </button>
     </div>
   </div>
 </div>
