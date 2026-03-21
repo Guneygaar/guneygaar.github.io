@@ -806,11 +806,6 @@ a:hover { text-decoration: underline; }
 
 /* Big numbers */
 /* Dot bar */
-/* Small dot bar (7px dots) */
-.dot-bar--small .dot-bar-dot {
-  width: 7px;
-  height: 7px;
-}
 
 /* Person section body */
 /* Section action button */
@@ -1113,7 +1108,6 @@ a:hover { text-decoration: underline; }
 .insight-row-label { color: var(--text2); }
 .insight-row-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text1); }
 .insight-row-val.warn  { color: var(--c-amber); }
-.insight-row-val.alert { color: var(--c-red); }
 .insight-row-val.ok    { color: var(--c-green); }
 .insight-flag {
   display: flex; align-items: center; gap: var(--sp-2);
@@ -1471,7 +1465,6 @@ tr:hover td { background: var(--surface2); }
   cursor: pointer;
 }
 .btn-client-upload:hover { opacity: 0.88; }
-.btn-client-upload.uploading { opacity: 0.7; cursor: not-allowed; }
 
 .btn-client-ack {
   height: 40px;
@@ -2336,30 +2329,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border: 1px solid var(--border2);
   transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-.pcs-cal-cell.pcs-cal-has-post {
-  cursor: pointer;
-}
-.pcs-cal-cell.pcs-cal-has-post:active {
-  transform: scale(0.98);
-  background: var(--surface3);
-}
-.pcs-cal-cell.pcs-cal-today {
-  border-color: var(--accent);
-}
-.pcs-cal-cell.pcs-cal-today .pcs-cal-date {
-  color: var(--accent);
-  font-weight: 700;
-  opacity: 1;
-}
-
-@media (hover: hover) {
-  .pcs-cal-cell.pcs-cal-has-post:hover {
-    transform: translateY(-1px);
-    opacity: 0.95;
-  }
-}
-
-/* 
+/*
    V2  CREATIVE TARGET TRACKER (fix 20)
  */
 .creative-tracker {
@@ -2594,7 +2564,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* All posts fully visible  no role-based dimming */
 .row-tile.pc-primary { opacity: 1; }
-.row-tile.pc-dim     { opacity: 1; filter: none; }
 
 .row-date {
   grid-column: 1;
@@ -2917,12 +2886,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .resp-badge.sched      { background: var(--cyan-bg); border: 1px solid rgba(34,211,238,0.35); color: var(--cyan); }
 
 .status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.status-dot.sd-ready      { background: var(--green); }
-.status-dot.sd-production { background: var(--amber); }
-.status-dot.sd-input      { background: var(--purple); }
-.status-dot.sd-approval   { background: var(--red); }
-.status-dot.sd-scheduled  { background: var(--cyan); }
-.status-dot.sd-published  { background: var(--muted); }
 
 /* 
    UPC  Universal Post Card
@@ -4919,9 +4882,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   border:1px dotted var(--muted2); color:var(--muted);
   cursor:pointer; transition:all 0.15s; background:transparent;
 }
-.nrs-urg-opt.urg-low    { color:var(--green); border-color:rgba(62,207,142,0.4); background:rgba(62,207,142,0.06); }
 .nrs-urg-opt.urg-normal { color:var(--amber); border-color:rgba(246,166,35,0.4); background:rgba(246,166,35,0.06); }
-.nrs-urg-opt.urg-urgent { color:var(--red);   border-color:rgba(255,75,75,0.4);  background:rgba(255,75,75,0.06); }
 .nrs-prod-badge {
   display:inline-flex; align-items:center; gap:5px;
   font-family:var(--mono); font-size:8px; letter-spacing:0.12em;
