@@ -1061,6 +1061,314 @@ window.allTasks        = window.allTasks    || [];
     </div>
   </div>
 
+  <!-- MAIN TABS -->
+  <div class="ins-main-tabs">
+    <button class="ins-main-tab active" onclick="insSetMainTab('overview',this)">Overview</button>
+    <button class="ins-main-tab" onclick="insSetMainTab('posts',this)">Posts</button>
+    <button class="ins-main-tab ins-ds-tab" id="ins-ds-tab" onclick="insSetMainTab('sources',this)">Sources</button>
+  </div>
+
+  <!-- CONTROLS (overview only) -->
+  <div class="ins-controls" id="ins-controls">
+    <div class="ins-date-row">
+      <span class="ins-row-lbl">Range</span>
+      <div class="ins-chips">
+        <button class="ins-chip active" onclick="insSetRange('7d',this)">7 Days</button>
+        <button class="ins-chip" onclick="insSetRange('30d',this)">30 Days</button>
+        <button class="ins-chip" onclick="insSetRange('custom',this)">Custom</button>
+      </div>
+    </div>
+    <div class="ins-custom-row" id="ins-custom-row">
+      <span class="ins-cd-lbl">From</span>
+      <input type="date" class="ins-cd-input" id="ins-cd-from">
+      <span class="ins-cd-lbl">To</span>
+      <input type="date" class="ins-cd-input" id="ins-cd-to">
+      <button class="ins-cd-apply" onclick="insApplyCustom()">Apply</button>
+    </div>
+    <div class="ins-pillar-row">
+      <button class="ins-pchip active" onclick="insSetPillar('all',this)">All</button>
+    </div>
+  </div>
+
+  <!-- TAB: OVERVIEW -->
+  <div class="ins-tab-body" id="ins-tab-overview">
+
+    <!-- Hero number -->
+    <div class="ins-hero">
+      <div class="ins-hero-ctx" id="ins-hero-ctx">Last 7 days - All pillars</div>
+      <div class="ins-hero-val" id="ins-hero-val">--</div>
+      <div class="ins-hero-lbl" id="ins-hero-lbl">Impressions</div>
+      <div class="ins-hero-delta" id="ins-hero-delta"></div>
+    </div>
+
+    <!-- Metric toggle -->
+    <div class="ins-metric-row">
+      <button class="ins-mt active" id="ins-mt-imp" onclick="insSetMetric('imp',this)">Impressions</button>
+      <button class="ins-mt" id="ins-mt-eng" onclick="insSetMetric('eng',this)">Engagement</button>
+      <button class="ins-mt" id="ins-mt-fol" onclick="insSetMetric('fol',this)">Followers</button>
+      <button class="ins-mt" id="ins-mt-com" onclick="insSetMetric('com',this)">Comments</button>
+    </div>
+
+    <!-- Line chart -->
+    <div class="ins-chart-sec">
+      <div class="ins-chart-wrap">
+        <svg class="ins-chart-svg" id="ins-line-svg"></svg>
+      </div>
+      <div class="ins-chart-xlabels" id="ins-chart-xlabels"></div>
+    </div>
+
+    <!-- Day-of-week chart -->
+    <div class="ins-dow-sec">
+      <div class="ins-dow-lbl">Performance by Day</div>
+      <div class="ins-dow-vals" id="ins-dow-vals"></div>
+      <div class="ins-dow-chart" id="ins-dow-chart"></div>
+      <div class="ins-dow-labels" id="ins-dow-labels"></div>
+      <div class="ins-dow-note" id="ins-dow-note"></div>
+    </div>
+
+    <!-- Top 3 posts -->
+    <div class="ins-top-sec">
+      <div class="ins-sec-hdr">
+        <span>Top Posts <span class="ins-sec-action" id="ins-top-ctx"></span></span>
+      </div>
+      <div id="ins-top-list"></div>
+    </div>
+
+    <!-- Follower bar chart -->
+    <div class="ins-fol-sec">
+      <div class="ins-fol-top">
+        <div>
+          <div class="ins-fol-big" id="ins-fol-big">+390</div>
+          <div class="ins-fol-sub">New followers this period</div>
+        </div>
+        <div>
+          <div class="ins-fol-total-n" id="ins-fol-total-n">12,847</div>
+          <div class="ins-fol-total-l">Total followers</div>
+        </div>
+      </div>
+      <div class="ins-fol-bars" id="ins-fol-bars"></div>
+      <div class="ins-fol-insight" id="ins-fol-insight">Peak day: <span>Sunday +68</span></div>
+    </div>
+
+    <!-- Agency velocity block -->
+    <div id="ins-agency-block">
+      <div class="ins-agency-wrap">
+        <div class="ins-agency-hdr">Agency Velocity</div>
+        <div class="ins-agency-body">
+          <div class="ins-vel-grid">
+            <div class="ins-vel-item">
+              <div class="ins-vel-lbl">Posts</div>
+              <div class="ins-vel-val" id="ins-vel-posts">--</div>
+              <div class="ins-vel-sub">this period</div>
+            </div>
+            <div class="ins-vel-item">
+              <div class="ins-vel-lbl">Avg / Week</div>
+              <div class="ins-vel-val" id="ins-vel-avg">--</div>
+              <div class="ins-vel-sub">posts</div>
+            </div>
+            <div class="ins-vel-item">
+              <div class="ins-vel-lbl">Cadence</div>
+              <div class="ins-vel-val" id="ins-vel-cadence">--</div>
+              <div class="ins-vel-sub">days gap</div>
+            </div>
+          </div>
+          <div class="ins-life-grid">
+            <div class="ins-life-item">
+              <div class="ins-life-val" id="ins-life-avg">--</div>
+              <div class="ins-life-lbl">Avg Lifespan</div>
+            </div>
+            <div class="ins-life-item">
+              <div class="ins-life-val" id="ins-life-peak">--</div>
+              <div class="ins-life-lbl">Peak Day</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Client report card -->
+      <div class="ins-report-sec">
+        <div class="ins-sec-hdr">Client Report Card</div>
+        <div class="ins-report-card" id="ins-report-card">
+          <div class="ins-rc-month" id="ins-rc-month">March 2026</div>
+          <div class="ins-rc-agency">Hinglish Agency</div>
+          <div class="ins-rc-stats" id="ins-rc-stats">
+            <div class="ins-rc-stat">
+              <div class="ins-rc-n" id="ins-rc-posts">--</div>
+              <div class="ins-rc-l">Posts</div>
+            </div>
+            <div class="ins-rc-stat">
+              <div class="ins-rc-n" id="ins-rc-imp">--</div>
+              <div class="ins-rc-l">Impressions</div>
+            </div>
+            <div class="ins-rc-stat">
+              <div class="ins-rc-n" id="ins-rc-fol">--</div>
+              <div class="ins-rc-l">Followers</div>
+            </div>
+          </div>
+          <div class="ins-rc-rows" id="ins-rc-rows">
+            <div class="ins-rc-row"><span class="ins-rc-rl">Avg Eng:</span> <span id="ins-rc-eng">--</span></div>
+            <div class="ins-rc-row"><span class="ins-rc-rl">Top Post:</span> <span id="ins-rc-top">--</span></div>
+            <div class="ins-rc-row"><span class="ins-rc-rl">Best Day:</span> <span id="ins-rc-day">--</span></div>
+          </div>
+        </div>
+        <button class="ins-share-btn" onclick="insShareReport()">Share Report</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TAB: POSTS -->
+  <div class="ins-tab-body ins-hidden" id="ins-tab-posts">
+
+    <!-- Lens buttons -->
+    <div class="ins-lens-row">
+      <button class="ins-lens-btn ins-lens-reach" onclick="insSetLens('reach',this)">Reach</button>
+      <button class="ins-lens-btn" onclick="insSetLens('resonance',this)">Resonance</button>
+      <button class="ins-lens-btn" onclick="insSetLens('growth',this)">Growth</button>
+    </div>
+
+    <!-- Period chips -->
+    <div class="ins-date-row">
+      <span class="ins-row-lbl">Period</span>
+      <div class="ins-chips">
+        <button class="ins-chip active" onclick="insSetPostsPeriod('mar',this)">March</button>
+        <button class="ins-chip" onclick="insSetPostsPeriod('feb',this)">February</button>
+        <button class="ins-chip" onclick="insSetPostsPeriod('all',this)">All Time</button>
+      </div>
+    </div>
+
+    <!-- Posts list -->
+    <div id="ins-posts-list"></div>
+
+  </div>
+
+  <!-- TAB: SOURCES -->
+  <div class="ins-tab-body ins-hidden" id="ins-tab-sources">
+
+    <div class="ins-ds-sec">
+      <div class="ins-ds-lbl">Data Sources</div>
+
+      <!-- LinkedIn connection banner -->
+      <div class="ins-li-connected">
+        <div class="ins-li-logo-badge">in</div>
+        <div class="ins-li-info">
+          <div class="ins-li-t1">LinkedIn Connected</div>
+          <div class="ins-li-t2">Hinglish Agency - Company Page</div>
+        </div>
+      </div>
+
+      <!-- CSV upload rows -->
+      <div class="ins-csv-list">
+        <div class="ins-csv-item ins-csv-done">
+          <div class="ins-csv-left">
+            <div class="ins-csv-icon done"></div>
+            <div>
+              <div class="ins-csv-name">Content Analytics</div>
+              <div class="ins-csv-date">Last uploaded - Mar 21, 2026</div>
+            </div>
+          </div>
+          <button class="ins-csv-btn ins-csv-uploaded" onclick="insSimulateUpload(this,'content')">Uploaded</button>
+        </div>
+        <div class="ins-csv-item ins-csv-done">
+          <div class="ins-csv-left">
+            <div class="ins-csv-icon done"></div>
+            <div>
+              <div class="ins-csv-name">Follower Analytics</div>
+              <div class="ins-csv-date">Last uploaded - Mar 21, 2026</div>
+            </div>
+          </div>
+          <button class="ins-csv-btn ins-csv-uploaded" onclick="insSimulateUpload(this,'followers')">Uploaded</button>
+        </div>
+        <div class="ins-csv-item">
+          <div class="ins-csv-left">
+            <div class="ins-csv-icon pending"></div>
+            <div>
+              <div class="ins-csv-name">Visitor Analytics</div>
+              <div class="ins-csv-date">Not yet uploaded</div>
+            </div>
+          </div>
+          <button class="ins-csv-btn" onclick="insSimulateUpload(this,'visitors')">Upload CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Missing URL list -->
+    <div class="ins-ds-sec">
+      <div class="ins-missing-hdr">
+        <div class="ins-ds-lbl" style="margin-bottom:0">Missing LinkedIn URLs</div>
+        <div class="ins-missing-count"><div class="ins-missing-dot"></div><span id="ins-missing-count-text">0 posts</span></div>
+      </div>
+      <div id="ins-missing-list"></div>
+    </div>
+
+  </div>
+
+  <!-- POST INSIGHT CARD OVERLAY -->
+  <div class="ins-card-overlay" id="ins-card-overlay" onclick="insHandleOverlay(event)">
+    <div class="ins-post-card">
+      <div class="ins-pcard-handle"></div>
+      <div class="ins-pcard-hdr">
+        <div>
+          <div class="ins-pcard-date" id="ins-pc-date"></div>
+          <div class="ins-pcard-title" id="ins-pc-title"></div>
+          <div id="ins-pc-badge-wrap"></div>
+        </div>
+        <button class="ins-pcard-close" onclick="insCloseCard()">X</button>
+      </div>
+      <div class="ins-pcard-hero">
+        <div class="ins-pcard-hero-lbl">Impressions</div>
+        <div class="ins-pcard-hero-val" id="ins-pc-imp">--</div>
+        <div class="ins-pcard-hero-sub" id="ins-pc-eng-sub">--</div>
+      </div>
+      <div class="ins-pcard-metrics">
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">Likes</div>
+          <div class="ins-pm-val" id="ins-pc-likes">--</div>
+        </div>
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">Comments</div>
+          <div class="ins-pm-val" id="ins-pc-comments">--</div>
+        </div>
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">Reposts</div>
+          <div class="ins-pm-val" id="ins-pc-reposts">--</div>
+        </div>
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">Clicks</div>
+          <div class="ins-pm-val" id="ins-pc-clicks">--</div>
+        </div>
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">CTR</div>
+          <div class="ins-pm-val" id="ins-pc-ctr">--</div>
+        </div>
+        <div class="ins-pm">
+          <div class="ins-pm-lbl">Eng Rate</div>
+          <div class="ins-pm-val" id="ins-pc-eng">--</div>
+        </div>
+      </div>
+      <div class="ins-pcard-eng">
+        <div class="ins-pcard-eng-lbl">Engagement vs Page Average</div>
+        <div class="ins-pcard-eng-track">
+          <div class="ins-pcard-eng-fill" id="ins-pc-eng-bar" style="width:0%;background:var(--amber)"></div>
+        </div>
+        <div class="ins-pcard-eng-cmp" id="ins-pc-eng-cmp"></div>
+      </div>
+      <div class="ins-pcard-fol">
+        <div>
+          <div class="ins-pcard-fol-lbl">Followers Gained</div>
+          <div class="ins-pcard-fol-val" id="ins-pc-fol">--</div>
+          <div class="ins-pcard-fol-sub">from this post</div>
+        </div>
+        <div class="ins-pcard-fol-pct" id="ins-pc-fol-pct">--%</div>
+      </div>
+      <a class="ins-pcard-li" id="ins-pc-li-link" href="#" target="_blank" rel="noopener">
+        <div class="ins-pcard-li-logo">in</div>
+        <div class="ins-pcard-li-text">View on LinkedIn</div>
+        <div class="ins-pcard-li-arr">&rarr;</div>
+      </a>
+    </div>
+  </div>
+
 </div>
 
 </body>
