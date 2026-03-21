@@ -325,18 +325,52 @@ function libFormatImp(n) {
   return String(n);
 }
 
+// --------------- pillar bar ---------------
+function libRenderPillarBar() {
+  var bar = document.getElementById('lib-pillar-bar');
+  var labels = document.getElementById('lib-pillar-labels');
+  if (!bar || !labels || !_libPosts) return;
+
+  var counts = {};
+  var total = 0;
+  for (var i = 0; i < _libPosts.length; i++) {
+    var pl = (_libPosts[i].content_pillar || '').toLowerCase();
+    if (!pl) continue;
+    counts[pl] = (counts[pl] || 0) + 1;
+    total++;
+  }
+  if (total === 0) return;
+
+  var barHtml = '';
+  var lblHtml = '';
+  var pillarOrder = ['leadership', 'innovation', 'sustainability', 'inclusivity'];
+  for (var p = 0; p < pillarOrder.length; p++) {
+    var pk = pillarOrder[p];
+    var cnt = counts[pk] || 0;
+    if (cnt === 0) continue;
+    var pct = ((cnt / total) * 100).toFixed(0);
+    barHtml += '<div class="lib-pb-seg lib-pb-' + pk + '" id="lib-pb-' + pk + '" style="width:' + pct + '%"></div>';
+    lblHtml += '<span class="lib-pb-label"><span class="lib-pb-dot lib-pb-' + pk + '"></span>' +
+               formatPillarDisplay(pk).substring(0, 4) + ' ' + pct + '%</span>';
+  }
+
+  bar.innerHTML = barHtml;
+  labels.innerHTML = lblHtml;
+}
+
 // --------------- list view ---------------
 function libRenderList() {
   var container = document.getElementById('lib-list-content');
   if (!container || !_libPosts) return;
 
-  // group by YYYY-MM
+  // group by YYYY-MM (skip posts with no target_date)
   var months = {};
   var monthOrder = [];
   for (var i = 0; i < _libPosts.length; i++) {
     var p = _libPosts[i];
     var td = p.target_date || '';
-    var key = td.length >= 7 ? td.substring(0, 7) : 'no-date';
+    if (td.length < 7) continue;
+    var key = td.substring(0, 7);
     if (!months[key]) { months[key] = []; monthOrder.push(key); }
     months[key].push(p);
   }
@@ -406,11 +440,8 @@ function libRenderList() {
     else grade = 'D';
 
     // month header
-    var monthLabel = mk;
-    if (mk !== 'no-date') {
-      var parts = mk.split('-');
-      monthLabel = MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
-    }
+    var parts = mk.split('-');
+    var monthLabel = MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
 
     html += '<div class="lib-month-hdr" data-month="' + esc(mk) + '">';
     html += '<span class="lib-mh-arrow">v</span>';
@@ -427,16 +458,16 @@ function libRenderList() {
 
     // pace line vs prior month
     if (m > 0 && prevMonthPosts !== null && prevMonthDays) {
-      var curDays = 30;
-      if (mk !== 'no-date') {
-        var pp = mk.split('-');
-        curDays = new Date(parseInt(pp[0], 10), parseInt(pp[1], 10), 0).getDate();
-      }
+      var curDays = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10), 0).getDate();
       var curRate = posts.length / curDays;
       var prevRate = prevMonthPosts / prevMonthDays;
       var paceDir = curRate >= prevRate ? 'up' : 'down';
-      html += '<div class="lib-pace-line">Pace ' + paceDir + ' vs prior month (' +
-              curRate.toFixed(1) + '/d vs ' + prevRate.toFixed(1) + '/d)</div>';
+      html += '<div class="lib-pace-line">';
+      html += '<div class="lib-pace-bar"></div>';
+      html += '<span class="lib-pace-txt">Pace ' + paceDir + ' vs prior month (' +
+              curRate.toFixed(1) + '/d vs ' + prevRate.toFixed(1) + '/d)</span>';
+      html += '<div class="lib-pace-bar"></div>';
+      html += '</div>';
     }
 
     for (var j = 0; j < posts.length; j++) {
@@ -463,31 +494,33 @@ function libRenderList() {
       var lifespan = libGetLifespan(post);
       if (lifespan !== null) html += ' &middot; ' + lifespan + 'd';
       html += '</div>';
+      html += '</div>'; // close lib-post-body
 
-      // right side: impressions or status
+      // right side: impressions or status label
+      html += '<div class="lib-p-right">';
       if (stage === 'published') {
         if (li && li.impressions) {
-          if (isBest) {
-            html += '<div class="lib-p-imp lib-imp-best">' + libFormatImp(li.impressions) + '</div>';
-          } else {
-            html += '<div class="lib-p-imp lib-imp-normal">' + libFormatImp(li.impressions) + '</div>';
-          }
+          var impClass = isBest ? 'lib-imp-best' : 'lib-imp-normal';
+          html += '<div class="lib-p-imp ' + impClass + '">' + libFormatImp(li.impressions) + '</div>';
+          html += '<div class="lib-p-imp-lbl">impressions</div>';
         } else {
           html += '<div class="lib-p-imp lib-imp-nodata">-</div>';
         }
       } else if (stage === 'parked') {
         html += '<div class="lib-p-imp lib-imp-park">Parked</div>';
-        if (post.comments) {
-          html += '<div class="lib-p-reason lib-reason-park">' + esc(post.comments) + '</div>';
-        }
       } else if (stage === 'rejected') {
         html += '<div class="lib-p-imp lib-imp-rej">Rejected</div>';
-        if (post.comments) {
-          html += '<div class="lib-p-reason lib-reason-rej">' + esc(post.comments) + '</div>';
-        }
       }
+      html += '</div>';
 
-      html += '</div></div>';
+      html += '</div>'; // close lib-post-row
+
+      // reason line (outside row, below it)
+      if (stage === 'parked' && post.comments) {
+        html += '<div class="lib-p-reason lib-reason-park">' + esc(post.comments) + '</div>';
+      } else if (stage === 'rejected' && post.comments) {
+        html += '<div class="lib-p-reason lib-reason-rej">' + esc(post.comments) + '</div>';
+      }
 
       // gap alert between posts
       if (j < posts.length - 1) {
@@ -506,11 +539,7 @@ function libRenderList() {
 
     // track for pace comparison
     prevMonthPosts = posts.length;
-    prevMonthDays = 30;
-    if (mk !== 'no-date') {
-      var pp2 = mk.split('-');
-      prevMonthDays = new Date(parseInt(pp2[0], 10), parseInt(pp2[1], 10), 0).getDate();
-    }
+    prevMonthDays = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10), 0).getDate();
   }
 
   container.innerHTML = html;
@@ -945,11 +974,18 @@ function showLibrary() {
 
   if (_libPosts === null) {
     libLoadPosts().then(function() {
+      libRenderPillarBar();
       libRenderList();
     });
   } else {
+    libRenderPillarBar();
     libRenderList();
   }
+}
+
+// --------------- search toggle stub ---------------
+function libToggleSearch() {
+  // placeholder for future search bar toggle
 }
 
 // --------------- attach to window ---------------
@@ -960,3 +996,4 @@ window.libResetFilters = libResetFilters;
 window.showLibrary = showLibrary;
 window.libSetView = libSetView;
 window.libOpenCard = libOpenCard;
+window.libToggleSearch = libToggleSearch;

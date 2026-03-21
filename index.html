@@ -963,26 +963,35 @@ window.allTasks        = window.allTasks    || [];
 
 <div class="insights-view" id="library-view">
 
-  <!-- Library header -->
+  <!-- Library header row 1: title + icons -->
   <div class="lib-hdr">
-    <div class="lib-hdr-left">
-      <div class="lib-hdr-title">Library</div>
-      <div class="lib-view-toggle">
-        <button class="lib-vt active" onclick="libSetView('list',this)">List</button>
-        <button class="lib-vt" onclick="libSetView('calendar',this)">Calendar</button>
-        <button class="lib-vt" onclick="libSetView('board',this)">Board</button>
-      </div>
-    </div>
+    <h1 class="lib-hdr-title">Library</h1>
     <div class="lib-hdr-right">
-      <button class="lib-filter-btn" onclick="libOpenFilterSheet()">
+      <button class="lib-icon-btn" id="lib-search-btn" onclick="libToggleSearch()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
+      </button>
+      <button class="lib-icon-btn" onclick="libOpenFilterSheet()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
         <span class="lib-filter-dot" id="lib-filter-dot"></span>
       </button>
     </div>
   </div>
 
+  <!-- Library header row 2: view tabs (full width, gold underline) -->
+  <div class="lib-tabs-row">
+    <button class="lib-vt active" onclick="libSetView('list',this)">List</button>
+    <button class="lib-vt" onclick="libSetView('calendar',this)">Calendar</button>
+    <button class="lib-vt" onclick="libSetView('board',this)">Board</button>
+  </div>
+
   <!-- Active filter strip -->
   <div class="lib-active-strip" id="lib-active-strip"></div>
+
+  <!-- Pillar bar -->
+  <div id="lib-pillar-bar-section" class="lib-pillar-bar-section">
+    <div class="lib-pillar-bar" id="lib-pillar-bar"></div>
+    <div class="lib-pillar-labels" id="lib-pillar-labels"></div>
+  </div>
 
   <!-- Filter sheet overlay -->
   <div class="ins-card-overlay lib-filter-sheet-overlay" id="lib-filter-sheet-overlay">
