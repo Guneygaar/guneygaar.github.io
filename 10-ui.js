@@ -608,13 +608,32 @@ function copyApprovalLink(url) {
 }
 
 // -- Admin Insights Popup (fix 19) -------------
-function openInsights() {
-  document.getElementById('insights-overlay')?.classList.add('open');
-  document.body.style.overflow = 'hidden';
+function showInsights() {
+  var dv = document.getElementById('dashboard-view');
+  var cv = document.getElementById('client-view');
+  var iv = document.getElementById('insights-view');
+  if (dv) dv.classList.remove('active');
+  if (cv) cv.classList.remove('active');
+  if (iv) iv.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(
+    function(b) { b.classList.remove('active'); });
+  var insBtn = document.querySelector(
+    '.tab-btn[data-tab="insights"]');
+  if (insBtn) insBtn.classList.add('active');
+  insUpdateOverview();
+  insRenderPosts();
+  insRenderMissingUrls();
+  insInitFolBars();
 }
+
+function openInsights() { showInsights(); }
+
 function closeInsights() {
-  document.getElementById('insights-overlay')?.classList.remove('open');
-  document.body.style.overflow = '';
+  var iv = document.getElementById('insights-view');
+  if (iv) iv.classList.remove('active');
+  var dv = document.getElementById('dashboard-view');
+  if (dv) dv.classList.add('active');
+  goToTab('tasks');
 }
 
 // -- FAB ---------------------------------------
