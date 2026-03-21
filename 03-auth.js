@@ -269,10 +269,3 @@ function updateActionButton() {
   btn.textContent = effectiveRole === 'Client' ? '+ New Request' : '+ New Post';
 }
 
-function handleActionButton() {
-  if (effectiveRole === 'Client') {
-    scrollToNewRequest();
-  } else {
-    openNewPostModal();
-  }
-}

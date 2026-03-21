@@ -273,24 +273,6 @@ async function flagIssue(postId) {
   } catch { showToast('Failed  -  try again', 'error'); }
 }
 
-async function nudgeClient(postId, title, targetDate) {
-  const days      = daysInStage(getPostById(postId));
-  const dateInfo  = targetDate ? `\n\nTarget date: ${formatDate(targetDate)}` : '';
-  const msg       = encodeURIComponent(`Hi! Just a quick note  -  we're waiting on your input for:\n\n"${title}"\n\nWhen you get a chance, could you check in?${dateInfo}\n\nThanks!`);
-  const waLink    = `https://wa.me/?text=${msg}`;
-  window.open(waLink, '_blank');
-  await logActivity({ post_id: postId, actor: currentRole, actor_role: currentRole, action: `Client nudged after ${days}d` });
-}
-
-async function copyCaption(postId) {
-  const post = getPostById(postId);
-  if (!post || !post.comments) { showToast('No caption found', 'error'); return; }
-  try {
-    await navigator.clipboard.writeText(post.comments);
-    showToast('Caption copied ok', 'success');
-  } catch { showToast('Could not copy  -  try manually', 'error'); }
-}
-
 // -- Delete post (Admin only) ------------------
 async function deletePost(postId) {
   const post = getPostById(postId);
@@ -744,9 +726,6 @@ function _pcsEditLink(postId, target) {
     };
   }
 }
-
-// Legacy alias  -  attach toggle used in _showStageConfirm guard
-function pcsToggleAttach(postId) { _pcsEditLink(postId, _pcsEditingTarget || 'canva'); }
 
 function pcsCloseAttach(postId) {
   _pcsEditingTarget = null;

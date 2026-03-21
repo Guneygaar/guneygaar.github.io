@@ -691,84 +691,6 @@ function getTopTask() {
 // Dashboard  -  Hero, Pipeline, Blockers
 // ===============================================
 
-function computeDelayMeta(posts) {
-  const now = Date.now();
-  const HOUR = 3600000;
-  // Stages that require status_changed_at for delay computation
-  const needsStatusTs = new Set(['in_production', 'scheduled', 'awaiting_approval']);
-
-  const enrichedPosts = posts.map(p => {
-    const s = p.stage || '';
-    const hasStatusTimestamp = !!(p.status_changed_at || p.statusChangedAt);
-    const createdAt = p.created_at || p.createdAt;
-
-    // If this stage needs status_changed_at and it's missing -> unknown
-    if (needsStatusTs.has(s) && !hasStatusTimestamp) {
-      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
-    }
-
-    // Pick the right reference timestamp per delay type
-    // request delay: uses created_at (when the request was made)
-    // internal/client delay: uses status_changed_at (when it entered this stage)
-    let ref = 0;
-    if (s === 'awaiting_brand_input') {
-      ref = createdAt ? new Date(createdAt).getTime() : 0;
-    } else {
-      const changedAt = p.status_changed_at || p.statusChangedAt;
-      ref = changedAt ? new Date(changedAt).getTime() : 0;
-    }
-
-    if (!ref) {
-      return { ...p, delayType: 'unknown', delayHours: null, isDelayed: false, isCritical: false };
-    }
-
-    const hours = (now - ref) / HOUR;
-    let delayType = 'none';
-    let isDelayed = false;
-    let isCritical = false;
-
-    if (s === 'awaiting_brand_input' && hours > 24) {
-      delayType = 'request'; isDelayed = true;
-    } else if ((s === 'in_production' || s === 'scheduled') && hours > 72) {
-      delayType = 'internal'; isDelayed = true;
-    } else if (s === 'awaiting_approval' && hours > 72) {
-      delayType = 'client'; isDelayed = true;
-      if (hours > 120) isCritical = true;
-    }
-
-    return { ...p, delayType, delayHours: Math.round(hours), isDelayed, isCritical };
-  });
-
-  const delayed = enrichedPosts.filter(p => p.isDelayed);
-  return {
-    enrichedPosts,
-    aggregates: {
-      totalDelayed:      delayed.length,
-      internalDelayed:   delayed.filter(p => p.delayType === 'internal').length,
-      clientDelayed:     delayed.filter(p => p.delayType === 'client').length,
-      requestDelayed:    delayed.filter(p => p.delayType === 'request').length,
-      criticalCount:     delayed.filter(p => p.isCritical).length,
-      unknownDelayCount: enrichedPosts.filter(p => p.delayType === 'unknown').length,
-    }
-  };
-}
-
-function _buildTopTaskHtml() {
-  if (window.effectiveRole === 'Client') return '';
-  const task = getTopTask();
-  if (!task) {
-    return `<div class="top-task top-task--empty">
-      <div class="top-task-label">STATUS</div>
-      <div class="top-task-text">No actions pending</div>
-    </div>`;
-  }
-  const attrs = task.postId ? ` data-nav="top-task" data-post-id="${esc(task.postId)}"` : '';
-  return `<div class="top-task"${attrs}>
-    <div class="top-task-label">DO THIS NOW</div>
-    <div class="top-task-text">${esc(task.text)}</div>
-  </div>`;
-}
-
 // -- Scoreboard  -  Data + Render ------------------
 
 // Safe stage accessor
@@ -895,17 +817,6 @@ function getScoreboardData() {
       input: inputCount
     }
   };
-}
-
-function isPostsReady() {
-  return (
-    Array.isArray(window.allPosts) &&
-    window._postsLoaded === true
-  );
-}
-
-function isPostsFresh() {
-  return window._postsSource === 'network';
 }
 
 function dashPad(n) {
@@ -1417,15 +1328,6 @@ function _renderDashboardInner() {
   _updateStreakLines();
   _appendYesterdaysWin();
 }
-
-/* Legacy stubs  -  keep function names callable so renderAll doesn't error */
-function renderDashHero() {}
-function renderDashPipeline() {}
-function renderDashBlockers() {}
-function renderDashIntel() {}
-function renderDashApprovalIntel() {}
-function renderDashActions() {}
-function renderDashEnterFlow() {}
 
 async function _updateStreakLines() {
   try {
@@ -2771,15 +2673,6 @@ function _calNav(delta) {
   if (_calMonth > 11) { _calMonth = 0; _calYear++; }
   if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
   filterLibrary();
-}
-
-function normalizeOwner(owner) {
-  return (owner || '').trim() || ' - ';
-}
-
-function normalizePillar(pillar) {
-  if (!pillar) return '';
-  return sanitizePillar(pillar);
 }
 
 function groupPostsByDay(posts, month, year) {

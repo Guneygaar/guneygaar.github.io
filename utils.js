@@ -42,20 +42,6 @@ function formatMonthYear(raw) {
   return `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// "Month YYYY"  -  for calendar headers
-function formatMonthYearLong(raw) {
-  const d = parseDate(raw);
-  if (!d) return 'No Date';
-  return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-// "DAY D Mon" uppercased  -  for schedule date headers
-function formatWeekdayDateShort(raw) {
-  const d = parseDate(raw);
-  if (!d) return 'NO DATE';
-  return `${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`.toUpperCase();
-}
-
 function formatDate(raw) {
   const d = parseDate(raw);
   if (!d) return null;
