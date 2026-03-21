@@ -516,6 +516,11 @@ function updateNotifBadge() {
     badge.textContent = unread;
     badge.style.display = unread > 0 ? '' : 'none';
   }
+  var bellBadge = document.getElementById('notif-bell-badge');
+  if (bellBadge) {
+    bellBadge.textContent = unread;
+    bellBadge.style.display = unread > 0 ? '' : 'none';
+  }
 }
 
 // -- PCS Activity toggle -----------------------

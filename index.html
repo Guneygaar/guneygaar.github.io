@@ -11,9 +11,9 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      LOGIN OVERLAY
-══════════════════════════════════════════ -->
+ -->
 <div id="login-overlay" class="hidden">
   <div class="login-card">
 
@@ -74,30 +74,30 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      PUBLIC APPROVAL VIEW  (?approve=POST-ID)
-══════════════════════════════════════════ -->
+ -->
 <div id="approval-view">
   <div class="apv-card">
     <div class="apv-brand">Hinglish <span>Ops</span> &middot; Approval Request</div>
-    <div id="apv-title" class="apv-title">Loading…</div>
+    <div id="apv-title" class="apv-title">Loading</div>
     <div id="apv-meta"  class="apv-meta"></div>
     <div id="apv-design-wrap"></div>
-    <div id="apv-preview" class="apv-preview">Fetching post details…</div>
+    <div id="apv-preview" class="apv-preview">Fetching post details</div>
     <div class="approval-actions">
-      <button class="btn-approve" onclick="submitApproval('approved')">✓ Approve</button>
-      <button class="btn-revise"  onclick="submitApproval('changes')">↺ Request Changes</button>
+      <button class="btn-approve" onclick="submitApproval('approved')"> Approve</button>
+      <button class="btn-revise"  onclick="submitApproval('changes')"> Request Changes</button>
     </div>
     <div id="apv-msg" class="approval-msg"></div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      GLOBAL ADMIN CONTROL MENU (visible in all views)
-══════════════════════════════════════════ -->
-<!-- ══════════════════════════════════════════
+ -->
+<!-- 
      MAIN DASHBOARD  (Admin / Servicing / Creative)
-══════════════════════════════════════════ -->
+ -->
 <div id="dashboard-view">
 
   <!-- HEADER -->
@@ -109,6 +109,11 @@
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" width="18" height="18">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z"/>
         </svg>
+      </button>
+      <!-- Bell icon -->
+      <button class="app-icon-btn" onclick="goToTab('updates')" title="Notifications" style="position:relative">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+        <span class="nav-badge" id="notif-bell-badge" style="display:none"></span>
       </button>
       <!-- Three-dot menu -->
       <div class="user-menu-wrap" id="user-menu-wrap">
@@ -413,18 +418,15 @@
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span class="nav-label">Library</span>
   </div>
-  <div class="nav-item tab-btn" id="nav-updates" data-tab="updates" onclick="switchTab(this)" style="position:relative">
-    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-    </svg>
-    <span class="nav-label">Updates</span>
-    <span class="nav-badge" id="notif-nav-badge" style="display:none"></span>
+  <div class="nav-item tab-btn" id="nav-insights" data-tab="insights" onclick="showInsights()" style="position:relative">
+    <svg class="nav-icon" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+    <span class="nav-label">INSIGHTS</span>
   </div>
 </nav>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      CLIENT VIEW
-══════════════════════════════════════════ -->
+ -->
 <div id="client-view">
 
   <!-- Client topbar -->
@@ -438,10 +440,10 @@
       </button>
       <div class="user-menu" id="client-menu">
         <button class="user-menu-item" onclick="toggleTheme(); closeClientMenu()">
-          <span>☀</span> Toggle Theme
+          <span></span> Toggle Theme
         </button>
         <button class="user-menu-item danger" onclick="logout()">
-          ↩ Sign Out
+           Sign Out
         </button>
       </div>
     </div>
@@ -460,8 +462,8 @@
       </div>
       <div class="client-items" id="client-input-items">
         <div class="empty-state">
-          <div class="empty-icon">✨</div>
-          <p>All clear — nothing needed from you right now.</p>
+          <div class="empty-icon"></div>
+          <p>All clear  nothing needed from you right now.</p>
         </div>
       </div>
     </div>
@@ -477,7 +479,7 @@
       </div>
       <div class="client-items" id="client-approval-items">
         <div class="empty-state">
-          <div class="empty-icon">👍</div>
+          <div class="empty-icon"></div>
           <p>Nothing waiting for approval right now.</p>
         </div>
       </div>
@@ -494,7 +496,7 @@
       <div class="client-request-form">
         <div class="form-field">
           <label class="form-label" for="req-topic">What do you want to post about? <span>*</span></label>
-          <textarea id="req-topic" rows="3" placeholder="e.g. Share our Q3 hiring story, announce the product launch…"></textarea>
+          <textarea id="req-topic" rows="3" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>
         </div>
         <div class="form-field">
           <label class="form-label" for="req-date">Any specific date in mind?</label>
@@ -502,11 +504,11 @@
         </div>
         <div class="form-field">
           <label class="form-label" for="req-ref">Reference images or links</label>
-          <input type="url" id="req-ref" placeholder="https://…  or upload below">
+          <input type="url" id="req-ref" placeholder="https://  or upload below">
           <input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px" onchange="handleRequestFileUpload(this)">
         </div>
         <button class="btn-submit-full" id="req-submit-btn" onclick="submitClientRequest()">
-          Send Request ↗
+          Send Request 
         </button>
       </div>
     </div>
@@ -526,7 +528,7 @@
             <tr><th>Post</th><th>Published</th><th>View</th></tr>
           </thead>
           <tbody id="client-approved-tbody">
-            <tr><td colspan="3"><div class="empty-state"><div class="empty-icon">📭</div><p>No published posts yet.</p></div></td></tr>
+            <tr><td colspan="3"><div class="empty-state"><div class="empty-icon"></div><p>No published posts yet.</p></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -535,9 +537,9 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      NEW POST MODAL
-══════════════════════════════════════════ -->
+ -->
 <div class="modal-overlay" id="new-post-overlay" onclick="closeNewPostModal(event)">
   <div class="new-post-sheet" id="new-post-sheet">
     <div class="nps-handle"></div>
@@ -653,9 +655,9 @@
 </div>
 
 
-<!-- ══════════════════════════════════════════
+<!-- 
      ADMIN QUICK-EDIT BOTTOM SHEET
-══════════════════════════════════════════ -->
+ -->
 <div id="admin-edit-overlay" onclick="if(event.target===this)closeAdminEdit()">
   <div id="admin-edit-sheet">
     <div class="modal-handle"></div>
@@ -664,7 +666,7 @@
         <div class="admin-edit-title" id="ae-title">Edit Post</div>
         <div class="admin-edit-id"   id="ae-id"></div>
       </div>
-      <button class="modal-close" onclick="closeAdminEdit()">✕</button>
+      <button class="modal-close" onclick="closeAdminEdit()"></button>
     </div>
 
     <div class="form-field">
@@ -705,7 +707,7 @@
 
     <div class="form-field">
       <label class="form-label-sm">Caption / Brief</label>
-      <textarea id="ae-comments" rows="4" placeholder="Caption or brief for this post…"></textarea>
+      <textarea id="ae-comments" rows="4" placeholder="Caption or brief for this post"></textarea>
     </div>
 
     <div class="modal-footer">
@@ -716,17 +718,17 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      ZEN MODE BRIEF OVERLAY
-══════════════════════════════════════════ -->
-<!-- ══════════════════════════════════════════
+ -->
+<!-- 
      PARKED POSTS SHEET
-══════════════════════════════════════════ -->
+ -->
 <div class="parked-overlay" id="parked-overlay" onclick="if(event.target===this)closeParked()">
   <div class="parked-sheet">
     <div class="parked-sheet-head">
       <span class="parked-sheet-title">Parked Posts</span>
-      <button class="parked-sheet-close" onclick="closeParked()">✕</button>
+      <button class="parked-sheet-close" onclick="closeParked()"></button>
     </div>
     <div class="parked-sheet-list" id="parked-sheet-list"></div>
   </div>
@@ -736,7 +738,7 @@
   <div id="zen-card">
     <div class="zen-header">
       <div class="zen-title" id="zen-title">Brief</div>
-      <button class="zen-close" onclick="closeZen()">✕</button>
+      <button class="zen-close" onclick="closeZen()"></button>
     </div>
     <div class="zen-body">
       <div class="zen-brief" id="zen-brief"></div>
@@ -744,48 +746,48 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      SNOOZE PANEL
-══════════════════════════════════════════ -->
+ -->
 <div id="snooze-overlay" onclick="if(event.target===this)closeSnooze()">
   <div id="snooze-panel">
-    <div class="snooze-title">Snooze this post until…</div>
+    <div class="snooze-title">Snooze this post until</div>
     <div class="snooze-options" id="snooze-options"></div>
     <button class="snooze-cancel" onclick="closeSnooze()">Cancel</button>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      ACTIVITY TIMELINE PANEL
-══════════════════════════════════════════ -->
+ -->
 <div id="timeline-overlay" onclick="if(event.target===this)closeTimeline()">
   <div id="timeline-panel">
     <div class="timeline-header">
       <div class="timeline-title" id="timeline-title">Activity</div>
-      <button class="timeline-close" onclick="closeTimeline()">✕</button>
+      <button class="timeline-close" onclick="closeTimeline()"></button>
     </div>
     <div class="timeline-body" id="timeline-body">
-      <div class="timeline-empty">Loading…</div>
+      <div class="timeline-empty">Loading</div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      ADMIN INSIGHTS POPUP  (fix 19)
-══════════════════════════════════════════ -->
+ -->
 <div id="insights-overlay" onclick="if(event.target===this)closeInsights()">
   <div id="insights-panel">
     <div class="insights-head">
       <span class="insights-title">Pipeline Intelligence</span>
-      <button onclick="closeInsights()">✕</button>
+      <button onclick="closeInsights()"></button>
     </div>
     <div id="insights-body"></div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      REQUEST CREATION SHEET
-══════════════════════════════════════════ -->
+ -->
 <div class="overlay" id="request-sheet-overlay"
   style="display:none; position:fixed; inset:0;
   background:rgba(0,0,0,0.72); z-index:700;
@@ -872,16 +874,16 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
+<!-- 
      TOAST + UNDO TOAST
-══════════════════════════════════════════ -->
-<!-- ══════════════════════════════════════════
+ -->
+<!-- 
      POST CONTROL SCREEN
-══════════════════════════════════════════ -->
+ -->
 <div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
   <div id="pcs-screen" class="pc-sheet">
 
-    <!-- Topbar: X left, trash right — outside scroll -->
+    <!-- Topbar: X left, trash right  outside scroll -->
     <div class="pc-topbar">
       <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -930,9 +932,9 @@
   <button class="btn-undo" onclick="triggerUndo()">Undo</button>
 </div>
 
-<!-- ══════════════════════════════════════════
-     FAB — body level so fixed positioning is never clipped
-══════════════════════════════════════════ -->
+<!-- 
+     FAB  body level so fixed positioning is never clipped
+ -->
 <button class="fab" id="fab" onclick="toggleFabMenu()"><span class="fab-icon">+</span></button>
 
 <div class="fab-backdrop" id="fab-backdrop" onclick="closeFabMenu()"></div>
@@ -965,7 +967,7 @@
 </div>
 
 <script>
-/* Global state — inline so it runs before any deferred script */
+/* Global state  inline so it runs before any deferred script */
 window._modalOpen      = false;
 window._deferredRender = false;
 window._postsReqId     = 0;
@@ -998,5 +1000,68 @@ window.allTasks        = window.allTasks    || [];
   </div>
   <button class="action-bar-fab" id="main-fab-btn" onclick="toggleFabMenu()">+</button>
 </div>
+
+<div class="insights-view" id="insights-view">
+
+  <div class="ins-hdr">
+    <div class="ins-hdr-left">
+      <div class="ins-hdr-title">Insights</div>
+      <div class="ins-view-toggle">
+        <button class="ins-vt active"
+          onclick="insSetView('agency',this)">
+          Agency
+        </button>
+        <button class="ins-vt"
+          onclick="insSetView('client',this)">
+          Client
+        </button>
+      </div>
+    </div>
+    <div class="hdr-icons">
+      <button class="hdr-icon"
+        onclick="showSearch()">
+        <svg width="17" height="17" fill="none"
+          stroke="currentColor" stroke-width="1.5"
+          viewBox="0 0 24 24"><path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M21 21l-5.197-5.197m0 0A7.5 7.5 0
+          105.196 15.803a7.5 7.5 0
+          0010.607 0z"/></svg>
+      </button>
+      <button class="hdr-icon"
+        onclick="goToTab('updates')" style="position:relative">
+        <svg width="17" height="17" fill="none"
+          stroke="currentColor" stroke-width="1.5"
+          viewBox="0 0 24 24"><path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M14.857 17.082a23.848 23.848 0
+          005.454-1.31A8.967 8.967 0 0118
+          9.75v-.7V9A6 6 0 006 9v.75a8.967
+          8.967 0 01-2.312 6.022c1.733.64
+          3.56 1.085 5.455 1.31m5.714 0a24.255
+          24.255 0 01-5.714 0m5.714 0a3 3 0
+          11-5.714 0"/></svg>
+        <span class="nav-badge" id="notif-ins-badge" style="display:none"></span>
+      </button>
+      <button class="hdr-icon"
+        onclick="toggleUserMenu()">
+        <svg width="17" height="17" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"><circle cx="12" cy="5"
+          r="1.5" fill="currentColor"
+          stroke="none"/><circle cx="12" cy="12"
+          r="1.5" fill="currentColor"
+          stroke="none"/><circle cx="12" cy="19"
+          r="1.5" fill="currentColor"
+          stroke="none"/></svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
 </body>
 </html>
