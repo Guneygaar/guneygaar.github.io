@@ -217,7 +217,7 @@ function activateRole(role) {
   // Update dashboard greeting after role is set
   var greetEl = document.getElementById('dash-edition');
   if (greetEl && typeof getDashGreeting === 'function') {
-    greetEl.textContent = getDashGreeting();
+    greetEl.innerHTML = getDashGreeting();
   }
   // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();

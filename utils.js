@@ -100,9 +100,9 @@ function formatIST(ts) {
   });
 }
 
-// Resolve actor name for write paths  -  always returns display name
+// Resolve actor display name from effectiveRole
 function resolveActor() {
-  var role = (typeof effectiveRole !== 'undefined') ? effectiveRole : '';
+  var role = window.effectiveRole || window.currentRole || '';
   if (role === 'Admin') return 'Shubham';
   if (role === 'Servicing') return 'Chitra';
   if (role === 'Creative') return 'Pranav';

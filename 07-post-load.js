@@ -866,6 +866,15 @@ function getScoreboardData() {
 
   console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit, failedPublish: failedPublishCount });
 
+  window._lastScoreboardData = {
+    runwayCount: runwayCount,
+    pranavDeficit: pranavDeficit,
+    chitraCount: chitraCount,
+    chitraOverdue: chitraOverdue,
+    approvalCount: approvalCount,
+    inputCount: inputCount
+  };
+
   return {
     failedPublish: failedPublishCount,
     readyCount: readyCount,
@@ -917,7 +926,7 @@ function getDashGreeting() {
     'Client':    'Client'
   };
   var name = roleNames[role] || resolveActor() || 'there';
-  return greeting + ', ' + name;
+  return greeting + ', <span style="color:var(--gold)">' + name + '</span>';
 }
 
 function renderScoreboard() {
@@ -1074,7 +1083,7 @@ function renderScoreboard() {
     var elDate = document.getElementById('dash-date');
     var elEdition = document.getElementById('dash-edition');
     if (elDate) elDate.textContent = dateStr;
-    if (elEdition) elEdition.textContent = getDashGreeting();
+    if (elEdition) elEdition.innerHTML = getDashGreeting();
 
     // --- STEP 6: TASK LIST ---
     _renderDashTaskList(role);
@@ -1120,25 +1129,26 @@ function renderScoreboard() {
       }
     };
     if (rowChitra) rowChitra.onclick = function() {
-      var chitraNum = parseInt(
-        (document.getElementById('metric-chitra-num') || {}).textContent) || 0;
-      if (chitraNum === 0) {
-        showToast('All dispatched \u00b7 nothing pending', 'success');
+      var data = window._lastScoreboardData || {};
+      var total = (data.chitraCount || 0) + (data.chitraOverdue || 0);
+      if (total === 0) {
+        showToast('All dispatched - nothing pending', 'success');
       } else {
         navigateWithFilter('pipeline', ['ready']);
       }
     };
     if (rowClient) rowClient.onclick = function() {
-      var aCount = (window.allPosts || []).filter(
-        function(p) { return p.stage === 'awaiting_approval'; }
-      ).length;
-      var iCount = (window.allPosts || []).filter(
-        function(p) { return p.stage === 'awaiting_brand_input'; }
-      ).length;
-      if (aCount >= iCount) {
-        navigateWithFilter('pipeline', ['awaiting_approval']);
-      } else {
+      var data = window._lastScoreboardData || {};
+      var approvals = data.approvalCount || 0;
+      var inputs = data.inputCount || 0;
+      if (approvals === 0 && inputs === 0) {
+        showToast('Client all clear', 'success');
+        return;
+      }
+      if (inputs > approvals) {
         navigateWithFilter('pipeline', ['awaiting_brand_input']);
+      } else {
+        navigateWithFilter('pipeline', ['awaiting_approval']);
       }
     };
 
@@ -1429,7 +1439,8 @@ async function _updateStreakLines() {
 
     logs = logs.map(function(l) {
       var a = l.actor || '';
-      if (a === 'system' || a === 'Admin' || a.indexOf('@') > -1) {
+      if (a === 'system' || a === 'Admin' ||
+          a.indexOf('@') > -1) {
         l.actor = 'Shubham';
       }
       return l;
@@ -1490,19 +1501,17 @@ async function _updateStreakLines() {
 
     var cEl = document.getElementById('metric-chitra-streak');
     if (cEl) {
-      var chitraRaw = logs.filter(function(l) {
-        return l.actor === 'Chitra';
-      });
-      if (chitraRaw.length === 0) {
+      var chitraLogs = logs.filter(function(l) { return l.actor === 'Chitra'; });
+      if (chitraLogs.length === 0) {
         cEl.innerHTML = '';
       } else {
         var cStreak = getStreak('Chitra');
         var cIdle = getIdleDays('Chitra');
         if (cIdle >= 2) {
           var cLast = getLastActive('Chitra');
-          cEl.innerHTML = '<span class="dms-idle">. idle ' + cIdle + ' days . last active ' + cLast + '</span>';
+          cEl.innerHTML = '<span class="dms-idle">- idle ' + cIdle + ' days - last active ' + cLast + '</span>';
         } else if (cStreak >= 3) {
-          cEl.innerHTML = '<span class="dms-on">. ' + String(cStreak).padStart(2, '0') + ' day streak</span>';
+          cEl.innerHTML = '<span class="dms-on">- ' + String(cStreak).padStart(2, '0') + ' day streak</span>';
         } else {
           cEl.innerHTML = '';
         }
@@ -1555,7 +1564,8 @@ async function _getYesterdaysWin() {
 
     logs = logs.map(function(l) {
       var a = l.actor || '';
-      if (a === 'system' || a === 'Admin' || a.indexOf('@') > -1) {
+      if (a === 'system' || a === 'Admin' ||
+          a.indexOf('@') > -1) {
         l.actor = 'Shubham';
       }
       return l;
