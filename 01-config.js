@@ -77,12 +77,6 @@ function stageStyle(raw) {
   return STAGE_META[key] || { hex: '#64748b', label: raw || 'Unknown' };
 }
 
-// Read owner directly from post  -  no derivation
-function getPostOwner(post) {
-  return (post?.owner || '').trim() || ' - ';
-}
-window.getPostOwner = getPostOwner;
-
 // -------------------------------------------------------
 // PILLAR SYSTEM
 // -------------------------------------------------------

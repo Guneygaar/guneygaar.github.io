@@ -122,8 +122,6 @@ function goToLibraryFiltered(stage) {
   if (sel) { sel.value = stage; filterLibrary(); }
 }
 
-function goToPipelineStage(stage) { goToTab('pipeline'); }
-
 function scrollToBucket(bucketKey) {
   setTimeout(() => {
     const grid = document.getElementById('tasks-container');
@@ -142,13 +140,6 @@ function scrollToBucket(bucketKey) {
       }
     }
   }, 80);
-}
-
-function _getHeaderDate() {
-  var d = new Date();
-  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
 }
 
 const _TAB_TITLES = {
@@ -182,61 +173,6 @@ function switchTab(btn) {
   if (tab === 'updates') { loadNotifications(); }
   safeRender();
   _fabAttachScroll();
-}
-
-function switchClientTab(tab) {
-  document.querySelectorAll('.client-tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.client-tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelector(`.client-tab-btn[data-tab="${tab}"]`)?.classList.add('active');
-  document.getElementById('client-panel-' + tab)?.classList.add('active');
-}
-
-// -- Notification formatting helpers -----------
-function _notifActor(actor) {
-  if (!actor) return 'System';
-  const a = actor.toLowerCase();
-  if (a.includes('pranav')) return 'Pranav';
-  if (a.includes('chitra')) return 'Chitra';
-  if (a.includes('client')) return 'Client';
-  if (a.includes('admin'))  return 'Admin';
-  return 'System';
-}
-
-function _notifAction(action) {
-  if (!action) return 'updated';
-  const a = action.toLowerCase();
-  if (a.includes('stage') || a.includes('moved')) {
-    const m = action.match(/->\s*(.+)/);
-    if (m) return 'moved to ' + m[1].trim();
-    return 'changed stage';
-  }
-  if (a.includes('approved') || a.includes('approve')) return 'approved';
-  if (a.includes('rejected') || a.includes('reject')) return 'rejected';
-  if (a.includes('created') || a.includes('create') || a.includes('new request')) return 'created';
-  if (a.includes('edit') || a.includes('saved'))   return 'updated';
-  if (a.includes('comment') || a.includes('change')) return 'requested changes';
-  if (a.includes('upload'))  return 'uploaded asset';
-  if (a.includes('flag'))    return 'flagged an issue';
-  if (a.includes('nudge'))   return 'nudged client';
-  if (a.includes('delete'))  return 'deleted';
-  if (a.includes('acknowledge')) return 'acknowledged';
-  return 'updated';
-}
-
-function _notifTime(ts) {
-  if (!ts) return '';
-  const d = new Date(ts);
-  const now = new Date();
-  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  if (d.toDateString() === now.toDateString()) return 'Today, ' + time;
-  const y = new Date(); y.setDate(now.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return 'Yesterday, ' + time;
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' + time;
-}
-
-function _notifTitle(postId) {
-  const post = getPostById(postId);
-  return post?.title || 'Untitled Post';
 }
 
 // -- Notifications (Updates Tab) ---------------
@@ -509,25 +445,10 @@ function closeZen() {
 
 // -- Snooze ------------------------------------
 let _snoozePostId = null;
-function openSnooze(postId) {
-  _snoozePostId = postId;
-  document.getElementById('snooze-overlay')?.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
 function closeSnooze() {
   document.getElementById('snooze-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
   _snoozePostId = null;
-}
-function confirmSnooze() {
-  const days = parseInt(document.getElementById('snooze-days')?.value) || 1;
-  if (!_snoozePostId) return;
-  const until = Date.now() + days * 86400000;
-  const key = `snooze_${_snoozePostId}`;
-  localStorage.setItem(key, until);
-  closeSnooze();
-  scheduleRender();
-  showToast(`Snoozed for ${days} day${days>1?'s':''}`, 'success');
 }
 function isSnoozed(postId) {
   const key = `snooze_${postId}`;
@@ -538,18 +459,6 @@ function isSnoozed(postId) {
 }
 
 // -- Timeline ----------------------------------
-async function openTimeline(postId, title) {
-  const overlay = document.getElementById('timeline-overlay');
-  if (!overlay) return;
-  const _tt = document.getElementById('timeline-title');
-  if (_tt) _tt.textContent = title || postId;
-  const list = document.getElementById('timeline-list');
-  if (!list) return;
-  list.innerHTML = '<div style="color:var(--text3);padding:12px 0">Loading...</div>';
-  overlay.classList.add('open');
-  document.body.style.overflow = 'hidden';
-  list.innerHTML = '<div style="color:var(--text3);padding:12px 0;font-size:13px">No activity recorded yet.</div>';
-}
 function closeTimeline() {
   document.getElementById('timeline-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
