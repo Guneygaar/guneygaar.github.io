@@ -167,7 +167,8 @@ var createBtn = document.getElementById('nps-create-btn');
 if (createBtn) createBtn.disabled = true;
 
 window._modalOpen = true;
-document.getElementById('new-post-overlay')?.classList.add('open');
+var _npoEl = document.getElementById('new-post-overlay');
+if (_npoEl) _npoEl.style.display = 'flex';
 document.body.style.overflow = 'hidden';
 
 _npsWireEvents();
@@ -184,7 +185,8 @@ if (e && e.target !== document.getElementById('new-post-overlay')) return;
 saveDraft();
 stopDraftAutosave();
 
-document.getElementById('new-post-overlay')?.classList.remove('open');
+var _npoClose = document.getElementById('new-post-overlay');
+if (_npoClose) _npoClose.style.display = 'none';
 document.body.style.overflow = '';
 window._modalOpen = false;
 _drainDeferredRender();
@@ -258,7 +260,8 @@ console.log('[submitNewPost] API SUCCESS');
 clearDraft();
 stopDraftAutosave();
 
-document.getElementById('new-post-overlay')?.classList.remove('open');
+var _npoClose2 = document.getElementById('new-post-overlay');
+if (_npoClose2) _npoClose2.style.display = 'none';
 document.body.style.overflow = '';
 window._modalOpen = false;
 
