@@ -6127,6 +6127,38 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 @keyframes dash-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .dc-pulse { animation: dash-pulse 1.4s ease-in-out infinite; }
 
+.dash-metric-streak {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+.dms-on   { color: var(--amber); opacity: 0.7; }
+.dms-idle { color: var(--red);   opacity: 0.65; }
+.dms-good { color: var(--green); opacity: 0.65; }
+.dms-muted{ color: var(--muted); opacity: 0.8; }
+
+.dash-task-urgent {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+  padding: 7px 0;
+  border-bottom: 1px dotted var(--muted2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.dash-task-urgent:hover { opacity: 0.7; }
+.dash-task-urgent:last-child { border-bottom: none; }
+.dash-task-urgent::before { content: '\2192'; flex-shrink: 0; }
+.dash-task-amber { color: var(--amber); }
+
 .dash-empty-state {
   font-family: var(--mono);
   font-size: 10px;
