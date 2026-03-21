@@ -761,34 +761,88 @@
 <!-- ══════════════════════════════════════════
      REQUEST CREATION SHEET
 ══════════════════════════════════════════ -->
-<div id="request-sheet-overlay" onclick="if(event.target===this)closeRequestSheet()">
-  <div id="request-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-header">
-      <div class="modal-title">New Request</div>
-      <button class="modal-close" onclick="closeRequestSheet()">✕</button>
-    </div>
-    <div class="form-field">
-      <label class="form-label-sm">What do you need? <span style="color:var(--c-red)">*</span></label>
-      <textarea id="req-sheet-brief" rows="3" placeholder="Describe what you'd like posted…"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-field">
-        <label class="form-label-sm">Target Date</label>
-        <input type="date" id="req-sheet-date">
+<div class="overlay" id="request-sheet-overlay"
+  style="display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.72); z-index:700;
+  align-items:flex-end; justify-content:center;">
+  <div class="nrs-sheet">
+    <div class="nrs-handle"></div>
+    <div class="nrs-red-strip"></div>
+    <div class="nrs-hdr">
+      <div class="nrs-hdr-left">
+        <div class="nrs-title">Client Request</div>
+        <div class="nrs-subtitle">&#xB7; Goes to production</div>
       </div>
-      <div class="form-field">
-        <label class="form-label-sm">Assign to</label>
-        <select id="req-sheet-owner">
-          <option value="">— Unassigned —</option>
-          <option>Chitra</option>
-          <option>Pranav</option>
-        </select>
+      <button class="nrs-close" id="nrs-close-btn">&#x2715;</button>
+    </div>
+    <div class="nrs-body">
+      <div class="nrs-section">
+        <div class="nrs-field-label">
+          What do they need? <span class="nrs-req">*</span>
+        </div>
+        <textarea class="nrs-brief" id="nrs-brief"
+          placeholder="Describe what the client wants posted..."></textarea>
+      </div>
+      <div class="nrs-grid">
+        <div class="nrs-cell nrs-cell-full">
+          <div class="nrs-field-label">Urgency</div>
+          <div class="nrs-urgency-opts">
+            <div class="nrs-urg-opt"
+              onclick="nrsSetUrg(this,'low')">Low</div>
+            <div class="nrs-urg-opt urg-normal"
+              onclick="nrsSetUrg(this,'normal')">Normal</div>
+            <div class="nrs-urg-opt"
+              onclick="nrsSetUrg(this,'urgent')">Urgent</div>
+          </div>
+        </div>
+        <div class="nrs-cell">
+          <div class="nrs-field-label">Target Date</div>
+          <input class="nrs-date" type="date" id="nrs-date">
+        </div>
+        <div class="nrs-cell">
+          <div class="nrs-field-label">Assign to</div>
+          <select class="nrs-select" id="nrs-assign">
+            <option value="Pranav">Pranav</option>
+            <option value="Chitra">Chitra</option>
+          </select>
+        </div>
+        <div class="nrs-cell">
+          <div class="nrs-field-label">Pillar</div>
+          <select class="nrs-select" id="nrs-pillar">
+            <option value="">Select...</option>
+            <option value="Lead">Leadership</option>
+            <option value="Innov">Innovation</option>
+            <option value="Sustain">Sustainability</option>
+            <option value="Incl">Inclusivity</option>
+            <option value="Events">Events</option>
+            <option value="Announce">Announcements</option>
+            <option value="Growth">Growth</option>
+          </select>
+        </div>
+        <div class="nrs-cell">
+          <div class="nrs-field-label">Format</div>
+          <select class="nrs-select" id="nrs-format">
+            <option value="">Select...</option>
+            <option value="Creative">Creative</option>
+            <option value="Photo">Photo</option>
+            <option value="Carousel">Carousel</option>
+            <option value="Video">Video</option>
+            <option value="Text">Text</option>
+          </select>
+        </div>
+      </div>
+      <div class="nrs-section" style="padding-top:10px;padding-bottom:14px">
+        <div class="nrs-prod-badge">
+          <div class="nrs-prod-dot"></div>
+          Post created in production &#xB7; team picks it up
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-modal-ghost" onclick="closeRequestSheet()">Cancel</button>
-      <button class="btn-modal-primary" id="req-sheet-submit" onclick="submitRequestSheet()">Send Request</button>
+    <div class="nrs-footer">
+      <button class="nrs-btn-cancel" id="nrs-cancel-btn">Cancel</button>
+      <button class="nrs-btn-send" id="nrs-send-btn" disabled>
+        &#x2192; Send to Production
+      </button>
     </div>
   </div>
 </div>

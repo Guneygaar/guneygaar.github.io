@@ -701,6 +701,103 @@ function closeFabMenu() {
   if (backdrop) backdrop.classList.remove('open');
 }
 
+// -- New Request Sheet (NRS) --------------------
+function nrsSetUrg(el, val) {
+  document.querySelectorAll('.nrs-urg-opt')
+    .forEach(function(o) { o.className = 'nrs-urg-opt'; });
+  el.classList.add('urg-' + val);
+  window._nrsUrgency = val;
+}
+
+function openRequestSheet() {
+  var overlay = document.getElementById('request-sheet-overlay');
+  if (!overlay) return;
+  overlay.style.display = 'flex';
+
+  var today = new Date().toISOString().split('T')[0];
+  var d = document.getElementById('nrs-date');
+  if (d) d.value = today;
+
+  var brief = document.getElementById('nrs-brief');
+  if (brief) {
+    brief.value = '';
+    brief.oninput = function() {
+      var btn = document.getElementById('nrs-send-btn');
+      if (btn) btn.disabled = !brief.value.trim();
+    };
+  }
+
+  document.querySelectorAll('.nrs-urg-opt')
+    .forEach(function(o) { o.className = 'nrs-urg-opt'; });
+  var normal = document.querySelector(
+    '.nrs-urg-opt:nth-child(2)');
+  if (normal) normal.classList.add('urg-normal');
+  window._nrsUrgency = 'normal';
+
+  var btn = document.getElementById('nrs-send-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.onclick = _nrsSubmit;
+  }
+
+  var closeReq = function() {
+    overlay.style.display = 'none';
+  };
+  var cb = document.getElementById('nrs-close-btn');
+  var ca = document.getElementById('nrs-cancel-btn');
+  if (cb) cb.onclick = closeReq;
+  if (ca) ca.onclick = closeReq;
+
+  overlay.onclick = function(e) {
+    if (e.target === overlay) overlay.style.display = 'none';
+  };
+}
+
+async function _nrsSubmit() {
+  var brief = (document.getElementById('nrs-brief')
+    .value || '').trim();
+  if (!brief) return;
+
+  var btn = document.getElementById('nrs-send-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+  try {
+    var postId = 'POST-' + Date.now();
+    var actor = resolveActor() || 'Shubham';
+    var body = {
+      post_id:       postId,
+      title:         brief.substring(0, 80),
+      stage:         'in_production',
+      owner:         document.getElementById('nrs-assign').value || 'Pranav',
+      content_pillar: document.getElementById('nrs-pillar').value || null,
+      format:        document.getElementById('nrs-format').value || null,
+      target_date:   document.getElementById('nrs-date').value || null,
+      comments:      brief,
+      created_by:    actor,
+      updated_by:    actor,
+      updated_at:    new Date().toISOString()
+    };
+
+    await apiFetch('/posts', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    document.getElementById('request-sheet-overlay')
+      .style.display = 'none';
+    showToast('Request sent to production', 'success');
+    if (typeof loadPosts === 'function') loadPosts();
+
+  } catch(e) {
+    console.error('Request submit failed:', e);
+    showToast('Failed to send request', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '\u2192 Send to Production';
+    }
+  }
+}
+
 // -- FAB menu wiring (runs once on DOMContentLoaded) --
 document.addEventListener('DOMContentLoaded', function() {
   var backdrop = document.getElementById('fab-backdrop');
@@ -723,7 +820,9 @@ document.addEventListener('DOMContentLoaded', function() {
   var assignTask = document.getElementById('fab-assign-task');
   if (assignTask) assignTask.addEventListener('click', function() {
     closeFabMenu();
-    console.log('[FAB] Assign Task clicked');
+    if (typeof openAssignTaskFromFab === 'function') {
+      openAssignTaskFromFab();
+    }
   });
 });
 
@@ -770,66 +869,6 @@ function openTaskModal(taskId) {
 function closeTaskModal() {
   var overlay = document.getElementById('task-detail-overlay');
   if (overlay) overlay.classList.remove('open');
-}
-
-// -- Request Sheet ------------------------------
-function openRequestSheet() {
-  const brief   = document.getElementById('req-sheet-brief');
-  const date    = document.getElementById('req-sheet-date');
-  const owner   = document.getElementById('req-sheet-owner');
-  const overlay = document.getElementById('request-sheet-overlay');
-  if (brief)   brief.value   = '';
-  if (date)    date.value    = '';
-  if (owner)   owner.value   = '';
-  if (overlay) { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
-}
-
-function closeRequestSheet() {
-  document.getElementById('request-sheet-overlay')?.classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-async function submitRequestSheet() {
-  console.log('[REQUEST] Sheet submit clicked');
-  const brief = document.getElementById('req-sheet-brief')?.value.trim();
-  if (!brief) {
-    console.warn('[REQUEST] BLOCKED: missing brief');
-    showToast('Please describe the request', 'error');
-    return;
-  }
-  const date  = document.getElementById('req-sheet-date')?.value  || null;
-  const owner = document.getElementById('req-sheet-owner')?.value || null;
-  const btn   = document.getElementById('req-sheet-submit');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending\u2026'; }
-  try {
-    const postId = 'REQ-' + Date.now();
-    const actor  = resolveActor();
-    const payload = {
-      post_id:     postId,
-      title:       brief.substring(0, 80),
-      stage:       'awaiting_brand_input',
-      owner:       owner || null,
-      comments:    brief,
-      target_date: date || null,
-      created_at:  new Date().toISOString(),
-      updated_at:  new Date().toISOString(),
-    };
-    console.log('[REQUEST] PAYLOAD:', payload);
-    await apiFetch('/posts', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    console.log('[REQUEST] API SUCCESS');
-    await logActivity({ post_id: postId, actor: actor, actor_role: actor, action: 'New request: ' + brief.substring(0, 60) });
-    closeRequestSheet();
-    showToast('Request created \u2713', 'success');
-    await loadPosts();
-  } catch (err) {
-    console.error('[REQUEST] API FAILED:', err);
-    showToast('Failed \u2014 try again', 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
-  }
 }
 
 // Attach FAB scroll on initial load
