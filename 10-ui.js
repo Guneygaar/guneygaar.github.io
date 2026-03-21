@@ -261,6 +261,11 @@ function _notifTitle(postId) {
 // -- Notifications (Updates Tab) ---------------
 var _notifFilter = 'all';
 var _notifData = [];
+var roleDisplayMap = {
+  'Admin':     { name: 'Shubham', label: 'Admin - Hinglish Ops' },
+  'Servicing': { name: 'Chitra',  label: 'Servicing - Dispatch' },
+  'Creative':  { name: 'Pranav',  label: 'Creative - Production' }
+};
 
 async function loadNotifications() {
   try {
@@ -282,10 +287,14 @@ async function loadNotifications() {
 function renderNotifications(name, role) {
   var notifs = _notifData;
 
+  var display = roleDisplayMap[role] || { name: name, label: role };
+  var displayName = display.name;
+  var displayLabel = display.label;
+
   var nameEl = document.getElementById('notif-name');
   var roleEl = document.getElementById('notif-role');
-  if (nameEl) nameEl.textContent = name;
-  if (roleEl) roleEl.textContent = role;
+  if (nameEl) nameEl.textContent = displayName;
+  if (roleEl) roleEl.textContent = displayLabel;
 
   var unread = notifs.filter(function(n) { return !n.read; });
   var urgent = notifs.filter(function(n) { return !n.read && ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
@@ -357,18 +366,6 @@ function renderNotifications(name, role) {
     else groups.Earlier.push(n);
   });
 
-  var typeIcon = {
-    'awaiting_approval':    { icon: '!',  cls: 'nic-red' },
-    'awaiting_brand_input': { icon: '?',  cls: 'nic-amber' },
-    'ready':                { icon: 'R',  cls: 'nic-green' },
-    'in_production':        { icon: 'P',  cls: 'nic-amber' },
-    'scheduled':            { icon: 'S',  cls: 'nic-cyan' },
-    'published':            { icon: 'ok', cls: 'nic-green' },
-    'rejected':             { icon: 'X',  cls: 'nic-red' },
-    'parked':               { icon: '--',  cls: 'nic-muted' },
-    'stage_change':         { icon: '->', cls: 'nic-gold' },
-  };
-
   var typeBorder = {
     'awaiting_approval':    'ntype-chase',
     'awaiting_brand_input': 'ntype-deficit',
@@ -420,7 +417,6 @@ function renderNotifications(name, role) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var ic = typeIcon[n.type] || { icon: '', cls: 'nic-muted' };
       var bc = typeBorder[n.type] || 'ntype-info';
       var ctx = getContext(n);
       var actions = getActions(n);
@@ -429,7 +425,6 @@ function renderNotifications(name, role) {
       }).join('');
 
       html += '<div class="notif-item ' + bc + ' ' + (n.read ? '' : 'unread') + '" onclick="openNotifItem(' + n.id + ',\'' + (n.post_id||'') + '\')">';
-      html += '<div class="notif-icon-circle ' + ic.cls + '">' + ic.icon + '</div>';
       html += '<div class="notif-body">';
       html += '<div class="notif-msg">' + (n.message || '') + '</div>';
       html += '<div class="notif-ctx ' + (ctx.urgent ? 'ctx-urgent' : '') + '">' + ctx.text + '</div>';
