@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-/* ═══════════════════════════════════════════════
+/* 
    DESIGN TOKENS
-═══════════════════════════════════════════════ */
+ */
 :root {
   --font-display: 'DM Sans', sans-serif;
   --font-body:    'DM Sans', sans-serif;
@@ -32,7 +32,7 @@
   --tab-h:    44px;
   --strip-h:  44px;
 
-  /* ── PCS MODAL LAYOUT CONTRACT ── */
+  /*  PCS MODAL LAYOUT CONTRACT  */
 
   /* Modal geometry */
   --pcs-modal-width: 520px;
@@ -102,7 +102,7 @@
   --pcs-surface-3: var(--surface3);
   --pcs-border-soft: rgba(255,255,255,0.06);
 
-  /* ── New design system tokens ── */
+  /*  New design system tokens  */
   --bg:       #080808;
   --surface:  #111111;
   --dotline:  rgba(255,255,255,0.10);
@@ -125,7 +125,7 @@
   --purple:   #9b87f5;
   --purple-bg:rgba(155,135,245,0.08);
 
-  /* Semantic tokens — dark-only design */
+  /* Semantic tokens  dark-only design */
   --text-primary: #FFFFFF;
   --text-secondary: #BBBBBB;
   --text-tertiary: #555555;
@@ -148,13 +148,13 @@
   --c-pub:    #3ECF8E;  --c-pub-dim:    rgba(62,207,142,0.14);
   --c-muted:  #555555;  --c-muted-dim:  rgba(85,85,85,0.14);
 
-  /* Legacy aliases → semantic tokens */
+  /* Legacy aliases  semantic tokens */
   --text3:      var(--text-tertiary);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    RESET + BASE
-═══════════════════════════════════════════════ */
+ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html { font-size: 16px; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
@@ -201,9 +201,9 @@ select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmln
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ═══════════════════════════════════════════════
-   VIEWS — show/hide
-═══════════════════════════════════════════════ */
+/* 
+   VIEWS  show/hide
+ */
 #login-overlay,
 #approval-view,
 #dashboard-view,
@@ -215,9 +215,9 @@ a:hover { text-decoration: underline; }
 #dashboard-view.active      { display: flex; }
 #client-view.active         { display: flex; }
 
-/* ═══════════════════════════════════════════════
+/* 
    LOGIN OVERLAY
-═══════════════════════════════════════════════ */
+ */
 #login-overlay {
   position: fixed;
   inset: 0;
@@ -540,9 +540,9 @@ a:hover { text-decoration: underline; }
   margin-top: var(--sp-3);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    TOPBAR
-═══════════════════════════════════════════════ */
+ */
 .topbar {
   height: var(--topbar-h);
   background: var(--surface);
@@ -781,9 +781,9 @@ a:hover { text-decoration: underline; }
 .user-menu-item:hover { background: var(--surface2); }
 .user-menu-item.danger { color: var(--c-red); }
 
-/* ═══════════════════════════════════════════════
+/* 
    GLOBAL ADMIN MENU (fixed, all views)
-═══════════════════════════════════════════════ */
+ */
 /* User-menu inline role-switch (replaces floating GAM) */
 .um-section-label {
   font-size: 10px;
@@ -821,9 +821,9 @@ a:hover { text-decoration: underline; }
   margin: var(--sp-1) 0;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    PIPELINE STRIP
-═══════════════════════════════════════════════ */
+ */
 .pipeline-strip-wrap {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -841,7 +841,7 @@ a:hover { text-decoration: underline; }
   overflow: hidden;
 }
 
-/* ── Mobile typography ── */
+/*  Mobile typography  */
 @media (max-width: 539px) {
   .hero-title { font-size: 22px !important; }
   .hero-comments, .hero-design-link, .hero-meta .tag { font-size: 15px !important; }
@@ -884,9 +884,9 @@ a:hover { text-decoration: underline; }
 .ps-count.warn { color: var(--c-red); }
 .ps-count.ok   { color: var(--c-green); }
 
-/* ═══════════════════════════════════════════════
+/* 
    TABS
-═══════════════════════════════════════════════ */
+ */
 .tabs-wrap {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -940,9 +940,9 @@ a:hover { text-decoration: underline; }
 
 /* tab-panel display rules moved to dashboard layout section */
 
-/* ═══════════════════════════════════════════════
+/* 
    DASHBOARD VIEW LAYOUT
-═══════════════════════════════════════════════ */
+ */
 #dashboard-view {
   flex-direction: column;
   height: 100vh;
@@ -977,17 +977,17 @@ a:hover { text-decoration: underline; }
 
 
 
-/* ═══════════════════════════════════════════════
-   DASHBOARD — CALM VERTICAL FLOW
-═══════════════════════════════════════════════ */
+/* 
+   DASHBOARD  CALM VERTICAL FLOW
+ */
 
-/* ── Top Task (legacy compat) ── */
+/*  Top Task (legacy compat)  */
 .top-task { display: none; }
 .top-task-label, .top-task-text { display: none; }
 
-/* ═══════════════════════════════════════════════
-   DASHBOARD — New Design System
-═══════════════════════════════════════════════ */
+/* 
+   DASHBOARD  New Design System
+ */
 .pcs-dash-surface { padding: 0; }
 
 .dash-section {
@@ -1265,9 +1265,9 @@ a:hover { text-decoration: underline; }
 }
 
 
-/* ═══════════════════════════════════════════════
-   HERO CARD — Zone 1 (legacy, hidden sections)
-═══════════════════════════════════════════════ */
+/* 
+   HERO CARD  Zone 1 (legacy, hidden sections)
+ */
 .hero-section { margin-bottom: var(--sp-4); }
 
 .hero-card {
@@ -1427,9 +1427,9 @@ a:hover { text-decoration: underline; }
 }
 .btn-hero-more:hover { background: var(--surface3); color: var(--text); }
 
-/* ═══════════════════════════════════════════════
+/* 
    COMPACT METER
-═══════════════════════════════════════════════ */
+ */
 .meter-section { margin-bottom: var(--sp-4); }
 
 .compact-meter {
@@ -1473,9 +1473,9 @@ a:hover { text-decoration: underline; }
 .compact-meter-fill.ok   { background: var(--c-green); }
 .compact-meter-fill.warn { background: var(--c-red); }
 
-/* ═══════════════════════════════════════════════
-   BUCKET GRID — Zone 2
-═══════════════════════════════════════════════ */
+/* 
+   BUCKET GRID  Zone 2
+ */
 
 /* Stale badges */
 .stale-badge {
@@ -1489,7 +1489,7 @@ a:hover { text-decoration: underline; }
 .stale-badge.amber { background: var(--c-amber-dim); color: var(--c-amber); }
 .stale-badge.red   { background: var(--c-red-dim);   color: var(--c-red); }
 
-/* ── Activity Timeline Modal ── */
+/*  Activity Timeline Modal  */
 #timeline-overlay {
   display: none; position: fixed; inset: 0; z-index: 9000;
   background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
@@ -1532,7 +1532,7 @@ a:hover { text-decoration: underline; }
 }
 .btn-timeline:hover { color: var(--text1); border-color: var(--text3); }
 
-/* ── Approval design preview ── */
+/*  Approval design preview  */
 .apv-design-btn {
   display: block; width: 100%; padding: var(--sp-3) var(--sp-4);
   background: var(--surface2); border: 1px solid var(--border1);
@@ -1541,7 +1541,7 @@ a:hover { text-decoration: underline; }
   margin-bottom: var(--sp-4); box-sizing: border-box;
 }
 
-/* ── Schedule date grouping ── */
+/*  Schedule date grouping  */
 .schedule-group { margin-bottom: var(--sp-5); }
 .schedule-date-header {
   font-size: 11px; font-weight: 700; color: var(--text3);
@@ -1552,7 +1552,7 @@ a:hover { text-decoration: underline; }
 .schedule-date-header.soon { color: var(--c-amber); }
 .schedule-date-header.today-hdr { color: var(--accent); }
 
-/* ── Admin Quick-Edit bottom sheet ── */
+/*  Admin Quick-Edit bottom sheet  */
 #admin-edit-overlay {
   display: none; position: fixed; inset: 0; z-index: 8500;
   background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
@@ -1569,7 +1569,7 @@ a:hover { text-decoration: underline; }
   color: var(--text1); margin-bottom: var(--sp-4);
 }
 .admin-edit-id { font-size: 11px; color: var(--text3); margin-top: -12px; margin-bottom: var(--sp-4); }
-/* ── Admin Insight Panels ── */
+/*  Admin Insight Panels  */
 .insight-wrap {
   display: flex;
   flex-direction: column;
@@ -1613,7 +1613,7 @@ a:hover { text-decoration: underline; }
   font-size: 11px; color: var(--accent); cursor: pointer;
   text-decoration: underline; margin-left: auto; flex-shrink: 0;
 }
-/* ── Task Banner (Creative / Servicing) ── */
+/*  Task Banner (Creative / Servicing)  */
 .task-banner {
   background: var(--accent-dim, rgba(232,195,122,0.12));
   border: 1px solid var(--accent);
@@ -1681,7 +1681,7 @@ a:hover { text-decoration: underline; }
   100% { background: transparent; }
 }
 
-/* ── Admin Task Panel ── */
+/*  Admin Task Panel  */
 .admin-task-wrap {
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-md); padding: var(--sp-4);
@@ -1755,7 +1755,7 @@ a:hover { text-decoration: underline; }
   display: block;
 }
 
-/* ── Snooze UI ── */
+/*  Snooze UI  */
 #snooze-overlay {
   display: none; position: fixed; inset: 0; z-index: 9200;
   background: rgba(0,0,0,0.55); align-items: flex-end; justify-content: center;
@@ -1782,7 +1782,7 @@ a:hover { text-decoration: underline; }
 }
 .btn-snooze:hover { color: var(--c-amber); border-color: var(--c-amber); }
 
-/* ── Payload buttons (Ready to Send) ── */
+/*  Payload buttons (Ready to Send)  */
 .payload-row {
   display: flex; gap: var(--sp-2); margin-top: var(--sp-2);
 }
@@ -1794,7 +1794,7 @@ a:hover { text-decoration: underline; }
 }
 .btn-payload:hover { background: var(--surface3); color: var(--text1); }
 
-/* ── Flag Issue button ── */
+/*  Flag Issue button  */
 .btn-flag {
   background: none; border: 1px solid var(--c-amber); color: var(--c-amber);
   border-radius: var(--r-sm); font-size: 12px; font-weight: 600;
@@ -1818,9 +1818,9 @@ a:hover { text-decoration: underline; }
   text-align: center;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    TAGS / CHIPS
-═══════════════════════════════════════════════ */
+ */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -1839,9 +1839,9 @@ a:hover { text-decoration: underline; }
 .tag-date.today   { background: var(--c-amber-dim); color: var(--c-amber); }
 .tag-date.soon    { background: var(--c-green-dim); color: var(--c-green); }
 
-/* ═══════════════════════════════════════════════
+/* 
    UPCOMING TABLE
-═══════════════════════════════════════════════ */
+ */
 .table-wrap {
   overflow-x: auto;
   overscroll-behavior-x: contain;
@@ -1887,9 +1887,9 @@ tr:hover td { background: var(--surface2); }
 }
 .copy-link-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
-/* ═══════════════════════════════════════════════
+/* 
    CLIENT VIEW
-═══════════════════════════════════════════════ */
+ */
 #client-view {
   flex-direction: column;
   min-height: 100vh;
@@ -2201,9 +2201,9 @@ tr:hover td { background: var(--surface2); }
 .btn-submit-full:active { transform: scale(0.98); }
 .btn-submit-full:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* ═══════════════════════════════════════════════
+/* 
    PUBLIC APPROVAL VIEW
-═══════════════════════════════════════════════ */
+ */
 #approval-view {
   min-height: 100vh;
   flex-direction: column;
@@ -2295,9 +2295,9 @@ tr:hover td { background: var(--surface2); }
 .approval-msg.success { background: var(--c-green-dim); color: var(--c-green); border: 1px solid var(--c-green); }
 .approval-msg.changes { background: var(--c-amber-dim); color: var(--c-amber); border: 1px solid var(--c-amber); }
 
-/* ═══════════════════════════════════════════════
+/* 
    MODALS
-═══════════════════════════════════════════════ */
+ */
 .modal-overlay {
   display: none;
   position: fixed;
@@ -2475,9 +2475,9 @@ tr:hover td { background: var(--surface2); }
   font-family: var(--font-mono);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    POST DETAIL MODAL
-═══════════════════════════════════════════════ */
+ */
 .pmd-title {
   font-family: var(--font-display);
   font-size: 18px;
@@ -2519,9 +2519,9 @@ tr:hover td { background: var(--surface2); }
   margin-bottom: var(--sp-4);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    ERROR BANNER
-═══════════════════════════════════════════════ */
+ */
 #error-banner {
   display: none;
   align-items: center;
@@ -2535,9 +2535,9 @@ tr:hover td { background: var(--surface2); }
 }
 #error-banner-stale { color: var(--text3); margin-left: auto; font-family: var(--font-mono); font-size: 11px; }
 
-/* ═══════════════════════════════════════════════
+/* 
    TOAST
-═══════════════════════════════════════════════ */
+ */
 #toast {
   position: fixed;
   bottom: 24px;
@@ -2602,9 +2602,9 @@ tr:hover td { background: var(--surface2); }
 }
 .btn-undo:hover { opacity: 0.88; }
 
-/* ═══════════════════════════════════════════════
+/* 
    SKELETON LOADING
-═══════════════════════════════════════════════ */
+ */
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
@@ -2622,9 +2622,9 @@ tr:hover td { background: var(--surface2); }
   margin-bottom: var(--sp-3);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    EMPTY STATES
-═══════════════════════════════════════════════ */
+ */
 .empty-state {
   padding: var(--sp-7) var(--sp-5);
   text-align: center;
@@ -2638,9 +2638,9 @@ tr:hover td { background: var(--surface2); }
 .empty-state p { font-size: 13px; line-height: 1.5; }
 .empty-state strong { color: var(--text2); }
 
-/* ═══════════════════════════════════════════════
+/* 
    SECTION HEADERS
-═══════════════════════════════════════════════ */
+ */
 .section-header {
   display: flex;
   align-items: center;
@@ -2661,16 +2661,16 @@ tr:hover td { background: var(--surface2); }
   color: var(--text3);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    SEARCH / FILTER (Library)
-═══════════════════════════════════════════════ */
+ */
 
-/* ── Library panel layout ── */
+/*  Library panel layout  */
 #panel-library {
   overflow: hidden; /* keep tab-panel clipping, content area scrolls internally */
 }
 
-/* ── Unified Search + Filter Block ── */
+/*  Unified Search + Filter Block  */
 .search-block { border-bottom: 1px dotted var(--dotline); background: var(--bg); position: relative; }
 .search-row { display: flex; align-items: center; border-bottom: 1px dotted var(--dotline); }
 .search-box { flex: 1; display: flex; align-items: center; gap: 8px; padding: 12px 16px; color: var(--muted); cursor: text; }
@@ -2707,7 +2707,7 @@ tr:hover td { background: var(--surface2); }
   min-height: 0;
 }
 
-/* ── Library List: time-based groups ── */
+/*  Library List: time-based groups  */
 .time-label { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 8px; }
 .time-label-text { font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; color: var(--muted); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
 .time-label-count { font-family: var(--mono); font-size: 9px; color: var(--muted); }
@@ -2726,7 +2726,7 @@ tr:hover td { background: var(--surface2); }
 .lib-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--muted2); }
 .lib-stage-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
-/* ── Calendar: month bar ── */
+/*  Calendar: month bar  */
 .month-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px dotted var(--dotline); gap: 12px; }
 .month-nav { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .month-title { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: var(--text); white-space: nowrap; }
@@ -2739,7 +2739,7 @@ tr:hover td { background: var(--surface2); }
 .mstat-pill.late  { color: var(--red); border-color: rgba(255,75,75,0.3); background: var(--red-bg); }
 .mstat-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-/* ── Calendar: cell dots ── */
+/*  Calendar: cell dots  */
 .cal-cell { background: var(--surface); border: 1px solid var(--muted2); border-radius: 3px; padding: 5px 4px 4px; cursor: pointer; display: flex; flex-direction: column; min-height: 52px; transition: background 0.15s; }
 .cal-cell.today { border-color: var(--gold); }
 .cal-cell.today .cc-num { color: var(--gold); font-weight: 700; }
@@ -2750,7 +2750,7 @@ tr:hover td { background: var(--surface2); }
 .cc-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .cc-overflow { font-family: var(--mono); font-size: 7px; color: var(--muted); margin-top: 2px; }
 
-/* ── Calendar: day drawer ── */
+/*  Calendar: day drawer  */
 .day-drawer { border-top: 1px dotted var(--dotline); background: var(--surface); display: none; flex-direction: column; }
 .day-drawer.open { display: flex; }
 .drawer-hdr { display: flex; justify-content: space-between; align-items: center; padding: 13px 20px; border-bottom: 1px dotted var(--dotline); }
@@ -2806,9 +2806,9 @@ tr:hover td { background: var(--surface2); }
 .search-input { flex: 1; min-width: 160px; }
 
 
-/* ═══════════════════════════════════════════════
-   RESPONSIVE — DESKTOP
-═══════════════════════════════════════════════ */
+/* 
+   RESPONSIVE  DESKTOP
+ */
 @media (min-width: 1024px) {
   .pcs-dash-flow {
     max-width: 640px;
@@ -2816,31 +2816,31 @@ tr:hover td { background: var(--surface2); }
   }
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    CONTENT LIBRARY POST LINK
-═══════════════════════════════════════════════ */
+ */
 .post-link-cell a {
   color: var(--accent);
   font-size: 12px;
   font-weight: 500;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    HIDDEN STAT ELEMENTS (preserve JS compat)
-═══════════════════════════════════════════════ */
+ */
 .stat-pill { display: none !important; }
 #pipeline-label, #library-label { display: none; }
 
-/* ═══════════════════════════════════════════════
-   V2 — MICRO-INTERACTIONS
-═══════════════════════════════════════════════ */
+/* 
+   V2  MICRO-INTERACTIONS
+ */
 
 /* Tab buttons */
 .tab-btn:active { transform: scale(0.96); }
 
-/* ═══════════════════════════════════════════════
-   V2 — DATE PICKER CALENDAR ICON
-═══════════════════════════════════════════════ */
+/* 
+   V2  DATE PICKER CALENDAR ICON
+ */
 input[type="date"] {
   appearance: none;
   -webkit-appearance: none;
@@ -2856,9 +2856,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-/* ═══════════════════════════════════════════════
-   V2 — TOPBAR REFRESH SPIN ANIMATION
-═══════════════════════════════════════════════ */
+/* 
+   V2  TOPBAR REFRESH SPIN ANIMATION
+ */
 #btn-refresh {
   opacity: 0.45;
   transition: opacity 0.15s ease;
@@ -2872,9 +2872,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   animation: spin-once 0.5s ease;
 }
 
-/* ═══════════════════════════════════════════════
-   V2 — ADMIN INSIGHTS POPUP (fix 19)
-═══════════════════════════════════════════════ */
+/* 
+   V2  ADMIN INSIGHTS POPUP (fix 19)
+ */
 #insights-overlay {
   display: none;
   position: fixed;
@@ -2946,9 +2946,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   white-space: nowrap;
 }
 
-/* ═══════════════════════════════════════════════
-   V2 — LIBRARY VIEW TOGGLE (fix 17)
-═══════════════════════════════════════════════ */
+/* 
+   V2  LIBRARY VIEW TOGGLE (fix 17)
+ */
 /* lib-view-btn rules moved to new library search bar section */
 
 /* Pillar view */
@@ -2998,7 +2998,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pillar-card-title { font-size: 13px; color: var(--text); flex: 1; min-width: 0; }
 .pillar-card-meta  { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
 
-/* Calendar view — pillar grid */
+/* Calendar view  pillar grid */
 .pcs-cal-header {
   display: flex;
   align-items: center;
@@ -3114,9 +3114,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text3);
 }
 
-/* ═══════════════════════════════════════════════
-   V2 — CREATIVE TARGET TRACKER (fix 20)
-═══════════════════════════════════════════════ */
+/* 
+   V2  CREATIVE TARGET TRACKER (fix 20)
+ */
 .creative-tracker {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3184,9 +3184,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: width 0.6s ease;
 }
 
-/* ═══════════════════════════════════════════════
-   STAGE CHIP GRID — My Tasks summary
-═══════════════════════════════════════════════ */
+/* 
+   STAGE CHIP GRID  My Tasks summary
+ */
 
 .stage-chip-grid {
   display: grid;
@@ -3248,9 +3248,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: right;
 }
 
-/* ═══════════════════════════════════════════════
-   PSTAGE — vertical stage sections (My Tasks, Pipeline)
-═══════════════════════════════════════════════ */
+/* 
+   PSTAGE  vertical stage sections (My Tasks, Pipeline)
+ */
 
 /* Direct scroll containers for task/pipeline lists */
 #tasks-container,
@@ -3308,9 +3308,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-/* ═══════════════════════════════════════════════
-   ROW TILE — universal compact list row
-═══════════════════════════════════════════════ */
+/* 
+   ROW TILE  universal compact list row
+ */
 
 .row-list {
   display: flex;
@@ -3355,14 +3355,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .row-tile:active { background: var(--surface2); }
 
-/* First actionable card — subtle emphasis */
+/* First actionable card  subtle emphasis */
 .row-tile.pc-focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent), 0 2px 12px rgba(59, 130, 246, 0.12);
   scroll-margin-top: 16px;
 }
 
-/* All posts fully visible — no role-based dimming */
+/* All posts fully visible  no role-based dimming */
 .row-tile.pc-primary { opacity: 1; }
 .row-tile.pc-dim     { opacity: 1; filter: none; }
 
@@ -3413,14 +3413,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: 50%;
 }
 
-/* Action slot — reserved for future stage-progression button */
+/* Action slot  reserved for future stage-progression button */
 .row-action {
   display: none;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    PERSON STRIP
-═══════════════════════════════════════════════ */
+ */
 .person-strip {
   display: flex;
   align-items: stretch;
@@ -3468,9 +3468,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .person-btn.active.pranav .person-num,
 .person-btn.active.pranav .person-label { color: var(--amber); }
 
-/* ═══════════════════════════════════════════════
+/* 
    STAGE CHIPS -- Monday weight
-═══════════════════════════════════════════════ */
+ */
 .stage-strip {
   display: flex;
   gap: 8px;
@@ -3558,9 +3558,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .stage-chip.active.in_production .chip-count { color: var(--amber); }
 .stage-chip.active.in_production .chip-label { color: var(--amber); }
 
-/* ═══════════════════════════════════════════════
+/* 
    PIPELINE GROUP HEADER
-═══════════════════════════════════════════════ */
+ */
 
 .group-hdr { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 6px; }
 .group-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; }
@@ -3571,7 +3571,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .group-label[data-stage="scheduled"]  { color: var(--cyan); }
 .group-count { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); background: var(--surface2); border: 1px solid var(--muted2); padding: 2px 8px; }
 
-/* ── Group collapse/expand ── */
+/*  Group collapse/expand  */
 .group-section { }
 
 .group-hdr {
@@ -3644,9 +3644,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: rgba(246,166,35,0.06);
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    PIPELINE POST CARD
-═══════════════════════════════════════════════ */
+ */
 
 .post-card {
   display: flex;
@@ -3675,9 +3675,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .pc-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-/* ═══════════════════════════════════════════════
+/* 
    RESPONSIBILITY BADGE + STATUS DOT
-═══════════════════════════════════════════════ */
+ */
 
 .resp-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 8px; font-weight: 700; flex-shrink: 0; }
 .resp-badge.p          { background: var(--amber-bg); border: 1px solid rgba(246,166,35,0.35); color: var(--amber); }
@@ -3694,10 +3694,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .status-dot.sd-scheduled  { background: var(--cyan); }
 .status-dot.sd-published  { background: var(--muted); }
 
-/* ═══════════════════════════════════════════════
-   UPC — Universal Post Card
+/* 
+   UPC  Universal Post Card
    Minimal scan-mode list row
-═══════════════════════════════════════════════ */
+ */
 
 .upc-list {
   display: flex;
@@ -3705,7 +3705,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 4px 0 var(--sp-4);
 }
 
-/* Single row: [badge] [title………] [⋯] */
+/* Single row: [badge] [title] [] */
 .upc {
   display: flex;
   align-items: center;
@@ -3779,9 +3779,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .upc-menu button:active { background: var(--surface2); }
 .upc-menu button.danger { color: var(--c-red); }
 
-/* ═══════════════════════════════════════════════
+/* 
    PRIORITY CARD
-═══════════════════════════════════════════════ */
+ */
 
 .pc-strip::before {
   transform: translateX(1px);
@@ -3800,9 +3800,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 16px;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    APP HEADER
-═══════════════════════════════════════════════ */
+ */
 
 .app-header {
   display: flex;
@@ -3813,7 +3813,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 150;
   background: var(--bg);
   overflow: hidden;
 }
@@ -3904,14 +3904,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .search-close-btn:active { opacity: 0.7; }
 
-/* ── Hide old topbar in dashboard (kept for client view) ── */
+/*  Hide old topbar in dashboard (kept for client view)  */
 #dashboard-view .topbar { display: none; }
 #dashboard-view .pipeline-strip-wrap { display: none !important; }
 #dashboard-view .tabs-wrap { display: none !important; }
 
-/* ═══════════════════════════════════════════════
+/* 
    BOTTOM NAVIGATION
-═══════════════════════════════════════════════ */
+ */
 
 .bottom-nav {
   position: fixed;
@@ -3950,9 +3950,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .nav-badge { position: absolute; top: 8px; right: calc(50% - 20px); background: var(--red); color: #fff; font-family: var(--mono); font-size: 7px; font-weight: 700; padding: 1px 4px; border-radius: 8px; min-width: 14px; text-align: center; border: 1.5px solid var(--bg); }
 
-/* ═══════════════════════════════════════════════
+/* 
    ACTION BAR (persistent, above bottom nav)
-═══════════════════════════════════════════════ */
+ */
 .fab {
   position: fixed;
   bottom: 74px;
@@ -4007,9 +4007,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    REQUEST SHEET
-═══════════════════════════════════════════════ */
+ */
 
 #request-sheet-overlay {
   display: none;
@@ -4032,13 +4032,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overscroll-behavior: contain;
 }
 
-/* ═══════════════════════════════════════════════
-   PCS — Post Control Screen (Apple-style modal sheet)
+/* 
+   PCS  Post Control Screen (Apple-style modal sheet)
    Redesigned: 3-zone layout with consistent spacing rhythm
-   8px micro · 16px section · 24px major
-═══════════════════════════════════════════════ */
+   8px micro  16px section  24px major
+ */
 
-/* ── Overlay ── */
+/*  Overlay  */
 #pcs-overlay {
   position: fixed;
   inset: 0;
@@ -4050,7 +4050,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 #pcs-overlay.open { display: flex; }
 
-/* ── Modal card — theme-aware with dark mode separation (Section 11) ── */
+/*  Modal card  theme-aware with dark mode separation (Section 11)  */
 #pcs-screen {
   display: flex;
   flex-direction: column;
@@ -4098,16 +4098,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
-/* Progressive enhancement — stable visible viewport (svh) */
+/* Progressive enhancement  stable visible viewport (svh) */
 @supports (height: 100svh) {
   #pcs-screen {
     height: 92svh;
   }
 }
 
-/* ═══════════════════════════════════════════════
-   ZONE 1 — HEADER (title + metadata + pipeline)
-═══════════════════════════════════════════════ */
+/* 
+   ZONE 1  HEADER (title + metadata + pipeline)
+ */
 .pcs-header {
   position: relative;
   padding-top: var(--pcs-header-padding);
@@ -4157,7 +4157,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 4px;
 }
 
-/* Title — most visually prominent element */
+/* Title  most visually prominent element */
 .pcs-title {
   font-size: 22px;
   font-weight: 650;
@@ -4196,7 +4196,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-title-input:focus { border-color: var(--c-blue); }
 
-/* Metadata row — Pillar · Owner · Date */
+/* Metadata row  Pillar  Owner  Date */
 .pcs-subtitle {
   display: flex;
   align-items: center;
@@ -4216,7 +4216,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text-tertiary);
 }
 
-/* ── Scroll area ── */
+/*  Scroll area  */
 .pcs-scroll {
   flex: 1;
   overflow-y: auto;
@@ -4239,13 +4239,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
-/* Body sections — spacing controlled by .pcs-scroll gap */
+/* Body sections  spacing controlled by .pcs-scroll gap */
 .pcs-body-section:empty {
   display: none;
 }
 
-/* ── Pipeline progress row ── */
-/* ── Pipeline stage indicator ── */
+/*  Pipeline progress row  */
+/*  Pipeline stage indicator  */
 .pipeline-container {
   display: flex;
   justify-content: space-between;
@@ -4300,7 +4300,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--c-green);
 }
 
-/* ── Design section layout ── */
+/*  Design section layout  */
 .pcs-design-stack {
   display: flex;
   flex-wrap: wrap;
@@ -4319,7 +4319,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
-/* ── Divider ── */
+/*  Divider  */
 .pcs-divider {
   border: none;
   border-top: 1px solid var(--border);
@@ -4352,7 +4352,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-action-chip:hover { background: var(--surface3); }
 .pcs-action-chip:active { background: var(--border2); transform: scale(0.98); }
 
-/* Stage advance chip — subtle primary emphasis */
+/* Stage advance chip  subtle primary emphasis */
 .pcs-action-chip--stage {
   background: var(--c-blue-dim);
   border-color: transparent;
@@ -4412,7 +4412,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-action-text:hover { color: var(--text-primary); }
 .pcs-action-text:active { transform: scale(0.97); }
 
-/* Legacy action controls — matched to 36px chip height */
+/* Legacy action controls  matched to 36px chip height */
 .pcs-next-action-btn {
   display: inline-flex;
   align-items: center;
@@ -4487,14 +4487,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pcs-attach-cancel:hover { color: var(--text-secondary); }
 
-/* ── Fields container — vertical rhythm for grid + notes ── */
+/*  Fields container  vertical rhythm for grid + notes  */
 #pcs-fields {
   display: flex;
   flex-direction: column;
   gap: var(--pcs-space-5);
 }
 
-/* ── Information section divider ── */
+/*  Information section divider  */
 .pcs-info-divider {
   height: 1px;
   background: var(--border);
@@ -4502,9 +4502,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 0;
 }
 
-/* ── Notes section — lighter feel ── */
+/*  Notes section  lighter feel  */
 
-/* Legacy design block classes — heights matched to 36px */
+/* Legacy design block classes  heights matched to 36px */
 .pcs-design-block { display: none; }
 .pcs-primary {
   display: inline-flex;
@@ -4541,11 +4541,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-design-replace:hover { background: var(--surface3); }
 .pcs-design-replace:active { transform: scale(0.97); }
 
-/* ═══════════════════════════════════════════════
-   ZONE 3 — CONTENT (Info grid, Notes, Activity)
-═══════════════════════════════════════════════ */
+/* 
+   ZONE 3  CONTENT (Info grid, Notes, Activity)
+ */
 
-/* ── Section containers ── */
+/*  Section containers  */
 .pcs-section {
   padding: 0;
   display: flex;
@@ -4561,7 +4561,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text-secondary);
 }
 
-/* ── Information grid — stacked single-column layout ── */
+/*  Information grid  stacked single-column layout  */
 .pcs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4577,7 +4577,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-width: 0;
   width: 100%;
 }
-/* ── Typography tokens ── */
+/*  Typography tokens  */
 .pcs-label {
   font-size: 13px;
   line-height: 1.3;
@@ -4646,7 +4646,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   min-width: 0;
   max-width: 100%;
 }
-/* Section 7: Unified value shell — all metadata fields */
+/* Section 7: Unified value shell  all metadata fields */
 .pcs-value-shell {
   display: flex;
   align-items: baseline;
@@ -4681,12 +4681,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   top: 1px;
 }
 
-/* ── Target Date — subtle signal via color only ── */
+/*  Target Date  subtle signal via color only  */
 .pcs-field[data-field="targetDate"] .pcs-value {
   color: var(--text-primary);
 }
 
-/* Date tap — inside .pcs-value-shell */
+/* Date tap  inside .pcs-value-shell */
 div.pcs-date-tap {
   display: flex;
   align-items: baseline;
@@ -4722,7 +4722,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   border: none;
 }
 
-/* ── Notes box — preview card with fade ── */
+/*  Notes box  preview card with fade  */
 .pcs-notes-box {
   position: relative;
   background: var(--surface2);
@@ -4767,7 +4767,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   line-height: 1.55;
 }
 
-/* ── Activity section (collapsed by default) ── */
+/*  Activity section (collapsed by default)  */
 .pcs-activity-section {
   border-top: 1.5px solid var(--border2);
   margin-top: -4px;
@@ -4801,7 +4801,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   transform: rotate(90deg);
 }
 
-/* ── Desktop hover lift (pointer devices only) ── */
+/*  Desktop hover lift (pointer devices only)  */
 @media (hover: hover) {
   .pcs-action-chip:hover,
   .pcs-primary:hover,
@@ -4838,7 +4838,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pcs-activity-loading,
 .pcs-activity-empty { font-size: 12px; color: var(--text-tertiary); padding: var(--pcs-space-1) 0; }
 
-/* ── Delete confirm — theme-aware ── */
+/*  Delete confirm  theme-aware  */
 .pcs-confirm-overlay {
   position: fixed;
   inset: 0;
@@ -4894,11 +4894,11 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pcs-confirm-stage:hover { filter: brightness(1.1); }
 .pcs-confirm-stage:active { transform: scale(0.97); }
 
-/* ═══════════════════════════════════════════════
-   PC — Post Card redesign (dotted border system)
-═══════════════════════════════════════════════ */
+/* 
+   PC  Post Card redesign (dotted border system)
+ */
 
-/* ── FIX 10: Card structure — fixed height, internal scroll ── */
+/*  FIX 10: Card structure  fixed height, internal scroll  */
 .pc-sheet {
   height: 92vh;
   display: flex;
@@ -4914,7 +4914,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .pc-scroll-body::-webkit-scrollbar { display: none; }
 
-/* ── FIX 2: Topbar — X left, trash right ── */
+/*  FIX 2: Topbar  X left, trash right  */
 .pc-topbar {
   display: flex;
   justify-content: space-between;
@@ -4939,7 +4939,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pc-icon-btn svg { width: 15px; height: 15px; }
 .pc-icon-btn.danger:hover { border-color: rgba(255,75,75,0.4); color: var(--red); }
 
-/* ── FIX 3: Title block ── */
+/*  FIX 3: Title block  */
 .pc-title-block {
   padding: 0 20px 14px;
   border-bottom: 1px dotted var(--dotline);
@@ -4982,7 +4982,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   padding: 1px 6px;
 }
 
-/* ── FIX 4: Pipeline dots with dotted connectors ── */
+/*  FIX 4: Pipeline dots with dotted connectors  */
 .pc-pipeline {
   display: flex;
   align-items: flex-start;
@@ -5033,7 +5033,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pc-pipe-lbl.current { color: var(--cyan); }
 .pc-pipe-lbl.future  { color: var(--muted); }
 
-/* ── FIX 5: Action links — Canva / LinkedIn ── */
+/*  FIX 5: Action links  Canva / LinkedIn  */
 .pc-actions-block {
   padding: 12px 20px;
   border-bottom: 1px dotted var(--dotline);
@@ -5063,7 +5063,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pc-action-link.linkedin { color: var(--cyan); border-color: rgba(34,211,238,0.35); background: transparent; }
 .pc-action-link.linkedin:hover { background: rgba(34,211,238,0.06); }
 
-/* ── FIX 6: Meta grid — mono labels ── */
+/*  FIX 6: Meta grid  mono labels  */
 .pc-meta-block {
   padding: 16px 20px;
   border-bottom: 1px dotted var(--dotline);
@@ -5136,7 +5136,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   cursor: pointer;
 }
 
-/* ── FIX 7: Stage advance button ── */
+/*  FIX 7: Stage advance button  */
 .pc-advance-block {
   padding: 14px 20px;
   border-bottom: 1px dotted var(--dotline);
@@ -5164,7 +5164,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pc-advance-btn:hover { background: rgba(255,255,255,0.04); }
 .pc-advance-arrow { font-size: 14px; }
 
-/* ── FIX 8: Notes compact ── */
+/*  FIX 8: Notes compact  */
 .pc-notes-block {
   padding: 14px 20px;
   border-bottom: 1px dotted var(--dotline);
@@ -5204,7 +5204,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   line-height: 1.5;
 }
 
-/* ── FIX 9: Activity link row ── */
+/*  FIX 9: Activity link row  */
 .pc-activity-row {
   display: flex;
   align-items: center;
@@ -5351,7 +5351,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .post-card.batch-selected .batch-checkbox::after { opacity: 1; }
 
-/* ── Chase Toast ── */
+/*  Chase Toast  */
 .chase-toast {
   position: fixed;
   bottom: 90px;
@@ -5376,7 +5376,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   transform: translateX(-50%) translateY(0);
 }
 
-/* ── Chase Button (individual card) ── */
+/*  Chase Button (individual card)  */
 .chase-btn {
   display: flex;
   align-items: center;
@@ -5399,7 +5399,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .chase-label { flex: 1; }
 .chase-days { opacity: 0.5; font-size: 8px; }
 
-/* ── Chase All Button (group header) ── */
+/*  Chase All Button (group header)  */
 .chase-all-btn {
   background: none;
   border: 1px dotted rgba(200,168,75,0.4);
@@ -5416,7 +5416,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .chase-all-btn:hover { opacity: 1; }
 
-/* ── Pipeline Expandable Search ── */
+/*  Pipeline Expandable Search  */
 .search-icon-btn {
   background: none;
   border: none;
@@ -5516,7 +5516,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  z-index: 100;
+  z-index: 90;
   background: var(--bg);
   border-bottom: 1px dotted var(--dotline);
   max-height: 60vh;
@@ -5595,7 +5595,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  z-index: 100;
+  z-index: 90;
   background: var(--bg);
   border-bottom: 1px dotted var(--dotline);
 }
@@ -5607,9 +5607,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   transition: opacity 0.2s;
 }
 
-/* ═══════════════════════════════════════════════
+/* 
    UPDATES / NOTIFICATIONS TAB
-═══════════════════════════════════════════════ */
+ */
 
 .notif-header {
   padding: 22px 20px 14px;
@@ -5763,8 +5763,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 .notif-item {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
-  padding: 13px 20px 13px 24px;
+  padding: 11px 16px;
   border-bottom: 1px dotted var(--muted2);
   cursor: pointer;
   transition: background 0.15s;
@@ -5791,19 +5792,24 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-body { flex: 1; min-width: 0; }
 
 .notif-msg {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.35;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  line-height: 1.4;
   margin-bottom: 3px;
 }
-.notif-msg .actor { font-weight:600; color:var(--text); }
-.notif-item.unread .notif-msg { font-weight: 600; }
+.notif-item.unread .notif-msg { color: var(--text); }
+.notif-msg .actor { font-weight: 600; color: var(--text); }
 
 .notif-meta {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 5px;
 }
 
