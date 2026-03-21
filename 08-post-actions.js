@@ -613,6 +613,8 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   try {
     console.log('[PCS] DB WRITE SENT:', postId, newStage, Date.now());
 
+    console.log('STAGE PATCH:', postId, 'newStage:', toDbStage(newStage), 'body:', JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }));
+
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
       body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: actor }),
