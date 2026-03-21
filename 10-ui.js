@@ -366,43 +366,50 @@ function renderNotifications(name, role) {
     else groups.Earlier.push(n);
   });
 
-  var typeBorder = {
-    'awaiting_approval':    'ntype-chase',
-    'awaiting_brand_input': 'ntype-deficit',
+  var typeClass = {
+    'awaiting_approval':    'ntype-awaiting_approval',
+    'awaiting_brand_input': 'ntype-awaiting_brand_input',
     'ready':                'ntype-ready',
     'scheduled':            'ntype-scheduled',
     'published':            'ntype-published',
     'stage_change':         'ntype-info',
-    'in_production':        'ntype-info',
+    'in_production':        'ntype-in_production',
   };
 
-  function getContext(n) {
-    var d = new Date(n.created_at);
-    var timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    if (n.type === 'awaiting_approval') return { text: 'Awaiting client approval - ' + timeStr, urgent: true };
-    if (n.type === 'awaiting_brand_input') return { text: 'Waiting for brand input - ' + timeStr, urgent: true };
-    if (n.type === 'ready') return { text: 'Ready to dispatch - ' + timeStr, urgent: false };
-    if (n.type === 'published') return { text: 'Published - ' + timeStr, urgent: false };
-    if (n.type === 'scheduled') return { text: 'Scheduled - ' + timeStr, urgent: false };
-    if (n.type === 'in_production') return { text: 'In production - ' + timeStr, urgent: false };
-    return { text: timeStr, urgent: false };
+  var stagePills = {
+    'awaiting_approval':    { label: 'Approval', cls: 'pill-approval' },
+    'awaiting_brand_input': { label: 'Brand Input', cls: 'pill-input' },
+    'ready':                { label: 'Ready', cls: 'pill-ready' },
+    'scheduled':            { label: 'Scheduled', cls: 'pill-scheduled' },
+    'published':            { label: 'Published', cls: 'pill-published' },
+    'in_production':        { label: 'Production', cls: 'pill-production' },
+  };
+
+  function parseActor(msg) {
+    if (!msg) return { name: 'System', initials: 'S', cls: 'av-system' };
+    var first = msg.split(/\s/)[0].toLowerCase();
+    if (first.includes('pranav'))  return { name: 'Pranav',  initials: 'P',  cls: 'av-pranav' };
+    if (first.includes('chitra'))  return { name: 'Chitra',  initials: 'Ch', cls: 'av-chitra' };
+    if (first.includes('shubham')) return { name: 'Shubham', initials: 'S',  cls: 'av-shubham' };
+    if (first.includes('client'))  return { name: 'Client',  initials: 'Cl', cls: 'av-client' };
+    return { name: first.charAt(0).toUpperCase() + first.slice(1), initials: first.charAt(0).toUpperCase(), cls: 'av-system' };
   }
 
   function getActions(n) {
     if (n.type === 'awaiting_approval') return [
-      { label: 'Chase Client', cls: 'nab-red', action: 'chase', id: n.id },
-      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+      { label: 'Chase Client', cls: 'danger', action: 'chase' },
+      { label: 'View', cls: '', action: 'view' }
     ];
     if (n.type === 'ready') return [
-      { label: 'Send for Approval', cls: 'nab-green', action: 'approve', id: n.id },
-      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+      { label: 'Send for Approval', cls: 'success', action: 'approve' },
+      { label: 'View', cls: '', action: 'view' }
     ];
     if (n.type === 'awaiting_brand_input') return [
-      { label: 'Chase Input', cls: 'nab-amber', action: 'chase', id: n.id },
-      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+      { label: 'Chase Input', cls: 'danger', action: 'chase' },
+      { label: 'View', cls: '', action: 'view' }
     ];
     if (n.type === 'scheduled' || n.type === 'published' || n.type === 'stage_change') return [
-      { label: 'View', cls: 'nab-muted', action: 'view', id: n.id }
+      { label: 'View', cls: '', action: 'view' }
     ];
     return [];
   }
@@ -417,21 +424,27 @@ function renderNotifications(name, role) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var bc = typeBorder[n.type] || 'ntype-info';
-      var ctx = getContext(n);
+      var tc = typeClass[n.type] || 'ntype-info';
+      var actor = parseActor(n.message);
       var actions = getActions(n);
+      var pill = stagePills[n.type];
+      var msgText = (n.message || '').replace(/^\S+\s*/, '');
+
       var actHtml = actions.map(function(a) {
-        return '<button class="notif-action-btn ' + a.cls + '" onclick="handleNotifAction(\'' + a.action + '\',\'' + (n.post_id||'') + '\',' + n.id + ',event)">' + a.label + '</button>';
+        return '<button class="notif-action-link ' + a.cls + '" onclick="handleNotifAction(\'' + a.action + '\',\'' + (n.post_id||'') + '\',' + n.id + ',event)">' + a.label + '</button>';
       }).join('');
 
-      html += '<div class="notif-item ' + bc + ' ' + (n.read ? '' : 'unread') + '" onclick="openNotifItem(' + n.id + ',\'' + (n.post_id||'') + '\')">';
+      html += '<div class="notif-item ' + tc + ' ' + (n.read ? '' : 'unread') + '" onclick="openNotifItem(' + n.id + ',\'' + (n.post_id||'') + '\')">';
+      html += '<div class="notif-avatar ' + actor.cls + '">' + actor.initials + '</div>';
       html += '<div class="notif-body">';
-      html += '<div class="notif-msg">' + (n.message || '') + '</div>';
-      html += '<div class="notif-ctx ' + (ctx.urgent ? 'ctx-urgent' : '') + '">' + ctx.text + '</div>';
-      if (actHtml) html += '<div class="notif-action-row">' + actHtml + '</div>';
+      html += '<div class="notif-msg"><span class="actor">' + actor.name + '</span> ' + msgText + '</div>';
+      html += '<div class="notif-meta">';
+      if (pill) html += '<span class="notif-stage-pill ' + pill.cls + '">' + pill.label + '</span> ';
+      html += '<span class="notif-time">' + formatTime(n.created_at) + '</span>';
+      html += '</div>';
+      if (actHtml) html += '<div class="notif-actions-inline">' + actHtml + '</div>';
       html += '</div>';
       html += '<div class="notif-right">';
-      html += '<div class="notif-time">' + formatTime(n.created_at) + '</div>';
       if (!n.read) html += '<div class="notif-unread-dot"></div>';
       html += '</div>';
       html += '</div>';
@@ -464,7 +477,7 @@ async function handleNotifAction(action, postId, notifId, event) {
     var title = post ? post.title : 'this post';
     var msg = 'Hi! Following up on ' + title + ' sent for approval. Please review when you get a chance.';
     if (navigator.clipboard) { navigator.clipboard.writeText(msg); }
-    showChaseToast('-> Copied to clipboard');
+    showChaseToast('Copied to clipboard');
     return;
   }
   if (action === 'approve' && postId) { openPCS(postId); return; }

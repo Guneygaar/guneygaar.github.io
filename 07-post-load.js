@@ -1514,7 +1514,7 @@ function buildPostCard(p, listKey) {
 function showChaseToast(msg) {
   var toast = document.getElementById('chase-toast');
   if (!toast) return;
-  toast.textContent = msg || '-> Copied to clipboard';
+  toast.textContent = msg || 'Copied to clipboard';
   toast.classList.add('visible');
   setTimeout(function() {
     toast.classList.remove('visible');
@@ -2613,7 +2613,7 @@ function copyChase(encodedMsg) {
   var msg = decodeURIComponent(encodedMsg);
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(msg).then(function() {
-      showChaseToast('-> Copied to clipboard');
+      showChaseToast('Copied to clipboard');
     }).catch(function() {
       fallbackCopy(msg);
     });
@@ -2632,9 +2632,9 @@ function fallbackCopy(text) {
   ta.select();
   try {
     document.execCommand('copy');
-    showChaseToast('-> Copied to clipboard');
+    showChaseToast('Copied to clipboard');
   } catch(e) {
-    showChaseToast('-> Copy failed');
+    showChaseToast('Copy failed');
   }
   document.body.removeChild(ta);
 }
@@ -2666,7 +2666,7 @@ function chaseAll() {
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(msg).then(function() {
-      showChaseToast('-> ' + overduePosts.length + ' posts copied');
+      showChaseToast(overduePosts.length + ' posts copied');
     }).catch(function() {
       fallbackCopy(msg);
     });
