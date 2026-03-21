@@ -212,7 +212,7 @@ function activateRole(role) {
     loadPosts();
     loadTasks();
     startRealtime();
-    fetchUnreadCount();
+    updateNotifBadge();
   }
   // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();

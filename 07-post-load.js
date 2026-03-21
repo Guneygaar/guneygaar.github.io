@@ -300,7 +300,7 @@ function startRealtime() {
       if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
         mergePosts(fresh);
         scheduleRender();
-        fetchUnreadCount();
+        updateNotifBadge();
       }
     } catch (e) {
       console.warn('realtime poll failed:', e.message);
