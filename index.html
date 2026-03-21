@@ -314,49 +314,8 @@
     </div>
   </div>
 
-  <!-- TAB: LIBRARY -->
-  <div class="tab-panel" id="panel-library">
-    <!-- Unified search + filter block -->
-    <div class="search-block">
-      <!-- Row 1: search + view toggle -->
-      <div class="search-row">
-        <div class="search-box" onclick="document.getElementById('search-input').focus()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="search-input" class="search-input-real" placeholder="Search posts..." oninput="filterLibrary()">
-        </div>
-        <div class="search-divider"></div>
-        <div class="view-toggle">
-          <button class="vt-btn active" id="btn-list" data-view="list" onclick="switchLibraryView(this)">List</button>
-          <button class="vt-btn" id="btn-cal" data-view="calendar" onclick="switchLibraryView(this)">Cal</button>
-        </div>
-      </div>
-      <!-- Row 2: filters -->
-      <div class="filter-row">
-        <select id="filter-stage" class="filter-chip" onchange="filterLibrary()">
-          <option value="">Stage</option>
-        </select>
-        <select id="filter-owner" class="filter-chip" onchange="filterLibrary()">
-          <option value="">Owner</option>
-        </select>
-        <select id="filter-pillar" class="filter-chip" onchange="filterLibrary()">
-          <option value="">Pillar</option>
-        </select>
-        <select id="filter-date" class="filter-chip" onchange="filterLibrary()">
-          <option value="">Date</option>
-          <option value="past">Past</option>
-          <option value="today">Today</option>
-          <option value="week">This week</option>
-          <option value="future">Future</option>
-          <option value="none">No date</option>
-        </select>
-      </div>
-    </div>
-    <!-- Content -->
-    <div class="dash-body" id="library-content">
-      <div id="library-list-view"></div>
-      <div id="library-calendar-view" style="display:none"></div>
-    </div>
-  </div>
+  <!-- TAB: LIBRARY (old content removed, new library uses #library-view) -->
+  <div class="tab-panel" id="panel-library"></div>
 
   <!-- TAB: UPDATES -->
   <div class="tab-panel" id="panel-updates">
@@ -414,7 +373,7 @@
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     <span class="nav-label">Pipeline</span>
   </div>
-  <div class="nav-item tab-btn" data-tab="library" onclick="switchTab(this)">
+  <div class="nav-item tab-btn" data-tab="library" onclick="showLibrary()">
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
     <span class="nav-label">Library</span>
   </div>
@@ -999,6 +958,85 @@ window.allTasks        = window.allTasks    || [];
     <span class="action-bar-placeholder">Add task or post...</span>
   </div>
   <button class="action-bar-fab" id="main-fab-btn" onclick="toggleFabMenu()">+</button>
+</div>
+
+<div class="library-view" id="library-view">
+
+  <!-- Library header -->
+  <div class="lib-hdr">
+    <div class="lib-hdr-left">
+      <div class="lib-hdr-title">Library</div>
+      <div class="lib-view-toggle">
+        <button class="lib-vt active" onclick="libSetView('list',this)">List</button>
+        <button class="lib-vt" onclick="libSetView('calendar',this)">Calendar</button>
+        <button class="lib-vt" onclick="libSetView('board',this)">Board</button>
+      </div>
+    </div>
+    <div class="lib-hdr-right">
+      <button class="lib-filter-btn" onclick="libOpenFilterSheet()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
+        <span class="lib-filter-dot" id="lib-filter-dot"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Active filter strip -->
+  <div class="lib-active-strip" id="lib-active-strip"></div>
+
+  <!-- Filter sheet overlay -->
+  <div class="lib-filter-sheet-overlay" id="lib-filter-sheet-overlay">
+    <div class="lib-filter-sheet" id="lib-filter-sheet">
+      <div class="lib-fs-hdr">Filters</div>
+
+      <div class="lib-fs-section">
+        <div class="lib-fs-label">Date</div>
+        <div class="lib-fs-chips">
+          <span class="lib-fsd-chip active" data-v="all">All</span>
+          <span class="lib-fsd-chip" data-v="week">This Week</span>
+          <span class="lib-fsd-chip" data-v="lastweek">Last Week</span>
+          <span class="lib-fsd-chip" data-v="month">This Month</span>
+        </div>
+      </div>
+
+      <div class="lib-fs-section">
+        <div class="lib-fs-label">Status</div>
+        <div class="lib-fs-chips">
+          <span class="lib-fss-chip active" data-v="all">All</span>
+          <span class="lib-fss-chip" data-v="published">Published</span>
+          <span class="lib-fss-chip" data-v="parked">Parked</span>
+          <span class="lib-fss-chip" data-v="rejected">Rejected</span>
+        </div>
+      </div>
+
+      <div class="lib-fs-section">
+        <div class="lib-fs-label">Pillar</div>
+        <div class="lib-fs-chips">
+          <span class="lib-fsp-chip active" data-v="all">All</span>
+          <span class="lib-fsp-chip" data-v="leadership">Leadership</span>
+          <span class="lib-fsp-chip" data-v="innovation">Innovation</span>
+          <span class="lib-fsp-chip" data-v="sustainability">Sustainability</span>
+          <span class="lib-fsp-chip" data-v="inclusivity">Inclusivity</span>
+        </div>
+      </div>
+
+      <div class="lib-fs-actions">
+        <button class="lib-fs-reset" id="lib-fs-reset-btn">Reset</button>
+        <button class="lib-fs-apply" id="lib-fs-apply-btn">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bodies -->
+  <div class="lib-tab-body" id="lib-tab-list">
+    <div id="lib-list-content"></div>
+  </div>
+  <div class="lib-tab-body lib-hidden" id="lib-tab-calendar">
+    <div id="lib-cal-wrap"></div>
+  </div>
+  <div class="lib-tab-body lib-hidden" id="lib-tab-board">
+    <div id="lib-board-cols"></div>
+  </div>
+
 </div>
 
 <div class="insights-view" id="insights-view">
