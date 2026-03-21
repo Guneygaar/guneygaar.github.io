@@ -909,13 +909,14 @@ function getDashGreeting() {
                  hour >= 12 && hour < 17 ? 'Good afternoon' :
                  hour >= 17 && hour < 21 ? 'Good evening' :
                  'Working late';
+  var role = window.effectiveRole || window.currentRole || '';
   var roleNames = {
-    'Admin': 'Shubham',
+    'Admin':     'Shubham',
     'Servicing': 'Chitra',
-    'Creative': 'Pranav',
-    'Client': 'Client'
+    'Creative':  'Pranav',
+    'Client':    'Client'
   };
-  var name = roleNames[window.effectiveRole] || 'there';
+  var name = roleNames[role] || resolveActor() || 'there';
   return greeting + ', ' + name;
 }
 
@@ -1104,9 +1105,42 @@ function renderScoreboard() {
 
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['scheduled']); };
-    if (rowPranav) rowPranav.onclick = function() { if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['in_production']); };
-    if (rowChitra) rowChitra.onclick = function() { if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['ready']); };
-    if (rowClient) rowClient.onclick = function() { if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['awaiting_approval']); };
+    if (rowPranav) rowPranav.onclick = function() {
+      var inProd = (window.allPosts || []).filter(function(p) {
+        return p.stage === 'in_production';
+      });
+      if (inProd.length > 0) {
+        navigateWithFilter('pipeline', ['in_production']);
+      } else {
+        if (typeof openNewPostModal === 'function') {
+          openNewPostModal();
+        } else {
+          showToast('No posts in production \u00b7 create one', 'info');
+        }
+      }
+    };
+    if (rowChitra) rowChitra.onclick = function() {
+      var chitraNum = parseInt(
+        (document.getElementById('metric-chitra-num') || {}).textContent) || 0;
+      if (chitraNum === 0) {
+        showToast('All dispatched \u00b7 nothing pending', 'success');
+      } else {
+        navigateWithFilter('pipeline', ['ready']);
+      }
+    };
+    if (rowClient) rowClient.onclick = function() {
+      var aCount = (window.allPosts || []).filter(
+        function(p) { return p.stage === 'awaiting_approval'; }
+      ).length;
+      var iCount = (window.allPosts || []).filter(
+        function(p) { return p.stage === 'awaiting_brand_input'; }
+      ).length;
+      if (aCount >= iCount) {
+        navigateWithFilter('pipeline', ['awaiting_approval']);
+      } else {
+        navigateWithFilter('pipeline', ['awaiting_brand_input']);
+      }
+    };
 
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
@@ -1114,7 +1148,7 @@ function renderScoreboard() {
 }
 
 function _renderDashTaskList(role) {
-  var items = _buildDoThisNowItems();
+  var items = _buildDoThisNowItems(role);
   var container = document.getElementById('dash-task-list');
   if (!container) return;
 
@@ -1133,7 +1167,15 @@ function _renderDashTaskList(role) {
   }
 
   if (!filtered.length) {
-    container.innerHTML = '<div style="color:var(--green);font-family:var(--mono);font-size:13px;padding:14px 0">All clear</div>';
+    var emptyMessages = {
+      'Admin':     'All systems running \u00b7 nothing needs you',
+      'Servicing': 'Queue clear \u00b7 nothing to dispatch',
+      'Creative':  'Pipeline healthy \u00b7 keep creating',
+      'Client':    'Nothing from us right now \u00b7 you\u2019re good'
+    };
+    var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
+    var emptyMsg = emptyMessages[emptyRole] || 'All clear';
+    container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
     return;
   }
 
@@ -1209,22 +1251,24 @@ function openRunwaySheet() {
   document.body.appendChild(overlay);
 }
 
-function _buildDoThisNowItems() {
+function _buildDoThisNowItems(role) {
   var items = [];
   var todayStr = new Date().toISOString().split('T')[0];
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+  role = role || window.effectiveRole || window.currentRole || 'Admin';
 
   // B-02 FIX: PRIORITY 0  Failed publish items (scheduled posts past target_date)
-  var failedPub = _ttFailedPublish();
-  for (var fp = 0; fp < failedPub.length && items.length < 3; fp++) {
-    var fpPost = failedPub[fp];
-    var daysMissed = Math.floor((new Date(todayStr) - new Date(fpPost.target_date)) / (1000*60*60*24));
-    items.push({
-      title: 'FIX PUBLISH - ' + getTitle(fpPost),
-      assignedTo: 'Admin',
-      taskId: getPostId(fpPost) || 'auto'
-    });
+  if (role !== 'Client') {
+    var failedPub = _ttFailedPublish();
+    for (var fp = 0; fp < failedPub.length && items.length < 3; fp++) {
+      var fpPost = failedPub[fp];
+      items.push({
+        title: 'FIX PUBLISH - ' + getTitle(fpPost),
+        assignedTo: 'Admin',
+        taskId: getPostId(fpPost) || 'auto'
+      });
+    }
   }
 
   // 1. Manual tasks first (sorted by due_date ascending)
@@ -1242,50 +1286,62 @@ function _buildDoThisNowItems() {
     });
   }
 
-  // 2. Auto-generated: overdue client posts
-  var overdueApprovalPosts = allPosts.filter(function(p) {
-    return p.stage === 'awaiting_approval' &&
-      p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
-  }).sort(function(a, b) {
-    return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
-  });
-  for (var c = 0; c < overdueApprovalPosts.length && items.length < 7; c++) {
-    var op = overdueApprovalPosts[c];
-    items.push({
-      title: 'Chase client - ' + getTitle(op),
-      assignedTo: 'Chitra',
-      taskId: 'auto'
+  // 2. Auto-generated: overdue client posts (Admin and Servicing only)
+  if (role === 'Admin' || role === 'Servicing') {
+    var overdueApprovalPosts = allPosts.filter(function(p) {
+      return p.stage === 'awaiting_approval' &&
+        p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+    }).sort(function(a, b) {
+      return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
     });
-  }
-  var overdueBrandPosts = allPosts.filter(function(p) {
-    return p.stage === 'awaiting_brand_input' &&
-      p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
-  }).sort(function(a, b) {
-    return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
-  });
-  for (var bi = 0; bi < overdueBrandPosts.length && items.length < 8; bi++) {
-    var bp = overdueBrandPosts[bi];
-    items.push({
-      title: 'Brand input pending - ' + getTitle(bp),
-      assignedTo: 'Chitra',
-      taskId: 'auto'
+    for (var c = 0; c < overdueApprovalPosts.length && items.length < 7; c++) {
+      var op = overdueApprovalPosts[c];
+      items.push({
+        title: 'Chase client - ' + getTitle(op),
+        assignedTo: 'Chitra',
+        taskId: 'auto'
+      });
+    }
+    var overdueBrandPosts = allPosts.filter(function(p) {
+      return p.stage === 'awaiting_brand_input' &&
+        p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+    }).sort(function(a, b) {
+      return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
     });
+    for (var bi = 0; bi < overdueBrandPosts.length && items.length < 8; bi++) {
+      var bp = overdueBrandPosts[bi];
+      items.push({
+        title: 'Brand input pending - ' + getTitle(bp),
+        assignedTo: 'Chitra',
+        taskId: 'auto'
+      });
+    }
   }
 
-  // 3. Auto: Pranav deficit
-  var inSystemCount = allPosts.filter(function(p) {
-    return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
-  }).length;
-  var awaitingTotal = allPosts.filter(function(p) {
-    return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
-  }).length;
-  var pranavDeficitAuto = inSystemCount - 35;
-  if (pranavDeficitAuto < 0 && awaitingTotal === 0 && items.length < 8) {
-    items.push({
-      title: pranavDeficitAuto + ' posts needed -- build now',
-      assignedTo: 'Pranav',
-      taskId: 'auto'
-    });
+  // 3. Auto: Pranav deficit (Admin and Creative only)
+  if (role === 'Admin' || role === 'Creative') {
+    var inSystemCount = allPosts.filter(function(p) {
+      return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
+    }).length;
+    var awaitingTotal = allPosts.filter(function(p) {
+      return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
+    }).length;
+    var pranavDeficitAuto = inSystemCount - 35;
+    if (pranavDeficitAuto < 0 && awaitingTotal === 0 && items.length < 8) {
+      if (role === 'Creative') {
+        items.push({
+          title: dashPad(Math.abs(pranavDeficitAuto)) + ' posts to build \u00b7 target ' + dashPad(35 - Math.abs(pranavDeficitAuto)) + ' of 35',
+          assignedTo: 'Pranav',
+          taskId: 'auto'
+        });
+      } else {
+        items.push({
+          title: pranavDeficitAuto + ' posts needed -- build now',
+          assignedTo: 'Pranav',
+          taskId: 'auto'
+        });
+      }
+    }
   }
 
   return items;
