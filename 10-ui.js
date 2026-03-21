@@ -262,9 +262,10 @@ function _notifTitle(postId) {
 var _notifFilter = 'all';
 var _notifData = [];
 var roleDisplayMap = {
-  'Admin':     { name: 'Shubham', label: 'Admin - Hinglish Ops' },
-  'Servicing': { name: 'Chitra',  label: 'Servicing - Dispatch' },
-  'Creative':  { name: 'Pranav',  label: 'Creative - Production' }
+  'Admin':     { name: 'Shubham', label: 'Admin \u00b7 Hinglish Ops' },
+  'Servicing': { name: 'Chitra',  label: 'Servicing \u00b7 Dispatch' },
+  'Creative':  { name: 'Pranav',  label: 'Creative \u00b7 Production' },
+  'Client':    { name: 'Client',  label: 'Client \u00b7 Hinglish Ops' }
 };
 
 async function loadNotifications() {

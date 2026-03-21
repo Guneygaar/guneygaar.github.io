@@ -5913,12 +5913,22 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   color: var(--text2);
   letter-spacing: 0.04em;
 }
-.dash-edition {
+.dash-updated {
   font-family: var(--mono);
   font-size: 8px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--muted);
   text-transform: uppercase;
+  display: block;
+  margin-top: 2px;
+}
+.dash-edition {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: none;
+  font-style: italic;
 }
 
 /* HEADLINE BLOCK */
@@ -5979,8 +5989,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   padding: 12px 18px;
   border-bottom: 1px dotted var(--muted2);
   transition: background 0.15s;
-  cursor: default;
+  cursor: pointer;
 }
+.dash-metric-row:active { background: var(--surface2); }
 .dash-metric-row:last-child { border-bottom: none; }
 .dash-metric-row:hover { background: var(--surface); }
 
