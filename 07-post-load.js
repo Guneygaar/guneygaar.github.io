@@ -1898,6 +1898,21 @@ async function executeBatchAction(targetStage) {
       }),
     });
 
+    var notifActor = resolveActor() || 'Chitra';
+    var count = ids.length;
+    var stageLabel = targetStage === 'awaiting_approval'
+      ? 'for approval' : 'for brand input';
+
+    await apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: 'Admin',
+        post_id: null,
+        type: targetStage,
+        message: notifActor + ' sent ' + count + ' posts ' + stageLabel
+      })
+    });
+
     toggleBatchMode();
     loadPosts();
 
