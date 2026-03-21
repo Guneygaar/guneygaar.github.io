@@ -100,11 +100,12 @@ function formatIST(ts) {
   });
 }
 
-// Resolve actor name for write paths  -  URL-path based, strict allowlist
+// Resolve actor name for write paths  -  always returns display name
 function resolveActor() {
-  const path = window.location.pathname.toLowerCase();
-  if (path.includes('client')) return 'Client';
-  if (path.includes('chitra') || path.includes('ops')) return 'Chitra';
-  if (path.includes('admin')) return 'Chitra';
-  return 'Pranav';
+  var role = (typeof effectiveRole !== 'undefined') ? effectiveRole : '';
+  if (role === 'Admin') return 'Shubham';
+  if (role === 'Servicing') return 'Chitra';
+  if (role === 'Creative') return 'Pranav';
+  if (role === 'Client') return 'Client';
+  return 'Shubham';
 }
