@@ -1,0 +1,962 @@
+/* ===============================================
+   09-library.js  -  Library tab: data + filters
+   Part A: data loading, filter state, filter sheet
+=============================================== */
+console.log("LOADED:", "09-library.js");
+
+// --------------- state ---------------
+var _libPosts = null;
+var _libLinkedIn = {};
+var _libFilterWired = false;
+var LIB_FILTER = {
+  date: 'all', status: 'all', pillar: 'all',
+  dateFrom: null, dateTo: null
+};
+
+// --------------- data loading ---------------
+async function libLoadPosts() {
+  var data = await apiFetch(
+    '/posts?select=*&stage=in.(published,parked,rejected)&order=target_date.desc'
+  );
+  _libPosts = data || [];
+
+  var li = await apiFetch('/linkedin_posts?select=*');
+  _libLinkedIn = {};
+  if (li && li.length) {
+    for (var i = 0; i < li.length; i++) {
+      _libLinkedIn[li[i].post_id] = li[i];
+    }
+  }
+}
+
+// --------------- filter sheet wiring ---------------
+function libWireFilters() {
+  if (_libFilterWired) return;
+  _libFilterWired = true;
+
+  var chipGroups = [
+    { sel: '.lib-fsd-chip', key: 'date' },
+    { sel: '.lib-fss-chip', key: 'status' },
+    { sel: '.lib-fsp-chip', key: 'pillar' }
+  ];
+
+  function getActiveClass(key, val) {
+    if (key === 'status') {
+      if (val === 'published') return 'active-pub';
+      if (val === 'parked') return 'active-park';
+      if (val === 'rejected') return 'active-rej';
+      return 'active';
+    }
+    if (key === 'pillar') {
+      var v = (val || '').toLowerCase();
+      if (v === 'leadership') return 'active-lead';
+      if (v === 'innovation') return 'active-innov';
+      if (v === 'sustainability') return 'active-sustain';
+      if (v === 'inclusivity') return 'active-incl';
+      return 'active';
+    }
+    return 'active';
+  }
+
+  function clearActiveClasses(chip) {
+    var cls = chip.className.split(' ');
+    for (var i = cls.length - 1; i >= 0; i--) {
+      if (cls[i].indexOf('active') === 0) {
+        chip.classList.remove(cls[i]);
+      }
+    }
+  }
+
+  for (var g = 0; g < chipGroups.length; g++) {
+    (function(group) {
+      var chips = document.querySelectorAll(group.sel);
+      for (var c = 0; c < chips.length; c++) {
+        (function(chip) {
+          var tapped = false;
+
+          chip.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            tapped = true;
+            handleChip(chip, group);
+            setTimeout(function() { tapped = false; }, 300);
+          });
+
+          chip.addEventListener('click', function() {
+            if (tapped) return;
+            handleChip(chip, group);
+          });
+
+          chip.style.touchAction = 'manipulation';
+        })(chips[c]);
+      }
+    })(chipGroups[g]);
+  }
+
+  function handleChip(chip, group) {
+    var val = chip.getAttribute('data-v') || 'all';
+    LIB_FILTER[group.key] = val;
+
+    var siblings = document.querySelectorAll(group.sel);
+    for (var i = 0; i < siblings.length; i++) {
+      clearActiveClasses(siblings[i]);
+    }
+    chip.classList.add(getActiveClass(group.key, val));
+  }
+
+  // Reset button
+  var resetBtn = document.getElementById('lib-fs-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      libResetFilters();
+    });
+  }
+
+  // Apply button
+  var applyBtn = document.getElementById('lib-fs-apply-btn');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', function() {
+      libApplyFilters();
+      libCloseFilterSheet();
+    });
+  }
+
+  // Overlay close
+  var overlay = document.getElementById('lib-filter-sheet-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) {
+        libCloseFilterSheet();
+      }
+    });
+  }
+
+  // Stop propagation on sheet itself
+  var sheet = document.getElementById('lib-filter-sheet');
+  if (sheet) {
+    sheet.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+  }
+}
+
+// --------------- open / close filter sheet ---------------
+function libOpenFilterSheet() {
+  var el = document.getElementById('lib-filter-sheet-overlay');
+  if (el) el.classList.add('open');
+}
+
+function libCloseFilterSheet() {
+  var el = document.getElementById('lib-filter-sheet-overlay');
+  if (el) el.classList.remove('open');
+}
+
+// --------------- apply filters ---------------
+function libApplyFilters() {
+  var items = document.querySelectorAll('.lib-item');
+  var allDefault = LIB_FILTER.date === 'all' &&
+                   LIB_FILTER.status === 'all' &&
+                   LIB_FILTER.pillar === 'all';
+
+  var now = new Date();
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  var dayOfWeek = today.getDay();
+  var monOffset = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+  var weekMon = new Date(today.getTime() + monOffset * 86400000);
+  var weekSun = new Date(weekMon.getTime() + 6 * 86400000);
+  var lastWeekMon = new Date(weekMon.getTime() - 7 * 86400000);
+  var lastWeekSun = new Date(weekMon.getTime() - 86400000);
+  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  var monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var show = true;
+
+    // Gap items only visible when no filters
+    if (item.getAttribute('data-s') === 'gap') {
+      item.style.display = allDefault ? '' : 'none';
+      continue;
+    }
+
+    // Date filter
+    if (LIB_FILTER.date !== 'all') {
+      var dateStr = item.getAttribute('data-date');
+      var d = parseDate(dateStr);
+      if (!d) {
+        show = false;
+      } else {
+        var dt = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        if (LIB_FILTER.date === 'week') {
+          show = dt >= weekMon && dt <= weekSun;
+        } else if (LIB_FILTER.date === 'lastweek') {
+          show = dt >= lastWeekMon && dt <= lastWeekSun;
+        } else if (LIB_FILTER.date === 'month') {
+          show = dt >= monthStart && dt <= monthEnd;
+        } else if (LIB_FILTER.date === 'custom') {
+          var from = LIB_FILTER.dateFrom ? parseDate(LIB_FILTER.dateFrom) : null;
+          var to = LIB_FILTER.dateTo ? parseDate(LIB_FILTER.dateTo) : null;
+          if (from && to) {
+            show = dt >= from && dt <= to;
+          } else if (from) {
+            show = dt >= from;
+          } else if (to) {
+            show = dt <= to;
+          }
+        }
+      }
+    }
+
+    // Status filter
+    if (show && LIB_FILTER.status !== 'all') {
+      var s = item.getAttribute('data-s') || '';
+      if (s !== LIB_FILTER.status) show = false;
+    }
+
+    // Pillar filter
+    if (show && LIB_FILTER.pillar !== 'all') {
+      var p = (item.getAttribute('data-p') || '').toLowerCase();
+      if (p !== LIB_FILTER.pillar.toLowerCase()) show = false;
+    }
+
+    item.style.display = show ? '' : 'none';
+  }
+
+  // Pillar bar dimming
+  var pbSegs = document.querySelectorAll('.lib-pb-seg');
+  if (LIB_FILTER.pillar !== 'all') {
+    for (var j = 0; j < pbSegs.length; j++) {
+      pbSegs[j].classList.add('lib-dimmed');
+    }
+    var activeSeg = document.getElementById('lib-pb-' + LIB_FILTER.pillar.toLowerCase());
+    if (activeSeg) activeSeg.classList.remove('lib-dimmed');
+  } else {
+    for (var j = 0; j < pbSegs.length; j++) {
+      pbSegs[j].classList.remove('lib-dimmed');
+    }
+  }
+
+  // Filter dot
+  var dot = document.getElementById('lib-filter-dot');
+  var anyActive = LIB_FILTER.date !== 'all' ||
+                  LIB_FILTER.status !== 'all' ||
+                  LIB_FILTER.pillar !== 'all';
+  if (dot) {
+    if (anyActive) dot.classList.add('active');
+    else dot.classList.remove('active');
+  }
+
+  // Active filter strip
+  var strip = document.getElementById('lib-active-strip');
+  if (strip) {
+    if (anyActive) {
+      strip.classList.add('show');
+      var tags = '';
+
+      if (LIB_FILTER.date !== 'all') {
+        var dlabel = LIB_FILTER.date;
+        if (dlabel === 'week') dlabel = 'This Week';
+        else if (dlabel === 'lastweek') dlabel = 'Last Week';
+        else if (dlabel === 'month') dlabel = 'This Month';
+        else if (dlabel === 'custom') dlabel = 'Custom';
+        tags += '<div class="lib-af-tag">' + esc(dlabel) +
+                ' <span onclick="LIB_FILTER.date=\'all\';libApplyFilters()">x</span></div>';
+      }
+      if (LIB_FILTER.status !== 'all') {
+        var slabel = LIB_FILTER.status.charAt(0).toUpperCase() + LIB_FILTER.status.slice(1);
+        tags += '<div class="lib-af-tag">' + esc(slabel) +
+                ' <span onclick="LIB_FILTER.status=\'all\';libApplyFilters()">x</span></div>';
+      }
+      if (LIB_FILTER.pillar !== 'all') {
+        var plabel = formatPillarDisplay(LIB_FILTER.pillar);
+        tags += '<div class="lib-af-tag">' + esc(plabel) +
+                ' <span onclick="LIB_FILTER.pillar=\'all\';libApplyFilters()">x</span></div>';
+      }
+      tags += '<div class="lib-af-tag" onclick="libResetFilters()">Clear all <span>x</span></div>';
+      strip.innerHTML = tags;
+    } else {
+      strip.classList.remove('show');
+      strip.innerHTML = '';
+    }
+  }
+}
+
+// --------------- reset filters ---------------
+function libResetFilters() {
+  LIB_FILTER.date = 'all';
+  LIB_FILTER.status = 'all';
+  LIB_FILTER.pillar = 'all';
+  LIB_FILTER.dateFrom = null;
+  LIB_FILTER.dateTo = null;
+
+  // Reset chip visuals
+  var groups = ['.lib-fsd-chip', '.lib-fss-chip', '.lib-fsp-chip'];
+  for (var g = 0; g < groups.length; g++) {
+    var chips = document.querySelectorAll(groups[g]);
+    for (var c = 0; c < chips.length; c++) {
+      var cls = chips[c].className.split(' ');
+      for (var k = cls.length - 1; k >= 0; k--) {
+        if (cls[k].indexOf('active') === 0) {
+          chips[c].classList.remove(cls[k]);
+        }
+      }
+      if (chips[c].getAttribute('data-v') === 'all') {
+        chips[c].classList.add('active');
+      }
+    }
+  }
+
+  libApplyFilters();
+}
+
+// ===============================================
+// Part B: rendering functions
+// ===============================================
+
+// --------------- helpers ---------------
+function libGetLifespan(post) {
+  if (!post.created_at || !post.status_changed_at) return null;
+  var a = new Date(post.created_at).getTime();
+  var b = new Date(post.status_changed_at).getTime();
+  return Math.round(Math.abs(b - a) / 86400000);
+}
+
+function libFormatImp(n) {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+// --------------- list view ---------------
+function libRenderList() {
+  var container = document.getElementById('lib-list-content');
+  if (!container || !_libPosts) return;
+
+  // group by YYYY-MM
+  var months = {};
+  var monthOrder = [];
+  for (var i = 0; i < _libPosts.length; i++) {
+    var p = _libPosts[i];
+    var td = p.target_date || '';
+    var key = td.length >= 7 ? td.substring(0, 7) : 'no-date';
+    if (!months[key]) { months[key] = []; monthOrder.push(key); }
+    months[key].push(p);
+  }
+
+  // find best post per month (highest impressions)
+  var monthBest = {};
+  for (var m = 0; m < monthOrder.length; m++) {
+    var mk = monthOrder[m];
+    var bestImp = -1;
+    var bestId = null;
+    for (var j = 0; j < months[mk].length; j++) {
+      var post = months[mk][j];
+      var li = _libLinkedIn[post.id] || _libLinkedIn[post.post_id];
+      if (li && li.impressions > bestImp) {
+        bestImp = li.impressions;
+        bestId = post.id || post.post_id;
+      }
+    }
+    if (bestId) monthBest[mk] = bestId;
+  }
+
+  // find week bests
+  var weekBest = {};
+  for (var i = 0; i < _libPosts.length; i++) {
+    var p = _libPosts[i];
+    var td = parseDate(p.target_date);
+    if (!td) continue;
+    var dow = td.getDay();
+    var monOff = (dow === 0) ? -6 : 1 - dow;
+    var wk = new Date(td.getTime() + monOff * 86400000);
+    var wkKey = wk.getFullYear() + '-' + String(wk.getMonth() + 1).padStart(2, '0') + '-' + String(wk.getDate()).padStart(2, '0');
+    var li = _libLinkedIn[p.id] || _libLinkedIn[p.post_id];
+    var imp = (li && li.impressions) ? li.impressions : 0;
+    if (!weekBest[wkKey] || imp > weekBest[wkKey].imp) {
+      weekBest[wkKey] = { id: p.id || p.post_id, imp: imp };
+    }
+  }
+
+  var html = '';
+  var prevMonthPosts = null;
+  var prevMonthDays = null;
+
+  for (var m = 0; m < monthOrder.length; m++) {
+    var mk = monthOrder[m];
+    var posts = months[mk];
+
+    // counts
+    var pubCnt = 0, parkCnt = 0, rejCnt = 0;
+    var lifespanSum = 0, lifespanCnt = 0;
+    for (var j = 0; j < posts.length; j++) {
+      var st = (posts[j].stage || '').toLowerCase();
+      if (st === 'published') pubCnt++;
+      else if (st === 'parked') parkCnt++;
+      else if (st === 'rejected') rejCnt++;
+      if (st === 'published') {
+        var ls = libGetLifespan(posts[j]);
+        if (ls !== null) { lifespanSum += ls; lifespanCnt++; }
+      }
+    }
+    var avgLife = lifespanCnt > 0 ? Math.round(lifespanSum / lifespanCnt) : null;
+
+    // grade
+    var grade = '';
+    if (pubCnt >= 8 && rejCnt === 0) grade = 'A';
+    else if (pubCnt >= 6) grade = 'B';
+    else if (pubCnt >= 4) grade = 'C';
+    else grade = 'D';
+
+    // month header
+    var monthLabel = mk;
+    if (mk !== 'no-date') {
+      var parts = mk.split('-');
+      monthLabel = MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+    }
+
+    html += '<div class="lib-month-hdr" data-month="' + esc(mk) + '">';
+    html += '<span class="lib-mh-arrow">v</span>';
+    html += '<span class="lib-mh-title">' + esc(monthLabel) + '</span>';
+    html += '<div class="lib-mh-counts">';
+    if (pubCnt > 0) html += '<span class="lib-mh-dot lib-mh-dot-pub">' + pubCnt + '</span>';
+    if (parkCnt > 0) html += '<span class="lib-mh-dot lib-mh-dot-park">' + parkCnt + '</span>';
+    if (rejCnt > 0) html += '<span class="lib-mh-dot lib-mh-dot-rej">' + rejCnt + '</span>';
+    html += '</div>';
+    html += '<span class="lib-mh-grade">' + grade + '</span>';
+    html += '</div>';
+
+    html += '<div class="lib-month-content">';
+
+    // pace line vs prior month
+    if (m > 0 && prevMonthPosts !== null && prevMonthDays) {
+      var curDays = 30;
+      if (mk !== 'no-date') {
+        var pp = mk.split('-');
+        curDays = new Date(parseInt(pp[0], 10), parseInt(pp[1], 10), 0).getDate();
+      }
+      var curRate = posts.length / curDays;
+      var prevRate = prevMonthPosts / prevMonthDays;
+      var paceDir = curRate >= prevRate ? 'up' : 'down';
+      html += '<div class="lib-pace-line">Pace ' + paceDir + ' vs prior month (' +
+              curRate.toFixed(1) + '/d vs ' + prevRate.toFixed(1) + '/d)</div>';
+    }
+
+    for (var j = 0; j < posts.length; j++) {
+      var post = posts[j];
+      var pid = post.id || post.post_id;
+      var stage = (post.stage || '').toLowerCase();
+      var li = _libLinkedIn[post.id] || _libLinkedIn[post.post_id];
+      var isBest = monthBest[mk] === pid;
+      var barClass = 'lib-bar';
+      if (isBest) barClass += ' lib-bar-best';
+      else if (stage === 'published') barClass += ' lib-bar-pub';
+      else if (stage === 'parked') barClass += ' lib-bar-park';
+      else if (stage === 'rejected') barClass += ' lib-bar-rej';
+
+      html += '<div class="lib-post-row lib-item" data-s="' + esc(stage) +
+              '" data-p="' + esc(post.content_pillar || '') +
+              '" data-date="' + esc(post.target_date || '') +
+              '" onclick="libOpenCard(\'' + esc(pid) + '\')">';
+      html += '<div class="' + barClass + '"></div>';
+      html += '<div class="lib-post-body">';
+      html += '<div class="lib-p-date">' + esc(formatDateShort(post.target_date)) + '</div>';
+      html += '<div class="lib-p-title">' + esc(post.title || 'Untitled') + '</div>';
+      html += '<div class="lib-p-meta">' + esc(formatPillarDisplay(post.content_pillar));
+      var lifespan = libGetLifespan(post);
+      if (lifespan !== null) html += ' &middot; ' + lifespan + 'd';
+      html += '</div>';
+
+      // right side: impressions or status
+      if (stage === 'published') {
+        if (li && li.impressions) {
+          if (isBest) {
+            html += '<div class="lib-p-imp lib-imp-best">' + libFormatImp(li.impressions) + '</div>';
+          } else {
+            html += '<div class="lib-p-imp lib-imp-normal">' + libFormatImp(li.impressions) + '</div>';
+          }
+        } else {
+          html += '<div class="lib-p-imp lib-imp-nodata">-</div>';
+        }
+      } else if (stage === 'parked') {
+        html += '<div class="lib-p-imp lib-imp-park">Parked</div>';
+        if (post.comments) {
+          html += '<div class="lib-p-reason lib-reason-park">' + esc(post.comments) + '</div>';
+        }
+      } else if (stage === 'rejected') {
+        html += '<div class="lib-p-imp lib-imp-rej">Rejected</div>';
+        if (post.comments) {
+          html += '<div class="lib-p-reason lib-reason-rej">' + esc(post.comments) + '</div>';
+        }
+      }
+
+      html += '</div></div>';
+
+      // gap alert between posts
+      if (j < posts.length - 1) {
+        var d1 = parseDate(post.target_date);
+        var d2 = parseDate(posts[j + 1].target_date);
+        if (d1 && d2) {
+          var gap = Math.round(Math.abs(d1.getTime() - d2.getTime()) / 86400000);
+          if (gap >= 5) {
+            html += '<div class="lib-item lib-gap-alert" data-s="gap">' + gap + '-day gap</div>';
+          }
+        }
+      }
+    }
+
+    html += '</div>';
+
+    // track for pace comparison
+    prevMonthPosts = posts.length;
+    prevMonthDays = 30;
+    if (mk !== 'no-date') {
+      var pp2 = mk.split('-');
+      prevMonthDays = new Date(parseInt(pp2[0], 10), parseInt(pp2[1], 10), 0).getDate();
+    }
+  }
+
+  container.innerHTML = html;
+
+  // wire month header collapse
+  var hdrs = container.querySelectorAll('.lib-month-hdr');
+  for (var h = 0; h < hdrs.length; h++) {
+    (function(hdr) {
+      hdr.addEventListener('click', function() {
+        var content = hdr.nextElementSibling;
+        if (content && content.classList.contains('lib-month-content')) {
+          content.classList.toggle('collapsed');
+        }
+        var arrow = hdr.querySelector('.lib-mh-arrow');
+        if (arrow) arrow.classList.toggle('collapsed');
+      });
+    })(hdrs[h]);
+  }
+}
+
+// --------------- calendar view ---------------
+function libRenderCalendar() {
+  var wrap = document.getElementById('lib-cal-wrap');
+  if (!wrap || !_libPosts) return;
+
+  var now = new Date();
+  var curMonth = { y: now.getFullYear(), m: now.getMonth() };
+  var prevMonth = { y: curMonth.m === 0 ? curMonth.y - 1 : curMonth.y, m: curMonth.m === 0 ? 11 : curMonth.m - 1 };
+  var displayMonths = [curMonth, prevMonth];
+
+  // build post map by date
+  var postsByDate = {};
+  for (var i = 0; i < _libPosts.length; i++) {
+    var p = _libPosts[i];
+    var td = p.target_date || '';
+    if (!td) continue;
+    if (!postsByDate[td]) postsByDate[td] = [];
+    postsByDate[td].push(p);
+  }
+
+  // best post per display month
+  var bestByMonth = {};
+  for (var dm = 0; dm < displayMonths.length; dm++) {
+    var dmo = displayMonths[dm];
+    var prefix = dmo.y + '-' + String(dmo.m + 1).padStart(2, '0');
+    var bestImp = -1;
+    var bestDate = null;
+    for (var dateKey in postsByDate) {
+      if (dateKey.substring(0, 7) !== prefix) continue;
+      var dayPosts = postsByDate[dateKey];
+      for (var j = 0; j < dayPosts.length; j++) {
+        var li = _libLinkedIn[dayPosts[j].id] || _libLinkedIn[dayPosts[j].post_id];
+        if (li && li.impressions > bestImp) {
+          bestImp = li.impressions;
+          bestDate = dateKey;
+        }
+      }
+    }
+    bestByMonth[prefix] = bestDate;
+  }
+
+  var html = '';
+
+  for (var dm = 0; dm < displayMonths.length; dm++) {
+    var dmo = displayMonths[dm];
+    var prefix = dmo.y + '-' + String(dmo.m + 1).padStart(2, '0');
+    var daysInMonth = new Date(dmo.y, dmo.m + 1, 0).getDate();
+    var firstDay = new Date(dmo.y, dmo.m, 1).getDay();
+
+    // counts
+    var pubC = 0, parkC = 0, rejC = 0;
+    for (var dateKey in postsByDate) {
+      if (dateKey.substring(0, 7) !== prefix) continue;
+      for (var j = 0; j < postsByDate[dateKey].length; j++) {
+        var st = (postsByDate[dateKey][j].stage || '').toLowerCase();
+        if (st === 'published') pubC++;
+        else if (st === 'parked') parkC++;
+        else if (st === 'rejected') rejC++;
+      }
+    }
+
+    html += '<div class="lib-cal-month-blk">';
+    html += '<div class="lib-cal-month-hdr">';
+    html += '<span>' + MONTHS[dmo.m] + ' ' + dmo.y + '</span>';
+    html += '<span class="lib-cal-hdr-counts">';
+    html += '<span class="lib-cal-cnt-pub">' + pubC + '</span> ';
+    html += '<span class="lib-cal-cnt-park">' + parkC + '</span> ';
+    html += '<span class="lib-cal-cnt-rej">' + rejC + '</span>';
+    html += '</span></div>';
+
+    html += '<div class="lib-cal-grid">';
+    var dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    for (var dl = 0; dl < 7; dl++) {
+      html += '<div class="lib-cal-dlbl">' + dayLabels[dl] + '</div>';
+    }
+
+    // offset cells
+    for (var o = 0; o < firstDay; o++) {
+      html += '<div class="lib-cal-cell lib-empty"></div>';
+    }
+
+    for (var day = 1; day <= daysInMonth; day++) {
+      var dateStr = dmo.y + '-' + String(dmo.m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+      var dayPosts = postsByDate[dateStr] || [];
+      var cellClass = 'lib-cal-cell';
+
+      if (dayPosts.length > 0) {
+        cellClass += ' lib-has-post';
+        // determine color class
+        var isBestDay = bestByMonth[prefix] === dateStr;
+        var hasRej = false, hasPark = false, pubCount = 0;
+        for (var dp = 0; dp < dayPosts.length; dp++) {
+          var ds = (dayPosts[dp].stage || '').toLowerCase();
+          if (ds === 'rejected') hasRej = true;
+          if (ds === 'parked') hasPark = true;
+          if (ds === 'published') pubCount++;
+        }
+        if (isBestDay) cellClass += ' lib-c-best';
+        else if (hasRej) cellClass += ' lib-c-rej';
+        else if (hasPark) cellClass += ' lib-c-park';
+        else if (pubCount >= 2) cellClass += ' lib-c-pub2';
+        else if (pubCount >= 1) cellClass += ' lib-c-pub1';
+      }
+
+      html += '<div class="' + cellClass + '" data-cal-date="' + dateStr + '">';
+      html += '<div class="lib-cal-inner">';
+      html += '<div class="lib-cal-num">' + day + '</div>';
+      if (dayPosts.length > 0) {
+        html += '<div class="lib-cal-dots">';
+        for (var dp = 0; dp < dayPosts.length; dp++) {
+          var ds = (dayPosts[dp].stage || '').toLowerCase();
+          var pid = dayPosts[dp].id || dayPosts[dp].post_id;
+          var isBestPost = bestByMonth[prefix] === dateStr &&
+                           (_libLinkedIn[dayPosts[dp].id] || _libLinkedIn[dayPosts[dp].post_id]);
+          var dotCls = 'lib-cal-dot';
+          if (isBestPost && (_libLinkedIn[dayPosts[dp].id] || _libLinkedIn[dayPosts[dp].post_id])) {
+            var liCheck = _libLinkedIn[dayPosts[dp].id] || _libLinkedIn[dayPosts[dp].post_id];
+            var bestCheck = true;
+            for (var bc = 0; bc < dayPosts.length; bc++) {
+              var liOther = _libLinkedIn[dayPosts[bc].id] || _libLinkedIn[dayPosts[bc].post_id];
+              if (liOther && liOther.impressions > liCheck.impressions) { bestCheck = false; break; }
+            }
+            if (bestCheck) dotCls += ' lib-dot-best';
+            else if (ds === 'published') dotCls += ' lib-dot-pub';
+          } else if (ds === 'published') dotCls += ' lib-dot-pub';
+          else if (ds === 'parked') dotCls += ' lib-dot-park';
+          else if (ds === 'rejected') dotCls += ' lib-dot-rej';
+          html += '<div class="' + dotCls + '"></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+
+    html += '</div></div>';
+  }
+
+  // pillar distribution
+  html += '<div class="lib-cal-pillar-wrap">';
+  var pillarCounts = {};
+  var totalPosts = 0;
+  for (var i = 0; i < _libPosts.length; i++) {
+    var pl = (_libPosts[i].content_pillar || 'other').toLowerCase();
+    pillarCounts[pl] = (pillarCounts[pl] || 0) + 1;
+    totalPosts++;
+  }
+  if (totalPosts > 0) {
+    html += '<div class="lib-cal-pillar-bar">';
+    for (var pk in pillarCounts) {
+      var pct = ((pillarCounts[pk] / totalPosts) * 100).toFixed(1);
+      html += '<div class="lib-cal-pillar-seg lib-cal-ps-' + esc(pk) + '" style="width:' + pct + '%"></div>';
+    }
+    html += '</div>';
+    html += '<div class="lib-cal-pillar-legend">';
+    for (var pk in pillarCounts) {
+      var pct = ((pillarCounts[pk] / totalPosts) * 100).toFixed(1);
+      html += '<span class="lib-cal-pl-item"><span class="lib-cal-pl-dot lib-cal-ps-' + esc(pk) + '"></span>' +
+              esc(formatPillarDisplay(pk)) + ' ' + pct + '%</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  wrap.innerHTML = html;
+
+  // wire click on cells with posts
+  var cells = wrap.querySelectorAll('.lib-has-post');
+  for (var c = 0; c < cells.length; c++) {
+    (function(cell) {
+      cell.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var dateStr = cell.getAttribute('data-cal-date');
+        var dayPosts = postsByDate[dateStr] || [];
+        if (!dayPosts.length) return;
+
+        var popup = document.getElementById('lib-cal-popup');
+        if (!popup) {
+          popup = document.createElement('div');
+          popup.id = 'lib-cal-popup';
+          document.body.appendChild(popup);
+        }
+
+        var ph = '<div class="lib-cal-popup-inner">';
+        ph += '<div class="lib-cal-popup-hdr">' + esc(formatDateShort(dateStr)) + '</div>';
+        for (var pp = 0; pp < dayPosts.length; pp++) {
+          var post = dayPosts[pp];
+          var pid = post.id || post.post_id;
+          ph += '<div class="lib-cal-popup-row" onclick="libOpenCard(\'' + esc(pid) + '\')">';
+          ph += '<span class="lib-cal-popup-title">' + esc(post.title || 'Untitled') + '</span>';
+          ph += '<span class="lib-cal-popup-stage lib-cal-ps-' + esc((post.stage || '').toLowerCase()) + '">' +
+                esc((post.stage || '').toLowerCase()) + '</span>';
+          ph += '</div>';
+        }
+        ph += '</div>';
+        popup.innerHTML = ph;
+        popup.classList.add('open');
+
+        var rect = cell.getBoundingClientRect();
+        popup.style.position = 'fixed';
+        popup.style.top = (rect.bottom + 4) + 'px';
+        popup.style.left = rect.left + 'px';
+
+        function closePopup(ev) {
+          if (!popup.contains(ev.target) && ev.target !== cell) {
+            popup.classList.remove('open');
+            document.removeEventListener('click', closePopup);
+          }
+        }
+        setTimeout(function() {
+          document.addEventListener('click', closePopup);
+        }, 0);
+      });
+    })(cells[c]);
+  }
+}
+
+// --------------- board view ---------------
+function libRenderBoard() {
+  var container = document.getElementById('lib-board-cols');
+  if (!container || !_libPosts) return;
+
+  var cols = [
+    { key: 'published', label: 'Published', color: '#22c55e' },
+    { key: 'parked', label: 'Parked', color: '#f59e0b' },
+    { key: 'rejected', label: 'Rejected', color: '#ef4444' }
+  ];
+
+  // find best post overall
+  var bestId = null;
+  var bestImp = -1;
+  for (var i = 0; i < _libPosts.length; i++) {
+    var li = _libLinkedIn[_libPosts[i].id] || _libLinkedIn[_libPosts[i].post_id];
+    if (li && li.impressions > bestImp) {
+      bestImp = li.impressions;
+      bestId = _libPosts[i].id || _libPosts[i].post_id;
+    }
+  }
+
+  var html = '';
+  for (var c = 0; c < cols.length; c++) {
+    var col = cols[c];
+    html += '<div class="lib-board-col">';
+    html += '<div class="lib-board-col-hdr" style="border-color:' + col.color + '">';
+    html += '<span style="color:' + col.color + '">' + esc(col.label) + '</span>';
+
+    var cnt = 0;
+    for (var i = 0; i < _libPosts.length; i++) {
+      if ((_libPosts[i].stage || '').toLowerCase() === col.key) cnt++;
+    }
+    html += '<span class="lib-board-cnt">' + cnt + '</span>';
+    html += '</div>';
+
+    for (var i = 0; i < _libPosts.length; i++) {
+      var post = _libPosts[i];
+      if ((post.stage || '').toLowerCase() !== col.key) continue;
+      var pid = post.id || post.post_id;
+      var li = _libLinkedIn[post.id] || _libLinkedIn[post.post_id];
+      var isBest = pid === bestId;
+      var lifespan = libGetLifespan(post);
+
+      html += '<div class="lib-bp-row lib-item" data-s="' + esc(col.key) +
+              '" data-p="' + esc(post.content_pillar || '') +
+              '" data-date="' + esc(post.target_date || '') +
+              '" onclick="libOpenCard(\'' + esc(pid) + '\')">';
+
+      html += '<div class="lib-bp-bar lib-bp-bar-' + col.key + '"></div>';
+      html += '<div class="lib-bp-body">';
+      html += '<div class="lib-bp-date">' + esc(formatDateShort(post.target_date)) + '</div>';
+      html += '<div class="lib-bp-title">' + esc(post.title || 'Untitled');
+      if (isBest) html += ' &#9733;';
+      html += '</div>';
+      html += '<div class="lib-bp-meta">' + esc(formatPillarDisplay(post.content_pillar));
+      if (lifespan !== null) html += ' &middot; ' + lifespan + 'd';
+      html += '</div>';
+
+      if (col.key === 'published') {
+        if (li && li.impressions) {
+          html += '<div class="lib-bp-stats">';
+          html += '<span>' + libFormatImp(li.impressions) + ' imp</span>';
+          if (li.engagement) html += '<span>' + li.engagement + '% eng</span>';
+          html += '</div>';
+        } else {
+          html += '<div class="lib-bp-nd">No data</div>';
+        }
+      } else if (col.key === 'parked') {
+        if (post.comments) {
+          html += '<div class="lib-bp-reason lib-bp-reason-park">' + esc(post.comments) + '</div>';
+        }
+      } else if (col.key === 'rejected') {
+        if (post.comments) {
+          html += '<div class="lib-bp-reason lib-bp-reason-rej">' + esc(post.comments) + '</div>';
+        }
+      }
+
+      html += '</div></div>';
+    }
+
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// --------------- view switcher ---------------
+function libSetView(view, btn) {
+  var tabs = document.querySelectorAll('.lib-vt');
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].classList.remove('active');
+  }
+  if (btn) btn.classList.add('active');
+
+  var bodies = document.querySelectorAll('.lib-tab-body');
+  for (var i = 0; i < bodies.length; i++) {
+    bodies[i].classList.add('lib-hidden');
+  }
+  var target = document.getElementById('lib-tab-' + view);
+  if (target) target.classList.remove('lib-hidden');
+
+  if (view === 'calendar') libRenderCalendar();
+  if (view === 'board') libRenderBoard();
+}
+
+// --------------- post card overlay ---------------
+function libOpenCard(postId) {
+  var post = null;
+  for (var i = 0; i < _libPosts.length; i++) {
+    if (_libPosts[i].id === postId || _libPosts[i].post_id === postId) {
+      post = _libPosts[i];
+      break;
+    }
+  }
+  if (!post) return;
+
+  var li = _libLinkedIn[postId] || null;
+  var stage = (post.stage || '').toLowerCase();
+  var lifespan = libGetLifespan(post);
+
+  var overlay = document.getElementById('lib-card-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'lib-card-overlay';
+    overlay.className = 'ins-card-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  var h = '';
+  h += '<div class="pc-handle"></div>';
+  h += '<div class="pc-hdr">';
+  h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
+  h += '<div class="pc-hdr-title">' + esc(post.title || 'Untitled') + '</div>';
+  h += '<button class="pc-close-btn" id="lib-card-close">x</button>';
+  h += '</div>';
+  h += '<div class="pc-body">';
+
+  if (stage === 'published' && li && li.impressions) {
+    h += '<div class="pc-hero">';
+    h += '<span class="pc-hero-imp">' + libFormatImp(li.impressions) + '</span>';
+    h += '<span class="pc-hero-label">impressions</span>';
+    h += '</div>';
+    h += '<div class="pc-metrics">';
+    if (li.likes !== undefined) h += '<div class="pc-metric pc-m-likes"><span class="pc-m-val">' + li.likes + '</span><span class="pc-m-lbl">likes</span></div>';
+    if (li.comments !== undefined) h += '<div class="pc-metric pc-m-comments"><span class="pc-m-val">' + li.comments + '</span><span class="pc-m-lbl">comments</span></div>';
+    if (li.engagement !== undefined) h += '<div class="pc-metric pc-m-eng"><span class="pc-m-val">' + li.engagement + '%</span><span class="pc-m-lbl">engagement</span></div>';
+    h += '</div>';
+    if (lifespan !== null) {
+      h += '<div class="pc-life">';
+      h += '<span class="pc-life-days">' + lifespan + ' days</span>';
+      h += '<div class="pc-life-bar"><div class="pc-life-fill" style="width:' + Math.min(lifespan * 5, 100) + '%"></div></div>';
+      h += '</div>';
+    }
+  } else if (stage === 'published') {
+    h += '<div class="pc-nodata">No LinkedIn data available</div>';
+    if (lifespan !== null) {
+      h += '<div class="pc-life"><span class="pc-life-days">' + lifespan + ' days lifespan</span></div>';
+    }
+  } else if (stage === 'parked' || stage === 'rejected') {
+    h += '<div class="pc-reason-block pc-reason-' + stage + '">';
+    h += '<div class="pc-reason-label">' + (stage === 'parked' ? 'Parked' : 'Rejected') + '</div>';
+    if (post.comments) h += '<div class="pc-reason-text">' + esc(post.comments) + '</div>';
+    h += '</div>';
+  }
+
+  h += '<button class="pc-action-btn" onclick="openPCS(\'' + esc(postId) + '\', \'library\')">Open in Pipeline</button>';
+  h += '</div>';
+
+  overlay.innerHTML = h;
+  overlay.classList.add('open');
+
+  var closeBtn = document.getElementById('lib-card-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', function() {
+      overlay.classList.remove('open');
+    });
+  }
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) {
+      overlay.classList.remove('open');
+    }
+  });
+}
+
+// --------------- show library tab ---------------
+function showLibrary() {
+  var dv = document.getElementById('dashboard-view');
+  if (dv) dv.classList.remove('active');
+  var iv = document.getElementById('insights-view');
+  if (iv) iv.classList.remove('active');
+  var lv = document.getElementById('library-view');
+  if (lv) lv.classList.add('active');
+
+  libWireFilters();
+
+  if (_libPosts === null) {
+    libLoadPosts().then(function() {
+      libRenderList();
+    });
+  } else {
+    libRenderList();
+  }
+}
+
+// --------------- attach to window ---------------
+window.libOpenFilterSheet = libOpenFilterSheet;
+window.libCloseFilterSheet = libCloseFilterSheet;
+window.libApplyFilters = libApplyFilters;
+window.libResetFilters = libResetFilters;
+window.showLibrary = showLibrary;
+window.libSetView = libSetView;
+window.libOpenCard = libOpenCard;
