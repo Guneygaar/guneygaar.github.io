@@ -897,171 +897,238 @@ function isPostsFresh() {
   return window._postsSource === 'network';
 }
 
+function dashPad(n) {
+  return String(Math.abs(n)).padStart(2, '0');
+}
+
 function renderScoreboard() {
   try {
     var data = getScoreboardData();
-    if (!data || typeof data !== 'object') return '';
+    if (!data || typeof data !== 'object') return;
 
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
-    // FIX 6: Runway
     var runwayCount = safe(data.runway.count);
-    var runwayColor, runwayStatus;
-    if (runwayCount <= 6)       { runwayColor = 'crit'; runwayStatus = 'CRITICAL'; }
-    else if (runwayCount <= 14) { runwayColor = 'warn'; runwayStatus = 'MODERATE'; }
-    else if (runwayCount <= 21) { runwayColor = 'ok';   runwayStatus = 'GOOD'; }
-    else                        { runwayColor = 'ok';   runwayStatus = 'ON TRACK'; }
-
-    // FIX 7: Pranav
     var pranavDeficit = safe(data.pranav.deficit);
     var pranavInSystem = safe(data.pranav.inSystem);
-    var pranavTarget = safe(data.pranav.target);
-    var pranavNumColor = pranavDeficit < 0 ? 'var(--red)' : pranavDeficit === 0 ? 'var(--amber)' : 'var(--green)';
-    var pranavDisplay = pranavDeficit > 0 ? '+' + pranavDeficit : String(pranavDeficit);
-
-    // FIX 8: Chitra
     var chitraCount = safe(data.chitra.count);
     var chitraOverdue = safe(data.chitra.overdue);
+    var approvalCount = safe(data.client.approval);
+    var inputCount = safe(data.client.input);
 
-    // FIX 9-10: Client
-    var approval = safe(data.client.approval);
-    var input = safe(data.client.input);
+    // --- HEADLINE PRIORITY ---
+    var kicker, kickerColor, headline, deck;
+    var role = window.effectiveRole || 'Admin';
 
-    // Dot bar helpers
-    function dotBar(filled, total, filledColor) {
-      var dots = '';
-      var max = Math.min(total, 21);
-      var f = Math.min(filled, max);
-      for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
-      for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
-      return '<div class="dot-bar">' + dots + '</div>';
-    }
-
-    function smallDotBar(filled, total, filledColor) {
-      var dots = '';
-      var max = Math.min(total, 20);
-      var f = Math.min(filled, max);
-      for (var i = 0; i < f; i++) dots += '<span class="dot-bar-dot dot-bar-dot--filled" style="color:' + filledColor + ';background:' + filledColor + '"></span>';
-      for (var j = f; j < max; j++) dots += '<span class="dot-bar-dot dot-bar-dot--empty"></span>';
-      return '<div class="dot-bar dot-bar--small">' + dots + '</div>';
-    }
-
-    function clientDots(filled, total, color) {
-      var dots = '';
-      var max = Math.min(total, 5);
-      var f = Math.min(filled, max);
-      for (var i = 0; i < f; i++) dots += '<span class="client-cell-dot client-cell-dot--filled" style="background:' + color + '"></span>';
-      for (var j = f; j < max; j++) dots += '<span class="client-cell-dot client-cell-dot--empty"></span>';
-      return '<div class="client-cell-dots">' + dots + '</div>';
-    }
-
-    // B-02 FIX: Failed publish count
-    var failedPublishCount = safe(data.failedPublish);
-    // B-01 FIX: Ready count for Chitra button context
-    var readyCount = safe(data.readyCount);
-
-    // FIX 11: Do This Now
-    var tasks = _buildDoThisNowItems();
-
-    var html = '';
-
-    /* -- B-02 FIX: FAILED PUBLISH ALERT (highest priority, shown first) -- */
-    if (failedPublishCount > 0) {
-      html += '<div class="dash-section" style="background:rgba(255,75,75,0.08);border:1px solid rgba(255,75,75,0.3);border-radius:var(--r-md)">';
-      html += '<div class="dash-section-header">';
-      html += '<span class="dash-section-label" style="color:var(--red)">PUBLISH FAILED</span>';
-      html += '<span class="status-badge status-badge--crit"><span class="status-badge-dot"></span>EMERGENCY</span>';
-      html += '</div>';
-      html += '<div class="dash-big-num dash-big-num--red">' + failedPublishCount + '</div>';
-      html += '<div class="dash-descriptor" style="color:var(--red)">scheduled post' + (failedPublishCount !== 1 ? 's' : '') + ' missed target date  fix before sending new content</div>';
-      html += '</div>';
-    }
-
-    /* -- RUNWAY SECTION -- */
-    html += '<div class="dash-section" data-action="open-runway">';
-    html += '<div class="dash-section-header">';
-    html += '<span class="dash-section-label">RUNWAY</span>';
-    html += '<span class="status-badge status-badge--' + runwayColor + '"><span class="status-badge-dot"></span>' + runwayStatus + '</span>';
-    html += '</div>';
-    html += '<div class="dash-big-num dash-big-num--' + (runwayColor === 'crit' ? 'red' : runwayColor === 'warn' ? 'amber' : 'green') + ' sb-tappable" id="runway-count" data-action="open-runway">' + runwayCount + '</div>';
-    html += '<div class="dash-descriptor">posts scheduled from today</div>';
-    html += dotBar(runwayCount, 21, 'var(--amber)');
-    html += '</div>';
-
-    /* -- PRANAV SECTION -- */
-    html += '<div class="dash-section" data-action="open-pranav">';
-    html += '<div class="dash-section-header">';
-    html += '<span class="dash-section-label" style="font-size:11px">PRANAV</span>';
-    html += '<span class="dash-section-meta">Creative &middot; Inventory</span>';
-    html += '</div>';
-    html += '<div class="person-body">';
-    html += '<div class="person-left">';
-    html += '<div class="dash-medium-num sb-tappable" style="color:' + pranavNumColor + '" data-action="open-pranav">' + pranavDisplay + '</div>';
-    html += smallDotBar(Math.min(pranavInSystem, 20), 20, 'var(--amber)');
-    html += '</div>';
-    html += '<div class="person-right">';
-    html += '<div class="person-right-title">' + pranavInSystem + ' of ' + pranavTarget + ' in system</div>';
-    html += '</div>';
-    html += '</div>';
-    html += '<button class="dash-action-btn dash-action-btn--amber" data-action="open-pranav" onclick="event.stopPropagation();if(typeof openNewPostModal===\'function\')openNewPostModal()">&rarr;&nbsp;&nbsp;&nbsp;BUILD NOW</button>';
-    html += '</div>';
-
-    /* -- CHITRA SECTION -- */
-    html += '<div class="dash-section" data-action="open-chitra">';
-    html += '<div class="dash-section-header">';
-    html += '<span class="dash-section-label" style="font-size:11px">CHITRA</span>';
-    html += '<span class="dash-section-meta">Servicing &middot; Dispatch</span>';
-    html += '</div>';
-    html += '<div class="person-body">';
-    html += '<div class="person-left">';
-    html += '<div class="dash-medium-num sb-tappable" style="color:var(--green)" data-action="open-chitra">' + chitraCount + '</div>';
-    html += smallDotBar(chitraCount, 20, 'var(--green)');
-    html += '</div>';
-    html += '<div class="person-right">';
-    html += '<div class="person-right-title">posts to dispatch</div>';
-    if (chitraOverdue > 0) {
-      html += '<div class="person-right-sub" style="color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:0.1em">' + chitraOverdue + ' overdue</div>';
+    if (role === 'Creative') {
+      // Pranav-specific headline
+      kicker = 'Your Status - Creative';
+      if (pranavDeficit >= 0) {
+        kickerColor = 'var(--green)';
+        headline = 'Target met - <span class="hl-num" style="color:var(--green)">' + dashPad(pranavDeficit) + '</span> ahead - great work';
+        deck = dashPad(runwayCount) + ' posts in runway - team on track';
+      } else if (pranavDeficit <= -15) {
+        kickerColor = 'var(--red)';
+        headline = 'Pranav - <span class="hl-num" style="color:var(--red)">' + dashPad(Math.abs(pranavDeficit)) + '</span> posts behind - build now';
+        deck = dashPad(runwayCount) + ' posts in runway - ' + pranavInSystem + ' in system vs 35 target';
+      } else {
+        kickerColor = 'var(--amber)';
+        headline = 'Pranav - <span class="hl-num" style="color:var(--amber)">' + dashPad(Math.abs(pranavDeficit)) + '</span> posts behind - keep going';
+        deck = dashPad(runwayCount) + ' posts in runway - ' + pranavInSystem + ' in system vs 35 target';
+      }
+    } else if (runwayCount <= 6) {
+      // Priority 1 - Runway critical
+      kicker = 'Breaking - Runway Crisis';
+      kickerColor = 'var(--red)';
+      headline = 'Runway at - <span class="hl-num" style="color:var(--red)">' + dashPad(runwayCount) + '</span> - agency running on empty';
+      deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today - Pranav ' + Math.abs(pranavDeficit) + ' posts behind - act immediately';
+    } else if (pranavDeficit < -14 && role !== 'Servicing') {
+      // Priority 2 - Pranav deficit worse than -14
+      kicker = 'Alert - Team Behind';
+      kickerColor = 'var(--amber)';
+      headline = 'Pranav - <span class="hl-num" style="color:var(--amber)">' + dashPad(Math.abs(pranavDeficit)) + '</span> posts behind - ' + (chitraOverdue > 0 ? chitraOverdue + ' overdue approvals' : 'runway watch closely');
+      deck = dashPad(runwayCount) + ' posts in runway - ' + (chitraOverdue > 0 ? 'Chitra chasing overdue clients - system under strain' : 'team needs to build urgently');
+    } else if (chitraOverdue > 0) {
+      // Priority 3 - Chitra has overdue
+      kicker = 'Alert - Client Not Responding';
+      kickerColor = 'var(--red)';
+      headline = '<span class="hl-num" style="color:var(--red)">' + dashPad(chitraOverdue) + '</span> approvals overdue - chase client now';
+      deck = 'Chitra has ' + chitraCount + ' posts total - ' + chitraOverdue + ' waiting more than 3 days - client not responding';
+    } else if (runwayCount <= 14) {
+      // Priority 4 - Normal
+      kicker = 'Update - Watch Closely';
+      kickerColor = 'var(--amber)';
+      headline = 'One week of runway - <span class="hl-num" style="color:var(--amber)">' + dashPad(runwayCount) + '</span> posts scheduled';
+      deck = 'Pranav ' + Math.abs(pranavDeficit) + ' behind target - Chitra has ' + chitraCount + ' to dispatch - ' + (approvalCount > 0 ? approvalCount + ' approval pending' : 'no pending approvals');
+    } else if (runwayCount <= 21) {
+      // Priority 5 - Good
+      kicker = 'Good - On Track';
+      kickerColor = 'var(--green)';
+      headline = 'Strong at - <span class="hl-num" style="color:var(--green)">' + dashPad(runwayCount) + '</span> - team nearly on target';
+      deck = 'Pranav ' + Math.abs(pranavDeficit) + ' posts short - Chitra has ' + chitraCount + ' ready - ' + (approvalCount > 0 ? approvalCount + ' approval pending' : 'all approvals clear');
+    } else if (pranavDeficit >= 0) {
+      // Priority 6 - Perfect
+      kicker = 'Excellent - All Systems Go';
+      kickerColor = 'var(--green)';
+      headline = 'Target met - <span class="hl-num" style="color:var(--green)">' + dashPad(runwayCount) + '</span> posts scheduled - team firing';
+      deck = 'Pranav ' + pranavDeficit + ' ahead of target - Chitra all clear - no pending approvals';
     } else {
-      html += '<div class="person-right-sub" style="color:var(--muted)">all moving</div>';
+      // Fallback (runwayCount > 21 but pranavDeficit < 0)
+      kicker = 'Good - On Track';
+      kickerColor = 'var(--green)';
+      headline = 'Strong at - <span class="hl-num" style="color:var(--green)">' + dashPad(runwayCount) + '</span> - team nearly on target';
+      deck = 'Pranav ' + Math.abs(pranavDeficit) + ' posts short - Chitra has ' + chitraCount + ' ready - ' + (approvalCount > 0 ? approvalCount + ' approval pending' : 'all approvals clear');
     }
-    html += '</div>';
-    html += '</div>';
-    // B-01 FIX: Chitra button label reflects available actions  only say SEND when ready > 0
-    var chitraBtnLabel = readyCount > 0 ? 'SEND NOW' : (chitraOverdue > 0 ? 'FOLLOW UP' : 'VIEW ALL');
-    html += '<button class="dash-action-btn dash-action-btn--green" data-action="open-chitra" onclick="event.stopPropagation();if(typeof navigateWithFilter===\'function\')navigateWithFilter(\'pipeline\',[\'ready\',\'awaiting_approval\',\'awaiting_brand_input\'])">&rarr;&nbsp;&nbsp;&nbsp;' + chitraBtnLabel + '</button>';
-    html += '</div>';
 
-    /* -- CLIENT SECTION -- */
-    html += '<div class="dash-section">';
-    html += '<div class="dash-section-label" style="margin-bottom:10px">CLIENT</div>';
-    html += '<div class="client-grid">';
-    // Approval cell
-    html += '<div class="client-cell" data-action="open-approval">';
-    html += '<div class="client-cell-label">APPROVAL</div>';
-    html += '<div class="client-cell-num sb-tappable' + (approval > 0 ? ' client-cell-num--red' : '') + '" data-action="open-approval">' + approval + '</div>';
-    html += '<div class="client-cell-sub">awaiting client</div>';
-    html += clientDots(approval, 5, 'var(--red)');
-    html += '</div>';
-    // Input cell
-    html += '<div class="client-cell" data-action="open-input">';
-    html += '<div class="client-cell-label">INPUT DUE</div>';
-    html += '<div class="client-cell-num sb-tappable' + (input > 0 ? ' client-cell-num--red' : '') + '" data-action="open-input">' + input + '</div>';
-    html += '<div class="client-cell-sub">input missing</div>';
-    html += clientDots(input, 5, 'var(--red)');
-    html += '</div>';
-    html += '</div>';
-    html += '</div>';
+    // --- STEP 3: METRIC ROWS ---
 
-    /* -- DO THIS NOW SECTION -- */
-    html += '<div class="dash-section" style="border-bottom:none">';
-    html += '<div class="dash-section-label" style="margin-bottom:10px">DO THIS NOW</div>';
-    html += tasks;
-    html += '</div>';
+    // RUNWAY
+    var rColor = runwayCount <= 6 ? 'var(--red)' : runwayCount <= 14 ? 'var(--amber)' : 'var(--green)';
+    var rMsg = runwayCount <= 1 ? 'Almost empty - build now' : runwayCount <= 6 ? 'Running out - urgent' : runwayCount <= 14 ? 'One week - watch closely' : runwayCount <= 21 ? 'Good runway - keep going' : 'Strong runway - well done';
+    var elRPre = document.getElementById('metric-runway-prefix');
+    var elRNum = document.getElementById('metric-runway-num');
+    var elRMsg = document.getElementById('metric-runway-msg');
+    if (elRPre) { elRPre.textContent = '-'; elRPre.style.color = rColor; }
+    if (elRNum) { elRNum.textContent = dashPad(runwayCount); elRNum.style.color = rColor; }
+    if (elRMsg) { elRMsg.textContent = rMsg; elRMsg.style.color = rColor; }
 
-    return html;
+    // PRANAV
+    var pPrefix = pranavDeficit >= 0 ? '+' : '-';
+    var pColor = pranavDeficit <= -22 ? 'var(--red)' : pranavDeficit <= -15 ? 'var(--red)' : pranavDeficit <= -8 ? 'var(--amber)' : pranavDeficit < 0 ? 'var(--amber)' : 'var(--green)';
+    var pMsg = pranavDeficit <= -22 ? 'Pipeline at risk - act now' : pranavDeficit <= -15 ? dashPad(Math.abs(pranavDeficit)) + ' behind - team needs you' : pranavDeficit <= -8 ? dashPad(Math.abs(pranavDeficit)) + ' behind - pick up pace' : pranavDeficit < 0 ? dashPad(Math.abs(pranavDeficit)) + ' posts behind - keep going' : 'Target met - great work';
+    var elPPre = document.getElementById('metric-pranav-prefix');
+    var elPNum = document.getElementById('metric-pranav-num');
+    var elPMsg = document.getElementById('metric-pranav-msg');
+    if (elPPre) { elPPre.textContent = pPrefix; elPPre.style.color = pColor; }
+    if (elPNum) { elPNum.textContent = dashPad(pranavDeficit); elPNum.style.color = pColor; }
+    if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pColor; }
+
+    // CHITRA
+    var cTotal = chitraCount;
+    var cPrefix = cTotal > 0 ? '-' : '-';
+    var cColor = chitraOverdue > 0 ? 'var(--red)' : cTotal > 8 ? 'var(--red)' : cTotal > 3 ? 'var(--amber)' : cTotal > 0 ? 'var(--green)' : 'var(--green)';
+    var cMsg = chitraOverdue > 0 ? dashPad(chitraOverdue) + ' overdue - chase client' : cTotal > 8 ? dashPad(cTotal) + ' posts piling up' : cTotal > 3 ? dashPad(cTotal) + ' posts waiting on you' : cTotal > 0 ? dashPad(cTotal) + ' post' + (cTotal === 1 ? '' : 's') + ' ready to send' : 'All dispatched - well done';
+    var elCPre = document.getElementById('metric-chitra-prefix');
+    var elCNum = document.getElementById('metric-chitra-num');
+    var elCMsg = document.getElementById('metric-chitra-msg');
+    if (elCPre) { elCPre.textContent = cPrefix; elCPre.style.color = cColor; }
+    if (elCNum) { elCNum.textContent = dashPad(cTotal); elCNum.style.color = cColor; }
+    if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cColor; }
+
+    // CLIENT
+    var clTotal = approvalCount + inputCount;
+    var clPrefix = clTotal > 0 ? '-' : '-';
+    var clColor = clTotal > 0 ? 'var(--red)' : 'var(--muted)';
+    var clMsg = approvalCount > 0 && inputCount > 0 ? dashPad(approvalCount) + ' approval - ' + dashPad(inputCount) + ' input' : approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'All clear';
+    var elClPre = document.getElementById('metric-client-prefix');
+    var elClNum = document.getElementById('metric-client-num');
+    var elClMsg = document.getElementById('metric-client-msg');
+    if (elClPre) { elClPre.textContent = clPrefix; elClPre.style.color = clColor; }
+    if (elClNum) { elClNum.textContent = dashPad(clTotal); elClNum.style.color = clColor; }
+    if (elClMsg) { elClMsg.textContent = clMsg; elClMsg.style.color = clColor; }
+
+    // --- STEP 4: HEADLINE RENDER ---
+    var elKDot = document.getElementById('dash-kicker-dot');
+    var elKText = document.getElementById('dash-kicker-text');
+    var elHL = document.getElementById('dash-headline');
+    var elDeck = document.getElementById('dash-deck');
+    if (elKDot) elKDot.style.background = kickerColor;
+    if (elKText) { elKText.textContent = kicker; elKText.style.color = kickerColor; }
+    if (elHL) elHL.innerHTML = headline;
+    if (elDeck) elDeck.textContent = deck;
+
+    // --- STEP 5: DATE AND EDITION ---
+    var now = new Date();
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dateStr = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+    var weekNumber = Math.ceil(now.getDate() / 7) + (now.getMonth() * 4);
+    var elDate = document.getElementById('dash-date');
+    var elEdition = document.getElementById('dash-edition');
+    if (elDate) elDate.textContent = dateStr;
+    if (elEdition) elEdition.textContent = 'Edition ' + weekNumber;
+
+    // --- STEP 6: TASK LIST ---
+    _renderDashTaskList(role);
+
+    // --- STEP 7: PERSONALIZATION ---
+    var rowPranav = document.getElementById('metric-row-pranav');
+    var rowChitra = document.getElementById('metric-row-chitra');
+    var rowClient = document.getElementById('metric-row-client');
+    var rowRunway = document.getElementById('metric-row-runway');
+
+    if (role === 'Servicing') {
+      if (rowPranav) rowPranav.style.display = 'none';
+      if (rowChitra) rowChitra.style.display = '';
+      if (rowClient) rowClient.style.display = '';
+      if (rowRunway) rowRunway.style.display = '';
+    } else if (role === 'Creative') {
+      if (rowChitra) rowChitra.style.display = 'none';
+      if (rowClient) rowClient.style.display = 'none';
+      if (rowPranav) rowPranav.style.display = '';
+      if (rowRunway) rowRunway.style.display = '';
+    } else {
+      // Admin: show all
+      if (rowPranav) rowPranav.style.display = '';
+      if (rowChitra) rowChitra.style.display = '';
+      if (rowClient) rowClient.style.display = '';
+      if (rowRunway) rowRunway.style.display = '';
+    }
+
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
-    return '';
+  }
+}
+
+function _renderDashTaskList(role) {
+  var items = _buildDoThisNowItems();
+  var container = document.getElementById('dash-task-list');
+  if (!container) return;
+
+  // Filter by role
+  var filtered = items;
+  if (role === 'Servicing') {
+    filtered = items.filter(function(item) {
+      var who = (item.assignedTo || '').toLowerCase();
+      return who === 'chitra' || item.taskId === 'auto';
+    });
+  } else if (role === 'Creative') {
+    filtered = items.filter(function(item) {
+      var who = (item.assignedTo || '').toLowerCase();
+      return who === 'pranav' || item.taskId === 'auto';
+    });
+  }
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="color:var(--green);font-family:var(--mono);font-size:13px;padding:14px 0">All clear</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var item = filtered[i];
+    var tid = item.taskId || 'auto';
+    html += '<div class="dash-task-row" onclick="toggleDashTask(this, \'' + tid + '\')">';
+    html += '<div class="dash-task-cb"></div>';
+    html += '<span class="dash-task-text">' + esc(item.title) + '</span>';
+    html += '<span class="dash-task-who">' + esc(item.assignedTo || '') + '</span>';
+    html += '</div>';
+  }
+  container.innerHTML = html;
+}
+
+async function toggleDashTask(row, taskId) {
+  var cb = row.querySelector('.dash-task-cb');
+  var txt = row.querySelector('.dash-task-text');
+  cb.classList.toggle('done');
+  txt.classList.toggle('done');
+  if (taskId && taskId !== 'auto') {
+    try {
+      await apiFetch('/tasks?id=eq.' + taskId, {
+        method: 'PATCH',
+        body: JSON.stringify({ done: cb.classList.contains('done') })
+      });
+    } catch(e) { console.warn('Task toggle failed:', e); }
   }
 }
 
@@ -1077,13 +1144,9 @@ function _buildDoThisNowItems() {
     var fpPost = failedPub[fp];
     var daysMissed = Math.floor((new Date(todayStr) - new Date(fpPost.target_date)) / (1000*60*60*24));
     items.push({
-      title: 'FIX PUBLISH  ' + getTitle(fpPost),
-      meta: 'Missed by ' + daysMissed + ' day' + (daysMissed !== 1 ? 's' : '') + '  revenue at risk',
-      postId: getPostId(fpPost),
-      color: 'var(--red)',
-      urgency: 3,
-      urgColor: 'var(--red)',
-      metaRed: true
+      title: 'FIX PUBLISH - ' + getTitle(fpPost),
+      assignedTo: 'Admin',
+      taskId: getPostId(fpPost) || 'auto'
     });
   }
 
@@ -1095,28 +1158,14 @@ function _buildDoThisNowItems() {
   }).slice(0, 5);
   for (var t = 0; t < manualTasks.length; t++) {
     var task = manualTasks[t];
-    var dueStr = task.due_date ? formatDateShort(task.due_date) : '';
-    var metaStr = (task.assigned_to || 'UNASSIGNED') + (dueStr ? ' &middot; ' + dueStr : '');
-    // Urgency based on due_date
-    var urgency = 1;
-    var urgColor = 'var(--muted2)';
-    if (task.due_date) {
-      if (task.due_date < todayStr) { urgency = 3; urgColor = 'var(--red)'; }
-      else if (task.due_date === todayStr) { urgency = 2; urgColor = 'var(--amber)'; }
-      else { urgency = 1; urgColor = 'var(--amber)'; }
-    }
     items.push({
       title: task.message || 'Task',
-      meta: metaStr,
-      postId: task.post_id || '',
-      color: 'var(--gold)',
-      urgency: urgency,
-      urgColor: urgColor
+      assignedTo: task.assigned_to || 'Unassigned',
+      taskId: task.id ? String(task.id) : 'auto'
     });
   }
 
   // 2. Auto-generated: overdue client posts
-  // B-04 FIX: Split awaiting_approval (actionable chase) from awaiting_brand_input (informational)
   var overdueApprovalPosts = allPosts.filter(function(p) {
     return p.stage === 'awaiting_approval' &&
       p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
@@ -1125,18 +1174,12 @@ function _buildDoThisNowItems() {
   });
   for (var c = 0; c < overdueApprovalPosts.length && items.length < 7; c++) {
     var op = overdueApprovalPosts[c];
-    var daysOverdue = Math.floor((new Date() - new Date(op.status_changed_at)) / (1000*60*60*24));
     items.push({
-      title: 'Chase client  ' + getTitle(op),
-      meta: 'Day ' + daysOverdue + ' &middot; awaiting approval',
-      postId: getPostId(op),
-      color: 'var(--red)',
-      urgency: 3,
-      urgColor: 'var(--red)',
-      metaRed: true
+      title: 'Chase client - ' + getTitle(op),
+      assignedTo: 'Chitra',
+      taskId: 'auto'
     });
   }
-  // B-04 FIX: awaiting_brand_input shown as informational  brand/legal team action, not client approver
   var overdueBrandPosts = allPosts.filter(function(p) {
     return p.stage === 'awaiting_brand_input' &&
       p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
@@ -1145,21 +1188,14 @@ function _buildDoThisNowItems() {
   });
   for (var bi = 0; bi < overdueBrandPosts.length && items.length < 8; bi++) {
     var bp = overdueBrandPosts[bi];
-    var daysBrandOverdue = Math.floor((new Date() - new Date(bp.status_changed_at)) / (1000*60*60*24));
     items.push({
-      title: 'Brand input pending  ' + getTitle(bp),
-      meta: 'Day ' + daysBrandOverdue + ' &middot; waiting on brand team',
-      postId: getPostId(bp),
-      color: 'var(--purple)',
-      urgency: 2,
-      urgColor: 'var(--amber)'
+      title: 'Brand input pending - ' + getTitle(bp),
+      assignedTo: 'Chitra',
+      taskId: 'auto'
     });
   }
 
   // 3. Auto: Pranav deficit
-  // B-03 FIX: Only fire "system dry" / deficit alert when there are no awaiting posts in pipeline.
-  // If posts are awaiting_approval or awaiting_brand_input, the pipeline is not dry  it's blocked on
-  // client/brand review. Escalating to Pranav to create more would be a misdirected action.
   var inSystemCount = allPosts.filter(function(p) {
     return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
   }).length;
@@ -1170,50 +1206,21 @@ function _buildDoThisNowItems() {
   if (pranavDeficitAuto < 0 && awaitingTotal === 0 && items.length < 8) {
     items.push({
       title: pranavDeficitAuto + ' posts needed -- build now',
-      meta: 'Pranav &middot; monthly target 35',
-      postId: '',
-      color: 'var(--amber)',
-      urgency: 3,
-      urgColor: 'var(--amber)'
+      assignedTo: 'Pranav',
+      taskId: 'auto'
     });
   }
 
-  if (!items.length) {
-    return '<div style="color:var(--green);font-family:var(--mono);font-size:13px;padding:14px 0">&rarr; All clear</div>';
-  }
-
-  var html = '';
-  for (var i = 0; i < items.length; i++) {
-    var item = items[i];
-    var attrs = item.postId ? ' data-post-id="' + esc(item.postId) + '" data-list="" style="cursor:pointer"' : '';
-    var urg = item.urgency || 1;
-    var uc = item.urgColor || item.color;
-    var dots = '';
-    for (var d = 0; d < 3; d++) {
-      var dotColor = d < urg ? uc : 'var(--muted2)';
-      dots += '<span class="do-now-dot" style="background:' + dotColor + '"></span>';
-    }
-    var metaStyle = item.metaRed ? ' style="color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase"' : '';
-    html += '<div class="do-now-item"' + attrs + '>';
-    html += '<span class="do-now-arrow" style="color:' + item.color + '">&rarr;</span>';
-    html += '<div class="do-now-content">';
-    html += '<div class="do-now-title">' + esc(item.title) + '</div>';
-    html += '<div class="do-now-meta"' + metaStyle + '>' + item.meta + '</div>';
-    html += '</div>';
-    html += '<div class="do-now-dots">' + dots + '</div>';
-    html += '</div>';
-  }
-  return html;
+  return items;
 }
 
 function renderDashboard() {
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
 function _renderDashboardInner() {
-  const el = document.getElementById('pcs-dashboard');
+  var el = document.getElementById('pcs-dashboard');
   if (!el) return;
-
-  el.innerHTML = renderScoreboard();
+  renderScoreboard();
 }
 
 /* Legacy stubs  -  keep function names callable so renderAll doesn't error */

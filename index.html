@@ -151,7 +151,84 @@
   <!-- TAB: MY TASKS -->
   <div class="tab-panel active" id="panel-tasks">
     <div class="dash-body pcs-dash-surface">
-      <div id="pcs-dashboard"></div>
+      <div id="pcs-dashboard">
+
+        <div class="dash-hdr">
+          <div class="dash-hdr-left">
+            <div class="dash-masthead">Hinglish Ops</div>
+            <div class="dash-date" id="dash-date">Sat 21 Mar 2026</div>
+          </div>
+          <div class="dash-edition" id="dash-edition">Edition 47</div>
+        </div>
+
+        <!-- HEADLINE BLOCK -->
+        <div class="dash-headline-block">
+          <div class="dash-kicker" id="dash-kicker">
+            <div class="dash-kicker-dot" id="dash-kicker-dot"></div>
+            <span id="dash-kicker-text"></span>
+          </div>
+          <div class="dash-headline" id="dash-headline"></div>
+          <div class="dash-deck" id="dash-deck"></div>
+        </div>
+
+        <!-- METRIC ROWS -->
+        <div class="dash-metric-rows" id="dash-metric-rows">
+
+          <!-- RUNWAY -->
+          <div class="dash-metric-row" id="metric-row-runway">
+            <div class="dash-metric-prefix dc-muted" id="metric-runway-prefix">&middot;</div>
+            <div class="dash-metric-num" id="metric-runway-num">01</div>
+            <div class="dash-metric-divider"></div>
+            <div class="dash-metric-info">
+              <div class="dash-metric-label">Runway</div>
+              <div class="dash-metric-msg" id="metric-runway-msg"></div>
+            </div>
+          </div>
+
+          <!-- PRANAV -->
+          <div class="dash-metric-row" id="metric-row-pranav">
+            <div class="dash-metric-prefix" id="metric-pranav-prefix">-</div>
+            <div class="dash-metric-num" id="metric-pranav-num">20</div>
+            <div class="dash-metric-divider"></div>
+            <div class="dash-metric-info">
+              <div class="dash-metric-label">Pranav</div>
+              <div class="dash-metric-msg" id="metric-pranav-msg"></div>
+            </div>
+          </div>
+
+          <!-- CHITRA -->
+          <div class="dash-metric-row" id="metric-row-chitra">
+            <div class="dash-metric-prefix" id="metric-chitra-prefix">&middot;</div>
+            <div class="dash-metric-num" id="metric-chitra-num">00</div>
+            <div class="dash-metric-divider"></div>
+            <div class="dash-metric-info">
+              <div class="dash-metric-label">Chitra</div>
+              <div class="dash-metric-msg" id="metric-chitra-msg"></div>
+            </div>
+          </div>
+
+          <!-- CLIENT -->
+          <div class="dash-metric-row" id="metric-row-client">
+            <div class="dash-metric-prefix dc-muted" id="metric-client-prefix">&middot;</div>
+            <div class="dash-metric-num dc-muted" id="metric-client-num">00</div>
+            <div class="dash-metric-divider"></div>
+            <div class="dash-metric-info">
+              <div class="dash-metric-label">Client</div>
+              <div class="dash-metric-msg" id="metric-client-msg"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TASK STRIP -->
+        <div class="dash-tasks">
+          <div class="dash-tasks-label">Do This Now</div>
+          <div id="dash-task-list">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+      </div>
       <!-- Hidden: stage chips + task list (rendered by existing logic, kept for JS compat) -->
       <div id="task-stage-chips" style="display:none"></div>
       <div id="tasks-container" style="display:none"></div>
