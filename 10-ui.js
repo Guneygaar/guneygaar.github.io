@@ -184,7 +184,7 @@ function switchTab(btn) {
   if (panel) panel.classList.add('active');
   // Update header title
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl) titleEl.textContent = (tab === 'tasks') ? _getHeaderDate() : (_TAB_TITLES[tab] || tab);
+  if (titleEl) titleEl.textContent = (tab === 'tasks') ? 'Dashboard' : (_TAB_TITLES[tab] || tab);
   // Show/hide pipeline search trigger based on active tab
   var searchTrigger = document.getElementById('pipeline-search-trigger');
   if (searchTrigger) searchTrigger.style.display = (tab === 'pipeline') ? '' : 'none';
@@ -836,5 +836,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   // Set initial header title to date
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl && !titleEl.textContent) titleEl.textContent = _getHeaderDate();
+  if (titleEl && !titleEl.textContent) titleEl.textContent = 'Dashboard';
 });
