@@ -14,14 +14,15 @@ _draftDebounce = setTimeout(saveDraft, 800);
 
 function saveDraft() {
 const draft = {
-title:    document.getElementById('npm-title')?.value    || '',
-pillar:   document.getElementById('npm-pillar')?.value   || '',
-location: document.getElementById('npm-location')?.value || '',
-owner:    document.getElementById('npm-owner')?.value    || '',
-stage:    document.getElementById('npm-stage')?.value    || '',
-date:     document.getElementById('npm-date')?.value     || '',
-comments: document.getElementById('npm-comments')?.value || '',
-postLink: document.getElementById('npm-postlink')?.value || '',
+title:    document.getElementById('new-post-title')?.value    || '',
+pillar:   document.getElementById('new-post-pillar')?.value   || '',
+location: document.getElementById('new-post-location')?.value || '',
+owner:    document.getElementById('new-post-owner')?.value    || '',
+stage:    document.getElementById('new-post-stage')?.value    || '',
+date:     document.getElementById('new-post-date')?.value     || '',
+comments: document.getElementById('new-post-comments')?.value || '',
+postLink: document.getElementById('new-post-link')?.value     || '',
+format:   document.getElementById('new-post-format')?.value   || '',
 savedAt:  Date.now(),
 };
 
@@ -45,17 +46,20 @@ return false;
 
 if (!d.title && !d.comments) return false;
 
-const _npm = id => document.getElementById(id);
-if (_npm('npm-title'))    _npm('npm-title').value    = d.title    || '';
-if (_npm('npm-pillar'))   _npm('npm-pillar').value   = d.pillar   || '';
-if (_npm('npm-location')) _npm('npm-location').value = d.location || '';
-if (_npm('npm-owner'))    _npm('npm-owner').value    = d.owner    || '';
-if (_npm('npm-stage'))    _npm('npm-stage').value    = d.stage    || 'in_production';
-if (_npm('npm-date'))     _npm('npm-date').value     = d.date     || '';
-if (_npm('npm-comments')) _npm('npm-comments').value = d.comments || '';
-if (_npm('npm-postlink')) _npm('npm-postlink').value = d.postLink || '';
+const _el = id => document.getElementById(id);
+if (_el('new-post-title'))    _el('new-post-title').value    = d.title    || '';
+if (_el('new-post-pillar'))   _el('new-post-pillar').value   = d.pillar   || '';
+if (_el('new-post-location')) _el('new-post-location').value = d.location || '';
+if (_el('new-post-owner'))    _el('new-post-owner').value    = d.owner    || '';
+if (_el('new-post-stage'))    _el('new-post-stage').value    = d.stage    || 'in_production';
+if (_el('new-post-date'))     _el('new-post-date').value     = d.date     || '';
+if (_el('new-post-comments')) _el('new-post-comments').value = d.comments || '';
+if (_el('new-post-link'))     _el('new-post-link').value     = d.postLink || '';
+if (_el('new-post-format'))   _el('new-post-format').value   = d.format   || '';
 
 showDraftStatus('Draft restored');
+_npsOwnerChange();
+_npsCheckValid();
 return true;
 
 } catch (_) {
@@ -86,60 +90,91 @@ function stopDraftAutosave() {
 clearInterval(_draftTimer);
 }
 
-function _populateNewPostDropdowns() {
-
-const stageEl = document.getElementById('npm-stage');
-
-if (stageEl && typeof STAGES_DB !== 'undefined') {
-stageEl.innerHTML = STAGES_DB
-.filter(s => s !== 'parked')
-.map(s => `<option value="${s}">${STAGE_DISPLAY[s]}</option>`)
-.join('');
+function _npsOwnerChange() {
+var val = document.getElementById('new-post-owner').value;
+var strip = document.getElementById('nps-color-strip');
+if (!strip) return;
+strip.className = 'nps-color-strip';
+if (val === 'Pranav') strip.classList.add('owner-pranav');
+if (val === 'Chitra') strip.classList.add('owner-chitra');
+if (val === 'Client') strip.classList.add('owner-client');
+_npsCheckValid();
 }
 
-const pillarEl = document.getElementById('npm-pillar');
-
-if (pillarEl && typeof PILLARS_DB !== 'undefined') {
-pillarEl.innerHTML =
-'<option value="">Select pillar</option>' +
-PILLARS_DB
-.map(p => `<option value="${p}">${formatPillarDisplay(p)}</option>`)
-.join('');
+function _npsCheckValid() {
+var t = (document.getElementById('new-post-title')
+  .value || '').trim();
+var o = document.getElementById('new-post-owner').value;
+var btn = document.getElementById('nps-create-btn');
+if (btn) btn.disabled = !(t && o);
 }
+
+function _npsWireEvents() {
+var ownerEl = document.getElementById('new-post-owner');
+if (ownerEl) ownerEl.onchange = function() { _npsOwnerChange(); saveDraftDebounced(); };
+
+var titleEl = document.getElementById('new-post-title');
+if (titleEl) titleEl.oninput = function() { _npsCheckValid(); saveDraftDebounced(); };
+
+var cancelBtn = document.getElementById('nps-cancel-btn');
+if (cancelBtn) cancelBtn.onclick = function() { closeNewPostModal(); };
+
+var closeBtn = document.getElementById('nps-close-btn');
+if (closeBtn) closeBtn.onclick = function() { closeNewPostModal(); };
+
+var createBtn = document.getElementById('nps-create-btn');
+if (createBtn) createBtn.onclick = function() { submitNewPost(); };
+
+// Wire saveDraftDebounced to remaining fields
+['new-post-stage','new-post-pillar','new-post-format','new-post-location','new-post-date'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.onchange = saveDraftDebounced;
+});
+['new-post-link','new-post-comments'].forEach(function(id) {
+  var el = document.getElementById(id);
+  if (el) el.oninput = saveDraftDebounced;
+});
 }
 
 function openNewPostModal() {
-
-_populateNewPostDropdowns();
 
 const hasDraft = loadDraft();
 
 if (!hasDraft) {
 
-['npm-title','npm-comments','npm-postlink'].forEach(id => {
+['new-post-title','new-post-comments','new-post-link'].forEach(id => {
 const el = document.getElementById(id);
 if (el) el.value = '';
 });
 
 const _np = id => document.getElementById(id);
-if (_np('npm-pillar'))   _np('npm-pillar').value   = '';
-if (_np('npm-location')) _np('npm-location').value = '';
-if (_np('npm-owner'))    _np('npm-owner').value    = '';
-if (_np('npm-stage'))    _np('npm-stage').value    = 'in_production';
-if (_np('npm-date'))     _np('npm-date').value     = '';
+if (_np('new-post-pillar'))   _np('new-post-pillar').value   = '';
+if (_np('new-post-location')) _np('new-post-location').value = '';
+if (_np('new-post-owner'))    _np('new-post-owner').value    = '';
+if (_np('new-post-stage'))    _np('new-post-stage').value    = 'in_production';
+if (_np('new-post-date'))     _np('new-post-date').value     = '';
+if (_np('new-post-format'))   _np('new-post-format').value   = '';
 }
 
-const npmSubmit = document.getElementById('npm-submit-btn');
-if (npmSubmit) npmSubmit.disabled = false;
-document.getElementById('npm-saving')?.classList.remove('active');
+var strip = document.getElementById('nps-color-strip');
+if (strip) strip.className = 'nps-color-strip';
+
+var today = new Date().toISOString().split('T')[0];
+var dateEl = document.getElementById('new-post-date');
+if (dateEl && !dateEl.value) dateEl.value = today;
+
+var createBtn = document.getElementById('nps-create-btn');
+if (createBtn) createBtn.disabled = true;
 
 window._modalOpen = true;
 document.getElementById('new-post-overlay')?.classList.add('open');
 document.body.style.overflow = 'hidden';
 
+_npsWireEvents();
+_npsCheckValid();
 startDraftAutosave();
 
-setTimeout(() => document.getElementById('npm-title')?.focus(), 60);
+setTimeout(() => document.getElementById('new-post-title')?.focus(), 60);
 }
 
 function closeNewPostModal(e) {
@@ -159,34 +194,32 @@ async function submitNewPost() {
 console.log('[submitNewPost] SAVE CLICKED');
 
 const _s = id => document.getElementById(id);
-const title    = (_s('npm-title')?.value || '').trim();
-const owner    = _s('npm-owner')?.value || '';
-const pillar   = _s('npm-pillar')?.value || '';
-const location = _s('npm-location')?.value || '';
-const stage    = _s('npm-stage')?.value || '';
-const date     = _s('npm-date')?.value || '';
-const comments = (_s('npm-comments')?.value || '').trim();
-const postLink = (_s('npm-postlink')?.value || '').trim();
+const title    = (_s('new-post-title')?.value || '').trim();
+const owner    = _s('new-post-owner')?.value || '';
+const pillar   = _s('new-post-pillar')?.value || '';
+const location = _s('new-post-location')?.value || '';
+const stage    = _s('new-post-stage')?.value || '';
+const date     = _s('new-post-date')?.value || '';
+const comments = (_s('new-post-comments')?.value || '').trim();
+const postLink = (_s('new-post-link')?.value || '').trim();
 
 if (!title) {
 console.warn('[submitNewPost] BLOCKED: title empty');
 showToast('Post title is required', 'error');
-_s('npm-title')?.focus();
+_s('new-post-title')?.focus();
 return;
 }
 
 if (!owner) {
 console.warn('[submitNewPost] BLOCKED: owner empty');
 showToast('Owner is required', 'error');
-_s('npm-owner')?.focus();
+_s('new-post-owner')?.focus();
 return;
 }
 
-const submitBtn = _s('npm-submit-btn');
-const savingMsg = _s('npm-saving');
+const createBtn = _s('nps-create-btn');
 
-if (submitBtn) submitBtn.disabled = true;
-if (savingMsg) savingMsg.classList.add('active');
+if (createBtn) createBtn.disabled = true;
 
 const payload = {
 post_id: 'POST-' + Date.now(),
@@ -241,7 +274,6 @@ saveDraft();
 
 showToast('Failed to create - draft saved', 'error');
 
-if (submitBtn) submitBtn.disabled = false;
-if (savingMsg) savingMsg.classList.remove('active');
+if (createBtn) createBtn.disabled = false;
 }
 }
