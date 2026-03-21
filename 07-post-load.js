@@ -1166,16 +1166,54 @@ function _renderDashTaskList(role) {
     });
   }
 
-  if (!filtered.length) {
-    var emptyMessages = {
-      'Admin':     'All systems running \u00b7 nothing needs you',
-      'Servicing': 'Queue clear \u00b7 nothing to dispatch',
-      'Creative':  'Pipeline healthy \u00b7 keep creating',
-      'Client':    'Nothing from us right now \u00b7 you\u2019re good'
-    };
-    var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
-    var emptyMsg = emptyMessages[emptyRole] || 'All clear';
-    container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
+  // Build urgent crisis items from current system state
+  var urgentItems = [];
+  var scoreData = getScoreboardData();
+  if (scoreData && typeof scoreData === 'object') {
+    var _rc = scoreData.runway ? scoreData.runway.count : 99;
+    var _co = scoreData.chitra ? scoreData.chitra.overdue : 0;
+    var _pd = scoreData.pranav ? scoreData.pranav.deficit : 0;
+    var _ac = scoreData.client ? scoreData.client.approval : 0;
+
+    if (_rc <= 6) {
+      urgentItems.push({
+        text: 'Build posts urgently \u00b7 runway at ' + dashPad(_rc),
+        cls: 'dash-task-urgent',
+        onclick: "navigateWithFilter('pipeline',['in_production'])"
+      });
+    }
+    if (_co > 0) {
+      urgentItems.push({
+        text: 'Chase client \u00b7 ' + dashPad(_co) + ' post' + (_co > 1 ? 's' : '') + ' overdue',
+        cls: 'dash-task-urgent',
+        onclick: "navigateWithFilter('pipeline',['awaiting_approval'])"
+      });
+    }
+    if (_pd <= -15) {
+      urgentItems.push({
+        text: dashPad(Math.abs(_pd)) + ' posts to build \u00b7 check in with Pranav',
+        cls: 'dash-task-urgent dash-task-amber',
+        onclick: "navigateWithFilter('pipeline',['in_production'])"
+      });
+    }
+
+    // Only show empty state when system is calm
+    if (!filtered.length && !urgentItems.length) {
+      if (_rc > 6 && _pd > -8 && _co === 0 && _ac === 0) {
+        var emptyMessages = {
+          'Admin':     'All systems running \u00b7 nothing needs you',
+          'Servicing': 'Queue clear \u00b7 nothing to dispatch',
+          'Creative':  'Pipeline healthy \u00b7 keep creating',
+          'Client':    'Nothing from us right now \u00b7 you\u2019re good'
+        };
+        var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
+        var emptyMsg = emptyMessages[emptyRole] || 'All clear';
+        container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
+        return;
+      }
+    }
+  } else if (!filtered.length) {
+    container.innerHTML = '<div class="dash-empty-state">All clear</div>';
     return;
   }
 
@@ -1189,6 +1227,18 @@ function _renderDashTaskList(role) {
     html += '<span class="dash-task-who">' + esc(item.assignedTo || '') + '</span>';
     html += '</div>';
   }
+
+  // Append urgent items after manual tasks
+  for (var u = 0; u < urgentItems.length; u++) {
+    var ui = urgentItems[u];
+    html += '<div class="' + ui.cls + '" onclick="' + ui.onclick + '">' + ui.text + '</div>';
+  }
+
+  if (!html) {
+    container.innerHTML = '<div class="dash-empty-state">All clear</div>';
+    return;
+  }
+
   container.innerHTML = html;
 }
 
@@ -1354,6 +1404,8 @@ function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
   if (!el) return;
   renderScoreboard();
+  _updateStreakLines();
+  _appendYesterdaysWin();
 }
 
 /* Legacy stubs  -  keep function names callable so renderAll doesn't error */
@@ -1364,6 +1416,165 @@ function renderDashIntel() {}
 function renderDashApprovalIntel() {}
 function renderDashActions() {}
 function renderDashEnterFlow() {}
+
+async function _updateStreakLines() {
+  try {
+    var today = new Date();
+
+    var logs = await apiFetch(
+      '/activity_log?select=actor,created_at,action,new_stage,old_stage' +
+      '&order=created_at.desc&limit=200'
+    );
+    if (!Array.isArray(logs)) return;
+
+    function getStreak(actor) {
+      var days = {};
+      logs.filter(function(l) {
+        return l.actor === actor;
+      }).forEach(function(l) {
+        var d = (l.created_at || '').split('T')[0];
+        if (d) days[d] = true;
+      });
+      var streak = 0;
+      var check = new Date(today);
+      check.setDate(check.getDate() - 1);
+      while (true) {
+        var ds = check.toISOString().split('T')[0];
+        if (days[ds]) {
+          streak++;
+          check.setDate(check.getDate() - 1);
+        } else { break; }
+      }
+      return streak;
+    }
+
+    function getIdleDays(actor) {
+      var actorLogs = logs.filter(function(l) {
+        return l.actor === actor;
+      });
+      if (!actorLogs.length) return 99;
+      var last = new Date(actorLogs[0].created_at);
+      return Math.floor((today - last) / (1000 * 60 * 60 * 24));
+    }
+
+    function getLastActive(actor) {
+      var actorLogs = logs.filter(function(l) {
+        return l.actor === actor;
+      });
+      if (!actorLogs.length) return '';
+      var d = new Date(actorLogs[0].created_at);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    }
+
+    var pEl = document.getElementById('metric-pranav-streak');
+    if (pEl) {
+      var pStreak = getStreak('Pranav');
+      var pIdle = getIdleDays('Pranav');
+      if (pIdle >= 2) {
+        var pLast = getLastActive('Pranav');
+        pEl.innerHTML = '<span class="dms-idle">\u00b7 idle ' + pIdle + ' days \u00b7 last active ' + pLast + '</span>';
+      } else if (pStreak >= 3) {
+        pEl.innerHTML = '<span class="dms-on">\u00b7 ' + String(pStreak).padStart(2, '0') + ' day streak \u00b7 ' + String(pStreak) + ' posts created</span>';
+      } else {
+        pEl.innerHTML = '';
+      }
+    }
+
+    var cEl = document.getElementById('metric-chitra-streak');
+    if (cEl) {
+      var cStreak = getStreak('Chitra');
+      var cIdle = getIdleDays('Chitra');
+      if (cIdle >= 2) {
+        var cLast = getLastActive('Chitra');
+        cEl.innerHTML = '<span class="dms-idle">\u00b7 idle ' + cIdle + ' days \u00b7 last active ' + cLast + '</span>';
+      } else if (cStreak >= 3) {
+        cEl.innerHTML = '<span class="dms-on">\u00b7 ' + String(cStreak).padStart(2, '0') + ' day streak</span>';
+      } else {
+        cEl.innerHTML = '';
+      }
+    }
+
+    var clEl = document.getElementById('metric-client-streak');
+    if (clEl) {
+      var clientLogs = logs.filter(function(l) {
+        return l.actor === 'Client' ||
+               l.new_stage === 'scheduled' ||
+               l.old_stage === 'awaiting_approval';
+      });
+      if (clientLogs.length) {
+        var clLast = new Date(clientLogs[0].created_at);
+        var clDiff = Math.floor((today - clLast) / (1000 * 60 * 60 * 24));
+        var clLastStr = clLast.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        if (clDiff === 0) {
+          clEl.innerHTML = '<span class="dms-good">\u00b7 approved today</span>';
+        } else if (clDiff === 1) {
+          clEl.innerHTML = '<span class="dms-good">\u00b7 approved yesterday</span>';
+        } else if (clDiff >= 5) {
+          clEl.innerHTML = '<span class="dms-idle">\u00b7 idle ' + clDiff + ' days \u00b7 last approved ' + clLastStr + '</span>';
+        } else {
+          clEl.innerHTML = '<span class="dms-muted">\u00b7 last approved ' + clLastStr + '</span>';
+        }
+      } else {
+        clEl.innerHTML = '';
+      }
+    }
+  } catch (e) {
+    console.warn('Streak update failed:', e);
+  }
+}
+
+async function _getYesterdaysWin() {
+  try {
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var yStart = yesterday.toISOString().split('T')[0] + 'T00:00:00';
+    var yEnd = yesterday.toISOString().split('T')[0] + 'T23:59:59';
+
+    var logs = await apiFetch(
+      '/activity_log?select=actor,action,new_stage,created_at' +
+      '&created_at=gte.' + yStart +
+      '&created_at=lte.' + yEnd +
+      '&order=created_at.desc'
+    );
+    if (!Array.isArray(logs) || !logs.length) return '';
+
+    var pranavBuilt = logs.filter(function(l) {
+      return l.actor === 'Pranav' && l.new_stage === 'ready';
+    }).length;
+
+    var chitraDispatched = logs.filter(function(l) {
+      return l.actor === 'Chitra' && l.new_stage === 'awaiting_approval';
+    }).length;
+
+    var scheduled = logs.filter(function(l) {
+      return l.new_stage === 'scheduled';
+    }).length;
+
+    var wins = [];
+    if (pranavBuilt > 0) {
+      wins.push('yesterday Pranav finished ' + pranavBuilt + ' post' + (pranavBuilt > 1 ? 's' : ''));
+    }
+    if (chitraDispatched > 0) {
+      wins.push('Chitra dispatched ' + chitraDispatched);
+    }
+    if (scheduled > 0 && wins.length === 0) {
+      wins.push(scheduled + ' post' + (scheduled > 1 ? 's' : '') + ' scheduled yesterday');
+    }
+
+    return wins.length ? wins.join(' \u00b7 ') : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+async function _appendYesterdaysWin() {
+  var elDeck = document.getElementById('dash-deck');
+  if (!elDeck) return;
+  var win = await _getYesterdaysWin();
+  if (win && elDeck.textContent) {
+    elDeck.textContent = elDeck.textContent + ' \u00b7 ' + win;
+  }
+}
 
 function _updateDashTimestamp() {
   var el = document.getElementById('dash-updated');
