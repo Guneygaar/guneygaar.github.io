@@ -155,6 +155,7 @@ function switchTab(btn) {
     dv.classList.add('active');
     document.getElementById('client-view')?.classList.remove('active');
     document.getElementById('insights-view')?.classList.remove('active');
+    document.getElementById('library-view')?.classList.remove('active');
   }
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
