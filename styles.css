@@ -5510,7 +5510,17 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pipeline-search-results {
   display: none;
   flex-direction: column;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 100;
+  background: var(--bg);
   border-bottom: 1px dotted var(--dotline);
+  max-height: 60vh;
+  overflow-y: auto;
 }
 .pipeline-search-results.visible { display: flex; }
 
@@ -5579,6 +5589,14 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   color: var(--muted);
   text-transform: uppercase;
   text-align: center;
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 100;
+  background: var(--bg);
   border-bottom: 1px dotted var(--dotline);
 }
 .pipeline-search-empty.visible { display: block; }
