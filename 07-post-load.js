@@ -1427,6 +1427,14 @@ async function _updateStreakLines() {
     );
     if (!Array.isArray(logs)) return;
 
+    logs = logs.map(function(l) {
+      var a = l.actor || '';
+      if (a === 'system' || a === 'Admin' || a.indexOf('@') > -1) {
+        l.actor = 'Shubham';
+      }
+      return l;
+    });
+
     function getStreak(actor) {
       var days = {};
       logs.filter(function(l) {
@@ -1482,15 +1490,22 @@ async function _updateStreakLines() {
 
     var cEl = document.getElementById('metric-chitra-streak');
     if (cEl) {
-      var cStreak = getStreak('Chitra');
-      var cIdle = getIdleDays('Chitra');
-      if (cIdle >= 2) {
-        var cLast = getLastActive('Chitra');
-        cEl.innerHTML = '<span class="dms-idle">\u00b7 idle ' + cIdle + ' days \u00b7 last active ' + cLast + '</span>';
-      } else if (cStreak >= 3) {
-        cEl.innerHTML = '<span class="dms-on">\u00b7 ' + String(cStreak).padStart(2, '0') + ' day streak</span>';
-      } else {
+      var chitraRaw = logs.filter(function(l) {
+        return l.actor === 'Chitra';
+      });
+      if (chitraRaw.length === 0) {
         cEl.innerHTML = '';
+      } else {
+        var cStreak = getStreak('Chitra');
+        var cIdle = getIdleDays('Chitra');
+        if (cIdle >= 2) {
+          var cLast = getLastActive('Chitra');
+          cEl.innerHTML = '<span class="dms-idle">. idle ' + cIdle + ' days . last active ' + cLast + '</span>';
+        } else if (cStreak >= 3) {
+          cEl.innerHTML = '<span class="dms-on">. ' + String(cStreak).padStart(2, '0') + ' day streak</span>';
+        } else {
+          cEl.innerHTML = '';
+        }
       }
     }
 
@@ -1537,6 +1552,14 @@ async function _getYesterdaysWin() {
       '&order=created_at.desc'
     );
     if (!Array.isArray(logs) || !logs.length) return '';
+
+    logs = logs.map(function(l) {
+      var a = l.actor || '';
+      if (a === 'system' || a === 'Admin' || a.indexOf('@') > -1) {
+        l.actor = 'Shubham';
+      }
+      return l;
+    });
 
     var pranavBuilt = logs.filter(function(l) {
       return l.actor === 'Pranav' && l.new_stage === 'ready';
