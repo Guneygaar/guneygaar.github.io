@@ -1056,7 +1056,13 @@ function renderScoreboard() {
     var elDeck = document.getElementById('dash-deck');
     if (elKDot) elKDot.style.background = kickerColor;
     if (elKText) { elKText.textContent = kicker; elKText.style.color = kickerColor; }
-    if (elHL) elHL.innerHTML = headline;
+    if (elHL) {
+      elHL.innerHTML = headline;
+      elHL.style.cursor = 'pointer';
+      elHL.onclick = function() { openRunwaySheet(); };
+    }
+    var hint = document.getElementById('dash-hl-hint');
+    if (hint) hint.style.display = '';
     if (elDeck) elDeck.textContent = deck;
 
     // --- STEP 5: DATE AND EDITION ---
@@ -1157,6 +1163,50 @@ async function toggleDashTask(row, taskId) {
       });
     } catch(e) { console.warn('Task toggle failed:', e); }
   }
+}
+
+function openRunwaySheet() {
+  var posts = (window.allPosts || []).filter(function(p) {
+    return p.stage === 'scheduled';
+  });
+
+  var existing = document.getElementById('runway-sheet-overlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'runway-sheet-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;';
+
+  var sheet = document.createElement('div');
+  sheet.id = 'runway-sheet';
+  sheet.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-surface,#111);border-top:1px dotted rgba(255,255,255,0.09);z-index:201;padding-bottom:40px;max-height:70vh;overflow-y:auto;';
+
+  var hdr = '<div style="padding:16px 18px 12px;border-bottom:1px dotted rgba(255,255,255,0.09);display:flex;justify-content:space-between;align-items:center;">';
+  hdr += '<span style="font-family:var(--mono,monospace);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#bbb;">Runway \u00b7 Scheduled Posts</span>';
+  hdr += '<span onclick="document.getElementById(\'runway-sheet-overlay\').remove()" style="font-family:var(--mono,monospace);font-size:10px;color:#555;cursor:pointer;padding:4px 8px;">\u00d7 Close</span>';
+  hdr += '</div>';
+
+  var body = '';
+  if (posts.length === 0) {
+    body = '<div style="padding:20px 18px;font-family:var(--mono,monospace);font-size:10px;color:#555;text-transform:uppercase;">No scheduled posts</div>';
+  } else {
+    posts.forEach(function(p) {
+      var date = p.target_date ? p.target_date.slice(5).replace('-',' ') : 'No date';
+      var postId = p.post_id || p.id || '';
+      body += '<div onclick="document.getElementById(\'runway-sheet-overlay\').remove();setTimeout(function(){openPCS(\'' + esc(postId) + '\')},50);" style="padding:13px 18px;border-bottom:1px dotted #1a1a1a;display:flex;align-items:center;gap:12px;cursor:pointer;">';
+      body += '<span style="font-family:var(--mono,monospace);font-size:10px;color:#555;width:44px;flex-shrink:0;">' + esc(date) + '</span>';
+      body += '<span style="font-size:14px;font-weight:500;color:#fff;flex:1;">' + esc(p.title || 'Untitled') + '</span>';
+      body += '<span style="font-family:var(--mono,monospace);font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:#22D3EE;border:1px dotted rgba(34,211,238,0.4);padding:2px 7px;">Scheduled</span>';
+      body += '</div>';
+    });
+  }
+
+  sheet.innerHTML = hdr + body;
+  overlay.appendChild(sheet);
+  overlay.onclick = function(e) {
+    if (e.target === overlay) overlay.remove();
+  };
+  document.body.appendChild(overlay);
 }
 
 function _buildDoThisNowItems() {

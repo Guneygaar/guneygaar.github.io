@@ -5899,14 +5899,6 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   flex-shrink: 0;
 }
 .dash-hdr-left {}
-.dash-masthead {
-  font-family: var(--mono);
-  font-size: 8px;
-  letter-spacing: 0.22em;
-  color: var(--muted);
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
 .dash-date {
   font-family: var(--mono);
   font-size: 11px;
@@ -5925,10 +5917,11 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .dash-edition {
   font-family: var(--mono);
   font-size: 9px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   color: var(--muted);
-  text-transform: none;
   font-style: italic;
+  text-transform: none;
+  margin-bottom: 3px;
 }
 
 /* HEADLINE BLOCK */
