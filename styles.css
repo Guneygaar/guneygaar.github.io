@@ -3811,10 +3811,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 10px 16px 9px;
   border-bottom: 1px dotted var(--dotline);
   flex-shrink: 0;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 150;
   background: var(--bg);
-  overflow: hidden;
 }
 .app-header-title {
   font-family: var(--mono);
