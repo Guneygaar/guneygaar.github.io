@@ -3815,7 +3815,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   top: 0;
   z-index: 150;
   background: var(--bg);
-  overflow: hidden;
 }
 .app-header-title {
   font-family: var(--mono);
@@ -5765,7 +5764,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 11px 16px;
+  padding: 10px 16px 10px 20px;
   border-bottom: 1px dotted var(--muted2);
   cursor: pointer;
   transition: background 0.15s;
