@@ -475,6 +475,7 @@ function copyApprovalLink(url) {
 
 // -- Insights Tab ------------------------------
 function showInsights() {
+  document.getElementById('library-view')?.classList.remove('active');
   var dv = document.getElementById('dashboard-view');
   var cv = document.getElementById('client-view');
   var iv = document.getElementById('insights-view');
