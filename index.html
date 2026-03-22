@@ -180,6 +180,7 @@
               <div class="dash-metric-label">Runway</div>
               <div class="dash-metric-msg" id="metric-runway-msg"></div>
             </div>
+            <span class="dash-metric-arrow">&rsaquo;</span>
           </div>
 
           <!-- PRANAV -->
@@ -192,6 +193,7 @@
               <div class="dash-metric-msg" id="metric-pranav-msg"></div>
               <div class="dash-metric-streak" id="metric-pranav-streak"></div>
             </div>
+            <span class="dash-metric-arrow">&rsaquo;</span>
           </div>
 
           <!-- CHITRA -->
@@ -204,6 +206,7 @@
               <div class="dash-metric-msg" id="metric-chitra-msg"></div>
               <div class="dash-metric-streak" id="metric-chitra-streak"></div>
             </div>
+            <span class="dash-metric-arrow">&rsaquo;</span>
           </div>
 
           <!-- CLIENT -->
@@ -216,6 +219,7 @@
               <div class="dash-metric-msg" id="metric-client-msg"></div>
               <div class="dash-metric-streak" id="metric-client-streak"></div>
             </div>
+            <span class="dash-metric-arrow">&rsaquo;</span>
           </div>
 
         </div>
@@ -229,32 +233,26 @@
         </div>
 
         <div id="dash-below-fold">
-          <div style="display:flex;align-items:center;gap:10px;padding:6px 18px;border-top:2px solid rgba(255,255,255,0.06);border-bottom:1px solid var(--dotline);">
-            <span style="font-family:var(--mono);font-size:6px;letter-spacing:0.25em;text-transform:uppercase;color:#222;white-space:nowrap;">Below the fold</span>
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.03);"></div>
+          <div style="border-top:1px solid rgba(255,255,255,0.07);"></div>
+
+          <div id="dash-next-up" style="padding:9px 18px 11px;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#666;margin-bottom:4px;">Next scheduled</div>
+            <div id="dash-next-list"></div>
           </div>
 
-          <div id="dash-next-up" style="padding:10px 18px 10px;border-bottom:1px solid var(--dotline);">
-            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#333;margin-bottom:4px;">Next scheduled</div>
-            <div id="dash-next-title" style="font-family:var(--sans);font-size:14px;font-weight:600;color:#ccc;margin-bottom:2px;"></div>
-            <div id="dash-next-meta" style="font-family:var(--mono);font-size:8px;color:#444;"></div>
+          <div id="dash-focus" style="padding:9px 18px 11px;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#666;margin-bottom:4px;">Today's focus</div>
+            <div id="dash-focus-row"></div>
           </div>
 
-          <div id="dash-focus" style="padding:10px 18px 10px;border-bottom:1px solid var(--dotline);">
-            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#333;margin-bottom:4px;">Today's focus</div>
-            <div id="dash-focus-title" style="font-family:var(--sans);font-size:14px;font-weight:600;color:#ccc;margin-bottom:2px;"></div>
-            <div id="dash-focus-meta" style="font-family:var(--mono);font-size:8px;color:#444;"></div>
+          <div id="dash-last-move" style="padding:9px 18px 11px;border-bottom:1px solid rgba(255,255,255,0.07);">
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#666;margin-bottom:4px;">Last move</div>
+            <div id="dash-move-text"></div>
           </div>
 
-          <div id="dash-last-move" style="padding:10px 18px 10px;border-bottom:1px solid var(--dotline);">
-            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#333;margin-bottom:4px;">Last move</div>
-            <div id="dash-move-title" style="font-family:var(--sans);font-size:14px;font-weight:600;color:#ccc;margin-bottom:2px;"></div>
-            <div id="dash-move-meta" style="font-family:var(--mono);font-size:8px;color:#444;"></div>
-          </div>
-
-          <div id="dash-unsaid" style="padding:10px 18px 14px;">
-            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#333;margin-bottom:4px;">The unsaid thing</div>
-            <div id="dash-unsaid-text" style="font-family:var(--mono);font-size:9px;color:#555;line-height:1.6;"></div>
+          <div id="dash-unsaid" style="padding:9px 18px 11px;">
+            <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#666;margin-bottom:4px;">The unsaid thing</div>
+            <div id="dash-unsaid-text"></div>
           </div>
         </div>
 

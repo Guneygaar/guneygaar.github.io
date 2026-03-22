@@ -959,7 +959,7 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at \u00b7 <span style="color:var(--c-red);display:inline-block;animation:dashGlow 2s ease-in-out infinite;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
+      headline = 'Runway at \u00b7 <span style="color:var(--c-red);display:inline-block;animation:hb 2.4s ease-in-out infinite;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
       deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 sort now';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
@@ -1009,7 +1009,8 @@ function renderScoreboard() {
     var elRMsg = document.getElementById('metric-runway-msg');
     if (elRPre) { elRPre.textContent = '\u00b7'; elRPre.style.color = rColor; }
     if (elRNum) { elRNum.textContent = dashPad(runwayCount); elRNum.style.color = rColor; }
-    if (elRMsg) { elRMsg.textContent = rMsg; elRMsg.style.color = rColor; }
+    var rMsgColor = runwayCount <= 6 ? '#cc3a3a' : runwayCount <= 14 ? 'var(--c-amber)' : 'var(--c-green)';
+    if (elRMsg) { elRMsg.textContent = rMsg; elRMsg.style.color = rMsgColor; }
 
     // PRANAV
     var pPrefix = pranavDeficit >= 0 ? '+' : '-';
@@ -1020,7 +1021,8 @@ function renderScoreboard() {
     var elPMsg = document.getElementById('metric-pranav-msg');
     if (elPPre) { elPPre.textContent = pPrefix; elPPre.style.color = pColor; }
     if (elPNum) { elPNum.textContent = dashPad(pranavDeficit); elPNum.style.color = pColor; }
-    if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pColor; }
+    var pMsgColor = pranavDeficit <= -15 ? '#cc3a3a' : pranavDeficit < 0 ? 'var(--c-amber)' : 'var(--c-green)';
+    if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pMsgColor; }
 
     // CHITRA
     var cTotal = chitraCount;
@@ -1032,7 +1034,8 @@ function renderScoreboard() {
     var elCMsg = document.getElementById('metric-chitra-msg');
     if (elCPre) { elCPre.textContent = cPrefix; elCPre.style.color = cColor; }
     if (elCNum) { elCNum.textContent = dashPad(cTotal); elCNum.style.color = cColor; }
-    if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cColor; }
+    var cMsgColor = chitraOverdue > 0 ? '#cc3a3a' : cTotal > 8 ? '#cc3a3a' : cTotal > 3 ? 'var(--c-amber)' : 'var(--c-green)';
+    if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
     var clTotal = approvalCount + inputCount;
@@ -1044,7 +1047,8 @@ function renderScoreboard() {
     var elClMsg = document.getElementById('metric-client-msg');
     if (elClPre) { elClPre.textContent = clPrefix; elClPre.style.color = clColor; }
     if (elClNum) { elClNum.textContent = dashPad(clTotal); elClNum.style.color = clColor; }
-    if (elClMsg) { elClMsg.textContent = clMsg; elClMsg.style.color = clColor; }
+    var clMsgColor = clTotal > 0 ? '#cc3a3a' : '#aaa';
+    if (elClMsg) { elClMsg.textContent = clMsg; elClMsg.style.color = clMsgColor; }
 
     // --- STEP 4: HEADLINE RENDER ---
     var elHL = document.getElementById('dash-headline');
@@ -1092,7 +1096,7 @@ function renderScoreboard() {
     }
 
     // --- STEP 8: TAPPABLE METRIC ROWS ---
-    if (rowRunway) rowRunway.onclick = function() { if (typeof navigateWithFilter === 'function') navigateWithFilter('pipeline', ['scheduled']); };
+    if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
       var inProd = (window.allPosts || []).filter(function(p) {
         return p.stage === 'in_production';
@@ -1591,34 +1595,40 @@ function updateBelowFold(posts) {
 }
 
 function _updateNextScheduled(allP) {
-  var titleEl = document.getElementById('dash-next-title');
-  var metaEl = document.getElementById('dash-next-meta');
-  if (!titleEl || !metaEl) return;
+  var listEl = document.getElementById('dash-next-list');
+  if (!listEl) return;
   var todayStr = new Date().toISOString().slice(0, 10);
   var upcoming = allP.filter(function(p) {
     return p.stage === 'scheduled' && p.target_date && p.target_date >= todayStr;
   }).sort(function(a, b) {
     return (a.target_date || '') < (b.target_date || '') ? -1 : 1;
   });
-  if (upcoming.length) {
-    var next = upcoming[0];
-    var t = next.title || 'Untitled';
-    if (t.length > 36) t = t.slice(0, 36) + '...';
-    titleEl.textContent = esc(t);
-    var parts = [];
-    if (next.target_date) parts.push(next.target_date);
-    if (next.owner) parts.push(next.owner);
-    metaEl.textContent = parts.join(' / ');
-  } else {
-    titleEl.textContent = 'Nothing on the runway';
-    metaEl.textContent = '';
+  var show = upcoming.slice(0, 3);
+  if (!show.length) {
+    listEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;">Nothing scheduled yet</div>';
+    return;
   }
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var html = '';
+  for (var i = 0; i < show.length; i++) {
+    var p = show[i];
+    var d = new Date(p.target_date + 'T00:00:00');
+    var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+    var title = esc(p.title || 'Untitled');
+    var pid = esc(getPostId(p));
+    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;transition:background 0.1s;" onclick="libOpenPostCard(\'' + pid + '\')">' +
+      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
+      '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
+      '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
+      '</div>';
+  }
+  listEl.innerHTML = html;
 }
 
 function _updateTodaysFocus(allP) {
-  var titleEl = document.getElementById('dash-focus-title');
-  var metaEl = document.getElementById('dash-focus-meta');
-  if (!titleEl || !metaEl) return;
+  var rowEl = document.getElementById('dash-focus-row');
+  if (!rowEl) return;
   var todayStr = new Date().toISOString().slice(0, 10);
   var focus = allP.filter(function(p) {
     return p.stage === 'scheduled' && p.target_date && p.target_date === todayStr;
@@ -1634,19 +1644,34 @@ function _updateTodaysFocus(allP) {
     var f = focus[0];
     var t = f.title || 'Untitled';
     if (t.length > 36) t = t.slice(0, 36) + '...';
-    titleEl.textContent = esc(t);
     var cfg = STAGE_META[f.stage] || {};
-    metaEl.textContent = (cfg.label || f.stage) + (f.owner ? ' / ' + f.owner : '');
+    var metaParts = [];
+    // Calculate waiting days
+    var changed = f.status_changed_at || f.updated_at || f.created_at;
+    if (changed) {
+      var waitDays = Math.floor((Date.now() - new Date(changed).getTime()) / 86400000);
+      if (waitDays > 0) metaParts.push('waiting ' + waitDays + ' day' + (waitDays > 1 ? 's' : ''));
+    }
+    if (f.owner) metaParts.push(f.owner.toLowerCase());
+    metaParts.push(cfg.label || f.stage);
+    if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
+    var pid = esc(getPostId(f));
+    rowEl.innerHTML =
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;transition:background 0.1s;" onclick="libOpenPostCard(\'' + pid + '\')">' +
+      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
+      '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
+      '</div>' +
+      '<div style="font-family:var(--mono);font-size:8px;color:#777;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \xB7 ')) + '</div>';
   } else {
-    titleEl.textContent = 'Clear runway';
-    metaEl.textContent = 'nothing needs attention today';
+    rowEl.innerHTML =
+      '<div style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">Clear runway</div>' +
+      '<div style="font-family:var(--mono);font-size:8px;color:#777;">nothing needs attention today</div>';
   }
 }
 
 function _updateLastMove(allP) {
-  var titleEl = document.getElementById('dash-move-title');
-  var metaEl = document.getElementById('dash-move-meta');
-  if (!titleEl || !metaEl) return;
+  var textEl = document.getElementById('dash-move-text');
+  if (!textEl) return;
   var moved = allP.filter(function(p) {
     return p.status_changed_at;
   }).sort(function(a, b) {
@@ -1656,13 +1681,14 @@ function _updateLastMove(allP) {
     var last = moved[0];
     var t = last.title || 'Untitled';
     if (t.length > 36) t = t.slice(0, 36) + '...';
-    titleEl.textContent = esc(t);
     var cfg = STAGE_META[last.stage] || {};
     var ago = _timeAgo(last.status_changed_at);
-    metaEl.textContent = (cfg.label || last.stage) + ' / ' + ago;
+    var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
+    var pid = getPostId(last);
+    var clickAttr = pid ? ' onclick="libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
-    titleEl.textContent = 'No moves yet';
-    metaEl.textContent = '';
+    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
   }
 }
 
@@ -1680,6 +1706,11 @@ function _timeAgo(dateStr) {
 function _updateUnsaidThing(allP) {
   var el = document.getElementById('dash-unsaid-text');
   if (!el) return;
+  el.style.fontFamily = 'var(--sans)';
+  el.style.fontSize = '13px';
+  el.style.color = '#888';
+  el.style.fontStyle = 'italic';
+  el.style.lineHeight = '1.5';
   var todayStr = new Date().toISOString().slice(0, 10);
   var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
   var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
