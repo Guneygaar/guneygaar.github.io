@@ -516,6 +516,7 @@ function renderAll() {
   // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
     run('dashboard',          renderDashboard);
+    run('dashHdr',            updateDashboardHeader);
     run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
@@ -527,6 +528,7 @@ function renderAll() {
     run('taskStageChips',     renderTaskStageChips);
   } else if (activeTab === 'pipeline') {
     run('pipeline',           renderPipeline);
+    run('pipelineHdr',        updatePipelineHeader);
   } else if (activeTab === 'library') {
     run('library',            renderLibrary);
     run('filterDropdowns',    populateFilterDropdowns);
@@ -2233,6 +2235,34 @@ async function executeBatchAction(targetStage) {
 function renderPipeline() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
 }
+function updatePipelineHeader() {
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var active = 0, sched = 0, done = 0;
+  posts.forEach(function(p) {
+    var s = (p.stage || '').toLowerCase();
+    if (s === 'scheduled') sched++;
+    else if (['published','parked','rejected'].indexOf(s) > -1) done++;
+    else active++;
+  });
+  var el;
+  el = document.getElementById('ph-active'); if (el) el.textContent = active;
+  el = document.getElementById('ph-sched'); if (el) el.textContent = sched;
+  el = document.getElementById('ph-done'); if (el) el.textContent = done;
+}
+
+function updateDashboardHeader() {
+  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var runway = 0, active = 0;
+  posts.forEach(function(p) {
+    var s = (p.stage || '').toLowerCase();
+    if (s === 'scheduled') runway++;
+    if (['published','parked','rejected','scheduled'].indexOf(s) === -1) active++;
+  });
+  var el;
+  el = document.getElementById('dh-runway'); if (el) el.textContent = runway;
+  el = document.getElementById('dh-active'); if (el) el.textContent = active;
+}
+
 function _renderPipelineInner() {
   // Consume pressure-click filter (set by dashboard click handler)
   const activeFilter = window.pcsPipelineFilter;

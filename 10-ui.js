@@ -164,7 +164,21 @@ function switchTab(btn) {
   const panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl) titleEl.textContent = (tab === 'tasks') ? 'Dashboard' : (_TAB_TITLES[tab] || tab);
+  var pipeHdr = document.getElementById('pipeline-hdr-nums');
+  var dashHdr = document.getElementById('dash-hdr-nums');
+  if (tab === 'pipeline') {
+    if (titleEl) titleEl.style.display = 'none';
+    if (pipeHdr) pipeHdr.style.display = 'flex';
+    if (dashHdr) dashHdr.style.display = 'none';
+  } else if (tab === 'tasks') {
+    if (titleEl) titleEl.style.display = 'none';
+    if (pipeHdr) pipeHdr.style.display = 'none';
+    if (dashHdr) dashHdr.style.display = 'flex';
+  } else {
+    if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
+    if (pipeHdr) pipeHdr.style.display = 'none';
+    if (dashHdr) dashHdr.style.display = 'none';
+  }
   var searchTrigger = document.getElementById('pipeline-search-trigger');
   if (searchTrigger) searchTrigger.style.display = (tab === 'pipeline') ? '' : 'none';
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
@@ -488,7 +502,11 @@ function showInsights() {
   var insBtn = document.querySelector('.tab-btn[data-tab="insights"]');
   if (insBtn) insBtn.classList.add('active');
   var titleEl = document.getElementById('app-header-title');
-  if (titleEl) titleEl.textContent = 'Insights';
+  if (titleEl) titleEl.style.display = 'none';
+  var pipeHdr = document.getElementById('pipeline-hdr-nums');
+  if (pipeHdr) pipeHdr.style.display = 'none';
+  var dashHdr = document.getElementById('dash-hdr-nums');
+  if (dashHdr) dashHdr.style.display = 'none';
   insUpdateOverview();
   insRenderPosts();
   insRenderMissingUrls();
@@ -676,6 +694,12 @@ function insUpdateOverview(){
   insRenderDowChart(posts);
   insRenderTopPosts(posts);
   insUpdateMetricBtns();
+  // Update insights number header
+  var totalImp = INS_POSTS.reduce(function(s,p){return s+p.imp},0);
+  var ihImp = document.getElementById('ih-imp');
+  if (ihImp) ihImp.textContent = insFmt(totalImp);
+  var ihPosts = document.getElementById('ih-posts');
+  if (ihPosts) ihPosts.textContent = INS_POSTS.length;
 }
 
 function insUpdateMetricBtns(){
@@ -1256,6 +1280,8 @@ function closeTaskModal() {
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   const titleEl = document.getElementById('app-header-title');
-  if (titleEl && !titleEl.textContent) titleEl.textContent = 'Dashboard';
+  if (titleEl) titleEl.style.display = 'none';
+  var dashHdrInit = document.getElementById('dash-hdr-nums');
+  if (dashHdrInit) dashHdrInit.style.display = 'flex';
   if (typeof loadNotifBadge === 'function') loadNotifBadge();
 });

@@ -2953,6 +2953,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: var(--text);
   font-weight: 400;
 }
+/* Option B number-forward headers */
+.hdr-nums { display:flex; align-items:baseline; gap:10px; }
+.hdr-num-block { display:flex; align-items:baseline; gap:4px; }
+.hdr-n { font-family:var(--mono); font-size:18px; font-weight:500; line-height:1; }
+.hdr-nl { font-family:var(--mono); font-size:7px; letter-spacing:0.15em; text-transform:uppercase; color:#444; }
+.hdr-vdiv { width:1px; height:14px; background:rgba(255,255,255,0.08); flex-shrink:0; }
 .app-header-right {
   display: flex;
   align-items: center;

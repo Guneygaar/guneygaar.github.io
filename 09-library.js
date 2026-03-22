@@ -20,6 +20,7 @@ async function libLoadPosts() {
     '/posts?select=*&stage=in.(published,parked,rejected)&order=target_date.desc'
   );
   _libPosts = data || [];
+  updateLibraryHeader();
 
   var li = await apiFetch('/linkedin_posts?select=*');
   _libLinkedIn = {};
@@ -66,6 +67,21 @@ function _matchLinkedInFromHardcoded(posts) {
       };
     }
   });
+}
+
+function updateLibraryHeader() {
+  if (!_libPosts) return;
+  var pub = 0, park = 0, rej = 0;
+  for (var i = 0; i < _libPosts.length; i++) {
+    var s = (_libPosts[i].stage || '').toLowerCase();
+    if (s === 'published') pub++;
+    else if (s === 'parked') park++;
+    else if (s === 'rejected') rej++;
+  }
+  var el;
+  el = document.getElementById('lh-pub'); if (el) el.textContent = pub;
+  el = document.getElementById('lh-park'); if (el) el.textContent = park;
+  el = document.getElementById('lh-rej'); if (el) el.textContent = rej;
 }
 
 // --------------- filter sheet wiring ---------------
@@ -1234,6 +1250,13 @@ function showLibrary() {
   document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
   var libBtn = document.querySelector('[onclick="showLibrary()"]');
   if (libBtn) libBtn.classList.add('active');
+  // Hide shared app-header number blocks for other tabs
+  var titleEl = document.getElementById('app-header-title');
+  if (titleEl) titleEl.style.display = 'none';
+  var pipeHdr = document.getElementById('pipeline-hdr-nums');
+  if (pipeHdr) pipeHdr.style.display = 'none';
+  var dashHdr = document.getElementById('dash-hdr-nums');
+  if (dashHdr) dashHdr.style.display = 'none';
 
   setTimeout(function() { libWireFilters(); libInitSearch(); }, 0);
 
