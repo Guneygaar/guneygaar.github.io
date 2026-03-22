@@ -41,17 +41,19 @@ function _matchLinkedInFromHardcoded(posts) {
   if (!window.INS_POSTS || !Array.isArray(window.INS_POSTS)) return;
   posts.forEach(function(post) {
     if (_libLinkedIn[post.id]) return;
-    var titleLower = (post.title || '').toLowerCase();
+    var titleLower = (post.title || '').toLowerCase().replace(/[^a-z0-9 ]/g, '');
+    var words = titleLower.split(' ').filter(function(w) { return w.length > 4; });
+    if (!words.length) return;
     var match = window.INS_POSTS.find(function(ip) {
-      var ipTitle = ip.title.toLowerCase();
-      return ipTitle.includes(titleLower.slice(0,12)) || titleLower.includes(ipTitle.slice(0,12));
+      var ipNorm = ip.title.toLowerCase().replace(/[^a-z0-9 ]/g, '');
+      return words.some(function(w) { return ipNorm.indexOf(w) > -1; });
     });
     if (match) {
       _libLinkedIn[post.id] = {
-        imp: match.imp, likes: match.likes, comments: match.comments,
-        reposts: match.reposts, clicks: match.clicks, ctr: match.ctr,
-        eng: match.eng, follows: match.follows,
-        impressions: match.imp, engagement: match.eng
+        imp: match.imp, impressions: match.imp,
+        likes: match.likes, comments: match.comments,
+        reposts: match.reposts, clicks: match.clicks,
+        ctr: match.ctr, eng: match.eng, follows: match.follows
       };
     }
   });
@@ -1053,12 +1055,12 @@ function libOpenCard(postId) {
   if (stage === 'published' && li && li.impressions) {
     h += '<div class="pc-hero">';
     h += '<span class="pc-hero-imp">' + libFormatImp(li.impressions) + '</span>';
-    h += '<span class="pc-hero-label">impressions</span>';
+    h += '<span class="pc-hero-label" style="color:var(--c-text3,#555)">impressions</span>';
     h += '</div>';
     h += '<div class="pc-metrics">';
-    if (li.likes !== undefined) h += '<div class="pc-metric pc-m-likes"><span class="pc-m-val">' + li.likes + '</span><span class="pc-m-lbl">likes</span></div>';
-    if (li.comments !== undefined) h += '<div class="pc-metric pc-m-comments"><span class="pc-m-val">' + li.comments + '</span><span class="pc-m-lbl">comments</span></div>';
-    if (li.engagement !== undefined) h += '<div class="pc-metric pc-m-eng"><span class="pc-m-val">' + li.engagement + '%</span><span class="pc-m-lbl">engagement</span></div>';
+    if (li.likes !== undefined) h += '<div class="pc-metric pc-m-likes"><span class="pc-m-val">' + li.likes + '</span><span class="pc-m-lbl" style="color:var(--c-text3,#555)">likes</span></div>';
+    if (li.comments !== undefined) h += '<div class="pc-metric pc-m-comments"><span class="pc-m-val">' + li.comments + '</span><span class="pc-m-lbl" style="color:var(--c-text3,#555)">comments</span></div>';
+    if (li.engagement !== undefined) h += '<div class="pc-metric pc-m-eng"><span class="pc-m-val">' + li.engagement + '%</span><span class="pc-m-lbl" style="color:var(--c-text3,#555)">engagement</span></div>';
     h += '</div>';
     if (lifespan !== null) {
       h += '<div class="pc-life">';
