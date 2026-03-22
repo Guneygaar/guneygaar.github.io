@@ -1073,33 +1073,42 @@ function libSetView(view, btn) {
 
 // --------------- open post card (bridges to pipeline PCS) ---------------
 function libOpenPostCard(postId) {
+  console.log('[PCS] libOpenPostCard called', postId);
+
   var libOverlay = document.getElementById('lib-card-overlay');
   if (libOverlay) libOverlay.style.display = 'none';
   var calPopup = document.getElementById('lib-cal-popup');
   if (calPopup) calPopup.style.display = 'none';
 
   var post = _libPosts.find(function(p) { return p.id === postId; });
-  if (!post) { console.warn('libOpenPostCard: post not found', postId); return; }
+  console.log('[PCS] post found in _libPosts:', !!post, post ? post.title : 'null');
+  if (!post) { console.warn('[PCS] post not found in _libPosts', postId); return; }
 
   var normalised = typeof normalise === 'function' ? normalise(post) : post;
+  console.log('[PCS] normalise function exists:', typeof normalise === 'function');
+  console.log('[PCS] normalised post id:', normalised.id || normalised.postId);
 
+  console.log('[PCS] allPosts exists:', typeof allPosts !== 'undefined', Array.isArray(allPosts) ? allPosts.length + ' posts' : 'not array');
   if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
-    var alreadyIn = allPosts.find(function(p) {
-      return (p.id || p.postId) === postId;
-    });
+    var alreadyIn = allPosts.find(function(p) { return (p.id || p.postId) === postId; });
+    console.log('[PCS] already in allPosts:', !!alreadyIn);
     if (!alreadyIn) allPosts.push(normalised);
+    console.log('[PCS] allPosts length after inject:', allPosts.length);
   }
 
+  console.log('[PCS] _postLists exists:', typeof window._postLists !== 'undefined');
   if (typeof window._postLists !== 'undefined') {
     window._postLists['library'] = _libPosts.map(function(p) {
       return typeof normalise === 'function' ? normalise(p) : p;
     });
+    console.log('[PCS] _postLists library set, length:', window._postLists['library'].length);
   }
 
+  console.log('[PCS] openPCS exists:', typeof openPCS === 'function');
   if (typeof openPCS === 'function') {
     openPCS(postId, 'library');
   } else {
-    console.warn('libOpenPostCard: openPCS not available');
+    console.warn('[PCS] openPCS not available');
   }
 }
 window.libOpenPostCard = libOpenPostCard;
