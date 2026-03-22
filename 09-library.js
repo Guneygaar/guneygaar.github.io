@@ -194,6 +194,21 @@ function libWireFilters() {
       e.stopPropagation();
     });
   }
+
+  // Explicit custom date row handler as backup
+  var dateChips = document.querySelectorAll('.lib-fsd-chip');
+  for (var dc = 0; dc < dateChips.length; dc++) {
+    (function(chip) {
+      chip.addEventListener('click', function() {
+        var customRow = document.getElementById('lib-fs-custom-row');
+        if ((chip.getAttribute('data-v') || '') === 'custom') {
+          if (customRow) customRow.classList.add('open');
+        } else {
+          if (customRow) customRow.classList.remove('open');
+        }
+      });
+    })(dateChips[dc]);
+  }
 }
 
 // --------------- open / close filter sheet ---------------
@@ -559,13 +574,6 @@ function libRenderList() {
     }
     var avgLife = lifespanCnt > 0 ? Math.round(lifespanSum / lifespanCnt) : null;
 
-    // grade
-    var grade = '';
-    if (pubCnt >= 8 && rejCnt === 0) grade = 'A';
-    else if (pubCnt >= 6) grade = 'B';
-    else if (pubCnt >= 4) grade = 'C';
-    else grade = 'D';
-
     // month header
     var parts = mk.split('-');
     var monthLabel = MONTHS[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
@@ -578,7 +586,6 @@ function libRenderList() {
     if (parkCnt > 0) html += '<span class="lib-mh-dot lib-mh-dot-park">' + parkCnt + '</span>';
     if (rejCnt > 0) html += '<span class="lib-mh-dot lib-mh-dot-rej">' + rejCnt + '</span>';
     html += '</div>';
-    html += '<span class="lib-mh-grade">' + grade + '</span>';
     html += '</div>';
 
     html += '<div class="lib-month-content">';
@@ -915,8 +922,9 @@ function libRenderCalendar() {
         popup.innerHTML = ph;
         popup.classList.add('open');
 
+        if (popup.parentNode !== document.body) document.body.appendChild(popup);
         popup.style.position = 'fixed';
-        popup.style.bottom = '80px';
+        popup.style.bottom = '10px';
         popup.style.left = '50%';
         popup.style.transform = 'translateX(-50%)';
         popup.style.width = 'calc(100% - 36px)';
@@ -1076,12 +1084,12 @@ function libOpenCard(postId) {
     overlay = document.createElement('div');
     overlay.id = 'lib-card-overlay';
     overlay.className = 'ins-card-overlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
     document.body.appendChild(overlay);
   }
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
 
   var h = '';
-  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:80px;">';
+  h += '<div class="lib-card-inner" style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
@@ -1122,17 +1130,18 @@ function libOpenCard(postId) {
   h += '<div style="padding:14px 18px;border-top:1px solid var(--dotline)">';
   h += '<button onclick="libGoToPipeline(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-text3);background:transparent;border:1px solid var(--dotline);padding:8px 14px;cursor:pointer;width:100%">Open in Pipeline</button>';
   h += '</div>';
-  var liUrl = (_libLinkedIn[postId] && _libLinkedIn[postId].linkedinUrl) ? _libLinkedIn[postId].linkedinUrl : '';
-  h += '<div style="padding:10px 18px 14px;border-top:1px solid var(--dotline)">';
-  h += '<div style="font-family:var(--mono);font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--c-text3);margin-bottom:6px">LinkedIn URL</div>';
-  h += '<div style="display:flex;gap:8px">';
-  h += '<input id="lib-li-url-input" type="url" placeholder="https://linkedin.com/feed/update/..." value="' + esc(liUrl) + '" style="flex:1;font-family:var(--mono);font-size:9px;color:var(--text1);background:var(--bg2);border:1px solid var(--dotline);padding:6px 10px;outline:none">';
-  h += '<button onclick="libSaveLinkedInUrl(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-gold);border:1px solid rgba(200,168,75,0.4);background:transparent;padding:6px 12px;cursor:pointer">Save</button>';
-  h += '</div></div>';
+  if (!li || !li.impressions) {
+    var liUrl = (_libLinkedIn[postId] && _libLinkedIn[postId].linkedinUrl) ? _libLinkedIn[postId].linkedinUrl : '';
+    h += '<div style="padding:10px 18px 14px;border-top:1px solid var(--dotline)">';
+    h += '<div style="font-family:var(--mono);font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--c-text3);margin-bottom:6px">Add LinkedIn URL to link performance data</div>';
+    h += '<div style="display:flex;gap:8px">';
+    h += '<input id="lib-li-url-input" type="url" placeholder="https://linkedin.com/feed/update/..." value="' + esc(liUrl) + '" style="flex:1;font-family:var(--mono);font-size:9px;color:var(--text1);background:var(--bg2);border:1px solid var(--dotline);padding:6px 10px;outline:none">';
+    h += '<button onclick="libSaveLinkedInUrl(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-gold);border:1px solid rgba(200,168,75,0.4);background:transparent;padding:6px 12px;cursor:pointer">Save</button>';
+    h += '</div></div>';
+  }
   h += '</div>';
 
   overlay.innerHTML = h;
-  overlay.style.display = 'flex';
   overlay.classList.add('open');
 
   var closeBtn = document.getElementById('lib-card-close');
@@ -1222,10 +1231,11 @@ function libGoToPipeline(postId) {
   var overlay = document.getElementById('lib-card-overlay');
   if (overlay) overlay.style.display = 'none';
   window._pipelinePubExpanded = true;
-  if (typeof showPipeline === 'function') showPipeline();
+  var pipelineBtn = document.querySelector('[data-tab="pipeline"]');
+  if (pipelineBtn) pipelineBtn.click();
   setTimeout(function() {
     if (typeof openPCS === 'function') openPCS(postId, 'library');
-  }, 300);
+  }, 500);
 }
 
 // --------------- libSaveLinkedInUrl ---------------
