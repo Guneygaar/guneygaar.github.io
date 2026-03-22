@@ -5396,12 +5396,12 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-pace-txt { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; }
 
 /* Post row */
-.lib-post-row { display: flex; align-items: flex-start; gap: 6px; padding: 8px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
+.lib-post-row { display: flex; align-items: stretch; gap: 6px; padding: 8px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
 .lib-post-row:hover { background: var(--surface); }
 .lib-item { /* generic filterable item marker */ }
 
 /* Colour bar */
-.lib-bar { width: 4px; min-height: 28px; border-radius: 2px; flex-shrink: 0; background: var(--muted2); }
+.lib-bar { width: 4px; min-height: 100%; border-radius: 2px; flex-shrink: 0; align-self: stretch; background: var(--muted2); }
 .lib-bar-pub  { background: var(--green); }
 .lib-bar-park { background: var(--amber); }
 .lib-bar-rej  { background: var(--red); }
@@ -5414,8 +5414,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 /* Right side: impressions */
 .lib-p-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; margin-left: auto; }
-.lib-p-imp { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; white-space: nowrap; }
-.lib-p-imp-lbl { font-family: var(--mono); font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lib-p-imp { font-family: var(--mono); font-size: 16px; font-weight: 700; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; white-space: nowrap; }
+.lib-p-imp-lbl { font-family: var(--mono); font-size: 6px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .lib-imp-best   { color: var(--gold); background: rgba(255,215,0,0.12); }
 .lib-imp-normal { color: var(--green); background: var(--green-bg); }
 .lib-imp-nodata { color: var(--muted); }
@@ -5426,6 +5426,19 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-p-reason { font-family: var(--mono); font-size: 8px; letter-spacing: 0.04em; margin-top: 2px; padding: 3px 6px; border-left: 2px solid; }
 .lib-reason-park { color: var(--amber); border-color: var(--amber); background: var(--amber-bg); }
 .lib-reason-rej  { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+
+/* Star badges */
+.lib-star-best { color: var(--gold); font-size: 13px; }
+.lib-star-week { color: var(--gold); font-size: 10px; opacity: 0.7; }
+
+/* Lifespan badge */
+.lib-life-badge { display: inline-block; font-family: var(--mono); font-size: 7px; letter-spacing: 0.04em; padding: 1px 4px; border: 1px solid var(--muted2); border-radius: 2px; margin-left: 2px; vertical-align: middle; }
+.lib-arr-fast { color: var(--green); border-color: rgba(62,207,142,0.3); }
+.lib-arr-slow { color: var(--amber); border-color: rgba(245,158,11,0.3); }
+.lib-arr-avg  { color: var(--muted); }
+
+/* Wed tag */
+.lib-wed-tag { font-family: var(--mono); font-size: 7px; letter-spacing: 0.06em; color: var(--gold); margin-left: 4px; }
 
 /* Gap alert */
 .lib-gap-alert { font-family: var(--mono); font-size: 9px; color: var(--red); padding: 6px 20px; letter-spacing: 0.06em; text-transform: uppercase; }
