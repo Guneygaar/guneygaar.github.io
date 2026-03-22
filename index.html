@@ -106,22 +106,7 @@
     <div id="dash-greeting-hdr" style="font-family:var(--sans);font-size:13px;color:#888;font-weight:400;">
       Good morning, <span id="dash-greeting-name" style="color:var(--c-gold);font-weight:500;">Shubham</span>
     </div>
-    <div class="hdr-nums" id="pipeline-hdr-nums" style="display:none">
-      <div class="hdr-num-block">
-        <div class="hdr-n" id="ph-active" style="color:var(--c-red)">0</div>
-        <div class="hdr-nl">active</div>
-      </div>
-      <div class="hdr-vdiv"></div>
-      <div class="hdr-num-block">
-        <div class="hdr-n" id="ph-sched" style="color:var(--c-cyan)">0</div>
-        <div class="hdr-nl">sched</div>
-      </div>
-      <div class="hdr-vdiv"></div>
-      <div class="hdr-num-block">
-        <div class="hdr-n" id="ph-done" style="color:#444">0</div>
-        <div class="hdr-nl">done</div>
-      </div>
-    </div>
+    <!-- pipeline-hdr-nums removed -->
     <div class="app-header-right">
       <!-- Bell icon -->
       <button class="app-icon-btn" id="notif-bell" onclick="openNotifications()" title="Notifications" style="position:relative">
@@ -288,6 +273,7 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
+    <div id="pipeline-narrative" onclick="openRunwaySheet()" style="font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text1);padding:10px 18px;border-bottom:1px solid var(--dotline);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;box-sizing:border-box;">Pipeline loading...</div>
     <div class="pipeline-search-results" id="pipeline-search-results"></div>
     <div class="pipeline-search-empty" id="pipeline-search-empty">No posts found</div>
     <div class="person-strip" id="person-strip">
@@ -319,7 +305,7 @@
       </div>
       <div class="stage-chip scheduled" data-stage="scheduled">
         <div class="chip-count" id="chip-count-scheduled">0</div>
-        <div class="chip-label">Scheduled</div>
+        <div class="chip-label">Sched</div>
       </div>
       <div class="stage-chip ready" data-stage="ready">
         <div class="chip-count" id="chip-count-ready">0</div>
