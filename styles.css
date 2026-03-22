@@ -5357,10 +5357,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-fs-hdr { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); margin-bottom: 16px; }
 .lib-fs-section { margin-bottom: 14px; }
 .lib-fs-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-.lib-fs-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lib-fs-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .lib-fsd-chip,
 .lib-fss-chip,
-.lib-fsp-chip { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 4px 10px; border: 1px dotted var(--muted2); color: var(--muted); cursor: pointer; text-transform: capitalize; }
+.lib-fsp-chip { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 7px 13px; border: 1px dotted var(--muted2); color: var(--muted); cursor: pointer; text-transform: capitalize; min-width: 80px; text-align: center; }
 .lib-fsd-chip.active,
 .lib-fss-chip.active,
 .lib-fsp-chip.active { background: var(--surface); color: var(--text); border-color: var(--text2); }
