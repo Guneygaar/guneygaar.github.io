@@ -5511,17 +5511,17 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-board-col-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 2px solid; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
 .lib-board-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 
-.lib-bp-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
+.lib-bp-row { display: flex; align-items: stretch; gap: 8px; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
 .lib-bp-row:hover { background: var(--surface); }
-.lib-bp-bar { width: 3px; min-height: 32px; border-radius: 2px; flex-shrink: 0; }
+.lib-bp-bar { width: 3px; border-radius: 2px; flex-shrink: 0; align-self: stretch; }
 .lib-bp-bar-published { background: var(--green); }
 .lib-bp-bar-parked    { background: var(--amber); }
 .lib-bp-bar-rejected  { background: var(--red); }
-.lib-bp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lib-bp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 9px 12px 9px 10px; }
 .lib-bp-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
 .lib-bp-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-bp-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
-.lib-bp-stats { font-family: var(--mono); font-size: 9px; color: var(--green); margin-top: 2px; }
+.lib-bp-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+.lib-bp-stats { font-family: var(--mono); font-size: 9px; color: var(--green); margin-top: 4px; }
 .lib-bp-nd    { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
 .lib-bp-reason { font-family: var(--mono); font-size: 8px; margin-top: 3px; padding: 3px 6px; border-left: 2px solid; }
 .lib-bp-reason-park { color: var(--amber); border-color: var(--amber); background: var(--amber-bg); }
@@ -5530,7 +5530,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 /* =============================================
    LIBRARY POST-CARD OVERLAY
    ============================================= */
-#lib-card-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; justify-content: center; }
+#lib-card-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; justify-content: center; }
 #lib-card-overlay.open { display: flex; }
 #lib-card-overlay .lib-card-inner { width: 100%; max-width: 480px; background: var(--bg2, #141414); border-top: 2px solid var(--gold, #c8a84b); border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); max-height: 88vh; overflow-y: auto; scrollbar-width: none; border-radius: 12px 12px 0 0; }
 #lib-card-overlay .pc-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--muted2); margin: 10px auto 6px; }

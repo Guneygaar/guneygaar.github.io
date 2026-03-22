@@ -1038,12 +1038,12 @@ function libOpenCard(postId) {
     overlay = document.createElement('div');
     overlay.id = 'lib-card-overlay';
     overlay.className = 'ins-card-overlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center;';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1100;align-items:flex-end;justify-content:center;';
     document.body.appendChild(overlay);
   }
 
   var h = '';
-  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;">';
+  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding-bottom:80px;">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
