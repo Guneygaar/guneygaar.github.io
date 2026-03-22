@@ -1105,7 +1105,6 @@ function libOpenPostCard(postId) {
 
   try {
     screen.style.cssText = '';
-    screen.style.transform = 'translateY(100%)';
     screen.style.pointerEvents = '';
     overlay.style.display = 'flex';
     overlay.style.position = 'fixed';
