@@ -165,19 +165,19 @@ function switchTab(btn) {
   if (panel) panel.classList.add('active');
   const titleEl = document.getElementById('app-header-title');
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
-  var kickerHdr = document.getElementById('dash-kicker-hdr');
+  var greetHdr = document.getElementById('dash-greeting-hdr');
   if (tab === 'pipeline') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'flex';
-    if (kickerHdr) kickerHdr.style.display = 'none';
+    if (greetHdr) greetHdr.style.display = 'none';
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'none';
-    if (kickerHdr) kickerHdr.style.display = 'flex';
+    if (greetHdr) greetHdr.style.display = '';
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
     if (pipeHdr) pipeHdr.style.display = 'none';
-    if (kickerHdr) kickerHdr.style.display = 'none';
+    if (greetHdr) greetHdr.style.display = 'none';
   }
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
@@ -520,8 +520,8 @@ function showInsights() {
   if (titleEl) titleEl.style.display = 'none';
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
   if (pipeHdr) pipeHdr.style.display = 'none';
-  var kickerHdr = document.getElementById('dash-kicker-hdr');
-  if (kickerHdr) kickerHdr.style.display = 'none';
+  var greetHdr = document.getElementById('dash-greeting-hdr');
+  if (greetHdr) greetHdr.style.display = 'none';
   insUpdateOverview();
   insRenderPosts();
   insRenderMissingUrls();
@@ -1296,7 +1296,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   const titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.style.display = 'none';
-  var kickerHdr = document.getElementById('dash-kicker-hdr');
-  if (kickerHdr) kickerHdr.style.display = 'flex';
+  var greetHdr = document.getElementById('dash-greeting-hdr');
+  if (greetHdr) greetHdr.style.display = '';
+  if (typeof updateDashGreeting === 'function') updateDashGreeting();
   if (typeof loadNotifBadge === 'function') loadNotifBadge();
 });
