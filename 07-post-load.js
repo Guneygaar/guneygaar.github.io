@@ -621,7 +621,6 @@ function renderAll() {
   } else if (activeTab === 'pipeline') {
     run('pipeline',           renderPipeline);
     run('pipelineHdr',        updatePipelineHeader);
-    run('pipelineCritical',   function() { updatePipelineCritical(allPosts); });
   } else if (activeTab === 'library') {
     run('library',            renderLibrary);
     run('filterDropdowns',    populateFilterDropdowns);
@@ -2570,60 +2569,86 @@ function renderPipeline() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
   updatePipelineCritical(allPosts);
   updatePipelineStageBar(allPosts);
+  updatePipelineNarrative(allPosts);
 }
 function updatePipelineHeader() {
-  updatePipelineNarrative();
+  updatePipelineNarrative(allPosts);
 }
 
-function updatePipelineNarrative() {
+function updatePipelineNarrative(posts) {
   var el = document.getElementById('pipeline-narrative');
   if (!el) return;
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var todayStr = new Date().toISOString().split('T')[0];
-  var activePosts = posts.filter(function(p) {
-    return ['published','parked','rejected'].indexOf(p.stage) === -1;
+  var allP = posts || allPosts || [];
+  var now = new Date();
+
+  // Priority 1: overdue post exists
+  var overdue = allP.filter(function(p) {
+    var d = new Date(p.targetDate || p.target_date);
+    return !isNaN(d) && d < now &&
+      !['published','parked','rejected'].includes(p.stage || p.stageLC);
+  }).sort(function(a,b) {
+    return new Date(a.targetDate||a.target_date) -
+           new Date(b.targetDate||b.target_date);
   });
-  // 1. Check overdue
-  var overdue = null;
-  var maxDays = 0;
-  posts.forEach(function(p) {
-    var d = p.target_date || p.targetDate;
-    if (!d) return;
-    if (d < todayStr && ['published','parked','rejected','scheduled'].indexOf(p.stage) === -1) {
-      var diff = Math.floor((new Date(todayStr) - new Date(d)) / 86400000);
-      if (diff > maxDays) { maxDays = diff; overdue = p; }
+  if (overdue.length) {
+    var t = (overdue[0].title || 'Post').split(' ').slice(0,2).join(' ');
+    var days = Math.floor((now - new Date(overdue[0].targetDate||
+      overdue[0].target_date)) / 86400000);
+    el.textContent = t + ' \u00b7 ' + days + 'd overdue';
+    el.style.color = 'var(--c-red)';
+    return;
+  }
+
+  // Priority 2: approvals waiting
+  var approvals = allP.filter(function(p) {
+    return p.stage === 'awaiting_approval' ||
+           p.stageLC === 'awaiting_approval';
+  });
+  if (approvals.length >= 3) {
+    el.textContent = approvals.length + ' waiting on approval';
+    el.style.color = 'var(--c-red)';
+    return;
+  }
+
+  // Priority 3: Pranav idle
+  var pranavPosts = allP.filter(function(p) {
+    return (p.owner||'').toLowerCase() === 'pranav' ||
+           (p.owner||'').toLowerCase() === 'creative';
+  });
+  if (pranavPosts.length) {
+    var last = pranavPosts.sort(function(a,b) {
+      return new Date(b.updated_at||b.updatedAt) -
+             new Date(a.updated_at||a.updatedAt);
+    })[0];
+    var idle = Math.floor((now - new Date(last.updated_at||
+      last.updatedAt)) / 86400000);
+    if (idle >= 3) {
+      el.textContent = 'Pranav idle \u00b7 ' + idle + ' days';
+      el.style.color = 'var(--c-amber)';
+      return;
     }
+  }
+
+  // Priority 4: scheduled posts exist
+  var sched = allP.filter(function(p) {
+    return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
-  if (overdue) {
-    el.textContent = (overdue.title || 'Untitled') + ' ' + maxDays + 'd overdue';
+  if (sched.length) {
+    el.textContent = 'Pipeline sorted \u00b7 ' + sched.length + ' scheduled';
+    el.style.color = 'var(--c-green)';
     return;
   }
-  // 2. Approval count >= 5
-  var approvalCount = posts.filter(function(p) {
-    return p.stage === 'awaiting_approval';
-  }).length;
-  if (approvalCount >= 5) {
-    el.textContent = approvalCount + ' posts waiting on approval';
+
+  // Priority 5: all clear
+  if (allP.length) {
+    el.textContent = 'All sorted \u00b7 nothing blocking';
+    el.style.color = '#555';
     return;
   }
-  // 3. Pranav idle >= 3 days
-  var pranavPosts = posts.filter(function(p) {
-    return (p.owner || '').toLowerCase() === 'pranav' && ['published','parked','rejected'].indexOf(p.stage) === -1;
-  });
-  var pranavIdle = 0;
-  pranavPosts.forEach(function(p) {
-    var u = p.updated_at || p.created_at;
-    if (u) {
-      var diff = Math.floor((new Date() - new Date(u)) / 86400000);
-      if (diff > pranavIdle) pranavIdle = diff;
-    }
-  });
-  if (pranavIdle >= 3) {
-    el.textContent = 'Pranav idle ' + pranavIdle + 'd - pipeline slowing';
-    return;
-  }
-  // 4. Default
-  el.textContent = 'Pipeline sorted - ' + activePosts.length + ' posts active';
+
+  // Priority 6: empty
+  el.textContent = 'Pipeline empty \u00b7 create now';
+  el.style.color = '#444';
 }
 
 function updateDashboardHeader() {
