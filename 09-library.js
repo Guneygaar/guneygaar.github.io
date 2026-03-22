@@ -29,6 +29,32 @@ async function libLoadPosts() {
     }
   }
   console.log('[Library] linkedin_posts loaded:', li ? li.length : 0, 'rows, _libLinkedIn keys:', Object.keys(_libLinkedIn).length);
+
+  // FIX 1: fallback to hardcoded INS_POSTS when Supabase empty
+  if (Object.keys(_libLinkedIn).length === 0 && window.INS_POSTS) {
+    _matchLinkedInFromHardcoded(_libPosts);
+    console.log('[Library] hardcoded fallback applied, _libLinkedIn keys:', Object.keys(_libLinkedIn).length);
+  }
+}
+
+function _matchLinkedInFromHardcoded(posts) {
+  if (!window.INS_POSTS || !Array.isArray(window.INS_POSTS)) return;
+  posts.forEach(function(post) {
+    if (_libLinkedIn[post.id]) return;
+    var titleLower = (post.title || '').toLowerCase();
+    var match = window.INS_POSTS.find(function(ip) {
+      var ipTitle = ip.title.toLowerCase();
+      return ipTitle.includes(titleLower.slice(0,12)) || titleLower.includes(ipTitle.slice(0,12));
+    });
+    if (match) {
+      _libLinkedIn[post.id] = {
+        imp: match.imp, likes: match.likes, comments: match.comments,
+        reposts: match.reposts, clicks: match.clicks, ctr: match.ctr,
+        eng: match.eng, follows: match.follows,
+        impressions: match.imp, engagement: match.eng
+      };
+    }
+  });
 }
 
 // --------------- filter sheet wiring ---------------
@@ -384,12 +410,48 @@ function libRenderPillarBar() {
     if (cnt === 0) continue;
     var pct = ((cnt / total) * 100).toFixed(0);
     barHtml += '<div class="lib-pb-seg lib-pb-' + pk + '" id="lib-pb-' + pk + '" style="width:' + pct + '%"></div>';
-    lblHtml += '<span class="lib-pb-label"><span class="lib-pb-dot lib-pb-' + pk + '"></span>' +
+    lblHtml += '<span class="lib-pb-label lib-pl-item" data-pillar="' + pk + '" style="cursor:pointer;">' +
+               '<span class="lib-pb-dot lib-pb-' + pk + '"></span>' +
                formatPillarDisplay(pk).substring(0, 4) + ' ' + pct + '%</span>';
   }
 
   bar.innerHTML = barHtml;
   labels.innerHTML = lblHtml;
+
+  // FIX 3: wire pillar label clicks for filtering
+  var plItems = labels.querySelectorAll('.lib-pl-item');
+  for (var pi = 0; pi < plItems.length; pi++) {
+    (function(item) {
+      item.addEventListener('click', function() {
+        var pillarName = item.getAttribute('data-pillar');
+        // toggle: clicking same pillar resets to all
+        if (LIB_FILTER.pillar.toLowerCase() === pillarName) {
+          LIB_FILTER.pillar = 'all';
+        } else {
+          LIB_FILTER.pillar = pillarName.charAt(0).toUpperCase() + pillarName.slice(1);
+        }
+        libApplyFilters();
+        // update visual state on pillar labels
+        var allItems = labels.querySelectorAll('.lib-pl-item');
+        for (var a = 0; a < allItems.length; a++) {
+          allItems[a].style.borderBottom = '';
+          allItems[a].style.color = '';
+        }
+        if (LIB_FILTER.pillar !== 'all') {
+          item.style.borderBottom = '2px solid var(--gold, #c8a84b)';
+          item.style.color = 'var(--gold, #c8a84b)';
+        }
+        // sync filter sheet chip
+        var fspChips = document.querySelectorAll('.lib-fsp-chip');
+        for (var fc = 0; fc < fspChips.length; fc++) {
+          fspChips[fc].className = fspChips[fc].className.replace(/\bactive\S*/g, '').trim();
+          if ((fspChips[fc].getAttribute('data-v') || 'all') === LIB_FILTER.pillar) {
+            fspChips[fc].classList.add('active');
+          }
+        }
+      });
+    })(plItems[pi]);
+  }
 }
 
 // --------------- list view ---------------
@@ -955,6 +1017,7 @@ function libSetView(view, btn) {
 
 // --------------- post card overlay ---------------
 function libOpenCard(postId) {
+  console.log('libOpenCard called', postId);
   var post = null;
   for (var i = 0; i < _libPosts.length; i++) {
     if (_libPosts[i].id === postId || _libPosts[i].post_id === postId) {
@@ -973,11 +1036,12 @@ function libOpenCard(postId) {
     overlay = document.createElement('div');
     overlay.id = 'lib-card-overlay';
     overlay.className = 'ins-card-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;align-items:flex-end;justify-content:center;';
     document.body.appendChild(overlay);
   }
 
   var h = '';
-  h += '<div class="lib-card-inner">';
+  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
@@ -1019,17 +1083,20 @@ function libOpenCard(postId) {
   h += '</div>';
 
   overlay.innerHTML = h;
+  overlay.style.display = 'flex';
   overlay.classList.add('open');
 
   var closeBtn = document.getElementById('lib-card-close');
   if (closeBtn) {
     closeBtn.onclick = function() {
       overlay.classList.remove('open');
+      overlay.style.display = 'none';
     };
   }
   overlay.onclick = function(e) {
     if (e.target === overlay) {
       overlay.classList.remove('open');
+      overlay.style.display = 'none';
     }
   };
 }
