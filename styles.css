@@ -5399,7 +5399,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-pace-txt { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; }
 
 /* Post row */
-.lib-post-row { display: flex; align-items: stretch; gap: 6px; padding: 8px 20px; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
+.lib-post-row { display: flex; align-items: stretch; gap: 6px; padding: 8px 20px; margin-top: 0; margin-bottom: 0; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
 .lib-post-row:hover { background: var(--surface); }
 .lib-item { /* generic filterable item marker */ }
 
@@ -5506,7 +5506,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
    ============================================= */
 #lib-tab-board { overflow-x: auto; display: block; }
 #lib-board-cols { display: flex; flex-direction: row; min-width: max-content; }
-.lib-board-col { width: 240px; flex-shrink: 0; margin-bottom: 20px; }
+.lib-board-col { width: 240px; flex-shrink: 0; margin-bottom: 20px; border-right: 1px solid rgba(255,255,255,0.08); }
+.lib-board-col:last-child { border-right: none; }
 .lib-board-col-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 2px solid; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
 .lib-board-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 
