@@ -5345,7 +5345,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-af-tag span { color: var(--red); font-weight: 700; }
 
 /* --- Filter sheet overlay --- */
-.lib-filter-sheet-overlay { z-index: 200; background: rgba(0,0,0,0.75) !important; }
+.lib-filter-sheet-overlay { z-index: 200; background: rgba(0,0,0,0.55); }
 .lib-filter-sheet { background: var(--bg2, #141414); border: 1px dotted var(--dotline); padding: 20px; max-width: 340px; width: 90%; margin: auto; }
 .lib-fs-hdr { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); margin-bottom: 16px; }
 .lib-fs-section { margin-bottom: 14px; }
@@ -5399,7 +5399,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-pace-txt { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; }
 
 /* Post row */
-.lib-post-row { display: flex; align-items: stretch; gap: 6px; padding: 8px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
+.lib-post-row { display: flex; align-items: stretch; gap: 6px; padding: 8px 20px; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
 .lib-post-row:hover { background: var(--surface); }
 .lib-item { /* generic filterable item marker */ }
 
@@ -5510,7 +5510,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-board-col-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 2px solid; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
 .lib-board-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 
-.lib-bp-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
+.lib-bp-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
 .lib-bp-row:hover { background: var(--surface); }
 .lib-bp-bar { width: 3px; min-height: 32px; border-radius: 2px; flex-shrink: 0; }
 .lib-bp-bar-published { background: var(--green); }
@@ -5531,7 +5531,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
    ============================================= */
 #lib-card-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; justify-content: center; }
 #lib-card-overlay.open { display: flex; }
-#lib-card-overlay .lib-card-inner { width: 100%; max-width: 480px; background: var(--bg2, #141414); border-top: 1px dotted var(--dotline); max-height: 88vh; overflow-y: auto; scrollbar-width: none; }
+#lib-card-overlay .lib-card-inner { width: 100%; max-width: 480px; background: var(--bg2, #141414); border-top: 2px solid var(--gold, #c8a84b); border-left: 1px solid rgba(255,255,255,0.06); border-right: 1px solid rgba(255,255,255,0.06); max-height: 88vh; overflow-y: auto; scrollbar-width: none; border-radius: 12px 12px 0 0; }
 #lib-card-overlay .pc-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--muted2); margin: 10px auto 6px; }
 #lib-card-overlay .pc-hdr { padding: 10px 20px 12px; border-bottom: 1px dotted var(--dotline); position: relative; }
 #lib-card-overlay .pc-hdr-date { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
