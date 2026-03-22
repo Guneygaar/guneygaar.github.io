@@ -963,6 +963,8 @@ function updateDashGreeting() {
   else timeWord = 'Working late';
   if (name) {
     nameEl.textContent = name;
+    nameEl.style.color = '#C8A84B';
+    nameEl.style.fontWeight = '500';
     hdrEl.childNodes[0].textContent = timeWord + ', ';
   } else {
     hdrEl.textContent = timeWord;
@@ -1683,8 +1685,8 @@ function updateBelowFold(posts) {
   var allP = posts || allPosts || [];
   _updateNextScheduled(allP);
   _updateTodaysFocus(allP);
-  _updateLastMove(allP);
   _updateUnsaidThing(allP);
+  _updateLastMove(allP);
 }
 
 function _updateNextScheduled(allP) {
@@ -1710,7 +1712,7 @@ function _updateNextScheduled(allP) {
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
     var pid = esc(getPostId(p));
-    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;transition:background 0.1s;" onclick="libOpenPostCard(\'' + pid + '\')">' +
+    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
@@ -1750,7 +1752,7 @@ function _updateTodaysFocus(allP) {
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
     var pid = esc(getPostId(f));
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;transition:background 0.1s;" onclick="libOpenPostCard(\'' + pid + '\')">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
       '</div>' +
@@ -1778,7 +1780,7 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = getPostId(last);
-    var clickAttr = pid ? ' onclick="libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
     textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
