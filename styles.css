@@ -3121,7 +3121,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #pcs-overlay {
   position: fixed;
   inset: 0;
-  z-index: 800;
+  z-index: 1200;
   display: none;
   background: rgba(0,0,0,0.4);
   align-items: center;
