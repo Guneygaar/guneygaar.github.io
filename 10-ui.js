@@ -1286,6 +1286,38 @@ function closeTaskModal() {
   if (overlay) overlay.classList.remove('open');
 }
 
+// -- Pipeline filter sheet functions ---------------
+function openPipelineFilter() {
+  var ov = document.getElementById('pipeline-filter-overlay');
+  if (ov) { ov.style.display = 'flex'; document.body.style.overflow = 'hidden'; window._modalOpen = true; }
+}
+function closePipelineFilter() {
+  var ov = document.getElementById('pipeline-filter-overlay');
+  if (ov) { ov.style.display = 'none'; document.body.style.overflow = ''; window._modalOpen = false; }
+}
+function pfChip(el) {
+  var group = el.dataset.group;
+  el.closest('div').querySelectorAll('.pf-chip[data-group="' + group + '"]').forEach(function(c) { c.classList.remove('pf-on'); });
+  el.classList.add('pf-on');
+}
+function applyPipelineFilter() {
+  var dot = document.getElementById('pipeline-filter-dot');
+  if (dot) dot.style.display = 'block';
+  closePipelineFilter();
+}
+function resetPipelineFilter() {
+  document.querySelectorAll('.pf-chip').forEach(function(c) { c.classList.remove('pf-on'); });
+  document.querySelectorAll('.pf-chip:first-child').forEach(function(c) { c.classList.add('pf-on'); });
+  var dot = document.getElementById('pipeline-filter-dot');
+  if (dot) dot.style.display = 'none';
+  closePipelineFilter();
+}
+window.openPipelineFilter = openPipelineFilter;
+window.closePipelineFilter = closePipelineFilter;
+window.pfChip = pfChip;
+window.applyPipelineFilter = applyPipelineFilter;
+window.resetPipelineFilter = resetPipelineFilter;
+
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   const titleEl = document.getElementById('app-header-title');

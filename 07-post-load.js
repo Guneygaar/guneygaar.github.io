@@ -34,6 +34,98 @@ function closePipelineSearch() {
   if (input) input.value = '';
 }
 
+// -- Pipeline critical header line --
+function updatePipelineCritical(posts) {
+  var el = document.getElementById('pipeline-critical');
+  if (!el) return;
+  var allP = posts || allPosts || [];
+  var now = new Date();
+  var overdue = allP.filter(function(p) {
+    var d = p.targetDate || p.target_date;
+    var s = p.stage || p.stageLC || '';
+    return d && new Date(d) < now && !['published','parked','rejected'].includes(s);
+  }).sort(function(a,b) {
+    return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date);
+  });
+  if (overdue.length) {
+    var oldest = overdue[0];
+    var daysOver = Math.floor((now - new Date(oldest.targetDate||oldest.target_date)) / 86400000);
+    el.textContent = (oldest.title||'A post') + ' ' + daysOver + 'd overdue \u00b7 sort now';
+    el.style.color = 'var(--c-red)';
+    return;
+  }
+  var approval = allP.filter(function(p) { return (p.stage||p.stageLC||'') === 'awaiting_approval'; });
+  if (approval.length >= 5) {
+    el.textContent = approval.length + ' posts waiting on approval \u00b7 client needs to sort';
+    el.style.color = 'var(--c-amber)';
+    return;
+  }
+  var scheduled = allP.filter(function(p) { return (p.stage||p.stageLC||'') === 'scheduled'; }).sort(function(a,b) { return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date); });
+  if (scheduled.length) {
+    var next = scheduled[0];
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var d = new Date(next.targetDate||next.target_date);
+    var diff = Math.ceil((d - now) / 86400000);
+    var when = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : 'in ' + diff + 'd';
+    el.textContent = (next.title||'Next post') + ' goes live ' + when + ' \u00b7 pipeline sorted';
+    el.style.color = 'var(--c-green)';
+    return;
+  }
+  el.textContent = 'Pipeline sorted \u00b7 keep going';
+  el.style.color = '#555';
+}
+
+// -- Pipeline stage bar --
+function updatePipelineStageBar(posts) {
+  var bar = document.getElementById('pipeline-stage-bar');
+  var labels = document.getElementById('pipeline-stage-labels');
+  if (!bar || !labels) return;
+  var allP = posts || allPosts || [];
+  var stageDefs = [
+    { key: 'awaiting_approval', label: 'APPROVAL', color: 'var(--c-red)' },
+    { key: 'awaiting_brand_input', label: 'INPUT', color: 'var(--c-purple)' },
+    { key: 'in_production', label: 'PRODUCTION', color: 'var(--c-amber)' },
+    { key: 'scheduled', label: 'SCHED', color: 'var(--c-cyan)' },
+    { key: 'ready', label: 'READY', color: 'var(--c-green)' }
+  ];
+  var active = allP.filter(function(p) { return !['published','parked','rejected'].includes(p.stage||p.stageLC||''); });
+  var total = active.length || 1;
+  var barHTML = '';
+  var labelsHTML = '<div onclick="filterPipelineStage(\'all\')" style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;letter-spacing:0.1em;color:#e8e2d9;white-space:nowrap;cursor:pointer;"><div style="width:5px;height:5px;border-radius:50%;background:#666;flex-shrink:0;"></div>ALL ' + total + '</div>';
+  stageDefs.forEach(function(s) {
+    var count = allP.filter(function(p) { return (p.stage||p.stageLC||'') === s.key; }).length;
+    if (!count) return;
+    var pct = Math.max(3, Math.round((count / total) * 100));
+    barHTML += '<div style="height:100%;flex-shrink:0;background:' + s.color + ';width:' + pct + '%;cursor:pointer;" onclick="filterPipelineStage(\'' + s.key + '\')"></div>';
+    labelsHTML += '<div onclick="filterPipelineStage(\'' + s.key + '\')" style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;letter-spacing:0.1em;color:#444;white-space:nowrap;cursor:pointer;"><div style="width:5px;height:5px;border-radius:50%;background:' + s.color + ';flex-shrink:0;"></div>' + s.label + ' ' + count + '</div>';
+  });
+  bar.innerHTML = barHTML;
+  labels.innerHTML = labelsHTML;
+}
+
+window.filterPipelineStage = function(stage) {
+  var chip = document.querySelector('[data-stage="' + stage + '"]');
+  if (chip) chip.click();
+  else { var all = document.querySelector('[data-stage="all"]'); if (all) all.click(); }
+};
+
+// -- Format day + date + days left --
+function fmtDayDate(dateStr) {
+  if (!dateStr) return '-- --';
+  var d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var now4 = new Date();
+  var diff = Math.ceil((d - now4) / 86400000);
+  var tag;
+  if (diff < 0) tag = Math.abs(diff) + 'd overdue';
+  else if (diff === 0) tag = 'today';
+  else if (diff === 1) tag = 'tomorrow';
+  else tag = diff + 'd left';
+  return dayNames[d.getDay()] + ' \u00b7 ' + d.getDate() + ' ' + monthNames[d.getMonth()] + ' \u00b7 ' + tag;
+}
+
 function openSearchResult(postId) {
   console.log('openSearchResult fired with:', postId);
   closePipelineSearch();
@@ -529,6 +621,7 @@ function renderAll() {
   } else if (activeTab === 'pipeline') {
     run('pipeline',           renderPipeline);
     run('pipelineHdr',        updatePipelineHeader);
+    run('pipelineCritical',   function() { updatePipelineCritical(allPosts); });
   } else if (activeTab === 'library') {
     run('library',            renderLibrary);
     run('filterDropdowns',    populateFilterDropdowns);
@@ -1115,7 +1208,7 @@ function renderScoreboard() {
       var data = window._lastScoreboardData || {};
       var total = (data.chitraCount || 0) + (data.chitraOverdue || 0);
       if (total === 0) {
-        showToast('All dispatched - nothing pending', 'success');
+        showToast('All sorted - nothing pending', 'success');
       } else {
         navigateWithFilter('pipeline', ['ready']);
       }
@@ -2074,11 +2167,11 @@ function buildPipelineCard(p, listKey) {
   var id     = getPostId(p);
   var title  = getTitle(p);
   var stage  = p.stage || '';
+  var stageLC = stage.toLowerCase();
   var pillar = getPillarShort(p.contentPillar);
   var sk     = _pipelineStageKey(stage);
 
   var d = parseDate(p.targetDate);
-  var dateStr = formatDateShort(p.targetDate);
   var today = new Date();
   today.setHours(0,0,0,0);
   var isToday = d && d.toDateString() === today.toDateString();
@@ -2094,7 +2187,15 @@ function buildPipelineCard(p, listKey) {
   else if (isToday) dateCls += ' today';
   else if (!d) dateCls += ' nodate';
 
-  var dateDisplay = dateStr || '-- --';
+  var dateDisplay = fmtDayDate(p.targetDate || p.target_date);
+
+  // Color bar computation
+  var now2 = new Date();
+  var td = p.targetDate || p.target_date;
+  var dObj = td ? new Date(td) : null;
+  var isOvd = dObj && dObj < now2 && !['published','parked','rejected'].includes(stageLC);
+  var dLeft = dObj ? Math.ceil((dObj - now2) / 86400000) : 999;
+  var barClr = isOvd ? 'var(--c-red)' : dLeft <= 3 ? 'var(--c-amber)' : stageLC === 'scheduled' ? 'var(--c-cyan)' : stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' : stageLC === 'in_production' ? 'rgba(246,166,35,0.25)' : 'rgba(255,255,255,0.06)';
 
   // Responsibility badge
   var badgeCls = 'resp-badge';
@@ -2129,7 +2230,7 @@ function buildPipelineCard(p, listKey) {
     }
   }
 
-  return '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
+  var innerCard = '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
     '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
     '<span class="pc-body">' +
       '<span class="pc-title">' + esc(title) + '</span>' +
@@ -2140,6 +2241,11 @@ function buildPipelineCard(p, listKey) {
       '<span class="' + dotCls + '"></span>' +
     '</span>' +
     chaseHtml +
+  '</div>';
+
+  return '<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);">' +
+    '<div style="width:3px;flex-shrink:0;background:' + barClr + ';"></div>' +
+    '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
 }
 
@@ -2460,6 +2566,8 @@ async function executeBatchAction(targetStage) {
 
 function renderPipeline() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
+  updatePipelineCritical(allPosts);
+  updatePipelineStageBar(allPosts);
 }
 function updatePipelineHeader() {
   updatePipelineNarrative();
@@ -2615,18 +2723,52 @@ function _renderPipelineInner() {
         chaseAllBtn = '<button class="chase-all-btn" onclick="chaseAll()" id="chase-all-btn">Chase All</button>';
       }
     }
+    // Stage badge colors aligned to design system
+    var badgeStyle = '';
+    if (sk === 'approval') badgeStyle = 'color:var(--c-red);background:rgba(255,75,75,0.08);border:1px solid rgba(255,75,75,0.25);';
+    else if (sk === 'input') badgeStyle = 'color:var(--c-purple);background:rgba(155,135,245,0.08);border:1px solid rgba(155,135,245,0.25);';
+    else if (sk === 'scheduled') badgeStyle = 'color:var(--c-cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);';
+    else if (sk === 'ready') badgeStyle = 'color:var(--c-green);background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);';
+    else if (sk === 'production') badgeStyle = 'color:var(--c-amber);background:rgba(246,166,35,0.08);border:1px solid rgba(246,166,35,0.25);';
+
+    // Per-stage summary line
+    var summaryText = '';
+    var now5 = new Date();
+    var stageKey = stage;
+    var stagePosts = posts;
+    if (stageKey === 'awaiting_approval') {
+      var clientCount = stagePosts.filter(function(p) { return (p.owner||'').toLowerCase() === 'client'; }).length;
+      var sortedByUpdate = stagePosts.slice().sort(function(a,b) { return new Date(a.updated_at||a.updatedAt) - new Date(b.updated_at||b.updatedAt); });
+      var oldestPost = sortedByUpdate[0];
+      var oldDays = oldestPost ? Math.floor((now5 - new Date(oldestPost.updated_at||oldestPost.updatedAt)) / 86400000) : 0;
+      summaryText = stagePosts.length + ' posts waiting \u00b7 oldest ' + oldDays + 'd \u00b7 ' + clientCount + ' from client';
+    } else if (stageKey === 'awaiting_brand_input') {
+      summaryText = stagePosts.length + ' blocked on brief \u00b7 needs unblocking';
+    } else if (stageKey === 'scheduled') {
+      var schedSorted = stagePosts.slice().sort(function(a,b) { return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date); });
+      var nextSched = schedSorted[0];
+      var daysToNext = nextSched ? Math.ceil((new Date(nextSched.targetDate||nextSched.target_date) - now5) / 86400000) : 0;
+      summaryText = 'Next goes live ' + (daysToNext <= 1 ? 'tomorrow' : 'in ' + daysToNext + 'd') + ' \u00b7 pipeline sorted ' + stagePosts.length + ' days';
+    } else if (stageKey === 'in_production') {
+      summaryText = stagePosts.length + ' posts in progress \u00b7 keep sorting';
+    } else if (stageKey === 'ready') {
+      summaryText = stagePosts.length + ' ready to schedule \u00b7 sort now';
+    }
+    var summaryHtml = summaryText ? '<div style="padding:5px 18px 5px 21px;font-family:var(--mono);font-size:7px;color:#333;letter-spacing:0.04em;border-bottom:1px solid var(--dotline);background:rgba(255,255,255,0.01);">' + summaryText + '</div>' : '';
+
     return `
       <div class="group-section" id="group-section-${esc(stage)}" data-stage="${esc(stage)}">
       <div class="group-hdr" onclick="togglePipelineGroup('${esc(stage)}')">
         <div class="group-hdr-left">
           <span class="group-chevron">&#9660;</span>
-          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}">${esc(label)}</div>
+          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}" style="${badgeStyle}padding:2px 8px;">${esc(label)}</div>
         </div>
         <div class="group-hdr-right" style="display:flex;align-items:center;gap:8px">
           ${selectBtn}
           <div class="group-count">${posts.length}</div>
         </div>
       </div>
+      ${summaryHtml}
       <div class="group-post-list">
         <div class="row-list post-list">
           ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}

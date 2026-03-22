@@ -5603,3 +5603,5 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 #lib-card-overlay .pc-reason-text { font-size: 12px; color: var(--text2); line-height: 1.5; }
 #lib-card-overlay .pc-action-btn { width: 100%; padding: 12px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; background: var(--surface); border: 1px dotted var(--muted2); color: var(--text); cursor: pointer; margin-top: 8px; }
 #lib-card-overlay .pc-action-btn:hover { background: var(--surface2); }
+.pf-chip { font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--dotline);color:#555;cursor:pointer;background:transparent;min-width:80px;text-align:center;transition:all 0.1s; }
+.pf-chip.pf-on { border-color:var(--c-gold);color:var(--c-gold);background:rgba(200,168,75,0.06); }
