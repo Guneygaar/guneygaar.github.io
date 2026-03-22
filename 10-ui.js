@@ -165,26 +165,20 @@ function switchTab(btn) {
   if (panel) panel.classList.add('active');
   const titleEl = document.getElementById('app-header-title');
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
-  var dashHdr = document.getElementById('dash-hdr-nums');
-  var pulseEl = document.getElementById('dash-pulse-word');
+  var kickerHdr = document.getElementById('dash-kicker-hdr');
   if (tab === 'pipeline') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'flex';
-    if (dashHdr) dashHdr.style.display = 'none';
-    if (pulseEl) pulseEl.style.display = 'none';
+    if (kickerHdr) kickerHdr.style.display = 'none';
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'none';
-    if (dashHdr) dashHdr.style.display = 'flex';
-    if (pulseEl) pulseEl.style.display = '';
+    if (kickerHdr) kickerHdr.style.display = 'flex';
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
     if (pipeHdr) pipeHdr.style.display = 'none';
-    if (dashHdr) dashHdr.style.display = 'none';
-    if (pulseEl) pulseEl.style.display = 'none';
+    if (kickerHdr) kickerHdr.style.display = 'none';
   }
-  var searchTrigger = document.getElementById('pipeline-search-trigger');
-  if (searchTrigger) searchTrigger.style.display = (tab === 'pipeline') ? '' : 'none';
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
     window._taskFilter = null;
@@ -198,17 +192,17 @@ function switchTab(btn) {
 var _notifFilter = 'all';
 var _notifData = [];
 var roleDisplayMap = {
-  'Admin':      { name: 'Shubham', label: 'Admin - Hinglish Ops' },
-  'admin':      { name: 'Shubham', label: 'Admin - Hinglish Ops' },
-  'shubham':    { name: 'Shubham', label: 'Admin - Hinglish Ops' },
+  'Admin':      { name: 'Shubham', label: 'Admin - Sorted' },
+  'admin':      { name: 'Shubham', label: 'Admin - Sorted' },
+  'shubham':    { name: 'Shubham', label: 'Admin - Sorted' },
   'Servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
   'servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
   'chitra':     { name: 'Chitra',  label: 'Servicing - Dispatch' },
   'Creative':   { name: 'Pranav',  label: 'Creative - Production' },
   'creative':   { name: 'Pranav',  label: 'Creative - Production' },
   'pranav':     { name: 'Pranav',  label: 'Creative - Production' },
-  'Client':     { name: '',        label: 'Client - Hinglish Ops' },
-  'client':     { name: '',        label: 'Client - Hinglish Ops' }
+  'Client':     { name: '',        label: 'Client - Sorted' },
+  'client':     { name: '',        label: 'Client - Sorted' }
 };
 
 async function loadNotifications() {
@@ -526,10 +520,8 @@ function showInsights() {
   if (titleEl) titleEl.style.display = 'none';
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
   if (pipeHdr) pipeHdr.style.display = 'none';
-  var dashHdr = document.getElementById('dash-hdr-nums');
-  if (dashHdr) dashHdr.style.display = 'none';
-  var pulseEl2 = document.getElementById('dash-pulse-word');
-  if (pulseEl2) pulseEl2.style.display = 'none';
+  var kickerHdr = document.getElementById('dash-kicker-hdr');
+  if (kickerHdr) kickerHdr.style.display = 'none';
   insUpdateOverview();
   insRenderPosts();
   insRenderMissingUrls();
@@ -1304,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   const titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.style.display = 'none';
-  var dashHdrInit = document.getElementById('dash-hdr-nums');
-  if (dashHdrInit) dashHdrInit.style.display = 'flex';
+  var kickerHdr = document.getElementById('dash-kicker-hdr');
+  if (kickerHdr) kickerHdr.style.display = 'flex';
   if (typeof loadNotifBadge === 'function') loadNotifBadge();
 });
