@@ -1247,48 +1247,46 @@ async function toggleDashTask(row, taskId) {
 }
 
 function openRunwaySheet() {
-  var posts = (window.allPosts || []).filter(function(p) {
-    return p.stage === 'scheduled';
+  var posts = (allPosts || []).filter(function(p) {
+    return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
-
-  var existing = document.getElementById('runway-sheet-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.id = 'runway-sheet-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;';
-
-  var sheet = document.createElement('div');
-  sheet.id = 'runway-sheet';
-  sheet.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg-surface,#111);border-top:1px dotted rgba(255,255,255,0.09);z-index:201;padding-bottom:40px;max-height:70vh;overflow-y:auto;';
-
-  var hdr = '<div style="padding:16px 18px 12px;border-bottom:1px dotted rgba(255,255,255,0.09);display:flex;justify-content:space-between;align-items:center;">';
-  hdr += '<span style="font-family:var(--mono,monospace);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#bbb;">Runway \u00b7 Scheduled Posts</span>';
-  hdr += '<span onclick="document.getElementById(\'runway-sheet-overlay\').remove()" style="font-family:var(--mono,monospace);font-size:10px;color:#555;cursor:pointer;padding:4px 8px;">\u00d7 Close</span>';
-  hdr += '</div>';
-
-  var body = '';
-  if (posts.length === 0) {
-    body = '<div style="padding:20px 18px;font-family:var(--mono,monospace);font-size:10px;color:#555;text-transform:uppercase;">No scheduled posts</div>';
+  var sheet = document.getElementById('runway-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'runway-sheet';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;';
+    sheet.onclick = function(e) { if (e.target === sheet) sheet.style.display = 'none'; };
+    document.body.appendChild(sheet);
+  }
+  var html = '<div style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--dotline);">';
+  html += '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Runway - ' + posts.length + ' scheduled</span>';
+  html += '<button onclick="document.getElementById(\'runway-sheet\').style.display=\'none\'" style="background:none;border:none;color:var(--c-text3);font-size:18px;cursor:pointer;line-height:1;">x</button>';
+  html += '</div>';
+  if (!posts.length) {
+    html += '<div style="padding:24px 18px;font-family:var(--mono);font-size:11px;color:var(--c-text3);">Nothing scheduled yet.</div>';
   } else {
     posts.forEach(function(p) {
-      var date = p.target_date ? p.target_date.slice(5).replace('-',' ') : 'No date';
-      var postId = p.post_id || p.id || '';
-      body += '<div onclick="document.getElementById(\'runway-sheet-overlay\').remove();setTimeout(function(){openPCS(\'' + esc(postId) + '\')},50);" style="padding:13px 18px;border-bottom:1px dotted #1a1a1a;display:flex;align-items:center;gap:12px;cursor:pointer;">';
-      body += '<span style="font-family:var(--mono,monospace);font-size:10px;color:#555;width:44px;flex-shrink:0;">' + esc(date) + '</span>';
-      body += '<span style="font-size:14px;font-weight:500;color:#fff;flex:1;">' + esc(p.title || 'Untitled') + '</span>';
-      body += '<span style="font-family:var(--mono,monospace);font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:#22D3EE;border:1px dotted rgba(34,211,238,0.4);padding:2px 7px;">Scheduled</span>';
-      body += '</div>';
+      var d = p.targetDate || p.target_date;
+      var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var dateStr = '-- --';
+      if (d) { var dt = new Date(d); dateStr = days[dt.getDay()] + ' - ' + dt.getDate() + ' ' + months[dt.getMonth()]; }
+      html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);">';
+      html += '<div style="width:3px;flex-shrink:0;background:var(--c-cyan);"></div>';
+      html += '<div style="flex:1;padding:10px 14px;">';
+      html += '<div style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);letter-spacing:0.08em;margin-bottom:3px;">' + dateStr + '</div>';
+      html += '<div style="font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text1);">' + esc(p.title || 'Untitled') + '</div>';
+      html += '<div style="font-family:var(--mono);font-size:8px;color:var(--c-text3);margin-top:2px;">' + esc(p.owner || '') + (p.content_pillar ? ' - ' + esc(p.content_pillar) : '') + '</div>';
+      html += '</div></div>';
     });
   }
-
-  sheet.innerHTML = hdr + body;
-  overlay.appendChild(sheet);
-  overlay.onclick = function(e) {
-    if (e.target === overlay) overlay.remove();
-  };
-  document.body.appendChild(overlay);
+  html += '</div>';
+  sheet.innerHTML = html;
+  sheet.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
+window.openRunwaySheet = openRunwaySheet;
 
 function _buildDoThisNowItems(role) {
   var items = [];
@@ -2433,18 +2431,58 @@ function renderPipeline() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
 }
 function updatePipelineHeader() {
+  updatePipelineNarrative();
+}
+
+function updatePipelineNarrative() {
+  var el = document.getElementById('pipeline-narrative');
+  if (!el) return;
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var active = 0, sched = 0, done = 0;
-  posts.forEach(function(p) {
-    var s = (p.stage || '').toLowerCase();
-    if (s === 'scheduled') sched++;
-    else if (['published','parked','rejected'].indexOf(s) > -1) done++;
-    else active++;
+  var todayStr = new Date().toISOString().split('T')[0];
+  var activePosts = posts.filter(function(p) {
+    return ['published','parked','rejected'].indexOf(p.stage) === -1;
   });
-  var el;
-  el = document.getElementById('ph-active'); if (el) el.textContent = active;
-  el = document.getElementById('ph-sched'); if (el) el.textContent = sched;
-  el = document.getElementById('ph-done'); if (el) el.textContent = done;
+  // 1. Check overdue
+  var overdue = null;
+  var maxDays = 0;
+  posts.forEach(function(p) {
+    var d = p.target_date || p.targetDate;
+    if (!d) return;
+    if (d < todayStr && ['published','parked','rejected','scheduled'].indexOf(p.stage) === -1) {
+      var diff = Math.floor((new Date(todayStr) - new Date(d)) / 86400000);
+      if (diff > maxDays) { maxDays = diff; overdue = p; }
+    }
+  });
+  if (overdue) {
+    el.textContent = (overdue.title || 'Untitled') + ' ' + maxDays + 'd overdue';
+    return;
+  }
+  // 2. Approval count >= 5
+  var approvalCount = posts.filter(function(p) {
+    return p.stage === 'awaiting_approval';
+  }).length;
+  if (approvalCount >= 5) {
+    el.textContent = approvalCount + ' posts waiting on approval';
+    return;
+  }
+  // 3. Pranav idle >= 3 days
+  var pranavPosts = posts.filter(function(p) {
+    return (p.owner || '').toLowerCase() === 'pranav' && ['published','parked','rejected'].indexOf(p.stage) === -1;
+  });
+  var pranavIdle = 0;
+  pranavPosts.forEach(function(p) {
+    var u = p.updated_at || p.created_at;
+    if (u) {
+      var diff = Math.floor((new Date() - new Date(u)) / 86400000);
+      if (diff > pranavIdle) pranavIdle = diff;
+    }
+  });
+  if (pranavIdle >= 3) {
+    el.textContent = 'Pranav idle ' + pranavIdle + 'd - pipeline slowing';
+    return;
+  }
+  // 4. Default
+  el.textContent = 'Pipeline sorted - ' + activePosts.length + ' posts active';
 }
 
 function updateDashboardHeader() {

@@ -164,19 +164,15 @@ function switchTab(btn) {
   const panel = document.getElementById('panel-' + tab);
   if (panel) panel.classList.add('active');
   const titleEl = document.getElementById('app-header-title');
-  var pipeHdr = document.getElementById('pipeline-hdr-nums');
   var greetHdr = document.getElementById('dash-greeting-hdr');
   if (tab === 'pipeline') {
     if (titleEl) titleEl.style.display = 'none';
-    if (pipeHdr) pipeHdr.style.display = 'flex';
     if (greetHdr) greetHdr.style.display = 'none';
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
-    if (pipeHdr) pipeHdr.style.display = 'none';
     if (greetHdr) greetHdr.style.display = '';
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
-    if (pipeHdr) pipeHdr.style.display = 'none';
     if (greetHdr) greetHdr.style.display = 'none';
   }
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
@@ -518,8 +514,6 @@ function showInsights() {
   if (insBtn) insBtn.classList.add('active');
   var titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.style.display = 'none';
-  var pipeHdr = document.getElementById('pipeline-hdr-nums');
-  if (pipeHdr) pipeHdr.style.display = 'none';
   var greetHdr = document.getElementById('dash-greeting-hdr');
   if (greetHdr) greetHdr.style.display = 'none';
   insUpdateOverview();

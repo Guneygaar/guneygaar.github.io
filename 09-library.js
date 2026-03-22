@@ -1253,8 +1253,6 @@ function showLibrary() {
   // Hide shared app-header number blocks for other tabs
   var titleEl = document.getElementById('app-header-title');
   if (titleEl) titleEl.style.display = 'none';
-  var pipeHdr = document.getElementById('pipeline-hdr-nums');
-  if (pipeHdr) pipeHdr.style.display = 'none';
   var greetHdr = document.getElementById('dash-greeting-hdr');
   if (greetHdr) greetHdr.style.display = 'none';
 
