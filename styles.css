@@ -5366,14 +5366,14 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-fsp-chip.active { background: var(--surface); color: var(--text); border-color: var(--text2); }
 .lib-fs-actions { display: flex; gap: 10px; margin-top: 16px; }
 .lib-fs-reset { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 14px; background: none; border: 1px dotted var(--muted2); color: var(--muted); cursor: pointer; }
-.lib-fs-apply { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 14px; background: var(--accent); border: none; color: #fff; cursor: pointer; }
+.lib-fs-apply { background: transparent; color: var(--c-gold); border: 1px solid rgba(200,168,75,0.5); font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; padding: 13px; width: calc(100% - 36px); margin: 14px 18px 0; cursor: pointer; }
 
 /* --- Search bar --- */
 .lib-search-bar { width: 100%; border-bottom: 1px solid var(--dotline); background: var(--bg); }
 .lib-search-input { width: 100%; padding: 8px 18px; font-family: var(--mono); font-size: 13px; color: var(--text1); background: var(--bg); border: none; border-bottom: 1px solid var(--dotline); outline: none; box-sizing: border-box; }
 
 /* --- Custom date row --- */
-.lib-fs-custom-row { display: none; align-items: center; gap: 8px; margin-top: 8px; }
+.lib-fs-custom-row { display: none; gap: 8px; align-items: center; padding: 8px 0 4px; flex-wrap: wrap; }
 .lib-fs-custom-row.open { display: flex; }
 .lib-fs-cd-lbl { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
 .lib-fs-cd-input { font-family: var(--mono); font-size: 10px; color: var(--text1); background: var(--bg); border: 1px solid var(--dotline); padding: 4px 8px; outline: none; }

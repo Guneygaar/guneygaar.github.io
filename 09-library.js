@@ -42,12 +42,21 @@ function _matchLinkedInFromHardcoded(posts) {
   posts.forEach(function(post) {
     if (_libLinkedIn[post.id]) return;
     var titleLower = (post.title || '').toLowerCase().replace(/[^a-z0-9 ]/g, '');
-    var words = titleLower.split(' ').filter(function(w) { return w.length > 4; });
+    var words = titleLower.split(' ').filter(function(w) { return w.length > 3; });
     if (!words.length) return;
-    var match = window.INS_POSTS.find(function(ip) {
+    var match = null;
+    // Pass 1: any word >3 chars appears in INS_POSTS title
+    match = window.INS_POSTS.find(function(ip) {
       var ipNorm = ip.title.toLowerCase().replace(/[^a-z0-9 ]/g, '');
       return words.some(function(w) { return ipNorm.indexOf(w) > -1; });
     });
+    // Pass 2: first 6 chars of post title matches start of any INS_POSTS title
+    if (!match && titleLower.length >= 6) {
+      var prefix = titleLower.slice(0, 6);
+      match = window.INS_POSTS.find(function(ip) {
+        return ip.title.toLowerCase().replace(/[^a-z0-9 ]/g, '').indexOf(prefix) > -1;
+      });
+    }
     if (match) {
       _libLinkedIn[post.id] = {
         imp: match.imp, impressions: match.imp,
@@ -907,12 +916,15 @@ function libRenderCalendar() {
         popup.classList.add('open');
 
         popup.style.position = 'fixed';
-        popup.style.bottom = '90px';
+        popup.style.bottom = '80px';
         popup.style.left = '50%';
         popup.style.transform = 'translateX(-50%)';
         popup.style.width = 'calc(100% - 36px)';
-        popup.style.maxWidth = '354px';
+        popup.style.maxWidth = '420px';
         popup.style.zIndex = '1100';
+        popup.style.background = '#141414';
+        popup.style.border = '1px solid rgba(255,255,255,0.1)';
+        popup.style.padding = '14px';
         popup.style.top = '';
 
         if (_libCalPopupClose) document.removeEventListener('click', _libCalPopupClose);
@@ -1064,12 +1076,12 @@ function libOpenCard(postId) {
     overlay = document.createElement('div');
     overlay.id = 'lib-card-overlay';
     overlay.className = 'ins-card-overlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1100;align-items:flex-end;justify-content:center;';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
     document.body.appendChild(overlay);
   }
 
   var h = '';
-  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding-bottom:80px;">';
+  h += '<div class="lib-card-inner" style="background:#141414;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:80px;">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
@@ -1209,7 +1221,11 @@ function libInitSearch() {
 function libGoToPipeline(postId) {
   var overlay = document.getElementById('lib-card-overlay');
   if (overlay) overlay.style.display = 'none';
-  if (typeof openPCS === 'function') openPCS(postId, 'library');
+  window._pipelinePubExpanded = true;
+  if (typeof showPipeline === 'function') showPipeline();
+  setTimeout(function() {
+    if (typeof openPCS === 'function') openPCS(postId, 'library');
+  }, 300);
 }
 
 // --------------- libSaveLinkedInUrl ---------------
