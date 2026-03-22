@@ -850,20 +850,38 @@ function getDashGreeting() {
   return { greeting: greeting, name: name };
 }
 
-function updateDashPulse(runwayCount, overdueCount) {
-  var el = document.getElementById('dash-pulse-word');
-  if (!el) return;
-  var word, color;
-  if (runwayCount <= 3) { word = 'CRISIS'; color = 'var(--c-red)'; }
-  else if (runwayCount <= 6 || overdueCount > 0) { word = 'URGENT'; color = 'var(--c-amber)'; }
-  else if (runwayCount > 6) { word = 'STEADY'; color = 'var(--c-green)'; }
-  else { word = 'IDLE'; color = '#444'; }
-  el.textContent = word;
-  el.style.color = color;
+function updateDashKicker(state, runway, overdue) {
+  var dot = document.getElementById('dash-kicker-dot');
+  var text = document.getElementById('dash-kicker-text');
+  var hdr = document.getElementById('dash-kicker-hdr');
+  if (!dot || !text || !hdr) return;
+  var states = {
+    crisis: { text: 'BREAKING \u00b7 RUNWAY CRISIS', color: 'var(--c-red)', dur: '1.5s' },
+    urgent: { text: 'HEADS UP \u00b7 ACTION NEEDED', color: 'var(--c-amber)', dur: '2s' },
+    steady: { text: 'ALL CLEAR \u00b7 RUNWAY HEALTHY', color: 'var(--c-green)', dur: '4s' },
+    idle:   { text: 'QUIET \u00b7 NO ACTIVITY TODAY', color: '#444', dur: '0s' }
+  };
+  var s = states[state] || states.idle;
+  hdr.style.color = s.color;
+  dot.style.background = s.color;
+  dot.style.animationDuration = s.dur;
+  if (s.dur === '0s') dot.style.animation = 'none';
+  text.textContent = s.text;
 }
 
-function updateDashClock() {
-  var el = document.getElementById('dash-clock');
+function updateDashDeck(runway, overdue, pranavDef) {
+  var el = document.getElementById('dash-deck');
+  if (!el) return;
+  var parts = [];
+  if (runway <= 6) parts.push('Only ' + runway + ' post' + (runway===1?'':'s') + ' scheduled from today');
+  if (pranavDef < 0) parts.push('Pranav ' + Math.abs(pranavDef) + ' behind');
+  if (overdue > 0) parts.push(overdue + ' overdue');
+  if (parts.length) parts.push('act immediately');
+  el.textContent = parts.join(' \u00b7 ');
+}
+
+function updateDashDatetime() {
+  var el = document.getElementById('dash-datetime');
   if (!el) return;
   var now = new Date();
   var h = now.getHours(), m = now.getMinutes();
@@ -871,24 +889,9 @@ function updateDashClock() {
   h = h % 12 || 12;
   var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  el.textContent = h + ':' + (m<10?'0':'') + m + ' ' + ampm + ' ' + String.fromCharCode(183) + ' ' + days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+  el.textContent = h + ':' + (m<10?'0':'') + m + ' ' + ampm + ' \u00b7 ' + days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
 }
 
-function updateDashGreetingLine() {
-  var g = getDashGreeting();
-  var greetEl = document.getElementById('dash-greeting-line');
-  if (!greetEl) return;
-  var nameEl = document.getElementById('dash-greeting-name');
-  if (nameEl) {
-    if (g.name) {
-      nameEl.textContent = g.name;
-      nameEl.previousSibling.textContent = g.greeting + ', ';
-    } else {
-      nameEl.textContent = '';
-      nameEl.previousSibling.textContent = g.greeting;
-    }
-  }
-}
 
 function renderScoreboard() {
   try {
@@ -931,7 +934,7 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at ' + String.fromCharCode(183) + ' <span class="hl-num dc-pulse" style="color:var(--c-red);text-shadow:0 0 16px rgba(255,75,75,0.5);">' + dashPad(runwayCount) + '</span> ' + String.fromCharCode(183) + ' agency running on empty';
+      headline = 'Runway at \u00b7 <span class="hl-num dc-pulse" style="color:var(--c-red);text-shadow:0 0 18px rgba(255,75,75,0.55);animation:glowPulse 2.5s ease-in-out infinite;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
       deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 act immediately';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
@@ -1019,25 +1022,22 @@ function renderScoreboard() {
     if (elClMsg) { elClMsg.textContent = clMsg; elClMsg.style.color = clColor; }
 
     // --- STEP 4: HEADLINE RENDER ---
-    var elKDot = document.getElementById('dash-kicker-dot');
-    var elKText = document.getElementById('dash-kicker-text');
     var elHL = document.getElementById('dash-headline');
-    var elDeck = document.getElementById('dash-deck');
-    if (elKDot) elKDot.style.background = kickerColor;
-    if (elKText) { elKText.textContent = kicker; elKText.style.color = kickerColor; }
     if (elHL) {
       elHL.innerHTML = headline;
       elHL.style.cursor = 'pointer';
       elHL.onclick = function() { openRunwaySheet(); };
     }
-    var hint = document.getElementById('dash-hl-hint');
-    if (hint) hint.style.display = '';
-    if (elDeck) elDeck.textContent = deck;
 
-    // --- STEP 5: GREETING LINE + PULSE ---
-    updateDashGreetingLine();
-    updateDashClock();
-    updateDashPulse(runwayCount, chitraOverdue);
+    // --- STEP 5: KICKER, DECK, DATETIME ---
+    var kickerState;
+    if (runwayCount <= 3) kickerState = 'crisis';
+    else if (runwayCount <= 6 || chitraOverdue > 0) kickerState = 'urgent';
+    else if (runwayCount > 6) kickerState = 'steady';
+    else kickerState = 'idle';
+    updateDashKicker(kickerState, runwayCount, chitraOverdue);
+    updateDashDeck(runwayCount, chitraOverdue, pranavDeficit);
+    updateDashDatetime();
 
     // --- STEP 6: TASK LIST ---
     _renderDashTaskList(role);
@@ -1368,9 +1368,9 @@ function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
   if (!el) return;
   renderScoreboard();
-  updateDashClock();
-  if (!window._dashClockInterval) {
-    window._dashClockInterval = setInterval(updateDashClock, 60000);
+  updateDashDatetime();
+  if (!window._dashDatetimeInterval) {
+    window._dashDatetimeInterval = setInterval(updateDashDatetime, 60000);
   }
   _updateStreakLines();
   _appendYesterdaysWin();
