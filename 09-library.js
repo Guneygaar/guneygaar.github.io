@@ -1225,12 +1225,15 @@ function libOpenCard(postId) {
 
 // --------------- show library tab ---------------
 function showLibrary() {
-  var dv = document.getElementById('dashboard-view');
-  if (dv) dv.classList.remove('active');
-  var iv = document.getElementById('insights-view');
-  if (iv) iv.classList.remove('active');
+  var insightsView = document.getElementById('insights-view');
+  if (insightsView) insightsView.classList.remove('active');
+  var dashView = document.getElementById('dashboard-view');
+  if (dashView) dashView.classList.remove('active');
   var lv = document.getElementById('library-view');
   if (lv) lv.classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  var libBtn = document.querySelector('[onclick="showLibrary()"]');
+  if (libBtn) libBtn.classList.add('active');
 
   setTimeout(function() { libWireFilters(); libInitSearch(); }, 0);
 
