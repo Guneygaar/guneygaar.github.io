@@ -884,8 +884,8 @@ function updateDashKicker(state) {
   var states = {
     crisis: { text: 'BREAKING \u00b7 RUNWAY CRISIS', color: 'var(--c-red)' },
     urgent: { text: 'HEADS UP \u00b7 ACTION NEEDED', color: 'var(--c-amber)' },
-    steady: { text: 'ALL CLEAR \u00b7 RUNWAY HEALTHY', color: 'var(--c-green)' },
-    idle:   { text: 'QUIET \u00b7 NO ACTIVITY TODAY', color: '#444' }
+    steady: { text: 'ALL SORTED \u00b7 RUNWAY HEALTHY', color: 'var(--c-green)' },
+    idle:   { text: 'SORTED \u00b7 QUIET DAY', color: '#444' }
   };
   var s = states[state] || states.idle;
   line.style.color = s.color;
@@ -900,7 +900,7 @@ function updateDashDeck(runway, overdue, pranavDef) {
   if (runway <= 6) parts.push('Only ' + runway + ' post' + (runway===1?'':'s') + ' scheduled');
   if (pranavDef < 0) parts.push('Pranav ' + Math.abs(pranavDef) + ' behind');
   if (overdue > 0) parts.push(overdue + ' overdue');
-  if (parts.length) parts.push('act now');
+  if (parts.length) parts.push('sort now');
   el.textContent = parts.join(' \u00b7 ');
   el.style.cssText = 'font-family:var(--mono);font-size:7px;color:#555;margin:4px 0 4px;line-height:1.4;letter-spacing:0.04em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;';
 }
@@ -959,8 +959,8 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at \u00b7 <span style="color:var(--c-red);filter:drop-shadow(0 0 8px rgba(255,75,75,0.9));animation:dashGlow 2s ease-in-out infinite;display:inline-block;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
-      deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 act immediately';
+      headline = 'Runway at \u00b7 <span style="color:var(--c-red);display:inline-block;animation:dashGlow 2s ease-in-out infinite;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
+      deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 sort now';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
       kicker = 'Alert \u00b7 Team Behind';
@@ -1003,7 +1003,7 @@ function renderScoreboard() {
 
     // RUNWAY
     var rColor = runwayCount <= 6 ? 'var(--red)' : runwayCount <= 14 ? 'var(--amber)' : 'var(--green)';
-    var rMsg = runwayCount <= 1 ? 'Almost empty \u00b7 build now' : runwayCount <= 6 ? 'Running out \u00b7 urgent' : runwayCount <= 14 ? 'One week \u00b7 watch closely' : runwayCount <= 21 ? 'Good runway \u00b7 keep going' : 'Strong runway \u00b7 well done';
+    var rMsg = runwayCount <= 1 ? 'Almost empty \u00b7 build now' : runwayCount <= 6 ? 'Running out \u00b7 sort now' : runwayCount <= 14 ? 'Getting low \u00b7 sort this week' : runwayCount <= 21 ? 'Good shape \u00b7 keep sorting' : 'Strong runway \u00b7 well done';
     var elRPre = document.getElementById('metric-runway-prefix');
     var elRNum = document.getElementById('metric-runway-num');
     var elRMsg = document.getElementById('metric-runway-msg');
@@ -1014,7 +1014,7 @@ function renderScoreboard() {
     // PRANAV
     var pPrefix = pranavDeficit >= 0 ? '+' : '-';
     var pColor = pranavDeficit <= -22 ? 'var(--red)' : pranavDeficit <= -15 ? 'var(--red)' : pranavDeficit <= -8 ? 'var(--amber)' : pranavDeficit < 0 ? 'var(--amber)' : 'var(--green)';
-    var pMsg = pranavDeficit <= -22 ? 'Pipeline at risk \u00b7 act now' : pranavDeficit <= -15 ? dashPad(Math.abs(pranavDeficit)) + ' behind \u00b7 team needs you' : pranavDeficit <= -8 ? dashPad(Math.abs(pranavDeficit)) + ' behind \u00b7 pick up pace' : pranavDeficit < 0 ? dashPad(Math.abs(pranavDeficit)) + ' posts behind \u00b7 keep going' : 'Target met \u00b7 great work';
+    var pMsg = pranavDeficit <= -22 ? 'Pipeline at risk \u00b7 sort now' : pranavDeficit <= -15 ? dashPad(Math.abs(pranavDeficit)) + ' behind \u00b7 team needs you' : pranavDeficit <= -8 ? dashPad(Math.abs(pranavDeficit)) + ' behind \u00b7 pick up pace' : pranavDeficit < 0 ? dashPad(Math.abs(pranavDeficit)) + ' posts behind \u00b7 keep going' : 'Target met \u00b7 great work';
     var elPPre = document.getElementById('metric-pranav-prefix');
     var elPNum = document.getElementById('metric-pranav-num');
     var elPMsg = document.getElementById('metric-pranav-msg');
@@ -1026,7 +1026,7 @@ function renderScoreboard() {
     var cTotal = chitraCount;
     var cPrefix = cTotal > 0 ? '-' : '\u00b7';
     var cColor = chitraOverdue > 0 ? 'var(--red)' : cTotal > 8 ? 'var(--red)' : cTotal > 3 ? 'var(--amber)' : cTotal > 0 ? 'var(--green)' : 'var(--green)';
-    var cMsg = chitraOverdue > 0 ? dashPad(chitraOverdue) + ' overdue \u00b7 chase client' : cTotal > 8 ? dashPad(cTotal) + ' posts piling up' : cTotal > 3 ? dashPad(cTotal) + ' posts waiting on you' : cTotal > 0 ? dashPad(cTotal) + ' post' + (cTotal === 1 ? '' : 's') + ' ready to send' : 'All dispatched \u00b7 well done';
+    var cMsg = chitraOverdue > 0 ? dashPad(chitraOverdue) + ' overdue \u00b7 chase client' : cTotal > 8 ? dashPad(cTotal) + ' posts piling up' : cTotal > 3 ? dashPad(cTotal) + ' posts waiting on you' : cTotal > 0 ? dashPad(cTotal) + ' post' + (cTotal === 1 ? '' : 's') + ' ready to send' : 'All sorted \u00b7 well done';
     var elCPre = document.getElementById('metric-chitra-prefix');
     var elCNum = document.getElementById('metric-chitra-num');
     var elCMsg = document.getElementById('metric-chitra-msg');
@@ -1038,7 +1038,7 @@ function renderScoreboard() {
     var clTotal = approvalCount + inputCount;
     var clPrefix = clTotal > 0 ? '-' : '\u00b7';
     var clColor = clTotal > 0 ? 'var(--red)' : 'var(--muted)';
-    var clMsg = approvalCount > 0 && inputCount > 0 ? dashPad(approvalCount) + ' approval \u00b7 ' + dashPad(inputCount) + ' input' : approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'All clear';
+    var clMsg = approvalCount > 0 && inputCount > 0 ? dashPad(approvalCount) + ' approval \u00b7 ' + dashPad(inputCount) + ' input' : approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'Client sorted \u00b7 good week';
     var elClPre = document.getElementById('metric-client-prefix');
     var elClNum = document.getElementById('metric-client-num');
     var elClMsg = document.getElementById('metric-client-msg');
@@ -1166,7 +1166,7 @@ function _renderDashTaskList(role) {
 
     if (_rc <= 6) {
       urgentItems.push({
-        text: 'Build posts urgently \u00b7 runway at ' + dashPad(_rc),
+        text: 'Unsort the pipeline \u00b7 runway at ' + dashPad(_rc),
         cls: 'dash-task-urgent',
         onclick: "navigateWithFilter('pipeline',['in_production'])"
       });
@@ -1190,19 +1190,19 @@ function _renderDashTaskList(role) {
     if (!filtered.length && !urgentItems.length) {
       if (_rc > 6 && _pd > -8 && _co === 0 && _ac === 0) {
         var emptyMessages = {
-          'Admin':     'All systems running \u00b7 nothing needs you',
-          'Servicing': 'Queue clear \u00b7 nothing to dispatch',
-          'Creative':  'Pipeline healthy \u00b7 keep creating',
-          'Client':    'Nothing from us right now \u00b7 you\u2019re good'
+          'Admin':     'All sorted \u00b7 nothing needs you',
+          'Servicing': 'All sorted \u00b7 nothing to dispatch',
+          'Creative':  'All sorted \u00b7 keep creating',
+          'Client':    'All sorted \u00b7 nothing from us right now'
         };
         var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
-        var emptyMsg = emptyMessages[emptyRole] || 'All clear';
+        var emptyMsg = emptyMessages[emptyRole] || 'All sorted';
         container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
         return;
       }
     }
   } else if (!filtered.length) {
-    container.innerHTML = '<div class="dash-empty-state">All clear</div>';
+    container.innerHTML = '<div class="dash-empty-state">All sorted</div>';
     return;
   }
 
@@ -1224,7 +1224,7 @@ function _renderDashTaskList(role) {
   }
 
   if (!html) {
-    container.innerHTML = '<div class="dash-empty-state">All clear</div>';
+    container.innerHTML = '<div class="dash-empty-state">All sorted</div>';
     return;
   }
 
@@ -1597,7 +1597,7 @@ function updateDashWin(posts) {
            p.status_changed_at && p.status_changed_at.slice(0,10) === yStr;
   });
   if (pubYesterday.length) {
-    el.textContent = pubYesterday.length + ' post' + (pubYesterday.length===1?'':'s') + ' published yesterday \u00b7 pipeline moving';
+    el.textContent = pubYesterday.length + ' post' + (pubYesterday.length===1?'':'s') + ' sorted yesterday \u00b7 pipeline sorted';
     return;
   }
   var sevenDays = new Date(now);
@@ -1615,7 +1615,7 @@ function updateDashWin(posts) {
     var daysAgo = Math.floor((now - new Date(last.status_changed_at)) / 86400000);
     el.textContent = title + ' \u00b7 ' + (daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago');
   } else {
-    el.textContent = 'No recent posts \u00b7 time to create';
+    el.textContent = 'Nothing sorted yet';
   }
 }
 
