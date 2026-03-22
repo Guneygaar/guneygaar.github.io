@@ -377,8 +377,10 @@ function libFormatImp(n) {
 function libFormatDMon(dateStr) {
   var d = parseDate(dateStr);
   if (!d) return '';
-  var mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return d.getDate() + ' ' + mons[d.getMonth()];
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var dow = days[d.getDay()];
+  var dateStrOut = dow + ' \xB7 ' + d.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+  return dateStrOut;
 }
 
 function libLifespanArrow(days) {
@@ -592,10 +594,6 @@ function libRenderList() {
 
       var lifespan = libGetLifespan(post);
 
-      // check if published on Wednesday
-      var isWed = false;
-      if (tdParsed && tdParsed.getDay() === 3) isWed = true;
-
       html += '<div class="lib-post-row lib-item" data-s="' + esc(stage) +
               '" data-p="' + esc(post.content_pillar || '') +
               '" data-date="' + esc(post.target_date || '') +
@@ -620,7 +618,6 @@ function libRenderList() {
         var arrInfo = libLifespanArrow(lifespan);
         html += ' <span class="lib-life-badge ' + arrInfo.cls + '">' + lifespan + 'd ' + arrInfo.arrow + '</span>';
       }
-      if (isWed && stage === 'published') html += ' <span class="lib-wed-tag">Wed</span>';
       html += '</div>';
 
       // FIX 5: reason block inside row for parked/rejected
@@ -890,10 +887,14 @@ function libRenderCalendar() {
         popup.innerHTML = ph;
         popup.classList.add('open');
 
-        var rect = cell.getBoundingClientRect();
         popup.style.position = 'fixed';
-        popup.style.top = (rect.bottom + 4) + 'px';
-        popup.style.left = rect.left + 'px';
+        popup.style.bottom = '90px';
+        popup.style.left = '50%';
+        popup.style.transform = 'translateX(-50%)';
+        popup.style.width = 'calc(100% - 36px)';
+        popup.style.maxWidth = '354px';
+        popup.style.zIndex = '1100';
+        popup.style.top = '';
 
         if (_libCalPopupClose) document.removeEventListener('click', _libCalPopupClose);
         _libCalPopupClose = function(ev) {
