@@ -1073,11 +1073,27 @@ function libSetView(view, btn) {
 
 // --------------- open post card (bridges to pipeline PCS) ---------------
 function libOpenPostCard(postId) {
-  var overlay = document.getElementById('lib-card-overlay');
-  if (overlay) overlay.style.display = 'none';
+  var libOverlay = document.getElementById('lib-card-overlay');
+  if (libOverlay) libOverlay.style.display = 'none';
   var calPopup = document.getElementById('lib-cal-popup');
   if (calPopup) calPopup.style.display = 'none';
-  if (typeof openPCS === 'function') openPCS(postId, 'library');
+  window._pipelinePubExpanded = true;
+  var pipelineBtn = document.querySelector('[data-tab="pipeline"]');
+  if (pipelineBtn) {
+    pipelineBtn.click();
+    setTimeout(function() {
+      if (typeof openPCS === 'function') {
+        openPCS(postId, 'library');
+        // fallback: if PCS sheet not visible, retry once
+        setTimeout(function() {
+          var pcsSheet = document.getElementById('pcs-sheet') || document.querySelector('.pcs-sheet');
+          if (pcsSheet && (pcsSheet.style.display === 'none' || !pcsSheet.classList.contains('open'))) {
+            openPCS(postId, 'library');
+          }
+        }, 400);
+      }
+    }, 600);
+  }
 }
 window.libOpenPostCard = libOpenPostCard;
 
