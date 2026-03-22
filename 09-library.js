@@ -1084,6 +1084,7 @@ function libOpenPostCard(postId) {
   var normalised = typeof normalise === 'function' ? normalise(post) : post;
   if (!normalised.id) normalised.id = post.id;
   if (!normalised.postId) normalised.postId = post.id;
+  if (!normalised.post_id) normalised.post_id = post.id;
 
   if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
     var alreadyIn = allPosts.find(function(p) { return (p.id || p.postId) === postId; });
