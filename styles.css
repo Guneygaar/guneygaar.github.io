@@ -775,6 +775,7 @@ a:hover { text-decoration: underline; }
   padding: 0 0 140px;
   min-height: 0;
   position: relative;
+  pointer-events: auto;
 }
 
 
@@ -4525,6 +4526,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   overflow-y: auto;
   scrollbar-width: none;
   padding-bottom: 80px;
+  pointer-events: auto;
 }
 #pcs-dashboard::-webkit-scrollbar { display: none; }
 
