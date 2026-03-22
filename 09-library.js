@@ -27,6 +27,7 @@ async function libLoadPosts() {
       _libLinkedIn[li[i].post_id] = li[i];
     }
   }
+  console.log('[Library] linkedin_posts loaded:', li ? li.length : 0, 'rows, _libLinkedIn keys:', Object.keys(_libLinkedIn).length);
 }
 
 // --------------- filter sheet wiring ---------------
@@ -906,6 +907,7 @@ function libOpenCard(postId) {
   }
 
   var h = '';
+  h += '<div class="lib-card-inner">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';
@@ -944,6 +946,7 @@ function libOpenCard(postId) {
 
   h += '<button class="pc-action-btn" onclick="openPCS(\'' + esc(postId) + '\', \'library\')">Open in Pipeline</button>';
   h += '</div>';
+  h += '</div>';
 
   overlay.innerHTML = h;
   overlay.classList.add('open');
@@ -970,7 +973,7 @@ function showLibrary() {
   var lv = document.getElementById('library-view');
   if (lv) lv.classList.add('active');
 
-  libWireFilters();
+  setTimeout(function() { libWireFilters(); }, 0);
 
   if (_libPosts === null) {
     libLoadPosts().then(function() {

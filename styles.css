@@ -5342,8 +5342,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-af-tag span { color: var(--red); font-weight: 700; }
 
 /* --- Filter sheet overlay --- */
-.lib-filter-sheet-overlay { z-index: 200; }
-.lib-filter-sheet { background: var(--bg); border: 1px dotted var(--dotline); padding: 20px; max-width: 340px; width: 90%; margin: auto; }
+.lib-filter-sheet-overlay { z-index: 200; background: rgba(0,0,0,0.75) !important; }
+.lib-filter-sheet { background: var(--bg2, #141414); border: 1px dotted var(--dotline); padding: 20px; max-width: 340px; width: 90%; margin: auto; }
 .lib-fs-hdr { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); margin-bottom: 16px; }
 .lib-fs-section { margin-bottom: 14px; }
 .lib-fs-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
@@ -5367,10 +5367,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-pillar-bar { height: 6px; display: flex; border-radius: 3px; overflow: hidden; margin-bottom: 8px; background: var(--muted2); }
 .lib-pillar-labels { display: flex; flex-wrap: wrap; gap: 10px; }
 .lib-pb-seg { height: 100%; transition: opacity 0.2s; }
-.lib-pb-leadership    { background: var(--cyan); }
-.lib-pb-innovation    { background: var(--purple); }
-.lib-pb-sustainability{ background: var(--green); }
-.lib-pb-inclusivity   { background: var(--amber); }
+.lib-pb-leadership    { background: var(--c-gold, var(--gold)); }
+.lib-pb-innovation    { background: var(--c-purple, var(--purple)); }
+.lib-pb-sustainability{ background: var(--c-cyan, var(--cyan)); }
+.lib-pb-inclusivity   { background: #f472b6; }
 .lib-pb-label { display: flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
 .lib-pb-dot { width: 6px; height: 6px; border-radius: 50%; }
 .lib-dimmed { opacity: 0.15; }
@@ -5396,18 +5396,18 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-pace-txt { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; white-space: nowrap; }
 
 /* Post row */
-.lib-post-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
+.lib-post-row { display: flex; align-items: flex-start; gap: 6px; padding: 8px 20px; border-bottom: 1px dotted var(--muted2); cursor: pointer; transition: background 0.15s; }
 .lib-post-row:hover { background: var(--surface); }
 .lib-item { /* generic filterable item marker */ }
 
 /* Colour bar */
-.lib-bar { width: 4px; min-height: 36px; border-radius: 2px; flex-shrink: 0; background: var(--muted2); }
+.lib-bar { width: 4px; min-height: 28px; border-radius: 2px; flex-shrink: 0; background: var(--muted2); }
 .lib-bar-pub  { background: var(--green); }
 .lib-bar-park { background: var(--amber); }
 .lib-bar-rej  { background: var(--red); }
 .lib-bar-best { background: var(--gold); }
 
-.lib-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lib-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .lib-p-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
 .lib-p-title { font-family: 'DM Sans', var(--sans); font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-p-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
@@ -5473,7 +5473,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-cal-pl-dot { width: 6px; height: 6px; border-radius: 50%; }
 
 /* Calendar popup */
-#lib-cal-popup { position: fixed; z-index: 300; background: var(--bg); border: 1px dotted var(--dotline); padding: 0; min-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+#lib-cal-popup { position: fixed; z-index: 400; background: #141414; border: 1px dotted var(--dotline); padding: 0; min-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; }
+#lib-cal-popup.open { display: block; }
 .lib-cal-popup-inner { padding: 10px 14px; }
 .lib-cal-popup-hdr { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .lib-cal-popup-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 0; cursor: pointer; }
@@ -5487,7 +5488,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 /* =============================================
    BOARD VIEW
    ============================================= */
-.lib-board-col { margin-bottom: 20px; }
+#lib-tab-board { overflow-x: auto; display: block; }
+#lib-board-cols { display: flex; flex-direction: row; min-width: max-content; }
+.lib-board-col { width: 240px; flex-shrink: 0; margin-bottom: 20px; }
 .lib-board-col-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 2px solid; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
 .lib-board-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 
@@ -5510,7 +5513,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 /* =============================================
    LIBRARY POST-CARD OVERLAY
    ============================================= */
-#lib-card-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; }
+#lib-card-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.6); display: none; align-items: flex-end; justify-content: center; }
+#lib-card-overlay.open { display: flex; }
+#lib-card-overlay .lib-card-inner { width: 100%; max-width: 480px; background: var(--bg2, #141414); border-top: 1px dotted var(--dotline); max-height: 88vh; overflow-y: auto; scrollbar-width: none; }
 #lib-card-overlay .pc-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--muted2); margin: 10px auto 6px; }
 #lib-card-overlay .pc-hdr { padding: 10px 20px 12px; border-bottom: 1px dotted var(--dotline); position: relative; }
 #lib-card-overlay .pc-hdr-date { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
