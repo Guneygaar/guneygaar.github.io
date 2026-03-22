@@ -2355,7 +2355,7 @@ function _renderPipelineInner() {
   }
   var pubGroupHtml = '<div class="group-section pipeline-pub-group" id="pipeline-pub-group">' +
     '<div class="pipeline-pub-toggle" onclick="togglePipelinePub()">' +
-      '<span class="pipeline-pub-arrow">&#9654;</span>' +
+      '<span class="pipeline-pub-arrow">&#9660;</span>' +
       '<span style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green)">PUBLISHED</span>' +
       '<span class="group-count">' + pubCount + '</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-text3,#555);margin-left:auto">Tap to expand</span>' +
