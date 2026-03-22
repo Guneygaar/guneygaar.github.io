@@ -863,7 +863,11 @@ function updateDashGreeting() {
   };
   var name = nameMap[role] || 'Shubham';
   var h = new Date().getHours();
-  var timeWord = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  var timeWord;
+  if (h >= 5 && h < 12) timeWord = 'Good morning';
+  else if (h >= 12 && h < 17) timeWord = 'Good afternoon';
+  else if (h >= 17 && h < 22) timeWord = 'Good evening';
+  else timeWord = 'Working late';
   if (name) {
     nameEl.textContent = name;
     hdrEl.childNodes[0].textContent = timeWord + ', ';
@@ -898,7 +902,7 @@ function updateDashDeck(runway, overdue, pranavDef) {
   if (overdue > 0) parts.push(overdue + ' overdue');
   if (parts.length) parts.push('act now');
   el.textContent = parts.join(' \u00b7 ');
-  el.style.cssText = 'font-family:var(--mono);font-size:8px;color:#555;margin:4px 0 4px;line-height:1.4;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+  el.style.cssText = 'font-family:var(--mono);font-size:7px;color:#555;margin:4px 0 4px;line-height:1.4;letter-spacing:0.04em;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;';
 }
 
 function updateDashDatetime() {
@@ -955,7 +959,7 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at \u00b7 <span style="position:relative;display:inline-block;color:var(--c-red);"><span style="position:absolute;left:0;top:0;color:var(--c-red);filter:blur(7px);animation:dashGlow 2s ease-in-out infinite;pointer-events:none;user-select:none;" aria-hidden="true">' + dashPad(runwayCount) + '</span>' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
+      headline = 'Runway at \u00b7 <span style="color:var(--c-red);filter:drop-shadow(0 0 8px rgba(255,75,75,0.9));animation:dashGlow 2s ease-in-out infinite;display:inline-block;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
       deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 act immediately';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
@@ -1395,7 +1399,6 @@ function _renderDashboardInner() {
     window._dashDatetimeInterval = setInterval(updateDashDatetime, 60000);
   }
   _updateStreakLines();
-  _appendYesterdaysWin();
   updateDashWin();
 }
 
@@ -1584,26 +1587,35 @@ async function _appendYesterdaysWin() {
 function updateDashWin(posts) {
   var el = document.getElementById('dash-win-text');
   if (!el) return;
-  var yesterday = new Date();
+  var now = new Date();
+  var yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   var yStr = yesterday.toISOString().slice(0, 10);
-  var published = (posts || allPosts || []).filter(function(p) {
+  var allP = posts || allPosts || [];
+  var pubYesterday = allP.filter(function(p) {
     return (p.stage === 'published' || p.stageLC === 'published') &&
            p.status_changed_at && p.status_changed_at.slice(0,10) === yStr;
   });
-  if (published.length) {
-    el.textContent = published.length + ' post' + (published.length===1?'':'s') + ' published yesterday \u00b7 pipeline moving';
+  if (pubYesterday.length) {
+    el.textContent = pubYesterday.length + ' post' + (pubYesterday.length===1?'':'s') + ' published yesterday \u00b7 pipeline moving';
+    return;
+  }
+  var sevenDays = new Date(now);
+  sevenDays.setDate(sevenDays.getDate() - 7);
+  var recent = allP.filter(function(p) {
+    return (p.stage === 'published' || p.stageLC === 'published') &&
+           p.status_changed_at && new Date(p.status_changed_at) >= sevenDays;
+  }).sort(function(a,b) {
+    return new Date(b.status_changed_at) - new Date(a.status_changed_at);
+  });
+  if (recent.length) {
+    var last = recent[0];
+    var title = (last.title || 'Last post');
+    if (title.length > 28) title = title.slice(0,28) + '\u2026';
+    var daysAgo = Math.floor((now - new Date(last.status_changed_at)) / 86400000);
+    el.textContent = title + ' \u00b7 ' + (daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago');
   } else {
-    var recentPublished = (posts || allPosts || []).filter(function(p) {
-      return p.stage === 'published' || p.stageLC === 'published';
-    });
-    if (recentPublished.length) {
-      var last = recentPublished[0];
-      var title = last.title || 'Last post';
-      el.textContent = (title.length > 28 ? title.slice(0,28) + '\u2026' : title) + ' \u00b7 last published';
-    } else {
-      el.textContent = 'No posts published recently \u00b7 time to create';
-    }
+    el.textContent = 'No recent posts \u00b7 time to create';
   }
 }
 
