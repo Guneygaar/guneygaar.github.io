@@ -166,18 +166,22 @@ function switchTab(btn) {
   const titleEl = document.getElementById('app-header-title');
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
   var dashHdr = document.getElementById('dash-hdr-nums');
+  var pulseEl = document.getElementById('dash-pulse-word');
   if (tab === 'pipeline') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'flex';
     if (dashHdr) dashHdr.style.display = 'none';
+    if (pulseEl) pulseEl.style.display = 'none';
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (pipeHdr) pipeHdr.style.display = 'none';
     if (dashHdr) dashHdr.style.display = 'flex';
+    if (pulseEl) pulseEl.style.display = '';
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
     if (pipeHdr) pipeHdr.style.display = 'none';
     if (dashHdr) dashHdr.style.display = 'none';
+    if (pulseEl) pulseEl.style.display = 'none';
   }
   var searchTrigger = document.getElementById('pipeline-search-trigger');
   if (searchTrigger) searchTrigger.style.display = (tab === 'pipeline') ? '' : 'none';
@@ -194,10 +198,17 @@ function switchTab(btn) {
 var _notifFilter = 'all';
 var _notifData = [];
 var roleDisplayMap = {
-  'Admin':     { name: 'Shubham', label: 'Admin - Hinglish Ops' },
-  'Servicing': { name: 'Chitra',  label: 'Servicing - Dispatch' },
-  'Creative':  { name: 'Pranav',  label: 'Creative - Production' },
-  'Client':    { name: 'Client',  label: 'Client - Hinglish Ops' }
+  'Admin':      { name: 'Shubham', label: 'Admin - Hinglish Ops' },
+  'admin':      { name: 'Shubham', label: 'Admin - Hinglish Ops' },
+  'shubham':    { name: 'Shubham', label: 'Admin - Hinglish Ops' },
+  'Servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
+  'servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
+  'chitra':     { name: 'Chitra',  label: 'Servicing - Dispatch' },
+  'Creative':   { name: 'Pranav',  label: 'Creative - Production' },
+  'creative':   { name: 'Pranav',  label: 'Creative - Production' },
+  'pranav':     { name: 'Pranav',  label: 'Creative - Production' },
+  'Client':     { name: '',        label: 'Client - Hinglish Ops' },
+  'client':     { name: '',        label: 'Client - Hinglish Ops' }
 };
 
 async function loadNotifications() {
@@ -216,12 +227,22 @@ async function loadNotifications() {
 
 function renderNotifications(name, role) {
   var notifs = _notifData;
-  var display = roleDisplayMap[role] || { name: name, label: role };
+  var effectiveR = window.effectiveRole || window.currentRole || role || 'Admin';
+  var display = roleDisplayMap[effectiveR] || roleDisplayMap[role] || { name: name, label: role };
   var displayName = display.name;
   var displayLabel = display.label;
   var nameEl = document.getElementById('notif-name');
   var roleEl = document.getElementById('notif-role');
-  if (nameEl) nameEl.textContent = displayName;
+  var heyEl = nameEl ? nameEl.parentElement : null;
+  if (nameEl) {
+    if (displayName) {
+      nameEl.textContent = displayName;
+      if (heyEl) heyEl.style.display = '';
+    } else {
+      nameEl.textContent = '';
+      if (heyEl) heyEl.style.display = 'none';
+    }
+  }
   if (roleEl) roleEl.textContent = displayLabel;
   var unread = notifs.filter(function(n) { return !n.read; });
   var urgent = notifs.filter(function(n) { return !n.read && ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
@@ -507,6 +528,8 @@ function showInsights() {
   if (pipeHdr) pipeHdr.style.display = 'none';
   var dashHdr = document.getElementById('dash-hdr-nums');
   if (dashHdr) dashHdr.style.display = 'none';
+  var pulseEl2 = document.getElementById('dash-pulse-word');
+  if (pulseEl2) pulseEl2.style.display = 'none';
   insUpdateOverview();
   insRenderPosts();
   insRenderMissingUrls();

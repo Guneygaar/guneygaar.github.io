@@ -844,11 +844,50 @@ function getDashGreeting() {
   var roleNames = {
     'Admin':     'Shubham',
     'Servicing': 'Chitra',
-    'Creative':  'Pranav',
-    'Client':    'Client'
+    'Creative':  'Pranav'
   };
-  var name = roleNames[role] || resolveActor() || 'there';
-  return greeting + ', <span style="color:var(--gold)">' + name + '</span>';
+  var name = roleNames[role] || '';
+  return { greeting: greeting, name: name };
+}
+
+function updateDashPulse(runwayCount, overdueCount) {
+  var el = document.getElementById('dash-pulse-word');
+  if (!el) return;
+  var word, color;
+  if (runwayCount <= 3) { word = 'CRISIS'; color = 'var(--c-red)'; }
+  else if (runwayCount <= 6 || overdueCount > 0) { word = 'URGENT'; color = 'var(--c-amber)'; }
+  else if (runwayCount > 6) { word = 'STEADY'; color = 'var(--c-green)'; }
+  else { word = 'IDLE'; color = '#444'; }
+  el.textContent = word;
+  el.style.color = color;
+}
+
+function updateDashClock() {
+  var el = document.getElementById('dash-clock');
+  if (!el) return;
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes();
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  el.textContent = h + ':' + (m<10?'0':'') + m + ' ' + ampm + ' ' + String.fromCharCode(183) + ' ' + days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+}
+
+function updateDashGreetingLine() {
+  var g = getDashGreeting();
+  var greetEl = document.getElementById('dash-greeting-line');
+  if (!greetEl) return;
+  var nameEl = document.getElementById('dash-greeting-name');
+  if (nameEl) {
+    if (g.name) {
+      nameEl.textContent = g.name;
+      nameEl.previousSibling.textContent = g.greeting + ', ';
+    } else {
+      nameEl.textContent = '';
+      nameEl.previousSibling.textContent = g.greeting;
+    }
+  }
 }
 
 function renderScoreboard() {
@@ -857,8 +896,6 @@ function renderScoreboard() {
     if (!data || typeof data !== 'object') return;
 
     window._dashLastUpdated = Date.now();
-    var elUpdated = document.getElementById('dash-updated');
-    if (elUpdated) elUpdated.textContent = 'Updated just now';
 
     function safe(v) { return (v != null && Number.isFinite(v)) ? v : 0; }
 
@@ -894,7 +931,7 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at \u00b7 <span class="hl-num dc-pulse" style="color:var(--red)">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
+      headline = 'Runway at ' + String.fromCharCode(183) + ' <span class="hl-num dc-pulse" style="color:var(--c-red);text-shadow:0 0 16px rgba(255,75,75,0.5);">' + dashPad(runwayCount) + '</span> ' + String.fromCharCode(183) + ' agency running on empty';
       deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 act immediately';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
@@ -997,15 +1034,10 @@ function renderScoreboard() {
     if (hint) hint.style.display = '';
     if (elDeck) elDeck.textContent = deck;
 
-    // --- STEP 5: DATE AND EDITION ---
-    var now = new Date();
-    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var dateStr = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
-    var elDate = document.getElementById('dash-date');
-    var elEdition = document.getElementById('dash-edition');
-    if (elDate) elDate.textContent = dateStr;
-    if (elEdition) elEdition.innerHTML = getDashGreeting();
+    // --- STEP 5: GREETING LINE + PULSE ---
+    updateDashGreetingLine();
+    updateDashClock();
+    updateDashPulse(runwayCount, chitraOverdue);
 
     // --- STEP 6: TASK LIST ---
     _renderDashTaskList(role);
@@ -1336,6 +1368,10 @@ function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
   if (!el) return;
   renderScoreboard();
+  updateDashClock();
+  if (!window._dashClockInterval) {
+    window._dashClockInterval = setInterval(updateDashClock, 60000);
+  }
   _updateStreakLines();
   _appendYesterdaysWin();
 }
