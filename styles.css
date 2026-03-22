@@ -2676,8 +2676,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
  */
 .stage-strip {
   display: flex;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 0;
+  padding: 0 12px;
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1px dotted var(--dotline);
@@ -2688,78 +2688,65 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .stage-chip {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 14px 14px 12px;
-  border-radius: 10px;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 10px;
   cursor: pointer;
   flex-shrink: 0;
-  min-height: 80px;
-  gap: 10px;
   border: none;
-  border-top: 3px solid transparent;
-  background: #141414;
-  transition: background 0.15s;
-  width: auto;
-  min-width: 80px;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  transition: color 0.15s;
+  min-height: auto;
+  min-width: auto;
 }
-.stage-chip:hover { background: #1c1c1c; }
+.stage-chip:hover { background: transparent; }
 
 .chip-count {
   font-family: var(--mono);
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 8px;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: -1px;
-  opacity: 0.4;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  color: #555;
 }
 .chip-label {
   font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: #555;
   font-weight: 500;
   white-space: nowrap;
   flex: none;
 }
 
 /* Inactive chip colors */
-.stage-chip.all { border-top-color: rgba(255,255,255,0.2); }
-.stage-chip.all .chip-count { color: var(--text2); }
-.stage-chip.awaiting_approval { border-top-color: rgba(255,75,75,0.4); }
-.stage-chip.awaiting_approval .chip-count { color: var(--red); }
-.stage-chip.awaiting_brand_input { border-top-color: rgba(155,135,245,0.4); }
-.stage-chip.awaiting_brand_input .chip-count { color: var(--purple); }
-.stage-chip.scheduled { border-top-color: rgba(34,211,238,0.4); }
-.stage-chip.scheduled .chip-count { color: var(--cyan); }
-.stage-chip.ready { border-top-color: rgba(62,207,142,0.4); }
-.stage-chip.ready .chip-count { color: var(--green); }
-.stage-chip.in_production { border-top-color: rgba(246,166,35,0.4); }
-.stage-chip.in_production .chip-count { color: var(--amber); }
+.stage-chip.all .chip-count { color: #555; }
+.stage-chip.awaiting_approval .chip-count { color: #555; }
+.stage-chip.awaiting_brand_input .chip-count { color: #555; }
+.stage-chip.scheduled .chip-count { color: #555; }
+.stage-chip.ready .chip-count { color: #555; }
+.stage-chip.in_production .chip-count { color: #555; }
 
-/* Active chip -- full background fill */
+/* Active chip -- underline only */
 .stage-chip.active .chip-count { opacity: 1; }
-.stage-chip.active .chip-label { opacity: 0.85; }
-.stage-chip.active.all { background: #2a2a2a; border-top-color: rgba(255,255,255,0.7); }
-.stage-chip.active.all .chip-count { color: var(--text); }
-.stage-chip.active.all .chip-label { color: var(--text2); }
-.stage-chip.active.awaiting_approval { background: rgba(255,75,75,0.15); border-top-color: var(--red); }
-.stage-chip.active.awaiting_approval .chip-count { color: var(--red); }
-.stage-chip.active.awaiting_approval .chip-label { color: var(--red); }
-.stage-chip.active.awaiting_brand_input { background: rgba(155,135,245,0.15); border-top-color: var(--purple); }
-.stage-chip.active.awaiting_brand_input .chip-count { color: var(--purple); }
-.stage-chip.active.awaiting_brand_input .chip-label { color: var(--purple); }
-.stage-chip.active.scheduled { background: rgba(34,211,238,0.12); border-top-color: var(--cyan); }
-.stage-chip.active.scheduled .chip-count { color: var(--cyan); }
-.stage-chip.active.scheduled .chip-label { color: var(--cyan); }
-.stage-chip.active.ready { background: rgba(62,207,142,0.12); border-top-color: var(--green); }
-.stage-chip.active.ready .chip-count { color: var(--green); }
-.stage-chip.active.ready .chip-label { color: var(--green); }
-.stage-chip.active.in_production { background: rgba(246,166,35,0.12); border-top-color: var(--amber); }
-.stage-chip.active.in_production .chip-count { color: var(--amber); }
-.stage-chip.active.in_production .chip-label { color: var(--amber); }
+.stage-chip.active .chip-label { color: var(--text1); }
+.stage-chip.active { border-bottom: 1px solid var(--text1); }
+.stage-chip.active.all .chip-count { color: var(--text1); }
+.stage-chip.active.all .chip-label { color: var(--text1); }
+.stage-chip.active.awaiting_approval .chip-count { color: var(--text1); }
+.stage-chip.active.awaiting_approval .chip-label { color: var(--text1); }
+.stage-chip.active.awaiting_brand_input .chip-count { color: var(--text1); }
+.stage-chip.active.awaiting_brand_input .chip-label { color: var(--text1); }
+.stage-chip.active.scheduled .chip-count { color: var(--text1); }
+.stage-chip.active.scheduled .chip-label { color: var(--text1); }
+.stage-chip.active.ready .chip-count { color: var(--text1); }
+.stage-chip.active.ready .chip-label { color: var(--text1); }
+.stage-chip.active.in_production .chip-count { color: var(--text1); }
+.stage-chip.active.in_production .chip-label { color: var(--text1); }
 
 /* 
    PIPELINE GROUP HEADER

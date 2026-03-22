@@ -1286,6 +1286,24 @@ function closeTaskModal() {
   if (overlay) overlay.classList.remove('open');
 }
 
+// -- Pipeline icon stubs ---------------------------
+function togglePipelineSearch() {
+  if (typeof openPipelineSearch === 'function') {
+    openPipelineSearch();
+  } else {
+    var bar = document.getElementById('pipeline-search-bar');
+    if (bar) bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+  }
+}
+
+function showPipelineMenu() {
+  var menu = document.getElementById('pipeline-menu');
+  if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+window.togglePipelineSearch = togglePipelineSearch;
+window.showPipelineMenu = showPipelineMenu;
+
 // -- Pipeline filter sheet functions ---------------
 function openPipelineFilter() {
   var ov = document.getElementById('pipeline-filter-overlay');
