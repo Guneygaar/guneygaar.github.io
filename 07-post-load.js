@@ -1043,14 +1043,30 @@ function renderScoreboard() {
     var clTotal = approvalCount + inputCount;
     var clPrefix = clTotal > 0 ? '-' : '\u00b7';
     var clColor = clTotal > 0 ? 'var(--red)' : 'var(--muted)';
-    var clMsg = approvalCount > 0 && inputCount > 0 ? dashPad(approvalCount) + ' approval \u00b7 ' + dashPad(inputCount) + ' input' : approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'Client sorted \u00b7 good week';
     var elClPre = document.getElementById('metric-client-prefix');
     var elClNum = document.getElementById('metric-client-num');
     var elClMsg = document.getElementById('metric-client-msg');
     if (elClPre) { elClPre.textContent = clPrefix; elClPre.style.color = clColor; }
     if (elClNum) { elClNum.textContent = dashPad(clTotal); elClNum.style.color = clColor; }
     var clMsgColor = clTotal > 0 ? '#cc3a3a' : '#aaa';
-    if (elClMsg) { elClMsg.textContent = clMsg; elClMsg.style.color = clMsgColor; }
+    if (elClMsg) {
+      if (approvalCount > 0 && inputCount > 0) {
+        elClMsg.innerHTML =
+          '<span style="cursor:pointer;color:#cc3a3a;" ' +
+          'onclick="event.stopPropagation();' +
+          'var c=document.querySelector(\'[data-stage=awaiting_approval]\');if(c)c.click();">' +
+          dashPad(approvalCount) + ' approval</span>' +
+          ' <span style="color:#555;">\u00b7</span> ' +
+          '<span style="cursor:pointer;color:#cc3a3a;" ' +
+          'onclick="event.stopPropagation();' +
+          'var c=document.querySelector(\'[data-stage=awaiting_brand_input]\');if(c)c.click();">' +
+          dashPad(inputCount) + ' input</span>';
+      } else {
+        var clMsg = approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'Client sorted \u00b7 good week';
+        elClMsg.textContent = clMsg;
+        elClMsg.style.color = clMsgColor;
+      }
+    }
 
     // --- STEP 4: HEADLINE RENDER ---
     var elHL = document.getElementById('dash-headline');
@@ -1619,7 +1635,7 @@ function _updateNextScheduled(allP) {
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
     var pid = esc(getPostId(p));
-    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\');},0)">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
@@ -1659,7 +1675,7 @@ function _updateTodaysFocus(allP) {
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
     var pid = esc(getPostId(f));
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\');},0)">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
       '</div>' +
@@ -1687,7 +1703,7 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = getPostId(last);
-    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    var clickAttr = pid ? ' onclick="setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\');},0)" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
     textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
