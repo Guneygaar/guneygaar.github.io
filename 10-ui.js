@@ -246,7 +246,7 @@ function renderNotifications(name, role) {
   var attEl = document.getElementById('notif-attention');
   if (attEl) {
     if (total === 0) {
-      attEl.innerHTML = 'Everything is up to date';
+      attEl.innerHTML = 'All sorted';
     } else {
       attEl.innerHTML = '<strong>' + total + '</strong> ' + (total === 1 ? 'thing needs' : 'things need') + ' your attention';
     }
@@ -254,7 +254,7 @@ function renderNotifications(name, role) {
   var bdEl = document.getElementById('notif-breakdown');
   if (bdEl) {
     if (total === 0) {
-      bdEl.innerHTML = '<span class="bk-allclear">All clear</span>';
+      bdEl.innerHTML = '<span class="bk-allclear">All sorted</span>';
     } else {
       var parts = [];
       if (urgent.length > 0)
