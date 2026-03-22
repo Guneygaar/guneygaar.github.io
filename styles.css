@@ -5117,7 +5117,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .insights-view.active{display:flex}
 .ins-hdr{display:flex;justify-content:space-between;align-items:center;padding:13px 18px 11px;border-bottom:1px dotted var(--dotline);flex-shrink:0}
 .ins-hdr-left{display:flex;align-items:center;gap:10px}
-.ins-hdr-title{font-size:17px;font-weight:600;letter-spacing:-0.2px}
+.ins-hdr-title{font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)}
 .ins-view-toggle{display:flex;border:1px dotted var(--muted2);overflow:hidden}
 .ins-vt{font-family:var(--mono);font-size:7px;letter-spacing:0.12em;text-transform:uppercase;padding:4px 9px;cursor:pointer;color:var(--muted);background:transparent;border:none;transition:all 0.15s;border-right:1px dotted var(--muted2)}
 .ins-vt:last-child{border-right:none}
@@ -5334,7 +5334,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 
 /* --- Header bar (row 1: title + icons) --- */
 .lib-hdr { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 10px; }
-.lib-hdr-title { font-family: 'DM Sans', var(--sans); font-size: 22px; font-weight: 700; color: var(--text); margin: 0; }
+.lib-hdr-title { font-family: var(--mono); font-size: 11px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .lib-hdr-right { display: flex; align-items: center; gap: 8px; }
 .lib-icon-btn { background: none; border: none; padding: 6px; cursor: pointer; color: var(--muted); display: flex; align-items: center; position: relative; }
 .lib-icon-btn:hover { color: var(--text); }

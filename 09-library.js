@@ -912,10 +912,11 @@ function libRenderCalendar() {
         for (var pp = 0; pp < dayPosts.length; pp++) {
           var post = dayPosts[pp];
           var pid = post.id || post.post_id;
-          ph += '<div class="lib-cal-popup-row" onclick="libOpenCard(\'' + esc(pid) + '\')">';
-          ph += '<span class="lib-cal-popup-title">' + esc(post.title || 'Untitled') + '</span>';
-          ph += '<span class="lib-cal-popup-stage lib-cal-ps-' + esc((post.stage || '').toLowerCase()) + '">' +
-                esc((post.stage || '').toLowerCase()) + '</span>';
+          var pStage = (post.stage || '').toLowerCase();
+          var statusColor = pStage === 'published' ? 'var(--c-green)' : pStage === 'parked' ? 'var(--c-amber)' : 'var(--c-red)';
+          ph += '<div style="display:flex;align-items:stretch;cursor:pointer;margin-bottom:4px;" onclick="libOpenCard(\'' + esc(pid) + '\')">';
+          ph += '<div style="width:4px;flex-shrink:0;background:' + statusColor + ';"></div>';
+          ph += '<div style="padding:8px 12px;flex:1;font-size:13px;color:#e8e2d9;">' + esc(post.title || 'Untitled') + '</div>';
           ph += '</div>';
         }
         ph += '</div>';
@@ -929,7 +930,7 @@ function libRenderCalendar() {
         popup.style.transform = 'translateX(-50%)';
         popup.style.width = 'calc(100% - 36px)';
         popup.style.maxWidth = '420px';
-        popup.style.zIndex = '1100';
+        popup.style.zIndex = '1050';
         popup.style.background = '#141414';
         popup.style.border = '1px solid rgba(255,255,255,0.1)';
         popup.style.padding = '14px';
@@ -1003,7 +1004,14 @@ function libRenderBoard() {
 
       html += '<div class="lib-bp-bar lib-bp-bar-' + col.key + '"></div>';
       html += '<div class="lib-bp-body">';
-      html += '<div class="lib-bp-date">' + esc(formatDateShort(post.target_date)) + '</div>';
+      var _bd = parseDate(post.target_date);
+      var _bdStr = '';
+      if (_bd) {
+        var _bdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        var _bmons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        _bdStr = _bdays[_bd.getDay()] + ' ' + _bd.getDate() + ' ' + _bmons[_bd.getMonth()];
+      }
+      html += '<div class="lib-bp-date">' + esc(_bdStr) + '</div>';
       html += '<div class="lib-bp-title">' + esc(post.title || 'Untitled');
       if (isBest) html += ' &#9733;';
       html += '</div>';
@@ -1063,8 +1071,22 @@ function libSetView(view, btn) {
   if (view === 'board') libRenderBoard();
 }
 
+// --------------- open post card (bridges to pipeline PCS) ---------------
+function libOpenPostCard(postId) {
+  var overlay = document.getElementById('lib-card-overlay');
+  if (overlay) overlay.style.display = 'none';
+  var calPopup = document.getElementById('lib-cal-popup');
+  if (calPopup) calPopup.style.display = 'none';
+  if (typeof openPCS === 'function') openPCS(postId, 'library');
+}
+window.libOpenPostCard = libOpenPostCard;
+
 // --------------- post card overlay ---------------
 function libOpenCard(postId) {
+  // FIX 2: dismiss calendar popup before opening card
+  var calPopup = document.getElementById('lib-cal-popup');
+  if (calPopup) calPopup.style.display = 'none';
+
   console.log('libOpenCard called', postId);
   var post = null;
   for (var i = 0; i < _libPosts.length; i++) {
@@ -1086,6 +1108,7 @@ function libOpenCard(postId) {
     overlay.className = 'ins-card-overlay';
     document.body.appendChild(overlay);
   }
+  // FIX 3: always set cssText so overlay anchors to bottom
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
 
   var h = '';
@@ -1127,18 +1150,12 @@ function libOpenCard(postId) {
   }
 
   h += '</div>';
-  h += '<div style="padding:14px 18px;border-top:1px solid var(--dotline)">';
-  h += '<button onclick="libGoToPipeline(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-text3);background:transparent;border:1px solid var(--dotline);padding:8px 14px;cursor:pointer;width:100%">Open in Pipeline</button>';
+  // FIX 1: single "Open Post Card" button, no LinkedIn URL field
+  h += '<div style="padding:14px 18px;">';
+  h += '<button onclick="libOpenPostCard(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-text3);background:transparent;border:1px solid var(--dotline);padding:10px 14px;cursor:pointer;width:100%;">';
+  h += 'Open Post Card';
+  h += '</button>';
   h += '</div>';
-  if (!li || !li.impressions) {
-    var liUrl = (_libLinkedIn[postId] && _libLinkedIn[postId].linkedinUrl) ? _libLinkedIn[postId].linkedinUrl : '';
-    h += '<div style="padding:10px 18px 14px;border-top:1px solid var(--dotline)">';
-    h += '<div style="font-family:var(--mono);font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--c-text3);margin-bottom:6px">Add LinkedIn URL to link performance data</div>';
-    h += '<div style="display:flex;gap:8px">';
-    h += '<input id="lib-li-url-input" type="url" placeholder="https://linkedin.com/feed/update/..." value="' + esc(liUrl) + '" style="flex:1;font-family:var(--mono);font-size:9px;color:var(--text1);background:var(--bg2);border:1px solid var(--dotline);padding:6px 10px;outline:none">';
-    h += '<button onclick="libSaveLinkedInUrl(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-gold);border:1px solid rgba(200,168,75,0.4);background:transparent;padding:6px 12px;cursor:pointer">Save</button>';
-    h += '</div></div>';
-  }
   h += '</div>';
 
   overlay.innerHTML = h;
@@ -1267,4 +1284,3 @@ window.libOpenCard = libOpenCard;
 window.libToggleSearch = libToggleSearch;
 window.libSyncChipVisuals = libSyncChipVisuals;
 window.libGoToPipeline = libGoToPipeline;
-window.libSaveLinkedInUrl = libSaveLinkedInUrl;

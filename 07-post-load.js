@@ -2357,8 +2357,8 @@ function _renderPipelineInner() {
     '<div class="pipeline-pub-toggle" onclick="togglePipelinePub()">' +
       '<span class="pipeline-pub-arrow">&#9660;</span>' +
       '<span style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green)">PUBLISHED</span>' +
+      '<span style="margin-left:auto"></span>' +
       '<span class="group-count">' + pubCount + '</span>' +
-      '<span style="font-family:var(--mono);font-size:8px;color:var(--c-text3,#555);margin-left:auto">Tap to expand</span>' +
     '</div>' +
     '<div class="pipeline-pub-cards"><div class="row-list post-list">' +
       (pubCardsHtml || '<div class="pstage-empty">No published posts</div>') +
