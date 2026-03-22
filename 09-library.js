@@ -1085,6 +1085,8 @@ function libOpenPostCard(postId) {
   if (!post) { console.warn('[PCS] post not found in _libPosts', postId); return; }
 
   var normalised = typeof normalise === 'function' ? normalise(post) : post;
+  if (!normalised.id) normalised.id = post.id;
+  if (!normalised.postId) normalised.postId = post.id;
   console.log('[PCS] normalise function exists:', typeof normalise === 'function');
   console.log('[PCS] normalised post id:', normalised.id || normalised.postId);
 
@@ -1097,7 +1099,8 @@ function libOpenPostCard(postId) {
   }
 
   console.log('[PCS] _postLists exists:', typeof window._postLists !== 'undefined');
-  if (typeof window._postLists !== 'undefined') {
+  if (typeof window._postLists === 'undefined') window._postLists = {};
+  if (true) {
     window._postLists['library'] = _libPosts.map(function(p) {
       return typeof normalise === 'function' ? normalise(p) : p;
     });
