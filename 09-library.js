@@ -1079,7 +1079,7 @@ function libOpenPostCard(postId) {
   if (calPopup) calPopup.style.display = 'none';
 
   var post = _libPosts.find(function(p) { return p.id === postId; });
-  if (!post) { console.warn('[PCS] post not found', postId); return; }
+  if (!post) return;
 
   var normalised = typeof normalise === 'function' ? normalise(post) : post;
   if (!normalised.id) normalised.id = post.id;
@@ -1091,24 +1091,32 @@ function libOpenPostCard(postId) {
   }
 
   var overlay = document.getElementById('pcs-overlay');
-  var screen  = document.getElementById('pcs-screen');
-  if (!overlay || !screen) { console.warn('[PCS] overlay not found'); return; }
+  var screen = document.getElementById('pcs-screen');
+  if (!overlay || !screen) return;
 
-  screen.style.cssText = '';
-  screen.style.pointerEvents = 'none';
-  overlay.style.cssText = 'display:flex;position:fixed;inset:0;z-index:1200;pointer-events:auto;';
-  document.body.style.overflow = 'hidden';
-  window._modalOpen = true;
+  try {
+    screen.style.cssText = '';
+    screen.style.transform = 'translateY(100%)';
+    screen.style.pointerEvents = '';
+    overlay.style.display = 'flex';
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.zIndex = '1200';
+    overlay.style.pointerEvents = 'auto';
+    document.body.style.overflow = 'hidden';
+    window._modalOpen = true;
 
-  if (typeof _renderPCS === 'function') {
     _renderPCS(postId);
-  } else {
-    console.warn('[PCS] _renderPCS not available');
-    return;
-  }
 
-  overlay.offsetHeight;
-  overlay.classList.add('open');
+    overlay.offsetHeight;
+    overlay.classList.add('open');
+  } catch(e) {
+    console.error('[PCS] failed:', e);
+    overlay.style.display = 'none';
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    window._modalOpen = false;
+  }
 }
 window.libOpenPostCard = libOpenPostCard;
 

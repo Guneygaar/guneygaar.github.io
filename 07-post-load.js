@@ -503,6 +503,7 @@ async function deleteTask(id) {
 }
 
 function renderAll() {
+  if (window._modalOpen) return;
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
 
   // Always render: lightweight stats & role visibility
