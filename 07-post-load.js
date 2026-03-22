@@ -131,6 +131,14 @@ function togglePipelineGroup(stage) {
   }
 }
 
+window._pipelinePubExpanded = false;
+function togglePipelinePub() {
+  window._pipelinePubExpanded = !window._pipelinePubExpanded;
+  var group = document.getElementById('pipeline-pub-group');
+  if (group) group.classList.toggle('pipeline-pub-expanded', window._pipelinePubExpanded);
+}
+window.togglePipelinePub = togglePipelinePub;
+
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
 // -- Unified link helpers  -  SINGLE SOURCE OF TRUTH for link display --
@@ -2330,9 +2338,42 @@ function _renderPipelineInner() {
       </div>`;
   }).join('');
 
+  // -- Published collapsed group --
+  var pubPosts = allPosts.filter(function(p) { return (p.stage || '') === 'published'; });
+  var pubCount = pubPosts.length;
+  var pubCardsHtml = '';
+  if (pubCount > 0) {
+    var pubListKey = 'pipeline-published';
+    var pubSorted = pubPosts.slice().sort(function(a, b) {
+      var dA = parseDate(a.targetDate), dB = parseDate(b.targetDate);
+      if (dA && dB) return dB - dA;
+      if (dA) return -1; if (dB) return 1;
+      return 0;
+    });
+    _postLists[pubListKey] = pubSorted;
+    pubCardsHtml = pubSorted.map(function(p) { return buildPipelineCard(p, pubListKey); }).join('');
+  }
+  var pubGroupHtml = '<div class="group-section pipeline-pub-group" id="pipeline-pub-group">' +
+    '<div class="pipeline-pub-toggle" onclick="togglePipelinePub()">' +
+      '<span class="pipeline-pub-arrow">&#9654;</span>' +
+      '<span style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green)">PUBLISHED</span>' +
+      '<span class="group-count">' + pubCount + '</span>' +
+      '<span style="font-family:var(--mono);font-size:8px;color:var(--c-text3,#555);margin-left:auto">Tap to expand</span>' +
+    '</div>' +
+    '<div class="pipeline-pub-cards"><div class="row-list post-list">' +
+      (pubCardsHtml || '<div class="pstage-empty">No published posts</div>') +
+    '</div></div>' +
+  '</div>';
+
   const container = document.getElementById('pipeline-container');
   if (!container) return;
-  container.innerHTML = html;
+  container.innerHTML = html + pubGroupHtml;
+
+  // -- Restore published expanded state --
+  if (window._pipelinePubExpanded) {
+    var pubGroup = document.getElementById('pipeline-pub-group');
+    if (pubGroup) pubGroup.classList.add('pipeline-pub-expanded');
+  }
 
   // -- Restore collapsed state across re-renders --
   Object.keys(_collapsedGroups).forEach(function(stage) {
