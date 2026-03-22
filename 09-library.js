@@ -8,6 +8,7 @@ console.log("LOADED:", "09-library.js");
 var _libPosts = null;
 var _libLinkedIn = {};
 var _libFilterWired = false;
+var _libCalPopupClose = null;
 var LIB_FILTER = {
   date: 'all', status: 'all', pillar: 'all',
   dateFrom: null, dateTo: null
@@ -149,6 +150,25 @@ function libOpenFilterSheet() {
 function libCloseFilterSheet() {
   var el = document.getElementById('lib-filter-sheet-overlay');
   if (el) el.classList.remove('open');
+  libSyncChipVisuals();
+}
+
+function libSyncChipVisuals() {
+  var groups = [
+    { sel: '.lib-fsd-chip', key: 'date' },
+    { sel: '.lib-fss-chip', key: 'status' },
+    { sel: '.lib-fsp-chip', key: 'pillar' }
+  ];
+  for (var g = 0; g < groups.length; g++) {
+    var chips = document.querySelectorAll(groups[g].sel);
+    for (var c = 0; c < chips.length; c++) {
+      var chip = chips[c];
+      chip.className = chip.className.replace(/\bactive\S*/g, '').trim();
+      if ((chip.getAttribute('data-v') || 'all') === LIB_FILTER[groups[g].key]) {
+        chip.classList.add('active');
+      }
+    }
+  }
 }
 
 // --------------- apply filters ---------------
@@ -250,7 +270,7 @@ function libApplyFilters() {
   var strip = document.getElementById('lib-active-strip');
   if (strip) {
     if (anyActive) {
-      strip.classList.add('show');
+      strip.classList.add('has-tags');
       var tags = '';
 
       if (LIB_FILTER.date !== 'all') {
@@ -275,7 +295,7 @@ function libApplyFilters() {
       tags += '<div class="lib-af-tag" onclick="libResetFilters()">Clear all <span>x</span></div>';
       strip.innerHTML = tags;
     } else {
-      strip.classList.remove('show');
+      strip.classList.remove('has-tags');
       strip.innerHTML = '';
     }
   }
@@ -811,14 +831,16 @@ function libRenderCalendar() {
         popup.style.top = (rect.bottom + 4) + 'px';
         popup.style.left = rect.left + 'px';
 
-        function closePopup(ev) {
+        if (_libCalPopupClose) document.removeEventListener('click', _libCalPopupClose);
+        _libCalPopupClose = function(ev) {
           if (!popup.contains(ev.target) && ev.target !== cell) {
             popup.classList.remove('open');
-            document.removeEventListener('click', closePopup);
+            document.removeEventListener('click', _libCalPopupClose);
+            _libCalPopupClose = null;
           }
-        }
+        };
         setTimeout(function() {
-          document.addEventListener('click', closePopup);
+          document.addEventListener('click', _libCalPopupClose);
         }, 0);
       });
     })(cells[c]);
@@ -1001,15 +1023,15 @@ function libOpenCard(postId) {
 
   var closeBtn = document.getElementById('lib-card-close');
   if (closeBtn) {
-    closeBtn.addEventListener('click', function() {
+    closeBtn.onclick = function() {
       overlay.classList.remove('open');
-    });
+    };
   }
-  overlay.addEventListener('click', function(e) {
+  overlay.onclick = function(e) {
     if (e.target === overlay) {
       overlay.classList.remove('open');
     }
-  });
+  };
 }
 
 // --------------- show library tab ---------------
@@ -1048,3 +1070,4 @@ window.showLibrary = showLibrary;
 window.libSetView = libSetView;
 window.libOpenCard = libOpenCard;
 window.libToggleSearch = libToggleSearch;
+window.libSyncChipVisuals = libSyncChipVisuals;
