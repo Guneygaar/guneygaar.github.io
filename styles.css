@@ -2847,11 +2847,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* --- Published collapsed group in Pipeline --- */
-.pipeline-pub-cards { display: none; }
-.pipeline-pub-expanded .pipeline-pub-cards { display: block; }
-.pipeline-pub-toggle { cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--dotline); }
-.pipeline-pub-arrow { transition: transform 0.2s; color: var(--c-text3); font-size: 10px; }
-.pipeline-pub-expanded .pipeline-pub-arrow { transform: rotate(90deg); }
+.pipeline-pub-cards { display: none; opacity: 0.35; }
+.pipeline-pub-expanded .pipeline-pub-cards { display: block; opacity: 0.45; }
+.pipeline-pub-toggle { cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-bottom: 1px solid var(--dotline); opacity: 0.5; border-top: 1px solid var(--dotline); }
+.pipeline-pub-toggle:hover { opacity: 0.7; }
+.pipeline-pub-arrow { transition: transform 0.2s, color 0.15s; color: var(--muted); font-family: var(--mono); font-size: 10px; display: inline-block; line-height: 1; flex-shrink: 0; }
+.pipeline-pub-expanded .pipeline-pub-arrow { transform: rotate(0deg); }
+.pipeline-pub-group:not(.pipeline-pub-expanded) .pipeline-pub-arrow { transform: rotate(-90deg); }
 
 /*
    PIPELINE POST CARD
