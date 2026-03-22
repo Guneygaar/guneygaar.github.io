@@ -1087,8 +1087,16 @@ function libOpenPostCard(postId) {
   if (!normalised.post_id) normalised.post_id = post.id;
 
   if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
-    var alreadyIn = allPosts.find(function(p) { return (p.id || p.postId) === postId; });
-    if (!alreadyIn) allPosts.push(normalised);
+    var existingIdx = allPosts.findIndex(function(p) {
+      return p.id === postId || p.postId === postId || p.post_id === postId;
+    });
+    if (existingIdx >= 0) {
+      allPosts[existingIdx].post_id = postId;
+      allPosts[existingIdx].id = postId;
+      allPosts[existingIdx].postId = postId;
+    } else {
+      allPosts.push(normalised);
+    }
   }
 
   var overlay = document.getElementById('pcs-overlay');
