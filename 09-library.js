@@ -1077,22 +1077,29 @@ function libOpenPostCard(postId) {
   if (libOverlay) libOverlay.style.display = 'none';
   var calPopup = document.getElementById('lib-cal-popup');
   if (calPopup) calPopup.style.display = 'none';
-  window._pipelinePubExpanded = true;
-  var pipelineBtn = document.querySelector('[data-tab="pipeline"]');
-  if (pipelineBtn) {
-    pipelineBtn.click();
-    setTimeout(function() {
-      if (typeof openPCS === 'function') {
-        openPCS(postId, 'library');
-        // fallback: if PCS sheet not visible, retry once
-        setTimeout(function() {
-          var pcsSheet = document.getElementById('pcs-sheet') || document.querySelector('.pcs-sheet');
-          if (pcsSheet && (pcsSheet.style.display === 'none' || !pcsSheet.classList.contains('open'))) {
-            openPCS(postId, 'library');
-          }
-        }, 400);
-      }
-    }, 600);
+
+  var post = _libPosts.find(function(p) { return p.id === postId; });
+  if (!post) { console.warn('libOpenPostCard: post not found', postId); return; }
+
+  var normalised = typeof normalise === 'function' ? normalise(post) : post;
+
+  if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
+    var alreadyIn = allPosts.find(function(p) {
+      return (p.id || p.postId) === postId;
+    });
+    if (!alreadyIn) allPosts.push(normalised);
+  }
+
+  if (typeof window._postLists !== 'undefined') {
+    window._postLists['library'] = _libPosts.map(function(p) {
+      return typeof normalise === 'function' ? normalise(p) : p;
+    });
+  }
+
+  if (typeof openPCS === 'function') {
+    openPCS(postId, 'library');
+  } else {
+    console.warn('libOpenPostCard: openPCS not available');
   }
 }
 window.libOpenPostCard = libOpenPostCard;
