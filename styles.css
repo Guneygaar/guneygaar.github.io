@@ -5410,10 +5410,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-bar-rej  { background: var(--red); }
 .lib-bar-best { background: var(--gold); }
 
-.lib-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.lib-p-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
-.lib-p-title { font-family: 'DM Sans', var(--sans); font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-p-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
+.lib-post-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 8px 12px 8px 10px; }
+.lib-p-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 2px; }
+.lib-p-title { font-family: 'DM Sans', var(--sans); font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.lib-p-meta  { font-family: var(--mono); font-size: 7px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; }
 
 /* Right side: impressions */
 .lib-p-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; margin-left: auto; }
@@ -5506,21 +5506,21 @@ label.pcs-date-tap:active { transform: scale(0.98); }
    ============================================= */
 #lib-tab-board { overflow-x: auto; display: block; }
 #lib-board-cols { display: flex; flex-direction: row; min-width: max-content; }
-.lib-board-col { width: 240px; flex-shrink: 0; margin-bottom: 20px; border-right: 1px solid rgba(255,255,255,0.08); }
+.lib-board-col { width: 240px; flex-shrink: 0; margin-bottom: 20px; border-right: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; }
 .lib-board-col:last-child { border-right: none; }
 .lib-board-col-hdr { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; border-top: 2px solid; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text2); }
 .lib-board-cnt { font-family: var(--mono); font-size: 9px; color: var(--muted); }
 
-.lib-bp-row { display: flex; align-items: stretch; gap: 8px; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; }
+.lib-bp-row { display: flex; align-items: stretch; gap: 8px; padding: 10px 20px; margin: 0; border-bottom: 1px solid var(--dotline); cursor: pointer; transition: background 0.15s; flex-shrink: 0; }
 .lib-bp-row:hover { background: var(--surface); }
-.lib-bp-bar { width: 3px; border-radius: 2px; flex-shrink: 0; align-self: stretch; }
+.lib-bp-bar { width: 4px; border-radius: 0; flex-shrink: 0; align-self: stretch; }
 .lib-bp-bar-published { background: var(--green); }
 .lib-bp-bar-parked    { background: var(--amber); }
 .lib-bp-bar-rejected  { background: var(--red); }
-.lib-bp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 9px 12px 9px 10px; }
-.lib-bp-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
-.lib-bp-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lib-bp-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 3px; }
+.lib-bp-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 7px 10px 7px 8px; }
+.lib-bp-date  { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 2px; }
+.lib-bp-title { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+.lib-bp-meta  { font-family: var(--mono); font-size: 8px; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
 .lib-bp-stats { font-family: var(--mono); font-size: 9px; color: var(--green); margin-top: 4px; }
 .lib-bp-nd    { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-top: 2px; }
 .lib-bp-reason { font-family: var(--mono); font-size: 8px; margin-top: 3px; padding: 3px 6px; border-left: 2px solid; }
