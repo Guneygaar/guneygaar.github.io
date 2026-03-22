@@ -103,6 +103,7 @@
   <!-- HEADER -->
   <header class="app-header">
     <span class="app-header-title" id="app-header-title"></span>
+    <span id="dash-pulse-word" style="font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:var(--c-red);display:none;">CRISIS</span>
     <!-- Option B: Pipeline number header -->
     <div class="hdr-nums" id="pipeline-hdr-nums" style="display:none">
       <div class="hdr-num-block">
@@ -187,12 +188,9 @@
     <div class="dash-body pcs-dash-surface">
       <div id="pcs-dashboard">
 
-        <div class="dash-hdr">
-          <div class="dash-hdr-left">
-            <div class="dash-edition" id="dash-edition">Good morning, Shubham</div>
-            <div class="dash-date" id="dash-date">Sat 21 Mar 2026</div>
-            <span class="dash-updated" id="dash-updated">Updated just now</span>
-          </div>
+        <div id="dash-greeting-line" style="display:flex;align-items:center;justify-content:space-between;padding:8px 18px;border-bottom:1px solid var(--dotline);">
+          <div style="font-family:var(--sans);font-size:12px;color:#888;">Working late, <span id="dash-greeting-name" style="color:var(--c-gold);font-weight:500;">Shubham</span></div>
+          <div id="dash-clock" style="font-family:var(--mono);font-size:9px;color:#444;"></div>
         </div>
 
         <!-- HEADLINE BLOCK -->
