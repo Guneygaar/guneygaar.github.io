@@ -109,21 +109,50 @@ window.filterPipelineStage = function(stage) {
   else { var all = document.querySelector('[data-stage="all"]'); if (all) all.click(); }
 };
 
-// -- Format day + date + days left --
-function fmtDayDate(dateStr) {
-  if (!dateStr) return '-- --';
+// -- Pipeline filter apply --
+function _applyPFFilter(posts) {
+  var pf = window._PF || { stage: 'all', owner: 'all', urgency: 'all' };
+  return posts.filter(function(p) {
+    var stage = p.stage || p.stageLC || '';
+    var owner = (p.owner || '').toLowerCase();
+    var td = new Date(p.targetDate || p.target_date);
+    var now = new Date();
+    var diff = Math.ceil((td - now) / 86400000);
+    if (pf.stage !== 'all' && stage !== pf.stage) return false;
+    if (pf.owner !== 'all') {
+      if (owner !== pf.owner) return false;
+    }
+    if (pf.urgency === 'overdue' && diff >= 0) return false;
+    if (pf.urgency === 'week' && (diff < 0 || diff > 7)) return false;
+    return true;
+  });
+}
+window._applyPFFilter = _applyPFFilter;
+
+// -- Format pipeline date with color --
+function formatPipelineDate(dateStr) {
+  if (!dateStr) return { text: '-- --', color: '#555' };
   var d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var now4 = new Date();
-  var diff = Math.ceil((d - now4) / 86400000);
-  var tag;
-  if (diff < 0) tag = Math.abs(diff) + 'd overdue';
-  else if (diff === 0) tag = 'today';
-  else if (diff === 1) tag = 'tomorrow';
-  else tag = diff + 'd left';
-  return dayNames[d.getDay()] + ' \u00b7 ' + d.getDate() + ' ' + monthNames[d.getMonth()] + ' \u00b7 ' + tag;
+  if (isNaN(d)) return { text: dateStr, color: '#555' };
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul',
+                'Aug','Sep','Oct','Nov','Dec'];
+  var base = days[d.getDay()] + ' \u00b7 ' + d.getDate() +
+             ' ' + months[d.getMonth()];
+  var now = new Date();
+  var diff = Math.ceil((new Date(d.getFullYear(),d.getMonth(),d.getDate()) -
+             new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
+  if (diff < 0) return {
+    text: base + ' \u00b7 ' + Math.abs(diff) + 'd overdue',
+    color: 'var(--c-red)'
+  };
+  if (diff === 0) return { text: base + ' \u00b7 today',
+    color: 'var(--c-cyan)' };
+  if (diff === 1) return { text: base + ' \u00b7 tomorrow',
+    color: 'var(--c-cyan)' };
+  if (diff <= 3) return { text: base + ' \u00b7 ' + diff + 'd left',
+    color: 'var(--c-amber)' };
+  return { text: base + ' \u00b7 ' + diff + 'd left', color: '#555' };
 }
 
 function openSearchResult(postId) {
@@ -2150,20 +2179,21 @@ function buildPipelineCard(p, listKey) {
   if (isOverdue) cardCls += ' overdue';
   if (isToday) cardCls += ' due-today';
 
-  var dateCls = 'pc-date';
-  if (isOverdue) dateCls += ' overdue';
-  else if (isToday) dateCls += ' today';
-  else if (!d) dateCls += ' nodate';
-
-  var dateDisplay = fmtDayDate(p.targetDate || p.target_date);
+  // Date display with color
+  var dateInfo = formatPipelineDate(p.targetDate || p.target_date);
+  var dateDisplay = dateInfo.text;
+  var dateColor = dateInfo.color;
 
   // Color bar computation
-  var now2 = new Date();
-  var td = p.targetDate || p.target_date;
-  var dObj = td ? new Date(td) : null;
-  var isOvd = dObj && dObj < now2 && !['published','parked','rejected'].includes(stageLC);
-  var dLeft = dObj ? Math.ceil((dObj - now2) / 86400000) : 999;
-  var barClr = isOvd ? 'var(--c-red)' : dLeft <= 3 ? 'var(--c-amber)' : stageLC === 'scheduled' ? 'var(--c-cyan)' : stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' : stageLC === 'in_production' ? 'rgba(246,166,35,0.25)' : 'rgba(255,255,255,0.06)';
+  var now2 = new Date().setHours(0,0,0,0);
+  var tdRaw = p.targetDate || p.target_date;
+  var tdVal = tdRaw ? new Date(tdRaw).setHours(0,0,0,0) : NaN;
+  var diff2 = isNaN(tdVal) ? 999 : Math.ceil((tdVal - now2) / 86400000);
+  var barColor = diff2 < 0 ? 'var(--c-red)' :
+    diff2 <= 3 ? 'var(--c-amber)' :
+    stageLC === 'scheduled' ? 'var(--c-cyan)' :
+    stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
+    'rgba(255,255,255,0.06)';
 
   // Responsibility badge
   var badgeCls = 'resp-badge';
@@ -2199,7 +2229,7 @@ function buildPipelineCard(p, listKey) {
   }
 
   var innerCard = '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
-    '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
+    '<span class="pc-date" style="color:' + dateColor + '">' + esc(dateDisplay) + '</span>' +
     '<span class="pc-body">' +
       '<span class="pc-title">' + esc(title) + '</span>' +
       (pillar ? '<span class="pc-meta">' + esc(pillar) + '</span>' : '') +
@@ -2211,8 +2241,8 @@ function buildPipelineCard(p, listKey) {
     chaseHtml +
   '</div>';
 
-  return '<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);">' +
-    '<div style="width:3px;flex-shrink:0;background:' + barClr + ';"></div>' +
+  return '<div style="display:flex;align-items:stretch;">' +
+    '<div style="width:3px;flex-shrink:0;background:' + barColor + '"></div>' +
     '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
 }
@@ -2644,6 +2674,9 @@ function _renderPipelineInner() {
     ? base.filter(p => activeFilter.includes(p.stage || ''))
     : base;
 
+  // -- Pipeline filter sheet --
+  stageFiltered = _applyPFFilter(stageFiltered);
+
   // -- Person filter --
   var source = stageFiltered;
   if (_activePerson === 'client') {
@@ -2654,16 +2687,16 @@ function _renderPipelineInner() {
     source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
   }
 
-  // -- PRIORITY SORT: daysInStage DESC -> targetDate ASC -> created_at ASC --
+  // -- PRIORITY SORT: overdue first, then soonest date --
   function prioritySort(posts) {
-    return posts.slice().sort((a, b) => {
-      const dA = daysInStage(a) || 0, dB = daysInStage(b) || 0;
-      if (dB !== dA) return dB - dA; // longest in stage first
-      const tA = parseDate(a.targetDate), tB = parseDate(b.targetDate);
-      if (tA && tB) return tA - tB; // nearest date first
-      if (tA) return -1; if (tB) return 1;
-      const cA = a.created_at || a.createdAt || '', cB = b.created_at || b.createdAt || '';
-      return cA < cB ? -1 : cA > cB ? 1 : 0; // oldest first
+    var now = new Date().setHours(0,0,0,0);
+    return posts.slice().sort(function(a, b) {
+      var da = new Date(a.targetDate || a.target_date).setHours(0,0,0,0);
+      var db = new Date(b.targetDate || b.target_date).setHours(0,0,0,0);
+      var aOver = da < now; var bOver = db < now;
+      if (aOver && !bOver) return -1;
+      if (!aOver && bOver) return 1;
+      return da - db;
     });
   }
 
@@ -2717,14 +2750,6 @@ function _renderPipelineInner() {
         chaseAllBtn = '<button class="chase-all-btn" onclick="chaseAll()" id="chase-all-btn">Chase All</button>';
       }
     }
-    // Stage badge colors aligned to design system
-    var badgeStyle = '';
-    if (sk === 'approval') badgeStyle = 'color:var(--c-red);background:rgba(255,75,75,0.08);border:1px solid rgba(255,75,75,0.25);';
-    else if (sk === 'input') badgeStyle = 'color:var(--c-purple);background:rgba(155,135,245,0.08);border:1px solid rgba(155,135,245,0.25);';
-    else if (sk === 'scheduled') badgeStyle = 'color:var(--c-cyan);background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);';
-    else if (sk === 'ready') badgeStyle = 'color:var(--c-green);background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.25);';
-    else if (sk === 'production') badgeStyle = 'color:var(--c-amber);background:rgba(246,166,35,0.08);border:1px solid rgba(246,166,35,0.25);';
-
     // Per-stage summary line
     var summaryText = '';
     var now5 = new Date();
@@ -2755,7 +2780,7 @@ function _renderPipelineInner() {
       <div class="group-hdr" onclick="togglePipelineGroup('${esc(stage)}')">
         <div class="group-hdr-left">
           <span class="group-chevron">&#9660;</span>
-          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}" style="${badgeStyle}padding:2px 8px;">${esc(label)}</div>
+          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}">${esc(label)}</div>
         </div>
         <div class="group-hdr-right" style="display:flex;align-items:center;gap:8px">
           ${selectBtn}

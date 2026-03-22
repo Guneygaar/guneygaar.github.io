@@ -1305,36 +1305,94 @@ window.togglePipelineSearch = togglePipelineSearch;
 window.showPipelineMenu = showPipelineMenu;
 
 // -- Pipeline filter sheet functions ---------------
+var _PF = { stage: 'all', owner: 'all', urgency: 'all' };
+
 function openPipelineFilter() {
-  var ov = document.getElementById('pipeline-filter-overlay');
-  if (ov) { ov.style.display = 'flex'; document.body.style.overflow = 'hidden'; window._modalOpen = true; }
+  var overlay = document.getElementById('pipeline-filter-overlay');
+  if (!overlay) return;
+  _buildPFChips('pf-stage-chips', 'stage', [
+    {val:'all',label:'All'}, {val:'awaiting_approval',label:'Approval'},
+    {val:'awaiting_brand_input',label:'Input'},
+    {val:'scheduled',label:'Scheduled'}, {val:'ready',label:'Ready'},
+    {val:'in_production',label:'Production'}
+  ]);
+  _buildPFChips('pf-owner-chips', 'owner', [
+    {val:'all',label:'All'}, {val:'chitra',label:'Chitra'},
+    {val:'pranav',label:'Pranav'}, {val:'client',label:'Client'}
+  ]);
+  _buildPFChips('pf-urgency-chips', 'urgency', [
+    {val:'all',label:'All'}, {val:'overdue',label:'Overdue'},
+    {val:'week',label:'Due this week'}
+  ]);
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  window._modalOpen = true;
 }
-function closePipelineFilter() {
-  var ov = document.getElementById('pipeline-filter-overlay');
-  if (ov) { ov.style.display = 'none'; document.body.style.overflow = ''; window._modalOpen = false; }
+
+function _buildPFChips(containerId, key, options) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = options.map(function(o) {
+    var active = _PF[key] === o.val;
+    return '<button onclick="_pfChip(\''+key+'\',\''+o.val+'\')"'+
+      ' style="font-family:var(--mono);font-size:8px;'+
+      'letter-spacing:0.1em;text-transform:uppercase;'+
+      'padding:5px 12px;border:1px solid '+
+      (active ? 'rgba(200,168,75,0.6);color:#C8A84B;' :
+      'rgba(255,255,255,0.1);color:#555;')+
+      'background:transparent;cursor:pointer;">'+o.label+'</button>';
+  }).join('');
 }
-function pfChip(el) {
-  var group = el.dataset.group;
-  el.closest('div').querySelectorAll('.pf-chip[data-group="' + group + '"]').forEach(function(c) { c.classList.remove('pf-on'); });
-  el.classList.add('pf-on');
+
+function _pfChip(key, val) {
+  _PF[key] = val;
+  if (key === 'stage') _buildPFChips('pf-stage-chips', 'stage',
+    [{val:'all',label:'All'},{val:'awaiting_approval',label:'Approval'},
+     {val:'awaiting_brand_input',label:'Input'},
+     {val:'scheduled',label:'Scheduled'},{val:'ready',label:'Ready'},
+     {val:'in_production',label:'Production'}]);
+  if (key === 'owner') _buildPFChips('pf-owner-chips', 'owner',
+    [{val:'all',label:'All'},{val:'chitra',label:'Chitra'},
+     {val:'pranav',label:'Pranav'},{val:'client',label:'Client'}]);
+  if (key === 'urgency') _buildPFChips('pf-urgency-chips', 'urgency',
+    [{val:'all',label:'All'},{val:'overdue',label:'Overdue'},
+     {val:'week',label:'Due this week'}]);
 }
+
 function applyPipelineFilter() {
-  var dot = document.getElementById('pipeline-filter-dot');
-  if (dot) dot.style.display = 'block';
   closePipelineFilter();
+  var filterIcon = document.querySelector(
+    '#pipeline-hdr-row button[onclick*="openPipelineFilter"]');
+  if (filterIcon) {
+    var hasFilter = _PF.stage!=='all'||_PF.owner!=='all'||
+                    _PF.urgency!=='all';
+    var badge = filterIcon.querySelector('.filter-active-dot');
+    if (!badge && hasFilter) {
+      badge = document.createElement('span');
+      badge.className = 'filter-active-dot';
+      badge.style.cssText = 'position:absolute;top:10px;right:4px;'+
+        'width:6px;height:6px;border-radius:50%;background:#C8A84B;'+
+        'border:1px solid #080808;';
+      filterIcon.appendChild(badge);
+    } else if (badge && !hasFilter) {
+      badge.remove();
+    }
+  }
+  if (typeof renderPipeline === 'function') renderPipeline();
 }
-function resetPipelineFilter() {
-  document.querySelectorAll('.pf-chip').forEach(function(c) { c.classList.remove('pf-on'); });
-  document.querySelectorAll('.pf-chip:first-child').forEach(function(c) { c.classList.add('pf-on'); });
-  var dot = document.getElementById('pipeline-filter-dot');
-  if (dot) dot.style.display = 'none';
-  closePipelineFilter();
+
+function closePipelineFilter() {
+  var overlay = document.getElementById('pipeline-filter-overlay');
+  if (overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+  window._modalOpen = false;
 }
+
 window.openPipelineFilter = openPipelineFilter;
 window.closePipelineFilter = closePipelineFilter;
-window.pfChip = pfChip;
 window.applyPipelineFilter = applyPipelineFilter;
-window.resetPipelineFilter = resetPipelineFilter;
+window._pfChip = _pfChip;
+window._PF = _PF;
 
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);

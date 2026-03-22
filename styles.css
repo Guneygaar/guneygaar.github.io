@@ -2753,13 +2753,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
  */
 
 .group-hdr { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px 6px; }
-.group-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; font-weight: 600; }
+.group-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 400; }
 .group-label[data-stage="production"] { color: var(--amber); }
 .group-label[data-stage="ready"]      { color: var(--green); }
 .group-label[data-stage="input"]      { color: var(--purple); }
 .group-label[data-stage="approval"]   { color: var(--red); }
 .group-label[data-stage="scheduled"]  { color: var(--cyan); }
-.group-count { font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text2); background: var(--surface2); border: 1px solid var(--muted2); padding: 2px 8px; }
+.group-count { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text1); background: none; border: none; padding: 0; }
 
 /*  Group collapse/expand  */
 .group-section { }
@@ -4025,23 +4025,21 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100%;
-  padding: 6px 10px;
-  margin-top: 6px;
-  border-top: 1px dotted rgba(200,168,75,0.2);
-  cursor: pointer;
   font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--gold);
-  opacity: 0.7;
-  transition: opacity 0.15s;
+  color: var(--c-red);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 4px;
 }
-.chase-btn:hover { opacity: 1; }
+.chase-btn:hover { opacity: 0.8; }
 .chase-arrow { font-weight: 600; }
 .chase-label { flex: 1; }
-.chase-days { opacity: 0.5; font-size: 8px; }
+.chase-days { opacity: 0.6; font-size: 8px; }
 
 /*  Chase All Button (group header)  */
 .chase-all-btn {
