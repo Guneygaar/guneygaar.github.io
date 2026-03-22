@@ -1145,6 +1145,78 @@ async function _nrsSubmit() {
   }
 }
 
+// -- Notification Bell Sheet -------------------
+async function openNotifications() {
+  var sheet = document.getElementById('notif-sheet');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'notif-sheet';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:1300;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.75);';
+    sheet.innerHTML = '<div id="notif-inner" style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--dotline);">' +
+      '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Notifications</span>' +
+      '<button onclick="closeNotifications()" style="background:none;border:none;color:var(--c-text3);font-size:16px;cursor:pointer;">X</button>' +
+      '</div>' +
+      '<div id="notif-list" style="padding:12px 18px;font-family:var(--mono);font-size:11px;color:var(--c-text3);">Loading...</div>' +
+      '</div>';
+    sheet.onclick = function(e) { if (e.target === sheet) closeNotifications(); };
+    document.body.appendChild(sheet);
+  }
+  sheet.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _loadNotifSheet();
+}
+
+async function _loadNotifSheet() {
+  var list = document.getElementById('notif-list');
+  if (!list) return;
+  try {
+    var role = window._userRole || 'admin';
+    var data = await apiFetch('/notifications?user_role=eq.' + role + '&order=created_at.desc&limit=30');
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="padding:20px 0;color:var(--c-text3);">No notifications yet.</div>';
+      return;
+    }
+    list.innerHTML = data.map(function(n) {
+      var ago = _bellTimeAgo(new Date(n.created_at));
+      return '<div style="padding:10px 0;border-bottom:1px solid var(--dotline);opacity:' + (n.read ? '0.5' : '1') + ';">' +
+        '<div style="color:var(--text1);margin-bottom:3px;">' + n.message + '</div>' +
+        '<div style="font-size:9px;color:var(--c-text3);">' + ago + '</div>' +
+        '</div>';
+    }).join('');
+    apiFetch('/notifications?user_role=eq.' + role + '&read=eq.false', { method: 'PATCH', body: JSON.stringify({ read: true }) });
+    updateNotifBadge();
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--c-red);">Failed to load notifications.</div>';
+  }
+}
+
+function closeNotifications() {
+  var sheet = document.getElementById('notif-sheet');
+  if (sheet) sheet.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function _bellTimeAgo(date) {
+  var diff = Math.floor((Date.now() - date) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+async function loadNotifBadge() {
+  try {
+    var role = window._userRole || 'admin';
+    var data = await apiFetch('/notifications?user_role=eq.' + role + '&read=eq.false&select=id');
+    updateNotifBadge(data ? data.length : 0);
+  } catch(e) {}
+}
+
+window.openNotifications = openNotifications;
+window.closeNotifications = closeNotifications;
+window.loadNotifBadge = loadNotifBadge;
+
 // -- FAB menu wiring --
 document.addEventListener('DOMContentLoaded', function() {
   var backdrop = document.getElementById('fab-backdrop');
@@ -1218,4 +1290,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_fabAttachScroll, 500);
   const titleEl = document.getElementById('app-header-title');
   if (titleEl && !titleEl.textContent) titleEl.textContent = 'Dashboard';
+  if (typeof loadNotifBadge === 'function') loadNotifBadge();
 });
