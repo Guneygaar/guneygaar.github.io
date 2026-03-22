@@ -103,6 +103,35 @@
   <!-- HEADER -->
   <header class="app-header">
     <span class="app-header-title" id="app-header-title"></span>
+    <!-- Option B: Pipeline number header -->
+    <div class="hdr-nums" id="pipeline-hdr-nums" style="display:none">
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-active" style="color:var(--c-red)">0</div>
+        <div class="hdr-nl">active</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-sched" style="color:var(--c-cyan)">0</div>
+        <div class="hdr-nl">sched</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-done" style="color:#444">0</div>
+        <div class="hdr-nl">done</div>
+      </div>
+    </div>
+    <!-- Option B: Dashboard number header -->
+    <div class="hdr-nums" id="dash-hdr-nums" style="display:none">
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="dh-runway" style="color:var(--c-red)">0</div>
+        <div class="hdr-nl">runway</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="dh-active" style="color:var(--c-amber)">0</div>
+        <div class="hdr-nl">active</div>
+      </div>
+    </div>
     <div class="app-header-right">
       <!-- Pipeline search trigger (visible only on Pipeline tab) -->
       <button class="search-icon-btn" id="pipeline-search-trigger" onclick="openPipelineSearch()" style="display:none">
@@ -965,7 +994,22 @@ window.allTasks        = window.allTasks    || [];
 
   <!-- Library header row 1: title + icons -->
   <div class="lib-hdr">
-    <h1 class="lib-hdr-title">Library</h1>
+    <div class="hdr-nums" id="lib-hdr-nums">
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="lh-pub" style="color:var(--c-green)">0</div>
+        <div class="hdr-nl">pub</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="lh-park" style="color:var(--c-amber)">0</div>
+        <div class="hdr-nl">parked</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="lh-rej" style="color:var(--c-red)">0</div>
+        <div class="hdr-nl">rej</div>
+      </div>
+    </div>
     <div class="lib-hdr-right">
       <button class="lib-icon-btn" id="lib-search-btn" onclick="libToggleSearch()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
@@ -1067,7 +1111,17 @@ window.allTasks        = window.allTasks    || [];
 
   <div class="ins-hdr">
     <div class="ins-hdr-left">
-      <div class="ins-hdr-title">Insights</div>
+      <div class="hdr-nums" id="ins-hdr-nums">
+        <div class="hdr-num-block">
+          <div class="hdr-n" id="ih-imp" style="color:var(--c-cyan)">--</div>
+          <div class="hdr-nl">imp</div>
+        </div>
+        <div class="hdr-vdiv"></div>
+        <div class="hdr-num-block">
+          <div class="hdr-n" id="ih-posts" style="color:#888">0</div>
+          <div class="hdr-nl">posts</div>
+        </div>
+      </div>
       <div class="ins-view-toggle">
         <button class="ins-vt active"
           onclick="insSetView('agency',this)">
