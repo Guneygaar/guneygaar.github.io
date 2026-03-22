@@ -326,6 +326,19 @@ function libFormatImp(n) {
   return String(n);
 }
 
+function libFormatDMon(dateStr) {
+  var d = parseDate(dateStr);
+  if (!d) return '';
+  var mons = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate() + ' ' + mons[d.getMonth()];
+}
+
+function libLifespanArrow(days) {
+  if (days <= 3) return { cls: 'lib-arr-fast', arrow: '&uarr;' };
+  if (days >= 10) return { cls: 'lib-arr-slow', arrow: '&darr;' };
+  return { cls: 'lib-arr-avg', arrow: '&ndash;' };
+}
+
 // --------------- pillar bar ---------------
 function libRenderPillarBar() {
   var bar = document.getElementById('lib-pillar-bar');
@@ -477,11 +490,27 @@ function libRenderList() {
       var stage = (post.stage || '').toLowerCase();
       var li = _libLinkedIn[post.id] || _libLinkedIn[post.post_id];
       var isBest = monthBest[mk] === pid;
+      var isWeekBest = false;
+      // check week best
+      var tdParsed = parseDate(post.target_date);
+      if (tdParsed) {
+        var dow = tdParsed.getDay();
+        var monOff2 = (dow === 0) ? -6 : 1 - dow;
+        var wk2 = new Date(tdParsed.getTime() + monOff2 * 86400000);
+        var wkKey2 = wk2.getFullYear() + '-' + String(wk2.getMonth() + 1).padStart(2, '0') + '-' + String(wk2.getDate()).padStart(2, '0');
+        if (weekBest[wkKey2] && weekBest[wkKey2].id === pid && !isBest) isWeekBest = true;
+      }
       var barClass = 'lib-bar';
       if (isBest) barClass += ' lib-bar-best';
       else if (stage === 'published') barClass += ' lib-bar-pub';
       else if (stage === 'parked') barClass += ' lib-bar-park';
       else if (stage === 'rejected') barClass += ' lib-bar-rej';
+
+      var lifespan = libGetLifespan(post);
+
+      // check if published on Wednesday
+      var isWed = false;
+      if (tdParsed && tdParsed.getDay() === 3) isWed = true;
 
       html += '<div class="lib-post-row lib-item" data-s="' + esc(stage) +
               '" data-p="' + esc(post.content_pillar || '') +
@@ -489,15 +518,36 @@ function libRenderList() {
               '" onclick="libOpenCard(\'' + esc(pid) + '\')">';
       html += '<div class="' + barClass + '"></div>';
       html += '<div class="lib-post-body">';
-      html += '<div class="lib-p-date">' + esc(formatDateShort(post.target_date)) + '</div>';
-      html += '<div class="lib-p-title">' + esc(post.title || 'Untitled') + '</div>';
-      html += '<div class="lib-p-meta">' + esc(formatPillarDisplay(post.content_pillar));
-      var lifespan = libGetLifespan(post);
-      if (lifespan !== null) html += ' &middot; ' + lifespan + 'd';
+
+      // FIX 2: date above title in D MMM format
+      html += '<div class="lib-p-date">' + esc(libFormatDMon(post.target_date)) + '</div>';
+
+      // FIX 6: star on best post
+      html += '<div class="lib-p-title">' + esc(post.title || 'Untitled');
+      if (isBest) html += ' <span class="lib-star-best">&#9733;</span>';
+      else if (isWeekBest) html += ' <span class="lib-star-week">&#9733;</span>';
       html += '</div>';
+
+      // FIX 3: meta line with pillar, owner, lifespan badge, Wed marker
+      html += '<div class="lib-p-meta">';
+      html += esc(formatPillarDisplay(post.content_pillar));
+      if (post.owner) html += ' &middot; ' + esc(post.owner);
+      if (lifespan !== null) {
+        var arrInfo = libLifespanArrow(lifespan);
+        html += ' <span class="lib-life-badge ' + arrInfo.cls + '">' + lifespan + 'd ' + arrInfo.arrow + '</span>';
+      }
+      if (isWed && stage === 'published') html += ' <span class="lib-wed-tag">Wed</span>';
+      html += '</div>';
+
+      // FIX 5: reason block inside row for parked/rejected
+      if ((stage === 'parked' || stage === 'rejected') && post.comments) {
+        var reasonCls = stage === 'parked' ? 'lib-reason-park' : 'lib-reason-rej';
+        html += '<div class="lib-p-reason ' + reasonCls + '">' + esc(post.comments) + '</div>';
+      }
+
       html += '</div>'; // close lib-post-body
 
-      // right side: impressions or status label
+      // FIX 4: right side impressions with all states
       html += '<div class="lib-p-right">';
       if (stage === 'published') {
         if (li && li.impressions) {
@@ -506,22 +556,20 @@ function libRenderList() {
           html += '<div class="lib-p-imp-lbl">impressions</div>';
         } else {
           html += '<div class="lib-p-imp lib-imp-nodata">-</div>';
+          html += '<div class="lib-p-imp-lbl">no data</div>';
         }
       } else if (stage === 'parked') {
         html += '<div class="lib-p-imp lib-imp-park">Parked</div>';
+        if (post.status_changed_at) {
+          var parkedDays = Math.round(Math.abs(new Date().getTime() - new Date(post.status_changed_at).getTime()) / 86400000);
+          html += '<div class="lib-p-imp-lbl">' + parkedDays + 'd parked</div>';
+        }
       } else if (stage === 'rejected') {
         html += '<div class="lib-p-imp lib-imp-rej">Rejected</div>';
       }
       html += '</div>';
 
       html += '</div>'; // close lib-post-row
-
-      // reason line (outside row, below it)
-      if (stage === 'parked' && post.comments) {
-        html += '<div class="lib-p-reason lib-reason-park">' + esc(post.comments) + '</div>';
-      } else if (stage === 'rejected' && post.comments) {
-        html += '<div class="lib-p-reason lib-reason-rej">' + esc(post.comments) + '</div>';
-      }
 
       // gap alert between posts
       if (j < posts.length - 1) {
