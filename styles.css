@@ -4777,9 +4777,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 @keyframes dash-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 .dc-pulse { animation: dash-pulse 1.4s ease-in-out infinite; }
 
-@keyframes glowPulse {
-  0%,100%{text-shadow:0 0 18px rgba(255,75,75,0.55);}
-  50%{text-shadow:0 0 30px rgba(255,75,75,0.9);}
+@keyframes dashGlow {
+  0%,100% { opacity:0.45; filter:blur(6px); }
+  50% { opacity:1; filter:blur(10px); }
 }
 
 .dash-metric-streak {

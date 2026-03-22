@@ -103,9 +103,8 @@
   <!-- HEADER -->
   <header class="app-header">
     <span class="app-header-title" id="app-header-title" style="display:none"></span>
-    <div id="dash-kicker-hdr" style="display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-red);">
-      <div id="dash-kicker-dot" style="width:6px;height:6px;border-radius:50%;background:var(--c-red);flex-shrink:0;"></div>
-      <span id="dash-kicker-text">BREAKING &middot; RUNWAY CRISIS</span>
+    <div id="dash-greeting-hdr" style="font-family:var(--sans);font-size:13px;color:#888;font-weight:400;">
+      Good morning, <span id="dash-greeting-name" style="color:var(--c-gold);font-weight:500;">Shubham</span>
     </div>
     <div class="hdr-nums" id="pipeline-hdr-nums" style="display:none">
       <div class="hdr-num-block">
@@ -172,6 +171,10 @@
     <div class="dash-body pcs-dash-surface">
       <div id="pcs-dashboard">
 
+        <div id="dash-kicker-line" style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-red);margin-bottom:6px;">
+          <div id="dash-kicker-dot" style="width:5px;height:5px;border-radius:50%;background:var(--c-red);flex-shrink:0;"></div>
+          <span id="dash-kicker-text">BREAKING &middot; RUNWAY CRISIS</span>
+        </div>
 
         <!-- HEADLINE BLOCK -->
         <div class="dash-headline-block">
@@ -238,6 +241,11 @@
           <div id="dash-task-list">
             <!-- populated by JS -->
           </div>
+        </div>
+
+        <div id="dash-win-section" style="padding:8px 18px 14px;border-top:1px solid rgba(255,255,255,0.08);">
+          <div style="font-family:var(--mono);font-size:7px;letter-spacing:0.22em;text-transform:uppercase;color:#333;margin-bottom:5px;">Yesterday's win</div>
+          <div id="dash-win-text" style="font-family:var(--mono);font-size:9px;color:#555;line-height:1.6;"></div>
         </div>
 
       </div>

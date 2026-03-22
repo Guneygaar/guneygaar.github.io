@@ -850,11 +850,33 @@ function getDashGreeting() {
   return { greeting: greeting, name: name };
 }
 
-function updateDashKicker(state, runway, overdue) {
+function updateDashGreeting() {
+  var nameEl = document.getElementById('dash-greeting-name');
+  var hdrEl = document.getElementById('dash-greeting-hdr');
+  if (!nameEl || !hdrEl) return;
+  var role = (window.effectiveRole || window.currentRole || 'admin').toLowerCase();
+  var nameMap = {
+    admin: 'Shubham', shubham: 'Shubham',
+    servicing: 'Chitra', chitra: 'Chitra',
+    creative: 'Pranav', pranav: 'Pranav',
+    client: ''
+  };
+  var name = nameMap[role] || 'Shubham';
+  var h = new Date().getHours();
+  var timeWord = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  if (name) {
+    nameEl.textContent = name;
+    hdrEl.childNodes[0].textContent = timeWord + ', ';
+  } else {
+    hdrEl.textContent = timeWord;
+  }
+}
+
+function updateDashKicker(state) {
   var dot = document.getElementById('dash-kicker-dot');
   var text = document.getElementById('dash-kicker-text');
-  var hdr = document.getElementById('dash-kicker-hdr');
-  if (!dot || !text || !hdr) return;
+  var line = document.getElementById('dash-kicker-line');
+  if (!dot || !text || !line) return;
   var states = {
     crisis: { text: 'BREAKING \u00b7 RUNWAY CRISIS', color: 'var(--c-red)' },
     urgent: { text: 'HEADS UP \u00b7 ACTION NEEDED', color: 'var(--c-amber)' },
@@ -862,7 +884,7 @@ function updateDashKicker(state, runway, overdue) {
     idle:   { text: 'QUIET \u00b7 NO ACTIVITY TODAY', color: '#444' }
   };
   var s = states[state] || states.idle;
-  hdr.style.color = s.color;
+  line.style.color = s.color;
   dot.style.background = s.color;
   text.textContent = s.text;
 }
@@ -871,11 +893,12 @@ function updateDashDeck(runway, overdue, pranavDef) {
   var el = document.getElementById('dash-deck');
   if (!el) return;
   var parts = [];
-  if (runway <= 6) parts.push('Only ' + runway + ' post' + (runway===1?'':'s') + ' scheduled from today');
+  if (runway <= 6) parts.push('Only ' + runway + ' post' + (runway===1?'':'s') + ' scheduled');
   if (pranavDef < 0) parts.push('Pranav ' + Math.abs(pranavDef) + ' behind');
   if (overdue > 0) parts.push(overdue + ' overdue');
-  if (parts.length) parts.push('act immediately');
+  if (parts.length) parts.push('act now');
   el.textContent = parts.join(' \u00b7 ');
+  el.style.cssText = 'font-family:var(--mono);font-size:8px;color:#555;margin:4px 0 4px;line-height:1.4;letter-spacing:0.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
 }
 
 function updateDashDatetime() {
@@ -932,7 +955,7 @@ function renderScoreboard() {
       // Priority 1 - Runway critical
       kicker = 'Breaking \u00b7 Runway Crisis';
       kickerColor = 'var(--red)';
-      headline = 'Runway at \u00b7 <span class="hl-num dc-pulse" style="color:var(--c-red);text-shadow:0 0 18px rgba(255,75,75,0.55);animation:glowPulse 2.5s ease-in-out infinite;">' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
+      headline = 'Runway at \u00b7 <span style="position:relative;display:inline-block;color:var(--c-red);"><span style="position:absolute;left:0;top:0;color:var(--c-red);filter:blur(7px);animation:dashGlow 2s ease-in-out infinite;pointer-events:none;user-select:none;" aria-hidden="true">' + dashPad(runwayCount) + '</span>' + dashPad(runwayCount) + '</span> \u00b7 agency running on empty';
       deck = 'Only ' + runwayCount + ' post' + (runwayCount === 1 ? '' : 's') + ' scheduled from today \u00b7 Pranav ' + Math.abs(pranavDeficit) + ' posts behind \u00b7 act immediately';
     } else if (pranavDeficit < -14 && role !== 'Servicing') {
       // Priority 2 - Pranav deficit worse than -14
@@ -1033,7 +1056,7 @@ function renderScoreboard() {
     else if (runwayCount <= 6 || chitraOverdue > 0) kickerState = 'urgent';
     else if (runwayCount > 6) kickerState = 'steady';
     else kickerState = 'idle';
-    updateDashKicker(kickerState, runwayCount, chitraOverdue);
+    updateDashKicker(kickerState);
     updateDashDeck(runwayCount, chitraOverdue, pranavDeficit);
     updateDashDatetime();
 
@@ -1365,6 +1388,7 @@ function renderDashboard() {
 function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
   if (!el) return;
+  updateDashGreeting();
   renderScoreboard();
   updateDashDatetime();
   if (!window._dashDatetimeInterval) {
@@ -1372,6 +1396,7 @@ function _renderDashboardInner() {
   }
   _updateStreakLines();
   _appendYesterdaysWin();
+  updateDashWin();
 }
 
 async function _updateStreakLines() {
@@ -1553,6 +1578,32 @@ async function _appendYesterdaysWin() {
   var win = await _getYesterdaysWin();
   if (win && elDeck.textContent) {
     elDeck.textContent = elDeck.textContent + ' \u00b7 ' + win;
+  }
+}
+
+function updateDashWin(posts) {
+  var el = document.getElementById('dash-win-text');
+  if (!el) return;
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var yStr = yesterday.toISOString().slice(0, 10);
+  var published = (posts || allPosts || []).filter(function(p) {
+    return (p.stage === 'published' || p.stageLC === 'published') &&
+           p.status_changed_at && p.status_changed_at.slice(0,10) === yStr;
+  });
+  if (published.length) {
+    el.textContent = published.length + ' post' + (published.length===1?'':'s') + ' published yesterday \u00b7 pipeline moving';
+  } else {
+    var recentPublished = (posts || allPosts || []).filter(function(p) {
+      return p.stage === 'published' || p.stageLC === 'published';
+    });
+    if (recentPublished.length) {
+      var last = recentPublished[0];
+      var title = last.title || 'Last post';
+      el.textContent = (title.length > 28 ? title.slice(0,28) + '\u2026' : title) + ' \u00b7 last published';
+    } else {
+      el.textContent = 'No posts published recently \u00b7 time to create';
+    }
   }
 }
 
