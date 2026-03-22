@@ -131,6 +131,18 @@ function libWireFilters() {
       clearActiveClasses(siblings[i]);
     }
     chip.classList.add(getActiveClass(group.key, val));
+
+    // Toggle custom date row
+    if (group.key === 'date') {
+      var customRow = document.getElementById('lib-fs-custom-row');
+      if (customRow) {
+        if (val === 'custom') {
+          customRow.classList.add('open');
+        } else {
+          customRow.classList.remove('open');
+        }
+      }
+    }
   }
 
   // Reset button
@@ -145,6 +157,12 @@ function libWireFilters() {
   var applyBtn = document.getElementById('lib-fs-apply-btn');
   if (applyBtn) {
     applyBtn.addEventListener('click', function() {
+      if (LIB_FILTER.date === 'custom') {
+        var fromEl = document.getElementById('lib-date-from');
+        var toEl = document.getElementById('lib-date-to');
+        LIB_FILTER.dateFrom = fromEl ? fromEl.value : null;
+        LIB_FILTER.dateTo = toEl ? toEl.value : null;
+      }
       libApplyFilters();
       libCloseFilterSheet();
     });
@@ -597,6 +615,7 @@ function libRenderList() {
       html += '<div class="lib-post-row lib-item" data-s="' + esc(stage) +
               '" data-p="' + esc(post.content_pillar || '') +
               '" data-date="' + esc(post.target_date || '') +
+              '" data-title="' + esc(post.title || '') +
               '" onclick="libOpenCard(\'' + esc(pid) + '\')">';
       html += '<div class="' + barClass + '"></div>';
       html += '<div class="lib-post-body">';
@@ -959,6 +978,7 @@ function libRenderBoard() {
       html += '<div class="lib-bp-row lib-item" data-s="' + esc(col.key) +
               '" data-p="' + esc(post.content_pillar || '') +
               '" data-date="' + esc(post.target_date || '') +
+              '" data-title="' + esc(post.title || '') +
               '" onclick="libOpenCard(\'' + esc(pid) + '\')">';
 
       html += '<div class="lib-bp-bar lib-bp-bar-' + col.key + '"></div>';
@@ -991,6 +1011,11 @@ function libRenderBoard() {
       }
 
       html += '</div></div>';
+    }
+
+    if (cnt === 0) {
+      var emptyLabel = col.key === 'rejected' ? 'No rejected posts' : col.key === 'parked' ? 'No parked posts' : 'No published posts';
+      html += '<div style="padding:18px 12px;font-family:var(--mono);font-size:11px;color:var(--c-text3,#555);text-align:center">' + emptyLabel + '</div>';
     }
 
     html += '</div>';
@@ -1081,8 +1106,17 @@ function libOpenCard(postId) {
     h += '</div>';
   }
 
-  h += '<button class="pc-action-btn" onclick="openPCS(\'' + esc(postId) + '\', \'library\')">Open in Pipeline</button>';
   h += '</div>';
+  h += '<div style="padding:14px 18px;border-top:1px solid var(--dotline)">';
+  h += '<button onclick="libGoToPipeline(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-text3);background:transparent;border:1px solid var(--dotline);padding:8px 14px;cursor:pointer;width:100%">Open in Pipeline</button>';
+  h += '</div>';
+  var liUrl = (_libLinkedIn[postId] && _libLinkedIn[postId].linkedinUrl) ? _libLinkedIn[postId].linkedinUrl : '';
+  h += '<div style="padding:10px 18px 14px;border-top:1px solid var(--dotline)">';
+  h += '<div style="font-family:var(--mono);font-size:7px;letter-spacing:0.2em;text-transform:uppercase;color:var(--c-text3);margin-bottom:6px">LinkedIn URL</div>';
+  h += '<div style="display:flex;gap:8px">';
+  h += '<input id="lib-li-url-input" type="url" placeholder="https://linkedin.com/feed/update/..." value="' + esc(liUrl) + '" style="flex:1;font-family:var(--mono);font-size:9px;color:var(--text1);background:var(--bg2);border:1px solid var(--dotline);padding:6px 10px;outline:none">';
+  h += '<button onclick="libSaveLinkedInUrl(\'' + esc(postId) + '\')" style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-gold);border:1px solid rgba(200,168,75,0.4);background:transparent;padding:6px 12px;cursor:pointer">Save</button>';
+  h += '</div></div>';
   h += '</div>';
 
   overlay.innerHTML = h;
@@ -1113,7 +1147,7 @@ function showLibrary() {
   var lv = document.getElementById('library-view');
   if (lv) lv.classList.add('active');
 
-  setTimeout(function() { libWireFilters(); }, 0);
+  setTimeout(function() { libWireFilters(); libInitSearch(); }, 0);
 
   if (_libPosts === null) {
     libLoadPosts().then(function() {
@@ -1126,9 +1160,74 @@ function showLibrary() {
   }
 }
 
-// --------------- search toggle stub ---------------
+// --------------- search toggle ---------------
+var _libSearchOpen = false;
 function libToggleSearch() {
-  // placeholder for future search bar toggle
+  var bar = document.getElementById('lib-search-bar');
+  if (!bar) return;
+  if (_libSearchOpen) {
+    bar.style.display = 'none';
+    bar.querySelector('input').value = '';
+    _libSearchOpen = false;
+    libSearchFilter('');
+  } else {
+    bar.style.display = 'block';
+    var inp = bar.querySelector('input');
+    inp.value = '';
+    inp.focus();
+    _libSearchOpen = true;
+  }
+}
+
+function libSearchFilter(term) {
+  var items = document.querySelectorAll('.lib-item');
+  var t = (term || '').toLowerCase();
+  for (var i = 0; i < items.length; i++) {
+    var title = (items[i].getAttribute('data-title') || '').toLowerCase();
+    if (!t) { items[i].style.display = ''; continue; }
+    items[i].style.display = title.indexOf(t) > -1 ? '' : 'none';
+  }
+}
+
+function libInitSearch() {
+  var hdr = document.querySelector('.lib-hdr');
+  if (!hdr || document.getElementById('lib-search-bar')) return;
+  var bar = document.createElement('div');
+  bar.id = 'lib-search-bar';
+  bar.className = 'lib-search-bar';
+  bar.style.display = 'none';
+  bar.innerHTML = '<input type="text" placeholder="Search posts..." class="lib-search-input">';
+  hdr.parentNode.insertBefore(bar, hdr.nextSibling);
+  var inp = bar.querySelector('input');
+  inp.addEventListener('input', function() { libSearchFilter(inp.value); });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { libToggleSearch(); }
+  });
+}
+
+// --------------- libGoToPipeline ---------------
+function libGoToPipeline(postId) {
+  var overlay = document.getElementById('lib-card-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (typeof openPCS === 'function') openPCS(postId, 'library');
+}
+
+// --------------- libSaveLinkedInUrl ---------------
+async function libSaveLinkedInUrl(postId) {
+  var input = document.getElementById('lib-li-url-input');
+  if (!input || !input.value.trim()) return;
+  var url = input.value.trim();
+  try {
+    await apiFetch('/posts?id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ linkedin_link: url, updated_at: new Date().toISOString() })
+    });
+    if (!_libLinkedIn[postId]) _libLinkedIn[postId] = {};
+    _libLinkedIn[postId].linkedinUrl = url;
+    showToast('LinkedIn URL saved', 'success');
+  } catch(e) {
+    showToast('Failed to save URL', 'error');
+  }
 }
 
 // --------------- attach to window ---------------
@@ -1141,3 +1240,5 @@ window.libSetView = libSetView;
 window.libOpenCard = libOpenCard;
 window.libToggleSearch = libToggleSearch;
 window.libSyncChipVisuals = libSyncChipVisuals;
+window.libGoToPipeline = libGoToPipeline;
+window.libSaveLinkedInUrl = libSaveLinkedInUrl;

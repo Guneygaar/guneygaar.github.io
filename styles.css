@@ -5361,6 +5361,16 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .lib-fs-reset { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 14px; background: none; border: 1px dotted var(--muted2); color: var(--muted); cursor: pointer; }
 .lib-fs-apply { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 14px; background: var(--accent); border: none; color: #fff; cursor: pointer; }
 
+/* --- Search bar --- */
+.lib-search-bar { width: 100%; border-bottom: 1px solid var(--dotline); background: var(--bg); }
+.lib-search-input { width: 100%; padding: 8px 18px; font-family: var(--mono); font-size: 13px; color: var(--text1); background: var(--bg); border: none; border-bottom: 1px solid var(--dotline); outline: none; box-sizing: border-box; }
+
+/* --- Custom date row --- */
+.lib-fs-custom-row { display: none; align-items: center; gap: 8px; margin-top: 8px; }
+.lib-fs-custom-row.open { display: flex; }
+.lib-fs-cd-lbl { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lib-fs-cd-input { font-family: var(--mono); font-size: 10px; color: var(--text1); background: var(--bg); border: 1px solid var(--dotline); padding: 4px 8px; outline: none; }
+
 /* --- Tab body / visibility --- */
 .lib-tab-body { display: block; }
 .lib-hidden { display: none !important; }
