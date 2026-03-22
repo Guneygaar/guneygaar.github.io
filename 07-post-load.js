@@ -1399,7 +1399,7 @@ function _renderDashboardInner() {
     window._dashDatetimeInterval = setInterval(updateDashDatetime, 60000);
   }
   _updateStreakLines();
-  updateDashWin();
+  updateBelowFold();
 }
 
 async function _updateStreakLines() {
@@ -1584,39 +1584,139 @@ async function _appendYesterdaysWin() {
   }
 }
 
-function updateDashWin(posts) {
-  var el = document.getElementById('dash-win-text');
-  if (!el) return;
-  var now = new Date();
-  var yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  var yStr = yesterday.toISOString().slice(0, 10);
+function updateBelowFold(posts) {
   var allP = posts || allPosts || [];
-  var pubYesterday = allP.filter(function(p) {
-    return (p.stage === 'published' || p.stageLC === 'published') &&
-           p.status_changed_at && p.status_changed_at.slice(0,10) === yStr;
+  _updateNextScheduled(allP);
+  _updateTodaysFocus(allP);
+  _updateLastMove(allP);
+  _updateUnsaidThing(allP);
+}
+
+function _updateNextScheduled(allP) {
+  var titleEl = document.getElementById('dash-next-title');
+  var metaEl = document.getElementById('dash-next-meta');
+  if (!titleEl || !metaEl) return;
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var upcoming = allP.filter(function(p) {
+    return p.stage === 'scheduled' && p.target_date && p.target_date >= todayStr;
+  }).sort(function(a, b) {
+    return (a.target_date || '') < (b.target_date || '') ? -1 : 1;
   });
-  if (pubYesterday.length) {
-    el.textContent = pubYesterday.length + ' post' + (pubYesterday.length===1?'':'s') + ' sorted yesterday \u00b7 pipeline sorted';
-    return;
+  if (upcoming.length) {
+    var next = upcoming[0];
+    var t = next.title || 'Untitled';
+    if (t.length > 36) t = t.slice(0, 36) + '...';
+    titleEl.textContent = esc(t);
+    var parts = [];
+    if (next.target_date) parts.push(next.target_date);
+    if (next.owner) parts.push(next.owner);
+    metaEl.textContent = parts.join(' / ');
+  } else {
+    titleEl.textContent = 'Nothing on the runway';
+    metaEl.textContent = '';
   }
-  var sevenDays = new Date(now);
-  sevenDays.setDate(sevenDays.getDate() - 7);
-  var recent = allP.filter(function(p) {
-    return (p.stage === 'published' || p.stageLC === 'published') &&
-           p.status_changed_at && new Date(p.status_changed_at) >= sevenDays;
-  }).sort(function(a,b) {
+}
+
+function _updateTodaysFocus(allP) {
+  var titleEl = document.getElementById('dash-focus-title');
+  var metaEl = document.getElementById('dash-focus-meta');
+  if (!titleEl || !metaEl) return;
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var focus = allP.filter(function(p) {
+    return p.stage === 'scheduled' && p.target_date && p.target_date === todayStr;
+  });
+  if (!focus.length) {
+    focus = allP.filter(function(p) {
+      return p.stage === 'in_production' || p.stage === 'ready' || p.stage === 'awaiting_approval';
+    }).sort(function(a, b) {
+      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
+    });
+  }
+  if (focus.length) {
+    var f = focus[0];
+    var t = f.title || 'Untitled';
+    if (t.length > 36) t = t.slice(0, 36) + '...';
+    titleEl.textContent = esc(t);
+    var cfg = STAGE_META[f.stage] || {};
+    metaEl.textContent = (cfg.label || f.stage) + (f.owner ? ' / ' + f.owner : '');
+  } else {
+    titleEl.textContent = 'Clear runway';
+    metaEl.textContent = 'nothing needs attention today';
+  }
+}
+
+function _updateLastMove(allP) {
+  var titleEl = document.getElementById('dash-move-title');
+  var metaEl = document.getElementById('dash-move-meta');
+  if (!titleEl || !metaEl) return;
+  var moved = allP.filter(function(p) {
+    return p.status_changed_at;
+  }).sort(function(a, b) {
     return new Date(b.status_changed_at) - new Date(a.status_changed_at);
   });
-  if (recent.length) {
-    var last = recent[0];
-    var title = (last.title || 'Last post');
-    if (title.length > 28) title = title.slice(0,28) + '\u2026';
-    var daysAgo = Math.floor((now - new Date(last.status_changed_at)) / 86400000);
-    el.textContent = title + ' \u00b7 ' + (daysAgo === 0 ? 'today' : daysAgo === 1 ? 'yesterday' : daysAgo + ' days ago');
+  if (moved.length) {
+    var last = moved[0];
+    var t = last.title || 'Untitled';
+    if (t.length > 36) t = t.slice(0, 36) + '...';
+    titleEl.textContent = esc(t);
+    var cfg = STAGE_META[last.stage] || {};
+    var ago = _timeAgo(last.status_changed_at);
+    metaEl.textContent = (cfg.label || last.stage) + ' / ' + ago;
   } else {
-    el.textContent = 'Nothing sorted yet';
+    titleEl.textContent = 'No moves yet';
+    metaEl.textContent = '';
   }
+}
+
+function _timeAgo(dateStr) {
+  var diff = Date.now() - new Date(dateStr).getTime();
+  var mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return mins + 'm ago';
+  var hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + 'h ago';
+  var days = Math.floor(hrs / 24);
+  return days + 'd ago';
+}
+
+function _updateUnsaidThing(allP) {
+  var el = document.getElementById('dash-unsaid-text');
+  if (!el) return;
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
+  var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
+  var scheduled = allP.filter(function(p) {
+    return p.stage === 'scheduled' && p.target_date && p.target_date >= todayStr;
+  }).length;
+  var awaiting = allP.filter(function(p) { return p.stage === 'awaiting_approval'; }).length;
+  var stale = allP.filter(function(p) {
+    if (!p.status_changed_at) return false;
+    return (Date.now() - new Date(p.status_changed_at).getTime()) > 3 * 86400000 &&
+           p.stage !== 'published' && p.stage !== 'parked' && p.stage !== 'rejected';
+  }).length;
+
+  var lines = [];
+  if (scheduled === 0) {
+    lines.push('runway is empty -- nothing scheduled ahead');
+  } else if (scheduled < 3) {
+    lines.push('only ' + scheduled + ' in the runway -- thin buffer');
+  }
+  if (inProd > 4) {
+    lines.push(inProd + ' posts stuck in production');
+  }
+  if (awaiting > 2) {
+    lines.push(awaiting + ' waiting on approval -- bottleneck?');
+  }
+  if (stale > 0) {
+    lines.push(stale + ' post' + (stale > 1 ? 's' : '') + ' untouched 3+ days');
+  }
+  if (ready > 3 && scheduled === 0) {
+    lines.push(ready + ' ready but none scheduled -- dispatch gap');
+  }
+  if (!lines.length) {
+    lines.push('pipeline is clean -- no flags');
+  }
+  el.textContent = lines.join(' / ');
 }
 
 function _updateDashTimestamp() {
