@@ -856,16 +856,14 @@ function updateDashKicker(state, runway, overdue) {
   var hdr = document.getElementById('dash-kicker-hdr');
   if (!dot || !text || !hdr) return;
   var states = {
-    crisis: { text: 'BREAKING \u00b7 RUNWAY CRISIS', color: 'var(--c-red)', dur: '1.5s' },
-    urgent: { text: 'HEADS UP \u00b7 ACTION NEEDED', color: 'var(--c-amber)', dur: '2s' },
-    steady: { text: 'ALL CLEAR \u00b7 RUNWAY HEALTHY', color: 'var(--c-green)', dur: '4s' },
-    idle:   { text: 'QUIET \u00b7 NO ACTIVITY TODAY', color: '#444', dur: '0s' }
+    crisis: { text: 'BREAKING \u00b7 RUNWAY CRISIS', color: 'var(--c-red)' },
+    urgent: { text: 'HEADS UP \u00b7 ACTION NEEDED', color: 'var(--c-amber)' },
+    steady: { text: 'ALL CLEAR \u00b7 RUNWAY HEALTHY', color: 'var(--c-green)' },
+    idle:   { text: 'QUIET \u00b7 NO ACTIVITY TODAY', color: '#444' }
   };
   var s = states[state] || states.idle;
   hdr.style.color = s.color;
   dot.style.background = s.color;
-  dot.style.animationDuration = s.dur;
-  if (s.dur === '0s') dot.style.animation = 'none';
   text.textContent = s.text;
 }
 

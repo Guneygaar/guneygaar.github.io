@@ -1255,8 +1255,8 @@ function showLibrary() {
   if (titleEl) titleEl.style.display = 'none';
   var pipeHdr = document.getElementById('pipeline-hdr-nums');
   if (pipeHdr) pipeHdr.style.display = 'none';
-  var dashHdr = document.getElementById('dash-hdr-nums');
-  if (dashHdr) dashHdr.style.display = 'none';
+  var kickerHdr = document.getElementById('dash-kicker-hdr');
+  if (kickerHdr) kickerHdr.style.display = 'none';
 
   setTimeout(function() { libWireFilters(); libInitSearch(); }, 0);
 

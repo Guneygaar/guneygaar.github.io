@@ -102,9 +102,26 @@
 
   <!-- HEADER -->
   <header class="app-header">
+    <span class="app-header-title" id="app-header-title" style="display:none"></span>
     <div id="dash-kicker-hdr" style="display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-red);">
-      <div id="dash-kicker-dot" style="width:6px;height:6px;border-radius:50%;background:var(--c-red);flex-shrink:0;animation:dashDotPulse 2s ease-in-out infinite;"></div>
+      <div id="dash-kicker-dot" style="width:6px;height:6px;border-radius:50%;background:var(--c-red);flex-shrink:0;"></div>
       <span id="dash-kicker-text">BREAKING &middot; RUNWAY CRISIS</span>
+    </div>
+    <div class="hdr-nums" id="pipeline-hdr-nums" style="display:none">
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-active" style="color:var(--c-red)">0</div>
+        <div class="hdr-nl">active</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-sched" style="color:var(--c-cyan)">0</div>
+        <div class="hdr-nl">sched</div>
+      </div>
+      <div class="hdr-vdiv"></div>
+      <div class="hdr-num-block">
+        <div class="hdr-n" id="ph-done" style="color:#444">0</div>
+        <div class="hdr-nl">done</div>
+      </div>
     </div>
     <div class="app-header-right">
       <!-- Bell icon -->
@@ -159,8 +176,8 @@
         <!-- HEADLINE BLOCK -->
         <div class="dash-headline-block">
           <div class="dash-headline" id="dash-headline"></div>
-          <div id="dash-deck" style="font-family:var(--mono);font-size:8px;letter-spacing:0.08em;color:#555;margin:6px 0 8px;line-height:1.5;"></div>
-          <div id="dash-datetime" style="font-family:var(--mono);font-size:9px;color:#555;letter-spacing:0.08em;margin-bottom:14px;"></div>
+          <div id="dash-deck" style="font-family:var(--mono);font-size:8px;letter-spacing:0.08em;color:#555;margin:4px 0 4px;line-height:1.4;"></div>
+          <div id="dash-datetime" style="font-family:var(--mono);font-size:9px;color:#666;letter-spacing:0.08em;margin-bottom:10px;"></div>
         </div>
 
         <!-- METRIC ROWS -->
