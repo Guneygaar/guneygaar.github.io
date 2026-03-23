@@ -4639,7 +4639,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   font-size: 7px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #333;
+  color: #444;
   margin-bottom: 7px;
   display: flex;
   align-items: center;
@@ -4688,7 +4688,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .dash-task-text {
   font-size: 11px;
-  color: #aaa;
+  color: #ccc;
   letter-spacing: 0.01em;
   flex: 1;
 }

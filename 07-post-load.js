@@ -1405,9 +1405,11 @@ function _renderDashTaskList(role) {
   for (var ci = 0; ci < chaseShow; ci++) {
     var cItem = chaseTasks[ci];
     var cTid = cItem.taskId || 'auto';
+    var cPid = cItem.postId || '';
     var cIsLast = (ci === chaseShow - 1 && chaseOverflow === 0);
     var cBorder = cIsLast ? '' : 'border-bottom:1px solid rgba(255,255,255,0.04);';
-    html += '<div class="dash-task-row" style="padding:5px 0;' + cBorder + '" onclick="toggleDashTask(this, \'' + cTid + '\')">';
+    var cClick = cPid ? 'openPostOverSheet(\'' + cPid + '\')' : 'toggleDashTask(this, \'' + cTid + '\')';
+    html += '<div class="dash-task-row" style="padding:5px 0;cursor:pointer;' + cBorder + '" onclick="' + cClick + '">';
     html += '<div class="dash-task-cb"></div>';
     html += '<span class="dash-task-text">' + esc(cItem.title) + '</span>';
     html += '<span class="dash-task-who">' + esc(cItem.assignedTo || '') + '</span>';
@@ -1423,7 +1425,7 @@ function _renderDashTaskList(role) {
   // Append urgent items after manual tasks
   for (var u = 0; u < urgentItems.length; u++) {
     var ui = urgentItems[u];
-    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;letter-spacing:0.05em;text-transform:uppercase;color:#666;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
+    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;letter-spacing:0.05em;text-transform:uppercase;color:#777;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
   }
 
   if (!html) {
@@ -1644,7 +1646,8 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'FIX PUBLISH - ' + getTitle(fpPost),
         assignedTo: 'Admin',
-        taskId: getPostId(fpPost) || 'auto'
+        taskId: getPostId(fpPost) || 'auto',
+        postId: fpPost.id || fpPost.post_id || ''
       });
     }
   }
@@ -1677,7 +1680,8 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'Chase client - ' + getTitle(op),
         assignedTo: 'Chitra',
-        taskId: 'auto'
+        taskId: 'auto',
+        postId: op.id || op.post_id || ''
       });
     }
     var overdueBrandPosts = allPosts.filter(function(p) {
@@ -1691,7 +1695,8 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'Brand input pending - ' + getTitle(bp),
         assignedTo: 'Chitra',
-        taskId: 'auto'
+        taskId: 'auto',
+        postId: bp.id || bp.post_id || ''
       });
     }
   }
@@ -1961,12 +1966,12 @@ function _updateNextScheduled(allP) {
     var metaParts = [];
     if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
-    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.04em;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
+    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#555;text-transform:uppercase;letter-spacing:0.04em;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
     html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<div style="display:flex;align-items:baseline;gap:0;">' +
-      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
+      '<span style="font-family:var(--mono);font-size:9px;color:#777;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + title + '</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.01em;">' + title + '</span>' +
       '</div>' + metaLine + '</div>';
   }
   listEl.innerHTML = html;
@@ -2004,14 +2009,14 @@ function _updateTodaysFocus(allP) {
     var pid = f.id || f.post_id || '';
     rowEl.innerHTML =
       '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="openPostOverSheet(\'' + pid + '\')">' +
-      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + esc(t) + '</span>' +
+      '<span style="font-family:var(--mono);font-size:9px;color:#777;margin-right:8px;">&#8250;</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.01em;">' + esc(t) + '</span>' +
       '</div>' +
-      '<div style="font-family:var(--mono);font-size:7px;color:#555;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
+      '<div style="font-family:var(--mono);font-size:7px;color:#666;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
   } else {
     rowEl.innerHTML =
-      '<div style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">Clear runway</div>' +
-      '<div style="font-family:var(--mono);font-size:7px;color:#555;">nothing needs attention today</div>';
+      '<div style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.01em;">Clear runway</div>' +
+      '<div style="font-family:var(--mono);font-size:7px;color:#666;">nothing needs attention today</div>';
   }
 }
 
@@ -2031,10 +2036,10 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = last.id || last.post_id || '';
-    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;"';
+    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:11px;color:#888;line-height:1.55;letter-spacing:0.01em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:11px;color:#888;line-height:1.55;letter-spacing:0.01em;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
-    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;">No moves yet</div>';
+    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:#888;line-height:1.55;letter-spacing:0.01em;">No moves yet</div>';
   }
 }
 
@@ -2054,7 +2059,7 @@ function _updateUnsaidThing(allP) {
   if (!el) return;
   el.style.fontFamily = 'var(--mono)';
   el.style.fontSize = '11px';
-  el.style.color = '#777';
+  el.style.color = '#888';
   el.style.fontStyle = 'normal';
   el.style.lineHeight = '1.55';
   el.style.letterSpacing = '0.01em';
