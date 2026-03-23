@@ -1157,14 +1157,19 @@ function renderScoreboard() {
     if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
-    var clientPosts = allPosts.filter(function(p) {
+    var clientPendingPosts = allPosts.filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var stage = p.stage || p.stageLC || '';
       return owner === 'client' &&
-        !['published','parked','rejected'].includes(stage);
+        (stage === 'awaiting_approval' || stage === 'awaiting_brand_input');
     });
-    var clientCount = clientPosts.length;
-    var clTotal = clientCount;
+    var approvalOnly = clientPendingPosts.filter(function(p) {
+      return (p.stage||p.stageLC) === 'awaiting_approval';
+    }).length;
+    var inputOnly = clientPendingPosts.filter(function(p) {
+      return (p.stage||p.stageLC) === 'awaiting_brand_input';
+    }).length;
+    var clTotal = clientPendingPosts.length;
     var clPrefix = clTotal > 0 ? '-' : '\u00b7';
     var clColor = clTotal > 0 ? 'var(--red)' : 'var(--muted)';
     var elClPre = document.getElementById('metric-client-prefix');
@@ -1174,7 +1179,7 @@ function renderScoreboard() {
     if (elClNum) { elClNum.textContent = dashPad(clTotal); elClNum.style.color = clColor; }
     var clMsgColor = clTotal > 0 ? '#cc3a3a' : '#aaa';
     if (elClMsg) {
-      if (approvalCount > 0 || inputCount > 0) {
+      if (approvalOnly > 0 || inputOnly > 0) {
         elClMsg.innerHTML =
           '<span style="cursor:pointer;color:var(--c-red);"' +
           ' onclick="event.stopPropagation();(function(){' +
@@ -1182,7 +1187,7 @@ function renderScoreboard() {
           'setTimeout(function(){window._PF=window._PF||{};' +
           'window._PF.stage=\'awaiting_approval\';window._PF.owner=\'all\';' +
           'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
-          '})()">' + dashPad(approvalCount) + ' APPROVAL</span>' +
+          '})()">' + dashPad(approvalOnly) + ' APPROVAL</span>' +
           ' <span style="color:#555;">\u00b7</span> ' +
           '<span style="cursor:pointer;color:#888;"' +
           ' onclick="event.stopPropagation();(function(){' +
@@ -1190,7 +1195,7 @@ function renderScoreboard() {
           'setTimeout(function(){window._PF=window._PF||{};' +
           'window._PF.stage=\'awaiting_brand_input\';window._PF.owner=\'all\';' +
           'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
-          '})()">' + dashPad(inputCount) + ' INPUT</span>';
+          '})()">' + dashPad(inputOnly) + ' INPUT</span>';
       } else {
         var clMsg = 'Client sorted \u00b7 good week';
         elClMsg.textContent = clMsg;
@@ -1258,10 +1263,10 @@ function renderScoreboard() {
     if (rowChitra) rowChitra.onclick = function() {
       document.querySelector('[data-tab="pipeline"]').click();
       setTimeout(function(){
-        var chip = document.querySelector('.stage-chip[data-stage="all"]');
-        if(chip) chip.click();
         window._PF = window._PF || {};
         window._PF.owner = 'chitra';
+        window._PF.urgency = 'overdue';
+        window._PF.stage = 'all';
         if(typeof renderPipeline==='function') renderPipeline();
       }, 400);
     };
@@ -1793,11 +1798,16 @@ function _updateNextScheduled(allP) {
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
     var pid = esc(p.id || p.post_id || getPostId(p) || '');
-    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+    var metaParts = [];
+    if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
+    if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
+    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
+    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+      '<div style="display:flex;align-items:baseline;gap:0;">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
-      '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
-      '</div>';
+      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + title + '</span>' +
+      '</div>' + metaLine + '</div>';
   }
   listEl.innerHTML = html;
 }
@@ -1805,24 +1815,24 @@ function _updateNextScheduled(allP) {
 function _updateTodaysFocus(allP) {
   var rowEl = document.getElementById('dash-focus-row');
   if (!rowEl) return;
-  var todayStr = new Date().toISOString().slice(0, 10);
-  var focus = allP.filter(function(p) {
-    return p.stage === 'scheduled' && p.target_date && p.target_date === todayStr;
+  var candidates = allP.filter(function(p) {
+    return p.stage === 'awaiting_approval' ||
+           p.stageLC === 'awaiting_approval';
+  }).sort(function(a,b) {
+    return new Date(a.status_changed_at||a.statusChangedAt||a.updated_at||0) -
+           new Date(b.status_changed_at||b.statusChangedAt||b.updated_at||0);
   });
-  if (!focus.length) {
-    focus = allP.filter(function(p) {
-      return p.stage === 'in_production' || p.stage === 'ready' || p.stage === 'awaiting_approval';
-    }).sort(function(a, b) {
-      return new Date(b.updated_at || b.created_at || 0) - new Date(a.updated_at || a.created_at || 0);
-    });
-  }
+  var focus = candidates.length ? candidates : allP.filter(function(p) {
+    return p.stage === 'in_production' || p.stage === 'ready';
+  }).sort(function(a, b) {
+    return new Date(a.updated_at || a.created_at || 0) - new Date(b.updated_at || b.created_at || 0);
+  });
   if (focus.length) {
     var f = focus[0];
     var t = f.title || 'Untitled';
     if (t.length > 36) t = t.slice(0, 36) + '...';
     var cfg = STAGE_META[f.stage] || {};
     var metaParts = [];
-    // Calculate waiting days
     var changed = f.status_changed_at || f.updated_at || f.created_at;
     if (changed) {
       var waitDays = Math.floor((Date.now() - new Date(changed).getTime()) / 86400000);
@@ -1835,12 +1845,12 @@ function _updateTodaysFocus(allP) {
     rowEl.innerHTML =
       '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
-      '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + esc(t) + '</span>' +
       '</div>' +
-      '<div style="font-family:var(--mono);font-size:8px;color:#777;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \xB7 ')) + '</div>';
+      '<div style="font-family:var(--mono);font-size:8px;color:#777;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
   } else {
     rowEl.innerHTML =
-      '<div style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">Clear runway</div>' +
+      '<div style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">Clear runway</div>' +
       '<div style="font-family:var(--mono);font-size:8px;color:#777;">nothing needs attention today</div>';
   }
 }
@@ -1861,10 +1871,10 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = last.id || last.post_id || getPostId(last) || '';
-    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
-    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
+    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;">No moves yet</div>';
   }
 }
 
@@ -1882,11 +1892,12 @@ function _timeAgo(dateStr) {
 function _updateUnsaidThing(allP) {
   var el = document.getElementById('dash-unsaid-text');
   if (!el) return;
-  el.style.fontFamily = 'var(--sans)';
-  el.style.fontSize = '13px';
-  el.style.color = '#888';
-  el.style.fontStyle = 'italic';
-  el.style.lineHeight = '1.5';
+  el.style.fontFamily = 'var(--mono)';
+  el.style.fontSize = '9px';
+  el.style.color = '#555';
+  el.style.fontStyle = 'normal';
+  el.style.lineHeight = '1.6';
+  el.style.letterSpacing = '0.03em';
   var todayStr = new Date().toISOString().slice(0, 10);
   var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
   var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
