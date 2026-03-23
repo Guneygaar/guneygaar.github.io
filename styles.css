@@ -3116,7 +3116,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #pcs-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 9500;
   display: none;
   background: rgba(0,0,0,0.4);
   align-items: center;
@@ -3488,7 +3488,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pcs-confirm-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 9501;
   background: rgba(0,0,0,0.4);
   display: flex;
   align-items: center;
