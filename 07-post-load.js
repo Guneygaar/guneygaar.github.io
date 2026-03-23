@@ -89,14 +89,14 @@ function updatePipelineStageBar(posts) {
   ];
   var active = allP.filter(function(p) { return !['published','parked','rejected'].includes(p.stage||p.stageLC||''); });
   var total = active.length || 1;
-  var barHTML = '';
+  var segments = [];
   stageDefs.forEach(function(s) {
     var count = allP.filter(function(p) { return (p.stage||p.stageLC||'') === s.key; }).length;
-    if (!count) return;
-    var pct = Math.max(3, Math.round((count / total) * 100));
-    barHTML += '<div style="height:100%;flex-shrink:0;background:' + s.color + ';width:' + pct + '%;cursor:pointer;" onclick="filterPipelineStage(\'' + s.key + '\')"></div>';
+    if (count) segments.push({ count: count, color: s.color, key: s.key });
   });
-  bar.innerHTML = barHTML;
+  bar.innerHTML = segments.map(function(s) {
+    return '<div style="flex:' + s.count + ';background:' + s.color + ';height:3px;cursor:pointer;" onclick="filterPipelineStage(\'' + s.key + '\')"></div>';
+  }).join('');
 }
 
 window.filterPipelineStage = function(stage) {
@@ -2206,88 +2206,73 @@ function _pipelineStageKey(stage) {
 }
 
 function buildPipelineCard(p, listKey) {
-  var id     = getPostId(p);
-  var title  = getTitle(p);
-  var stage  = p.stage || '';
+  var id = getPostId(p);
+  var title = getTitle(p);
+  var stage = p.stage || '';
   var stageLC = stage.toLowerCase();
-  var pillar = getPillarShort(p.contentPillar);
-  var sk     = _pipelineStageKey(stage);
 
-  var d = parseDate(p.targetDate);
-  var today = new Date();
-  today.setHours(0,0,0,0);
-  var isToday = d && d.toDateString() === today.toDateString();
-  var _noOverdueStages = ['published', 'parked', 'rejected'];
-  var isOverdue = d && !isToday && d < today && _noOverdueStages.indexOf(stage) === -1;
-
-  var cardCls = 'post-card';
-  if (isOverdue) cardCls += ' overdue';
-  if (isToday) cardCls += ' due-today';
-
-  // Date display with color
-  var dateInfo = formatPipelineDate(p.targetDate || p.target_date);
-  var dateDisplay = dateInfo.text;
-  var dateColor = dateInfo.color;
-
-  // Color bar computation
-  var now2 = new Date().setHours(0,0,0,0);
+  // FIX 1 -- Color bar computation
+  var now = new Date(); now.setHours(0,0,0,0);
   var tdRaw = p.targetDate || p.target_date;
-  var tdVal = tdRaw ? new Date(tdRaw).setHours(0,0,0,0) : NaN;
-  var diff2 = isNaN(tdVal) ? 999 : Math.ceil((tdVal - now2) / 86400000);
-  var barColor = diff2 < 0 ? 'var(--c-red)' :
-    diff2 <= 3 ? 'var(--c-amber)' :
+  var td = tdRaw ? new Date(tdRaw) : null;
+  if (td) td.setHours(0,0,0,0);
+  var diffDays = td ? Math.ceil((td - now) / 86400000) : 999;
+  var isOverdue = diffDays < 0;
+  var barColor = isOverdue ? 'var(--c-red)' :
+    diffDays <= 3 ? 'var(--c-amber)' :
     stageLC === 'scheduled' ? 'var(--c-cyan)' :
     stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
     'rgba(255,255,255,0.06)';
 
-  // Responsibility badge
-  var badgeCls = 'resp-badge';
-  var badgeText = '';
-  if (sk === 'production')  { badgeCls += ' p'; badgeText = 'P'; }
-  else if (sk === 'ready')  { badgeCls += ' ch'; badgeText = 'Ch'; }
-  else if (sk === 'input')  { badgeCls += ' cl-input'; badgeText = 'Cl'; }
-  else if (sk === 'approval') { badgeCls += ' cl-approval'; badgeText = 'Cl'; }
-  else if (sk === 'scheduled') { badgeCls += ' sched'; badgeText = 'Ch'; }
-  else if (sk === 'published') { badgeCls += ' pub'; badgeText = 'ok'; }
-  else if (sk === 'parked') { badgeCls += ' parked'; badgeText = 'P'; }
-  else if (sk === 'rejected') { badgeCls += ' rejected'; badgeText = 'X'; }
+  // FIX 2 -- Date
+  var dateInfo = formatPipelineDate(tdRaw);
 
-  // Status dot
-  var dotCls = 'status-dot';
-  if (sk) dotCls += ' sd-' + sk;
+  // FIX 4 -- Meta line: PILLAR . OWNER . LOCATION
+  var pillarShort = (p.contentPillar || p.content_pillar || '').slice(0,6).toUpperCase();
+  var ownerStr = p.owner || '';
+  var locationStr = p.location || '';
+  var metaParts = [pillarShort, ownerStr, locationStr].filter(Boolean);
+  var metaLine = metaParts.join(' \u00b7 ');
 
-  // Chase button for awaiting_approval posts waiting >= 3 days
-  var chaseHtml = '';
+  // FIX 5 -- Chase button (plain text, no border)
+  var rightHtml = '';
   if (stage === 'awaiting_approval') {
-    var now = new Date();
     var changed = p.status_changed_at ? new Date(p.status_changed_at) : null;
-    var daysWaiting = changed ? Math.floor((now - changed) / (1000*60*60*24)) : 0;
+    var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
     if (daysWaiting >= 3) {
       var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'recently';
-      var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance \uD83D\uDE4F';
-      chaseHtml = '<div class="chase-btn" onclick="event.stopPropagation(); copyChase(\'' + encodeURIComponent(chaseMsg) + '\')">' +
-        '<span class="chase-arrow">-></span>' +
-        '<span class="chase-label">Chase</span>' +
-        '<span class="chase-days">' + daysWaiting + 'd</span>' +
-        '</div>';
+      var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance';
+      rightHtml = '<button onclick="event.stopPropagation();copyChase(\'' + encodeURIComponent(chaseMsg) + '\')" ' +
+        'style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
+        'color:var(--c-red);background:transparent;border:none;cursor:pointer;padding:0;">' +
+        'CHASE ' + daysWaiting + 'D</button>';
+    }
+  }
+  // FIX 6 -- Owner badge on non-chase cards
+  if (!rightHtml) {
+    var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
+    if (ownerInitial) {
+      rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
+        'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
+        'font-size:7px;color:#555;display:flex;align-items:center;' +
+        'justify-content:center;">' + esc(ownerInitial) + '</div>';
     }
   }
 
-  var innerCard = '<div class="' + cardCls + '" id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '">' +
-    '<span class="pc-date" style="color:' + dateColor + '">' + esc(dateDisplay) + '</span>' +
-    '<span class="pc-body">' +
-      '<span class="pc-title">' + esc(title) + '</span>' +
-      (pillar ? '<span class="pc-meta">' + esc(pillar) + '</span>' : '') +
-    '</span>' +
-    '<span class="pc-right">' +
-      '<span class="' + badgeCls + '">' + badgeText + '</span>' +
-      '<span class="' + dotCls + '"></span>' +
-    '</span>' +
-    chaseHtml +
-  '</div>';
+  // Build card content (all inline -- no CSS classes for card layout)
+  var innerCard =
+    '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:' + dateInfo.color + ';">' + esc(dateInfo.text) + '</div>' +
+        '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#ccc;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(title) + '</div>' +
+        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
+      '</div>' +
+      (rightHtml ? '<div style="flex-shrink:0;">' + rightHtml + '</div>' : '') +
+    '</div>';
 
-  return '<div style="display:flex;align-items:stretch;">' +
-    '<div style="width:3px;flex-shrink:0;background:' + barColor + '"></div>' +
+  // FIX 1 -- Outer wrapper with 3px color bar + bottom divider
+  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">' +
+    '<div style="width:3px;flex-shrink:0;background:' + barColor + ';"></div>' +
     '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
 }
@@ -2331,7 +2316,7 @@ function updatePipelineChipCounts() {
     if (!chip.querySelector('.chip-dot')) {
       var dot = document.createElement('span');
       dot.className = 'chip-dot';
-      dot.style.cssText = 'width:5px;height:5px;border-radius:50%;flex-shrink:0;background:' + (dotColors[stage] || '#555') + ';';
+      dot.style.background = dotColors[stage] || '#555';
       chip.insertBefore(dot, chip.firstChild);
     }
     var countEl = chip.querySelector('.chip-count');
@@ -2550,7 +2535,7 @@ function toggleBatchMode() {
   if (btn) btn.classList.toggle('active', _batchMode);
   if (bar) bar.style.display = _batchMode ? 'flex' : 'none';
 
-  document.querySelectorAll('.post-card[data-stage="ready"]').forEach(function(card) {
+  document.querySelectorAll('[data-post-id][data-stage="ready"]').forEach(function(card) {
     if (_batchMode) {
       card.classList.add('batch-mode');
       var cb = document.createElement('div');
@@ -2655,7 +2640,8 @@ function updatePipelineNarrative(posts) {
            new Date(b.targetDate||b.target_date);
   });
   if (overdue.length) {
-    var t = (overdue[0].title || 'Post').split(' ').slice(0,3).join(' ');
+    var raw = (overdue[0].title || 'Post');
+    var t = raw.length > 20 ? raw.slice(0, 18) + '\u2026' : raw;
     var days = Math.floor((now - new Date(overdue[0].targetDate||
       overdue[0].target_date)) / 86400000);
     el.textContent = t + ' \u00b7 ' + days + 'd overdue';
@@ -2796,7 +2782,7 @@ function _renderPipelineInner() {
       const card = buildPipelineCard(p, listKey);
       if (isFirstCard && activeFilter) {
         isFirstCard = false;
-        return card.replace('class="post-card', 'class="post-card pc-focus');
+        return card.replace('data-post-id=', 'data-focus="1" data-post-id=');
       }
       return card;
     }).join('');
