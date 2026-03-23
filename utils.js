@@ -5,7 +5,13 @@
 
 function getTitle(post) { return post.title || post.post_id || 'Untitled'; }
 function getPostId(post) { return post.post_id || post.id || ''; }
-function getPostById(postId) { return allPosts.find(p => getPostId(p) === postId) || null; }
+function getPostById(postId) {
+  return allPosts.find(function(p) {
+    return p.id === postId ||
+           p.post_id === postId ||
+           getPostId(p) === postId;
+  }) || null;
+}
 
 function parseDate(raw) {
   if (!raw) return null;
