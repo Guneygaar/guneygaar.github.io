@@ -1350,21 +1350,57 @@ function _renderDashTaskList(role) {
     return;
   }
 
-  var html = '';
+  // Separate chase tasks from non-chase tasks
+  var normalTasks = [];
+  var chaseTasks = [];
   for (var i = 0; i < filtered.length; i++) {
     var item = filtered[i];
-    var tid = item.taskId || 'auto';
-    html += '<div class="dash-task-row" onclick="toggleDashTask(this, \'' + tid + '\')">';
+    var tLower = (item.title || '').toLowerCase();
+    if (tLower.indexOf('chase client') === 0 || tLower.indexOf('brand input pending') === 0) {
+      chaseTasks.push(item);
+    } else {
+      normalTasks.push(item);
+    }
+  }
+
+  var html = '';
+  // Render non-chase tasks
+  for (var n = 0; n < normalTasks.length; n++) {
+    var nItem = normalTasks[n];
+    var nTid = nItem.taskId || 'auto';
+    var nBorder = (n < normalTasks.length - 1 || chaseTasks.length > 0) ? 'border-bottom:1px solid rgba(255,255,255,0.04);' : '';
+    html += '<div class="dash-task-row" style="padding:5px 0;' + nBorder + '" onclick="toggleDashTask(this, \'' + nTid + '\')">';
     html += '<div class="dash-task-cb"></div>';
-    html += '<span class="dash-task-text">' + esc(item.title) + '</span>';
-    html += '<span class="dash-task-who">' + esc(item.assignedTo || '') + '</span>';
+    html += '<span class="dash-task-text">' + esc(nItem.title) + '</span>';
+    html += '<span class="dash-task-who">' + esc(nItem.assignedTo || '') + '</span>';
     html += '</div>';
+  }
+
+  // Render chase tasks (max 3 visible)
+  var chaseShow = chaseTasks.length > 3 ? 3 : chaseTasks.length;
+  var chaseOverflow = chaseTasks.length - chaseShow;
+  for (var ci = 0; ci < chaseShow; ci++) {
+    var cItem = chaseTasks[ci];
+    var cTid = cItem.taskId || 'auto';
+    var cIsLast = (ci === chaseShow - 1 && chaseOverflow === 0);
+    var cBorder = cIsLast ? '' : 'border-bottom:1px solid rgba(255,255,255,0.04);';
+    html += '<div class="dash-task-row" style="padding:5px 0;' + cBorder + '" onclick="toggleDashTask(this, \'' + cTid + '\')">';
+    html += '<div class="dash-task-cb"></div>';
+    html += '<span class="dash-task-text">' + esc(cItem.title) + '</span>';
+    html += '<span class="dash-task-who">' + esc(cItem.assignedTo || '') + '</span>';
+    html += '</div>';
+  }
+  if (chaseOverflow > 0) {
+    html += '<div style="font-family:var(--mono);font-size:8px;' +
+      'color:#444;letter-spacing:0.06em;text-transform:uppercase;' +
+      'padding:5px 0;">+ ' + chaseOverflow +
+      ' more overdue posts</div>';
   }
 
   // Append urgent items after manual tasks
   for (var u = 0; u < urgentItems.length; u++) {
     var ui = urgentItems[u];
-    html += '<div class="' + ui.cls + '" onclick="' + ui.onclick + '">' + ui.text + '</div>';
+    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
   }
 
   if (!html) {
