@@ -2588,7 +2588,21 @@ function updatePipelineNarrative(posts) {
   var allP = posts || allPosts || [];
   var now = new Date(); now.setHours(0,0,0,0);
 
-  // Priority 1: any post overdue -- show stage name + days
+  var stageDisplayNames = {
+    'awaiting_approval':   'Approval',
+    'awaiting_brand_input': 'Input',
+    'in_production':       'Production',
+    'ready':               'Ready',
+    'scheduled':           'Scheduled'
+  };
+
+  function setText(text, color, filterStage) {
+    el.textContent = text;
+    el.style.color = color;
+    el.dataset.filterStage = filterStage || 'all';
+  }
+
+  // PRIORITY 1: any post overdue -- show stage + days overdue
   var overdue = allP.filter(function(p) {
     var d = new Date(p.targetDate || p.target_date);
     d.setHours(0,0,0,0);
@@ -2600,48 +2614,74 @@ function updatePipelineNarrative(posts) {
            new Date(b.targetDate||b.target_date);
   });
   if (overdue.length) {
-    var stageNames = {
-      'awaiting_approval': 'Approval',
-      'awaiting_brand_input': 'Input',
-      'in_production': 'Production',
-      'ready': 'Ready',
-      'scheduled': 'Scheduled'
-    };
-    var stageName = stageNames[
-      overdue[0].stage || overdue[0].stageLC] || 'Post';
-    var days = Math.floor((now -
-      new Date(overdue[0].targetDate ||
-      overdue[0].target_date).setHours(0,0,0,0))
-      / 86400000);
-    el.textContent = stageName + ' \u00b7 ' + days + 'd overdue';
-    el.style.color = 'var(--c-red)';
+    var overdueStage = overdue[0].stage || overdue[0].stageLC;
+    var stageName = stageDisplayNames[overdueStage] || 'Post';
+    var days = Math.floor(
+      (now - new Date(overdue[0].targetDate ||
+      overdue[0].target_date).setHours(0,0,0,0)) / 86400000);
+    setText(
+      stageName + ' \u00b7 ' + days + 'd overdue',
+      'var(--c-red)',
+      overdueStage
+    );
     return;
   }
 
-  // Priority 2: approvals waiting
+  // PRIORITY 2a: 5+ approvals waiting
   var approvals = allP.filter(function(p) {
     return p.stage === 'awaiting_approval' ||
            p.stageLC === 'awaiting_approval';
   });
-  if (approvals.length >= 3) {
-    el.textContent = approvals.length + ' waiting on approval';
-    el.style.color = 'var(--c-red)';
+  if (approvals.length >= 5) {
+    setText(
+      approvals.length + ' waiting on approval',
+      'var(--c-red)',
+      'awaiting_approval'
+    );
     return;
   }
 
-  // Priority 3: input blocked
+  // PRIORITY 2b: 1-4 approvals waiting
+  if (approvals.length >= 1) {
+    setText(
+      'Approval \u00b7 ' + approvals.length + ' post' +
+      (approvals.length === 1 ? '' : 's') + ' waiting',
+      'var(--c-amber)',
+      'awaiting_approval'
+    );
+    return;
+  }
+
+  // PRIORITY 3: input blocked
   var inputs = allP.filter(function(p) {
     return p.stage === 'awaiting_brand_input' ||
            p.stageLC === 'awaiting_brand_input';
   });
   if (inputs.length) {
-    el.textContent = 'Input \u00b7 ' + inputs.length +
-      ' post' + (inputs.length === 1 ? '' : 's') + ' waiting';
-    el.style.color = 'var(--c-purple)';
+    setText(
+      'Input \u00b7 ' + inputs.length + ' post' +
+      (inputs.length === 1 ? '' : 's') + ' waiting',
+      'var(--c-purple)',
+      'awaiting_brand_input'
+    );
     return;
   }
 
-  // Priority 4: Pranav idle 3+ days
+  // PRIORITY 4: production posts exist
+  var production = allP.filter(function(p) {
+    return p.stage === 'in_production' ||
+           p.stageLC === 'in_production';
+  });
+  if (production.length) {
+    setText(
+      'Production \u00b7 ' + production.length + ' in progress',
+      'var(--c-amber)',
+      'in_production'
+    );
+    return;
+  }
+
+  // PRIORITY 5: Pranav idle 3+ days
   var pranavPosts = allP.filter(function(p) {
     return (p.owner||'').toLowerCase() === 'pranav' ||
            (p.owner||'').toLowerCase() === 'creative';
@@ -2651,33 +2691,50 @@ function updatePipelineNarrative(posts) {
       return new Date(b.updated_at||b.updatedAt) -
              new Date(a.updated_at||a.updatedAt);
     })[0];
-    var idle = Math.floor((Date.now() -
-      new Date(last.updated_at||last.updatedAt))
+    var idle = Math.floor(
+      (Date.now() - new Date(last.updated_at||last.updatedAt))
       / 86400000);
     if (idle >= 3) {
-      el.textContent = 'Pranav idle \u00b7 ' + idle + ' days';
-      el.style.color = 'var(--c-amber)';
+      setText(
+        'Pranav idle \u00b7 ' + idle + ' days',
+        'var(--c-amber)',
+        'all'
+      );
       return;
     }
   }
 
-  // Priority 5: scheduled posts exist
+  // PRIORITY 6: scheduled posts exist
   var sched = allP.filter(function(p) {
     return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
   if (sched.length) {
-    el.textContent = 'Pipeline sorted \u00b7 ' +
-      sched.length + ' scheduled';
-    el.style.color = 'var(--c-green)';
+    setText(
+      'Pipeline sorted \u00b7 ' + sched.length + ' scheduled',
+      'var(--c-green)',
+      'scheduled'
+    );
     return;
   }
 
-  // Priority 6: default
-  el.textContent = allP.length ?
-    'All sorted \u00b7 nothing blocking' :
-    'Pipeline empty \u00b7 create now';
-  el.style.color = allP.length ? '#555' : '#444';
+  // PRIORITY 7: default
+  setText(
+    allP.length ? 'All sorted \u00b7 nothing blocking' :
+                  'Pipeline empty \u00b7 create now',
+    allP.length ? '#555' : '#444',
+    'all'
+  );
 }
+
+function filterFromNarrative() {
+  var el = document.getElementById('pipeline-narrative');
+  if (!el) return;
+  var stage = el.dataset.filterStage || 'all';
+  var chip = document.querySelector(
+    '.stage-chip[data-stage="' + stage + '"]');
+  if (chip) chip.click();
+}
+window.filterFromNarrative = filterFromNarrative;
 
 function updateDashboardHeader() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
