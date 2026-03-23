@@ -1275,7 +1275,20 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      openStageSheet('pranav_overdue');
+      var pranavPosts = (allPosts||[]).filter(function(p) {
+        var owner = (p.owner||'').toLowerCase();
+        var s = p.stage || p.stageLC || '';
+        return (owner === 'pranav' || owner === 'creative') &&
+          (s === 'in_production' || s === 'ready') &&
+          !['published','parked','rejected'].includes(s);
+      });
+      if (pranavPosts.length > 0) {
+        openStageSheet('pranav_production');
+      } else {
+        if (typeof openCreatePost === 'function') openCreatePost();
+        else document.getElementById('fab-btn') &&
+          document.getElementById('fab-btn').click();
+      }
     };
     if (rowChitra) rowChitra.onclick = function() {
       openStageSheet('chitra_overdue');
@@ -1386,8 +1399,9 @@ function _renderDashTaskList(role) {
   }
 
   // Render chase tasks (max 3 visible)
-  var chaseShow = chaseTasks.length > 3 ? 3 : chaseTasks.length;
-  var chaseOverflow = chaseTasks.length - chaseShow;
+  var totalOverdue = chaseTasks.length;
+  var chaseShow = Math.min(3, totalOverdue);
+  var chaseOverflow = totalOverdue - chaseShow;
   for (var ci = 0; ci < chaseShow; ci++) {
     var cItem = chaseTasks[ci];
     var cTid = cItem.taskId || 'auto';
@@ -1403,7 +1417,7 @@ function _renderDashTaskList(role) {
     html += '<div style="font-family:var(--mono);font-size:8px;' +
       'color:#444;letter-spacing:0.06em;text-transform:uppercase;' +
       'padding:5px 0;cursor:pointer;" onclick="openStageSheet(\'overdue\')">+ ' + chaseOverflow +
-      ' more overdue posts</div>';
+      ' more \u00b7 ' + totalOverdue + ' total</div>';
   }
 
   // Append urgent items after manual tasks
@@ -1496,7 +1510,8 @@ function openStageSheet(stage) {
     'overdue': 'Overdue Posts',
     'client_pending': 'Client \u00b7 Pending',
     'chitra_overdue': 'Chitra \u00b7 Overdue',
-    'pranav_overdue': 'Pranav \u00b7 Overdue'
+    'pranav_overdue': 'Pranav \u00b7 Overdue',
+    'pranav_production': 'Pranav \u00b7 In Progress'
   };
   var posts;
   var title;
@@ -1525,6 +1540,17 @@ function openStageSheet(stage) {
       return new Date(ac) - new Date(bc);
     });
     title = 'Chitra \u00b7 Active Posts';
+  } else if (stage === 'pranav_production') {
+    posts = (allPosts||[]).filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      var s = p.stage || p.stageLC || '';
+      return (owner === 'pranav' || owner === 'creative') &&
+        (s === 'in_production' || s === 'ready');
+    }).sort(function(a,b) {
+      return new Date(a.status_changed_at||a.updated_at||'') -
+             new Date(b.status_changed_at||b.updated_at||'');
+    });
+    title = 'Pranav \u00b7 In Progress';
   } else if (stage === 'pranav_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
