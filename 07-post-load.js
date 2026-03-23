@@ -1275,7 +1275,20 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      openStageSheet('pranav_overdue');
+      var pranavPosts = (allPosts||[]).filter(function(p) {
+        var owner = (p.owner||'').toLowerCase();
+        var s = p.stage || p.stageLC || '';
+        return (owner === 'pranav' || owner === 'creative') &&
+          (s === 'in_production' || s === 'ready') &&
+          !['published','parked','rejected'].includes(s);
+      });
+      if (pranavPosts.length > 0) {
+        openStageSheet('pranav_production');
+      } else {
+        if (typeof openCreatePost === 'function') openCreatePost();
+        else document.getElementById('fab-btn') &&
+          document.getElementById('fab-btn').click();
+      }
     };
     if (rowChitra) rowChitra.onclick = function() {
       openStageSheet('chitra_overdue');
@@ -1386,8 +1399,9 @@ function _renderDashTaskList(role) {
   }
 
   // Render chase tasks (max 3 visible)
-  var chaseShow = chaseTasks.length > 3 ? 3 : chaseTasks.length;
-  var chaseOverflow = chaseTasks.length - chaseShow;
+  var totalOverdue = chaseTasks.length;
+  var chaseShow = Math.min(3, totalOverdue);
+  var chaseOverflow = totalOverdue - chaseShow;
   for (var ci = 0; ci < chaseShow; ci++) {
     var cItem = chaseTasks[ci];
     var cTid = cItem.taskId || 'auto';
@@ -1403,13 +1417,13 @@ function _renderDashTaskList(role) {
     html += '<div style="font-family:var(--mono);font-size:8px;' +
       'color:#444;letter-spacing:0.06em;text-transform:uppercase;' +
       'padding:5px 0;cursor:pointer;" onclick="openStageSheet(\'overdue\')">+ ' + chaseOverflow +
-      ' more overdue posts</div>';
+      ' more \u00b7 ' + totalOverdue + ' total</div>';
   }
 
   // Append urgent items after manual tasks
   for (var u = 0; u < urgentItems.length; u++) {
     var ui = urgentItems[u];
-    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
+    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;letter-spacing:0.05em;text-transform:uppercase;color:#666;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
   }
 
   if (!html) {
@@ -1496,7 +1510,8 @@ function openStageSheet(stage) {
     'overdue': 'Overdue Posts',
     'client_pending': 'Client \u00b7 Pending',
     'chitra_overdue': 'Chitra \u00b7 Overdue',
-    'pranav_overdue': 'Pranav \u00b7 Overdue'
+    'pranav_overdue': 'Pranav \u00b7 Overdue',
+    'pranav_production': 'Pranav \u00b7 In Progress'
   };
   var posts;
   var title;
@@ -1525,6 +1540,17 @@ function openStageSheet(stage) {
       return new Date(ac) - new Date(bc);
     });
     title = 'Chitra \u00b7 Active Posts';
+  } else if (stage === 'pranav_production') {
+    posts = (allPosts||[]).filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      var s = p.stage || p.stageLC || '';
+      return (owner === 'pranav' || owner === 'creative') &&
+        (s === 'in_production' || s === 'ready');
+    }).sort(function(a,b) {
+      return new Date(a.status_changed_at||a.updated_at||'') -
+             new Date(b.status_changed_at||b.updated_at||'');
+    });
+    title = 'Pranav \u00b7 In Progress';
   } else if (stage === 'pranav_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
@@ -1935,12 +1961,12 @@ function _updateNextScheduled(allP) {
     var metaParts = [];
     if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
-    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
+    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.04em;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
     html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<div style="display:flex;align-items:baseline;gap:0;">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + title + '</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + title + '</span>' +
       '</div>' + metaLine + '</div>';
   }
   listEl.innerHTML = html;
@@ -1979,13 +2005,13 @@ function _updateTodaysFocus(allP) {
     rowEl.innerHTML =
       '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + esc(t) + '</span>' +
+      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + esc(t) + '</span>' +
       '</div>' +
-      '<div style="font-family:var(--mono);font-size:8px;color:#777;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
+      '<div style="font-family:var(--mono);font-size:7px;color:#555;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
   } else {
     rowEl.innerHTML =
-      '<div style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">Clear runway</div>' +
-      '<div style="font-family:var(--mono);font-size:8px;color:#777;">nothing needs attention today</div>';
+      '<div style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">Clear runway</div>' +
+      '<div style="font-family:var(--mono);font-size:7px;color:#555;">nothing needs attention today</div>';
   }
 }
 
@@ -2005,10 +2031,10 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = last.id || last.post_id || '';
-    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;"';
+    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
-    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;">No moves yet</div>';
+    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;">No moves yet</div>';
   }
 }
 
@@ -2027,11 +2053,11 @@ function _updateUnsaidThing(allP) {
   var el = document.getElementById('dash-unsaid-text');
   if (!el) return;
   el.style.fontFamily = 'var(--mono)';
-  el.style.fontSize = '9px';
-  el.style.color = '#555';
+  el.style.fontSize = '11px';
+  el.style.color = '#777';
   el.style.fontStyle = 'normal';
-  el.style.lineHeight = '1.6';
-  el.style.letterSpacing = '0.03em';
+  el.style.lineHeight = '1.55';
+  el.style.letterSpacing = '0.01em';
   var todayStr = new Date().toISOString().slice(0, 10);
   var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
   var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
