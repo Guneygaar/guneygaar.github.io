@@ -285,7 +285,7 @@
         autocorrect="off"
         spellcheck="false"
       />
-      <button class="pipeline-search-cancel" onclick="closePipelineSearch()">Cancel</button>
+      <button class="pipeline-search-cancel" onclick="(function(){var b=document.getElementById('pipeline-search-bar');var i=document.getElementById('pipeline-search-input');if(b)b.style.display='none';if(i)i.value='';if(typeof handlePipelineSearch==='function')handlePipelineSearch('');})()">Cancel</button>
       <div class="pipeline-search-underline"></div>
     </div>
     <div id="pipeline-stage-bar" style="height:3px;display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.07);"></div>

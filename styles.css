@@ -2723,7 +2723,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: var(--mono);
   font-size: 9px;
   color: inherit;
-  margin-right: 2px;
+  margin-right: 3px;
 }
 .chip-count {
   font-family: var(--mono);
