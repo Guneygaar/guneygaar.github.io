@@ -1756,7 +1756,7 @@ function _updateNextScheduled(allP) {
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
     var pid = esc(p.id || p.post_id || getPostId(p) || '');
-    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="console.log(\'[DASH] opening post\',\'' + pid + '\');setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\');},0)">' +
+    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(typeof openPCS===\'function\')openPCS(\'' + pid + '\',\'pipeline\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
@@ -1796,7 +1796,7 @@ function _updateTodaysFocus(allP) {
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
     var pid = esc(f.id || f.post_id || getPostId(f) || '');
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="console.log(\'[DASH] opening post\',\'' + pid + '\');setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\');},0)">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(typeof openPCS===\'function\')openPCS(\'' + pid + '\',\'pipeline\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
       '</div>' +
@@ -1824,7 +1824,7 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = last.id || last.post_id || getPostId(last) || '';
-    var clickAttr = pid ? ' onclick="console.log(\'[DASH] opening post\',\'' + esc(pid) + '\');setTimeout(function(){if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\');},0)" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    var clickAttr = pid ? ' onclick="if(typeof openPCS===\'function\')openPCS(\'' + esc(pid) + '\',\'pipeline\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
     textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
@@ -3417,7 +3417,7 @@ function _closeDayDrawer() {
 // Single document-level listener  -  survives ALL innerHTML replacements.
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ===============================================
-(document.getElementById('dashboard-view') || document).addEventListener('click', function _cardClickDelegate(e) {
+document.addEventListener('click', function _cardClickDelegate(e) {
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
   var postId  = card.dataset.postId;
