@@ -2413,7 +2413,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding-bottom: 12px;
 }
 
-.stage-chip {
+.pf-chip {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -2427,17 +2427,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   text-align: left;
 }
-.stage-chip:active { background: var(--surface2); }
+.pf-chip:active { background: var(--surface2); }
 
-.stage-chip.chip-active {
+.pf-chip.chip-active {
   border-color: var(--accent);
   background: var(--accent-dim);
 }
 
-.stage-chip.chip-warn {
+.pf-chip.chip-warn {
   border-color: rgba(239, 68, 68, 0.35);
 }
-.stage-chip.chip-warn .chip-count { color: var(--c-red); }
+.pf-chip.chip-warn .chip-count { color: var(--c-red); }
 
 .chip-dot {
   width: 7px;
