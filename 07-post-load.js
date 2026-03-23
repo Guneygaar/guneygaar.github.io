@@ -2645,8 +2645,10 @@ function updatePipelineHeader() {
 }
 
 function updatePipelineNarrative(posts) {
-  var el = document.getElementById('pipeline-narrative');
-  if (!el) return;
+  var wrapEl = document.getElementById('pipeline-narrative');
+  if (!wrapEl) return;
+  var el = document.getElementById('pipeline-narrative-text');
+  if (!el) el = wrapEl;
   var allP = posts || allPosts || [];
   var now = new Date(); now.setHours(0,0,0,0);
 
@@ -2661,7 +2663,7 @@ function updatePipelineNarrative(posts) {
   function setText(text, color, filterStage) {
     el.textContent = text;
     el.style.color = color;
-    el.dataset.filterStage = filterStage || 'all';
+    wrapEl.dataset.filterStage = filterStage || 'all';
   }
 
   // PRIORITY 1: post stuck in stage 2+ days

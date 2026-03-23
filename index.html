@@ -272,7 +272,7 @@
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
     <div id="pipeline-hdr-row" style="display:flex;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,0.07);min-height:48px;">
-      <div id="pipeline-narrative" style="flex:1;max-width:calc(100% - 160px);font-family:var(--sans);font-size:15px;font-weight:600;color:var(--c-red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 0;cursor:pointer;" onclick="filterFromNarrative()"></div>
+      <div id="pipeline-narrative" style="flex:1;max-width:calc(100% - 160px);font-family:var(--sans);font-size:15px;font-weight:600;color:var(--c-red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 0;pointer-events:none;"><span id="pipeline-narrative-text" style="cursor:pointer;pointer-events:auto;" onclick="filterFromNarrative()"></span></div>
       <div style="display:flex;align-items:center;gap:0;flex-shrink:0;margin-left:8px;position:relative;z-index:10;">
         <button id="pipeline-search-btn" onclick="(function(){var b=document.getElementById('pipeline-search-bar');var i=document.getElementById('pipeline-search-input');if(!b)return;var open=b.style.display==='flex';b.style.display=open?'none':'flex';if(!open&&i){i.value='';i.focus();}})()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;position:relative;z-index:10;">
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
