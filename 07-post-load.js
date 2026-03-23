@@ -2199,14 +2199,21 @@ function buildPipelineCard(p, listKey) {
         'CHASE ' + daysWaiting + 'D</button>';
     }
   }
-  // FIX 6 -- Owner badge on non-chase cards
+  // FIX 6 -- Owner badge on non-chase cards (colored initials)
   if (!rightHtml) {
+    var ownerColors = {
+      'client': 'var(--c-red)',
+      'chitra': 'var(--c-cyan)',
+      'pranav': 'var(--c-purple)'
+    };
+    var ownerKey = (p.owner || '').toLowerCase();
+    var ownerColor = ownerColors[ownerKey] || '#666';
     var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
     if (ownerInitial) {
       rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
         'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
-        'font-size:7px;color:#555;display:flex;align-items:center;' +
-        'justify-content:center;">' + esc(ownerInitial) + '</div>';
+        'font-size:7px;color:' + ownerColor + ';display:flex;align-items:center;' +
+        'justify-content:center;flex-shrink:0;">' + esc(ownerInitial) + '</div>';
     }
   }
 
@@ -2272,7 +2279,7 @@ function updatePipelineChipCounts() {
     }
     var countEl = chip.querySelector('.chip-count');
     if (countEl) {
-      countEl.style.color = stage === 'all' ? 'inherit' : (dotColors[stage] || '#555');
+      countEl.style.color = dotColors[stage] || '#555';
     }
   });
 }
@@ -2579,23 +2586,34 @@ function updatePipelineNarrative(posts) {
   var el = document.getElementById('pipeline-narrative');
   if (!el) return;
   var allP = posts || allPosts || [];
-  var now = new Date();
+  var now = new Date(); now.setHours(0,0,0,0);
 
-  // Priority 1: overdue post exists
+  // Priority 1: any post overdue -- show stage name + days
   var overdue = allP.filter(function(p) {
     var d = new Date(p.targetDate || p.target_date);
+    d.setHours(0,0,0,0);
     return !isNaN(d) && d < now &&
-      !['published','parked','rejected'].includes(p.stage || p.stageLC);
+      !['published','parked','rejected'].includes(
+        p.stage || p.stageLC);
   }).sort(function(a,b) {
     return new Date(a.targetDate||a.target_date) -
            new Date(b.targetDate||b.target_date);
   });
   if (overdue.length) {
-    var raw = (overdue[0].title || 'Post');
-    var t = raw.length > 20 ? raw.slice(0, 18) + '\u2026' : raw;
-    var days = Math.floor((now - new Date(overdue[0].targetDate||
-      overdue[0].target_date)) / 86400000);
-    el.textContent = t + ' \u00b7 ' + days + 'd overdue';
+    var stageNames = {
+      'awaiting_approval': 'Approval',
+      'awaiting_brand_input': 'Input',
+      'in_production': 'Production',
+      'ready': 'Ready',
+      'scheduled': 'Scheduled'
+    };
+    var stageName = stageNames[
+      overdue[0].stage || overdue[0].stageLC] || 'Post';
+    var days = Math.floor((now -
+      new Date(overdue[0].targetDate ||
+      overdue[0].target_date).setHours(0,0,0,0))
+      / 86400000);
+    el.textContent = stageName + ' \u00b7 ' + days + 'd overdue';
     el.style.color = 'var(--c-red)';
     return;
   }
@@ -2611,7 +2629,19 @@ function updatePipelineNarrative(posts) {
     return;
   }
 
-  // Priority 3: Pranav idle
+  // Priority 3: input blocked
+  var inputs = allP.filter(function(p) {
+    return p.stage === 'awaiting_brand_input' ||
+           p.stageLC === 'awaiting_brand_input';
+  });
+  if (inputs.length) {
+    el.textContent = 'Input \u00b7 ' + inputs.length +
+      ' post' + (inputs.length === 1 ? '' : 's') + ' waiting';
+    el.style.color = 'var(--c-purple)';
+    return;
+  }
+
+  // Priority 4: Pranav idle 3+ days
   var pranavPosts = allP.filter(function(p) {
     return (p.owner||'').toLowerCase() === 'pranav' ||
            (p.owner||'').toLowerCase() === 'creative';
@@ -2621,8 +2651,9 @@ function updatePipelineNarrative(posts) {
       return new Date(b.updated_at||b.updatedAt) -
              new Date(a.updated_at||a.updatedAt);
     })[0];
-    var idle = Math.floor((now - new Date(last.updated_at||
-      last.updatedAt)) / 86400000);
+    var idle = Math.floor((Date.now() -
+      new Date(last.updated_at||last.updatedAt))
+      / 86400000);
     if (idle >= 3) {
       el.textContent = 'Pranav idle \u00b7 ' + idle + ' days';
       el.style.color = 'var(--c-amber)';
@@ -2630,26 +2661,22 @@ function updatePipelineNarrative(posts) {
     }
   }
 
-  // Priority 4: scheduled posts exist
+  // Priority 5: scheduled posts exist
   var sched = allP.filter(function(p) {
     return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
   if (sched.length) {
-    el.textContent = 'Pipeline sorted \u00b7 ' + sched.length + ' scheduled';
+    el.textContent = 'Pipeline sorted \u00b7 ' +
+      sched.length + ' scheduled';
     el.style.color = 'var(--c-green)';
     return;
   }
 
-  // Priority 5: all clear
-  if (allP.length) {
-    el.textContent = 'All sorted \u00b7 nothing blocking';
-    el.style.color = '#555';
-    return;
-  }
-
-  // Priority 6: empty
-  el.textContent = 'Pipeline empty \u00b7 create now';
-  el.style.color = '#444';
+  // Priority 6: default
+  el.textContent = allP.length ?
+    'All sorted \u00b7 nothing blocking' :
+    'Pipeline empty \u00b7 create now';
+  el.style.color = allP.length ? '#555' : '#444';
 }
 
 function updateDashboardHeader() {
