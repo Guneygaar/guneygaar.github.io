@@ -2310,7 +2310,7 @@ function updatePipelineChipCounts() {
     if (el) el.textContent = stageCounts[keys[k]];
   }
   // Hide chips with zero count (except ALL)
-  document.querySelectorAll('.stage-chip').forEach(function(chip) {
+  document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
     var stage = chip.dataset.stage;
     if (stage === 'all') return;
     var count = stageCounts[stage] || 0;
@@ -2325,7 +2325,7 @@ function updatePipelineChipCounts() {
     ready: 'var(--c-green)',
     in_production: 'var(--c-amber)'
   };
-  document.querySelectorAll('.stage-chip').forEach(function(chip) {
+  document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
     var stage = chip.dataset.stage;
     if (!chip.querySelector('.chip-dot')) {
       var dot = document.createElement('span');
@@ -2422,7 +2422,7 @@ function renderTaskStageChips() {
     const color = stripStage ? stripStage.color : 'var(--text3)';
     const warn = bucket.warn && count > 0 ? ' chip-warn' : '';
     return `
-      <button class="stage-chip${active}${warn}" onclick="filterTasksByChip('${bucket.key}')">
+      <button class="pf-chip${active}${warn}" onclick="filterTasksByChip('${bucket.key}')">
         <span class="chip-dot" style="background:${color}"></span>
         <span class="chip-label">${esc(bucket.label)}</span>
         <span class="chip-count">${count}</span>
