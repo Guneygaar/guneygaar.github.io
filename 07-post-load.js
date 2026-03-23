@@ -19,9 +19,11 @@ function isPostStale(p) {
   var s = p.stage || p.stageLC || '';
   if (['published','parked','rejected'].includes(s)) return false;
   var logs = window._activityLogs || [];
-  var postId = p.id || p.post_id;
+  var postShortId = p.post_id || getPostId(p);
   var entry = logs.find(function(l) {
-    return (l.post_id === postId) && (l.new_stage === s);
+    return (l.post_id === postShortId ||
+            l.post_id === p.id) &&
+           (l.new_stage === s);
   });
   var changed = entry ? entry.created_at :
     (p.status_changed_at || p.statusChangedAt ||
@@ -1279,7 +1281,7 @@ function renderScoreboard() {
       openStageSheet('chitra_overdue');
     };
     if (rowClient) rowClient.onclick = function() {
-      openStageSheet('awaiting_approval');
+      openStageSheet('client_pending');
     };
 
   } catch (err) {
@@ -1492,30 +1494,55 @@ function openStageSheet(stage) {
     'awaiting_approval': 'Awaiting Approval',
     'awaiting_brand_input': 'Awaiting Input',
     'overdue': 'Overdue Posts',
+    'client_pending': 'Client \u00b7 Pending',
     'chitra_overdue': 'Chitra \u00b7 Overdue',
     'pranav_overdue': 'Pranav \u00b7 Overdue'
   };
   var posts;
+  var title;
   if (stage === 'overdue') {
     posts = (allPosts||[]).filter(function(p) {
       return isPostStale(p);
     });
+  } else if (stage === 'client_pending') {
+    posts = (allPosts||[]).filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      var s = p.stage || p.stageLC || '';
+      return owner === 'client' &&
+        (s === 'awaiting_approval' ||
+         s === 'awaiting_brand_input');
+    });
+    title = 'Client \u00b7 Pending';
   } else if (stage === 'chitra_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
-      return owner === 'chitra' && isPostStale(p);
+      var s = p.stage || p.stageLC || '';
+      return (owner === 'chitra' || owner === 'servicing') &&
+        !['published','parked','rejected'].includes(s);
+    }).sort(function(a,b) {
+      var ac = a.status_changed_at||a.updated_at||'';
+      var bc = b.status_changed_at||b.updated_at||'';
+      return new Date(ac) - new Date(bc);
     });
+    title = 'Chitra \u00b7 Active Posts';
   } else if (stage === 'pranav_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
-      return owner === 'pranav' && isPostStale(p);
+      var s = p.stage || p.stageLC || '';
+      return (owner === 'pranav' || owner === 'creative') &&
+        !['published','parked','rejected'].includes(s);
+    }).sort(function(a,b) {
+      var ac = a.status_changed_at||a.updated_at||'';
+      var bc = b.status_changed_at||b.updated_at||'';
+      return new Date(ac) - new Date(bc);
     });
+    title = 'Pranav \u00b7 Active Posts';
   } else {
     posts = (allPosts||[]).filter(function(p) {
       return (p.stage||p.stageLC) === stage;
     });
   }
-  var sheetTitle = stageNames[stage] || stage;
+  var sheetTitle = title || stageNames[stage] || stage;
   var sheet = document.getElementById('stage-sheet-overlay');
   if (!sheet) {
     sheet = document.createElement('div');
