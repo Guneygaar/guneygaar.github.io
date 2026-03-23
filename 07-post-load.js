@@ -111,15 +111,22 @@ function _applyPFFilter(posts) {
   return posts.filter(function(p) {
     var stage = p.stage || p.stageLC || '';
     var owner = (p.owner || '').toLowerCase();
-    var td = new Date(p.targetDate || p.target_date);
-    var now = new Date();
-    var diff = Math.ceil((td - now) / 86400000);
     if (pf.stage !== 'all' && stage !== pf.stage) return false;
     if (pf.owner !== 'all') {
       if (owner !== pf.owner) return false;
     }
-    if (pf.urgency === 'overdue' && diff >= 0) return false;
-    if (pf.urgency === 'week' && (diff < 0 || diff > 7)) return false;
+    if (pf.urgency === 'overdue') {
+      var changed = p.status_changed_at || p.statusChangedAt ||
+                    p.updated_at || p.updatedAt;
+      var daysInStage = changed ? Math.floor(
+        (Date.now()-new Date(changed).getTime())/86400000) : 0;
+      if (daysInStage < 2) return false;
+    }
+    if (pf.urgency === 'week') {
+      var td = new Date(p.targetDate || p.target_date);
+      var diff = Math.ceil((td - new Date()) / 86400000);
+      if (diff < 0 || diff > 7) return false;
+    }
     return true;
   });
 }
@@ -1182,20 +1189,12 @@ function renderScoreboard() {
       if (approvalOnly > 0 || inputOnly > 0) {
         elClMsg.innerHTML =
           '<span style="cursor:pointer;color:var(--c-red);"' +
-          ' onclick="event.stopPropagation();(function(){' +
-          'document.querySelector(\'[data-tab=\\\'pipeline\\\']\').click();' +
-          'setTimeout(function(){window._PF=window._PF||{};' +
-          'window._PF.stage=\'awaiting_approval\';window._PF.owner=\'all\';' +
-          'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
-          '})()">' + dashPad(approvalOnly) + ' APPROVAL</span>' +
+          ' onclick="event.stopPropagation();openStageSheet(\'awaiting_approval\')">' +
+          dashPad(approvalOnly) + ' APPROVAL</span>' +
           ' <span style="color:#555;">\u00b7</span> ' +
           '<span style="cursor:pointer;color:#888;"' +
-          ' onclick="event.stopPropagation();(function(){' +
-          'document.querySelector(\'[data-tab=\\\'pipeline\\\']\').click();' +
-          'setTimeout(function(){window._PF=window._PF||{};' +
-          'window._PF.stage=\'awaiting_brand_input\';window._PF.owner=\'all\';' +
-          'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
-          '})()">' + dashPad(inputOnly) + ' INPUT</span>';
+          ' onclick="event.stopPropagation();openStageSheet(\'awaiting_brand_input\')">' +
+          dashPad(inputOnly) + ' INPUT</span>';
       } else {
         var clMsg = 'Client sorted \u00b7 good week';
         elClMsg.textContent = clMsg;
@@ -1398,7 +1397,7 @@ function _renderDashTaskList(role) {
   if (chaseOverflow > 0) {
     html += '<div style="font-family:var(--mono);font-size:8px;' +
       'color:#444;letter-spacing:0.06em;text-transform:uppercase;' +
-      'padding:5px 0;">+ ' + chaseOverflow +
+      'padding:5px 0;cursor:pointer;" onclick="openStageSheet(\'overdue\')">+ ' + chaseOverflow +
       ' more overdue posts</div>';
   }
 
@@ -1472,6 +1471,89 @@ function openRunwaySheet() {
   document.body.style.overflow = 'hidden';
 }
 window.openRunwaySheet = openRunwaySheet;
+
+function openStageSheet(stage) {
+  var stageNames = {
+    'awaiting_approval': 'Awaiting Approval',
+    'awaiting_brand_input': 'Awaiting Input',
+    'overdue': 'Overdue Posts'
+  };
+  var posts;
+  if (stage === 'overdue') {
+    posts = (allPosts||[]).filter(function(p) {
+      var changed = p.status_changed_at||p.statusChangedAt||
+                    p.updated_at||p.updatedAt;
+      var daysVal = changed ? Math.floor(
+        (Date.now()-new Date(changed).getTime())/86400000) : 0;
+      var s = p.stage||p.stageLC||'';
+      return daysVal >= 2 &&
+        !['published','parked','rejected'].includes(s);
+    });
+  } else {
+    posts = (allPosts||[]).filter(function(p) {
+      return (p.stage||p.stageLC) === stage;
+    });
+  }
+  var sheetTitle = stageNames[stage] || stage;
+  var sheet = document.getElementById('stage-sheet-overlay');
+  if (!sheet) {
+    sheet = document.createElement('div');
+    sheet.id = 'stage-sheet-overlay';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:9500;'+
+      'background:rgba(0,0,0,0.75);display:flex;'+
+      'align-items:flex-end;justify-content:center;';
+    sheet.onclick = function(e) {
+      if (e.target===sheet) sheet.style.display='none';
+    };
+    document.body.appendChild(sheet);
+  }
+  var html = '<div style="width:100%;max-width:480px;'+
+    'max-height:88vh;overflow-y:auto;background:#141414;'+
+    'border-top:1px solid rgba(255,255,255,0.1);'+
+    'padding-bottom:30px;">';
+  html += '<div style="display:flex;align-items:center;'+
+    'justify-content:space-between;padding:14px 18px;'+
+    'border-bottom:1px solid rgba(255,255,255,0.07);">'+
+    '<span style="font-family:var(--mono);font-size:9px;'+
+    'letter-spacing:0.2em;text-transform:uppercase;'+
+    'color:#e8e2d9;">'+esc(sheetTitle)+' \u00b7 '+posts.length+'</span>'+
+    '<button onclick="document.getElementById('+
+    '\'stage-sheet-overlay\').style.display=\'none\'"'+
+    ' style="background:none;border:none;color:#555;'+
+    'font-size:18px;cursor:pointer;">\u00d7</button></div>';
+  if (!posts.length) {
+    html += '<div style="padding:20px 18px;font-family:'+
+      'var(--mono);font-size:11px;color:#555;">'+
+      'All sorted.</div>';
+  } else {
+    posts.forEach(function(p) {
+      var pid = p.id || p.post_id || '';
+      var pTitle = esc(p.title || 'Untitled');
+      var pOwner = esc(p.owner || '');
+      var pStage = esc((p.stage||p.stageLC||'').replace(/_/g,' '));
+      html += '<div onclick="document.getElementById('+
+        '\'stage-sheet-overlay\').style.display=\'none\';'+
+        'if(window.libOpenPostCard)window.libOpenPostCard(\''+
+        esc(pid)+'\');" style="display:flex;align-items:stretch;'+
+        'border-bottom:1px solid rgba(255,255,255,0.07);'+
+        'cursor:pointer;">'+
+        '<div style="width:3px;flex-shrink:0;background:'+
+        'var(--c-red);"></div>'+
+        '<div style="flex:1;padding:10px 14px;">'+
+        '<div style="font-family:var(--mono);font-size:11px;'+
+        'color:#bbb;margin-bottom:3px;">'+pTitle+'</div>'+
+        '<div style="font-family:var(--mono);font-size:8px;'+
+        'color:#444;text-transform:uppercase;">'+
+        pOwner+(pStage?' \u00b7 '+pStage:'')+'</div>'+
+        '</div></div>';
+    });
+  }
+  html += '</div>';
+  sheet.innerHTML = html;
+  sheet.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+window.openStageSheet = openStageSheet;
 
 function _buildDoThisNowItems(role) {
   var items = [];
@@ -1802,7 +1884,7 @@ function _updateNextScheduled(allP) {
     if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
     var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
-    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="(function(){var match=allPosts&&allPosts.find(function(x){return x.id===\'' + pid + '\';});var realId=match?match.id:\'' + pid + '\';if(window.libOpenPostCard)window.libOpenPostCard(realId);})()">' +
       '<div style="display:flex;align-items:baseline;gap:0;">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
@@ -1843,7 +1925,7 @@ function _updateTodaysFocus(allP) {
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
     var pid = esc(f.id || f.post_id || getPostId(f) || '');
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="(function(){var match=allPosts&&allPosts.find(function(x){return x.id===\'' + pid + '\';});var realId=match?match.id:\'' + pid + '\';if(window.libOpenPostCard)window.libOpenPostCard(realId);})()">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + esc(t) + '</span>' +
       '</div>' +
