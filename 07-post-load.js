@@ -1157,7 +1157,14 @@ function renderScoreboard() {
     if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
-    var clTotal = approvalCount + inputCount;
+    var clientPosts = allPosts.filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      var stage = p.stage || p.stageLC || '';
+      return owner === 'client' &&
+        !['published','parked','rejected'].includes(stage);
+    });
+    var clientCount = clientPosts.length;
+    var clTotal = clientCount;
     var clPrefix = clTotal > 0 ? '-' : '\u00b7';
     var clColor = clTotal > 0 ? 'var(--red)' : 'var(--muted)';
     var elClPre = document.getElementById('metric-client-prefix');
@@ -1167,19 +1174,25 @@ function renderScoreboard() {
     if (elClNum) { elClNum.textContent = dashPad(clTotal); elClNum.style.color = clColor; }
     var clMsgColor = clTotal > 0 ? '#cc3a3a' : '#aaa';
     if (elClMsg) {
-      if (approvalCount > 0 && inputCount > 0) {
+      if (approvalCount > 0 || inputCount > 0) {
         elClMsg.innerHTML =
-          '<span style="cursor:pointer;color:#cc3a3a;" ' +
-          'onclick="event.stopPropagation();' +
-          'var c=document.querySelector(\'[data-stage=awaiting_approval]\');if(c)c.click();">' +
-          dashPad(approvalCount) + ' approval</span>' +
+          '<span style="cursor:pointer;color:var(--c-red);"' +
+          ' onclick="event.stopPropagation();(function(){' +
+          'document.querySelector(\'[data-tab=\\\'pipeline\\\']\').click();' +
+          'setTimeout(function(){window._PF=window._PF||{};' +
+          'window._PF.stage=\'awaiting_approval\';window._PF.owner=\'all\';' +
+          'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
+          '})()">' + dashPad(approvalCount) + ' APPROVAL</span>' +
           ' <span style="color:#555;">\u00b7</span> ' +
-          '<span style="cursor:pointer;color:#cc3a3a;" ' +
-          'onclick="event.stopPropagation();' +
-          'var c=document.querySelector(\'[data-stage=awaiting_brand_input]\');if(c)c.click();">' +
-          dashPad(inputCount) + ' input</span>';
+          '<span style="cursor:pointer;color:#888;"' +
+          ' onclick="event.stopPropagation();(function(){' +
+          'document.querySelector(\'[data-tab=\\\'pipeline\\\']\').click();' +
+          'setTimeout(function(){window._PF=window._PF||{};' +
+          'window._PF.stage=\'awaiting_brand_input\';window._PF.owner=\'all\';' +
+          'if(typeof renderPipeline===\'function\')renderPipeline();},400)' +
+          '})()">' + dashPad(inputCount) + ' INPUT</span>';
       } else {
-        var clMsg = approvalCount > 0 ? dashPad(approvalCount) + ' awaiting approval' : inputCount > 0 ? dashPad(inputCount) + ' input missing' : 'Client sorted \u00b7 good week';
+        var clMsg = 'Client sorted \u00b7 good week';
         elClMsg.textContent = clMsg;
         elClMsg.style.color = clMsgColor;
       }
@@ -1233,41 +1246,33 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      var inProd = (window.allPosts || []).filter(function(p) {
-        return p.stage === 'in_production';
-      });
-      if (inProd.length > 0) {
-        navigateWithFilter('pipeline', ['in_production']);
-      } else {
-        if (typeof openNewPostModal === 'function') {
-          openNewPostModal();
-        } else {
-          showToast('No posts in production \u00b7 create one', 'info');
-        }
-      }
+      document.querySelector('[data-tab="pipeline"]').click();
+      setTimeout(function(){
+        var chip = document.querySelector('.stage-chip[data-stage="all"]');
+        if(chip) chip.click();
+        window._PF = window._PF || {};
+        window._PF.owner = 'pranav';
+        if(typeof renderPipeline==='function') renderPipeline();
+      }, 400);
     };
     if (rowChitra) rowChitra.onclick = function() {
-      var data = window._lastScoreboardData || {};
-      var total = (data.chitraCount || 0) + (data.chitraOverdue || 0);
-      if (total === 0) {
-        showToast('All sorted - nothing pending', 'success');
-      } else {
-        navigateWithFilter('pipeline', ['ready']);
-      }
+      document.querySelector('[data-tab="pipeline"]').click();
+      setTimeout(function(){
+        var chip = document.querySelector('.stage-chip[data-stage="all"]');
+        if(chip) chip.click();
+        window._PF = window._PF || {};
+        window._PF.owner = 'chitra';
+        if(typeof renderPipeline==='function') renderPipeline();
+      }, 400);
     };
     if (rowClient) rowClient.onclick = function() {
-      var data = window._lastScoreboardData || {};
-      var approvals = data.approvalCount || 0;
-      var inputs = data.inputCount || 0;
-      if (approvals === 0 && inputs === 0) {
-        showToast('Client all clear', 'success');
-        return;
-      }
-      if (inputs > approvals) {
-        navigateWithFilter('pipeline', ['awaiting_brand_input']);
-      } else {
-        navigateWithFilter('pipeline', ['awaiting_approval']);
-      }
+      document.querySelector('[data-tab="pipeline"]').click();
+      setTimeout(function(){
+        window._PF = window._PF || {};
+        window._PF.stage = 'awaiting_approval';
+        window._PF.owner = 'all';
+        if(typeof renderPipeline==='function') renderPipeline();
+      }, 400);
     };
 
   } catch (err) {
@@ -1752,7 +1757,7 @@ function _updateNextScheduled(allP) {
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
     var pid = esc(p.id || p.post_id || getPostId(p) || '');
-    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(typeof openPCS===\'function\')openPCS(\'' + pid + '\',\'pipeline\')">' +
+    html += '<div style="display:flex;align-items:baseline;gap:0;margin-bottom:5px;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + title + '</span>' +
@@ -1792,7 +1797,7 @@ function _updateTodaysFocus(allP) {
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
     var pid = esc(f.id || f.post_id || getPostId(f) || '');
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(typeof openPCS===\'function\')openPCS(\'' + pid + '\',\'pipeline\')">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--sans);font-size:14px;font-weight:500;color:#ccc;">' + esc(t) + '</span>' +
       '</div>' +
@@ -1820,7 +1825,7 @@ function _updateLastMove(allP) {
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
     var pid = last.id || last.post_id || getPostId(last) || '';
-    var clickAttr = pid ? ' onclick="if(typeof openPCS===\'function\')openPCS(\'' + esc(pid) + '\',\'pipeline\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
+    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
     textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;line-height:1.6;">No moves yet</div>';
@@ -1861,26 +1866,28 @@ function _updateUnsaidThing(allP) {
 
   var lines = [];
   if (scheduled === 0) {
-    lines.push('runway is empty -- nothing scheduled ahead');
+    lines.push('runway is empty \u00b7 nothing scheduled ahead');
   } else if (scheduled < 3) {
-    lines.push('only ' + scheduled + ' in the runway -- thin buffer');
+    lines.push('only ' + scheduled + ' in the runway \u00b7 thin buffer');
   }
   if (inProd > 4) {
     lines.push(inProd + ' posts stuck in production');
   }
   if (awaiting > 2) {
-    lines.push(awaiting + ' waiting on approval -- bottleneck?');
+    lines.push(awaiting + ' waiting on approval \u00b7 bottleneck?');
   }
   if (stale > 0) {
     lines.push(stale + ' post' + (stale > 1 ? 's' : '') + ' untouched 3+ days');
   }
   if (ready > 3 && scheduled === 0) {
-    lines.push(ready + ' ready but none scheduled -- dispatch gap');
+    lines.push(ready + ' ready but none scheduled \u00b7 dispatch gap');
   }
   if (!lines.length) {
-    lines.push('pipeline is clean -- no flags');
+    lines.push('pipeline is clean \u00b7 no flags');
   }
-  el.textContent = lines.join(' / ');
+  var unsaidText = lines.join(' / ');
+  if (unsaidText.length > 120) unsaidText = unsaidText.slice(0, 117) + '...';
+  el.textContent = unsaidText;
 }
 
 function _updateDashTimestamp() {
