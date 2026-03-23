@@ -2309,7 +2309,14 @@ function updatePipelineChipCounts() {
     var el = document.getElementById('chip-count-' + chipKey);
     if (el) el.textContent = stageCounts[keys[k]];
   }
-  // Inject colored dots into stage chips
+  // Hide chips with zero count (except ALL)
+  document.querySelectorAll('.stage-chip').forEach(function(chip) {
+    var stage = chip.dataset.stage;
+    if (stage === 'all') return;
+    var count = stageCounts[stage] || 0;
+    chip.style.display = count > 0 ? 'flex' : 'none';
+  });
+  // Inject colored dots into stage chips (after counts and visibility)
   var dotColors = {
     all: '#666',
     awaiting_approval: 'var(--c-red)',
