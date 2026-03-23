@@ -78,29 +78,25 @@ function updatePipelineCritical(posts) {
 // -- Pipeline stage bar --
 function updatePipelineStageBar(posts) {
   var bar = document.getElementById('pipeline-stage-bar');
-  var labels = document.getElementById('pipeline-stage-labels');
-  if (!bar || !labels) return;
+  if (!bar) return;
   var allP = posts || allPosts || [];
   var stageDefs = [
-    { key: 'awaiting_approval', label: 'APPROVAL', color: 'var(--c-red)' },
-    { key: 'awaiting_brand_input', label: 'INPUT', color: 'var(--c-purple)' },
-    { key: 'in_production', label: 'PRODUCTION', color: 'var(--c-amber)' },
-    { key: 'scheduled', label: 'SCHED', color: 'var(--c-cyan)' },
-    { key: 'ready', label: 'READY', color: 'var(--c-green)' }
+    { key: 'awaiting_approval', color: 'var(--c-red)' },
+    { key: 'awaiting_brand_input', color: 'var(--c-purple)' },
+    { key: 'in_production', color: 'var(--c-amber)' },
+    { key: 'scheduled', color: 'var(--c-cyan)' },
+    { key: 'ready', color: 'var(--c-green)' }
   ];
   var active = allP.filter(function(p) { return !['published','parked','rejected'].includes(p.stage||p.stageLC||''); });
   var total = active.length || 1;
   var barHTML = '';
-  var labelsHTML = '<div onclick="filterPipelineStage(\'all\')" style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;letter-spacing:0.1em;color:#e8e2d9;white-space:nowrap;cursor:pointer;"><div style="width:5px;height:5px;border-radius:50%;background:#666;flex-shrink:0;"></div>ALL ' + total + '</div>';
   stageDefs.forEach(function(s) {
     var count = allP.filter(function(p) { return (p.stage||p.stageLC||'') === s.key; }).length;
     if (!count) return;
     var pct = Math.max(3, Math.round((count / total) * 100));
     barHTML += '<div style="height:100%;flex-shrink:0;background:' + s.color + ';width:' + pct + '%;cursor:pointer;" onclick="filterPipelineStage(\'' + s.key + '\')"></div>';
-    labelsHTML += '<div onclick="filterPipelineStage(\'' + s.key + '\')" style="display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:7px;letter-spacing:0.1em;color:#444;white-space:nowrap;cursor:pointer;"><div style="width:5px;height:5px;border-radius:50%;background:' + s.color + ';flex-shrink:0;"></div>' + s.label + ' ' + count + '</div>';
   });
   bar.innerHTML = barHTML;
-  labels.innerHTML = labelsHTML;
 }
 
 window.filterPipelineStage = function(stage) {
@@ -2588,7 +2584,7 @@ function updatePipelineNarrative(posts) {
            new Date(b.targetDate||b.target_date);
   });
   if (overdue.length) {
-    var t = (overdue[0].title || 'Post').split(' ').slice(0,2).join(' ');
+    var t = (overdue[0].title || 'Post').split(' ').slice(0,3).join(' ');
     var days = Math.floor((now - new Date(overdue[0].targetDate||
       overdue[0].target_date)) / 86400000);
     el.textContent = t + ' \u00b7 ' + days + 'd overdue';

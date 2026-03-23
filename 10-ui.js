@@ -168,12 +168,18 @@ function switchTab(btn) {
   if (tab === 'pipeline') {
     if (titleEl) titleEl.style.display = 'none';
     if (greetHdr) greetHdr.style.display = 'none';
+    var appHdr = document.querySelector('.app-header');
+    if (appHdr) appHdr.style.display = 'none';
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (greetHdr) greetHdr.style.display = '';
+    var appHdr = document.querySelector('.app-header');
+    if (appHdr) appHdr.style.display = 'flex';
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
     if (greetHdr) greetHdr.style.display = 'none';
+    var appHdr = document.querySelector('.app-header');
+    if (appHdr) appHdr.style.display = 'none';
   }
   if (tab !== 'pipeline' && typeof closePipelineSearch === 'function') closePipelineSearch();
   if (tab !== 'tasks' && typeof _taskFilter !== 'undefined') {
@@ -500,6 +506,8 @@ function copyApprovalLink(url) {
 
 // -- Insights Tab ------------------------------
 function showInsights() {
+  var appHdr = document.querySelector('.app-header');
+  if (appHdr) appHdr.style.display = 'none';
   document.getElementById('library-view')?.classList.remove('active');
   var dv = document.getElementById('dashboard-view');
   var cv = document.getElementById('client-view');
