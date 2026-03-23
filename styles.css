@@ -2688,7 +2688,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .stage-chip {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0;
   font-family: var(--mono);
   font-size: 9px;
@@ -2729,8 +2729,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: var(--mono);
   font-size: 9px;
   color: inherit;
-  background: none;
-  border: none;
+  min-width: 14px;
+  text-align: left;
   padding: 0;
   margin-left: 0;
 }
