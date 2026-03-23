@@ -3,6 +3,34 @@
 =============================================== */
 console.log("LOADED:", "07-post-load.js");
 
+// -- Activity log cache for stage age --
+window._activityLogs = [];
+async function _fetchActivityLogs() {
+  try {
+    var data = await apiFetch(
+      '/activity_log?select=post_id,new_stage,created_at' +
+      '&order=created_at.desc&limit=500'
+    );
+    window._activityLogs = Array.isArray(data) ? data : [];
+  } catch(e) { window._activityLogs = []; }
+}
+
+function isPostStale(p) {
+  var s = p.stage || p.stageLC || '';
+  if (['published','parked','rejected'].includes(s)) return false;
+  var logs = window._activityLogs || [];
+  var postId = p.id || p.post_id;
+  var entry = logs.find(function(l) {
+    return (l.post_id === postId) && (l.new_stage === s);
+  });
+  var changed = entry ? entry.created_at :
+    (p.status_changed_at || p.statusChangedAt ||
+     p.updated_at || p.updatedAt);
+  if (!changed) return false;
+  return Math.floor((Date.now()-new Date(changed).getTime())/86400000) >= 2;
+}
+window.isPostStale = isPostStale;
+
 // -- Pipeline search state --
 var _pipelineSearchOpen = false;
 
@@ -41,16 +69,17 @@ function updatePipelineCritical(posts) {
   var allP = posts || allPosts || [];
   var now = new Date();
   var overdue = allP.filter(function(p) {
-    var d = p.targetDate || p.target_date;
-    var s = p.stage || p.stageLC || '';
-    return d && new Date(d) < now && !['published','parked','rejected'].includes(s);
+    return isPostStale(p);
   }).sort(function(a,b) {
-    return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date);
+    var ac = a.status_changed_at||a.statusChangedAt||a.updated_at||a.updatedAt||'';
+    var bc = b.status_changed_at||b.statusChangedAt||b.updated_at||b.updatedAt||'';
+    return new Date(ac) - new Date(bc);
   });
   if (overdue.length) {
     var oldest = overdue[0];
-    var daysOver = Math.floor((now - new Date(oldest.targetDate||oldest.target_date)) / 86400000);
-    el.textContent = (oldest.title||'A post') + ' ' + daysOver + 'd overdue \u00b7 sort now';
+    var changedAt = oldest.status_changed_at||oldest.statusChangedAt||oldest.updated_at||oldest.updatedAt;
+    var daysOver = changedAt ? Math.floor((Date.now() - new Date(changedAt).getTime()) / 86400000) : 0;
+    el.textContent = (oldest.title||'A post') + ' ' + daysOver + 'd in stage \u00b7 sort now';
     el.style.color = 'var(--c-red)';
     return;
   }
@@ -115,13 +144,7 @@ function _applyPFFilter(posts) {
     if (pf.owner !== 'all') {
       if (owner !== pf.owner) return false;
     }
-    if (pf.urgency === 'overdue') {
-      var changed = p.status_changed_at || p.statusChangedAt ||
-                    p.updated_at || p.updatedAt;
-      var daysInStage = changed ? Math.floor(
-        (Date.now()-new Date(changed).getTime())/86400000) : 0;
-      if (daysInStage < 2) return false;
-    }
+    if (pf.urgency === 'overdue' && !isPostStale(p)) return false;
     if (pf.urgency === 'week') {
       var td = new Date(p.targetDate || p.target_date);
       var diff = Math.ceil((td - new Date()) / 86400000);
@@ -1250,33 +1273,13 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      document.querySelector('[data-tab="pipeline"]').click();
-      setTimeout(function(){
-        var chip = document.querySelector('.stage-chip[data-stage="all"]');
-        if(chip) chip.click();
-        window._PF = window._PF || {};
-        window._PF.owner = 'pranav';
-        if(typeof renderPipeline==='function') renderPipeline();
-      }, 400);
+      openStageSheet('pranav_overdue');
     };
     if (rowChitra) rowChitra.onclick = function() {
-      document.querySelector('[data-tab="pipeline"]').click();
-      setTimeout(function(){
-        window._PF = window._PF || {};
-        window._PF.owner = 'chitra';
-        window._PF.urgency = 'overdue';
-        window._PF.stage = 'all';
-        if(typeof renderPipeline==='function') renderPipeline();
-      }, 400);
+      openStageSheet('chitra_overdue');
     };
     if (rowClient) rowClient.onclick = function() {
-      document.querySelector('[data-tab="pipeline"]').click();
-      setTimeout(function(){
-        window._PF = window._PF || {};
-        window._PF.stage = 'awaiting_approval';
-        window._PF.owner = 'all';
-        if(typeof renderPipeline==='function') renderPipeline();
-      }, 400);
+      openStageSheet('awaiting_approval');
     };
 
   } catch (err) {
@@ -1456,7 +1459,8 @@ function openRunwaySheet() {
       var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       var dateStr = '-- --';
       if (d) { var dt = new Date(d); dateStr = days[dt.getDay()] + ' - ' + dt.getDate() + ' ' + months[dt.getMonth()]; }
-      html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);">';
+      var rpid = p.id || p.post_id || '';
+      html += '<div onclick="openPostOverSheet(\'' + rpid + '\')" style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);cursor:pointer;transition:background 0.1s;" onmousedown="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseup="this.style.background=\'\'">';
       html += '<div style="width:3px;flex-shrink:0;background:var(--c-cyan);"></div>';
       html += '<div style="flex:1;padding:10px 14px;">';
       html += '<div style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);letter-spacing:0.08em;margin-bottom:3px;">' + dateStr + '</div>';
@@ -1472,22 +1476,39 @@ function openRunwaySheet() {
 }
 window.openRunwaySheet = openRunwaySheet;
 
+function openPostOverSheet(pid) {
+  var match = (allPosts||[]).find(function(p) {
+    return p.id === pid || p.post_id === pid;
+  });
+  var realId = match ? (match.id || match.post_id) : pid;
+  if (typeof openPCS === 'function') {
+    openPCS(realId, 'pipeline');
+  }
+}
+window.openPostOverSheet = openPostOverSheet;
+
 function openStageSheet(stage) {
   var stageNames = {
     'awaiting_approval': 'Awaiting Approval',
     'awaiting_brand_input': 'Awaiting Input',
-    'overdue': 'Overdue Posts'
+    'overdue': 'Overdue Posts',
+    'chitra_overdue': 'Chitra \u00b7 Overdue',
+    'pranav_overdue': 'Pranav \u00b7 Overdue'
   };
   var posts;
   if (stage === 'overdue') {
     posts = (allPosts||[]).filter(function(p) {
-      var changed = p.status_changed_at||p.statusChangedAt||
-                    p.updated_at||p.updatedAt;
-      var daysVal = changed ? Math.floor(
-        (Date.now()-new Date(changed).getTime())/86400000) : 0;
-      var s = p.stage||p.stageLC||'';
-      return daysVal >= 2 &&
-        !['published','parked','rejected'].includes(s);
+      return isPostStale(p);
+    });
+  } else if (stage === 'chitra_overdue') {
+    posts = (allPosts||[]).filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      return owner === 'chitra' && isPostStale(p);
+    });
+  } else if (stage === 'pranav_overdue') {
+    posts = (allPosts||[]).filter(function(p) {
+      var owner = (p.owner||'').toLowerCase();
+      return owner === 'pranav' && isPostStale(p);
     });
   } else {
     posts = (allPosts||[]).filter(function(p) {
@@ -1499,7 +1520,7 @@ function openStageSheet(stage) {
   if (!sheet) {
     sheet = document.createElement('div');
     sheet.id = 'stage-sheet-overlay';
-    sheet.style.cssText = 'position:fixed;inset:0;z-index:9500;'+
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:1400;'+
       'background:rgba(0,0,0,0.75);display:flex;'+
       'align-items:flex-end;justify-content:center;';
     sheet.onclick = function(e) {
@@ -1531,12 +1552,12 @@ function openStageSheet(stage) {
       var pTitle = esc(p.title || 'Untitled');
       var pOwner = esc(p.owner || '');
       var pStage = esc((p.stage||p.stageLC||'').replace(/_/g,' '));
-      html += '<div onclick="document.getElementById('+
-        '\'stage-sheet-overlay\').style.display=\'none\';'+
-        'if(window.libOpenPostCard)window.libOpenPostCard(\''+
-        esc(pid)+'\');" style="display:flex;align-items:stretch;'+
+      html += '<div onclick="openPostOverSheet(\''+pid+'\')"'+
+        ' style="display:flex;align-items:stretch;'+
         'border-bottom:1px solid rgba(255,255,255,0.07);'+
-        'cursor:pointer;">'+
+        'cursor:pointer;transition:background 0.1s;"'+
+        ' onmousedown="this.style.background=\'rgba(255,255,255,0.03)\'"'+
+        ' onmouseup="this.style.background=\'\'">'+
         '<div style="width:3px;flex-shrink:0;background:'+
         'var(--c-red);"></div>'+
         '<div style="flex:1;padding:10px 14px;">'+
@@ -1657,6 +1678,10 @@ function renderDashboard() {
 function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
   if (!el) return;
+  if (!window._activityLogsFetched) {
+    window._activityLogsFetched = true;
+    _fetchActivityLogs();
+  }
   updateDashGreeting();
   renderScoreboard();
   updateDashDatetime();
@@ -1879,12 +1904,12 @@ function _updateNextScheduled(allP) {
     var d = new Date(p.target_date + 'T00:00:00');
     var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
     var title = esc(p.title || 'Untitled');
-    var pid = esc(p.id || p.post_id || getPostId(p) || '');
+    var pid = p.id || p.post_id || '';
     var metaParts = [];
     if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
     var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
-    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="(function(){var match=allPosts&&allPosts.find(function(x){return x.id===\'' + pid + '\';});var realId=match?match.id:\'' + pid + '\';if(window.libOpenPostCard)window.libOpenPostCard(realId);})()">' +
+    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<div style="display:flex;align-items:baseline;gap:0;">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
@@ -1923,9 +1948,9 @@ function _updateTodaysFocus(allP) {
     if (f.owner) metaParts.push(f.owner.toLowerCase());
     metaParts.push(cfg.label || f.stage);
     if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
-    var pid = esc(f.id || f.post_id || getPostId(f) || '');
+    var pid = f.id || f.post_id || '';
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="(function(){var match=allPosts&&allPosts.find(function(x){return x.id===\'' + pid + '\';});var realId=match?match.id:\'' + pid + '\';if(window.libOpenPostCard)window.libOpenPostCard(realId);})()">' +
+      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
       '<span style="font-family:var(--mono);font-size:11px;color:#bbb;letter-spacing:0.02em;">' + esc(t) + '</span>' +
       '</div>' +
@@ -1952,8 +1977,8 @@ function _updateLastMove(allP) {
     var cfg = STAGE_META[last.stage] || {};
     var ago = _timeAgo(last.status_changed_at);
     var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
-    var pid = last.id || last.post_id || getPostId(last) || '';
-    var clickAttr = pid ? ' onclick="if(window.libOpenPostCard)window.libOpenPostCard(\'' + esc(pid) + '\')" style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;"';
+    var pid = last.id || last.post_id || '';
+    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;"';
     textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
   } else {
     textEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#555;line-height:1.6;letter-spacing:0.03em;">No moves yet</div>';
@@ -2348,20 +2373,11 @@ function buildPipelineCard(p, listKey) {
   var stageLC = stage.toLowerCase();
 
   // FIX 1 -- Color bar computation
-  var now = new Date(); now.setHours(0,0,0,0);
   var tdRaw = p.targetDate || p.target_date;
-  var td = tdRaw ? new Date(tdRaw) : null;
-  if (td) td.setHours(0,0,0,0);
-  var diffDays = td ? Math.ceil((td - now) / 86400000) : 999;
-  var changed = p.status_changed_at || p.statusChangedAt ||
-                p.updated_at || p.updatedAt;
-  var daysInStage = changed ? Math.floor(
-    (Date.now() - new Date(changed)) / 86400000) : 0;
-  var isStale = daysInStage >= 2;
-  var barColor = isStale && stageLC === 'awaiting_approval'
+  var cardIsStale = isPostStale(p);
+  var barColor = cardIsStale && stageLC === 'awaiting_approval'
     ? 'var(--c-red)' :
-    isStale ? 'var(--c-amber)' :
-    diffDays <= 3 ? 'var(--c-amber)' :
+    cardIsStale ? 'var(--c-amber)' :
     stageLC === 'scheduled' ? 'var(--c-cyan)' :
     stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
     'rgba(255,255,255,0.06)';
@@ -2803,17 +2819,8 @@ function updatePipelineNarrative(posts) {
   }
 
   // PRIORITY 1: post stuck in stage 2+ days
-  var activeStages = ['awaiting_approval','awaiting_brand_input',
-    'in_production','ready','scheduled'];
   var stuck = allP.filter(function(p) {
-    var stage = p.stage || p.stageLC || '';
-    if (!activeStages.includes(stage)) return false;
-    var changed = p.status_changed_at || p.statusChangedAt ||
-                  p.updated_at || p.updatedAt;
-    if (!changed) return false;
-    var daysInStage = Math.floor(
-      (Date.now() - new Date(changed)) / 86400000);
-    return daysInStage >= 2;
+    return isPostStale(p);
   }).sort(function(a,b) {
     var aChanged = a.status_changed_at || a.statusChangedAt ||
                    a.updated_at || a.updatedAt;
