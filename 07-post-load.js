@@ -2268,6 +2268,28 @@ function updatePipelineChipCounts() {
     var el = document.getElementById('chip-count-' + chipKey);
     if (el) el.textContent = stageCounts[keys[k]];
   }
+  // Inject colored dots into stage chips
+  var dotColors = {
+    all: '#666',
+    awaiting_approval: 'var(--c-red)',
+    awaiting_brand_input: 'var(--c-purple)',
+    scheduled: 'var(--c-cyan)',
+    ready: 'var(--c-green)',
+    in_production: 'var(--c-amber)'
+  };
+  document.querySelectorAll('.stage-chip').forEach(function(chip) {
+    var stage = chip.dataset.stage;
+    if (!chip.querySelector('.chip-dot')) {
+      var dot = document.createElement('span');
+      dot.className = 'chip-dot';
+      dot.style.cssText = 'width:5px;height:5px;border-radius:50%;flex-shrink:0;background:' + (dotColors[stage] || '#555') + ';';
+      chip.insertBefore(dot, chip.firstChild);
+    }
+    var countEl = chip.querySelector('.chip-count');
+    if (countEl) {
+      countEl.style.color = stage === 'all' ? 'inherit' : (dotColors[stage] || '#555');
+    }
+  });
 }
 
 // -- Person strip count updater ------------------
