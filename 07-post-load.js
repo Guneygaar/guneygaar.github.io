@@ -2168,8 +2168,14 @@ function buildPipelineCard(p, listKey) {
   var td = tdRaw ? new Date(tdRaw) : null;
   if (td) td.setHours(0,0,0,0);
   var diffDays = td ? Math.ceil((td - now) / 86400000) : 999;
-  var isOverdue = diffDays < 0;
-  var barColor = isOverdue ? 'var(--c-red)' :
+  var changed = p.status_changed_at || p.statusChangedAt ||
+                p.updated_at || p.updatedAt;
+  var daysInStage = changed ? Math.floor(
+    (Date.now() - new Date(changed)) / 86400000) : 0;
+  var isStale = daysInStage >= 2;
+  var barColor = isStale && stageLC === 'awaiting_approval'
+    ? 'var(--c-red)' :
+    isStale ? 'var(--c-amber)' :
     diffDays <= 3 ? 'var(--c-amber)' :
     stageLC === 'scheduled' ? 'var(--c-cyan)' :
     stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
@@ -2609,27 +2615,39 @@ function updatePipelineNarrative(posts) {
     el.dataset.filterStage = filterStage || 'all';
   }
 
-  // PRIORITY 1: any post overdue -- show stage + days overdue
-  var overdue = allP.filter(function(p) {
-    var d = new Date(p.targetDate || p.target_date);
-    d.setHours(0,0,0,0);
-    return !isNaN(d) && d < now &&
-      !['published','parked','rejected'].includes(
-        p.stage || p.stageLC);
+  // PRIORITY 1: post stuck in stage 2+ days
+  var activeStages = ['awaiting_approval','awaiting_brand_input',
+    'in_production','ready','scheduled'];
+  var stuck = allP.filter(function(p) {
+    var stage = p.stage || p.stageLC || '';
+    if (!activeStages.includes(stage)) return false;
+    var changed = p.status_changed_at || p.statusChangedAt ||
+                  p.updated_at || p.updatedAt;
+    if (!changed) return false;
+    var daysInStage = Math.floor(
+      (Date.now() - new Date(changed)) / 86400000);
+    return daysInStage >= 2;
   }).sort(function(a,b) {
-    return new Date(a.targetDate||a.target_date) -
-           new Date(b.targetDate||b.target_date);
+    var aChanged = a.status_changed_at || a.statusChangedAt ||
+                   a.updated_at || a.updatedAt;
+    var bChanged = b.status_changed_at || b.statusChangedAt ||
+                   b.updated_at || b.updatedAt;
+    return new Date(aChanged) - new Date(bChanged);
   });
-  if (overdue.length) {
-    var overdueStage = overdue[0].stage || overdue[0].stageLC;
-    var stageName = stageDisplayNames[overdueStage] || 'Post';
-    var days = Math.floor(
-      (now - new Date(overdue[0].targetDate ||
-      overdue[0].target_date).setHours(0,0,0,0)) / 86400000);
+
+  if (stuck.length) {
+    var stuckStage = stuck[0].stage || stuck[0].stageLC;
+    var stageName = stageDisplayNames[stuckStage] || 'Post';
+    var changed = stuck[0].status_changed_at ||
+                  stuck[0].statusChangedAt ||
+                  stuck[0].updated_at || stuck[0].updatedAt;
+    var daysStuck = Math.floor(
+      (Date.now() - new Date(changed)) / 86400000);
+    var color = daysStuck >= 4 ? 'var(--c-red)' : 'var(--c-amber)';
     setText(
-      stageName + ' \u00b7 ' + days + 'd overdue',
-      'var(--c-red)',
-      overdueStage
+      stageName + ' \u00b7 ' + daysStuck + 'd waiting',
+      color,
+      stuckStage
     );
     return;
   }
