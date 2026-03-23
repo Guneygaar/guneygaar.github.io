@@ -103,7 +103,7 @@
   --pcs-border-soft: rgba(255,255,255,0.06);
 
   /*  New design system tokens  */
-  --bg:       #080808;
+  --bg:       #0a0a0f;
   --surface:  #111111;
   --dotline:  rgba(255,255,255,0.10);
   --dotfaint: rgba(255,255,255,0.05);
@@ -129,7 +129,7 @@
   --text-primary: #FFFFFF;
   --text-secondary: #BBBBBB;
   --text-tertiary: #555555;
-  --surface-bg: #080808;
+  --surface-bg: #0a0a0f;
 
   --surface2:   #1a1a1a;
   --surface3:   #252525;
@@ -4023,7 +4023,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   align-items: center;
   gap: 10px;
   padding: 0 18px;
-  background: #080808;
+  background: #0a0a0f;
   border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 .pipeline-search-bar.open {
@@ -4639,8 +4639,8 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   font-size: 7px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #666;
-  margin-bottom: 8px;
+  color: #333;
+  margin-bottom: 7px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -4687,9 +4687,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: block;
 }
 .dash-task-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: 0.01em;
   flex: 1;
 }
 .dash-task-text.done {
