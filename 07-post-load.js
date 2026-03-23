@@ -2212,8 +2212,7 @@ function buildPipelineCard(p, listKey) {
 
   // Build card content (all inline -- no CSS classes for card layout)
   var innerCard =
-    '<div id="upc-' + esc(id) + '" data-post-id="' + esc(id) + '" data-stage="' + esc(stage) + '" data-list="' + esc(listKey||'') + '" ' +
-    'style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:' + dateInfo.color + ';">' + esc(dateInfo.text) + '</div>' +
         '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#ccc;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(title) + '</div>' +
@@ -2223,7 +2222,7 @@ function buildPipelineCard(p, listKey) {
     '</div>';
 
   // FIX 1 -- Outer wrapper with 3px color bar + bottom divider
-  return '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">' +
+  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">' +
     '<div style="width:3px;flex-shrink:0;background:' + barColor + ';"></div>' +
     '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
