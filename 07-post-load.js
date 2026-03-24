@@ -3739,7 +3739,7 @@ function _renderClientViewInner() {
           '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
           '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
         '</div>' +
-        '<div style="padding:12px 14px 28px;position:sticky;bottom:0;' +
+        '<div style="padding:12px 14px 90px;position:sticky;bottom:0;' +
         'background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
         '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
         'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
