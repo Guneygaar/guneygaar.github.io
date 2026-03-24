@@ -204,7 +204,10 @@ function activateRole(role) {
   if ((role || '').toLowerCase() === 'client') {
     window.currentRole = 'Client';
     window.effectiveRole = 'Client';
-    if (typeof switchTab === 'function') switchTab('tasks');
+    var loginOv = document.getElementById('login-overlay');
+    if (loginOv) loginOv.classList.add('hidden');
+    document.getElementById('client-view')?.classList.add('active');
+    if (typeof loadPostsForClient === 'function') loadPostsForClient();
     return;
   }
 
