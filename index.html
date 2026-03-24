@@ -445,8 +445,8 @@
 <!-- 
      NEW POST MODAL
  -->
-<div class="modal-overlay" id="new-post-overlay" onclick="closeNewPostModal(event)" style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;">
-  <div class="new-post-sheet" id="new-post-sheet" style="width:100%;max-width:390px;height:75vh;max-height:75vh;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.12);display:flex;flex-direction:column;overflow:hidden;">
+<div id="new-post-overlay" style="position:fixed;inset:0;z-index:1000;background:#0a0a0f;display:flex;align-items:stretch;justify-content:center;">
+  <div id="new-post-sheet" style="width:100%;max-width:390px;height:100vh;height:100dvh;background:#0a0a0f;display:flex;flex-direction:column;overflow:hidden;">
     <div class="nps-handle"></div>
     <div class="nps-color-strip" id="nps-color-strip"></div>
 
@@ -455,12 +455,10 @@
       <button class="nps-close" id="nps-close-btn">&#x2715;</button>
     </div>
 
-    <div class="nps-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
+    <div class="nps-body">
 
       <div class="nps-title-field">
-        <div class="nps-field-label">
-          Post Title <span class="nps-req">*</span>
-        </div>
+        <span class="nps-label">Post Title <span class="nps-req">*</span></span>
         <input class="nps-title-input" type="text"
           id="new-post-title"
           placeholder="What's this post about?">
@@ -469,9 +467,7 @@
       <div class="nps-grid">
 
         <div class="nps-cell">
-          <div class="nps-field-label">
-            Owner <span class="nps-req">*</span>
-          </div>
+          <span class="nps-label">Owner <span class="nps-req">*</span></span>
           <select class="nps-select" id="new-post-owner">
             <option value="">Assign to...</option>
             <option value="Pranav">Pranav</option>
@@ -481,18 +477,13 @@
         </div>
 
         <div class="nps-cell">
-          <div class="nps-label">Stage</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
-            letter-spacing:0.1em;text-transform:uppercase;
-            color:#9b87f5;border:1px solid rgba(155,135,245,0.25);
-            padding:4px 10px;display:inline-block;margin-top:4px;">
-            In Production
-          </div>
+          <span class="nps-label">Stage</span>
+          <div class="nps-stage-badge">In Production</div>
           <input type="hidden" id="new-post-stage" value="in_production">
         </div>
 
         <div class="nps-cell">
-          <div class="nps-field-label">Pillar</div>
+          <span class="nps-label">Pillar</span>
           <select class="nps-select" id="new-post-pillar">
             <option value="">Select...</option>
             <option value="Lead">Leadership</option>
@@ -506,7 +497,7 @@
         </div>
 
         <div class="nps-cell">
-          <div class="nps-field-label">Format</div>
+          <span class="nps-label">Format</span>
           <select class="nps-select" id="new-post-format">
             <option value="">Select...</option>
             <option value="Creative">Creative</option>
@@ -518,7 +509,7 @@
         </div>
 
         <div class="nps-cell">
-          <div class="nps-field-label">Location</div>
+          <span class="nps-label">Location</span>
           <select class="nps-select" id="new-post-location">
             <option value="">Select...</option>
             <option value="Mumbai">Mumbai</option>
@@ -529,56 +520,34 @@
         </div>
 
         <div class="nps-cell">
-          <div class="nps-field-label">Target Date</div>
-          <input class="nps-date" type="date" id="new-post-date">
+          <span class="nps-label">Target Date</span>
+          <input class="nps-select" type="date" id="new-post-date">
         </div>
 
-      </div>
-
-      <div class="form-group" style="margin-top:8px;">
-        <label class="form-label" for="new-post-caption" style="display:flex;align-items:center;gap:8px;">
-          <span>Copy / Caption</span>
-          <span style="color:#444;font-family:var(--mono);font-size:7px;letter-spacing:0.08em;">(goes to client)</span>
-        </label>
-        <textarea
-          id="new-post-caption"
-          placeholder="Write the LinkedIn caption here..."
-          style="width:100%;background:rgba(255,255,255,0.02);border:1px solid rgba(246,166,35,0.2);color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:13px;padding:10px;outline:none;resize:none;line-height:1.6;min-height:80px;"
-          rows="6"
-        ></textarea>
-      </div>
-
-      <div class="form-group" style="padding:10px 18px 0;">
-        <label class="form-label" style="display:flex;align-items:center;gap:8px;">
-          <span>Post Photos</span>
-          <span style="color:#444;font-family:var(--mono);font-size:7px;letter-spacing:0.08em;">(up to 20, shown to client)</span>
-        </label>
-
-        <!-- Preview grid -- shown after files selected -->
-        <div id="new-post-asset-grid"
-          style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
-        </div>
-
-        <!-- Upload button -- always visible -->
-        <input type="file" id="new-post-asset" accept="image/*"
-          multiple style="display:none;">
-        <label for="new-post-asset" id="new-post-asset-label"
-          style="display:block;font-family:'IBM Plex Mono',monospace;
-          font-size:8px;letter-spacing:0.12em;text-transform:uppercase;
-          color:#F6A623;background:transparent;
-          border:1px dashed rgba(246,166,35,0.3);
-          padding:14px 0;text-align:center;cursor:pointer;width:100%;">
-          + Upload Photos
-        </label>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;
-          color:#333;letter-spacing:0.06em;text-align:center;margin-top:4px;">
-          JPG / PNG -- original quality stored in Supabase
-        </div>
       </div>
 
       <div class="nps-full">
-        <div class="nps-field-label">Brief / Internal Notes <span style="color:#333;font-family:var(--mono);font-size:7px;letter-spacing:0.08em;"> (team only, not shared with client)</span></div>
-        <textarea class="nps-textarea" id="new-post-comments"
+        <span class="nps-label">Copy / Caption <span class="nps-label-hint">(goes to client)</span></span>
+        <textarea class="nps-textarea nps-caption-area" id="new-post-caption"
+          placeholder="Write the LinkedIn caption here..."
+          rows="6"></textarea>
+      </div>
+
+      <div class="nps-full">
+        <span class="nps-label">Post Photos <span class="nps-label-hint">(up to 20, shown to client)</span></span>
+
+        <div id="new-post-asset-grid" style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;"></div>
+
+        <input type="file" id="new-post-asset" accept="image/*" multiple style="display:none;">
+        <label for="new-post-asset" id="new-post-asset-label" class="nps-upload-label">
+          + Upload Photos
+        </label>
+        <div class="nps-upload-hint">JPG / PNG -- original quality stored in Supabase</div>
+      </div>
+
+      <div class="nps-full">
+        <span class="nps-label">Brief / Internal Notes <span class="nps-label-hint">(team only, not shared with client)</span></span>
+        <textarea class="nps-textarea nps-notes-area" id="new-post-comments"
           placeholder="Brief, caption, or notes..."></textarea>
       </div>
 

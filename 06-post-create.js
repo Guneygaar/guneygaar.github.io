@@ -183,8 +183,6 @@ setTimeout(() => document.getElementById('new-post-title')?.focus(), 60);
 
 function closeNewPostModal(e) {
 
-if (e && e.target !== document.getElementById('new-post-overlay')) return;
-
 saveDraft();
 stopDraftAutosave();
 
@@ -193,8 +191,7 @@ if (captionEl) captionEl.value = '';
 _newPostAssetFiles = [];
 if (typeof clearPostAsset === 'function') clearPostAsset();
 
-var _npoClose = document.getElementById('new-post-overlay');
-if (_npoClose) _npoClose.style.display = 'none';
+document.getElementById('new-post-overlay').style.display = 'none';
 var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = '';
 document.body.style.overflow = '';
