@@ -3624,14 +3624,61 @@ function _renderClientViewInner() {
         var pillar = (p.contentPillar || '').toUpperCase();
         var owner  = (p.owner || '').toUpperCase();
         var metaText = [pillar, owner].filter(Boolean).join(' / ');
-        var postLink = getPostLink(p);
         var approvalUrl = window.location.origin + '/p/' + id;
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
 
-        var previewHtml = postLink
-          ? '<a href="' + esc(postLink) + '" target="_blank" rel="noopener" class="cp-preview" style="text-decoration:none;"><span class="cp-preview-text">View Post Design ^</span></a>'
-          : '<div class="cp-preview"><span class="cp-preview-text">View Post Design ^</span></div>';
+        var imgs = Array.isArray(p.images) ? p.images : [];
+        var imgStripHtml = '';
+        if (imgs.length) {
+          imgStripHtml =
+            '<div style="display:flex;gap:2px;overflow-x:auto;' +
+            'scrollbar-width:none;margin-bottom:0;">' +
+            imgs.map(function(url, idx) {
+              return '<div style="flex-shrink:0;width:90px;height:90px;' +
+                'background:#111;overflow:hidden;">' +
+                '<img src="' + url + '" style="width:90px;height:90px;' +
+                'object-fit:cover;display:block;"></div>';
+            }).join('') +
+            '</div>';
+        }
+
+        var capHtml = '';
+        if (p.caption) {
+          var capId = 'cli-cap-' + p.post_id;
+          var btnId = 'cli-btn-' + p.post_id;
+          capHtml =
+            '<div style="padding:10px 14px 0;">' +
+            '<div id="' + capId + '" ' +
+            'style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+            'color:#888;line-height:1.6;white-space:pre-wrap;' +
+            'word-wrap:break-word;overflow-wrap:break-word;' +
+            'word-break:break-word;max-width:100%;' +
+            'overflow:hidden;max-height:62px;' +
+            '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
+            'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
+            esc(p.caption) + '</div>' +
+            '<button id="' + btnId + '" ' +
+            'onclick="(function(){' +
+              'var c=document.getElementById(\'' + capId + '\');' +
+              'var b=document.getElementById(\'' + btnId + '\');' +
+              'if(c.style.maxHeight===\'none\'||c.style.maxHeight===\'\'){' +
+                'c.style.maxHeight=\'62px\';' +
+                'c.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';' +
+                'c.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';' +
+                'b.textContent=\'See more\';}' +
+              'else{' +
+                'c.style.maxHeight=\'none\';' +
+                'c.style.webkitMaskImage=\'none\';' +
+                'c.style.maskImage=\'none\';' +
+                'b.textContent=\'See less\';}' +
+            '})()" ' +
+            'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+            'letter-spacing:0.1em;text-transform:uppercase;color:#444;' +
+            'background:transparent;border:none;cursor:pointer;' +
+            'padding:6px 14px 0;display:block;">See more</button>' +
+            '</div>';
+        }
 
         return '<div class="cp-card" id="apv-item-' + esc(id) + '">' +
           '<div class="cp-bar ' + barCls + '"></div>' +
@@ -3639,7 +3686,8 @@ function _renderClientViewInner() {
             '<div class="cp-status ' + statusCls + '">' + esc(statusText) + '</div>' +
             '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
             '<div class="cp-meta">' + esc(metaText) + '</div>' +
-            previewHtml +
+            imgStripHtml +
+            capHtml +
             '<div class="cp-actions">' +
               '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green);background:transparent;border:1px solid rgba(62,207,142,0.3);padding:9px 0;flex:1;cursor:pointer;" onclick="clientApprove(\'' + esc(id) + '\', this)">Approve</button>' +
               '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#666;background:transparent;border:1px solid rgba(255,255,255,0.08);padding:9px 0;flex:1;cursor:pointer;" onclick="showChangeInput(\'' + esc(id) + '\')">Changes</button>' +
