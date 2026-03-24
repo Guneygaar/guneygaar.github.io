@@ -189,13 +189,20 @@ function logout() {
 }
 
 function activateRole(role) {
+  var rolePreview = localStorage.getItem('pcs_role_preview');
+  if (rolePreview && rolePreview !== 'Admin') {
+    window.effectiveRole = rolePreview;
+    window.currentRole = rolePreview;
+    if (typeof switchTab === 'function') switchTab('tasks');
+    return;
+  }
+
   currentRole = role;
 
   // Client DB role takes absolute priority - real clients always go to client portal
   if ((role || '').toLowerCase() === 'client') {
     window.currentRole = 'Client';
     window.effectiveRole = 'Client';
-    localStorage.removeItem('pcs_role_preview');
     if (typeof switchTab === 'function') switchTab('tasks');
     return;
   }
