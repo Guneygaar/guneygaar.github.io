@@ -225,6 +225,13 @@ function activateRole(role) {
   if (typeof updateExitPreviewBar === 'function') updateExitPreviewBar();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
+
+  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+    setTimeout(function() {
+      if (typeof switchTab === 'function') switchTab('tasks');
+    }, 100);
+    return;
+  }
 }
 
 // Escape failsafe  -  callable from console if UI is ever unreachable
@@ -272,4 +279,14 @@ function updateActionButton() {
   if (!btn) return;
   btn.textContent = effectiveRole === 'Client' ? '+ New Request' : '+ New Post';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    var role = (window.effectiveRole ||
+      localStorage.getItem('hinglish_role') || '').toLowerCase();
+    if (role === 'client') {
+      if (typeof switchTab === 'function') switchTab('tasks');
+    }
+  }, 500);
+});
 
