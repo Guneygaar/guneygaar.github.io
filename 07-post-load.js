@@ -1191,7 +1191,10 @@ function renderScoreboard() {
     if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pMsgColor; }
 
     // CHITRA
-    var cTotal = chitraCount;
+    var cTotal = (allPosts||[]).filter(function(p) {
+      var s = p.stage || p.stageLC || '';
+      return s === 'awaiting_approval' || s === 'awaiting_brand_input';
+    }).length;
     var cPrefix = cTotal > 0 ? '-' : '\u00b7';
     var cColor = chitraOverdue > 0 ? 'var(--red)' : cTotal > 8 ? 'var(--red)' : cTotal > 3 ? 'var(--amber)' : cTotal > 0 ? 'var(--green)' : 'var(--green)';
     var cMsg = chitraOverdue > 0 ? dashPad(chitraOverdue) + ' overdue \u00b7 chase client' : cTotal > 8 ? dashPad(cTotal) + ' posts piling up' : cTotal > 3 ? dashPad(cTotal) + ' posts waiting on you' : cTotal > 0 ? dashPad(cTotal) + ' post' + (cTotal === 1 ? '' : 's') + ' ready to send' : 'All sorted \u00b7 well done';
@@ -1291,22 +1294,20 @@ function renderScoreboard() {
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
       var pranavPosts = (allPosts||[]).filter(function(p) {
-        var owner = (p.owner||'').toLowerCase();
         var s = p.stage || p.stageLC || '';
+        var owner = (p.owner||'').toLowerCase();
         return (owner === 'pranav' || owner === 'creative') &&
-          (s === 'in_production' || s === 'ready') &&
-          !['published','parked','rejected'].includes(s);
+               s === 'in_production';
       });
       if (pranavPosts.length > 0) {
         openStageSheet('pranav_production');
       } else {
-        if (typeof openCreatePost === 'function') openCreatePost();
-        else document.getElementById('fab-btn') &&
-          document.getElementById('fab-btn').click();
+        var fab = document.getElementById('fab-btn');
+        if (fab) fab.click();
       }
     };
     if (rowChitra) rowChitra.onclick = function() {
-      openStageSheet('chitra_overdue');
+      openStageSheet('chitra_active');
     };
     if (rowClient) rowClient.onclick = function() {
       openStageSheet('client_pending');
@@ -1349,21 +1350,21 @@ function _renderDashTaskList(role) {
       urgentItems.push({
         text: '<span style="color:#FF4B4B">' + dashPad(_rc) + '</span> runway',
         arrow: '#FF4B4B',
-        onclick: "navigateWithFilter('pipeline',['in_production'])"
+        onclick: "if(typeof openRunwaySheet==='function')openRunwaySheet()"
       });
     }
     if (_co > 0) {
       urgentItems.push({
         text: 'chase client <span style="color:#FF4B4B">' + dashPad(_co) + '</span> overdue',
         arrow: '#FF4B4B',
-        onclick: "navigateWithFilter('pipeline',['awaiting_approval'])"
+        onclick: "openStageSheet('overdue')"
       });
     }
     if (_pd <= -15) {
       urgentItems.push({
         text: '<span style="color:#FF4B4B">' + dashPad(Math.abs(_pd)) + '</span> posts to build <span style="color:#9b87f5">pranav</span>',
         arrow: '#9b87f5',
-        onclick: "navigateWithFilter('pipeline',['in_production'])"
+        onclick: "openStageSheet('pranav_production')"
       });
     }
 
@@ -1547,6 +1548,7 @@ function openStageSheet(stage) {
     'overdue': 'Overdue Posts',
     'client_pending': 'Client \u00b7 Pending',
     'chitra_overdue': 'Chitra \u00b7 Overdue',
+    'chitra_active': 'Chitra \u00b7 Awaiting Action',
     'pranav_overdue': 'Pranav \u00b7 Overdue',
     'pranav_production': 'Pranav \u00b7 In Progress'
   };
@@ -1565,6 +1567,16 @@ function openStageSheet(stage) {
          s === 'awaiting_brand_input');
     });
     title = 'Client \u00b7 Pending';
+  } else if (stage === 'chitra_active') {
+    posts = (allPosts||[]).filter(function(p) {
+      var s = p.stage || p.stageLC || '';
+      return s === 'awaiting_approval' ||
+             s === 'awaiting_brand_input';
+    }).sort(function(a,b) {
+      return new Date(a.status_changed_at||a.updated_at||'') -
+             new Date(b.status_changed_at||b.updated_at||'');
+    });
+    title = 'Chitra \u00b7 Awaiting Action';
   } else if (stage === 'chitra_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
@@ -1579,15 +1591,15 @@ function openStageSheet(stage) {
     title = 'Chitra \u00b7 Active Posts';
   } else if (stage === 'pranav_production') {
     posts = (allPosts||[]).filter(function(p) {
-      var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
+      var owner = (p.owner||'').toLowerCase();
       return (owner === 'pranav' || owner === 'creative') &&
-        (s === 'in_production' || s === 'ready');
+             s === 'in_production';
     }).sort(function(a,b) {
       return new Date(a.status_changed_at||a.updated_at||'') -
              new Date(b.status_changed_at||b.updated_at||'');
     });
-    title = 'Pranav \u00b7 In Progress';
+    title = 'Pranav \u00b7 In Production';
   } else if (stage === 'pranav_overdue') {
     posts = (allPosts||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
@@ -1881,23 +1893,32 @@ async function _updateStreakLines() {
 
     var clEl = document.getElementById('metric-client-streak');
     if (clEl) {
+      var todayStart = new Date();
+      todayStart.setHours(0,0,0,0);
+      var approvedToday = (window._activityLogs||[]).some(function(l) {
+        return new Date(l.created_at) >= todayStart &&
+          (l.new_stage === 'scheduled' ||
+           l.new_stage === 'ready' ||
+           l.new_stage === 'published') &&
+          l.old_stage === 'awaiting_approval';
+      });
       var clientLogs = logs.filter(function(l) {
         return l.actor === 'Client' ||
                l.new_stage === 'scheduled' ||
                l.old_stage === 'awaiting_approval';
       });
-      if (clientLogs.length) {
+      if (approvedToday) {
+        clEl.innerHTML = '<span class="dms-good">- approved today</span>';
+      } else if (clientLogs.length) {
         var clLast = new Date(clientLogs[0].created_at);
         var clDiff = Math.floor((today - clLast) / (1000 * 60 * 60 * 24));
         var clLastStr = clLast.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-        if (clDiff === 0) {
-          clEl.innerHTML = '<span class="dms-good">\u00b7 approved today</span>';
-        } else if (clDiff === 1) {
-          clEl.innerHTML = '<span class="dms-good">\u00b7 approved yesterday</span>';
+        if (clDiff === 1) {
+          clEl.innerHTML = '<span class="dms-good">- approved yesterday</span>';
         } else if (clDiff >= 5) {
-          clEl.innerHTML = '<span class="dms-idle">\u00b7 idle ' + clDiff + ' days \u00b7 last approved ' + clLastStr + '</span>';
+          clEl.innerHTML = '<span class="dms-idle">- idle ' + clDiff + ' days - last approved ' + clLastStr + '</span>';
         } else {
-          clEl.innerHTML = '<span class="dms-muted">\u00b7 last approved ' + clLastStr + '</span>';
+          clEl.innerHTML = '<span class="dms-muted">- last approved ' + clLastStr + '</span>';
         }
       } else {
         clEl.innerHTML = '';
@@ -2108,49 +2129,67 @@ function _timeAgo(dateStr) {
 function _updateUnsaidThing(allP) {
   var el = document.getElementById('dash-unsaid-text');
   if (!el) return;
-  el.style.fontFamily = 'var(--sans)';
-  el.style.fontSize = '13px';
-  el.style.color = '#888';
-  el.style.fontStyle = 'italic';
-  el.style.lineHeight = '1.5';
-  el.style.letterSpacing = '0';
-  var todayStr = new Date().toISOString().slice(0, 10);
-  var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
-  var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
-  var scheduled = allP.filter(function(p) {
-    return p.stage === 'scheduled' && p.target_date && p.target_date >= todayStr;
-  }).length;
-  var awaiting = allP.filter(function(p) { return p.stage === 'awaiting_approval'; }).length;
-  var stale = allP.filter(function(p) {
-    if (!p.status_changed_at) return false;
-    return (Date.now() - new Date(p.status_changed_at).getTime()) > 3 * 86400000 &&
-           p.stage !== 'published' && p.stage !== 'parked' && p.stage !== 'rejected';
-  }).length;
+  var logs = window._activityLogs || [];
 
-  var lines = [];
-  if (scheduled === 0) {
-    lines.push('runway is empty \u00b7 nothing scheduled ahead');
-  } else if (scheduled < 3) {
-    lines.push('only ' + scheduled + ' in the runway \u00b7 thin buffer');
+  // Priority 1: Pranav idle 3+ days
+  var pranavPosts = allP.filter(function(p) {
+    var o = (p.owner||'').toLowerCase();
+    return o === 'pranav' || o === 'creative';
+  });
+  if (pranavPosts.length) {
+    var lastPranav = pranavPosts.sort(function(a,b) {
+      return new Date(b.updated_at||b.updatedAt||0) -
+             new Date(a.updated_at||a.updatedAt||0);
+    })[0];
+    var pranavIdle = Math.floor(
+      (Date.now() - new Date(lastPranav.updated_at||
+      lastPranav.updatedAt)) / 86400000);
+    if (pranavIdle >= 3) {
+      el.textContent = 'Pranav has not submitted anything' +
+        ' in ' + pranavIdle + ' days. The pipeline is waiting.';
+      return;
+    }
   }
-  if (inProd > 4) {
-    lines.push(inProd + ' posts stuck in production');
+
+  // Priority 2: Client not approving 3+ days
+  var oldApprovals = allP.filter(function(p) {
+    var s = p.stage || p.stageLC || '';
+    return s === 'awaiting_approval' && isPostStale(p);
+  });
+  if (oldApprovals.length >= 3) {
+    el.textContent = oldApprovals.length + ' posts are' +
+      ' waiting on client approval for 3+ days.' +
+      ' Chitra should be chasing.';
+    return;
   }
-  if (awaiting > 2) {
-    lines.push(awaiting + ' waiting on approval \u00b7 bottleneck?');
+
+  // Priority 3: Chitra has overdue posts
+  var chitraOverdue = allP.filter(function(p) {
+    var s = p.stage || p.stageLC || '';
+    return (s === 'awaiting_approval' ||
+            s === 'awaiting_brand_input') &&
+           isPostStale(p);
+  });
+  if (chitraOverdue.length) {
+    el.textContent = chitraOverdue.length +
+      ' posts are waiting on client approval.' +
+      ' Chitra needs to follow up.';
+    return;
   }
-  if (stale > 0) {
-    lines.push(stale + ' post' + (stale > 1 ? 's' : '') + ' untouched 3+ days');
+
+  // Priority 4: runway low
+  var runway = allP.filter(function(p) {
+    var s = p.stage || p.stageLC || '';
+    return s === 'scheduled';
+  }).length;
+  if (runway <= 3) {
+    el.textContent = 'Only ' + runway +
+      ' posts scheduled. The runway is thinning.';
+    return;
   }
-  if (ready > 3 && scheduled === 0) {
-    lines.push(ready + ' ready but none scheduled \u00b7 dispatch gap');
-  }
-  if (!lines.length) {
-    lines.push('pipeline is clean \u00b7 no flags');
-  }
-  var unsaidText = lines.join(' / ');
-  if (unsaidText.length > 120) unsaidText = unsaidText.slice(0, 117) + '...';
-  el.textContent = unsaidText;
+
+  // Priority 5: all good
+  el.textContent = 'Nothing to flag today. Everyone is moving.';
 }
 
 function _updateDashTimestamp() {
