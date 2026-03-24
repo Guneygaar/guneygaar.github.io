@@ -3524,7 +3524,7 @@ function _renderClientViewInner() {
       'letter-spacing:0.12em;text-transform:uppercase;' +
       'color:var(--c-gold);background:transparent;' +
       'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
-      'cursor:pointer;" onclick="scrollToNewRequest()">+ New Request</button>' +
+      'cursor:pointer;" onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o){o.style.display=\'flex\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'none\';}})()">+ New Request</button>' +
       '<button onclick="logout()" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
@@ -3725,8 +3725,12 @@ function _renderClientViewInner() {
   if (reqForm && !reqForm.dataset.init) {
     reqForm.dataset.init = '1';
     var html =
-      '<div style="position:fixed;inset:0;z-index:2000;background:#0a0a0f;display:flex;align-items:stretch;justify-content:center;" id="req-overlay">' +
+      '<div style="position:fixed;inset:0;z-index:2000;background:#0a0a0f;display:none;align-items:stretch;justify-content:center;" id="req-overlay">' +
         '<div style="width:100%;max-width:390px;display:flex;flex-direction:column;overflow:hidden;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+            '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--c-gold);">New Request</span>' +
+            '<button onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o)o.style.display=\'none\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'\';})()" style="background:transparent;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;">X</button>' +
+          '</div>' +
           '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">' +
             '<div class="cp-form-field" style="padding:12px 18px 0;">' +
               '<label class="cp-form-label" for="req-topic">What do you want to post about? *</label>' +
@@ -3754,8 +3758,6 @@ function _renderClientViewInner() {
     div.innerHTML = html;
     var overlay = div.firstElementChild;
     document.body.appendChild(overlay);
-    var nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = 'none';
   }
 
   renderClientApproved();

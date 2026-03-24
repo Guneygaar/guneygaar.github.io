@@ -258,6 +258,10 @@ async function submitClientRequest() {
     if (topicEl) topicEl.value = '';
     if (fileInput) fileInput.value = '';
     if (btn) btn.disabled = false;
+    var reqOverlay = document.getElementById('req-overlay');
+    if (reqOverlay) reqOverlay.style.display = 'none';
+    var navEl = document.getElementById('bottom-nav');
+    if (navEl) navEl.style.display = '';
     showToast('Request sent - The team will be in touch.', 'success');
     if (typeof loadPosts === 'function') await loadPosts();
     setTimeout(() => loadPostsForClient(), 800);
