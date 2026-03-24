@@ -583,8 +583,7 @@ function _renderPCS(postId) {
 
   var whatsappHtml = '';
   var showWA = post.caption &&
-    stageLC === 'awaiting_approval' &&
-    (typeof isPostStale === 'function' ? isPostStale(post) : true);
+    stageLC === 'awaiting_approval';
 
   if (showWA) {
     whatsappHtml = '<div style="padding:10px 18px 12px;' +
@@ -1210,14 +1209,36 @@ async function _pcsHandlePhotoInput(postId, input) {
   if (!post) return;
   var currentImages = Array.isArray(post.images) ? post.images.slice() : [];
   var uploaded = [];
-  for (var i = 0; i < files.length; i++) {
+  var progressWrap = document.createElement('div');
+  progressWrap.id = 'pcs-upload-progress';
+  progressWrap.style.cssText = 'padding:8px 18px;border-bottom:' +
+    '1px solid rgba(255,255,255,0.07);';
+  progressWrap.innerHTML =
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
+    'margin-bottom:6px;" id="pcs-upload-label">Uploading 0 of ' +
+    files.length + '...</div>' +
+    '<div style="height:2px;background:rgba(255,255,255,0.06);width:100%;">' +
+    '<div id="pcs-upload-bar" style="height:2px;background:#F6A623;' +
+    'width:0%;transition:width 0.2s ease;"></div></div>';
+  var photoSection = document.getElementById('pcs-photo-section');
+  if (photoSection) photoSection.parentNode.insertBefore(
+    progressWrap, photoSection);
+  for (var fi = 0; fi < files.length; fi++) {
     if (currentImages.length + uploaded.length >= 20) break;
     try {
-      var url = await uploadPostAsset(files[i], postId);
+      var url = await uploadPostAsset(files[fi], postId);
       if (url) uploaded.push(url);
     } catch(e) {
       console.warn('[PCS] Photo upload failed:', e);
     }
+    var pct = Math.round(((fi + 1) / files.length) * 100);
+    var bar = document.getElementById('pcs-upload-bar');
+    var lbl = document.getElementById('pcs-upload-label');
+    if (bar) bar.style.width = pct + '%';
+    if (lbl) lbl.textContent = 'Uploading ' + (fi + 1) +
+      ' of ' + files.length + '...' +
+      (pct === 100 ? ' Done.' : '');
   }
   if (!uploaded.length) return;
   var newImages = currentImages.concat(uploaded);
@@ -1237,6 +1258,8 @@ async function _pcsHandlePhotoInput(postId, input) {
       post.images = newImages;
       if (typeof openPCS === 'function') openPCS(postId, '');
     }
+    var pw = document.getElementById('pcs-upload-progress');
+    if (pw) pw.remove();
   } catch(e) {
     alert('Failed to save photos. Please try again.');
   }
