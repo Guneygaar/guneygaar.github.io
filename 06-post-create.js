@@ -170,6 +170,8 @@ window._modalOpen = true;
 var _npoEl = document.getElementById('new-post-overlay');
 if (_npoEl) _npoEl.style.display = 'flex';
 document.body.style.overflow = 'hidden';
+var nav = document.getElementById('bottom-nav');
+if (nav) nav.style.display = 'none';
 
 _npsWireEvents();
 _npsCheckValid();
@@ -194,6 +196,8 @@ if (typeof clearPostAsset === 'function') clearPostAsset();
 var _npoClose = document.getElementById('new-post-overlay');
 if (_npoClose) _npoClose.style.display = 'none';
 document.body.style.overflow = '';
+var nav = document.getElementById('bottom-nav');
+if (nav) nav.style.display = '';
 window._modalOpen = false;
 _drainDeferredRender();
 }
@@ -286,6 +290,8 @@ stopDraftAutosave();
 var _npoClose2 = document.getElementById('new-post-overlay');
 if (_npoClose2) _npoClose2.style.display = 'none';
 document.body.style.overflow = '';
+var nav = document.getElementById('bottom-nav');
+if (nav) nav.style.display = '';
 window._modalOpen = false;
 
 await loadPosts();
