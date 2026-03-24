@@ -130,7 +130,7 @@ if (createBtn) createBtn.onclick = function() { submitNewPost(); };
   var el = document.getElementById(id);
   if (el) el.onchange = saveDraftDebounced;
 });
-['new-post-link','new-post-comments'].forEach(function(id) {
+['new-post-link','new-post-comments','new-post-caption'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) el.oninput = saveDraftDebounced;
 });
@@ -174,6 +174,7 @@ document.body.style.overflow = 'hidden';
 _npsWireEvents();
 _npsCheckValid();
 startDraftAutosave();
+if (typeof _initPostAssetInput === 'function') _initPostAssetInput();
 
 setTimeout(() => document.getElementById('new-post-title')?.focus(), 60);
 }
@@ -184,6 +185,10 @@ if (e && e.target !== document.getElementById('new-post-overlay')) return;
 
 saveDraft();
 stopDraftAutosave();
+
+var captionEl = document.getElementById('new-post-caption');
+if (captionEl) captionEl.value = '';
+if (typeof clearPostAsset === 'function') clearPostAsset();
 
 var _npoClose = document.getElementById('new-post-overlay');
 if (_npoClose) _npoClose.style.display = 'none';
@@ -204,6 +209,7 @@ const stage    = _s('new-post-stage')?.value || '';
 const date     = _s('new-post-date')?.value || '';
 const comments = (_s('new-post-comments')?.value || '').trim();
 const postLink = (_s('new-post-link')?.value || '').trim();
+var captionVal = (_s('new-post-caption')?.value || '').trim();
 
 if (!title) {
 console.warn('[submitNewPost] BLOCKED: title empty');
@@ -233,6 +239,7 @@ stage: toDbStage(stage || 'in_production'),
 target_date: date || null,
 comments: comments || null,
 };
+if (captionVal) payload.caption = captionVal;
 // Defensive: remove any invalid field names that must never reach DB
 delete payload.post_link;
 delete payload.linkedin_url;
@@ -246,6 +253,17 @@ if (postLink) {
     payload.canva_link = postLink;
   }
 }
+var assetFile = document.getElementById('new-post-asset') &&
+                document.getElementById('new-post-asset').files[0];
+if (assetFile && typeof uploadPostAsset === 'function') {
+  try {
+    var assetUrl = await uploadPostAsset(assetFile, payload.post_id);
+    if (assetUrl) payload.image = assetUrl;
+  } catch (uploadErr) {
+    console.warn('[ASSET] Upload failed, continuing without image:', uploadErr);
+  }
+}
+
 console.log('[submitNewPost] VALIDATION PASSED');
 console.log('FINAL PAYLOAD:', JSON.stringify(payload, null, 2));
 
@@ -280,3 +298,40 @@ showToast('Failed to create - draft saved', 'error');
 if (createBtn) createBtn.disabled = false;
 }
 }
+
+function _initPostAssetInput() {
+  var input = document.getElementById('new-post-asset');
+  if (!input || input._wired) return;
+  input._wired = true;
+  input.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var img      = document.getElementById('new-post-asset-img');
+      var preview  = document.getElementById('new-post-asset-preview');
+      var placeholder = document.getElementById('new-post-asset-placeholder');
+      var filename = document.getElementById('new-post-asset-filename');
+      if (img)         img.src = ev.target.result;
+      if (filename)    filename.textContent = file.name;
+      if (preview)     preview.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+}
+window._initPostAssetInput = _initPostAssetInput;
+
+function clearPostAsset() {
+  var input       = document.getElementById('new-post-asset');
+  var img         = document.getElementById('new-post-asset-img');
+  var preview     = document.getElementById('new-post-asset-preview');
+  var placeholder = document.getElementById('new-post-asset-placeholder');
+  var filename    = document.getElementById('new-post-asset-filename');
+  if (input)       input.value = '';
+  if (img)         img.src = '';
+  if (filename)    filename.textContent = '';
+  if (preview)     preview.style.display = 'none';
+  if (placeholder) placeholder.style.display = 'block';
+}
+window.clearPostAsset = clearPostAsset;

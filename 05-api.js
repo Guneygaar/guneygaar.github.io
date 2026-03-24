@@ -74,6 +74,8 @@ function normalise(rows) {
     postLink:      r.canva_link     || '',
     linkedinUrl:   r.linkedin_link  || '',
     comments:      r.comments       || '',
+    caption:       r.caption        || '',
+    image:         r.image          || '',
     format:        r.format         || '',
     post_id:       r.post_id        || r.id || '',
     created_at:    r.created_at     || '',
