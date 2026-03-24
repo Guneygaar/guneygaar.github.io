@@ -176,6 +176,10 @@ const _TAB_TITLES = {
 };
 
 function switchTab(btn) {
+  if (typeof btn === 'string') {
+    btn = document.querySelector('.tab-btn[data-tab="' + btn + '"]');
+    if (!btn) return;
+  }
   var role = (window.effectiveRole || '').toLowerCase();
   if (role === 'client') {
     document.getElementById('dashboard-view')?.classList.remove('active');
