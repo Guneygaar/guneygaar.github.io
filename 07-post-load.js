@@ -3505,6 +3505,10 @@ function renderClientView() {
   try { _renderClientViewInner(); } catch(e) { console.error('[PCS] renderClientView crash:', e); }
 }
 function _renderClientViewInner() {
+  var fab = document.getElementById('fab') ||
+    document.querySelector('.fab');
+  if (fab) fab.style.display = 'none';
+
   var h = new Date().getHours();
   var timeOfDay = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
   var clientName = (localStorage.getItem('hinglish_email') || 'there').split('@')[0];
@@ -3643,8 +3647,8 @@ function _renderClientViewInner() {
             imgs.map(function(url, idx) {
               return '<div style="flex-shrink:0;width:90px;height:90px;' +
                 'background:#111;overflow:hidden;">' +
-                '<img src="' + url + '" style="width:90px;height:90px;' +
-                'object-fit:cover;display:block;"></div>';
+                '<img src="' + url + '" loading="eager" width="90" height="90" ' +
+                'style="width:90px;height:90px;object-fit:cover;display:block;"></div>';
             }).join('') +
             '</div>';
         }
