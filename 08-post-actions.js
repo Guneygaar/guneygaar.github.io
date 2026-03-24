@@ -539,20 +539,63 @@ function _renderPCS(postId) {
       '</div>';
   }
 
-  // -- LinkedIn link (published/scheduled only) --
-  var linkedinHtml = '';
-  if ((stageLC === 'published' || stageLC === 'scheduled') && linkedinUrl) {
-    linkedinHtml = '<div style="padding:10px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;color:#555;margin-bottom:8px;">Live Post</div>' +
-      '<button onclick="window.open(\'' + esc(linkedinUrl) + '\',\'_blank\')" ' +
-      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;color:#0a66c2;' +
-      'background:transparent;border:1px solid rgba(10,102,194,0.3);' +
-      'padding:10px 0;cursor:pointer;">View on LinkedIn &rarr;</button>' +
-      '</div>';
+  // -- LinkedIn link (published posts) --
+  var stageForLi = (post.stage || '').toLowerCase();
+  var liHtml = '';
+
+  if (stageForLi === 'published') {
+    if (post.linkedinUrl) {
+      // Has LinkedIn URL -- show view button
+      liHtml =
+        '<div style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);' +
+        'background:rgba(10,102,194,0.04);border-top:1px solid rgba(10,102,194,0.1);">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;' +
+        'margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
+        '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;' +
+        'flex-shrink:0;"></div>Live on LinkedIn</div>' +
+        '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'letter-spacing:0.12em;text-transform:uppercase;color:#0a66c2;' +
+        'background:transparent;border:1px solid rgba(10,102,194,0.3);' +
+        'padding:11px 0;cursor:pointer;display:flex;align-items:center;' +
+        'justify-content:center;gap:8px;">' +
+        '<span style="font-size:14px;font-weight:600;">in</span>' +
+        'View Live Post</button>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;' +
+        'text-overflow:ellipsis;white-space:nowrap;">' +
+        esc(post.linkedinUrl.replace('https://', '')) + '</div>' +
+        '</div>';
+    } else {
+      // Published but no URL yet -- show inline input
+      liHtml =
+        '<div style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);' +
+        'border-top:1px solid rgba(246,166,35,0.1);' +
+        'background:rgba(246,166,35,0.03);">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'letter-spacing:0.18em;text-transform:uppercase;color:#444;' +
+        'margin-bottom:8px;">Live Post URL</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<input id="pcs-li-inline-input" type="url" ' +
+        'placeholder="Paste LinkedIn post URL..." ' +
+        'style="flex:1;background:rgba(255,255,255,0.02);border:none;' +
+        'border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'padding:8px 0;outline:none;letter-spacing:0.02em;">' +
+        '<button onclick="_saveLiUrlInline(\'' + esc(id) + '\')" ' +
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
+        'background:transparent;border:1px solid rgba(62,207,142,0.3);' +
+        'padding:7px 12px;cursor:pointer;flex-shrink:0;">Save</button>' +
+        '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'color:#2a2a2a;letter-spacing:0.06em;margin-top:6px;">' +
+        'Add so the team can track impressions</div>' +
+        '</div>';
+    }
   }
-  if (elDesign) elDesign.innerHTML = photoStripHtml + linkedinHtml;
+  if (elDesign) elDesign.innerHTML = photoStripHtml + liHtml;
 
   var captionHtml = '';
   if (post.caption || canEdit) {
@@ -683,6 +726,10 @@ function _pcsTitleEdit(el, postId) {
 function changeStage(newStage) {
   const postId = _pcs.postId;
   if (!postId) return;
+  if (newStage === 'published') {
+    _showPublishSheet(postId);
+    return;
+  }
   const post = getPostById(postId);
   if (!post) return;
   const current = post.stage || '';
@@ -690,6 +737,135 @@ function changeStage(newStage) {
 
   _showStageConfirm(postId, newStage);
 }
+
+function _showPublishSheet(postId) {
+  var existing = document.getElementById('pcs-publish-sheet');
+  if (existing) existing.remove();
+
+  var sheet = document.createElement('div');
+  sheet.id = 'pcs-publish-sheet';
+  sheet.style.cssText = 'position:fixed;inset:0;z-index:9600;' +
+    'background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;' +
+    'justify-content:center;';
+  sheet.innerHTML =
+    '<div style="width:100%;max-width:390px;background:#141414;' +
+    'border-top:1px solid rgba(255,255,255,0.1);' +
+    'padding:20px 18px 44px;">' +
+
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;' +
+    'margin-bottom:6px;">Mark as Published</div>' +
+
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+    'color:#666;line-height:1.5;margin-bottom:20px;">' +
+    'Paste the LinkedIn post URL so the team can track impressions. ' +
+    'You can skip this and add it later.</div>' +
+
+    '<input id="pcs-li-url-input" type="url" ' +
+    'placeholder="https://linkedin.com/posts/..." ' +
+    'style="width:100%;background:rgba(255,255,255,0.02);border:none;' +
+    'border-bottom:1px solid rgba(255,255,255,0.15);color:#e8e2d9;' +
+    'font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
+    'padding:10px 0;outline:none;margin-bottom:16px;' +
+    'letter-spacing:0.02em;">' +
+
+    '<div style="display:flex;gap:10px;">' +
+    '<button onclick="_confirmPublish(\'' + postId + '\')" ' +
+    'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
+    'background:transparent;border:1px solid rgba(62,207,142,0.4);' +
+    'padding:13px 0;cursor:pointer;">Publish + Save URL</button>' +
+    '<button onclick="_skipPublish(\'' + postId + '\')" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#333;' +
+    'background:transparent;border:1px solid rgba(255,255,255,0.06);' +
+    'padding:13px 16px;cursor:pointer;">Skip</button>' +
+    '</div></div>';
+
+  document.body.appendChild(sheet);
+  setTimeout(function() {
+    var inp = document.getElementById('pcs-li-url-input');
+    if (inp) inp.focus();
+  }, 100);
+}
+window._showPublishSheet = _showPublishSheet;
+
+function _removePublishSheet() {
+  var sheet = document.getElementById('pcs-publish-sheet');
+  if (sheet) sheet.remove();
+}
+
+async function _confirmPublish(postId) {
+  var input = document.getElementById('pcs-li-url-input');
+  var url = input ? input.value.trim() : '';
+  _removePublishSheet();
+
+  // Save LinkedIn URL if provided
+  if (url) {
+    try {
+      await apiFetch('/posts?post_id=eq.' + postId, {
+        method: 'PATCH',
+        body: JSON.stringify({ linkedin_link: url })
+      });
+      // Update allPosts in memory
+      if (window.allPosts && Array.isArray(window.allPosts)) {
+        var idx = window.allPosts.findIndex(function(p) {
+          return p.post_id === postId || p.id === postId;
+        });
+        if (idx !== -1) {
+          window.allPosts[idx].linkedinUrl = url;
+          window.allPosts[idx].linkedin_link = url;
+        }
+      }
+    } catch(e) {
+      console.warn('[PUBLISH] Failed to save LinkedIn URL:', e);
+    }
+  }
+
+  // Now change stage to published
+  if (typeof quickStage === 'function') {
+    quickStage(postId, 'published');
+  } else if (typeof _showStageConfirm === 'function') {
+    _showStageConfirm(postId, 'published');
+  }
+}
+window._confirmPublish = _confirmPublish;
+
+async function _skipPublish(postId) {
+  _removePublishSheet();
+  // Change stage without saving URL
+  if (typeof quickStage === 'function') {
+    quickStage(postId, 'published');
+  } else if (typeof _showStageConfirm === 'function') {
+    _showStageConfirm(postId, 'published');
+  }
+}
+window._skipPublish = _skipPublish;
+
+async function _saveLiUrlInline(postId) {
+  var input = document.getElementById('pcs-li-inline-input');
+  var url = input ? input.value.trim() : '';
+  if (!url) return;
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ linkedin_link: url })
+    });
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var idx = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId;
+      });
+      if (idx !== -1) {
+        window.allPosts[idx].linkedinUrl = url;
+        window.allPosts[idx].linkedin_link = url;
+      }
+    }
+    if (typeof openPCS === 'function') openPCS(postId, '');
+  } catch(e) {
+    alert('Failed to save. Please try again.');
+  }
+}
+window._saveLiUrlInline = _saveLiUrlInline;
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
