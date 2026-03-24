@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Changes - Sorted</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0f;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #e8e2d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 24px 60px;
+  }
+  .logo { font-size: 14px; color: #C8A84B; letter-spacing: 0.1em; margin-bottom: 32px; }
+  .state { display: none; width: 100%; max-width: 390px; flex-direction: column; align-items: center; }
+  .state.active { display: flex; }
+  .post-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8e2d9;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .section-label {
+    font-size: 7px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #F6A623;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .feedback-area {
+    width: 100%;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #e8e2d9;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 14px;
+    outline: none;
+    resize: none;
+    line-height: 1.6;
+    min-height: 160px;
+    margin-bottom: 16px;
+  }
+  .feedback-area:focus { border-color: rgba(246,166,35,0.4); }
+  .submit-btn {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #F6A623;
+    background: rgba(246,166,35,0.06);
+    border: 1px solid rgba(246,166,35,0.4);
+    padding: 16px 0;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .submit-btn:active { background: rgba(246,166,35,0.12); }
+  .back-link {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #333;
+    text-decoration: none;
+    text-align: center;
+    display: block;
+    margin-top: 8px;
+  }
+  .success-icon { font-size: 48px; margin-bottom: 20px; }
+  .success-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #F6A623;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .success-sub {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: #444;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .loading-text {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #333;
+    text-align: center;
+  }
+  .error-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: #FF4B4B;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .error-sub {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: #444;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="logo">srtd.io</div>
+
+<div class="state active" id="state-loading">
+  <div class="loading-text">Loading...</div>
+</div>
+
+<div class="state" id="state-form">
+  <div class="post-title" id="form-title"></div>
+  <div style="height:16px;"></div>
+  <div class="section-label">What needs to change?</div>
+  <textarea class="feedback-area" id="feedback-text"
+    placeholder="Describe what needs to change.
+
+Example: Please add the event timing in the first line. Also mention that entry is free for registered visitors."></textarea>
+  <button class="submit-btn" onclick="doSubmit()">Send Feedback</button>
+  <a id="back-link" href="" class="back-link">Go back and approve instead</a>
+</div>
+
+<div class="state" id="state-success">
+  <div class="success-icon">&#x2713;</div>
+  <div class="success-title">Feedback Sent</div>
+  <div class="success-sub" id="success-sub">
+    The team will review your feedback<br>and send a revised version shortly.
+  </div>
+</div>
+
+<div class="state" id="state-error">
+  <div class="error-title">Something went wrong</div>
+  <div class="error-sub" id="error-sub">Could not find this post.</div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
+var currentPost = null;
+
+function getSlug() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get('p') || '';
+}
+
+function slugToTitle(slug) {
+  return slug.replace(/-/g, ' ');
+}
+
+function showState(id) {
+  document.querySelectorAll('.state').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function showError(msg) {
+  var sub = document.getElementById('error-sub');
+  if (sub && msg) sub.textContent = msg;
+  showState('state-error');
+}
+
+async function loadPost() {
+  var slug = getSlug();
+  if (!slug) { showError('No post specified.'); return; }
+  var titleSearch = slugToTitle(slug);
+  try {
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/posts?select=post_id,title,stage&title=ilike.*' +
+      encodeURIComponent(titleSearch) + '*&limit=5',
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+    var data = await res.json();
+    if (!data || !data.length) { showError('Post not found.'); return; }
+
+    var post = data[0];
+    for (var i = 0; i < data.length; i++) {
+      var testSlug = data[i].title.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim().replace(/\s+/g, '-').slice(0, 50);
+      if (testSlug === slug) { post = data[i]; break; }
+    }
+
+    currentPost = post;
+    var titleEl = document.getElementById('form-title');
+    if (titleEl) titleEl.textContent = post.title || '';
+    var backLink = document.getElementById('back-link');
+    if (backLink) backLink.href = '/ok/?p=' + slug;
+    showState('state-form');
+
+  } catch(e) {
+    showError('Network error. Please try again.');
+  }
+}
+
+async function doSubmit() {
+  if (!currentPost) return;
+  var feedback = (document.getElementById('feedback-text') || {}).value || '';
+  if (!feedback.trim()) {
+    alert('Please describe what needs to change before submitting.');
+    return;
+  }
+  var btn = document.querySelector('.submit-btn');
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+
+  try {
+    // Update stage to awaiting_brand_input
+    await fetch(
+      SUPABASE_URL + '/rest/v1/posts?post_id=eq.' + encodeURIComponent(currentPost.post_id),
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          stage: 'awaiting_brand_input',
+          status_changed_at: new Date().toISOString()
+        })
+      }
+    );
+
+    // Log feedback to activity_log
+    await fetch(
+      SUPABASE_URL + '/rest/v1/activity_log',
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          post_id: currentPost.post_id,
+          actor: 'client',
+          action: 'changes_requested_via_link',
+          old_stage: currentPost.stage || 'awaiting_approval',
+          new_stage: feedback.trim().slice(0, 1000),
+          created_at: new Date().toISOString()
+        })
+      }
+    );
+
+    var sub = document.getElementById('success-sub');
+    if (sub) sub.textContent = 'Your feedback on ' + currentPost.title +
+      ' has been sent. The team will revise and send a new version shortly.';
+    showState('state-success');
+
+  } catch(e) {
+    if (btn) { btn.textContent = 'Send Feedback'; btn.disabled = false; }
+    alert('Failed to send. Please try again.');
+  }
+}
+
+loadPost();
+</script>
+</body>
+</html>

@@ -1489,8 +1489,8 @@ function _sharePostOnWhatsApp(postId) {
     .replace(/\s+/g, '-')
     .slice(0, 50);
 
-  var approveUrl = 'https://srtd.io/ok/' + rawSlug;
-  var changesUrl = 'https://srtd.io/no/' + rawSlug;
+  var approveUrl = 'https://srtd.io/ok/?p=' + rawSlug;
+  var changesUrl = 'https://srtd.io/no/?p=' + rawSlug;
 
   var message =
     'Hi, ' + title + ' is ready for your review.\n\n' +
