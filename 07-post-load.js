@@ -31,6 +31,21 @@ function isPostStale(p) {
   if (!changed) return false;
   return Math.floor((Date.now()-new Date(changed).getTime())/86400000) >= 2;
 }
+
+function _ownerColor(owner) {
+  var o = (owner || '').toLowerCase();
+  if (o === 'chitra' || o === 'servicing') return '#22D3EE';
+  if (o === 'pranav' || o === 'creative') return '#9b87f5';
+  if (o === 'client') return '#FF4B4B';
+  return '#666';
+}
+
+function _staleDays(p) {
+  var changed = p.status_changed_at || p.statusChangedAt ||
+    p.updated_at || p.updatedAt;
+  if (!changed) return 0;
+  return Math.floor((Date.now() - new Date(changed).getTime()) / 86400000);
+}
 window.isPostStale = isPostStale;
 
 // -- Pipeline search state --
@@ -1332,22 +1347,22 @@ function _renderDashTaskList(role) {
 
     if (_rc <= 6) {
       urgentItems.push({
-        text: 'Unsort the pipeline \u00b7 runway at ' + dashPad(_rc),
-        cls: 'dash-task-urgent',
+        text: '<span style="color:#FF4B4B">' + dashPad(_rc) + '</span> runway',
+        arrow: '#FF4B4B',
         onclick: "navigateWithFilter('pipeline',['in_production'])"
       });
     }
     if (_co > 0) {
       urgentItems.push({
-        text: 'Chase client \u00b7 ' + dashPad(_co) + ' post' + (_co > 1 ? 's' : '') + ' overdue',
-        cls: 'dash-task-urgent',
+        text: 'chase client <span style="color:#FF4B4B">' + dashPad(_co) + '</span> overdue',
+        arrow: '#FF4B4B',
         onclick: "navigateWithFilter('pipeline',['awaiting_approval'])"
       });
     }
     if (_pd <= -15) {
       urgentItems.push({
-        text: dashPad(Math.abs(_pd)) + ' posts to build \u00b7 check in with Pranav',
-        cls: 'dash-task-urgent dash-task-amber',
+        text: '<span style="color:#FF4B4B">' + dashPad(Math.abs(_pd)) + '</span> posts to build <span style="color:#9b87f5">pranav</span>',
+        arrow: '#9b87f5',
         onclick: "navigateWithFilter('pipeline',['in_production'])"
       });
     }
@@ -1356,10 +1371,10 @@ function _renderDashTaskList(role) {
     if (!filtered.length && !urgentItems.length) {
       if (_rc > 6 && _pd > -8 && _co === 0 && _ac === 0) {
         var emptyMessages = {
-          'Admin':     'All sorted \u00b7 nothing needs you',
-          'Servicing': 'All sorted \u00b7 nothing to dispatch',
-          'Creative':  'All sorted \u00b7 keep creating',
-          'Client':    'All sorted \u00b7 nothing from us right now'
+          'Admin':     'All sorted - nothing needs you',
+          'Servicing': 'All sorted - nothing to dispatch',
+          'Creative':  'All sorted - keep creating',
+          'Client':    'All sorted - nothing from us right now'
         };
         var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
         var emptyMsg = emptyMessages[emptyRole] || 'All sorted';
@@ -1378,7 +1393,7 @@ function _renderDashTaskList(role) {
   for (var i = 0; i < filtered.length; i++) {
     var item = filtered[i];
     var tLower = (item.title || '').toLowerCase();
-    if (tLower.indexOf('chase client') === 0 || tLower.indexOf('brand input pending') === 0) {
+    if (tLower.indexOf('chase client') === 0 || tLower.indexOf('brand input pending') === 0 || tLower.indexOf('fix publish') === 0) {
       chaseTasks.push(item);
     } else {
       normalTasks.push(item);
@@ -1386,44 +1401,66 @@ function _renderDashTaskList(role) {
   }
 
   var html = '';
-  // Render non-chase tasks
+  // Render non-chase tasks as pipeline cards
   for (var n = 0; n < normalTasks.length; n++) {
     var nItem = normalTasks[n];
     var nTid = nItem.taskId || 'auto';
-    var nBorder = (n < normalTasks.length - 1 || chaseTasks.length > 0) ? 'border-bottom:1px solid rgba(255,255,255,0.04);' : '';
-    html += '<div class="dash-task-row" style="padding:5px 0;' + nBorder + '" onclick="toggleDashTask(this, \'' + nTid + '\')">';
-    html += '<div class="dash-task-cb"></div>';
-    html += '<span class="dash-task-text">' + esc(nItem.title) + '</span>';
-    html += '<span class="dash-task-who">' + esc(nItem.assignedTo || '') + '</span>';
-    html += '</div>';
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="toggleDashTask(this, \'' + nTid + '\')">';
+    html += '<div style="width:3px;flex-shrink:0;background:#FF4B4B;"></div>';
+    html += '<div style="flex:1;padding:8px 12px;">';
+    html += '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(nItem.title) + '</div>';
+    html += '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' +
+      '<span style="color:' + _ownerColor(nItem.assignedTo) + '">' + esc((nItem.assignedTo || '').toLowerCase()) + '</span></div>';
+    html += '</div></div>';
   }
 
-  // Render chase tasks (max 3 visible)
+  // Render chase tasks as pipeline cards (max 3)
   var totalOverdue = chaseTasks.length;
   var chaseShow = Math.min(3, totalOverdue);
   var chaseOverflow = totalOverdue - chaseShow;
   for (var ci = 0; ci < chaseShow; ci++) {
     var cItem = chaseTasks[ci];
-    var cTid = cItem.taskId || 'auto';
-    var cIsLast = (ci === chaseShow - 1 && chaseOverflow === 0);
-    var cBorder = cIsLast ? '' : 'border-bottom:1px solid rgba(255,255,255,0.04);';
-    html += '<div class="dash-task-row" style="padding:5px 0;' + cBorder + '" onclick="toggleDashTask(this, \'' + cTid + '\')">';
-    html += '<div class="dash-task-cb"></div>';
-    html += '<span class="dash-task-text">' + esc(cItem.title) + '</span>';
-    html += '<span class="dash-task-who">' + esc(cItem.assignedTo || '') + '</span>';
+    var cPid = cItem.postId || '';
+    var cPost = cItem.post;
+    var cDays = cPost ? _staleDays(cPost) : 0;
+    var cStage = cPost ? (STAGE_META[cPost.stage] || {}).label || cPost.stage : '';
+    var cOwner = cPost ? (cPost.owner || '') : (cItem.assignedTo || '');
+    var cPillar = cPost ? (cPost.content_pillar || '') : '';
+    var cLocation = cPost ? (cPost.location || '') : '';
+    var cTitle = cPost ? (cPost.title || 'Untitled') : cItem.title;
+    var cClick = cPid ? 'openPostOverSheet(\'' + cPid + '\')' : '';
+    var cMeta = [];
+    if (cOwner) cMeta.push('<span style="color:' + _ownerColor(cOwner) + '">' + esc(cOwner.toLowerCase()) + '</span>');
+    if (cPillar) cMeta.push(esc(cPillar.toLowerCase()));
+    if (cLocation) cMeta.push(esc(cLocation.toLowerCase()));
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;"' + (cClick ? ' onclick="' + cClick + '"' : '') + '>';
+    html += '<div style="width:3px;flex-shrink:0;background:#FF4B4B;"></div>';
+    html += '<div style="flex:1;padding:8px 12px;">';
+    html += '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#FF4B4B;">' +
+      (cDays > 0 ? cDays + 'd waiting' : '') + (cStage ? (cDays > 0 ? ' - ' : '') + esc(cStage.toLowerCase()) : '') + '</div>';
+    html += '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(cTitle) + '</div>';
+    if (cMeta.length) html += '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + cMeta.join(' - ') + '</div>';
     html += '</div>';
+    html += '<div style="padding:8px 14px 8px 8px;display:flex;align-items:center;flex-shrink:0;">';
+    html += '<span style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#FF4B4B;background:transparent;border:none;">chase</span>';
+    html += '</div></div>';
   }
   if (chaseOverflow > 0) {
-    html += '<div style="font-family:var(--mono);font-size:8px;' +
-      'color:#444;letter-spacing:0.06em;text-transform:uppercase;' +
-      'padding:5px 0;cursor:pointer;" onclick="openStageSheet(\'overdue\')">+ ' + chaseOverflow +
-      ' more \u00b7 ' + totalOverdue + ' total</div>';
+    html += '<div style="padding:7px 18px;font-family:var(--mono);font-size:8px;color:#555;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="openStageSheet(\'overdue\')">+ ' +
+      chaseOverflow + ' more - ' + totalOverdue + ' total overdue</div>';
   }
 
-  // Append urgent items after manual tasks
-  for (var u = 0; u < urgentItems.length; u++) {
-    var ui = urgentItems[u];
-    html += '<div class="' + ui.cls + '" style="margin-bottom:3px;font-size:8px;letter-spacing:0.05em;text-transform:uppercase;color:#666;" onclick="' + ui.onclick + '">' + ui.text + '</div>';
+  // Arrow action items
+  if (urgentItems.length) {
+    html += '<div style="padding:10px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.07);">';
+    for (var u = 0; u < urgentItems.length; u++) {
+      var ui = urgentItems[u];
+      html += '<div style="display:flex;gap:8px;margin-bottom:5px;cursor:pointer;" onclick="' + ui.onclick + '">';
+      html += '<span style="font-size:10px;flex-shrink:0;color:' + ui.arrow + ';">&#8594;</span>';
+      html += '<span style="font-size:8px;letter-spacing:0.04em;text-transform:uppercase;color:#888;">' + ui.text + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
   }
 
   if (!html) {
@@ -1644,7 +1681,9 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'FIX PUBLISH - ' + getTitle(fpPost),
         assignedTo: 'Admin',
-        taskId: getPostId(fpPost) || 'auto'
+        taskId: getPostId(fpPost) || 'auto',
+        postId: fpPost.id || fpPost.post_id || '',
+        post: fpPost
       });
     }
   }
@@ -1677,7 +1716,9 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'Chase client - ' + getTitle(op),
         assignedTo: 'Chitra',
-        taskId: 'auto'
+        taskId: 'auto',
+        postId: op.id || op.post_id || '',
+        post: op
       });
     }
     var overdueBrandPosts = allPosts.filter(function(p) {
@@ -1691,7 +1732,9 @@ function _buildDoThisNowItems(role) {
       items.push({
         title: 'Brand input pending - ' + getTitle(bp),
         assignedTo: 'Chitra',
-        taskId: 'auto'
+        taskId: 'auto',
+        postId: bp.id || bp.post_id || '',
+        post: bp
       });
     }
   }
@@ -1944,30 +1987,32 @@ function _updateNextScheduled(allP) {
   }).sort(function(a, b) {
     return (a.target_date || '') < (b.target_date || '') ? -1 : 1;
   });
-  var show = upcoming.slice(0, 3);
+  var show = upcoming.slice(0, 2);
   if (!show.length) {
     listEl.innerHTML = '<div style="font-family:var(--mono);font-size:8px;color:#888;">Nothing scheduled yet</div>';
     return;
   }
-  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var html = '';
   for (var i = 0; i < show.length; i++) {
     var p = show[i];
-    var d = new Date(p.target_date + 'T00:00:00');
-    var dateStr = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
-    var title = esc(p.title || 'Untitled');
+    var fd = formatPipelineDate(p.target_date);
     var pid = p.id || p.post_id || '';
+    var owner = p.owner || '';
+    var initials = owner.length >= 2 ? owner.slice(0,2).toUpperCase() : owner.toUpperCase();
     var metaParts = [];
-    if (p.owner) metaParts.push(esc(p.owner.toLowerCase()));
+    if (owner) metaParts.push('<span style="color:' + _ownerColor(owner) + '">' + esc(owner.toLowerCase()) + '</span>');
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
-    var metaLine = metaParts.length ? '<div style="font-family:var(--mono);font-size:7px;color:#444;text-transform:uppercase;letter-spacing:0.04em;padding-left:17px;">' + metaParts.join(' \u00b7 ') + '</div>' : '';
-    html += '<div style="margin-bottom:5px;cursor:pointer;pointer-events:auto;" onclick="openPostOverSheet(\'' + pid + '\')">' +
-      '<div style="display:flex;align-items:baseline;gap:0;">' +
-      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
-      '<span style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);min-width:74px;flex-shrink:0;">' + dateStr + '</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + title + '</span>' +
-      '</div>' + metaLine + '</div>';
+    if (p.location) metaParts.push(esc(p.location.toLowerCase()));
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">';
+    html += '<div style="width:3px;flex-shrink:0;background:#22D3EE;"></div>';
+    html += '<div style="flex:1;padding:8px 12px;">';
+    html += '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#22D3EE;">' + esc(fd.text) + '</div>';
+    html += '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(p.title || 'Untitled') + '</div>';
+    if (metaParts.length) html += '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + metaParts.join(' - ') + '</div>';
+    html += '</div>';
+    html += '<div style="padding:8px 14px 8px 8px;display:flex;align-items:center;flex-shrink:0;">';
+    html += '<div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;letter-spacing:0.04em;color:' + _ownerColor(owner) + ';">' + esc(initials) + '</div>';
+    html += '</div></div>';
   }
   listEl.innerHTML = html;
 }
@@ -1989,29 +2034,32 @@ function _updateTodaysFocus(allP) {
   });
   if (focus.length) {
     var f = focus[0];
-    var t = f.title || 'Untitled';
-    if (t.length > 36) t = t.slice(0, 36) + '...';
     var cfg = STAGE_META[f.stage] || {};
+    var waitDays = _staleDays(f);
+    var dateParts = [];
+    if (waitDays > 0) dateParts.push('waiting ' + waitDays + 'd');
+    dateParts.push((cfg.label || f.stage).toLowerCase());
+    if (focus.length > 1) dateParts.push('+' + (focus.length - 1) + ' more');
+    var owner = f.owner || '';
     var metaParts = [];
-    var changed = f.status_changed_at || f.updated_at || f.created_at;
-    if (changed) {
-      var waitDays = Math.floor((Date.now() - new Date(changed).getTime()) / 86400000);
-      if (waitDays > 0) metaParts.push('waiting ' + waitDays + ' day' + (waitDays > 1 ? 's' : ''));
-    }
-    if (f.owner) metaParts.push(f.owner.toLowerCase());
-    metaParts.push(cfg.label || f.stage);
-    if (focus.length > 1) metaParts.push('+' + (focus.length - 1) + ' more');
+    if (owner) metaParts.push('<span style="color:' + _ownerColor(owner) + '">' + esc(owner.toLowerCase()) + '</span>');
+    if (f.content_pillar) metaParts.push(esc(f.content_pillar.toLowerCase()));
+    if (f.location) metaParts.push(esc(f.location.toLowerCase()));
     var pid = f.id || f.post_id || '';
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:baseline;gap:0;cursor:pointer;pointer-events:auto;transition:background 0.1s;" onclick="openPostOverSheet(\'' + pid + '\')">' +
-      '<span style="font-family:var(--mono);font-size:9px;color:#444;margin-right:8px;">&#8250;</span>' +
-      '<span style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">' + esc(t) + '</span>' +
+      '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">' +
+      '<div style="width:3px;flex-shrink:0;background:#F6A623;"></div>' +
+      '<div style="flex:1;padding:8px 12px;">' +
+      '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#F6A623;">' + esc(dateParts.join(' - ')) + '</div>' +
+      '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(f.title || 'Untitled') + '</div>' +
+      (metaParts.length ? '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + metaParts.join(' - ') + '</div>' : '') +
       '</div>' +
-      '<div style="font-family:var(--mono);font-size:7px;color:#555;margin-top:2px;padding-left:17px;">' + esc(metaParts.join(' \u00b7 ')) + '</div>';
+      '<div style="padding:8px 14px 8px 8px;display:flex;align-items:center;flex-shrink:0;">' +
+      '<span style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#FF4B4B;background:transparent;border:none;">chase</span>' +
+      '</div></div>';
   } else {
     rowEl.innerHTML =
-      '<div style="font-family:var(--mono);font-size:11px;color:#aaa;letter-spacing:0.01em;">Clear runway</div>' +
-      '<div style="font-family:var(--mono);font-size:7px;color:#555;">nothing needs attention today</div>';
+      '<div style="padding:10px 18px 12px;font-family:var(--sans);font-size:13px;color:#888;line-height:1.5;font-style:italic;">Clear runway - nothing needs attention today</div>';
   }
 }
 
@@ -2025,16 +2073,24 @@ function _updateLastMove(allP) {
   });
   if (moved.length) {
     var last = moved[0];
-    var t = last.title || 'Untitled';
-    if (t.length > 36) t = t.slice(0, 36) + '...';
     var cfg = STAGE_META[last.stage] || {};
     var ago = _timeAgo(last.status_changed_at);
-    var text = esc(t) + ' \xB7 ' + esc(cfg.label || last.stage) + ' \xB7 ' + esc(ago);
+    var actor = last.owner || '';
     var pid = last.id || last.post_id || '';
-    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')" style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;cursor:pointer;pointer-events:auto;transition:background 0.1s;"' : ' style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;"';
-    textEl.innerHTML = '<div' + clickAttr + '>' + text + '</div>';
+    var metaParts = [];
+    if (actor) metaParts.push('<span style="color:' + _ownerColor(actor) + '">' + esc(actor.toLowerCase()) + '</span>');
+    metaParts.push(esc((cfg.label || last.stage).toLowerCase()));
+    var clickAttr = pid ? ' onclick="openPostOverSheet(\'' + pid + '\')"' : '';
+    textEl.innerHTML =
+      '<div style="display:flex;align-items:stretch;cursor:pointer;"' + clickAttr + '>' +
+      '<div style="width:3px;flex-shrink:0;background:' + _ownerColor(actor) + ';"></div>' +
+      '<div style="flex:1;padding:8px 12px;">' +
+      '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#555;">' + esc(ago) + ' - ' + esc((cfg.label || last.stage).toLowerCase()) + '</div>' +
+      '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(last.title || 'Untitled') + '</div>' +
+      '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + metaParts.join(' - ') + '</div>' +
+      '</div></div>';
   } else {
-    textEl.innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:#777;line-height:1.55;letter-spacing:0.01em;">No moves yet</div>';
+    textEl.innerHTML = '<div style="padding:10px 18px 12px;font-family:var(--sans);font-size:13px;color:#888;line-height:1.5;font-style:italic;">No moves yet</div>';
   }
 }
 
@@ -2052,12 +2108,12 @@ function _timeAgo(dateStr) {
 function _updateUnsaidThing(allP) {
   var el = document.getElementById('dash-unsaid-text');
   if (!el) return;
-  el.style.fontFamily = 'var(--mono)';
-  el.style.fontSize = '11px';
-  el.style.color = '#777';
-  el.style.fontStyle = 'normal';
-  el.style.lineHeight = '1.55';
-  el.style.letterSpacing = '0.01em';
+  el.style.fontFamily = 'var(--sans)';
+  el.style.fontSize = '13px';
+  el.style.color = '#888';
+  el.style.fontStyle = 'italic';
+  el.style.lineHeight = '1.5';
+  el.style.letterSpacing = '0';
   var todayStr = new Date().toISOString().slice(0, 10);
   var inProd = allP.filter(function(p) { return p.stage === 'in_production'; }).length;
   var ready = allP.filter(function(p) { return p.stage === 'ready'; }).length;
