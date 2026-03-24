@@ -1480,6 +1480,8 @@ function _sharePostOnWhatsApp(postId) {
 
   var caption  = post.caption || '';
   var title    = post.title   || 'New Post';
+  var firstImage = (Array.isArray(post.images) && post.images.length)
+    ? post.images[0] : '';
 
   var rawSlug = title.toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -1493,6 +1495,7 @@ function _sharePostOnWhatsApp(postId) {
   var message =
     'Hi, ' + title + ' is ready for your review.\n\n' +
     caption + '\n\n' +
+    (firstImage ? 'Preview: ' + firstImage + '\n\n' : '') +
     'Approve: ' + approveUrl + '\n' +
     'Request changes: ' + changesUrl;
 
