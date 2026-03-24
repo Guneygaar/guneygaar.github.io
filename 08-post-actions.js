@@ -230,15 +230,22 @@ async function submitClientRequest() {
   try {
     const postId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('hinglish_email') || 'Client';
+    const reqDate = document.getElementById('req-date')?.value || null;
     const payload = {
       post_id:     postId,
       title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
-      stage:       'awaiting_brand_input',
+      stage:       'in_production',
       owner:       email,
       comments:    brief,
+      target_date: reqDate,
       created_at:  new Date().toISOString(),
       updated_at:  new Date().toISOString(),
     };
+    var reqRef = document.getElementById('req-ref');
+    if (reqRef && reqRef.value.trim()) {
+      payload.comments = (payload.comments || '') +
+        '\n\nReference: ' + reqRef.value.trim();
+    }
     console.log('[REQUEST] PAYLOAD:', payload);
     await apiFetch('/posts', {
       method: 'POST',
@@ -252,6 +259,7 @@ async function submitClientRequest() {
     if (fileInput) fileInput.value = '';
     if (btn) btn.disabled = false;
     showToast('Request sent - The team will be in touch.', 'success');
+    if (typeof loadPosts === 'function') await loadPosts();
     setTimeout(() => loadPostsForClient(), 800);
   } catch (err) {
     console.error('[REQUEST] API FAILED:', err);
