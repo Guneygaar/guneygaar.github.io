@@ -227,19 +227,10 @@ function activateRole(role) {
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 
   if ((window.effectiveRole || '').toLowerCase() === 'client') {
-    setTimeout(function() {
-      if (typeof switchTab === 'function') switchTab('tasks');
-    }, 100);
+    if (typeof switchTab === 'function') switchTab('tasks');
+    return;
   }
-
-  // Reveal the correct view now that role is fully set
-  var dv = document.getElementById('dashboard-view');
-  var cv = document.getElementById('client-view');
-  if (effectiveRole === 'Client') {
-    if (cv) cv.style.visibility = 'visible';
-  } else {
-    if (dv) dv.style.visibility = 'visible';
-  }
+  if (typeof switchTab === 'function') switchTab('tasks');
 }
 
 // Escape failsafe  -  callable from console if UI is ever unreachable
