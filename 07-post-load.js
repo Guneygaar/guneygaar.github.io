@@ -3739,7 +3739,15 @@ function _renderClientViewInner() {
           '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
           '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
         '</div>' +
-        '<button id="req-submit-btn" onclick="submitClientRequest()" style="width:100%;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-gold);background:transparent;border:1px solid rgba(200,168,75,0.4);padding:12px 0;cursor:pointer;">Send Request</button>' +
+        '<div style="padding:12px 14px 28px;position:sticky;bottom:0;' +
+        'background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
+        '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+        'color:#3ECF8E;background:rgba(62,207,142,0.08);' +
+        'border:1px solid rgba(62,207,142,0.4);' +
+        'padding:14px 0;cursor:pointer;">&#x2192; Send Request</button>' +
+        '</div>' +
       '</div>';
   }
 
