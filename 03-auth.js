@@ -225,11 +225,10 @@ function activateRole(role) {
   if (typeof updateExitPreviewBar === 'function') updateExitPreviewBar();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
+
   if ((window.effectiveRole || '').toLowerCase() === 'client') {
     setTimeout(function() {
-      if (typeof switchTab === 'function') {
-        switchTab('tasks');
-      }
+      if (typeof switchTab === 'function') switchTab('tasks');
     }, 100);
     return;
   }
