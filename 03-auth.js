@@ -190,6 +190,16 @@ function logout() {
 
 function activateRole(role) {
   currentRole = role;
+
+  // Client DB role takes absolute priority - real clients always go to client portal
+  if ((role || '').toLowerCase() === 'client') {
+    window.currentRole = 'Client';
+    window.effectiveRole = 'Client';
+    localStorage.removeItem('pcs_role_preview');
+    if (typeof switchTab === 'function') switchTab('tasks');
+    return;
+  }
+
   // Resolve effectiveRole: Admin can preview other roles via localStorage
   if (role === 'Admin') {
     const preview = localStorage.getItem('pcs_role_preview');
