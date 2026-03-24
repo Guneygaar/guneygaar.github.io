@@ -408,112 +408,38 @@
  -->
 <div id="client-view">
 
-  <!-- Client topbar -->
-  <header class="topbar">
-    <div class="topbar-brand">Sorted</div>
-    <div class="topbar-spacer"></div>
-    <button class="btn-primary-action" onclick="scrollToNewRequest()">+ New Request</button>
-    <div class="user-menu-wrap" id="client-menu-wrap">
-      <button class="icon-btn" onclick="toggleClientMenu()" title="Menu">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-      </button>
-      <div class="user-menu" id="client-menu">
-        <button class="user-menu-item" onclick="toggleTheme(); closeClientMenu()">
-          <span></span> Toggle Theme
-        </button>
-        <button class="user-menu-item danger" onclick="logout()">
-           Sign Out
-        </button>
-      </div>
-    </div>
-  </header>
+  <!-- Client header -->
+  <div id="client-header"></div>
 
-  <div class="client-body">
+  <!-- Client greeting -->
+  <div id="client-greeting"></div>
 
-    <!-- Card 1: We need something from you -->
-    <div class="client-section" id="client-input-section">
-      <div class="client-section-head">
-        <div>
-          <div class="client-section-title">We need something from you</div>
-          <div class="client-section-sub">Posts waiting on your input to move forward</div>
-        </div>
-        <span class="client-count-badge" id="client-input-count">0</span>
-      </div>
-      <div class="client-items" id="client-input-items">
-        <div class="empty-state">
-          <div class="empty-icon"></div>
-          <p>All clear  nothing needed from you right now.</p>
-        </div>
-      </div>
-    </div>
+  <!-- Input needed section -->
+  <div id="client-input-eyebrow"></div>
+  <div id="client-input-items"></div>
 
-    <!-- Card 2: Waiting for your approval -->
-    <div class="client-section" id="client-approval-section">
-      <div class="client-section-head">
-        <div>
-          <div class="client-section-title">Waiting for your approval</div>
-          <div class="client-section-sub">Review and approve before we publish</div>
-        </div>
-        <span class="client-count-badge" id="client-approval-count">0</span>
-      </div>
-      <div class="client-items" id="client-approval-items">
-        <div class="empty-state">
-          <div class="empty-icon"></div>
-          <p>Nothing waiting for approval right now.</p>
-        </div>
-      </div>
-    </div>
+  <!-- Approval section -->
+  <div id="client-approval-eyebrow"></div>
+  <div id="client-approval-items"></div>
 
-    <!-- Card 3: New Request -->
-    <div class="client-section" id="client-request-section">
-      <div class="client-section-head">
-        <div>
-          <div class="client-section-title">New Request</div>
-          <div class="client-section-sub">Tell us what you'd like to post</div>
-        </div>
-      </div>
-      <div class="client-request-form">
-        <div class="form-field">
-          <label class="form-label" for="req-topic">What do you want to post about? <span>*</span></label>
-          <textarea id="req-topic" rows="3" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>
-        </div>
-        <div class="form-field">
-          <label class="form-label" for="req-date">Any specific date in mind?</label>
-          <input type="date" id="req-date">
-        </div>
-        <div class="form-field">
-          <label class="form-label" for="req-ref">Reference images or links</label>
-          <input type="url" id="req-ref" placeholder="https://  or upload below">
-          <input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px" onchange="handleRequestFileUpload(this)">
-        </div>
-        <button class="btn-submit-full" id="req-submit-btn" onclick="submitClientRequest()">
-          Send Request 
-        </button>
-      </div>
-    </div>
+  <!-- New Request section -->
+  <div id="client-request-eyebrow"></div>
+  <div id="client-request-form"></div>
 
-    <!-- Previously published -->
-    <div class="client-section" id="client-published-section">
-      <div class="client-section-head">
-        <div>
-          <div class="client-section-title">Live on LinkedIn</div>
-          <div class="client-section-sub">Your published posts</div>
-        </div>
-        <span class="client-count-badge" id="client-approved-label">0</span>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Post</th><th>Published</th><th>View</th></tr>
-          </thead>
-          <tbody id="client-approved-tbody">
-            <tr><td colspan="3"><div class="empty-state"><div class="empty-icon"></div><p>No published posts yet.</p></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+  <!-- Published section -->
+  <div id="client-published-section">
+    <div id="client-published-eyebrow"></div>
+    <div id="client-approved-tbody-wrap"></div>
   </div>
+
+  <!-- Hidden menu -->
+  <div class="user-menu-wrap" id="client-menu-wrap" style="display:none;">
+    <div class="user-menu" id="client-menu">
+      <button class="user-menu-item" onclick="toggleTheme(); closeClientMenu()">Toggle Theme</button>
+      <button class="user-menu-item danger" onclick="logout()">Sign Out</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- 
