@@ -194,6 +194,7 @@ function activateRole(role) {
     window.effectiveRole = rolePreview;
     window.currentRole = rolePreview;
     if (typeof switchTab === 'function') switchTab('tasks');
+    if (typeof loadPosts === 'function') loadPosts();
     return;
   }
 
@@ -259,9 +260,9 @@ function _buildUserMenu() {
   if (!menu) return;
   let html = '';
   // Role-switch section (Admin only) - shown first
-  if (currentRole === 'Admin' || currentRole === 'admin' ||
-      window.effectiveRole === 'Admin' ||
-      localStorage.getItem('hinglish_role') === 'Admin') {
+  if (currentRole === 'Admin' ||
+      localStorage.getItem('hinglish_role') === 'Admin' ||
+      localStorage.getItem('hinglish_role') === 'admin') {
     const roles = ['Admin', 'Pranav', 'Chitra', 'Client'];
     html += '<div class="um-section-label">View</div>';
     html += '<div class="um-role-options">';
