@@ -1217,6 +1217,16 @@ async function _saveCaptionEdit(postId) {
       })
     });
 
+    // Update allPosts in memory so reopening the card shows the new caption
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var matchIdx = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId || p.postId === postId;
+      });
+      if (matchIdx !== -1) {
+        window.allPosts[matchIdx].caption = newCaption;
+      }
+    }
+
     if (textEl) {
       textEl.textContent  = newCaption || 'No copy yet';
       textEl.dataset.raw  = newCaption;
