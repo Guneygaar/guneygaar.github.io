@@ -1705,9 +1705,10 @@ function _sharePostOnWhatsApp(postId) {
     ? post.images[0] : '';
 
   var rawSlug = title.toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
     .trim()
     .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
     .slice(0, 50);
 
   var approveUrl = 'https://srtd.io/ok/?p=' + rawSlug;
