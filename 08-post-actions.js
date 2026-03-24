@@ -540,38 +540,39 @@ function _renderPCS(postId) {
   }
 
   // -- LinkedIn link (published posts) --
-  var stageForLi = (post.stage || '').toLowerCase();
+  var stageForLi = (post.stage || stageLC || '').toLowerCase();
   var liHtml = '';
 
   if (stageForLi === 'published') {
     if (post.linkedinUrl) {
-      // Has LinkedIn URL -- show view button
       liHtml =
-        '<div style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);' +
-        'background:rgba(10,102,194,0.04);border-top:1px solid rgba(10,102,194,0.1);">' +
+        '<div style="padding:12px 18px;border-bottom:1px solid' +
+        ' rgba(255,255,255,0.07);background:rgba(10,102,194,0.04);' +
+        'border-top:1px solid rgba(10,102,194,0.1);">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
         'letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;' +
         'margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
-        '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;' +
-        'flex-shrink:0;"></div>Live on LinkedIn</div>' +
-        '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.12em;text-transform:uppercase;color:#0a66c2;' +
-        'background:transparent;border:1px solid rgba(10,102,194,0.3);' +
+        '<div style="width:6px;height:6px;border-radius:50%;' +
+        'background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
+        '<button onclick="window.open(\'' + esc(post.linkedinUrl) +
+        '\',\'_blank\')" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
+        'color:#0a66c2;background:transparent;' +
+        'border:1px solid rgba(10,102,194,0.3);' +
         'padding:11px 0;cursor:pointer;display:flex;align-items:center;' +
         'justify-content:center;gap:8px;">' +
         '<span style="font-size:14px;font-weight:600;">in</span>' +
-        'View Live Post</button>' +
+        'View Live Post &rarr;</button>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
         'color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;' +
         'text-overflow:ellipsis;white-space:nowrap;">' +
         esc(post.linkedinUrl.replace('https://', '')) + '</div>' +
         '</div>';
     } else {
-      // Published but no URL yet -- show inline input
       liHtml =
-        '<div style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);' +
-        'border-top:1px solid rgba(246,166,35,0.1);' +
+        '<div style="padding:12px 18px;border-bottom:1px solid' +
+        ' rgba(255,255,255,0.07);border-top:1px solid rgba(246,166,35,0.1);' +
         'background:rgba(246,166,35,0.03);">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
         'letter-spacing:0.18em;text-transform:uppercase;color:#444;' +
@@ -595,7 +596,7 @@ function _renderPCS(postId) {
         '</div>';
     }
   }
-  if (elDesign) elDesign.innerHTML = photoStripHtml + liHtml;
+  if (elDesign) elDesign.innerHTML = photoStripHtml;
 
   var captionHtml = '';
   if (post.caption || canEdit) {
@@ -644,7 +645,7 @@ function _renderPCS(postId) {
       '</div>';
   }
 
-  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
+  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + liHtml + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
 
   // Stage advance button
   _renderAdvanceButton(stageLC);
