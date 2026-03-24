@@ -616,8 +616,20 @@ function _renderPCS(postId) {
       '</div>' +
       (post.caption ?
         '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;">' +
-        esc(post.caption) + '</div>'
+        'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
+        'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
+        'max-height:62px;overflow:hidden;' +
+        '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
+        'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
+        esc(post.caption) + '</div>' +
+        '<button id="pcs-caption-see-more" onclick="(function(){' +
+        'var t=document.getElementById(\'pcs-caption-text\');' +
+        'var b=document.getElementById(\'pcs-caption-see-more\');' +
+        'if(t.style.maxHeight===\'62px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
+        'else{t.style.maxHeight=\'62px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';t.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';b.textContent=\'See More\';}' +
+        '})()" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;' +
+        'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
+        'padding:6px 0 0 0;">See More</button>'
         :
         '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;' +
         'font-size:9px;color:#333;letter-spacing:0.06em;">No copy yet</div>'
@@ -1696,7 +1708,6 @@ function _sharePostOnWhatsApp(postId) {
   var message =
     'Hi, ' + title + ' is ready for your review.\n\n' +
     caption + '\n\n' +
-    (firstImage ? 'Preview: ' + firstImage + '\n\n' : '') +
     'Approve: ' + approveUrl + '\n' +
     'Request changes: ' + changesUrl;
 
