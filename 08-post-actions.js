@@ -1344,9 +1344,6 @@ window._pcsLbDownload = _pcsLbDownload;
 })();
 
 function _startCaptionEdit(postId) {
-  var confirmed = confirm('Edit copy? The current version will be saved to audit log before changes are made.');
-  if (!confirmed) return;
-
   var textEl  = document.getElementById('pcs-caption-text');
   var editBtn = document.getElementById('pcs-caption-edit-btn');
   if (!textEl) return;
@@ -1489,8 +1486,8 @@ function _sharePostOnWhatsApp(postId) {
     .replace(/\s+/g, '-')
     .slice(0, 50);
 
-  var approveUrl = 'https://srtd.io/ok/' + rawSlug;
-  var changesUrl = 'https://srtd.io/no/' + rawSlug;
+  var approveUrl = 'https://srtd.io/ok/?p=' + rawSlug;
+  var changesUrl = 'https://srtd.io/no/?p=' + rawSlug;
 
   var message =
     'Hi, ' + title + ' is ready for your review.\n\n' +

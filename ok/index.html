@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Approve Post - Sorted</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0f;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #e8e2d9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 24px 60px;
+  }
+  .logo {
+    font-size: 14px;
+    color: #C8A84B;
+    letter-spacing: 0.1em;
+    margin-bottom: 32px;
+  }
+  .state { display: none; width: 100%; max-width: 390px; flex-direction: column; align-items: center; }
+  .state.active { display: flex; }
+  .post-img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    display: block;
+    border: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 16px;
+  }
+  .post-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #e8e2d9;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .post-meta {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #444;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .post-caption {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: #888;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 14px;
+    width: 100%;
+    margin-bottom: 28px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .approve-btn {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #3ECF8E;
+    background: rgba(62,207,142,0.08);
+    border: 1px solid rgba(62,207,142,0.4);
+    padding: 16px 0;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .approve-btn:active { background: rgba(62,207,142,0.15); }
+  .changes-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #333;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 0;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+  }
+  .success-icon { font-size: 48px; margin-bottom: 20px; }
+  .success-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #3ECF8E;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .success-sub {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: #444;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .error-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: #FF4B4B;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .error-sub {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: #444;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .loading-text {
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #333;
+    text-align: center;
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="logo">srtd.io</div>
+
+<!-- LOADING STATE -->
+<div class="state active" id="state-loading">
+  <div class="loading-text">Loading post...</div>
+</div>
+
+<!-- POST PREVIEW STATE -->
+<div class="state" id="state-preview">
+  <img id="preview-img" class="post-img" src="" alt="" style="display:none;">
+  <div class="post-title" id="preview-title"></div>
+  <div class="post-meta" id="preview-meta"></div>
+  <div class="post-caption" id="preview-caption"></div>
+  <button class="approve-btn" onclick="doApprove()">Approve Post</button>
+  <a id="changes-link" href="" class="changes-link">Request Changes Instead</a>
+</div>
+
+<!-- SUCCESS STATE -->
+<div class="state" id="state-success">
+  <div class="success-icon">&#10003;</div>
+  <div class="success-title">Approved</div>
+  <div class="success-sub" id="success-sub">
+    Post has been marked for scheduling.<br>
+    The team has been notified.
+  </div>
+</div>
+
+<!-- ERROR STATE -->
+<div class="state" id="state-error">
+  <div class="error-title">Something went wrong</div>
+  <div class="error-sub" id="error-sub">
+    Could not find this post.<br>
+    Please contact the agency.
+  </div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
+var currentPost = null;
+
+function getSlug() {
+  var params = new URLSearchParams(window.location.search);
+  return params.get('p') || '';
+}
+
+function slugToTitle(slug) {
+  return slug.replace(/-/g, ' ');
+}
+
+function showState(id) {
+  document.querySelectorAll('.state').forEach(function(s) {
+    s.classList.remove('active');
+  });
+  var el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function showError(msg) {
+  var sub = document.getElementById('error-sub');
+  if (sub && msg) sub.textContent = msg;
+  showState('state-error');
+}
+
+async function loadPost() {
+  var slug = getSlug();
+  if (!slug) { showError('No post specified in this link.'); return; }
+
+  var titleSearch = slugToTitle(slug);
+
+  try {
+    var res = await fetch(
+      SUPABASE_URL + '/rest/v1/posts?select=post_id,title,caption,images,content_pillar,owner,stage&title=ilike.*' +
+      encodeURIComponent(titleSearch) + '*&limit=5',
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY
+        }
+      }
+    );
+    var data = await res.json();
+    if (!data || !data.length) {
+      showError('Post not found. The link may have expired or the title changed.');
+      return;
+    }
+
+    // Find best slug match
+    var post = data[0];
+    for (var i = 0; i < data.length; i++) {
+      var testSlug = data[i].title.toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .trim().replace(/\s+/g, '-').slice(0, 50);
+      if (testSlug === slug) { post = data[i]; break; }
+    }
+
+    currentPost = post;
+
+    // Populate preview
+    var imgs = Array.isArray(post.images) ? post.images : [];
+    var imgEl = document.getElementById('preview-img');
+    if (imgs.length && imgEl) {
+      imgEl.src = imgs[0];
+      imgEl.style.display = 'block';
+    }
+
+    var titleEl = document.getElementById('preview-title');
+    if (titleEl) titleEl.textContent = post.title || '';
+
+    var metaEl = document.getElementById('preview-meta');
+    if (metaEl) {
+      var parts = [];
+      if (post.content_pillar) parts.push(post.content_pillar.toUpperCase());
+      if (post.owner) parts.push(post.owner.toUpperCase());
+      metaEl.textContent = parts.join(' / ');
+    }
+
+    var capEl = document.getElementById('preview-caption');
+    if (capEl) capEl.textContent = post.caption || '(No caption added yet)';
+
+    var changesLink = document.getElementById('changes-link');
+    if (changesLink) {
+      changesLink.href = '/no/?p=' + slug;
+    }
+
+    showState('state-preview');
+
+  } catch(e) {
+    showError('Network error. Please try again.');
+    console.error(e);
+  }
+}
+
+async function doApprove() {
+  if (!currentPost) return;
+  var btn = document.querySelector('.approve-btn');
+  if (btn) { btn.textContent = 'Approving...'; btn.disabled = true; }
+
+  try {
+    // Update stage to scheduled
+    await fetch(
+      SUPABASE_URL + '/rest/v1/posts?post_id=eq.' + encodeURIComponent(currentPost.post_id),
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          stage: 'scheduled',
+          status_changed_at: new Date().toISOString()
+        })
+      }
+    );
+
+    // Log to activity_log
+    await fetch(
+      SUPABASE_URL + '/rest/v1/activity_log',
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          post_id: currentPost.post_id,
+          actor: 'client',
+          action: 'approved_via_link',
+          old_stage: currentPost.stage || 'awaiting_approval',
+          new_stage: 'scheduled',
+          created_at: new Date().toISOString()
+        })
+      }
+    );
+
+    var sub = document.getElementById('success-sub');
+    if (sub) sub.textContent = currentPost.title + ' has been approved and marked for scheduling. The team has been notified.';
+    showState('state-success');
+
+  } catch(e) {
+    if (btn) { btn.textContent = 'Approve Post'; btn.disabled = false; }
+    alert('Failed to approve. Please try again or contact the agency.');
+    console.error(e);
+  }
+}
+
+loadPost();
+</script>
+</body>
+</html>
