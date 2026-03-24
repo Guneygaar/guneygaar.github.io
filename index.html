@@ -446,7 +446,7 @@
      NEW POST MODAL
  -->
 <div class="modal-overlay" id="new-post-overlay" onclick="closeNewPostModal(event)">
-  <div class="new-post-sheet" id="new-post-sheet">
+  <div class="new-post-sheet" id="new-post-sheet" style="max-height:92vh;overflow:hidden;display:flex;flex-direction:column;">
     <div class="nps-handle"></div>
     <div class="nps-color-strip" id="nps-color-strip"></div>
 
@@ -455,7 +455,7 @@
       <button class="nps-close" id="nps-close-btn">&#x2715;</button>
     </div>
 
-    <div class="nps-body">
+    <div class="nps-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
 
       <div class="nps-title-field">
         <div class="nps-field-label">
@@ -590,7 +590,7 @@
 
     </div>
 
-    <div class="nps-footer" style="position:sticky;bottom:0;background:#0a0a0f;">
+    <div class="nps-footer" style="position:sticky;bottom:0;background:#0a0a0f;padding:12px 18px 90px;">
       <button class="nps-btn-cancel" id="nps-cancel-btn">Cancel</button>
       <button class="nps-btn-create" id="nps-create-btn" disabled>
         &#x2192; Create Post
