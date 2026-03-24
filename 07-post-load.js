@@ -3519,12 +3519,18 @@ function _renderClientViewInner() {
       'border-bottom:1px solid rgba(255,255,255,0.07);">' +
       '<div style="font-family:var(--mono);font-size:13px;' +
       'color:var(--c-gold);letter-spacing:0.08em;">srtd.io</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;">' +
       '<button style="font-family:var(--mono);font-size:8px;' +
       'letter-spacing:0.12em;text-transform:uppercase;' +
       'color:var(--c-gold);background:transparent;' +
       'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
       'cursor:pointer;" onclick="scrollToNewRequest()">+ New Request</button>' +
-      '</div>';
+      '<button onclick="logout()" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
+      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+      'padding:6px 10px;cursor:pointer;">Sign Out</button>' +
+      '</div></div>';
   }
 
   // CHANGE 3 - Greeting
