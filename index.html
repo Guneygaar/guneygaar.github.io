@@ -481,15 +481,14 @@
         </div>
 
         <div class="nps-cell">
-          <div class="nps-field-label">Stage</div>
-          <select class="nps-select" id="new-post-stage">
-            <option value="in_production">In Production</option>
-            <option value="ready">Ready</option>
-            <option value="awaiting_approval">Awaiting Approval</option>
-            <option value="awaiting_brand_input">Awaiting Input</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="parked">Parked</option>
-          </select>
+          <div class="nps-label">Stage</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;
+            letter-spacing:0.1em;text-transform:uppercase;
+            color:#9b87f5;border:1px solid rgba(155,135,245,0.25);
+            padding:4px 10px;display:inline-block;margin-top:4px;">
+            In Production
+          </div>
+          <input type="hidden" id="new-post-stage" value="in_production">
         </div>
 
         <div class="nps-cell">
@@ -591,7 +590,7 @@
 
     </div>
 
-    <div class="nps-footer">
+    <div class="nps-footer" style="position:sticky;bottom:0;background:#0a0a0f;">
       <button class="nps-btn-cancel" id="nps-cancel-btn">Cancel</button>
       <button class="nps-btn-create" id="nps-create-btn" disabled>
         &#x2192; Create Post

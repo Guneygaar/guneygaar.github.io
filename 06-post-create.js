@@ -236,7 +236,7 @@ title,
 owner,
 content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
-stage: toDbStage(stage || 'in_production'),
+stage: 'in_production',
 target_date: date || null,
 comments: comments || null,
 };

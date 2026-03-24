@@ -230,12 +230,14 @@ async function submitClientRequest() {
   try {
     const postId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('hinglish_email') || 'Client';
+    const reqDate = document.getElementById('req-date')?.value || null;
     const payload = {
       post_id:     postId,
       title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
-      stage:       'awaiting_brand_input',
+      stage:       'in_production',
       owner:       email,
       comments:    brief,
+      target_date: reqDate,
       created_at:  new Date().toISOString(),
       updated_at:  new Date().toISOString(),
     };
