@@ -3,6 +3,12 @@
 =============================================== */
 console.log("LOADED:", "09-approval.js");
 
+function _isAssetUrl(url) {
+  if (!url) return false;
+  return url.includes('supabase.co/storage') ||
+    /\.(jpg|jpeg|png|gif|webp)(\?|$)/i.test(url);
+}
+
 async function showApprovalView(postId) {
   document.getElementById('login-overlay')?.classList.add('hidden');
   document.getElementById('dashboard-view')?.classList.remove('active');
@@ -36,6 +42,54 @@ async function showApprovalView(postId) {
       ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="approval-design-link">[edit] ${linkLabel} [ext]</a>`
       : `<div class="approval-no-design">No design link attached yet.</div>`;
 
+    const imageBlock = (post.image && _isAssetUrl(post.image))
+      ? '<div style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
+        '<img src="' + esc(post.image) + '"' +
+        ' alt="Post photo"' +
+        ' style="width:100%;max-height:200px;object-fit:cover;display:block;">' +
+        '</div>'
+      : (postLink
+        ? '<div style="background:rgba(255,255,255,0.02);' +
+          'border:1px solid rgba(255,255,255,0.07);' +
+          'height:80px;display:flex;align-items:center;' +
+          'justify-content:center;margin:8px 14px 10px;">' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.1em;text-transform:uppercase;color:#F6A623;">' +
+          'View Post Design ^</span>' +
+          '</div>'
+        : '');
+
+    const captionBlock = post.caption
+      ? '<div style="padding:8px 14px 10px;' +
+        'border-bottom:1px solid rgba(255,255,255,0.07);' +
+        'position:relative;max-height:72px;overflow:hidden;">' +
+        '<div style="font-family:\'DM Sans\',sans-serif;' +
+        'font-size:12px;color:#888;line-height:1.55;">' +
+        esc(post.caption) +
+        '</div>' +
+        '<div style="position:absolute;bottom:0;left:0;right:0;' +
+        'height:28px;background:linear-gradient(transparent,#141414);' +
+        'pointer-events:none;"></div>' +
+        '</div>'
+      : '';
+
+    var hasCaption = !!(post.caption && post.caption.trim());
+    const whatsappBtn = hasCaption
+      ? '<button onclick="_sharePostOnWhatsApp(\'' + esc(postId) + '\')" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
+        'color:#444;background:transparent;' +
+        'border:1px solid rgba(255,255,255,0.06);' +
+        'padding:9px 0;cursor:pointer;">' +
+        'Share on WhatsApp</button>'
+      : '<button ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
+        'color:#222;background:transparent;' +
+        'border:1px solid rgba(255,255,255,0.03);' +
+        'padding:9px 0;cursor:not-allowed;">' +
+        'Share on WhatsApp</button>';
+
     const actionsBlock = alreadyApproved
       ? `<div class="approval-already-approved"><span>ok</span> This post has already been approved</div>`
       : `<div class="approval-actions">
@@ -62,6 +116,9 @@ async function showApprovalView(postId) {
           <div class="approval-card-title">${esc(title)}</div>
           ${comments ? `<div class="approval-card-comments">${esc(comments)}</div>` : ''}
           ${designBlock}
+          ${imageBlock}
+          ${captionBlock}
+          ${whatsappBtn}
         </div>
         ${actionsBlock}
       </div>`;
