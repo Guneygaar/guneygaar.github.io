@@ -533,28 +533,49 @@
           rows="6"></textarea>
       </div>
 
-      <div class="nps-full">
-        <span class="nps-label">Post Photos <span class="nps-label-hint">(up to 20, shown to client)</span></span>
+<div class="nps-full">
+  <div class="nps-label">Post Photos
+    <span style="color:#2a2a2a;font-size:6px;
+    letter-spacing:0.06em;text-transform:none;">
+    (up to 20, shown to client)</span>
+  </div>
+  <div id="new-post-asset-grid"
+    style="display:none;flex-wrap:wrap;gap:4px;
+    margin-bottom:6px;"></div>
+  <input type="file" id="new-post-asset"
+    accept="image/*" multiple style="display:none;">
+  <label for="new-post-asset"
+    style="display:block;font-family:'IBM Plex Mono',
+    monospace;font-size:7px;letter-spacing:0.12em;
+    text-transform:uppercase;color:#F6A623;
+    background:transparent;
+    border:1px dashed rgba(246,166,35,0.25);
+    padding:11px 0;text-align:center;
+    cursor:pointer;width:100%;margin-top:4px;">
+    + Upload Photos
+  </label>
+  <div style="font-family:'IBM Plex Mono',monospace;
+    font-size:6px;color:#2a2a2a;letter-spacing:0.06em;
+    text-align:center;margin-top:4px;">
+    JPG / PNG -- original quality stored in Supabase
+  </div>
+</div>
 
-        <div id="new-post-asset-grid" style="display:none;flex-wrap:wrap;gap:4px;margin-bottom:8px;"></div>
-
-        <input type="file" id="new-post-asset" accept="image/*" multiple style="display:none;">
-        <label for="new-post-asset" id="new-post-asset-label" class="nps-upload-label">
-          + Upload Photos
-        </label>
-        <div class="nps-upload-hint">JPG / PNG -- original quality stored in Supabase</div>
-      </div>
-
-      <div class="nps-full">
-        <span class="nps-label">Brief / Internal Notes <span class="nps-label-hint">(team only, not shared with client)</span></span>
-        <textarea class="nps-textarea nps-notes-area" id="new-post-comments"
-          placeholder="Brief, caption, or notes..."></textarea>
-      </div>
+<div class="nps-full">
+  <div class="nps-label">Brief / Internal Notes
+    <span style="color:#2a2a2a;font-size:6px;
+    letter-spacing:0.06em;text-transform:none;">
+    (team only)</span>
+  </div>
+  <textarea class="nps-textarea nps-notes-area"
+    id="new-post-comments"
+    placeholder="Brief or direction..."></textarea>
+</div>
 
     </div>
 
     <div class="nps-footer">
-      <button class="nps-btn-cancel" id="nps-cancel-btn">Cancel</button>
+      <button class="nps-btn-cancel" id="nps-cancel-btn" onclick="closeNewPostModal()">Cancel</button>
       <button class="nps-btn-create" id="nps-create-btn" disabled>
         &#x2192; Create Post
       </button>
