@@ -230,7 +230,15 @@ function activateRole(role) {
     setTimeout(function() {
       if (typeof switchTab === 'function') switchTab('tasks');
     }, 100);
-    return;
+  }
+
+  // Reveal the correct view now that role is fully set
+  var dv = document.getElementById('dashboard-view');
+  var cv = document.getElementById('client-view');
+  if (effectiveRole === 'Client') {
+    if (cv) cv.style.visibility = 'visible';
+  } else {
+    if (dv) dv.style.visibility = 'visible';
   }
 }
 
