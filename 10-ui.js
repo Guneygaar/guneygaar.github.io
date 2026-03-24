@@ -105,6 +105,7 @@ function gamSwitchRole(role) {
   }
   location.reload();
 }
+window.gamSwitchRole = gamSwitchRole;
 
 // -- Exit Preview Bar -------------------------
 function updateExitPreviewBar() {
