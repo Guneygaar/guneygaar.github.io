@@ -169,6 +169,8 @@ if (createBtn) createBtn.disabled = true;
 window._modalOpen = true;
 var _npoEl = document.getElementById('new-post-overlay');
 if (_npoEl) _npoEl.style.display = 'flex';
+var nav = document.getElementById('bottom-nav');
+if (nav) nav.style.display = 'none';
 document.body.style.overflow = 'hidden';
 
 _npsWireEvents();
@@ -193,6 +195,8 @@ if (typeof clearPostAsset === 'function') clearPostAsset();
 
 var _npoClose = document.getElementById('new-post-overlay');
 if (_npoClose) _npoClose.style.display = 'none';
+var nav = document.getElementById('bottom-nav');
+if (nav) nav.style.display = '';
 document.body.style.overflow = '';
 window._modalOpen = false;
 _drainDeferredRender();
