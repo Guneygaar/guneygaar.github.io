@@ -462,25 +462,97 @@ function _renderPCS(postId) {
 
   _updateSubtitle(post);
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
-  var imageHtml = '';
-  if (post.image && isAssetUrl(post.image)) {
-    imageHtml = '<div style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<img src="' + esc(post.image) + '"' +
-      ' alt="Post photo"' +
-      ' style="width:100%;max-height:260px;object-fit:cover;display:block;">' +
+
+  // -- Photo strip --
+  var imgs = Array.isArray(post.images) ? post.images : [];
+  var showPhotoSection = canEdit || imgs.length > 0;
+  var photoStripHtml = '';
+  if (showPhotoSection) {
+    photoStripHtml =
+      '<div id="pcs-photo-section" style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:5px 18px 7px;">' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.08em;text-transform:uppercase;color:#444;">Post Photo</span>' +
+      'padding:7px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">' +
+      'Photos <span style="color:' + (imgs.length ? '#777' : '#333') + ';">' +
+      imgs.length + '</span></div>' +
       (canEdit ?
-        '<button onclick="_pcsChangeImage(\'' + esc(id) + '\')" ' +
+        '<button onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:#555;' +
-        'background:none;border:none;cursor:pointer;">Change</button>'
+        'letter-spacing:0.1em;text-transform:uppercase;color:#F6A623;' +
+        'background:transparent;border:1px solid rgba(246,166,35,0.3);' +
+        'padding:4px 10px;cursor:pointer;">+ Add More</button>'
         : '') +
-      '</div></div>';
+      '</div>' +
+      (imgs.length > 0 ?
+        '<div style="display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;">' +
+        imgs.map(function(url, idx) {
+          return '<div onclick="_pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')" ' +
+            'style="flex-shrink:0;width:100px;height:100px;position:relative;' +
+            'background:#1a1a1a;cursor:pointer;overflow:hidden;">' +
+            '<img src="' + esc(url) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+            '<div style="position:absolute;bottom:3px;right:4px;font-family:' +
+            '\'IBM Plex Mono\',monospace;font-size:7px;color:rgba(255,255,255,0.4);' +
+            'background:rgba(0,0,0,0.5);padding:1px 4px;">' + (idx + 1) + '</div>' +
+            (canEdit ?
+              '<button onclick="event.stopPropagation();_pcsRemovePhoto(\'' +
+              esc(id) + '\',' + idx + ')" ' +
+              'style="position:absolute;top:3px;right:3px;width:18px;height:18px;' +
+              'border-radius:50%;background:rgba(0,0,0,0.75);border:none;' +
+              'color:#888;font-size:10px;cursor:pointer;display:flex;' +
+              'align-items:center;justify-content:center;line-height:1;">x</button>'
+              : '') +
+            '</div>';
+        }).join('') +
+        (canEdit ?
+          '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
+          'style="flex-shrink:0;width:100px;height:100px;' +
+          'border:1px dashed rgba(246,166,35,0.2);display:flex;' +
+          'flex-direction:column;align-items:center;justify-content:center;' +
+          'cursor:pointer;gap:5px;">' +
+          '<div style="font-size:22px;color:rgba(246,166,35,0.35);">+</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+          'letter-spacing:0.1em;text-transform:uppercase;color:#333;' +
+          'text-align:center;line-height:1.5;">Upload<br>Photos</div>' +
+          '</div>'
+          : '') +
+        '</div>'
+        :
+        (canEdit ?
+          '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
+          'style="margin:10px 18px 12px;border:1px dashed rgba(255,255,255,0.07);' +
+          'padding:20px;display:flex;flex-direction:column;align-items:center;' +
+          'gap:8px;cursor:pointer;">' +
+          '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.12em;text-transform:uppercase;color:#F6A623;">Upload Photos</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'color:#333;letter-spacing:0.06em;">JPG / PNG -- stored in Supabase, original quality</div>' +
+          '</div>'
+          : '')
+      ) +
+      (canEdit ?
+        '<input type="file" id="pcs-photo-input" accept="image/*" ' +
+        'multiple style="display:none;" ' +
+        'onchange="_pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
+        : '') +
+      '</div>';
   }
-  if (elDesign)   elDesign.innerHTML = imageHtml + _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, id, stageLC);
+
+  // -- LinkedIn link (published/scheduled only) --
+  var linkedinHtml = '';
+  if ((stageLC === 'published' || stageLC === 'scheduled') && linkedinUrl) {
+    linkedinHtml = '<div style="padding:10px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.18em;text-transform:uppercase;color:#555;margin-bottom:8px;">Live Post</div>' +
+      '<button onclick="window.open(\'' + esc(linkedinUrl) + '\',\'_blank\')" ' +
+      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;color:#0a66c2;' +
+      'background:transparent;border:1px solid rgba(10,102,194,0.3);' +
+      'padding:10px 0;cursor:pointer;">View on LinkedIn &rarr;</button>' +
+      '</div>';
+  }
+  if (elDesign) elDesign.innerHTML = photoStripHtml + linkedinHtml;
 
   var captionHtml = '';
   if (post.caption || canEdit) {
@@ -1121,10 +1193,155 @@ async function pcsDoDelete() {
   } catch(e) { showToast('Delete failed', 'error'); }
 }
 
-function _pcsChangeImage(postId) {
-  console.log('[PCS] Change image for', postId);
+function _pcsAddPhotos(postId) {
+  var input = document.getElementById('pcs-photo-input');
+  if (input) input.click();
 }
-window._pcsChangeImage = _pcsChangeImage;
+window._pcsAddPhotos = _pcsAddPhotos;
+
+async function _pcsHandlePhotoInput(postId, input) {
+  var files = Array.from(input.files || []);
+  if (!files.length) return;
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+  var currentImages = Array.isArray(post.images) ? post.images.slice() : [];
+  var uploaded = [];
+  for (var i = 0; i < files.length; i++) {
+    if (currentImages.length + uploaded.length >= 20) break;
+    try {
+      var url = await uploadPostAsset(files[i], postId);
+      if (url) uploaded.push(url);
+    } catch(e) {
+      console.warn('[PCS] Photo upload failed:', e);
+    }
+  }
+  if (!uploaded.length) return;
+  var newImages = currentImages.concat(uploaded);
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ images: newImages })
+    });
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var idx = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId;
+      });
+      if (idx !== -1) window.allPosts[idx].images = newImages;
+    }
+    var section = document.getElementById('pcs-photo-section');
+    if (section && post) {
+      post.images = newImages;
+      if (typeof openPCS === 'function') openPCS(postId, '');
+    }
+  } catch(e) {
+    alert('Failed to save photos. Please try again.');
+  }
+}
+window._pcsHandlePhotoInput = _pcsHandlePhotoInput;
+
+async function _pcsRemovePhoto(postId, idx) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+  var imgs = Array.isArray(post.images) ? post.images.slice() : [];
+  imgs.splice(idx, 1);
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ images: imgs })
+    });
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var i2 = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId;
+      });
+      if (i2 !== -1) window.allPosts[i2].images = imgs;
+    }
+    if (typeof openPCS === 'function') openPCS(postId, '');
+  } catch(e) {
+    alert('Failed to remove photo. Please try again.');
+  }
+}
+window._pcsRemovePhoto = _pcsRemovePhoto;
+
+// -- Lightbox --
+var _pcsLbImages = [];
+var _pcsLbIdx = 0;
+
+function _pcsOpenLightbox(postId, idx) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  _pcsLbImages = (post && Array.isArray(post.images)) ? post.images : [];
+  _pcsLbIdx = idx || 0;
+  _pcsLbRender();
+  var lb = document.getElementById('pcs-lightbox');
+  if (lb) { lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+}
+window._pcsOpenLightbox = _pcsOpenLightbox;
+
+function _pcsLbRender() {
+  var img = document.getElementById('pcs-lb-img');
+  var counter = document.getElementById('pcs-lb-counter');
+  var filename = document.getElementById('pcs-lb-filename');
+  var dots = document.getElementById('pcs-lb-dots');
+  if (!img) return;
+  var url = _pcsLbImages[_pcsLbIdx] || '';
+  img.src = url;
+  if (counter) counter.textContent = (_pcsLbIdx + 1) + ' / ' + _pcsLbImages.length;
+  if (filename) {
+    var parts = url.split('/');
+    filename.textContent = parts[parts.length - 1] || '';
+  }
+  if (dots) {
+    dots.innerHTML = _pcsLbImages.map(function(u, i) {
+      return '<div style="width:5px;height:5px;border-radius:50%;background:' +
+        (i === _pcsLbIdx ? '#e8e2d9' : '#2a2a2a') + ';"></div>';
+    }).join('');
+  }
+}
+
+function _pcsLbNext() {
+  _pcsLbIdx = (_pcsLbIdx + 1) % _pcsLbImages.length;
+  _pcsLbRender();
+}
+window._pcsLbNext = _pcsLbNext;
+
+function _pcsLbPrev() {
+  _pcsLbIdx = (_pcsLbIdx - 1 + _pcsLbImages.length) % _pcsLbImages.length;
+  _pcsLbRender();
+}
+window._pcsLbPrev = _pcsLbPrev;
+
+function _pcsLbClose() {
+  var lb = document.getElementById('pcs-lightbox');
+  if (lb) { lb.style.display = 'none'; document.body.style.overflow = ''; }
+}
+window._pcsLbClose = _pcsLbClose;
+
+function _pcsLbDownload() {
+  var url = _pcsLbImages[_pcsLbIdx];
+  if (!url) return;
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = url.split('/').pop() || 'photo.jpg';
+  a.target = '_blank';
+  a.click();
+}
+window._pcsLbDownload = _pcsLbDownload;
+
+(function() {
+  var tx = 0;
+  document.addEventListener('DOMContentLoaded', function() {
+    var lb = document.getElementById('pcs-lightbox');
+    if (!lb) return;
+    lb.addEventListener('touchstart', function(e) {
+      tx = e.touches[0].clientX;
+    });
+    lb.addEventListener('touchend', function(e) {
+      var diff = tx - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 40) {
+        diff > 0 ? _pcsLbNext() : _pcsLbPrev();
+      }
+    });
+  });
+})();
 
 function _startCaptionEdit(postId) {
   var confirmed = confirm('Edit copy? The current version will be saved to audit log before changes are made.');
@@ -1263,6 +1480,8 @@ function _sharePostOnWhatsApp(postId) {
 
   var caption  = post.caption || '';
   var title    = post.title   || 'New Post';
+  var firstImage = (Array.isArray(post.images) && post.images.length)
+    ? post.images[0] : '';
 
   var rawSlug = title.toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
@@ -1276,6 +1495,7 @@ function _sharePostOnWhatsApp(postId) {
   var message =
     'Hi, ' + title + ' is ready for your review.\n\n' +
     caption + '\n\n' +
+    (firstImage ? 'Preview: ' + firstImage + '\n\n' : '') +
     'Approve: ' + approveUrl + '\n' +
     'Request changes: ' + changesUrl;
 
