@@ -3725,7 +3725,7 @@ function _renderClientViewInner() {
   if (reqForm && !reqForm.dataset.init) {
     reqForm.dataset.init = '1';
     reqForm.innerHTML =
-      '<div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;" id="req-overlay" onclick="if(event.target===this)this.parentElement.dataset.init=\'\';this.remove();">' +
+      '<div style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;" id="req-overlay" onclick="if(event.target===this)this.parentElement.dataset.init=\'\';this.remove();">' +
         '<div style="width:100%;max-width:390px;height:75vh;max-height:75vh;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.12);display:flex;flex-direction:column;overflow:hidden;" onclick="event.stopPropagation();">' +
           '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">' +
             '<div class="cp-form-field" style="padding:12px 18px 0;">' +

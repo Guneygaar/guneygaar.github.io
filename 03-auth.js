@@ -237,8 +237,10 @@ function _buildUserMenu() {
   const menu = document.getElementById('user-menu');
   if (!menu) return;
   let html = '';
-  // Role-switch section (Admin only)
-  if (currentRole === 'Admin') {
+  // Role-switch section (Admin only) - shown first
+  if (currentRole === 'Admin' || currentRole === 'admin' ||
+      window.effectiveRole === 'Admin' ||
+      localStorage.getItem('hinglish_role') === 'Admin') {
     const roles = ['Admin', 'Pranav', 'Chitra', 'Client'];
     html += '<div class="um-section-label">View</div>';
     html += '<div class="um-role-options">';
