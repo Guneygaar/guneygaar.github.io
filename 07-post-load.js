@@ -3725,25 +3725,27 @@ function _renderClientViewInner() {
   if (reqForm && !reqForm.dataset.init) {
     reqForm.dataset.init = '1';
     reqForm.innerHTML =
-      '<div style="display:flex;flex-direction:column;height:70vh;max-height:70vh;overflow:hidden;">' +
-        '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px;">' +
-          '<div class="cp-form-field" style="padding:12px 18px 0;">' +
-            '<label class="cp-form-label" for="req-topic">What do you want to post about? *</label>' +
-            '<textarea id="req-topic" rows="3" class="cp-form-input" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>' +
+      '<div style="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;" id="req-overlay" onclick="if(event.target===this)this.parentElement.dataset.init=\'\';this.remove();">' +
+        '<div style="width:100%;max-width:390px;height:75vh;max-height:75vh;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.12);display:flex;flex-direction:column;overflow:hidden;" onclick="event.stopPropagation();">' +
+          '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">' +
+            '<div class="cp-form-field" style="padding:12px 18px 0;">' +
+              '<label class="cp-form-label" for="req-topic">What do you want to post about? *</label>' +
+              '<textarea id="req-topic" rows="3" class="cp-form-input" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>' +
+            '</div>' +
+            '<div class="cp-form-field" style="padding:0 18px;">' +
+              '<label class="cp-form-label" for="req-date">Any specific date in mind?</label>' +
+              '<input type="date" id="req-date" class="cp-form-input">' +
+            '</div>' +
+            '<div class="cp-form-field" style="padding:0 18px;">' +
+              '<label class="cp-form-label" for="req-ref">Reference images or links</label>' +
+              '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
+              '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
+            '</div>' +
           '</div>' +
-          '<div class="cp-form-field" style="padding:0 18px;">' +
-            '<label class="cp-form-label" for="req-date">Any specific date in mind?</label>' +
-            '<input type="date" id="req-date" class="cp-form-input">' +
+          '<div style="flex-shrink:0;padding:12px 14px 16px;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
+            '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
+            'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.4);padding:14px 0;cursor:pointer;">&#x2192; Send Request</button>' +
           '</div>' +
-          '<div class="cp-form-field" style="padding:0 18px;">' +
-            '<label class="cp-form-label" for="req-ref">Reference images or links</label>' +
-            '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
-            '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
-          '</div>' +
-        '</div>' +
-        '<div style="flex-shrink:0;padding:12px 14px 20px;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
-          '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
-          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.4);padding:14px 0;cursor:pointer;">&#x2192; Send Request</button>' +
         '</div>' +
       '</div>';
   }

@@ -221,6 +221,8 @@ function activateRole(role) {
   }
   // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();
+  // Show/hide exit-preview bar
+  if (typeof updateExitPreviewBar === 'function') updateExitPreviewBar();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 }

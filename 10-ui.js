@@ -102,6 +102,32 @@ function gamSwitchRole(role) {
   location.reload();
 }
 
+// -- Exit Preview Bar -------------------------
+function updateExitPreviewBar() {
+  var existing = document.getElementById('exit-preview-bar');
+  if (existing) existing.remove();
+
+  if (window.effectiveRole !== 'Admin' &&
+      window.effectiveRole !== 'admin') {
+    var bar = document.createElement('div');
+    bar.id = 'exit-preview-bar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;' +
+      'z-index:9999;background:#C8A84B;' +
+      'font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:#000;padding:6px 18px;' +
+      'display:flex;align-items:center;justify-content:space-between;' +
+      'cursor:pointer;';
+    bar.innerHTML = '<span>Viewing as ' + window.effectiveRole + '</span>' +
+      '<span>Tap to exit &rarr;</span>';
+    bar.onclick = function() {
+      localStorage.removeItem('pcs_role_preview');
+      location.reload();
+    };
+    document.body.appendChild(bar);
+  }
+}
+
 // -- Tabs --------------------------------------
 function goToTab(tabName) {
   const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
