@@ -3655,38 +3655,36 @@ function _renderClientViewInner() {
 
         var capHtml = '';
         if (p.caption) {
-          var capId = 'cli-cap-' + p.post_id;
-          var btnId = 'cli-btn-' + p.post_id;
           capHtml =
-            '<div style="padding:10px 14px 0;">' +
-            '<div id="' + capId + '" ' +
+            '<div style="padding:10px 18px 0;">' +
+            '<div id="cap-' + p.post_id + '" ' +
             'style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
             'color:#888;line-height:1.6;white-space:pre-wrap;' +
             'word-wrap:break-word;overflow-wrap:break-word;' +
-            'word-break:break-word;max-width:100%;' +
-            'overflow:hidden;max-height:62px;' +
-            '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
-            'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
+            'max-height:52px;overflow:hidden;' +
+            '-webkit-mask-image:linear-gradient(to bottom,black 20px,transparent 50px);' +
+            'mask-image:linear-gradient(to bottom,black 20px,transparent 50px);">' +
             esc(p.caption) + '</div>' +
-            '<button id="' + btnId + '" ' +
+            '<button id="smb-' + p.post_id + '" ' +
             'onclick="(function(){' +
-              'var c=document.getElementById(\'' + capId + '\');' +
-              'var b=document.getElementById(\'' + btnId + '\');' +
+              'var c=document.getElementById(\'cap-' + p.post_id + '\');' +
+              'var b=document.getElementById(\'smb-' + p.post_id + '\');' +
               'if(c.style.maxHeight===\'none\'||c.style.maxHeight===\'\'){' +
-                'c.style.maxHeight=\'62px\';' +
-                'c.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';' +
-                'c.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';' +
-                'b.textContent=\'See more\';}' +
+                'c.style.maxHeight=\'52px\';' +
+                'c.style.webkitMaskImage=\'linear-gradient(to bottom,black 20px,transparent 50px)\';' +
+                'c.style.maskImage=\'linear-gradient(to bottom,black 20px,transparent 50px)\';' +
+                'b.textContent=\'See more \u2192\';}' +
               'else{' +
                 'c.style.maxHeight=\'none\';' +
                 'c.style.webkitMaskImage=\'none\';' +
                 'c.style.maskImage=\'none\';' +
-                'b.textContent=\'See less\';}' +
+                'b.textContent=\'See less \u2190\';}' +
             '})()" ' +
-            'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-            'letter-spacing:0.1em;text-transform:uppercase;color:#444;' +
-            'background:transparent;border:none;cursor:pointer;' +
-            'padding:6px 14px 0;display:block;">See more</button>' +
+            'style="display:block;width:100%;text-align:right;' +
+            'font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+            'letter-spacing:0.1em;text-transform:uppercase;' +
+            'color:#333;background:transparent;border:none;' +
+            'cursor:pointer;padding:4px 0 0;margin:0;">See more &rarr;</button>' +
             '</div>';
         }
 
@@ -3698,7 +3696,7 @@ function _renderClientViewInner() {
             '<div class="cp-meta">' + esc(metaText) + '</div>' +
             imgStripHtml +
             capHtml +
-            '<div class="cp-actions">' +
+            '<div class="cp-actions" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);">' +
               '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green);background:transparent;border:1px solid rgba(62,207,142,0.3);padding:9px 0;flex:1;cursor:pointer;" onclick="clientApprove(\'' + esc(id) + '\', this)">Approve</button>' +
               '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#666;background:transparent;border:1px solid rgba(255,255,255,0.08);padding:9px 0;flex:1;cursor:pointer;" onclick="showChangeInput(\'' + esc(id) + '\')">Changes</button>' +
             '</div>' +
