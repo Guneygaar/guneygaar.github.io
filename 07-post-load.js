@@ -3725,7 +3725,7 @@ function _renderClientViewInner() {
   if (reqForm && !reqForm.dataset.init) {
     reqForm.dataset.init = '1';
     reqForm.innerHTML =
-      '<div style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;" id="req-overlay" onclick="if(event.target===this)this.parentElement.dataset.init=\'\';this.remove();">' +
+      '<div style="position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;" id="req-overlay" onclick="if(event.target===this){var n=document.getElementById(\'bottom-nav\');if(n)n.style.display=\'\';this.parentElement.dataset.init=\'\';this.remove();}">' +
         '<div style="width:100%;max-width:390px;height:75vh;max-height:75vh;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.12);display:flex;flex-direction:column;overflow:hidden;" onclick="event.stopPropagation();">' +
           '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">' +
             '<div class="cp-form-field" style="padding:12px 18px 0;">' +
@@ -3742,12 +3742,14 @@ function _renderClientViewInner() {
               '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
             '</div>' +
           '</div>' +
-          '<div style="flex-shrink:0;padding:12px 14px 16px;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
+          '<div style="flex-shrink:0;padding:12px 14px 100px;background:#0a0a0f;border-top:1px solid rgba(255,255,255,0.07);">' +
             '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
             'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.4);padding:14px 0;cursor:pointer;">&#x2192; Send Request</button>' +
           '</div>' +
         '</div>' +
       '</div>';
+    var nav = document.getElementById('bottom-nav');
+    if (nav) nav.style.display = 'none';
   }
 
   renderClientApproved();
