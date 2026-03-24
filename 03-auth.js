@@ -195,8 +195,6 @@ function activateRole(role) {
     const preview = localStorage.getItem('pcs_role_preview');
     effectiveRole = (preview && preview !== 'Admin') ? preview : 'Admin';
   } else {
-    // Non-admin: clear any stale preview, effectiveRole = real role
-    localStorage.removeItem('pcs_role_preview');
     effectiveRole = role;
   }
   const overlay = document.getElementById('login-overlay');

@@ -98,7 +98,11 @@ function closeClientMenu() { document.getElementById('client-menu')?.classList.r
 
 // -- Global Admin Menu -------------------------
 function gamSwitchRole(role) {
-  localStorage.setItem('pcs_role_preview', role);
+  if (role === 'Admin') {
+    localStorage.removeItem('pcs_role_preview');
+  } else {
+    localStorage.setItem('pcs_role_preview', role);
+  }
   location.reload();
 }
 
