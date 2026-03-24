@@ -179,11 +179,10 @@ function showError(msg) {
 async function loadPost() {
   var slug = getSlug();
   if (!slug) { showError('No post specified.'); return; }
-  var titleSearch = slugToTitle(slug);
   try {
     var res = await fetch(
-      SUPABASE_URL + '/rest/v1/posts?select=post_id,title,stage&title=ilike.*' +
-      encodeURIComponent(titleSearch) + '*&limit=5',
+      SUPABASE_URL + '/rest/v1/posts?select=post_id,title,stage&' +
+      'title=ilike.*' + slug.replace(/-/g, '%20') + '*&limit=5',
       {
         headers: {
           'apikey': SUPABASE_KEY,
