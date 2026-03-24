@@ -78,6 +78,7 @@ function normalise(rows) {
     post_id:       r.post_id        || r.id || '',
     created_at:    r.created_at     || '',
     updated_at:    r.updated_at     || '',
+    caption:       r.caption        || '',
   }));
 }
 
