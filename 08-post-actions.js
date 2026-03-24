@@ -582,7 +582,11 @@ function _renderPCS(postId) {
   }
 
   var whatsappHtml = '';
-  if (post.caption) {
+  var showWA = post.caption &&
+    stageLC === 'awaiting_approval' &&
+    (typeof isPostStale === 'function' ? isPostStale(post) : true);
+
+  if (showWA) {
     whatsappHtml = '<div style="padding:10px 18px 12px;' +
       'background:rgba(37,211,102,0.04);' +
       'border-top:1px solid rgba(37,211,102,0.1);' +
