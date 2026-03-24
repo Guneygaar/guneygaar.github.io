@@ -644,7 +644,7 @@ function _renderPCS(postId) {
       '</div>';
   }
 
-  if (elFields)   elFields.innerHTML = _buildInfoGrid(post, canEdit, id) + captionHtml + _buildNotes(post, canEdit, id) + whatsappHtml + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
+  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
 
   // Stage advance button
   _renderAdvanceButton(stageLC);
