@@ -188,6 +188,7 @@ stopDraftAutosave();
 
 var captionEl = document.getElementById('new-post-caption');
 if (captionEl) captionEl.value = '';
+_newPostAssetFiles = [];
 if (typeof clearPostAsset === 'function') clearPostAsset();
 
 var _npoClose = document.getElementById('new-post-overlay');
@@ -253,14 +254,18 @@ if (postLink) {
     payload.canva_link = postLink;
   }
 }
-var assetFile = document.getElementById('new-post-asset') &&
-                document.getElementById('new-post-asset').files[0];
-if (assetFile && typeof uploadPostAsset === 'function') {
-  try {
-    var assetUrl = await uploadPostAsset(assetFile, payload.post_id);
-    if (assetUrl) payload.image = assetUrl;
-  } catch (uploadErr) {
-    console.warn('[ASSET] Upload failed, continuing without image:', uploadErr);
+if (_newPostAssetFiles.length && typeof uploadPostAsset === 'function') {
+  var uploadedUrls = [];
+  for (var fi = 0; fi < _newPostAssetFiles.length; fi++) {
+    try {
+      var url = await uploadPostAsset(_newPostAssetFiles[fi], payload.post_id);
+      if (url) uploadedUrls.push(url);
+    } catch (uploadErr) {
+      console.warn('[ASSET] Upload failed for file', fi, uploadErr);
+    }
+  }
+  if (uploadedUrls.length) {
+    payload.images = uploadedUrls;
   }
 }
 
@@ -299,39 +304,63 @@ if (createBtn) createBtn.disabled = false;
 }
 }
 
+var _newPostAssetFiles = [];
+
 function _initPostAssetInput() {
   var input = document.getElementById('new-post-asset');
   if (!input || input._wired) return;
   input._wired = true;
   input.addEventListener('change', function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      var img      = document.getElementById('new-post-asset-img');
-      var preview  = document.getElementById('new-post-asset-preview');
-      var placeholder = document.getElementById('new-post-asset-placeholder');
-      var filename = document.getElementById('new-post-asset-filename');
-      if (img)         img.src = ev.target.result;
-      if (filename)    filename.textContent = file.name;
-      if (preview)     preview.style.display = 'block';
-      if (placeholder) placeholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    files.forEach(function(file) {
+      if (_newPostAssetFiles.length >= 20) return;
+      _newPostAssetFiles.push(file);
+    });
+    _renderNewPostAssetGrid();
   });
 }
 window._initPostAssetInput = _initPostAssetInput;
 
+function _renderNewPostAssetGrid() {
+  var grid = document.getElementById('new-post-asset-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!_newPostAssetFiles.length) {
+    grid.style.display = 'none';
+    return;
+  }
+  grid.style.display = 'flex';
+  _newPostAssetFiles.forEach(function(file, idx) {
+    var url = URL.createObjectURL(file);
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;width:80px;height:80px;flex-shrink:0;';
+    var img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:80px;height:80px;object-fit:cover;display:block;';
+    var rmBtn = document.createElement('button');
+    rmBtn.type = 'button';
+    rmBtn.textContent = 'x';
+    rmBtn.style.cssText = 'position:absolute;top:2px;right:2px;' +
+      'width:18px;height:18px;border-radius:50%;' +
+      'background:rgba(0,0,0,0.7);border:none;color:#888;' +
+      'font-size:10px;cursor:pointer;display:flex;' +
+      'align-items:center;justify-content:center;line-height:1;';
+    rmBtn.onclick = function() {
+      _newPostAssetFiles.splice(idx, 1);
+      _renderNewPostAssetGrid();
+    };
+    wrap.appendChild(img);
+    wrap.appendChild(rmBtn);
+    grid.appendChild(wrap);
+  });
+}
+window._renderNewPostAssetGrid = _renderNewPostAssetGrid;
+
 function clearPostAsset() {
-  var input       = document.getElementById('new-post-asset');
-  var img         = document.getElementById('new-post-asset-img');
-  var preview     = document.getElementById('new-post-asset-preview');
-  var placeholder = document.getElementById('new-post-asset-placeholder');
-  var filename    = document.getElementById('new-post-asset-filename');
-  if (input)       input.value = '';
-  if (img)         img.src = '';
-  if (filename)    filename.textContent = '';
-  if (preview)     preview.style.display = 'none';
-  if (placeholder) placeholder.style.display = 'block';
+  _newPostAssetFiles = [];
+  var input = document.getElementById('new-post-asset');
+  if (input) input.value = '';
+  _renderNewPostAssetGrid();
 }
 window.clearPostAsset = clearPostAsset;
