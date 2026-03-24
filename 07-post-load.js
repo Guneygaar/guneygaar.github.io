@@ -3505,56 +3505,226 @@ function renderClientView() {
   try { _renderClientViewInner(); } catch(e) { console.error('[PCS] renderClientView crash:', e); }
 }
 function _renderClientViewInner() {
-  const inputPosts = allPosts.filter(p => p.stage === 'awaiting_brand_input');
-  const inputCount = document.getElementById('client-input-count');
-  if (inputCount) inputCount.textContent = inputPosts.length;
-  const inputItems = document.getElementById('client-input-items');
+  var h = new Date().getHours();
+  var timeOfDay = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+  var clientName = (localStorage.getItem('hinglish_email') || 'there').split('@')[0];
+  clientName = clientName.charAt(0).toUpperCase() + clientName.slice(1);
+
+  // CHANGE 2 - Header
+  var headerEl = document.getElementById('client-header');
+  if (headerEl) {
+    headerEl.innerHTML =
+      '<div style="display:flex;align-items:center;' +
+      'justify-content:space-between;padding:13px 18px;' +
+      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<div style="font-family:var(--mono);font-size:13px;' +
+      'color:var(--c-gold);letter-spacing:0.08em;">srtd.io</div>' +
+      '<button style="font-family:var(--mono);font-size:8px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:var(--c-gold);background:transparent;' +
+      'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
+      'cursor:pointer;" onclick="scrollToNewRequest()">+ New Request</button>' +
+      '</div>';
+  }
+
+  // CHANGE 3 - Greeting
+  var greetEl = document.getElementById('client-greeting');
+  if (greetEl) {
+    greetEl.innerHTML =
+      '<div style="padding:10px 18px;' +
+      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<div style="font-family:var(--sans);font-size:13px;' +
+      'color:#777;">Good ' + esc(timeOfDay) + ', ' +
+      '<span style="color:var(--c-gold);font-weight:500;">' +
+      esc(clientName) + '</span></div></div>';
+  }
+
+  // Input needed section
+  var inputPosts = allPosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; });
+
+  // CHANGE 4 - Input eyebrow
+  var inputEyebrow = document.getElementById('client-input-eyebrow');
+  if (inputEyebrow) {
+    inputEyebrow.innerHTML =
+      '<div style="display:flex;align-items:center;' +
+      'justify-content:space-between;padding:8px 18px;' +
+      'font-family:var(--mono);font-size:7px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;' +
+      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<span>Input Needed</span>' +
+      '<span style="font-size:8px;color:var(--c-amber);' +
+      'border:1px solid rgba(246,166,35,0.25);' +
+      'padding:1px 6px;">' + inputPosts.length + '</span></div>';
+  }
+
+  // CHANGE 7 - Input request cards
+  var inputItems = document.getElementById('client-input-items');
   if (inputItems) {
-    if (!inputPosts.length) { inputItems.innerHTML = `<div class="empty-state"><div class="empty-icon">?</div><p>All clear - nothing needed from you right now.</p></div>`; }
-    else {
-      inputItems.innerHTML = inputPosts.map(p => {
-        const id   = getPostId(p);
-        const days = daysInStage(p);
-        const sl   = staleLabel(days, p.stage);
-        const sc   = staleClass(days);
-        const waitingHtml = sl ? `<div class="client-item-waiting ${sc}">Waiting ${sl} - we need your input</div>` : `<div class="client-item-waiting amber">Waiting for your input</div>`;
-        return `<div class="client-input-item"><div class="client-item-title">${esc(getTitle(p))}</div><div class="client-item-need">${esc(p.comments||'We need your input to move this post forward.')}</div>${waitingHtml}<div class="client-item-actions"><label class="btn-client-upload" id="upload-label-${esc(id)}">? Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, '${esc(id)}')"></label><button class="btn-client-ack" onclick="clientAcknowledge('${esc(id)}')">I'll send it on WhatsApp</button></div><div id="upload-confirm-${esc(id)}"></div></div>`;
+    if (!inputPosts.length) {
+      inputItems.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07);">All clear</div>';
+    } else {
+      inputItems.innerHTML = inputPosts.map(function(p) {
+        var id   = getPostId(p);
+        var days = daysInStage(p);
+        var barCls = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
+        var statusCls = barCls;
+        var statusText = days >= 1 ? days + 'd waiting' : 'New';
+        var pillar = (p.contentPillar || '').toUpperCase();
+        var owner = (p.owner || '').toUpperCase();
+        var metaText = [pillar, owner].filter(Boolean).join(' / ');
+
+        return '<div class="cp-card">' +
+          '<div class="cp-bar ' + barCls + '"></div>' +
+          '<div class="cp-body">' +
+            '<div class="cp-status ' + statusCls + '">Waiting for your input &middot; ' + statusText + '</div>' +
+            '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
+            '<div class="cp-meta">' + esc(metaText) + '</div>' +
+            '<div class="cp-need-label">What we need</div>' +
+            '<div class="cp-need-text">' + esc(p.comments || 'We need your input to move this post forward.') + '</div>' +
+            '<div class="cp-actions">' +
+              '<label style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-amber);background:transparent;border:1px solid rgba(246,166,35,0.3);padding:9px 0;flex:1;cursor:pointer;text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
+              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#444;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:9px 0;flex:1;cursor:pointer;" onclick="clientAcknowledge(\'' + esc(id) + '\')">Send on WhatsApp</button>' +
+            '</div>' +
+            '<div id="upload-confirm-' + esc(id) + '"></div>' +
+          '</div></div>';
       }).join('');
     }
   }
-  const approvalPosts = allPosts.filter(p => p.stage === 'awaiting_approval');
-  const approvalCount = document.getElementById('client-approval-count');
-  if (approvalCount) approvalCount.textContent = approvalPosts.length;
-  const approvalItems = document.getElementById('client-approval-items');
+
+  // Approval section
+  var approvalPosts = allPosts.filter(function(p) { return p.stage === 'awaiting_approval'; });
+
+  // CHANGE 4 - Approval eyebrow
+  var approvalEyebrow = document.getElementById('client-approval-eyebrow');
+  if (approvalEyebrow) {
+    approvalEyebrow.innerHTML =
+      '<div style="display:flex;align-items:center;' +
+      'justify-content:space-between;padding:8px 18px;' +
+      'font-family:var(--mono);font-size:7px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;' +
+      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<span>Awaiting Approval</span>' +
+      '<span style="font-size:8px;color:var(--c-amber);' +
+      'border:1px solid rgba(246,166,35,0.25);' +
+      'padding:1px 6px;">' + approvalPosts.length + '</span></div>';
+  }
+
+  // CHANGE 5 - Approval post cards
+  var approvalItems = document.getElementById('client-approval-items');
   if (approvalItems) {
-    if (!approvalPosts.length) { approvalItems.innerHTML = `<div class="empty-state"><div class="empty-icon">?</div><p>Nothing waiting for approval right now.</p></div>`; }
-    else {
-      approvalItems.innerHTML = approvalPosts.map(p => {
-        const id          = getPostId(p);
-        const postLink    = getPostLink(p);
-        const approvalUrl = `${window.location.origin}/p/${id}`;
-        const waText      = encodeURIComponent(`LinkedIn post ready for review\n\nPreview and approve here:\n${approvalUrl}\n\nTakes 5 seconds.`);
-        const waLink      = `https://wa.me/?text=${waText}`;
-        const preview     = postLink ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" style="display:block;width:100%;height:100px;background:var(--surface3);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;margin-bottom:var(--sp-3)">View Post Design ^</a>` : `<div class="approval-item-preview">No preview - review brief above</div>`;
-        return `<div class="client-approval-item" id="apv-item-${esc(id)}"><div class="client-item-title" style="margin-bottom:var(--sp-3)">${esc(getTitle(p))}</div>${preview}<div class="approval-item-actions"><button class="btn-approve-green" onclick="clientApprove('${esc(id)}', this)">OK Approve</button><button class="btn-revise-outline" onclick="showChangeInput('${esc(id)}')">? Changes</button></div><div class="change-input-wrap" id="change-wrap-${esc(id)}"><textarea class="change-textarea" id="change-text-${esc(id)}" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea><button class="btn-send-changes" onclick="submitClientChanges('${esc(id)}')">Send Change Request</button></div><div class="approval-confirmed" id="approved-confirm-${esc(id)}">OK Approved! The team has been notified.</div><a href="${waLink}" target="_blank" rel="noopener" class="btn-whatsapp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>Share on WhatsApp</a></div>`;
+    if (!approvalPosts.length) {
+      approvalItems.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07);">Nothing to approve</div>';
+    } else {
+      approvalItems.innerHTML = approvalPosts.map(function(p) {
+        var id       = getPostId(p);
+        var days     = daysInStage(p);
+        var barCls   = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
+        var statusCls = barCls;
+        var statusText = days >= 3 ? days + 'd waiting - oldest in queue' : days >= 1 ? days + 'd waiting' : 'New';
+        var pillar = (p.contentPillar || '').toUpperCase();
+        var owner  = (p.owner || '').toUpperCase();
+        var metaText = [pillar, owner].filter(Boolean).join(' / ');
+        var postLink = getPostLink(p);
+        var approvalUrl = window.location.origin + '/p/' + id;
+        var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
+        var waLink = 'https://wa.me/?text=' + waText;
+
+        var previewHtml = postLink
+          ? '<a href="' + esc(postLink) + '" target="_blank" rel="noopener" class="cp-preview" style="text-decoration:none;"><span class="cp-preview-text">View Post Design ^</span></a>'
+          : '<div class="cp-preview"><span class="cp-preview-text">View Post Design ^</span></div>';
+
+        return '<div class="cp-card" id="apv-item-' + esc(id) + '">' +
+          '<div class="cp-bar ' + barCls + '"></div>' +
+          '<div class="cp-body">' +
+            '<div class="cp-status ' + statusCls + '">' + esc(statusText) + '</div>' +
+            '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
+            '<div class="cp-meta">' + esc(metaText) + '</div>' +
+            previewHtml +
+            '<div class="cp-actions">' +
+              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green);background:transparent;border:1px solid rgba(62,207,142,0.3);padding:9px 0;flex:1;cursor:pointer;" onclick="clientApprove(\'' + esc(id) + '\', this)">Approve</button>' +
+              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#666;background:transparent;border:1px solid rgba(255,255,255,0.08);padding:9px 0;flex:1;cursor:pointer;" onclick="showChangeInput(\'' + esc(id) + '\')">Changes</button>' +
+            '</div>' +
+            '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
+              '<textarea class="change-textarea" id="change-text-' + esc(id) + '" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea>' +
+              '<button class="btn-send-changes" onclick="submitClientChanges(\'' + esc(id) + '\')">Send Change Request</button>' +
+            '</div>' +
+            '<div class="approval-confirmed" id="approved-confirm-' + esc(id) + '">Approved - the team has been notified.</div>' +
+            '<a href="' + esc(waLink) + '" target="_blank" rel="noopener" style="display:block;font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#444;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:9px 0;width:100%;margin-top:8px;text-align:center;text-decoration:none;cursor:pointer;">Share on WhatsApp</a>' +
+          '</div></div>';
       }).join('');
     }
   }
+
+  // CHANGE 8 - New Request section
+  var reqEyebrow = document.getElementById('client-request-eyebrow');
+  if (reqEyebrow) {
+    reqEyebrow.innerHTML =
+      '<div style="display:flex;align-items:center;' +
+      'padding:8px 18px;font-family:var(--mono);font-size:7px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;' +
+      'color:var(--c-gold);' +
+      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      'New Request</div>';
+  }
+
+  var reqForm = document.getElementById('client-request-form');
+  if (reqForm && !reqForm.dataset.init) {
+    reqForm.dataset.init = '1';
+    reqForm.innerHTML =
+      '<div style="padding:12px 18px;">' +
+        '<div class="cp-form-field" style="padding:0;">' +
+          '<label class="cp-form-label" for="req-topic">What do you want to post about? *</label>' +
+          '<textarea id="req-topic" rows="3" class="cp-form-input" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>' +
+        '</div>' +
+        '<div class="cp-form-field" style="padding:0;">' +
+          '<label class="cp-form-label" for="req-date">Any specific date in mind?</label>' +
+          '<input type="date" id="req-date" class="cp-form-input">' +
+        '</div>' +
+        '<div class="cp-form-field" style="padding:0;">' +
+          '<label class="cp-form-label" for="req-ref">Reference images or links</label>' +
+          '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
+          '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
+        '</div>' +
+        '<button id="req-submit-btn" onclick="submitClientRequest()" style="width:100%;font-family:var(--mono);font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--c-gold);background:transparent;border:1px solid rgba(200,168,75,0.4);padding:12px 0;cursor:pointer;">Send Request</button>' +
+      '</div>';
+  }
+
   renderClientApproved();
 }
 
 function renderClientApproved() {
-  // Hide published section on Client home  -  still visible in Library
-  const pubSection = document.getElementById('client-published-section');
+  // Hide published section on Client home - still visible in Library
+  var pubSection = document.getElementById('client-published-section');
   if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
   if (pubSection) pubSection.style.display = '';
-  const published = allPosts.filter(p => p.stage === 'published');
-  const label     = document.getElementById('client-approved-label');
-  if (label) label.textContent = published.length;
-  const tbody = document.getElementById('client-approved-tbody');
-  if (!tbody) return;
-  if (!published.length) { tbody.innerHTML = `<tr><td colspan="3"><div class="empty-state"><div class="empty-icon">?</div><p>No published posts yet.</p></div></td></tr>`; return; }
-  tbody.innerHTML = published.map(p => { const link = getPostLink(p); return `<tr><td>${esc(getTitle(p))}</td><td class="mono">${displayDate(p.targetDate)}</td><td class="post-link-cell">${link?`<a href="${esc(link)}" target="_blank" rel="noopener">^ View</a>`:'-'}</td></tr>`; }).join('');
+  var published = allPosts.filter(function(p) { return p.stage === 'published'; });
+
+  // Eyebrow
+  var pubEyebrow = document.getElementById('client-published-eyebrow');
+  if (pubEyebrow) {
+    pubEyebrow.innerHTML =
+      '<div style="display:flex;align-items:center;' +
+      'justify-content:space-between;padding:8px 18px;' +
+      'font-family:var(--mono);font-size:7px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;' +
+      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      '<span>Published</span>' +
+      '<span style="font-size:8px;color:var(--c-amber);' +
+      'border:1px solid rgba(246,166,35,0.25);' +
+      'padding:1px 6px;">' + published.length + '</span></div>';
+  }
+
+  var wrap = document.getElementById('client-approved-tbody-wrap');
+  if (!wrap) return;
+  if (!published.length) {
+    wrap.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;">No published posts yet</div>';
+    return;
+  }
+  wrap.innerHTML = '<table class="cp-pub-table"><thead><tr><th>Post</th><th>Published</th><th>View</th></tr></thead><tbody>' +
+    published.map(function(p) {
+      var link = getPostLink(p);
+      return '<tr><td>' + esc(getTitle(p)) + '</td><td class="mono">' + displayDate(p.targetDate) + '</td><td>' + (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">View</a>' : '-') + '</td></tr>';
+    }).join('') + '</tbody></table>';
 }
 
 // -- Production Tracker ----------
