@@ -3516,8 +3516,10 @@ function _renderClientViewInner() {
 
   var h = new Date().getHours();
   var timeOfDay = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-  var clientName = (localStorage.getItem('hinglish_email') || 'there').split('@')[0];
-  clientName = clientName.charAt(0).toUpperCase() + clientName.slice(1);
+  var greetName = window.currentUserName ||
+    window.currentUser?.name ||
+    (window.currentUserEmail || localStorage.getItem('hinglish_email') || 'there').split('@')[0];
+  var clientName = greetName.charAt(0).toUpperCase() + greetName.slice(1);
 
   // CHANGE 2 - Header
   var headerEl = document.getElementById('client-header');
@@ -3584,16 +3586,16 @@ function _renderClientViewInner() {
         var barCls = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
         var statusCls = barCls;
         var statusText = days >= 1 ? days + 'd waiting' : 'New';
-        var pillar = (p.contentPillar || '').toUpperCase();
-        var owner = (p.owner || '').toUpperCase();
-        var metaText = [pillar, owner].filter(Boolean).join(' / ');
+        var metaLocation = (p.location || '').toUpperCase();
+        var metaPillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
+        var metaLine = metaPillar + (metaLocation ? ' / ' + metaLocation : '');
 
         return '<div class="cp-card">' +
           '<div class="cp-bar ' + barCls + '"></div>' +
           '<div class="cp-body">' +
             '<div class="cp-status ' + statusCls + '">Waiting for your input &middot; ' + statusText + '</div>' +
             '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
-            '<div class="cp-meta">' + esc(metaText) + '</div>' +
+            '<div class="cp-meta">' + esc(metaLine) + '</div>' +
             '<div class="cp-need-label">What we need</div>' +
             '<div class="cp-need-text">' + esc(p.comments || 'We need your input to move this post forward.') + '</div>' +
             '<div class="cp-actions">' +
@@ -3636,9 +3638,9 @@ function _renderClientViewInner() {
         var barCls   = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
         var statusCls = barCls;
         var statusText = days >= 3 ? days + 'd waiting - oldest in queue' : days >= 1 ? days + 'd waiting' : 'New';
-        var pillar = (p.contentPillar || '').toUpperCase();
-        var owner  = (p.owner || '').toUpperCase();
-        var metaText = [pillar, owner].filter(Boolean).join(' / ');
+        var metaLocation = (p.location || '').toUpperCase();
+        var metaPillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
+        var metaLine = metaPillar + (metaLocation ? ' / ' + metaLocation : '');
         var approvalUrl = window.location.origin + '/p/' + id;
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
@@ -3652,7 +3654,7 @@ function _renderClientViewInner() {
             imgs.map(function(url, idx) {
               return '<div style="flex-shrink:0;width:90px;height:90px;' +
                 'background:#111;overflow:hidden;">' +
-                '<img src="' + url + '" loading="eager" width="90" height="90" ' +
+                '<img src="' + url + '" loading="lazy" decoding="async" width="90" height="90" ' +
                 'style="width:90px;height:90px;object-fit:cover;display:block;"></div>';
             }).join('') +
             '</div>';
@@ -3685,7 +3687,7 @@ function _renderClientViewInner() {
           '<div class="cp-body">' +
             '<div class="cp-status ' + statusCls + '">' + esc(statusText) + '</div>' +
             '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
-            '<div class="cp-meta">' + esc(metaText) + '</div>' +
+            '<div class="cp-meta">' + esc(metaLine) + '</div>' +
             imgStripHtml +
             capHtml +
             '<div class="cp-actions" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);">' +
