@@ -3953,7 +3953,7 @@ function _renderClientViewInner() {
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'color:#F6A623;background:none;border:none;cursor:pointer;">Remove</button>' +
       '</div></div>' +
-      '<input type="file" id="req-file" accept="image/*" style="display:none;" ' +
+      '<input type="file" id="req-file" accept="image/*" multiple style="display:none;" ' +
       'onchange="_reqPreviewFile(this)">' +
       '</div>' +
 
@@ -4041,20 +4041,22 @@ function _reqSetUrgency(el, type) {
 window._reqSetUrgency = _reqSetUrgency;
 
 function _reqPreviewFile(input) {
-  var file = input.files[0];
-  if (!file) return;
+  var files = Array.from(input.files);
+  if (!files.length) return;
+  var area = document.getElementById('req-upload-area');
+  var preview = document.getElementById('req-upload-preview');
+  var img = document.getElementById('req-preview-img');
+  var name = document.getElementById('req-preview-name');
   var reader = new FileReader();
   reader.onload = function(e) {
-    var img = document.getElementById('req-preview-img');
-    var name = document.getElementById('req-preview-name');
-    var area = document.getElementById('req-upload-area');
-    var preview = document.getElementById('req-upload-preview');
     if (img) img.src = e.target.result;
-    if (name) name.textContent = file.name;
     if (area) area.style.display = 'none';
     if (preview) preview.style.display = 'block';
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(files[0]);
+  if (name) name.textContent = files.length === 1
+    ? files[0].name
+    : files.length + ' photos selected';
 }
 window._reqPreviewFile = _reqPreviewFile;
 
