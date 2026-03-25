@@ -3751,7 +3751,8 @@ function _renderClientViewInner() {
             '<div onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
             'style="cursor:pointer;overflow:hidden;">' +
             '<img src="' + hero + '" loading="eager" decoding="async" ' +
-            'style="width:100%;height:220px;object-fit:cover;display:block;">' +
+            'style="aspect-ratio:1/1;width:100%;object-fit:cover;height:auto;display:block;cursor:pointer;" ' +
+            'onclick="event.stopPropagation();_edOpenLightbox(\'' + esc(p.post_id) + '\',0)">' +
             '</div>'
             :
             (p.caption
@@ -4523,7 +4524,8 @@ function _openClientEditorial(postId) {
     // Hero image
     (hero ?
       '<img src="' + hero + '" style="width:100%;max-height:280px;' +
-      'object-fit:cover;display:block;" loading="eager">'
+      'object-fit:cover;display:block;cursor:pointer;" loading="eager" ' +
+      'onclick="_edOpenLightbox(\'' + postId + '\',0)">'
       : '') +
 
     // Body
