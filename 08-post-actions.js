@@ -252,8 +252,9 @@ async function submitClientRequest() {
     return;
   }
   var btn       = document.getElementById('req-submit-btn');
-  var fileInput = document.getElementById('req-file');
-  var files = fileInput ? Array.from(fileInput.files) : [];
+  var files = (window._reqStoredFiles || []).filter(function(f) {
+    return f !== null;
+  });
   if (btn) btn.disabled = true;
   try {
     const postId = 'REQ-' + Date.now();
