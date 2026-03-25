@@ -188,7 +188,8 @@ setTimeout(() => document.getElementById('new-post-title')?.focus(), 60);
 
 function closeNewPostModal(e) {
 
-saveDraft();
+clearDraft();
+localStorage.removeItem('hinglish_new_post_draft');
 stopDraftAutosave();
 
 var captionEl = document.getElementById('new-post-caption');
@@ -287,10 +288,34 @@ body: JSON.stringify(payload)
 
 console.log('[submitNewPost] API SUCCESS');
 clearDraft();
+localStorage.removeItem('hinglish_new_post_draft');
 stopDraftAutosave();
-closeNewPostModal();
+
+// Show success screen before closing
+var npo = document.getElementById('new-post-overlay');
+var _npoOriginalHTML = npo ? npo.innerHTML : '';
+if (npo) {
+  npo.innerHTML =
+    '<div style="position:fixed;inset:0;z-index:2001;background:#0a0a0f;' +
+    'display:flex;flex-direction:column;align-items:center;' +
+    'justify-content:center;gap:14px;">' +
+    '<div style="font-size:32px;color:#3ECF8E;line-height:1;">&#x2713;</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+    'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Post created.</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.18em;text-transform:uppercase;color:#555;">' +
+    'It\'s now in production.</div>' +
+    '</div>';
+  npo.style.display = 'flex';
+}
+
 await loadPosts();
-showToast('Post created', 'success');
+
+setTimeout(function() {
+  // Restore original form DOM before closing
+  if (npo && _npoOriginalHTML) npo.innerHTML = _npoOriginalHTML;
+  closeNewPostModal();
+}, 2000);
 
 } catch (err) {
 
