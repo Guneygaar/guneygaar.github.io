@@ -4299,11 +4299,38 @@ function _openClientEditorial(postId) {
 
     '</div>' +
 
-    // Second image
-    (img2 ?
-      '<img src="' + img2 + '" style="width:100%;max-height:220px;' +
-      'object-fit:cover;display:block;margin-bottom:28px;" loading="eager">'
-      : '') +
+    // Image gallery strip with dots
+    (imgs.length > 1 ?
+    '<div style="padding:0 0 24px;">' +
+
+    '<div style="display:flex;align-items:center;justify-content:space-between;' +
+    'padding:0 22px 8px;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#555;">' +
+    'All Photos</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#F6A623;">' +
+    imgs.length + ' photos &#x2192;</div>' +
+    '</div>' +
+
+    '<div style="display:flex;gap:2px;overflow-x:auto;' +
+    'scrollbar-width:none;-webkit-overflow-scrolling:touch;' +
+    'padding-left:22px;">' +
+    imgs.map(function(url,i){
+      return '<img src="'+url+'" loading="lazy" decoding="async" '+
+      'style="flex-shrink:0;width:100px;height:100px;object-fit:cover;'+
+      'display:block;opacity:'+(i===0?'1':'0.55')+';">';
+    }).join('') +
+    '<div style="flex-shrink:0;width:22px;"></div>' +
+    '</div>' +
+
+    '<div style="display:flex;justify-content:center;gap:5px;padding:10px 0 0;">' +
+    imgs.map(function(u,i){
+      return '<div style="width:5px;height:5px;border-radius:50%;background:'+
+      (i===0?'#e8e2d9':'#2a2a2a')+'"></div>';
+    }).join('') +
+    '</div></div>'
+    : '') +
 
     // Footer
     '<div style="padding:0 22px 44px;max-width:390px;margin:0 auto;">' +
