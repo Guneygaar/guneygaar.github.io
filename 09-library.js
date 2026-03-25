@@ -1241,6 +1241,11 @@ function libOpenCard(postId) {
 
 // --------------- show library tab ---------------
 function showLibrary() {
+  var _libIsClient = (window.effectiveRole || '').toLowerCase() === 'client';
+  if (_libIsClient) {
+    if (typeof switchTab === 'function') switchTab('tasks');
+    return;
+  }
   var appHdr = document.querySelector('.app-header');
   if (appHdr) appHdr.style.display = 'none';
   var insightsView = document.getElementById('insights-view');

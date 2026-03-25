@@ -144,6 +144,7 @@ async function resolveRoleFromToken(accessToken, email) {
     }
     var userName = Array.isArray(roleData) && roleData[0]?.name;
     if (userName) window.currentUserName = userName;
+    if (userName) localStorage.setItem('hinglish_name', userName);
     window.currentUserEmail = email;
     localStorage.setItem('hinglish_role', role);
     localStorage.setItem('hinglish_email', email);
