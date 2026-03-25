@@ -3697,11 +3697,18 @@ function _renderClientViewInner() {
       'Awaiting Your Approval</span>' +
       '</div>' +
 
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
-      'font-weight:600;color:#e8e2d9;line-height:1.2;margin-bottom:10px;' +
-      'letter-spacing:-0.01em;">' +
-      approvalPosts.length + ' posts are<br>waiting for your OK' +
-      '</div>' +
+      (function() {
+        var countColor = '#e8e2d9';
+        if (approvalPosts.length >= 13) countColor = '#FF4B4B';
+        else if (approvalPosts.length >= 8) countColor = '#FF8C00';
+        else if (approvalPosts.length >= 4) countColor = '#F6A623';
+        return '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+        'font-weight:600;color:#e8e2d9;line-height:1.2;margin-bottom:10px;' +
+        'letter-spacing:-0.01em;">' +
+        '<span style="color:' + countColor + ';">' +
+        approvalPosts.length + '</span> posts are<br>waiting for your OK' +
+        '</div>';
+      })() +
 
       (function() {
         var now = Date.now();
@@ -3714,13 +3721,13 @@ function _renderClientViewInner() {
         var overdue = waitTimes.filter(function(d) { return d >= 5; }).length;
         var deckHtml =
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.1em;color:#aaa;">Oldest waiting: </span>' +
+          'letter-spacing:0.1em;color:#999;">Oldest waiting: </span>' +
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
           'letter-spacing:0.1em;color:#F6A623;font-weight:500;">' + oldest + ' days</span>';
         if (overdue > 0) {
           deckHtml +=
             '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-            'letter-spacing:0.1em;color:#aaa;"> &nbsp;&nbsp; </span>' +
+            'letter-spacing:0.1em;color:#999;"> &nbsp;&middot;&nbsp; </span>' +
             '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
             'letter-spacing:0.1em;color:#FF4B4B;font-weight:500;">' +
             overdue + ' overdue</span>';
