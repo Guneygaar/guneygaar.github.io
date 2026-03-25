@@ -684,6 +684,32 @@ function _renderPCS(postId) {
       'letter-spacing:0.14em;text-transform:uppercase;color:#25D366;' +
       'background:transparent;border:1px solid rgba(37,211,102,0.25);' +
       'padding:11px 0;cursor:pointer;">Share on WhatsApp</button>' +
+      (function(){
+        var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
+        var _copyHtml = _isDesktop ?
+          '<button onclick="(function(){' +
+          'var post=(typeof getPostById===\'function\')?getPostById(\'' + postId + '\'):null;' +
+          'if(!post)return;' +
+          'var slug=(post.title||\'\').toLowerCase()' +
+          '.replace(/[^a-z0-9\\s]/g,\' \').trim()' +
+          '.replace(/\\s+/g,\'-\').replace(/-+/g,\'-\').slice(0,50);' +
+          'var msg=(post.title||\'\')+\'\\n\\n\'+(post.caption||\'\')+' +
+          '\'\\n\\nApprove: https://srtd.io/ok/?p=\'+slug+' +
+          '\'\\nChanges: https://srtd.io/no/?p=\'+slug;' +
+          'navigator.clipboard.writeText(msg).then(function(){' +
+          'var b=document.getElementById(\'pcs-copy-btn\');' +
+          'if(b){b.textContent=\'Copied\';' +
+          'setTimeout(function(){b.textContent=\'\u2398 Copy to Share\';},2000);}' +
+          '});' +
+          '})()" id="pcs-copy-btn" ' +
+          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
+          'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
+          'padding:10px 0;cursor:pointer;margin-top:6px;">' +
+          '\u2398 Copy to Share</button>'
+          : '';
+        return _copyHtml;
+      })() +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'color:#333;letter-spacing:0.06em;margin-top:6px;text-align:center;">' +
       'Sends copy + approval link to client</div>' +
