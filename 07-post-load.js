@@ -3753,48 +3753,53 @@ function _renderClientViewInner() {
           ? Math.floor((now - new Date(p.status_changed_at).getTime()) / 86400000)
           : 0;
 
-        var dividerColor, dividerBg, dividerLabel;
+        var badgeColor, badgeBorder, badgeBg, badgeText;
         if (daysWaiting >= 5) {
-          dividerColor = '#FF4B4B';
-          dividerBg = 'rgba(255,75,75,0.25)';
-          dividerLabel = 'Waiting ' + daysWaiting + ' days';
+          badgeColor = '#FF4B4B';
+          badgeBorder = 'rgba(255,75,75,0.4)';
+          badgeBg = 'rgba(255,75,75,0.06)';
+          badgeText = daysWaiting + ' days';
         } else if (daysWaiting >= 2) {
-          dividerColor = '#F6A623';
-          dividerBg = 'rgba(246,166,35,0.25)';
-          dividerLabel = 'Waiting ' + daysWaiting + ' days';
+          badgeColor = '#F6A623';
+          badgeBorder = 'rgba(246,166,35,0.4)';
+          badgeBg = 'rgba(246,166,35,0.06)';
+          badgeText = daysWaiting + ' days';
         } else if (daysWaiting === 1) {
-          dividerColor = '#F6A623';
-          dividerBg = 'rgba(246,166,35,0.15)';
-          dividerLabel = 'Sent yesterday';
+          badgeColor = '#F6A623';
+          badgeBorder = 'rgba(246,166,35,0.3)';
+          badgeBg = 'rgba(246,166,35,0.04)';
+          badgeText = 'Yesterday';
         } else {
-          dividerColor = '#3ECF8E';
-          dividerBg = 'rgba(62,207,142,0.2)';
-          dividerLabel = 'Sent today';
+          badgeColor = '#3ECF8E';
+          badgeBorder = 'rgba(62,207,142,0.4)';
+          badgeBg = 'rgba(62,207,142,0.06)';
+          badgeText = 'Today';
         }
 
-        var divider =
-          '<div style="display:flex;align-items:center;gap:10px;' +
-          'padding:10px 18px 6px;">' +
-          '<div style="flex:1;height:1px;background:' + dividerBg + ';"></div>' +
+        var cardHeader =
+          '<div style="padding:12px 16px 10px 20px;">' +
+          '<div style="display:flex;align-items:flex-start;' +
+          'justify-content:space-between;gap:10px;margin-bottom:4px;">' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
+          'font-weight:600;color:#e8e2d9;line-height:1.25;flex:1;min-width:0;">' +
+          esc(p.title || '') + '</div>' +
           '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.16em;text-transform:uppercase;' +
-          'color:' + dividerColor + ';font-weight:500;white-space:nowrap;">' +
-          dividerLabel + '</div>' +
-          '<div style="flex:1;height:1px;background:' + dividerBg + ';"></div>' +
+          'letter-spacing:0.12em;text-transform:uppercase;padding:3px 8px;' +
+          'border:1px solid ' + badgeBorder + ';background:' + badgeBg + ';' +
+          'color:' + badgeColor + ';white-space:nowrap;flex-shrink:0;' +
+          'margin-top:3px;font-weight:500;">' + badgeText + '</div>' +
+          '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.12em;text-transform:uppercase;color:#888;' +
+          'line-height:1.4;word-break:break-word;">' +
+          esc((p.content_pillar || p.contentPillar || '').toUpperCase()) +
+          ((p.location) ? ' \xB7 ' + esc(p.location.toUpperCase()) : '') +
+          '</div>' +
           '</div>';
 
         var id = getPostId(p);
         var imgs = Array.isArray(p.images) ? p.images : [];
         var hero = imgs[0] || '';
-        var _pillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
-        var _loc = (p.location || '').toUpperCase();
-        var metaLine = _pillar + (_loc ? ' &#xB7; ' + _loc : '');
-        var isNew = !p.status_changed_at ||
-          (Date.now() - new Date(p.status_changed_at).getTime()) < 86400000;
-        var badgeLabel = isNew ? 'New' : 'Review Pending';
-        var badgeStyle = isNew
-          ? 'color:#C8A84B;background:rgba(200,168,75,0.1);border:1px solid rgba(200,168,75,0.25);'
-          : 'color:#555;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);';
         var _rawSlug = (p.title || '').toLowerCase()
           .replace(/[^a-z0-9\s]/g, ' ')
           .trim()
@@ -3810,25 +3815,10 @@ function _renderClientViewInner() {
         );
         var waLink = 'https://wa.me/?text=' + waText;
 
-        return divider + '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
+        return '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
           'background:#0a0a0a;margin-bottom:0;position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#3ECF8E;"></div>' +
-          '<div style="padding:10px 16px 0 20px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-          'letter-spacing:0.14em;text-transform:uppercase;' +
-          'display:inline-block;padding:3px 7px;' + badgeStyle + '">' +
-          badgeLabel + '</div>' +
-          '</div>' +
-          '<div style="padding:8px 16px 0 20px;">' +
-          '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
-          'font-weight:600;color:#e8e2d9;line-height:1.25;' +
-          'letter-spacing:-0.01em;">' + esc(getTitle(p)) + '</div>' +
-          '</div>' +
-          '<div style="padding:4px 16px 12px 20px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.12em;text-transform:uppercase;color:#555;">' +
-          metaLine + '</div>' +
-          '</div>' +
+          cardHeader +
           (hero
             ?
             '<div onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
@@ -3861,7 +3851,7 @@ function _renderClientViewInner() {
           'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
           'background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.4);' +
           'padding:12px 0;cursor:pointer;">Approve</button>' +
-          '<button onclick="showChangeInput(this,\'' + esc(id) + '\')" ' +
+          '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
           'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
           'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
           'background:transparent;border:1px solid rgba(255,255,255,0.15);' +
