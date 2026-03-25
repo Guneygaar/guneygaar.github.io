@@ -269,11 +269,6 @@ async function submitClientRequest() {
       created_at:  new Date().toISOString(),
       updated_at:  new Date().toISOString(),
     };
-    var reqRef = document.getElementById('req-ref');
-    if (reqRef && reqRef.value.trim()) {
-      payload.comments = (payload.comments || '') +
-        '\n\nReference: ' + reqRef.value.trim();
-    }
     // Read selected content type chip
     var selectedChip = document.querySelector(
       '#req-overlay button[style*="rgb(200, 168, 75)"]'

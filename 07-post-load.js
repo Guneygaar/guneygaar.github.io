@@ -3915,139 +3915,132 @@ function _renderClientViewInner() {
     if (existingOverlay) existingOverlay.remove();
     reqForm.dataset.init = '1';
     var html =
-      '<div style="position:fixed;inset:0;z-index:2000;background:#0a0a0f;display:none;align-items:stretch;justify-content:center;" id="req-overlay">' +
-      '<div style="width:100%;height:100dvh;display:flex;flex-direction:column;">' +
+      '<div id="req-overlay" ' +
+      'style="position:fixed;inset:0;z-index:2000;background:#080808;' +
+      'display:none;flex-direction:column;">' +
 
-      '<div style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;">New Request</div>' +
-      '<button onclick="_closeReqForm()" ' +
-      'style="font-size:16px;color:#666;background:transparent;border:none;' +
-      'cursor:pointer;width:28px;height:28px;display:flex;align-items:center;' +
-      'justify-content:center;">&#x2715;</button>' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;' +
+      'padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
+      '<div style="display:flex;align-items:baseline;gap:10px;">' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;">New Request</span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#444;">' +
+      '-- We\'ll handle everything</span>' +
       '</div>' +
-
-      '<div style="padding:14px 18px 12px;font-family:\'DM Sans\',sans-serif;' +
-      'font-size:13px;color:#888;line-height:1.5;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.07);flex-shrink:0;">' +
-      'Tell us what you want to post. We\'ll handle the writing, design, and scheduling.' +
+      '<button onclick="_closeReqForm()" ' +
+      'style="font-size:15px;color:#555;background:transparent;border:none;' +
+      'cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
 
       '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
 
-      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:8px;">' +
-      'What do you want to post about? ' +
-      '<span style="color:#FF4B4B;">*</span></div>' +
-      '<textarea id="req-topic" rows="4" ' +
-      'placeholder="e.g. Share our Q3 hiring story, announce the new distillery launch..." ' +
+      '<div style="padding:16px 18px;border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">01</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
+      'What\'s the brief? <span style="color:#FF4B4B;font-size:12px;">*</span></div>' +
+      '<textarea id="req-topic" rows="2" ' +
+      'placeholder="Write the brief here -- topic, story, key message..." ' +
+      'oninput="this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\';" ' +
       'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(200,168,75,0.3);' +
-      'color:#e8e2d9;font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'padding:8px 0 10px;outline:none;resize:none;line-height:1.6;' +
-      'caret-color:#C8A84B;">' +
-      '</textarea>' +
+      'border-bottom:1px solid rgba(200,168,75,0.25);color:#e8e2d9;' +
+      'font-family:\'DM Sans\',sans-serif;font-size:14px;padding:6px 0 8px;' +
+      'outline:none;resize:none;line-height:1.7;min-height:44px;' +
+      'caret-color:#C8A84B;overflow:hidden;"></textarea>' +
       '</div>' +
 
-      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
-      'Content type ' +
-      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
-      '(optional)</span></div>' +
+      '<div style="padding:16px 18px;border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">02</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#e8e2d9;margin-bottom:12px;line-height:1.3;">Content type</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-      ['Photo','Carousel','Video','Text'].map(function(t){
+      ['Photo','Carousel','Video','Text','Creative'].map(function(t) {
         return '<button onclick="_reqToggleChip(this)" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;' +
-        'color:#666;background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.1);padding:6px 10px;cursor:pointer;">' +
-        t + '</button>';
+        'letter-spacing:0.1em;text-transform:uppercase;color:#444;' +
+        'border:1px solid rgba(255,255,255,0.08);padding:6px 11px;' +
+        'cursor:pointer;background:transparent;">' + t + '</button>';
       }).join('') +
       '</div></div>' +
 
-      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:8px;">' +
-      'Any specific date? ' +
-      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
-      '(optional)</span></div>' +
+      '<div style="padding:16px 18px;border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">03</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#e8e2d9;margin-bottom:12px;line-height:1.3;">Target date</div>' +
       '<input type="date" id="req-date" ' +
-      'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(200,168,75,0.3);' +
-      'color:#e8e2d9;font-family:\'IBM Plex Mono\',monospace;font-size:12px;' +
-      'padding:8px 0 10px;outline:none;caret-color:#C8A84B;' +
-      'color-scheme:dark;background-image:none;">' +
+      'style="width:100%;background:transparent;' +
+      'border:none;border-bottom:1px solid rgba(255,255,255,0.1);' +
+      'color:#888;font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+      'padding:8px 0 10px;outline:none;color-scheme:dark;' +
+      'cursor:pointer;">' +
       '</div>' +
 
-      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
-      'How urgent? ' +
-      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
-      '(optional)</span></div>' +
-      '<div style="display:flex;gap:8px;">' +
-      '<button onclick="_reqSetUrgency(this,\'normal\')" id="req-urgency-normal" ' +
+      '<div style="padding:16px 18px;border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">04</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#e8e2d9;margin-bottom:12px;line-height:1.3;">Urgency</div>' +
+      '<div style="display:flex;border:1px solid rgba(255,255,255,0.08);">' +
+      '<button id="req-urgency-normal" onclick="_reqSetUrgency(this,\'normal\')" ' +
       'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#3ECF8E;' +
-      'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.3);' +
-      'padding:10px 0;cursor:pointer;">Normal</button>' +
-      '<button onclick="_reqSetUrgency(this,\'urgent\')" id="req-urgency-urgent" ' +
+      'letter-spacing:0.1em;text-transform:uppercase;' +
+      'color:#3ECF8E;background:rgba(62,207,142,0.08);' +
+      'border:none;border-right:1px solid rgba(255,255,255,0.08);' +
+      'padding:11px 0;cursor:pointer;">Normal</button>' +
+      '<button id="req-urgency-urgent" onclick="_reqSetUrgency(this,\'urgent\')" ' +
       'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#555;' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-      'padding:10px 0;cursor:pointer;">Urgent -- this week</button>' +
+      'letter-spacing:0.1em;text-transform:uppercase;' +
+      'color:#333;background:transparent;border:none;' +
+      'padding:11px 0;cursor:pointer;">Urgent -- this week</button>' +
       '</div></div>' +
 
-      '<div style="padding:14px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
-      'Reference photo ' +
-      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
-      '(optional)</span></div>' +
-      '<div id="req-upload-area" onclick="document.getElementById(\'req-file\').click()" ' +
-      'style="border:1px dashed rgba(255,255,255,0.1);padding:20px;' +
-      'text-align:center;cursor:pointer;">' +
-      '<div style="font-size:18px;color:rgba(255,255,255,0.2);margin-bottom:6px;">+</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">Tap to upload</div>' +
+      '<div style="padding:16px 18px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">05</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#e8e2d9;margin-bottom:12px;line-height:1.3;">Reference photos</div>' +
+      '<div id="req-photo-grid" ' +
+      'style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
+      '<div id="req-add-tile" ' +
+      'onclick="document.getElementById(\'req-file\').click()" ' +
+      'style="aspect-ratio:1/1;background:rgba(200,168,75,0.04);' +
+      'border:1px dashed rgba(200,168,75,0.2);display:flex;' +
+      'flex-direction:column;align-items:center;justify-content:center;' +
+      'cursor:pointer;gap:4px;">' +
+      '<div style="font-size:20px;color:rgba(200,168,75,0.4);line-height:1;">+</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'color:#444;margin-top:3px;">JPG / PNG</div>' +
-      '</div>' +
-      '<div id="req-upload-preview" style="display:none;">' +
-      '<img id="req-preview-img" src="" style="width:100%;max-height:140px;object-fit:cover;display:block;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;' +
-      'padding:5px 8px;background:rgba(0,0,0,0.5);">' +
-      '<span id="req-preview-name" style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:7px;color:#555;"></span>' +
-      '<button onclick="_reqClearUpload()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'color:#F6A623;background:none;border:none;cursor:pointer;">Remove</button>' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#444;">Add photos</div>' +
       '</div></div>' +
-      '<input type="file" id="req-file" accept="image/*" multiple style="display:none;" ' +
-      'onchange="_reqPreviewFile(this)">' +
+      '<div id="req-photo-count" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#555;margin-top:6px;">' +
+      'No photos added</div>' +
+      '<input type="file" id="req-file" accept="image/*" multiple ' +
+      'style="display:none;" onchange="_reqAddPhotos(this)">' +
       '</div>' +
 
       '</div>' +
 
-      '<div style="flex-shrink:0;padding:12px 18px 16px;' +
-      'border-top:1px solid rgba(255,255,255,0.07);background:#0a0a0f;' +
+      '<div style="flex-shrink:0;padding:12px 18px 20px;' +
+      'border-top:1px solid rgba(200,168,75,0.1);background:#080808;' +
       'display:flex;gap:10px;">' +
       '<button onclick="_closeReqForm()" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#444;' +
       'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
       'padding:13px 16px;cursor:pointer;flex-shrink:0;">Cancel</button>' +
       '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
       'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
       'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
       'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
-      'box-shadow:0 0 14px rgba(200,168,75,0.15);padding:13px 0;cursor:pointer;">&#x2192; Send Request</button>' +
+      'padding:13px 0;cursor:pointer;' +
+      'box-shadow:0 0 12px rgba(200,168,75,0.12);">&#x2192; Send Request</button>' +
       '</div>' +
 
-      '</div>' +
       '</div>';
     var existing = document.getElementById('req-overlay');
     if (existing) existing.remove();
@@ -4073,17 +4066,25 @@ function _closeReqForm() {
   // Reset chips
   var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
   chips.forEach(function(c) {
-    c.style.color = '#666';
+    c.style.color = '#444';
     c.style.background = 'transparent';
-    c.style.borderColor = 'rgba(255,255,255,0.1)';
+    c.style.borderColor = 'rgba(255,255,255,0.08)';
   });
   // Reset urgency to normal
   if (typeof _reqSetUrgency === 'function') {
     var normalBtn = document.getElementById('req-urgency-normal');
     if (normalBtn) _reqSetUrgency(normalBtn, 'normal');
   }
-  // Reset photo upload
-  if (typeof _reqClearUpload === 'function') _reqClearUpload();
+  // Reset photo grid
+  var grid = document.getElementById('req-photo-grid');
+  if (grid) {
+    var thumbs = grid.querySelectorAll('div[style*="aspect-ratio"]');
+    thumbs.forEach(function(t) { t.remove(); });
+  }
+  var countEl = document.getElementById('req-photo-count');
+  if (countEl) countEl.textContent = 'No photos added';
+  var fi = document.getElementById('req-file');
+  if (fi) fi.value = '';
 }
 window._closeReqForm = _closeReqForm;
 
@@ -4142,6 +4143,54 @@ function _reqClearUpload() {
   if (preview) preview.style.display = 'none';
 }
 window._reqClearUpload = _reqClearUpload;
+
+function _reqAddPhotos(input) {
+  var files = Array.from(input.files);
+  if (!files.length) return;
+  var grid = document.getElementById('req-photo-grid');
+  var addTile = document.getElementById('req-add-tile');
+  if (!grid || !addTile) return;
+
+  var dt = new DataTransfer();
+  var existing = document.getElementById('req-file').files;
+  Array.from(existing).forEach(function(f) { dt.items.add(f); });
+  files.forEach(function(f) { dt.items.add(f); });
+  document.getElementById('req-file').files = dt.files;
+
+  files.forEach(function(file) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var div = document.createElement('div');
+      div.style.cssText = 'aspect-ratio:1/1;position:relative;' +
+        'overflow:hidden;background:#111;';
+      div.innerHTML =
+        '<img src="' + e.target.result + '" ' +
+        'style="width:100%;height:100%;object-fit:cover;display:block;">' +
+        '<button onclick="(function(el){' +
+        'el.closest(\'div\').remove();' +
+        '_reqUpdatePhotoCount();})(this)" ' +
+        'style="position:absolute;top:3px;right:3px;width:20px;height:20px;' +
+        'background:rgba(0,0,0,0.85);border-radius:50%;display:flex;' +
+        'align-items:center;justify-content:center;font-size:10px;' +
+        'color:#e8e2d9;cursor:pointer;border:none;">&#x2715;</button>';
+      grid.insertBefore(div, addTile);
+      _reqUpdatePhotoCount();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+window._reqAddPhotos = _reqAddPhotos;
+
+function _reqUpdatePhotoCount() {
+  var grid = document.getElementById('req-photo-grid');
+  var count = grid ? grid.querySelectorAll('img').length : 0;
+  var el = document.getElementById('req-photo-count');
+  if (el) el.textContent = count > 0
+    ? count + ' photo' + (count !== 1 ? 's' : '') + ' selected'
+    : 'No photos added';
+}
+window._reqUpdatePhotoCount = _reqUpdatePhotoCount;
 
 function renderClientApproved() {
   // Hide published section on Client home - still visible in Library
