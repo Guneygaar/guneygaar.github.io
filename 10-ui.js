@@ -186,6 +186,22 @@ function switchTab(btn) {
     if (!btn) return;
   }
   var role = (window.effectiveRole || '').toLowerCase();
+  if (role === 'client') {
+    var targetTab = typeof btn === 'string' ? btn :
+      (btn && btn.dataset ? btn.dataset.tab : '');
+    if (targetTab === 'pipeline') {
+      // allow pipeline to render for client
+      // but hide agency-only header elements first
+    } else if (targetTab === 'library') {
+      // allow library through
+    } else {
+      // all other tabs (tasks, insights etc) -> client dashboard
+      document.getElementById('dashboard-view')?.classList.remove('active');
+      document.getElementById('client-view')?.classList.add('active');
+      if (typeof renderClientView === 'function') renderClientView();
+      return;
+    }
+  }
   const dv = document.getElementById('dashboard-view');
   if (dv && !dv.classList.contains('active')) {
     dv.classList.add('active');
