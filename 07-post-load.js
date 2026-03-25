@@ -3692,7 +3692,7 @@ function _renderClientViewInner() {
             imgs.map(function(url, idx) {
               return '<div style="flex-shrink:0;width:90px;height:90px;' +
                 'background:#111;overflow:hidden;">' +
-                '<img src="' + url + '" loading="lazy" decoding="async" width="90" height="90" ' +
+                '<img src="' + url + '" loading="eager" decoding="async" width="90" height="90" ' +
                 'style="width:90px;height:90px;object-fit:cover;display:block;"></div>';
             }).join('') +
             '</div>';
