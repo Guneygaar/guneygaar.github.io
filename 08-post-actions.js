@@ -316,6 +316,24 @@ async function submitClientRequest() {
     var navEl = document.getElementById('bottom-nav');
     if (navEl) navEl.style.display = '';
     showToast('Request sent - The team will be in touch.', 'success');
+    var overlay = document.getElementById('req-overlay');
+    if (overlay) {
+      overlay.innerHTML =
+        '<div style="position:fixed;inset:0;z-index:2001;background:#0a0a0f;' +
+        'display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;gap:14px;">' +
+        '<div style="font-size:32px;color:#C8A84B;line-height:1;">&#x2713;</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+        'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Request sent.</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'letter-spacing:0.18em;text-transform:uppercase;color:#555;">' +
+        'We\'ll get started shortly.</div>' +
+        '</div>';
+      overlay.style.display = 'flex';
+      setTimeout(function() {
+        if (typeof _closeReqForm === 'function') _closeReqForm();
+      }, 2000);
+    }
     if (typeof loadPosts === 'function') await loadPosts();
     setTimeout(() => loadPostsForClient(), 800);
   } catch (err) {
