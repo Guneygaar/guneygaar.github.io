@@ -3704,8 +3704,19 @@ function _renderClientViewInner() {
         var badgeStyle = isNew
           ? 'color:#C8A84B;background:rgba(200,168,75,0.1);border:1px solid rgba(200,168,75,0.25);'
           : 'color:#555;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);';
-        var approvalUrl = window.location.origin + '/p/' + id;
-        var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
+        var _rawSlug = (p.title || '').toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .trim()
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .slice(0, 50);
+        var approvalUrl = 'https://srtd.io/ok/?p=' + _rawSlug;
+        var waText = encodeURIComponent(
+          (p.title || '') + '\n\n' +
+          (p.caption || '') + '\n\n' +
+          'Approve: ' + approvalUrl + '\n' +
+          'Request changes: https://srtd.io/no/?p=' + _rawSlug
+        );
         var waLink = 'https://wa.me/?text=' + waText;
 
         return '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
