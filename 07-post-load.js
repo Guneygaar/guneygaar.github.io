@@ -3793,31 +3793,138 @@ function _renderClientViewInner() {
     reqForm.dataset.init = '1';
     var html =
       '<div style="position:fixed;inset:0;z-index:2000;background:#0a0a0f;display:none;align-items:stretch;justify-content:center;" id="req-overlay">' +
-        '<div style="width:100%;max-width:390px;display:flex;flex-direction:column;overflow:hidden;">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-            '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--c-gold);">New Request</span>' +
-            '<button onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o)o.style.display=\'none\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'\';})()" style="background:transparent;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px 8px;">X</button>' +
-          '</div>' +
-          '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">' +
-            '<div class="cp-form-field" style="padding:12px 18px 0;">' +
-              '<label class="cp-form-label" for="req-topic">What do you want to post about? *</label>' +
-              '<textarea id="req-topic" rows="3" class="cp-form-input" placeholder="e.g. Share our Q3 hiring story, announce the product launch"></textarea>' +
-            '</div>' +
-            '<div class="cp-form-field" style="padding:0 18px;">' +
-              '<label class="cp-form-label" for="req-date">Any specific date in mind?</label>' +
-              '<input type="date" id="req-date" class="cp-form-input">' +
-            '</div>' +
-            '<div class="cp-form-field" style="padding:0 18px;">' +
-              '<label class="cp-form-label" for="req-ref">Reference images or links</label>' +
-              '<input type="url" id="req-ref" class="cp-form-input" placeholder="https:// or upload below">' +
-              '<input type="file" id="req-file" accept="image/jpeg,image/png,image/webp,video/mp4" style="margin-top:8px;font-family:var(--mono);font-size:8px;color:#555;" onchange="handleRequestFileUpload(this)">' +
-            '</div>' +
-          '</div>' +
-          '<div style="flex-shrink:0;padding:12px 18px 16px;border-top:1px solid rgba(255,255,255,0.07);background:#0a0a0f;">' +
-            '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
-            'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.4);padding:14px 0;cursor:pointer;">&#x2192; Send Request</button>' +
-          '</div>' +
-        '</div>' +
+      '<div style="width:100%;height:100dvh;display:flex;flex-direction:column;">' +
+
+      '<div style="display:flex;align-items:center;justify-content:space-between;' +
+      'padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;">New Request</div>' +
+      '<button onclick="_closeReqForm()" ' +
+      'style="font-size:16px;color:#666;background:transparent;border:none;' +
+      'cursor:pointer;width:28px;height:28px;display:flex;align-items:center;' +
+      'justify-content:center;">&#x2715;</button>' +
+      '</div>' +
+
+      '<div style="padding:14px 18px 12px;font-family:\'DM Sans\',sans-serif;' +
+      'font-size:13px;color:#666;line-height:1.5;' +
+      'border-bottom:1px dashed rgba(255,255,255,0.07);flex-shrink:0;">' +
+      'Tell us what you want to post. We\'ll handle the writing, design, and scheduling.' +
+      '</div>' +
+
+      '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
+
+      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:8px;">' +
+      'What do you want to post about? ' +
+      '<span style="color:#FF4B4B;">*</span></div>' +
+      '<textarea id="req-topic" rows="4" ' +
+      'placeholder="e.g. Share our Q3 hiring story, announce the new distillery launch..." ' +
+      'style="width:100%;background:transparent;border:none;' +
+      'border-bottom:1px solid rgba(255,255,255,0.12);' +
+      'color:#e8e2d9;font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+      'padding:8px 0 10px;outline:none;resize:none;line-height:1.6;' +
+      'caret-color:#C8A84B;">' +
+      '</textarea>' +
+      '</div>' +
+
+      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'Content type ' +
+      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
+      '(optional)</span></div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+      ['Photo Post','Carousel','Video','Text Only','Announcement'].map(function(t){
+        return '<button onclick="_reqToggleChip(this)" ' +
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'letter-spacing:0.1em;text-transform:uppercase;' +
+        'color:#666;background:transparent;' +
+        'border:1px solid rgba(255,255,255,0.1);padding:6px 10px;cursor:pointer;">' +
+        t + '</button>';
+      }).join('') +
+      '</div></div>' +
+
+      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:8px;">' +
+      'Any specific date? ' +
+      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
+      '(optional)</span></div>' +
+      '<input type="date" id="req-date" ' +
+      'style="width:100%;background:transparent;border:none;' +
+      'border-bottom:1px solid rgba(255,255,255,0.12);' +
+      'color:#e8e2d9;font-family:\'IBM Plex Mono\',monospace;font-size:12px;' +
+      'padding:8px 0 10px;outline:none;-webkit-appearance:none;appearance:none;' +
+      'color-scheme:dark;background-image:none;">' +
+      '</div>' +
+
+      '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'How urgent? ' +
+      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
+      '(optional)</span></div>' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button onclick="_reqSetUrgency(this,\'normal\')" id="req-urgency-normal" ' +
+      'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#3ECF8E;' +
+      'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.3);' +
+      'padding:10px 0;cursor:pointer;">Normal</button>' +
+      '<button onclick="_reqSetUrgency(this,\'urgent\')" id="req-urgency-urgent" ' +
+      'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#555;' +
+      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+      'padding:10px 0;cursor:pointer;">Urgent -- this week</button>' +
+      '</div></div>' +
+
+      '<div style="padding:14px 18px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'Reference photo ' +
+      '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
+      '(optional)</span></div>' +
+      '<div id="req-upload-area" onclick="document.getElementById(\'req-file\').click()" ' +
+      'style="border:1px dashed rgba(255,255,255,0.1);padding:20px;' +
+      'text-align:center;cursor:pointer;">' +
+      '<div style="font-size:18px;color:rgba(255,255,255,0.2);margin-bottom:6px;">+</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">Tap to upload</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+      'color:#333;margin-top:3px;">JPG / PNG</div>' +
+      '</div>' +
+      '<div id="req-upload-preview" style="display:none;">' +
+      '<img id="req-preview-img" src="" style="width:100%;max-height:140px;object-fit:cover;display:block;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;' +
+      'padding:5px 8px;background:rgba(0,0,0,0.5);">' +
+      '<span id="req-preview-name" style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:7px;color:#555;"></span>' +
+      '<button onclick="_reqClearUpload()" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'color:#F6A623;background:none;border:none;cursor:pointer;">Remove</button>' +
+      '</div></div>' +
+      '<input type="file" id="req-file" accept="image/*" style="display:none;" ' +
+      'onchange="_reqPreviewFile(this)">' +
+      '</div>' +
+
+      '</div>' +
+
+      '<div style="flex-shrink:0;padding:12px 18px 16px;' +
+      'border-top:1px solid rgba(255,255,255,0.07);background:#0a0a0f;' +
+      'display:flex;gap:10px;">' +
+      '<button onclick="_closeReqForm()" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
+      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+      'padding:13px 16px;cursor:pointer;flex-shrink:0;">Cancel</button>' +
+      '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
+      'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;' +
+      'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.35);' +
+      'padding:13px 0;cursor:pointer;">&#x2192; Send Request</button>' +
+      '</div>' +
+
+      '</div>' +
       '</div>';
     var existing = document.getElementById('req-overlay');
     if (existing) existing.remove();
@@ -3829,6 +3936,69 @@ function _renderClientViewInner() {
 
   renderClientApproved();
 }
+
+function _closeReqForm() {
+  var o = document.getElementById('req-overlay');
+  if (o) o.remove();
+  var nav = document.getElementById('bottom-nav');
+  if (nav) nav.style.display = '';
+}
+window._closeReqForm = _closeReqForm;
+
+function _reqToggleChip(el) {
+  var isActive = el.style.color === 'rgb(200, 168, 75)';
+  if (isActive) {
+    el.style.color = '#666';
+    el.style.background = 'transparent';
+    el.style.borderColor = 'rgba(255,255,255,0.1)';
+  } else {
+    el.style.color = '#C8A84B';
+    el.style.background = 'rgba(200,168,75,0.08)';
+    el.style.borderColor = 'rgba(200,168,75,0.35)';
+  }
+}
+window._reqToggleChip = _reqToggleChip;
+
+function _reqSetUrgency(el, type) {
+  var n = document.getElementById('req-urgency-normal');
+  var u = document.getElementById('req-urgency-urgent');
+  if (n) { n.style.color='#555'; n.style.background='transparent'; n.style.borderColor='rgba(255,255,255,0.07)'; }
+  if (u) { u.style.color='#555'; u.style.background='transparent'; u.style.borderColor='rgba(255,255,255,0.07)'; }
+  if (type === 'urgent' && u) {
+    u.style.color='#FF4B4B'; u.style.background='rgba(255,75,75,0.06)'; u.style.borderColor='rgba(255,75,75,0.3)';
+  } else if (n) {
+    n.style.color='#3ECF8E'; n.style.background='rgba(62,207,142,0.08)'; n.style.borderColor='rgba(62,207,142,0.3)';
+  }
+}
+window._reqSetUrgency = _reqSetUrgency;
+
+function _reqPreviewFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = document.getElementById('req-preview-img');
+    var name = document.getElementById('req-preview-name');
+    var area = document.getElementById('req-upload-area');
+    var preview = document.getElementById('req-upload-preview');
+    if (img) img.src = e.target.result;
+    if (name) name.textContent = file.name;
+    if (area) area.style.display = 'none';
+    if (preview) preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+window._reqPreviewFile = _reqPreviewFile;
+
+function _reqClearUpload() {
+  var input = document.getElementById('req-file');
+  var area = document.getElementById('req-upload-area');
+  var preview = document.getElementById('req-upload-preview');
+  if (input) input.value = '';
+  if (area) area.style.display = 'block';
+  if (preview) preview.style.display = 'none';
+}
+window._reqClearUpload = _reqClearUpload;
 
 function renderClientApproved() {
   // Hide published section on Client home - still visible in Library
