@@ -390,6 +390,10 @@ function showLoadingSkeleton(containerId) {
 }
 
 async function loadPosts() {
+  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+    if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    return;
+  }
   showLoadingSkeleton('tasks-container');
   const reqId = _newPostsRequest();
   try {
@@ -669,6 +673,10 @@ async function deleteTask(id) {
 }
 
 function renderAll() {
+  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+    if (typeof renderClientView === 'function') renderClientView();
+    return;
+  }
   if (window._modalOpen) return;
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
 
@@ -1783,6 +1791,7 @@ function _buildDoThisNowItems(role) {
 }
 
 function renderDashboard() {
+  if ((window.effectiveRole || '').toLowerCase() === 'client') return;
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
 function _renderDashboardInner() {
@@ -3577,7 +3586,7 @@ function _renderClientViewInner() {
   if (inputEyebrow) {
     inputEyebrow.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;' +
-      'padding:20px 18px 12px;">' +
+      'padding:14px 18px 8px;">' +
       '<div style="font-size:13px;color:#F6A623;flex-shrink:0;">&#x26A0;</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
@@ -3602,12 +3611,12 @@ function _renderClientViewInner() {
         var _loc = (p.location || '').toUpperCase();
         var metaLine = _pillar + (_loc ? ' / ' + _loc : '');
 
-        return '<div style="margin:0 18px 12px;' +
-          'border:1px solid rgba(255,255,255,0.09);' +
+        return '<div style="margin:0 0 0 0;' +
+          'border-bottom:3px solid #0a0a0a;' +
           'background:rgba(255,255,255,0.015);' +
           'position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;' +
-          'width:3px;background:#F6A623;"></div>' +
+          'width:3px;background:#3ECF8E;"></div>' +
           '<div style="display:flex;align-items:center;gap:8px;' +
           'padding:10px 14px 8px 16px;">' +
           '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
@@ -3665,7 +3674,7 @@ function _renderClientViewInner() {
   if (approvalEyebrow) {
     approvalEyebrow.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;' +
-      'padding:20px 18px 12px;">' +
+      'padding:14px 18px 8px;">' +
       '<div style="font-size:13px;color:#3ECF8E;flex-shrink:0;">&#x2713;</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
@@ -3699,7 +3708,7 @@ function _renderClientViewInner() {
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
 
-        return '<div style="margin:0 0 0;border-bottom:2px solid #0a0a0f;' +
+        return '<div style="margin:0 0 0;border-bottom:3px solid #0a0a0a;' +
           'background:#0a0a0a;margin-bottom:0;position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#3ECF8E;"></div>' +
           '<div style="padding:10px 16px 0 20px;">' +
@@ -4439,7 +4448,7 @@ function _openClientEditorial(postId) {
     'padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
     '<button onclick="_closeClientEditorial()" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:#e8e2d9;' +
     'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#333;">' +
@@ -4473,44 +4482,52 @@ function _openClientEditorial(postId) {
     'margin-bottom:22px;"></div>' +
 
     // Caption
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
+    '<div id="ed-caption-' + postId + '" style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
     'color:#888;line-height:1.8;white-space:pre-wrap;' +
     'word-wrap:break-word;margin-bottom:28px;">' + caption + '</div>' +
 
     '</div>' +
 
     // Image gallery strip with dots
-    (imgs.length > 1 ?
-    '<div style="padding:0 0 24px;">' +
+    (function(){
+      var stripId = 'ed-strip-' + postId;
+      var dotsId = 'ed-dots-' + postId;
+      return (imgs.length > 1 ?
+      '<div style="padding:0 0 20px;">' +
 
-    '<div style="display:flex;align-items:center;justify-content:space-between;' +
-    'padding:0 22px 8px;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#555;">' +
-    'All Photos</div>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#F6A623;">' +
-    imgs.length + ' photos &#x2192;</div>' +
-    '</div>' +
+      '<div style="display:flex;align-items:center;' +
+      'justify-content:space-between;padding:0 22px 8px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">All Photos</div>' +
+      '<div onclick="_edOpenLightbox(\'' + postId + '\',0)" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#F6A623;cursor:pointer;">' +
+      imgs.length + ' photos &#x2192;</div>' +
+      '</div>' +
 
-    '<div style="display:flex;gap:2px;overflow-x:auto;' +
-    'scrollbar-width:none;-webkit-overflow-scrolling:touch;' +
-    'padding-left:22px;">' +
-    imgs.map(function(url,i){
-      return '<img src="'+url+'" loading="lazy" decoding="async" '+
-      'style="flex-shrink:0;width:100px;height:100px;object-fit:cover;'+
-      'display:block;opacity:'+(i===0?'1':'0.55')+';">';
-    }).join('') +
-    '<div style="flex-shrink:0;width:22px;"></div>' +
-    '</div>' +
+      '<div id="' + stripId + '" ' +
+      'style="display:flex;gap:2px;overflow-x:auto;' +
+      'scrollbar-width:none;-webkit-overflow-scrolling:touch;' +
+      'padding-left:22px;" ' +
+      'onscroll="_edUpdateDots(\'' + stripId + '\',\'' + dotsId + '\',' + imgs.length + ')">' +
+      imgs.map(function(url, i) {
+        return '<img src="' + url + '" loading="eager" decoding="async" ' +
+        'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
+        'style="flex-shrink:0;width:100px;height:100px;object-fit:cover;' +
+        'display:block;cursor:pointer;">';
+      }).join('') +
+      '<div style="flex-shrink:0;width:22px;"></div>' +
+      '</div>' +
 
-    '<div style="display:flex;justify-content:center;gap:5px;padding:10px 0 0;">' +
-    imgs.map(function(u,i){
-      return '<div style="width:5px;height:5px;border-radius:50%;background:'+
-      (i===0?'#e8e2d9':'#2a2a2a')+'"></div>';
-    }).join('') +
-    '</div></div>'
-    : '') +
+      '<div id="' + dotsId + '" ' +
+      'style="display:flex;justify-content:center;gap:5px;padding:10px 0 0;">' +
+      imgs.map(function(u, i) {
+        return '<div style="width:5px;height:5px;border-radius:50%;background:' +
+        (i === 0 ? '#e8e2d9' : '#2a2a2a') + ';transition:background 0.2s;"></div>';
+      }).join('') +
+      '</div></div>'
+      : '');
+    })() +
 
     // Footer
     '<div style="padding:0 22px 44px;max-width:390px;margin:0 auto;">' +
@@ -4530,6 +4547,21 @@ function _openClientEditorial(postId) {
       location + '</div>'
       : '') +
     '</div>' +
+
+    // WhatsApp share
+    '<button onclick="(function(){' +
+    'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
+    '(document.getElementById(\'ed-caption-\'+\'' + postId + '\') ? ' +
+    'document.getElementById(\'ed-caption-\'+\'' + postId + '\').textContent : ' +
+    '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
+    '\'\\n\\nPlease review and let me know.\';' +
+    'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
+    '})()" ' +
+    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#25D366;' +
+    'background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);' +
+    'padding:14px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
+    '&#x2197; Share on WhatsApp</button>' +
 
     // Approve button
     '<button onclick="_editorialApprove(\'' + postId + '\')" ' +
@@ -4578,3 +4610,103 @@ function _editorialChanges(postId) {
   }
 }
 window._editorialChanges = _editorialChanges;
+
+function _edUpdateDots(stripId, dotsId, total) {
+  var strip = document.getElementById(stripId);
+  var dotsEl = document.getElementById(dotsId);
+  if (!strip || !dotsEl) return;
+  var idx = Math.round(strip.scrollLeft / 102);
+  idx = Math.max(0, Math.min(idx, total - 1));
+  var dots = dotsEl.querySelectorAll('div');
+  dots.forEach(function(d, i) {
+    d.style.background = i === idx ? '#e8e2d9' : '#2a2a2a';
+  });
+}
+window._edUpdateDots = _edUpdateDots;
+
+function _edOpenLightbox(postId, startIdx) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+  var imgs = Array.isArray(post.images) ? post.images : [];
+  if (!imgs.length) return;
+  var idx = startIdx || 0;
+
+  var existing = document.getElementById('ed-lightbox');
+  if (existing) existing.remove();
+
+  var lb = document.createElement('div');
+  lb.id = 'ed-lightbox';
+  lb.style.cssText = 'position:fixed;inset:0;z-index:9900;background:#000;' +
+    'display:flex;flex-direction:column;';
+
+  lb.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;' +
+    'padding:14px 18px;background:rgba(0,0,0,0.8);flex-shrink:0;">' +
+    '<button onclick="document.getElementById(\'ed-lightbox\').remove();' +
+    'document.body.style.overflow=\'\';" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:#e8e2d9;' +
+    'background:transparent;border:none;cursor:pointer;">&#x2190; Close</button>' +
+    '<span id="ed-lb-counter" style="font-family:\'IBM Plex Mono\',monospace;' +
+    'font-size:8px;color:#555;">' + (idx+1) + ' / ' + imgs.length + '</span>' +
+    '<a id="ed-lb-dl" href="' + imgs[idx] + '" download ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
+    'text-decoration:none;border:1px solid rgba(62,207,142,0.3);' +
+    'padding:5px 10px;">&#x2193; Save</a>' +
+    '</div>' +
+    '<div style="flex:1;display:flex;align-items:center;justify-content:center;' +
+    'padding:20px;">' +
+    '<img id="ed-lb-img" src="' + imgs[idx] + '" ' +
+    'style="max-width:100%;max-height:100%;object-fit:contain;display:block;">' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;' +
+    'padding:10px 18px 28px;background:rgba(0,0,0,0.8);flex-shrink:0;">' +
+    '<button onclick="_edLbNav(-1)" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;color:#555;' +
+    'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);' +
+    'width:44px;height:44px;cursor:pointer;">&#x2190;</button>' +
+    '<div id="ed-lb-dots" style="display:flex;gap:5px;">' +
+    imgs.map(function(u,i){
+      return '<div style="width:5px;height:5px;border-radius:50%;background:' +
+      (i===idx?'#e8e2d9':'#2a2a2a') + ';"></div>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="_edLbNav(1)" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;color:#555;' +
+    'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);' +
+    'width:44px;height:44px;cursor:pointer;">&#x2192;</button>' +
+    '</div>';
+
+  window._edLbImages = imgs;
+  window._edLbIdx = idx;
+  document.body.appendChild(lb);
+  document.body.style.overflow = 'hidden';
+
+  var tx = 0;
+  lb.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; });
+  lb.addEventListener('touchend', function(e){
+    var diff = tx - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) _edLbNav(diff > 0 ? 1 : -1);
+  });
+}
+window._edOpenLightbox = _edOpenLightbox;
+
+function _edLbNav(dir) {
+  var imgs = window._edLbImages || [];
+  var idx = (window._edLbIdx + dir + imgs.length) % imgs.length;
+  window._edLbIdx = idx;
+  var img = document.getElementById('ed-lb-img');
+  var counter = document.getElementById('ed-lb-counter');
+  var dl = document.getElementById('ed-lb-dl');
+  var dots = document.getElementById('ed-lb-dots');
+  if (img) img.src = imgs[idx];
+  if (counter) counter.textContent = (idx+1) + ' / ' + imgs.length;
+  if (dl) dl.href = imgs[idx];
+  if (dots) {
+    dots.querySelectorAll('div').forEach(function(d,i){
+      d.style.background = i === idx ? '#e8e2d9' : '#2a2a2a';
+    });
+  }
+}
+window._edLbNav = _edLbNav;
