@@ -3797,6 +3797,8 @@ function _renderClientViewInner() {
 
   var reqForm = document.getElementById('client-request-form');
   if (reqForm && !reqForm.dataset.init) {
+    var existingOverlay = document.getElementById('req-overlay');
+    if (existingOverlay) existingOverlay.remove();
     reqForm.dataset.init = '1';
     var html =
       '<div style="position:fixed;inset:0;z-index:2000;background:#0a0a0f;display:none;align-items:stretch;justify-content:center;" id="req-overlay">' +
