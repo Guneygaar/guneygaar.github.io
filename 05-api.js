@@ -97,7 +97,11 @@ async function uploadPostAsset(file, postId) {
     body: file,
   });
   if (!res.ok) throw new Error(`Upload ${res.status}`);
-  return `${SUPABASE_URL}/storage/v1/object/public/post-assets/${filename}`;
+  var publicUrl = `${SUPABASE_URL}/storage/v1/object/public/post-assets/${filename}`;
+  try {
+    fetch(publicUrl, { method: 'GET', mode: 'no-cors' });
+  } catch (e) {}
+  return publicUrl;
 }
 
 async function logActivity({ post_id, actor, actor_role, action }) {
