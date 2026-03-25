@@ -3517,8 +3517,8 @@ function _renderClientViewInner() {
   var h = new Date().getHours();
   var timeOfDay = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
   var greetName = window.currentUserName ||
-    window.currentUser?.name ||
-    (window.currentUserEmail || localStorage.getItem('hinglish_email') || 'there').split('@')[0];
+    (window.currentUser && window.currentUser.name) ||
+    (window.currentUserEmail || '').split('@')[0];
   var clientName = greetName.charAt(0).toUpperCase() + greetName.slice(1);
 
   // CHANGE 2 - Header
@@ -3563,15 +3563,16 @@ function _renderClientViewInner() {
   var inputEyebrow = document.getElementById('client-input-eyebrow');
   if (inputEyebrow) {
     inputEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;' +
-      'justify-content:space-between;padding:8px 18px;' +
-      'font-family:var(--mono);font-size:7px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;' +
-      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<span>Input Needed</span>' +
-      '<span style="font-size:8px;color:var(--c-amber);' +
-      'border:1px solid rgba(246,166,35,0.25);' +
-      'padding:1px 6px;">' + inputPosts.length + '</span></div>';
+      '<div style="display:flex;align-items:center;gap:10px;' +
+      'padding:20px 18px 12px;">' +
+      '<div style="font-size:13px;color:#F6A623;flex-shrink:0;">&#x26A0;</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
+      'Awaiting Input</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'color:#444;border:1px solid rgba(255,255,255,0.07);padding:2px 7px;">' +
+      inputPosts.length + '</div>' +
+      '</div>';
   }
 
   // CHANGE 7 - Input request cards
@@ -3583,27 +3584,55 @@ function _renderClientViewInner() {
       inputItems.innerHTML = inputPosts.map(function(p) {
         var id   = getPostId(p);
         var days = daysInStage(p);
-        var barCls = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
-        var statusCls = barCls;
-        var statusText = days >= 1 ? days + 'd waiting' : 'New';
-        var metaLocation = (p.location || '').toUpperCase();
-        var metaPillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
-        var metaLine = metaPillar + (metaLocation ? ' / ' + metaLocation : '');
+        var staleLabel = days >= 1 ? days + 'd waiting' : 'New';
+        var _pillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
+        var _loc = (p.location || '').toUpperCase();
+        var metaLine = _pillar + (_loc ? ' / ' + _loc : '');
 
-        return '<div class="cp-card">' +
-          '<div class="cp-bar ' + barCls + '"></div>' +
-          '<div class="cp-body">' +
-            '<div class="cp-status ' + statusCls + '">Waiting for your input &middot; ' + statusText + '</div>' +
-            '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
-            '<div class="cp-meta">' + esc(metaLine) + '</div>' +
-            '<div class="cp-need-label">What we need</div>' +
-            '<div class="cp-need-text">' + esc(p.comments || 'We need your input to move this post forward.') + '</div>' +
-            '<div class="cp-actions">' +
-              '<label style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-amber);background:transparent;border:1px solid rgba(246,166,35,0.3);padding:9px 0;flex:1;cursor:pointer;text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
-              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#444;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:9px 0;flex:1;cursor:pointer;" onclick="clientAcknowledge(\'' + esc(id) + '\')">Send on WhatsApp</button>' +
-            '</div>' +
-            '<div id="upload-confirm-' + esc(id) + '"></div>' +
-          '</div></div>';
+        return '<div style="margin:0 18px 12px;' +
+          'border:1px solid rgba(255,255,255,0.09);' +
+          'background:rgba(255,255,255,0.015);' +
+          'position:relative;overflow:hidden;">' +
+          '<div style="position:absolute;top:0;left:0;bottom:0;' +
+          'width:3px;background:#F6A623;"></div>' +
+          '<div style="display:flex;align-items:center;gap:8px;' +
+          'padding:10px 14px 8px 16px;">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+          'letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#FF4B4B;background:rgba(255,75,75,0.12);' +
+          'border:1px solid rgba(255,75,75,0.3);padding:3px 7px;">' +
+          'Action Needed</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.08em;color:#555;flex:1;">' +
+          esc(staleLabel) + '</div>' +
+          '</div>' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:17px;' +
+          'font-weight:600;color:#e8e2d9;padding:0 14px 3px 16px;' +
+          'line-height:1.3;">' + esc(getTitle(p)) + '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.1em;text-transform:uppercase;color:#555;' +
+          'padding:0 14px 12px 16px;">' +
+          esc(metaLine) + '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+          'letter-spacing:0.18em;text-transform:uppercase;color:#F6A623;' +
+          'padding:0 14px 5px 16px;">What we need</div>' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+          'color:#888;line-height:1.55;padding:0 14px 14px 16px;">' +
+          esc(p.comments || 'No brief added yet.') + '</div>' +
+          '<div style="display:flex;gap:8px;padding:0 14px 14px 16px;">' +
+          '<label style="flex:1;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:7px;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#F6A623;background:transparent;' +
+          'border:1px solid rgba(246,166,35,0.35);padding:10px 0;cursor:pointer;' +
+          'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
+          '<button style="flex:1;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:7px;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#555;background:transparent;' +
+          'border:1px solid rgba(255,255,255,0.07);padding:10px 0;cursor:pointer;" ' +
+          'onclick="clientAcknowledge(\'' + esc(id) + '\')">Send on WhatsApp</button>' +
+          '</div>' +
+          '<div id="upload-confirm-' + esc(id) + '"></div>' +
+          '</div>';
       }).join('');
     }
   }
@@ -3615,15 +3644,16 @@ function _renderClientViewInner() {
   var approvalEyebrow = document.getElementById('client-approval-eyebrow');
   if (approvalEyebrow) {
     approvalEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;' +
-      'justify-content:space-between;padding:8px 18px;' +
-      'font-family:var(--mono);font-size:7px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;' +
-      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<span>Awaiting Approval</span>' +
-      '<span style="font-size:8px;color:var(--c-amber);' +
-      'border:1px solid rgba(246,166,35,0.25);' +
-      'padding:1px 6px;">' + approvalPosts.length + '</span></div>';
+      '<div style="display:flex;align-items:center;gap:10px;' +
+      'padding:20px 18px 12px;">' +
+      '<div style="font-size:13px;color:#3ECF8E;flex-shrink:0;">&#x2713;</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
+      'Awaiting Approval</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'color:#444;border:1px solid rgba(255,255,255,0.07);padding:2px 7px;">' +
+      approvalPosts.length + '</div>' +
+      '</div>';
   }
 
   // CHANGE 5 - Approval post cards
@@ -3634,16 +3664,24 @@ function _renderClientViewInner() {
     } else {
       approvalItems.innerHTML = approvalPosts.map(function(p) {
         var id       = getPostId(p);
-        var days     = daysInStage(p);
-        var barCls   = days >= 3 ? 'red' : days >= 1 ? 'amber' : 'muted';
-        var statusCls = barCls;
-        var statusText = days >= 3 ? days + 'd waiting - oldest in queue' : days >= 1 ? days + 'd waiting' : 'New';
-        var metaLocation = (p.location || '').toUpperCase();
-        var metaPillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
-        var metaLine = metaPillar + (metaLocation ? ' / ' + metaLocation : '');
+        var _pillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
+        var _loc = (p.location || '').toUpperCase();
+        var metaLine = _pillar + (_loc ? ' / ' + _loc : '');
         var approvalUrl = window.location.origin + '/p/' + id;
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
+
+        var isNew = !p.status_changed_at ||
+          (Date.now() - new Date(p.status_changed_at).getTime()) < 86400000;
+        var badgeHtml = isNew
+          ? '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+            'letter-spacing:0.14em;text-transform:uppercase;' +
+            'color:#C8A84B;background:rgba(200,168,75,0.1);' +
+            'border:1px solid rgba(200,168,75,0.25);padding:3px 7px;">New</div>'
+          : '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+            'letter-spacing:0.14em;text-transform:uppercase;' +
+            'color:#555;background:rgba(255,255,255,0.04);' +
+            'border:1px solid rgba(255,255,255,0.1);padding:3px 7px;">Review Pending</div>';
 
         var imgs = Array.isArray(p.images) ? p.images : [];
         var imgStripHtml = '';
@@ -3660,47 +3698,67 @@ function _renderClientViewInner() {
             '</div>';
         }
 
-        var capHtml = '';
-        if (p.caption) {
-          capHtml =
-            '<div style="padding:10px 18px 0;">' +
-            '<div id="cap-' + p.post_id + '" ' +
-            'style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-            'color:#888;line-height:1.6;white-space:pre-wrap;' +
-            'word-wrap:break-word;overflow-wrap:break-word;' +
-            'max-height:52px;overflow:hidden;' +
-            '-webkit-mask-image:linear-gradient(to bottom,black 20px,transparent 50px);' +
-            'mask-image:linear-gradient(to bottom,black 20px,transparent 50px);">' +
-            esc(p.caption) + '</div>' +
-            '<button id="smb-' + p.post_id + '" ' +
-            'onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
-            'style="display:block;width:100%;text-align:right;' +
-            'font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-            'letter-spacing:0.1em;text-transform:uppercase;' +
-            'color:#333;background:transparent;border:none;' +
-            'cursor:pointer;padding:4px 0 0;margin:0;">See more &rarr;</button>' +
-            '</div>';
-        }
-
-        return '<div class="cp-card" id="apv-item-' + esc(id) + '">' +
-          '<div class="cp-bar ' + barCls + '"></div>' +
-          '<div class="cp-body">' +
-            '<div class="cp-status ' + statusCls + '">' + esc(statusText) + '</div>' +
-            '<div class="cp-title">' + esc(getTitle(p)) + '</div>' +
-            '<div class="cp-meta">' + esc(metaLine) + '</div>' +
-            imgStripHtml +
-            capHtml +
-            '<div class="cp-actions" style="margin-top:12px;border-top:1px solid rgba(255,255,255,0.07);">' +
-              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green);background:transparent;border:1px solid rgba(62,207,142,0.3);padding:9px 0;flex:1;cursor:pointer;" onclick="clientApprove(\'' + esc(id) + '\', this)">Approve</button>' +
-              '<button style="font-family:var(--mono);font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#666;background:transparent;border:1px solid rgba(255,255,255,0.08);padding:9px 0;flex:1;cursor:pointer;" onclick="showChangeInput(\'' + esc(id) + '\')">Changes</button>' +
-            '</div>' +
-            '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
-              '<textarea class="change-textarea" id="change-text-' + esc(id) + '" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea>' +
-              '<button class="btn-send-changes" onclick="submitClientChanges(\'' + esc(id) + '\')">Send Change Request</button>' +
-            '</div>' +
-            '<div class="approval-confirmed" id="approved-confirm-' + esc(id) + '">Approved - the team has been notified.</div>' +
-            '<a href="' + esc(waLink) + '" target="_blank" rel="noopener" style="display:block;font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#444;background:transparent;border:1px solid rgba(255,255,255,0.06);padding:9px 0;width:100%;margin-top:8px;text-align:center;text-decoration:none;cursor:pointer;">Share on WhatsApp</a>' +
-          '</div></div>';
+        return '<div style="margin:0 18px 12px;' +
+          'border:1px solid rgba(255,255,255,0.09);' +
+          'background:rgba(255,255,255,0.015);' +
+          'position:relative;overflow:hidden;" id="apv-item-' + esc(id) + '">' +
+          '<div style="position:absolute;top:0;left:0;bottom:0;' +
+          'width:3px;background:#3ECF8E;"></div>' +
+          '<div style="display:flex;align-items:center;gap:8px;' +
+          'padding:10px 14px 8px 16px;">' +
+          badgeHtml +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.08em;color:#444;flex:1;">' + esc(metaLine) + '</div>' +
+          '</div>' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:17px;' +
+          'font-weight:600;color:#e8e2d9;padding:0 14px 3px 16px;' +
+          'line-height:1.3;">' + esc(getTitle(p)) + '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.1em;text-transform:uppercase;color:#444;' +
+          'padding:0 14px 10px 16px;">' + esc(metaLine) + '</div>' +
+          imgStripHtml +
+          '<div style="padding:12px 14px 0 16px;">' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+          'color:#777;line-height:1.6;max-height:52px;overflow:hidden;' +
+          '-webkit-mask-image:linear-gradient(to bottom,black 20px,transparent 50px);' +
+          'mask-image:linear-gradient(to bottom,black 20px,transparent 50px);' +
+          'white-space:pre-wrap;word-wrap:break-word;">' +
+          esc(p.caption || '') + '</div>' +
+          '<button onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
+          'style="display:block;width:100%;text-align:right;' +
+          'font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.12em;text-transform:uppercase;' +
+          'color:#F6A623;background:transparent;border:none;' +
+          'cursor:pointer;padding:8px 0 0;">See More &#x2192;</button>' +
+          '</div>' +
+          '<div style="margin:16px 14px 0 16px;' +
+          'border-top:1px dashed rgba(255,255,255,0.1);' +
+          'padding-top:12px;display:flex;gap:8px;">' +
+          '<button onclick="clientApprove(\'' + esc(id) + '\',this)" ' +
+          'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
+          'background:rgba(62,207,142,0.08);' +
+          'border:1px solid rgba(62,207,142,0.3);padding:11px 0;cursor:pointer;">' +
+          'Approve</button>' +
+          '<button onclick="showChangeInput(this,\'' + esc(id) + '\')" ' +
+          'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
+          'background:transparent;border:1px solid rgba(255,255,255,0.08);' +
+          'padding:11px 0;cursor:pointer;">Changes</button>' +
+          '</div>' +
+          '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
+            '<textarea class="change-textarea" id="change-text-' + esc(id) + '" placeholder="What would you like changed? Be as specific as possible..." rows="3"></textarea>' +
+            '<button class="btn-send-changes" onclick="submitClientChanges(\'' + esc(id) + '\')">Send Change Request</button>' +
+          '</div>' +
+          '<div class="approval-confirmed" id="approved-confirm-' + esc(id) + '">Approved - the team has been notified.</div>' +
+          '<div style="padding:8px 14px 12px 16px;">' +
+          '<a href="' + esc(waLink) + '" target="_blank" rel="noopener" style="display:block;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:7px;letter-spacing:0.1em;text-transform:uppercase;' +
+          'color:#333;background:transparent;' +
+          'border:1px solid rgba(255,255,255,0.05);' +
+          'padding:8px 0;cursor:pointer;text-align:center;text-decoration:none;">Share on WhatsApp</a>' +
+          '</div>' +
+          '</div>';
       }).join('');
     }
   }
