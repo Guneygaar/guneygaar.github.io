@@ -3856,7 +3856,7 @@ function _renderClientViewInner() {
       '</div>' +
 
       '<div style="padding:14px 18px 12px;font-family:\'DM Sans\',sans-serif;' +
-      'font-size:13px;color:#666;line-height:1.5;' +
+      'font-size:13px;color:#888;line-height:1.5;' +
       'border-bottom:1px dashed rgba(255,255,255,0.07);flex-shrink:0;">' +
       'Tell us what you want to post. We\'ll handle the writing, design, and scheduling.' +
       '</div>' +
@@ -3865,13 +3865,13 @@ function _renderClientViewInner() {
 
       '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:8px;">' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:8px;">' +
       'What do you want to post about? ' +
       '<span style="color:#FF4B4B;">*</span></div>' +
       '<textarea id="req-topic" rows="4" ' +
       'placeholder="e.g. Share our Q3 hiring story, announce the new distillery launch..." ' +
       'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(255,255,255,0.12);' +
+      'border-bottom:1px solid rgba(200,168,75,0.3);' +
       'color:#e8e2d9;font-family:\'DM Sans\',sans-serif;font-size:14px;' +
       'padding:8px 0 10px;outline:none;resize:none;line-height:1.6;' +
       'caret-color:#C8A84B;">' +
@@ -3880,7 +3880,7 @@ function _renderClientViewInner() {
 
       '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
       'Content type ' +
       '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
       '(optional)</span></div>' +
@@ -3897,21 +3897,21 @@ function _renderClientViewInner() {
 
       '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:8px;">' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:8px;">' +
       'Any specific date? ' +
       '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
       '(optional)</span></div>' +
       '<input type="date" id="req-date" ' +
       'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(255,255,255,0.12);' +
+      'border-bottom:1px solid rgba(200,168,75,0.3);' +
       'color:#e8e2d9;font-family:\'IBM Plex Mono\',monospace;font-size:12px;' +
-      'padding:8px 0 10px;outline:none;' +
+      'padding:8px 0 10px;outline:none;caret-color:#C8A84B;' +
       'color-scheme:dark;background-image:none;">' +
       '</div>' +
 
       '<div style="padding:14px 18px;border-bottom:1px dashed rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
       'How urgent? ' +
       '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
       '(optional)</span></div>' +
@@ -3930,7 +3930,7 @@ function _renderClientViewInner() {
 
       '<div style="padding:14px 18px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#777;margin-bottom:10px;">' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;margin-bottom:10px;">' +
       'Reference photo ' +
       '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
       '(optional)</span></div>' +
@@ -3941,7 +3941,7 @@ function _renderClientViewInner() {
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.14em;text-transform:uppercase;color:#555;">Tap to upload</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'color:#333;margin-top:3px;">JPG / PNG</div>' +
+      'color:#444;margin-top:3px;">JPG / PNG</div>' +
       '</div>' +
       '<div id="req-upload-preview" style="display:none;">' +
       '<img id="req-preview-img" src="" style="width:100%;max-height:140px;object-fit:cover;display:block;">' +
@@ -3969,9 +3969,9 @@ function _renderClientViewInner() {
       'padding:13px 16px;cursor:pointer;flex-shrink:0;">Cancel</button>' +
       '<button id="req-submit-btn" onclick="submitClientRequest()" ' +
       'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;' +
-      'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.35);' +
-      'padding:13px 0;cursor:pointer;">&#x2192; Send Request</button>' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
+      'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
+      'box-shadow:0 0 14px rgba(200,168,75,0.15);padding:13px 0;cursor:pointer;">&#x2192; Send Request</button>' +
       '</div>' +
 
       '</div>' +
@@ -4022,8 +4022,8 @@ function _reqToggleChip(el) {
     chip.style.borderColor = 'rgba(255,255,255,0.1)';
   });
   el.style.color = '#C8A84B';
-  el.style.background = 'rgba(200,168,75,0.08)';
-  el.style.borderColor = 'rgba(200,168,75,0.35)';
+  el.style.background = 'rgba(200,168,75,0.07)';
+  el.style.borderColor = 'rgba(200,168,75,0.4)';
 }
 window._reqToggleChip = _reqToggleChip;
 
