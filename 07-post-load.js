@@ -3140,7 +3140,8 @@ function _renderPipelineInner() {
   window.pcsPipelineFilter = null;
 
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
-  var _clientStages = ['awaiting_approval', 'awaiting_brand_input', 'published'];
+  var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
+    'scheduled', 'published'];
   var _isClient = (effectiveRole || '').toLowerCase() === 'client';
   const base = allPosts.filter(p => {
     if (_isClient && !_clientStages.includes(p.stage || '')) return false;
@@ -3395,7 +3396,6 @@ function filterLibrary() {
 
   const filtered = allPosts.filter(p => {
     var _isClient = (effectiveRole || '').toLowerCase() === 'client';
-    if (_isClient && (p.stage || '') !== 'published') return false;
     if (!_allowedStages.includes(p.stage || '')) return false;
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage || '') !== stage) return false;

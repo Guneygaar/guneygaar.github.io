@@ -186,12 +186,6 @@ function switchTab(btn) {
     if (!btn) return;
   }
   var role = (window.effectiveRole || '').toLowerCase();
-  if (role === 'client') {
-    document.getElementById('dashboard-view')?.classList.remove('active');
-    document.getElementById('client-view')?.classList.add('active');
-    if (typeof renderClientView === 'function') renderClientView();
-    return;
-  }
   const dv = document.getElementById('dashboard-view');
   if (dv && !dv.classList.contains('active')) {
     dv.classList.add('active');
