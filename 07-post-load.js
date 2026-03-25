@@ -3675,21 +3675,62 @@ function _renderClientViewInner() {
   }
 
   // Approval section
-  var approvalPosts = allPosts.filter(function(p) { return p.stage === 'awaiting_approval'; });
+  var approvalPosts = allPosts.filter(function(p) {
+    return p.stage === 'awaiting_approval';
+  }).sort(function(a, b) {
+    var aTime = a.status_changed_at ? new Date(a.status_changed_at).getTime() : 0;
+    var bTime = b.status_changed_at ? new Date(b.status_changed_at).getTime() : 0;
+    return aTime - bTime;
+  });
 
   // CHANGE 4 - Approval eyebrow
   var approvalEyebrow = document.getElementById('client-approval-eyebrow');
   if (approvalEyebrow) {
     approvalEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;' +
-      'padding:14px 18px 8px;">' +
-      '<div style="font-size:13px;color:#3ECF8E;flex-shrink:0;">&#x2713;</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
-      'Awaiting Approval</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'color:#444;border:1px solid rgba(255,255,255,0.07);padding:2px 7px;">' +
-      approvalPosts.length + '</div>' +
+      '<div style="padding:20px 18px 18px;' +
+      'border-bottom:1px solid rgba(255,255,255,0.05);">' +
+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
+      '<span style="font-size:11px;color:#3ECF8E;">&#x2713;</span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#3ECF8E;">' +
+      'Awaiting Your Approval</span>' +
+      '</div>' +
+
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+      'font-weight:600;color:#e8e2d9;line-height:1.2;margin-bottom:10px;' +
+      'letter-spacing:-0.01em;">' +
+      approvalPosts.length + ' posts are<br>waiting for your OK' +
+      '</div>' +
+
+      (function() {
+        var now = Date.now();
+        var waitTimes = approvalPosts.map(function(p) {
+          return p.status_changed_at
+            ? Math.floor((now - new Date(p.status_changed_at).getTime()) / 86400000)
+            : 0;
+        });
+        var oldest = Math.max.apply(null, waitTimes);
+        var overdue = waitTimes.filter(function(d) { return d >= 5; }).length;
+        var deckHtml =
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.1em;color:#aaa;">Oldest waiting: </span>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.1em;color:#F6A623;font-weight:500;">' + oldest + ' days</span>';
+        if (overdue > 0) {
+          deckHtml +=
+            '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+            'letter-spacing:0.1em;color:#aaa;"> &nbsp;&nbsp; </span>' +
+            '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+            'letter-spacing:0.1em;color:#FF4B4B;font-weight:500;">' +
+            overdue + ' overdue</span>';
+        }
+        return '<div style="margin-bottom:14px;">' + deckHtml + '</div>';
+      })() +
+
+      '<div style="height:1px;background:linear-gradient(to right,' +
+      'rgba(62,207,142,0.5),transparent);"></div>' +
+
       '</div>';
   }
 
@@ -3699,7 +3740,42 @@ function _renderClientViewInner() {
     if (!approvalPosts.length) {
       approvalItems.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07);">Nothing to approve</div>';
     } else {
+      var now = Date.now();
       approvalItems.innerHTML = approvalPosts.map(function(p) {
+        var daysWaiting = p.status_changed_at
+          ? Math.floor((now - new Date(p.status_changed_at).getTime()) / 86400000)
+          : 0;
+
+        var dividerColor, dividerBg, dividerLabel;
+        if (daysWaiting >= 5) {
+          dividerColor = '#FF4B4B';
+          dividerBg = 'rgba(255,75,75,0.25)';
+          dividerLabel = 'Waiting ' + daysWaiting + ' days';
+        } else if (daysWaiting >= 2) {
+          dividerColor = '#F6A623';
+          dividerBg = 'rgba(246,166,35,0.25)';
+          dividerLabel = 'Waiting ' + daysWaiting + ' days';
+        } else if (daysWaiting === 1) {
+          dividerColor = '#F6A623';
+          dividerBg = 'rgba(246,166,35,0.15)';
+          dividerLabel = 'Sent yesterday';
+        } else {
+          dividerColor = '#3ECF8E';
+          dividerBg = 'rgba(62,207,142,0.2)';
+          dividerLabel = 'Sent today';
+        }
+
+        var divider =
+          '<div style="display:flex;align-items:center;gap:10px;' +
+          'padding:10px 18px 6px;">' +
+          '<div style="flex:1;height:1px;background:' + dividerBg + ';"></div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.16em;text-transform:uppercase;' +
+          'color:' + dividerColor + ';font-weight:500;white-space:nowrap;">' +
+          dividerLabel + '</div>' +
+          '<div style="flex:1;height:1px;background:' + dividerBg + ';"></div>' +
+          '</div>';
+
         var id = getPostId(p);
         var imgs = Array.isArray(p.images) ? p.images : [];
         var hero = imgs[0] || '';
@@ -3727,7 +3803,7 @@ function _renderClientViewInner() {
         );
         var waLink = 'https://wa.me/?text=' + waText;
 
-        return '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
+        return divider + '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
           'background:#0a0a0a;margin-bottom:0;position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#3ECF8E;"></div>' +
           '<div style="padding:10px 16px 0 20px;">' +
