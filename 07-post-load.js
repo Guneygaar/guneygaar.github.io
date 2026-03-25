@@ -3781,14 +3781,36 @@ function _renderClientViewInner() {
             '<button class="btn-send-changes" onclick="submitClientChanges(\'' + esc(id) + '\')">Send Change Request</button>' +
           '</div>' +
           '<div class="approval-confirmed" id="approved-confirm-' + esc(id) + '">Approved - the team has been notified.</div>' +
-          '<div style="padding:8px 16px 14px 20px;">' +
-          '<a href="' + esc(waLink) + '" target="_blank" rel="noopener" ' +
-          'style="display:block;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:7px;letter-spacing:0.1em;text-transform:uppercase;' +
-          'color:#888;background:transparent;' +
-          'border:1px solid rgba(255,255,255,0.15);' +
-          'padding:10px 0;width:100%;cursor:pointer;text-align:center;text-decoration:none;">Share on WhatsApp</a>' +
-          '</div>' +
+          (function(){
+            var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
+            return '<div style="padding:0 16px 14px 20px;display:flex;gap:8px;">' +
+            '<a href="' + esc(waLink) + '" target="_blank" ' +
+            'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+            'letter-spacing:0.1em;text-transform:uppercase;color:#888;' +
+            'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
+            'padding:10px 0;cursor:pointer;text-align:center;text-decoration:none;' +
+            'display:block;">Share on WhatsApp</a>' +
+            (_isDesktop ?
+              '<button onclick="(function(){' +
+              'var msg=\'' + (p.title||'').replace(/'/g,"\\'") + '\\n\\n' +
+              (p.caption||'').replace(/'/g,"\\'").slice(0,300).replace(/\n/g,'\\n') +
+              '\\n\\nApprove: https://srtd.io/ok/?p=' +
+              (p.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50) +
+              '\\nChanges: https://srtd.io/no/?p=' +
+              (p.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50) + '\';' +
+              'navigator.clipboard.writeText(msg).then(function(){' +
+              'var b=this;b.textContent=\'Copied\';' +
+              'setTimeout(function(){b.textContent=\'\u2398 Copy to Share\';},2000);' +
+              '}.bind(this));' +
+              '})()" ' +
+              'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+              'letter-spacing:0.1em;text-transform:uppercase;color:#888;' +
+              'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
+              'padding:10px 0;cursor:pointer;">' +
+              '\u2398 Copy to Share</button>'
+              : '') +
+            '</div>';
+          })() +
           '</div>';
       }).join('');
     }
@@ -4581,19 +4603,43 @@ function _openClientEditorial(postId) {
     '</div>' +
 
     // WhatsApp share
-    '<button onclick="(function(){' +
-    'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
-    '(document.getElementById(\'ed-caption-\'+\'' + postId + '\') ? ' +
-    'document.getElementById(\'ed-caption-\'+\'' + postId + '\').textContent : ' +
-    '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
-    '\'\\n\\nPlease review and let me know.\';' +
-    'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
-    '})()" ' +
-    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#e8e2d9;' +
-    'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);' +
-    'padding:14px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
-    '&#x2197; Share on WhatsApp</button>' +
+    (function(){
+      var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
+      var rawSlug = (post.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50);
+      return '<div style="display:' + (_isDesktop ? 'flex' : 'block') + ';gap:8px;margin-bottom:10px;">' +
+      '<button onclick="(function(){' +
+      'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
+      '(document.getElementById(\'ed-caption-\'+\'' + postId + '\') ? ' +
+      'document.getElementById(\'ed-caption-\'+\'' + postId + '\').textContent : ' +
+      '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
+      '\'\\n\\nPlease review and let me know.\';' +
+      'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
+      '})()" ' +
+      'style="flex:1;width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#e8e2d9;' +
+      'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);' +
+      'padding:14px 0;cursor:pointer;display:block;">' +
+      '&#x2197; Share on WhatsApp</button>' +
+      (_isDesktop ?
+        '<button onclick="(function(){' +
+        'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
+        'document.getElementById(\'ed-caption-' + postId + '\')?.textContent+' +
+        '\'\\n\\nApprove: https://srtd.io/ok/?p=' + rawSlug + '\'+' +
+        '\'\\nChanges: https://srtd.io/no/?p=' + rawSlug + '\';' +
+        'navigator.clipboard.writeText(msg).then(function(){' +
+        'var b=document.getElementById(\'ed-copy-' + postId + '\');' +
+        'if(b){b.textContent=\'Copied\';' +
+        'setTimeout(function(){b.textContent=\'\u2398 Copy to Share\';},2000);}' +
+        '});' +
+        '})()" id="ed-copy-' + postId + '" ' +
+        'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
+        'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
+        'padding:14px 0;cursor:pointer;">' +
+        '\u2398 Copy to Share</button>'
+        : '') +
+      '</div>';
+    })() +
 
     // Approve button
     '<button onclick="_editorialApprove(\'' + postId + '\')" ' +
