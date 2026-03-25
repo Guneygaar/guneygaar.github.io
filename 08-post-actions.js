@@ -1718,19 +1718,25 @@ function _startCaptionEdit(postId) {
   ta.value = currentText;
   ta.style.cssText = [
     'width:100%',
-    'background:rgba(255,255,255,0.03)',
-    'border:1px solid rgba(246,166,35,0.3)',
+    'background:transparent',
+    'border:none',
+    'border-bottom:1px solid rgba(200,168,75,0.3)',
     'color:#e8e2d9',
     'font-family:\'DM Sans\',sans-serif',
-    'font-size:13px',
-    'padding:10px',
+    'font-size:14px',
+    'line-height:1.7',
+    'padding:8px 0 10px',
     'outline:none',
     'resize:none',
-    'line-height:1.6',
-    'min-height:130px',
-    'margin-top:4px'
+    'overflow:hidden',
+    'min-height:120px',
+    'height:auto',
+    'caret-color:#C8A84B'
   ].join(';');
+  ta.oninput = function() { this.style.height='auto'; this.style.height=this.scrollHeight+'px'; };
   textEl.parentNode.insertBefore(ta, textEl.nextSibling);
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
 
   var btnRow = document.createElement('div');
   btnRow.id = 'pcs-caption-btnrow';
