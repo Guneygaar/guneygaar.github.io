@@ -566,9 +566,9 @@ function _renderPCS(postId) {
             (canEdit ?
               '<button onclick="event.stopPropagation();_pcsRemovePhoto(\'' +
               esc(id) + '\',' + idx + ')" ' +
-              'style="position:absolute;top:3px;right:3px;width:18px;height:18px;' +
-              'border-radius:50%;background:rgba(0,0,0,0.75);border:none;' +
-              'color:#888;font-size:10px;cursor:pointer;display:flex;' +
+              'style="position:absolute;top:4px;right:4px;width:28px;height:28px;' +
+              'border-radius:50%;background:rgba(0,0,0,0.85);border:none;' +
+              'color:#e8e2d9;font-size:14px;cursor:pointer;display:flex;' +
               'align-items:center;justify-content:center;line-height:1;">x</button>'
               : '') +
             '</div>';

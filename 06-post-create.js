@@ -154,6 +154,11 @@ if (_np('new-post-owner'))    _np('new-post-owner').value    = '';
 if (_np('new-post-stage'))    _np('new-post-stage').value    = 'in_production';
 if (_np('new-post-date'))     _np('new-post-date').value     = '';
 if (_np('new-post-format'))   _np('new-post-format').value   = '';
+
+var captionEl = document.getElementById('new-post-caption');
+if (captionEl) captionEl.value = '';
+_newPostAssetFiles = [];
+if (typeof clearPostAsset === 'function') clearPostAsset();
 }
 
 var strip = document.getElementById('nps-color-strip');
@@ -283,15 +288,9 @@ body: JSON.stringify(payload)
 console.log('[submitNewPost] API SUCCESS');
 clearDraft();
 stopDraftAutosave();
-
-var _npoClose2 = document.getElementById('new-post-overlay');
-if (_npoClose2) _npoClose2.style.display = 'none';
-document.body.style.overflow = '';
-window._modalOpen = false;
-
+closeNewPostModal();
 await loadPosts();
-
-showToast('Post created OK', 'success');
+showToast('Post created', 'success');
 
 } catch (err) {
 
