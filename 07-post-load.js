@@ -3638,11 +3638,18 @@ function _renderClientViewInner() {
           'color:#F6A623;background:transparent;' +
           'border:1px solid rgba(246,166,35,0.35);padding:10px 0;cursor:pointer;' +
           'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
-          '<button style="flex:1;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:7px;letter-spacing:0.14em;text-transform:uppercase;' +
-          'color:#555;background:transparent;' +
-          'border:1px solid rgba(255,255,255,0.07);padding:10px 0;cursor:pointer;" ' +
-          'onclick="clientAcknowledge(\'' + esc(id) + '\')">Send on WhatsApp</button>' +
+          (function() {
+            var inputMsg = 'Hi, we need something from you for the post: ' +
+              (p.title || '') + '.\n\n' +
+              (p.comments || '') + '\n\nPlease upload or send it here.';
+            var inputWaUrl = 'https://wa.me/?text=' + encodeURIComponent(inputMsg);
+            return '<a href="' + inputWaUrl + '" target="_blank" ' +
+              'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+              'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
+              'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+              'padding:10px 0;cursor:pointer;text-align:center;' +
+              'text-decoration:none;display:block;">Send on WhatsApp</a>';
+          })() +
           '</div>' +
           '<div id="upload-confirm-' + esc(id) + '"></div>' +
           '</div>';
@@ -3692,8 +3699,8 @@ function _renderClientViewInner() {
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
 
-        return '<div style="margin:0 0 1px;border-bottom:1px solid rgba(255,255,255,0.07);' +
-          'background:#0a0a0f;position:relative;overflow:hidden;">' +
+        return '<div style="margin:0 0 0;border-bottom:2px solid #0a0a0f;' +
+          'background:#0a0a0a;margin-bottom:0;position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#3ECF8E;"></div>' +
           '<div style="padding:10px 16px 0 20px;">' +
           '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
@@ -3937,16 +3944,15 @@ function _closeReqForm() {
 window._closeReqForm = _closeReqForm;
 
 function _reqToggleChip(el) {
-  var isActive = el.style.color === 'rgb(200, 168, 75)';
-  if (isActive) {
-    el.style.color = '#666';
-    el.style.background = 'transparent';
-    el.style.borderColor = 'rgba(255,255,255,0.1)';
-  } else {
-    el.style.color = '#C8A84B';
-    el.style.background = 'rgba(200,168,75,0.08)';
-    el.style.borderColor = 'rgba(200,168,75,0.35)';
-  }
+  var allChips = el.parentNode.querySelectorAll('button');
+  allChips.forEach(function(chip) {
+    chip.style.color = '#666';
+    chip.style.background = 'transparent';
+    chip.style.borderColor = 'rgba(255,255,255,0.1)';
+  });
+  el.style.color = '#C8A84B';
+  el.style.background = 'rgba(200,168,75,0.08)';
+  el.style.borderColor = 'rgba(200,168,75,0.35)';
 }
 window._reqToggleChip = _reqToggleChip;
 

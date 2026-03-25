@@ -34,6 +34,8 @@ async function _startRouter() {
   const refreshToken = localStorage.getItem('sb_refresh_token');
 
   if (savedRole && (savedToken || refreshToken)) {
+    var savedName = localStorage.getItem('hinglish_name');
+    if (savedName) window.currentUserName = savedName;
     // Try to refresh the session silently first
     if (refreshToken) {
       const newToken = await refreshSession();
