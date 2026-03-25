@@ -251,9 +251,9 @@ async function submitClientRequest() {
     showToast('Please describe what you need', 'error');
     return;
   }
-  const btn       = document.getElementById('req-submit-btn');
-  const fileInput = document.getElementById('req-file');
-  const file      = fileInput?.files[0] || null;
+  var btn       = document.getElementById('req-submit-btn');
+  var fileInput = document.getElementById('req-file');
+  var files = fileInput ? Array.from(fileInput.files) : [];
   if (btn) btn.disabled = true;
   try {
     const postId = 'REQ-' + Date.now();
@@ -289,13 +289,23 @@ async function submitClientRequest() {
     if (isUrgent) {
       payload.comments = '[URGENT] ' + (payload.comments || '');
     }
+    var imageUrls = [];
+    if (files.length) {
+      imageUrls = await Promise.all(
+        files.map(function(f) { return uploadPostAsset(f, postId); })
+      );
+    }
+    if (imageUrls.length) {
+      payload.comments = (payload.comments || '') +
+        '\n\nReference photos:\n' + imageUrls.join('\n');
+      payload.images = imageUrls;
+    }
     console.log('[REQUEST] PAYLOAD:', payload);
     await apiFetch('/posts', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     console.log('[REQUEST] API SUCCESS');
-    if (file) await uploadPostAsset(file, postId);
     await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
