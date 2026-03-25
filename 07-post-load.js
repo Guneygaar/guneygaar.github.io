@@ -674,6 +674,14 @@ async function deleteTask(id) {
 
 function renderAll() {
   if ((window.effectiveRole || '').toLowerCase() === 'client') {
+    var clientTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
+    if (clientTab === 'pipeline') {
+      if (typeof renderPipeline === 'function') renderPipeline();
+      return;
+    }
+    if (clientTab === 'library') {
+      return;
+    }
     if (typeof renderClientView === 'function') renderClientView();
     return;
   }
