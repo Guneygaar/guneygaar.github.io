@@ -235,7 +235,7 @@ async function submitClientRequest() {
       post_id:     postId,
       title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
       stage:       'in_production',
-      owner:       email,
+      owner:       'Client',
       comments:    brief,
       target_date: reqDate,
       created_at:  new Date().toISOString(),

@@ -3864,7 +3864,7 @@ function _renderClientViewInner() {
       'style="width:100%;background:transparent;border:none;' +
       'border-bottom:1px solid rgba(255,255,255,0.12);' +
       'color:#e8e2d9;font-family:\'IBM Plex Mono\',monospace;font-size:12px;' +
-      'padding:8px 0 10px;outline:none;-webkit-appearance:none;appearance:none;' +
+      'padding:8px 0 10px;outline:none;' +
       'color-scheme:dark;background-image:none;">' +
       '</div>' +
 
