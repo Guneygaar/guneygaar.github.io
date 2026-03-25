@@ -190,24 +190,52 @@ async function clientAcknowledge(postId) {
 }
 
 async function handleClientUpload(input, postId) {
-  const file = input.files[0];
-  if (!file) return;
-  const label = document.getElementById(`upload-label-${postId}`);
+  var files = Array.from(input.files);
+  if (!files.length) return;
+  var label = document.getElementById('upload-label-' + postId);
   if (label) label.textContent = 'Uploading...';
   try {
-    const url = await uploadPostAsset(file, postId);
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+    // Upload all files in parallel
+    var urls = await Promise.all(files.map(function(file) {
+      return uploadPostAsset(file, postId);
+    }));
+
+    // Fetch existing images array from allPosts
+    var existing = [];
+    var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+    if (post && Array.isArray(post.images)) existing = post.images;
+
+    // Merge existing + new URLs
+    var merged = existing.concat(urls);
+
+    // PATCH images array + move to in_production
+    await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
       method: 'PATCH',
-      body: JSON.stringify({ canva_link: url, stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
+      body: JSON.stringify({
+        images: merged,
+        stage: 'in_production',
+        updated_at: new Date().toISOString(),
+        status_changed_at: new Date().toISOString()
+      }),
     });
-    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Uploaded asset' });
-    const confirmEl = document.getElementById(`upload-confirm-${postId}`);
-    if (confirmEl) confirmEl.innerHTML = `<div style="color:var(--c-green);font-size:13px;margin-top:var(--sp-2)">ok File uploaded! The team has been notified.</div>`;
-    if (label) label.textContent = '^ Upload Here';
-    setTimeout(() => loadPostsForClient(), 1000);
+
+    await logActivity({
+      post_id: postId,
+      actor: 'Client',
+      actor_role: 'Client',
+      action: 'Uploaded ' + urls.length + ' asset' + (urls.length > 1 ? 's' : '')
+    });
+
+    var confirmEl = document.getElementById('upload-confirm-' + postId);
+    if (confirmEl) confirmEl.innerHTML =
+      '<div style="color:var(--c-green);font-size:13px;margin-top:8px">' +
+      urls.length + ' photo' + (urls.length > 1 ? 's' : '') +
+      ' uploaded. The team has been notified.</div>';
+    if (label) label.textContent = '+ Upload Here';
+    setTimeout(function() { loadPostsForClient(); }, 1000);
   } catch (err) {
-    if (label) label.textContent = '^ Upload Here';
-    showToast('Upload failed  -  try again', 'error');
+    if (label) label.textContent = '+ Upload Here';
+    showToast('Upload failed - try again', 'error');
   }
 }
 
