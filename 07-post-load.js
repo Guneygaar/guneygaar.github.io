@@ -3666,20 +3666,7 @@ function _renderClientViewInner() {
             'mask-image:linear-gradient(to bottom,black 20px,transparent 50px);">' +
             esc(p.caption) + '</div>' +
             '<button id="smb-' + p.post_id + '" ' +
-            'onclick="(function(){' +
-              'var c=document.getElementById(\'cap-' + p.post_id + '\');' +
-              'var b=document.getElementById(\'smb-' + p.post_id + '\');' +
-              'if(c.style.maxHeight===\'none\'||c.style.maxHeight===\'\'){' +
-                'c.style.maxHeight=\'52px\';' +
-                'c.style.webkitMaskImage=\'linear-gradient(to bottom,black 20px,transparent 50px)\';' +
-                'c.style.maskImage=\'linear-gradient(to bottom,black 20px,transparent 50px)\';' +
-                'b.textContent=\'See more \u2192\';}' +
-              'else{' +
-                'c.style.maxHeight=\'none\';' +
-                'c.style.webkitMaskImage=\'none\';' +
-                'c.style.maskImage=\'none\';' +
-                'b.textContent=\'See less \u2190\';}' +
-            '})()" ' +
+            'onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
             'style="display:block;width:100%;text-align:right;' +
             'font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
             'letter-spacing:0.1em;text-transform:uppercase;' +
@@ -4176,3 +4163,146 @@ function chaseAll() {
     fallbackCopy(msg);
   }
 }
+
+// -- Client Editorial Full-Screen View ----------
+function _openClientEditorial(postId) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+
+  var existing = document.getElementById('client-editorial-overlay');
+  if (existing) existing.remove();
+
+  var imgs = Array.isArray(post.images) ? post.images : [];
+  var hero = imgs[0] || '';
+  var img2 = imgs[1] || '';
+  var pillar = (post.content_pillar || post.contentPillar || '').toUpperCase();
+  var location = (post.location || '').toUpperCase();
+  var caption = post.caption || '';
+  var title = post.title || '';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'client-editorial-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
+    'background:#0a0a0a;overflow-y:auto;' +
+    '-webkit-overflow-scrolling:touch;';
+
+  overlay.innerHTML =
+    // Topbar
+    '<div style="position:sticky;top:0;z-index:10;' +
+    'background:rgba(10,10,10,0.92);backdrop-filter:blur(8px);' +
+    'display:flex;align-items:center;justify-content:space-between;' +
+    'padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+    '<button onclick="_closeClientEditorial()" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
+    'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#333;">' +
+    'Awaiting Approval</div>' +
+    '<div style="width:60px;"></div>' +
+    '</div>' +
+
+    // Hero image
+    (hero ?
+      '<img src="' + hero + '" style="width:100%;max-height:280px;' +
+      'object-fit:cover;display:block;" loading="eager">'
+      : '') +
+
+    // Body
+    '<div style="padding:28px 22px 0;max-width:390px;margin:0 auto;">' +
+
+    // Pillar label
+    (pillar ?
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;' +
+      'margin-bottom:10px;">' + pillar + '</div>'
+      : '') +
+
+    // Title
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:26px;' +
+    'font-weight:700;color:#f0ece4;line-height:1.2;margin-bottom:20px;' +
+    'letter-spacing:-0.01em;">' + title + '</div>' +
+
+    // Gold divider
+    '<div style="width:32px;height:1px;background:#C8A84B;' +
+    'margin-bottom:22px;"></div>' +
+
+    // Caption
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
+    'color:#888;line-height:1.8;white-space:pre-wrap;' +
+    'word-wrap:break-word;margin-bottom:28px;">' + caption + '</div>' +
+
+    '</div>' +
+
+    // Second image
+    (img2 ?
+      '<img src="' + img2 + '" style="width:100%;max-height:220px;' +
+      'object-fit:cover;display:block;margin-bottom:28px;" loading="eager">'
+      : '') +
+
+    // Footer
+    '<div style="padding:0 22px 44px;max-width:390px;margin:0 auto;">' +
+
+    // Meta pills -- pillar + location only, NOT client
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' +
+    (pillar ?
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#777;' +
+      'border:1px solid rgba(255,255,255,0.15);padding:4px 8px;">' +
+      pillar + '</div>'
+      : '') +
+    (location ?
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#777;' +
+      'border:1px solid rgba(255,255,255,0.15);padding:4px 8px;">' +
+      location + '</div>'
+      : '') +
+    '</div>' +
+
+    // Approve button
+    '<button onclick="_editorialApprove(\'' + postId + '\')" ' +
+    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;' +
+    'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.35);' +
+    'padding:16px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
+    '&#x2713; Approve Post</button>' +
+
+    // Request Changes button
+    '<button onclick="_editorialChanges(\'' + postId + '\')" ' +
+    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'letter-spacing:0.2em;text-transform:uppercase;color:#555;' +
+    'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+    'padding:14px 0;cursor:pointer;display:block;">' +
+    'Request Changes</button>' +
+
+    '</div>';
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+window._openClientEditorial = _openClientEditorial;
+
+function _closeClientEditorial() {
+  var overlay = document.getElementById('client-editorial-overlay');
+  if (overlay) overlay.remove();
+  document.body.style.overflow = '';
+}
+window._closeClientEditorial = _closeClientEditorial;
+
+function _editorialApprove(postId) {
+  _closeClientEditorial();
+  if (typeof clientApprove === 'function') {
+    clientApprove(postId);
+  } else if (typeof quickStage === 'function') {
+    quickStage(postId, 'scheduled');
+  }
+}
+window._editorialApprove = _editorialApprove;
+
+function _editorialChanges(postId) {
+  _closeClientEditorial();
+  if (typeof showChangeInput === 'function') {
+    showChangeInput(postId);
+  }
+}
+window._editorialChanges = _editorialChanges;
