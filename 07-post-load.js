@@ -3844,7 +3844,7 @@ function _renderClientViewInner() {
       '<span style="color:#444;font-size:6px;letter-spacing:0.1em;text-transform:none;">' +
       '(optional)</span></div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-      ['Photo Post','Carousel','Video','Text Only','Announcement'].map(function(t){
+      ['Photo','Carousel','Video','Text'].map(function(t){
         return '<button onclick="_reqToggleChip(this)" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
         'letter-spacing:0.1em;text-transform:uppercase;' +
@@ -3948,9 +3948,28 @@ function _renderClientViewInner() {
 
 function _closeReqForm() {
   var o = document.getElementById('req-overlay');
-  if (o) o.remove();
+  if (o) o.style.display = 'none';
   var nav = document.getElementById('bottom-nav');
   if (nav) nav.style.display = '';
+  // Reset all fields for next open
+  var topic = document.getElementById('req-topic');
+  if (topic) topic.value = '';
+  var date = document.getElementById('req-date');
+  if (date) date.value = '';
+  // Reset chips
+  var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
+  chips.forEach(function(c) {
+    c.style.color = '#666';
+    c.style.background = 'transparent';
+    c.style.borderColor = 'rgba(255,255,255,0.1)';
+  });
+  // Reset urgency to normal
+  if (typeof _reqSetUrgency === 'function') {
+    var normalBtn = document.getElementById('req-urgency-normal');
+    if (normalBtn) _reqSetUrgency(normalBtn, 'normal');
+  }
+  // Reset photo upload
+  if (typeof _reqClearUpload === 'function') _reqClearUpload();
 }
 window._closeReqForm = _closeReqForm;
 

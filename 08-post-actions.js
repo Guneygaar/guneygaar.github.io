@@ -246,18 +246,20 @@ async function submitClientRequest() {
       payload.comments = (payload.comments || '') +
         '\n\nReference: ' + reqRef.value.trim();
     }
+    // Read selected content type chip
+    var selectedChip = document.querySelector(
+      '#req-overlay button[style*="rgb(200, 168, 75)"]'
+    );
+    if (selectedChip) {
+      payload.comments = (payload.comments || '') +
+        ' [Type: ' + selectedChip.textContent.trim() + ']';
+    }
+    // Read urgency
     var urgentBtn = document.getElementById('req-urgency-urgent');
     var isUrgent = urgentBtn &&
       urgentBtn.style.color === 'rgb(255, 75, 75)';
     if (isUrgent) {
       payload.comments = '[URGENT] ' + (payload.comments || '');
-    }
-    var selectedChip = document.querySelector(
-      '#req-overlay .chips button[style*="rgb(200, 168, 75)"]'
-    );
-    if (selectedChip) {
-      payload.comments = (payload.comments || '') +
-        ' [Type: ' + selectedChip.textContent + ']';
     }
     console.log('[REQUEST] PAYLOAD:', payload);
     await apiFetch('/posts', {
