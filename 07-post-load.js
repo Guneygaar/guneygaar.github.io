@@ -3122,7 +3122,10 @@ function _renderPipelineInner() {
   window.pcsPipelineFilter = null;
 
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
+  var _clientStages = ['awaiting_approval', 'awaiting_brand_input', 'published'];
+  var _isClient = (effectiveRole || '').toLowerCase() === 'client';
   const base = allPosts.filter(p => {
+    if (_isClient && !_clientStages.includes(p.stage || '')) return false;
     return PIPELINE_RENDER_ORDER.includes(p.stage || '');
   });
   var stageFiltered = activeFilter && Array.isArray(activeFilter)
@@ -3369,6 +3372,8 @@ function filterLibrary() {
   const _allowedStages = stage ? _LIB_STAGES_ALL : _LIB_STAGES_DEFAULT;
 
   const filtered = allPosts.filter(p => {
+    var _isClient = (effectiveRole || '').toLowerCase() === 'client';
+    if (_isClient && (p.stage || '') !== 'published') return false;
     if (!_allowedStages.includes(p.stage || '')) return false;
     if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
     if (stage  && (p.stage || '') !== stage) return false;
