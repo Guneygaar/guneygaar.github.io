@@ -3616,7 +3616,7 @@ function _renderClientViewInner() {
           'background:rgba(255,255,255,0.015);' +
           'position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;' +
-          'width:3px;background:#3ECF8E;"></div>' +
+          'width:3px;background:#F6A623;"></div>' +
           '<div style="display:flex;align-items:center;gap:8px;' +
           'padding:10px 14px 8px 16px;">' +
           '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
@@ -3757,12 +3757,12 @@ function _renderClientViewInner() {
           '<button onclick="clientApprove(\'' + esc(id) + '\',this)" ' +
           'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
           'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
-          'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.3);' +
+          'background:rgba(62,207,142,0.06);border:1px solid rgba(62,207,142,0.4);' +
           'padding:12px 0;cursor:pointer;">Approve</button>' +
           '<button onclick="showChangeInput(this,\'' + esc(id) + '\')" ' +
           'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
-          'background:transparent;border:1px solid rgba(255,255,255,0.08);' +
+          'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
+          'background:transparent;border:1px solid rgba(255,255,255,0.15);' +
           'padding:12px 0;cursor:pointer;">Changes</button>' +
           '</div>' +
           '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
@@ -3774,9 +3774,9 @@ function _renderClientViewInner() {
           '<a href="' + esc(waLink) + '" target="_blank" rel="noopener" ' +
           'style="display:block;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
           'font-size:7px;letter-spacing:0.1em;text-transform:uppercase;' +
-          'color:#333;background:transparent;' +
-          'border:1px solid rgba(255,255,255,0.05);' +
-          'padding:8px 0;cursor:pointer;text-align:center;text-decoration:none;">Share on WhatsApp</a>' +
+          'color:#888;background:transparent;' +
+          'border:1px solid rgba(255,255,255,0.15);' +
+          'padding:10px 0;width:100%;cursor:pointer;text-align:center;text-decoration:none;">Share on WhatsApp</a>' +
           '</div>' +
           '</div>';
       }).join('');
@@ -4691,6 +4691,19 @@ function _edOpenLightbox(postId, startIdx) {
     var diff = tx - e.changedTouches[0].clientX;
     if (Math.abs(diff) > 40) _edLbNav(diff > 0 ? 1 : -1);
   });
+
+  var mx = 0;
+  var dragging = false;
+  lb.addEventListener('mousedown', function(e) {
+    mx = e.clientX; dragging = true;
+  });
+  lb.addEventListener('mouseup', function(e) {
+    if (!dragging) return;
+    dragging = false;
+    var diff = mx - e.clientX;
+    if (Math.abs(diff) > 40) _edLbNav(diff > 0 ? 1 : -1);
+  });
+  lb.addEventListener('mouseleave', function() { dragging = false; });
 }
 window._edOpenLightbox = _edOpenLightbox;
 
