@@ -4612,7 +4612,9 @@ function _openClientEditorial(postId) {
       '(document.getElementById(\'ed-caption-\'+\'' + postId + '\') ? ' +
       'document.getElementById(\'ed-caption-\'+\'' + postId + '\').textContent : ' +
       '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
-      '\'\\n\\nPlease review and let me know.\';' +
+      '\'\\n\\nPlease review and let me know.\'+' +
+      '\'\\n\\nApprove: https://srtd.io/ok/?p=' + rawSlug + '\'+' +
+      '\'\\nChanges: https://srtd.io/no/?p=' + rawSlug + '\';' +
       'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
       '})()" ' +
       'style="flex:1;width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
@@ -4623,13 +4625,15 @@ function _openClientEditorial(postId) {
       (_isDesktop ?
         '<button onclick="(function(){' +
         'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
-        'document.getElementById(\'ed-caption-' + postId + '\')?.textContent+' +
+        '(document.getElementById(\'ed-caption-' + postId + '\') ? ' +
+        'document.getElementById(\'ed-caption-' + postId + '\').textContent : ' +
+        '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
         '\'\\n\\nApprove: https://srtd.io/ok/?p=' + rawSlug + '\'+' +
         '\'\\nChanges: https://srtd.io/no/?p=' + rawSlug + '\';' +
         'navigator.clipboard.writeText(msg).then(function(){' +
         'var b=document.getElementById(\'ed-copy-' + postId + '\');' +
         'if(b){b.textContent=\'Copied\';' +
-        'setTimeout(function(){b.textContent=\'\u2398 Copy to Share\';},2000);}' +
+        'setTimeout(function(){b.textContent=\'&#x2318; Copy to Share\';},2000);}' +
         '});' +
         '})()" id="ed-copy-' + postId + '" ' +
         'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
