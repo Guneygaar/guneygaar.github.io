@@ -260,9 +260,15 @@ async function submitClientRequest() {
     const postId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('hinglish_email') || 'Client';
     const reqDate = document.getElementById('req-date')?.value || null;
+    var reqName = (document.getElementById('req-name') || {}).value || '';
+    var now = new Date();
+    var fallbackTitle = 'Request - ' +
+      now.toLocaleDateString('en-IN', { day:'numeric', month:'short' }) +
+      ' - ' +
+      now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
     const payload = {
       post_id:     postId,
-      title:       'Client Request - ' + new Date().getDate() + ' ' + MONTHS[new Date().getMonth()],
+      title:       reqName.trim() || fallbackTitle,
       stage:       'in_production',
       owner:       'Client',
       comments:    brief,
@@ -305,6 +311,8 @@ async function submitClientRequest() {
     await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
+    var nameResetEl = document.getElementById('req-name');
+    if (nameResetEl) nameResetEl.value = '';
     if (fileInput) fileInput.value = '';
     if (btn) btn.disabled = false;
     var reqOverlay = document.getElementById('req-overlay');
