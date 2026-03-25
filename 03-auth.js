@@ -132,7 +132,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
 async function resolveRoleFromToken(accessToken, email) {
   try {
     const roleRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role&limit=1`,
+      `${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role,name&limit=1`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` } }
     );
     const roleData = await roleRes.json();
@@ -142,6 +142,9 @@ async function resolveRoleFromToken(accessToken, email) {
       if (el) el.textContent = `No role found for ${email}. Ask your admin.`;
       return;
     }
+    var userName = Array.isArray(roleData) && roleData[0]?.name;
+    if (userName) window.currentUserName = userName;
+    window.currentUserEmail = email;
     localStorage.setItem('hinglish_role', role);
     localStorage.setItem('hinglish_email', email);
     const overlay = document.getElementById('login-overlay');
