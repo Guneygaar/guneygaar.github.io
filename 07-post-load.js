@@ -3751,8 +3751,7 @@ function _renderClientViewInner() {
             '<div onclick="_openClientEditorial(\'' + p.post_id + '\')" ' +
             'style="cursor:pointer;overflow:hidden;">' +
             '<img src="' + hero + '" loading="eager" decoding="async" ' +
-            'style="aspect-ratio:1/1;width:100%;object-fit:cover;height:auto;display:block;cursor:pointer;" ' +
-            'onclick="event.stopPropagation();_edOpenLightbox(\'' + esc(p.post_id) + '\',0)">' +
+            'style="aspect-ratio:1/1;width:100%;object-fit:cover;height:auto;display:block;">' +
             '</div>'
             :
             (p.caption
