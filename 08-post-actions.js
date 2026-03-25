@@ -168,9 +168,9 @@ async function submitClientChanges(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
+      body: JSON.stringify({ stage: 'in_production', client_feedback: text, status_changed_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Client feedback: ' + text });
     const item = document.getElementById(`apv-item-${postId}`);
     if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent  -  the team will take care of it.</div>`;
     setTimeout(() => loadPostsForClient(), 1000);
@@ -1382,14 +1382,42 @@ function _buildInfoGrid(post, canEdit, id) {
 }
 
 function _buildNotes(post, canEdit, id) {
-  if (!canEdit && !post.comments) return '';
+  // Client feedback banner - read only, always visible if exists
+  var feedbackHtml = '';
+  if (post.client_feedback && post.client_feedback.trim()) {
+    feedbackHtml =
+      '<div style="background:rgba(255,75,75,0.06);' +
+      'border:1px solid rgba(255,75,75,0.25);' +
+      'border-left:3px solid #FF4B4B;' +
+      'padding:12px 14px;margin-bottom:14px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+      '<div style="width:6px;height:6px;border-radius:50%;' +
+      'background:#FF4B4B;flex-shrink:0;"></div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.16em;text-transform:uppercase;color:#FF4B4B;">' +
+      'Client Feedback</div>' +
+      '</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+      'color:#e8e2d9;line-height:1.6;">' +
+      esc(post.client_feedback) +
+      '</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#333;margin-top:8px;">' +
+      'Read only</div>' +
+      '</div>';
+  }
+
+  var _isClient = (window.effectiveRole || '').toLowerCase() === 'client';
+  if (_isClient) return feedbackHtml || '';
+
+  if (!canEdit && !post.comments) return feedbackHtml;
 
   var notesInput = canEdit
     ? '<textarea class="pc-notes-area" placeholder="Brief or caption..."' +
       ' onblur="updatePost(\'' + esc(id) + '\',\'comments\',this.value)">' + esc(post.comments || '') + '</textarea>'
     : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
 
-  return '<div class="pc-notes-block">' +
+  return feedbackHtml + '<div class="pc-notes-block">' +
     '<div class="pc-notes-lbl">Notes</div>' +
     (notesInput || '<div class="pcs-activity-empty">No notes.</div>') +
   '</div>';
