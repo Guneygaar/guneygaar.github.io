@@ -3589,10 +3589,10 @@ function _renderClientViewInner() {
       'padding:14px 18px 8px;">' +
       '<div style="font-size:13px;color:#F6A623;flex-shrink:0;">&#x26A0;</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#666;flex:1;">' +
+      'letter-spacing:0.22em;text-transform:uppercase;color:#999;flex:1;">' +
       'Awaiting Input</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'color:#444;border:1px solid rgba(255,255,255,0.07);padding:2px 7px;">' +
+      'color:#777;border:1px solid rgba(255,255,255,0.15);padding:2px 7px;">' +
       inputPosts.length + '</div>' +
       '</div>';
   }
@@ -3612,7 +3612,7 @@ function _renderClientViewInner() {
         var metaLine = _pillar + (_loc ? ' / ' + _loc : '');
 
         return '<div style="margin:0 0 0 0;' +
-          'border-bottom:3px solid #0a0a0a;' +
+          'border-bottom:1px solid rgba(255,255,255,0.06);' +
           'background:rgba(255,255,255,0.015);' +
           'position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;' +
@@ -3708,7 +3708,7 @@ function _renderClientViewInner() {
         var waText = encodeURIComponent('LinkedIn post ready for review\n\nPreview and approve here:\n' + approvalUrl + '\n\nTakes 5 seconds.');
         var waLink = 'https://wa.me/?text=' + waText;
 
-        return '<div style="margin:0 0 0;border-bottom:3px solid #0a0a0a;' +
+        return '<div style="margin:0 0 0;border-bottom:1px solid rgba(255,255,255,0.06);' +
           'background:#0a0a0a;margin-bottom:0;position:relative;overflow:hidden;">' +
           '<div style="position:absolute;top:0;left:0;bottom:0;width:3px;background:#3ECF8E;"></div>' +
           '<div style="padding:10px 16px 0 20px;">' +
@@ -4560,8 +4560,8 @@ function _openClientEditorial(postId) {
     'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
     '})()" ' +
     'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#25D366;' +
-    'background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);' +
+    'letter-spacing:0.14em;text-transform:uppercase;color:#e8e2d9;' +
+    'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);' +
     'padding:14px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
     '&#x2197; Share on WhatsApp</button>' +
 
