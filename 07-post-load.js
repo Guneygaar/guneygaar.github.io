@@ -4085,6 +4085,7 @@ function _closeReqForm() {
   if (countEl) countEl.textContent = 'No photos added';
   var fi = document.getElementById('req-file');
   if (fi) fi.value = '';
+  window._reqStoredFiles = [];
 }
 window._closeReqForm = _closeReqForm;
 
@@ -4151,22 +4152,23 @@ function _reqAddPhotos(input) {
   var addTile = document.getElementById('req-add-tile');
   if (!grid || !addTile) return;
 
-  var dt = new DataTransfer();
-  var existing = document.getElementById('req-file').files;
-  Array.from(existing).forEach(function(f) { dt.items.add(f); });
-  files.forEach(function(f) { dt.items.add(f); });
-  document.getElementById('req-file').files = dt.files;
-
-  files.forEach(function(file) {
+  window._reqStoredFiles = window._reqStoredFiles || [];
+  files.forEach(function(file, i) {
+    var fileIdx = window._reqStoredFiles.length;
+    window._reqStoredFiles.push(file);
     var reader = new FileReader();
     reader.onload = function(e) {
       var div = document.createElement('div');
+      div.dataset.fileIdx = fileIdx;
       div.style.cssText = 'aspect-ratio:1/1;position:relative;' +
         'overflow:hidden;background:#111;';
       div.innerHTML =
         '<img src="' + e.target.result + '" ' +
         'style="width:100%;height:100%;object-fit:cover;display:block;">' +
         '<button onclick="(function(el){' +
+        'var idx=el.closest(\'div\').dataset.fileIdx;' +
+        'if(window._reqStoredFiles && idx!==undefined)' +
+        'window._reqStoredFiles[idx]=null;' +
         'el.closest(\'div\').remove();' +
         '_reqUpdatePhotoCount();})(this)" ' +
         'style="position:absolute;top:3px;right:3px;width:20px;height:20px;' +
