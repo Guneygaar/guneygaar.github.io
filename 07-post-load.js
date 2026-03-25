@@ -3802,14 +3802,27 @@ function _renderClientViewInner() {
         'gap:10px;border-bottom:1px dashed rgba(255,255,255,0.08);">' +
 
         '<div style="flex:3;min-width:0;padding-top:0;margin-top:0;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);' +
-        'margin-bottom:5px;">Somaiya Group &middot; Godavari Biorefineries</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:21px;' +
-        'font-weight:600;color:#e8e2d9;line-height:1;' +
+        'font-weight:600;color:#e8e2d9;line-height:1;margin-top:0;padding-top:0;' +
         'letter-spacing:-0.01em;word-wrap:break-word;' +
         'overflow-wrap:break-word;min-width:0;">' +
         esc(p.title || '') + '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:10px;letter-spacing:0.04em;' +
+        'color:rgba(255,255,255,0.45);margin-top:6px;line-height:1;">' +
+        (function() {
+          if (!p.status_changed_at) return 'Sent recently';
+          var d = new Date(p.status_changed_at);
+          var date = d.toLocaleDateString('en-IN', {
+            day: 'numeric', month: 'short'
+          });
+          var time = d.toLocaleTimeString('en-IN', {
+            hour: '2-digit', minute: '2-digit',
+            hour12: true
+          });
+          return 'Sent ' + date + ' \xB7 ' + time;
+        })() +
+        '</div>' +
         '</div>' +
 
         '<div style="flex:1;flex-shrink:0;display:flex;flex-direction:column;' +
