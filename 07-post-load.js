@@ -3801,21 +3801,22 @@ function _renderClientViewInner() {
         'align-items:flex-start;justify-content:space-between;' +
         'gap:10px;border-bottom:1px dashed rgba(255,255,255,0.08);">' +
 
-        '<div style="flex:3;min-width:0;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-        'letter-spacing:0.2em;text-transform:uppercase;color:#444;' +
+        '<div style="flex:3;min-width:0;padding-top:0;margin-top:0;">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);' +
         'margin-bottom:5px;">Somaiya Group &middot; Godavari Biorefineries</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:21px;' +
-        'font-weight:600;color:#e8e2d9;line-height:1.15;' +
+        'font-weight:600;color:#e8e2d9;line-height:1;' +
         'letter-spacing:-0.01em;word-wrap:break-word;' +
         'overflow-wrap:break-word;min-width:0;">' +
         esc(p.title || '') + '</div>' +
         '</div>' +
 
-        '<div style="flex:1;text-align:right;flex-shrink:0;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-        'letter-spacing:0.16em;text-transform:uppercase;color:#444;' +
-        'margin-bottom:3px;">Waiting</div>' +
+        '<div style="flex:1;flex-shrink:0;display:flex;flex-direction:column;' +
+        'align-items:flex-end;padding-top:0;margin-top:0;">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);' +
+        'line-height:1;margin-bottom:4px;margin-top:0;padding-top:0;">Waiting</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:24px;' +
         'font-weight:500;line-height:1;color:' + waitColor + ';">' +
         waitLabel + '</div>' +
@@ -3827,8 +3828,8 @@ function _renderClientViewInner() {
         'border-bottom:1px dashed rgba(255,255,255,0.08);">' +
 
         '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:5px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:3px;">Pillar</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Pillar</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
@@ -3836,8 +3837,8 @@ function _renderClientViewInner() {
         '</div>' +
 
         '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:5px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:3px;">Location</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Location</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
@@ -3845,8 +3846,8 @@ function _renderClientViewInner() {
         '</div>' +
 
         '<div style="padding:9px 16px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:5px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:3px;">Target</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Target</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
