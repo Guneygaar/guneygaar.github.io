@@ -3654,7 +3654,7 @@ function _renderClientViewInner() {
           'font-size:7px;letter-spacing:0.14em;text-transform:uppercase;' +
           'color:#F6A623;background:transparent;' +
           'border:1px solid rgba(246,166,35,0.35);padding:10px 0;cursor:pointer;' +
-          'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
+          'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
           (function() {
             var inputMsg = 'Hi, we need something from you for the post: ' +
               (p.title || '') + '.\n\n' +
