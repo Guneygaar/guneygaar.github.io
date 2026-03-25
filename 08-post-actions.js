@@ -472,6 +472,10 @@ function _renderPCS(postId) {
     }
   }
 
+  // Hide delete button for Client role
+  var _pcsDelBtn = document.querySelector('.pc-topbar .pc-icon-btn.danger');
+  if (_pcsDelBtn) _pcsDelBtn.style.display = canEdit ? '' : 'none';
+
   _updateSubtitle(post);
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
 
@@ -650,8 +654,10 @@ function _renderPCS(postId) {
   }
 
   var whatsappHtml = '';
-  var showWA = post.caption &&
-    stageLC === 'awaiting_approval';
+  var showWA = post.caption && (
+    (effectiveRole || '').toLowerCase() === 'client' ||
+    stageLC === 'awaiting_approval'
+  );
 
   if (showWA) {
     whatsappHtml = '<div style="padding:10px 18px 12px;' +
@@ -1308,6 +1314,7 @@ var _ADVANCE_CLS = {
 };
 
 function _renderAdvanceButton(stageLC) {
+  if ((effectiveRole || '').toLowerCase() === 'client') return '';
   var block = document.getElementById('pc-advance-block');
   var btn = document.getElementById('pc-advance-btn');
   var label = document.getElementById('pc-advance-label');
@@ -1718,11 +1725,21 @@ function _sharePostOnWhatsApp(postId) {
   var approveUrl = 'https://srtd.io/ok/?p=' + rawSlug;
   var changesUrl = 'https://srtd.io/no/?p=' + rawSlug;
 
-  var message =
-    'Hi, ' + title + ' is ready for your review.\n\n' +
-    caption + '\n\n' +
-    'Approve: ' + approveUrl + '\n' +
-    'Request changes: ' + changesUrl;
+  var _isClient = (effectiveRole || '').toLowerCase() === 'client';
+
+  var message;
+  if (_isClient) {
+    message =
+      title + '\n\n' +
+      caption + '\n\n' +
+      'Please review and let me know.';
+  } else {
+    message =
+      'Hi, ' + title + ' is ready for your review.\n\n' +
+      caption + '\n\n' +
+      'Approve: ' + approveUrl + '\n' +
+      'Request changes: ' + changesUrl;
+  }
 
   var waUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
   window.open(waUrl, '_blank');
