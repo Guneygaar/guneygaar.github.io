@@ -75,6 +75,7 @@ function normalise(rows) {
     linkedinUrl:   r.linkedin_link  || '',
     comments:      r.comments       || '',
     caption:       r.caption        || '',
+    client_feedback: r.client_feedback || '',
     images:        Array.isArray(r.images) ? r.images : (r.images ? [r.images] : []),
     format:        r.format         || '',
     post_id:       r.post_id        || r.id || '',
