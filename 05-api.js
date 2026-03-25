@@ -84,7 +84,37 @@ function normalise(rows) {
   }));
 }
 
+async function _compressImage(file) {
+  return new Promise(function(resolve) {
+    if (!file.type.startsWith('image/')) { resolve(file); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var MAX_W = 1200;
+        var MAX_H = 1200;
+        var w = img.width;
+        var h = img.height;
+        if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
+        if (h > MAX_H) { w = Math.round(w * MAX_H / h); h = MAX_H; }
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(function(blob) {
+          var compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+          resolve(compressed);
+        }, 'image/jpeg', 0.82);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadPostAsset(file, postId) {
+  file = await _compressImage(file);
   const ext      = file.name.split('.').pop();
   const filename = `${postId}/${Date.now()}.${ext}`;
   const url      = `${SUPABASE_URL}/storage/v1/object/post-assets/${filename}`;
