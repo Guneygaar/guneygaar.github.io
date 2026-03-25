@@ -83,6 +83,8 @@ function closePipelineSearch() {
 function updatePipelineCritical(posts) {
   var el = document.getElementById('pipeline-critical');
   if (!el) return;
+  var _isClientCrit = (effectiveRole || '').toLowerCase() === 'client';
+  if (_isClientCrit) { el.textContent = ''; return; }
   var allP = posts || allPosts || [];
   var now = new Date();
   var overdue = allP.filter(function(p) {
@@ -2541,8 +2543,9 @@ function buildPipelineCard(p, listKey) {
   var metaLine = metaParts.join(' \u00b7 ');
 
   // FIX 5 -- Chase button (plain text, no border)
+  var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
   var rightHtml = '';
-  if (stage === 'awaiting_approval') {
+  if (!_isClientCard && stage === 'awaiting_approval') {
     var changed = p.status_changed_at ? new Date(p.status_changed_at) : null;
     var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
     if (daysWaiting >= 3) {
@@ -2615,9 +2618,15 @@ function updatePipelineChipCounts() {
     var el = document.getElementById('chip-count-' + chipKey);
     if (el) el.textContent = stageCounts[keys[k]];
   }
-  // Hide chips with zero count (except ALL)
+  // Hide chips with zero count (except ALL); also filter for Client role
+  var _isClientChip = (effectiveRole || '').toLowerCase() === 'client';
+  var _clientVisibleStages = ['all', 'awaiting_approval', 'awaiting_brand_input', 'published'];
   document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
     var stage = chip.dataset.stage;
+    if (_isClientChip && _clientVisibleStages.indexOf(stage) === -1) {
+      chip.style.display = 'none';
+      return;
+    }
     if (stage === 'all') return;
     var count = stageCounts[stage] || 0;
     chip.style.display = count > 0 ? 'flex' : 'none';
@@ -3195,8 +3204,9 @@ function _renderPipelineInner() {
       ? '<button class="batch-select-btn" id="batch-select-btn" onclick="event.stopPropagation();toggleBatchMode()">Select</button>'
       : '';
     // Chase All button for awaiting_approval group
+    var _isClientCA = (effectiveRole || '').toLowerCase() === 'client';
     var chaseAllBtn = '';
-    if (stage === 'awaiting_approval') {
+    if (!_isClientCA && stage === 'awaiting_approval') {
       var nowCA = new Date();
       var threeDaysAgoCA = new Date();
       threeDaysAgoCA.setDate(threeDaysAgoCA.getDate() - 3);
@@ -3209,11 +3219,14 @@ function _renderPipelineInner() {
       }
     }
     // Per-stage summary line
+    var _isClientSum = (effectiveRole || '').toLowerCase() === 'client';
     var summaryText = '';
     var now5 = new Date();
     var stageKey = stage;
     var stagePosts = posts;
-    if (stageKey === 'awaiting_approval') {
+    if (_isClientSum) {
+      // Client sees no summary lines
+    } else if (stageKey === 'awaiting_approval') {
       var clientCount = stagePosts.filter(function(p) { return (p.owner||'').toLowerCase() === 'client'; }).length;
       var sortedByUpdate = stagePosts.slice().sort(function(a,b) { return new Date(a.updated_at||a.updatedAt) - new Date(b.updated_at||b.updatedAt); });
       var oldestPost = sortedByUpdate[0];
