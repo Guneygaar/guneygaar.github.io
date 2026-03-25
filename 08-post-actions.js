@@ -255,7 +255,15 @@ async function submitClientRequest() {
   var files = (window._reqStoredFiles || []).filter(function(f) {
     return f !== null;
   });
-  if (btn) btn.disabled = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.style.color = '#444';
+    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    btn.style.background = 'transparent';
+    btn.style.boxShadow = 'none';
+    btn.style.cursor = 'not-allowed';
+    btn.innerHTML = 'Sending...';
+  }
   try {
     const postId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('hinglish_email') || 'Client';
@@ -298,8 +306,6 @@ async function submitClientRequest() {
       );
     }
     if (imageUrls.length) {
-      payload.comments = (payload.comments || '') +
-        '\n\nReference photos:\n' + imageUrls.join('\n');
       payload.images = imageUrls;
     }
     console.log('[REQUEST] PAYLOAD:', payload);
@@ -313,7 +319,8 @@ async function submitClientRequest() {
     if (topicEl) topicEl.value = '';
     var nameResetEl = document.getElementById('req-name');
     if (nameResetEl) nameResetEl.value = '';
-    if (fileInput) fileInput.value = '';
+    var fi = document.getElementById('req-file');
+    if (fi) fi.value = '';
     if (btn) btn.disabled = false;
     var reqOverlay = document.getElementById('req-overlay');
     if (reqOverlay) reqOverlay.style.display = 'none';
