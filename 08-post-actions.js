@@ -1209,10 +1209,13 @@ async function loadPcsComments(postId) {
     }
 
     if (!Array.isArray(rows) || rows.length === 0) {
-      list.innerHTML = '<div style="padding:8px 16px 4px;' +
-        'font-family:\'DM Sans\',sans-serif;font-size:12px;' +
-        'color:rgba(255,255,255,0.25);font-style:italic;">' +
-        'No comments yet. Be the first.</div>';
+      list.innerHTML =
+        '<div style="padding:20px 16px;text-align:center;">' +
+        '<div style="font-size:18px;opacity:0.25;margin-bottom:8px;">&#x1F4AC;</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+        'color:rgba(255,255,255,0.25);line-height:1.5;">' +
+        'Start the conversation.<br>Client and team see all comments.</div>' +
+        '</div>';
       var countEl = document.getElementById('pcs-comments-count');
       if (countEl) countEl.style.display = 'none';
       return;
@@ -1222,6 +1225,7 @@ async function loadPcsComments(postId) {
     if (countEl) {
       countEl.textContent = rows.length;
       countEl.style.display = 'inline';
+      countEl.style.cssText = 'background:rgba(200,168,75,0.15);color:#C8A84B;font-size:7px;padding:2px 7px;letter-spacing:0.08em;font-weight:600;display:inline;';
     }
 
     function _commentAvatarStyle(role) {
@@ -1246,27 +1250,37 @@ async function loadPcsComments(postId) {
             hour12:true,timeZone:'Asia/Kolkata'});
         }
       }
-      return '<div style="padding:8px 16px;display:flex;gap:10px;">' +
-        '<div style="width:26px;height:26px;border-radius:50%;' +
-        'flex-shrink:0;display:flex;align-items:center;' +
-        'justify-content:center;font-size:8px;font-weight:700;' +
+      return '<div style="display:flex;gap:10px;padding:10px 16px;' +
+        'border-radius:2px;position:relative;" ' +
+        'onmouseover="this.style.background=\'rgba(255,255,255,0.02)\'" ' +
+        'onmouseout="this.style.background=\'transparent\'">' +
+        (!c.read ? '<div style="position:absolute;left:6px;top:14px;' +
+        'width:4px;height:4px;border-radius:50%;background:#C8A84B;"></div>' : '') +
+        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
+        'display:flex;align-items:center;justify-content:center;' +
+        'font-size:9px;font-weight:700;margin-top:1px;' +
         'font-family:\'IBM Plex Mono\',monospace;' +
         _commentAvatarStyle(c.author_role) + '">' +
         esc(_initial) + '</div>' +
         '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:baseline;' +
-        'gap:8px;margin-bottom:3px;">' +
+        'gap:6px;margin-bottom:4px;flex-wrap:wrap;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:11px;font-weight:700;color:#e8e2d9;">' +
+        'font-size:12px;font-weight:700;color:#e8e2d9;line-height:1;">' +
         esc(c.author) + '</span>' +
+        '<div style="width:2px;height:2px;border-radius:50%;' +
+        'background:rgba(255,255,255,0.2);flex-shrink:0;margin-bottom:1px;"></div>' +
         '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:7px;letter-spacing:0.06em;' +
-        'color:rgba(255,255,255,0.35);">' + _ts + '</span>' +
+        'font-size:8px;letter-spacing:0.04em;' +
+        'color:rgba(255,255,255,0.35);line-height:1;">' + _ts + '</span>' +
         '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:13px;color:rgba(255,255,255,0.75);' +
-        'line-height:1.55;">' + esc(c.message) + '</div>' +
-        '</div></div>';
+        'font-size:13px;color:rgba(255,255,255,0.78);' +
+        'line-height:1.6;white-space:pre-wrap;">' +
+        esc(c.message) + '</div>' +
+        '</div></div>' +
+        '<div style="height:1px;background:rgba(255,255,255,0.03);' +
+        'margin:0 16px;"></div>';
     }).join('');
 
     list.scrollTop = list.scrollHeight;
