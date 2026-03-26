@@ -4431,13 +4431,8 @@ function _renderClientViewInner() {
         'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
         'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x25C8; Approve</button>' +
 
-        '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-        'letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
-        'background:transparent;border:none;' +
-        'border-right:1px solid rgba(255,255,255,0.22);' +
-        'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x21A9; Changes</button>' +
+        '<button onclick="showBoardingComment(\'' + esc(id) + '\')" ' +
+        'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);background:transparent;border:none;border-right:1px solid rgba(255,255,255,0.22);padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x1F4AC; Comment</button>' +
 
         '<a href="' + esc(waLink) + '" target="_blank" ' +
         'style="flex:2;display:flex;align-items:center;justify-content:center;' +
@@ -4453,23 +4448,13 @@ function _renderClientViewInner() {
 
         '</div>' +
 
-        '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
-        '<div style="display:flex;align-items:center;' +
-        'justify-content:space-between;margin-bottom:10px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.16em;text-transform:uppercase;color:#F6A623;">' +
-        'What needs to change?</div>' +
-        '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
-        'color:#e8e2d9;background:rgba(255,255,255,0.08);' +
-        'border:1px solid rgba(255,255,255,0.2);' +
-        'cursor:pointer;padding:4px 10px;' +
-        'line-height:1;letter-spacing:0;">&#x2715;</button>' +
-        '</div>' +
-        '<textarea class="change-textarea" id="change-text-' + esc(id) + '" ' +
-        'placeholder="Be specific -- tone, image, hashtags..." rows="3"></textarea>' +
-        '<button class="btn-send-changes" ' +
-        'onclick="submitClientChanges(\'' + esc(id) + '\')">&#x2192; Send Feedback</button>' +
+        '<div id="boarding-comment-wrap-' + esc(id) + '" ' +
+        'style="display:none;padding:12px 16px;">' +
+        '<textarea id="boarding-comment-input-' + esc(id) + '" ' +
+        'placeholder="Leave a comment or ask a question..." ' +
+        'style="width:100%;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:#e8e2d9;font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.5;padding:10px 12px;outline:none;resize:none;min-height:80px;caret-color:#C8A84B;"></textarea>' +
+        '<button onclick="submitBoardingComment(\'' + esc(id) + '\')" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;background:transparent;border:1px solid rgba(200,168,75,0.3);padding:9px 0;cursor:pointer;margin-top:8px;">Send Comment &#x2192;</button>' +
         '</div>' +
 
         '<div class="approval-confirmed" ' +
@@ -5612,17 +5597,17 @@ function _editorialChanges(postId) {
       '<div style="position:fixed;inset:0;background:#0a0a0f;' +
       'display:flex;flex-direction:column;align-items:center;' +
       'justify-content:center;gap:14px;z-index:6000;">' +
-      '<div style="font-size:28px;color:#F6A623;line-height:1;">&#x25C8;</div>' +
+      '<div style="font-size:28px;color:#C8A84B;line-height:1;">&#x1F4AC;</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;' +
-      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Opening feedback...</div>' +
+      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Opening comments...</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
-      'Tell us what to change.</div>' +
+      'Leave a comment or question.</div>' +
       '</div>';
   }
   setTimeout(function() {
     _closeClientEditorial();
-    if (typeof showChangeInput === 'function') showChangeInput(postId);
+    if (typeof showBoardingComment === 'function') showBoardingComment(postId);
   }, 1200);
 }
 window._editorialChanges = _editorialChanges;
