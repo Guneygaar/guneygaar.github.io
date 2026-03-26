@@ -927,6 +927,13 @@ function _renderPCS(postId) {
       _loadPCSActivity(id, elActivity);
     }
   }
+
+  // Load comments
+  var _pcsPostIdEl = document.getElementById('pcs-post-id');
+  var _pcsPostId = _pcsPostIdEl ? _pcsPostIdEl.value : id;
+  if (typeof loadPcsComments === 'function') {
+    loadPcsComments(_pcsPostId);
+  }
 }
 
 // -- Subtitle sync (single source of truth) --------------
@@ -1136,7 +1143,8 @@ window._skipPublish = _skipPublish;
 
 function _saveLiUrlInline(postId) {
   var input = document.getElementById('li-url-input-' + postId)
-    || document.getElementById('pcs-li-inline-input');
+    || document.getElementById('pcs-li-inline-input')
+    || document.querySelector('.pcs-li-url-input');
   if (!input) return;
   var url = (input.value || '').trim();
   if (!url) {
@@ -1144,18 +1152,24 @@ function _saveLiUrlInline(postId) {
     return;
   }
 
+  var _liPost = (allPosts||[]).find(function(p) {
+    return p.post_id === postId ||
+           (p.id && p.id === postId);
+  });
+  var _liPostId = _liPost ? _liPost.post_id : postId;
+
   var btn = document.getElementById('li-save-btn-' + postId);
   if (btn) {
     btn.textContent = 'Saving...';
     btn.disabled = true;
   }
 
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(_liPostId), {
     method: 'PATCH',
     body: JSON.stringify({ linkedin_link: url })
   }).then(function() {
     var idx = (allPosts || []).findIndex(function(p) {
-      return p.post_id === postId;
+      return p.post_id === _liPostId;
     });
     if (idx !== -1) {
       allPosts[idx].linkedin_link = url;
@@ -1174,6 +1188,158 @@ function _saveLiUrlInline(postId) {
   });
 }
 window._saveLiUrlInline = _saveLiUrlInline;
+
+// -- PCS Comments --------------------------------------------------
+async function loadPcsComments(postId) {
+  var section = document.getElementById('pcs-comments-section');
+  var inputBar = document.getElementById('pcs-comment-input-bar');
+  var list = document.getElementById('pcs-comments-list');
+  if (!section || !list) return;
+
+  try {
+    var rows = await apiFetch(
+      '/post_comments?post_id=eq.' +
+      encodeURIComponent(postId) +
+      '&order=created_at.asc&limit=100'
+    );
+
+    section.style.display = 'block';
+    if (inputBar) {
+      inputBar.style.display = 'flex';
+      inputBar.style.flexDirection = 'row';
+    }
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      list.innerHTML = '<div style="padding:8px 16px 4px;' +
+        'font-family:\'DM Sans\',sans-serif;font-size:12px;' +
+        'color:rgba(255,255,255,0.25);font-style:italic;">' +
+        'No comments yet. Be the first.</div>';
+      var countEl = document.getElementById('pcs-comments-count');
+      if (countEl) countEl.style.display = 'none';
+      return;
+    }
+
+    var countEl = document.getElementById('pcs-comments-count');
+    if (countEl) {
+      countEl.textContent = rows.length;
+      countEl.style.display = 'inline';
+    }
+
+    function _commentAvatarStyle(role) {
+      var r = (role||'').toLowerCase();
+      if (r === 'client') return 'background:rgba(255,75,75,0.15);color:#FF4B4B;border:1px solid rgba(255,75,75,0.2);';
+      if (r === 'servicing' || r === 'chitra') return 'background:rgba(34,211,238,0.15);color:#22D3EE;border:1px solid rgba(34,211,238,0.2);';
+      if (r === 'creative' || r === 'pranav') return 'background:rgba(155,135,245,0.15);color:#9b87f5;border:1px solid rgba(155,135,245,0.2);';
+      return 'background:rgba(200,168,75,0.15);color:#C8A84B;border:1px solid rgba(200,168,75,0.2);';
+    }
+
+    list.innerHTML = rows.map(function(c) {
+      var _initial = (c.author||'?').charAt(0).toUpperCase();
+      var _ts = '';
+      if (c.created_at) {
+        var _d = new Date((c.created_at||'').replace(' ','T').replace('+00','Z'));
+        if (!isNaN(_d.getTime())) {
+          _ts = _d.toLocaleDateString('en-IN',{
+            day:'numeric',month:'short',
+            timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
+            _d.toLocaleTimeString('en-IN',{
+            hour:'numeric',minute:'2-digit',
+            hour12:true,timeZone:'Asia/Kolkata'});
+        }
+      }
+      return '<div style="padding:8px 16px;display:flex;gap:10px;">' +
+        '<div style="width:26px;height:26px;border-radius:50%;' +
+        'flex-shrink:0;display:flex;align-items:center;' +
+        'justify-content:center;font-size:8px;font-weight:700;' +
+        'font-family:\'IBM Plex Mono\',monospace;' +
+        _commentAvatarStyle(c.author_role) + '">' +
+        esc(_initial) + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:baseline;' +
+        'gap:8px;margin-bottom:3px;">' +
+        '<span style="font-family:\'DM Sans\',sans-serif;' +
+        'font-size:11px;font-weight:700;color:#e8e2d9;">' +
+        esc(c.author) + '</span>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:7px;letter-spacing:0.06em;' +
+        'color:rgba(255,255,255,0.35);">' + _ts + '</span>' +
+        '</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;' +
+        'font-size:13px;color:rgba(255,255,255,0.75);' +
+        'line-height:1.55;">' + esc(c.message) + '</div>' +
+        '</div></div>';
+    }).join('');
+
+    list.scrollTop = list.scrollHeight;
+
+  } catch(e) {
+    console.error('loadPcsComments failed:', e);
+  }
+}
+window.loadPcsComments = loadPcsComments;
+
+async function submitPcsComment() {
+  var input = document.getElementById('pcs-comment-input');
+  if (!input) return;
+  var message = (input.value || '').trim();
+  if (!message) return;
+
+  var postIdEl = document.getElementById('pcs-post-id');
+  var postId = postIdEl ? postIdEl.value : '';
+  if (!postId) return;
+
+  var _post = (allPosts||[]).find(function(p) {
+    return p.post_id === postId || p.id === postId;
+  });
+  var _realPostId = _post ? _post.post_id : postId;
+
+  var _author = window.currentUserName ||
+    window.effectiveRole || 'Team';
+  var _role = window.effectiveRole || 'Admin';
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  try {
+    await apiFetch('/post_comments', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: _realPostId,
+        author: _author,
+        author_role: _role,
+        message: message
+      })
+    });
+
+    loadPcsComments(_realPostId);
+
+    var _notifRoles = [];
+    var _roleLower = (_role||'').toLowerCase();
+    if (_roleLower === 'client') {
+      _notifRoles = ['Servicing', 'Admin'];
+    } else {
+      _notifRoles = ['Client'];
+    }
+    var _title = _post ? (_post.title || _realPostId) : _realPostId;
+    _notifRoles.forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id: _realPostId,
+          type: 'stage_change',
+          message: _author + ' commented on ' + _title
+        })
+      }).catch(function(){});
+    });
+
+  } catch(e) {
+    console.error('submitPcsComment failed:', e);
+    showToast('Failed to send comment', 'error');
+    input.value = message;
+  }
+}
+window.submitPcsComment = submitPcsComment;
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
@@ -1605,7 +1771,8 @@ function _buildNotes(post, canEdit, id) {
     : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
 
   return feedbackHtml + '<div class="pc-notes-block">' +
-    '<div class="pc-notes-lbl">Notes</div>' +
+    '<div class="pc-notes-lbl" style="display:flex;align-items:center;gap:8px;">Internal Notes' +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;color:rgba(255,166,35,0.6);background:rgba(255,166,35,0.08);padding:2px 6px;letter-spacing:0.1em;text-transform:uppercase;">Agency only</span></div>' +
     (notesInput || '<div class="pcs-activity-empty">No notes.</div>') +
   '</div>';
 }
