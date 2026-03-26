@@ -323,17 +323,30 @@ if (npo) {
 
 await loadPosts();
 
-// Park the brief post if this was created from a brief
+// Close the brief and link to new post
 if (window._activeBriefPostId) {
   var _bid = window._activeBriefPostId;
   window._activeBriefPostId = null;
+
+  var _newPostId = null;
+  try {
+    var _sorted = (allPosts || []).slice().sort(function(a, b) {
+      return new Date((b.status_changed_at||b.updated_at||'')+'Z') -
+             new Date((a.status_changed_at||a.updated_at||'')+'Z');
+    });
+    if (_sorted[0]) _newPostId = _sorted[0].post_id;
+  } catch(e) {}
+
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
     method: 'PATCH',
     body: JSON.stringify({
-      stage: 'parked',
+      stage: 'brief_done',
+      linked_post_id: _newPostId || null,
       updated_at: new Date().toISOString()
     })
-  }).catch(function(){});
+  }).catch(function() {
+    console.warn('Brief close failed -- close manually from brief sheet');
+  });
 }
 
 setTimeout(function() {
