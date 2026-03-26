@@ -4122,9 +4122,11 @@ function _renderClientViewInner() {
         'letter-spacing:0.16em;text-transform:uppercase;color:#F6A623;">' +
         'What needs to change?</div>' +
         '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-        'color:rgba(255,255,255,0.4);background:transparent;border:none;' +
-        'cursor:pointer;padding:2px 6px;">&#x2715;</button>' +
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
+        'color:#e8e2d9;background:rgba(255,255,255,0.08);' +
+        'border:1px solid rgba(255,255,255,0.2);' +
+        'cursor:pointer;padding:4px 10px;' +
+        'line-height:1;letter-spacing:0;">&#x2715;</button>' +
         '</div>' +
         '<textarea class="change-textarea" id="change-text-' + esc(id) + '" ' +
         'placeholder="Be specific -- tone, image, hashtags..." rows="3"></textarea>' +
