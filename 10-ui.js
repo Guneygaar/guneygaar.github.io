@@ -454,18 +454,6 @@ function renderNotifications(name, role) {
         }
       }
 
-      var _onclick = '';
-      if (n.post_id) {
-        var _isBriefNotif = _postStage === 'brief';
-        if (_isBriefNotif) {
-          _onclick = 'closeNotifications();setTimeout(function(){' +
-            '_openBriefSheet(' + JSON.stringify(n.post_id) + ');},150);';
-        } else {
-          _onclick = 'closeNotifications();setTimeout(function(){' +
-            'openPCS(' + JSON.stringify(n.post_id) + ',\'\');},150);';
-        }
-      }
-
       var _isUnread = !n.read;
 
       var _msgParts = (n.message||'').split(' ');
@@ -502,7 +490,9 @@ function renderNotifications(name, role) {
         '</div>' +
 
         (n.post_id && (_postTitle || _thumb) ?
-          '<div onclick="' + _onclick + '" ' +
+          '<div class="notif-post-card-tap" ' +
+          'data-post-id="' + esc(n.post_id) + '" ' +
+          'data-is-brief="' + (_postStage === 'brief' ? '1' : '0') + '" ' +
           'style="display:flex;align-items:center;gap:10px;' +
           'background:rgba(255,255,255,0.03);' +
           'border:1px solid rgba(255,255,255,0.07);' +
@@ -1373,6 +1363,26 @@ async function _nrsSubmit() {
 function openNotifications() {
   var panel = document.getElementById('panel-updates');
   if (!panel) return;
+  if (!panel._notifTapWired) {
+    panel._notifTapWired = true;
+    panel.addEventListener('click', function(e) {
+      var card = e.target.closest('.notif-post-card-tap');
+      if (!card) return;
+      e.stopPropagation();
+      var pid = card.getAttribute('data-post-id');
+      var isBrief = card.getAttribute('data-is-brief') === '1';
+      if (!pid) return;
+      closeNotifications();
+      setTimeout(function() {
+        if (isBrief) {
+          if (typeof _openBriefSheet === 'function')
+            _openBriefSheet(pid);
+        } else {
+          openPCS(pid, '');
+        }
+      }, 150);
+    });
+  }
   var overlay = document.getElementById('notif-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
