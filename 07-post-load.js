@@ -411,6 +411,21 @@ async function loadPosts() {
     mergePosts(normalise(data));
     hideErrorBanner();
     scheduleRender();
+    // Fetch comment counts for all posts
+    apiFetch('/post_comments?select=post_id')
+      .then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var counts = {};
+        rows.forEach(function(r) {
+          if (r.post_id) {
+            counts[r.post_id] = (counts[r.post_id] || 0) + 1;
+          }
+        });
+        (allPosts || []).forEach(function(p) {
+          p._commentCount = counts[p.post_id] || 0;
+        });
+        scheduleRender();
+      }).catch(function(){});
     showToast(`${allPosts.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
@@ -2548,14 +2563,15 @@ function buildPipelineCard(p, listKey) {
 
   // Card type detection
   var _isBrief = (p.stage || '') === 'brief';
-  var _hasFeedback = !_isBrief &&
-    p.client_feedback && p.client_feedback.trim().length > 0;
+  var _hasComments = !_isBrief &&
+    (p._commentCount || 0) > 0;
+  var _commentCount = p._commentCount || 0;
 
   // FIX 1 -- Color bar computation
   var tdRaw = p.targetDate || p.target_date;
   var cardIsStale = isPostStale(p);
   var barColor = _isBrief ? '#C8A84B' :
-    _hasFeedback ? '#FF4B4B' :
+    _hasComments ? '#C8A84B' :
     cardIsStale && stageLC === 'awaiting_approval'
     ? 'var(--c-red)' :
     cardIsStale ? 'var(--c-amber)' :
@@ -2565,7 +2581,7 @@ function buildPipelineCard(p, listKey) {
 
   // Row wash background
   var rowBg = _isBrief ? 'rgba(200,168,75,0.04)' :
-    _hasFeedback ? 'rgba(255,75,75,0.04)' : 'transparent';
+    _hasComments ? 'rgba(200,168,75,0.04)' : 'transparent';
 
   // FIX 2 -- Date
   var dateInfo = formatPipelineDate(tdRaw);
@@ -2602,17 +2618,21 @@ function buildPipelineCard(p, listKey) {
       'letter-spacing:0.12em;text-transform:uppercase;' +
       'background:#C8A84B;color:#000;font-weight:600;' +
       'padding:4px 8px;flex-shrink:0;">BRIEF</div>';
-  } else if (_hasFeedback) {
+  } else if (_hasComments) {
     chipHtml =
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'background:#FF4B4B;color:#fff;font-weight:600;' +
-      'padding:4px 8px;flex-shrink:0;">FEEDBACK</div>';
+      'letter-spacing:0.1em;text-transform:uppercase;' +
+      'background:rgba(200,168,75,0.12);border:1px solid rgba(200,168,75,0.25);' +
+      'color:#C8A84B;font-weight:600;' +
+      'padding:3px 8px;flex-shrink:0;' +
+      'display:flex;align-items:center;gap:4px;">' +
+      '&#x1F4AC; ' + _commentCount +
+      '</div>';
   }
 
   // Right side: chip for brief/feedback, chase/owner badge for normal
   var rightHtml = '';
-  if (_isBrief || _hasFeedback) {
+  if (_isBrief || _hasComments) {
     rightHtml = chipHtml;
   } else {
     // FIX 5 -- Chase button (plain text, no border)
@@ -3396,13 +3416,14 @@ function _renderPipelineInner() {
       posts = (grouped[stage] || []).slice().sort(function(a, b) {
         var aIsBrief = (a.stage || '') === 'brief';
         var bIsBrief = (b.stage || '') === 'brief';
-        var aHasFeedback = !aIsBrief &&
-          a.client_feedback && a.client_feedback.trim().length > 0;
-        var bHasFeedback = !bIsBrief &&
-          b.client_feedback && b.client_feedback.trim().length > 0;
-        var aPriority = aIsBrief ? 0 : aHasFeedback ? 1 : 2;
-        var bPriority = bIsBrief ? 0 : bHasFeedback ? 1 : 2;
+        var aHasComments = !aIsBrief && (a._commentCount||0) > 0;
+        var bHasComments = !bIsBrief && (b._commentCount||0) > 0;
+        var aPriority = aIsBrief ? 0 : aHasComments ? 1 : 2;
+        var bPriority = bIsBrief ? 0 : bHasComments ? 1 : 2;
         if (aPriority !== bPriority) return aPriority - bPriority;
+        if (aHasComments && bHasComments) {
+          return (b._commentCount||0) - (a._commentCount||0);
+        }
         var aTime = new Date((a.status_changed_at||'')+'Z').getTime();
         var bTime = new Date((b.status_changed_at||'')+'Z').getTime();
         return aTime - bTime;
@@ -3552,9 +3573,47 @@ function _renderPipelineInner() {
     '</div></div>' +
   '</div>';
 
+  // Build COMMENTED section -- posts with comments across all stages
+  var commentedPosts = source.filter(function(p) {
+    return (p._commentCount || 0) > 0;
+  });
+  commentedPosts = commentedPosts.slice().sort(function(a, b) {
+    return (b._commentCount||0) - (a._commentCount||0);
+  });
+  var commentedHtml = '';
+  if (commentedPosts.length > 0) {
+    var _cListKey = 'pipeline-commented';
+    _postLists[_cListKey] = commentedPosts;
+    var _cCards = commentedPosts.map(function(p) {
+      return buildPipelineCard(p, _cListKey);
+    }).join('');
+    commentedHtml =
+      '<div class="group-section" id="group-section-commented">' +
+      '<div class="group-hdr" onclick="togglePipelineGroup(\'commented\')">' +
+      '<div class="group-hdr-left">' +
+      '<span class="group-chevron">&#9660;</span>' +
+      '<div class="group-label" style="color:#C8A84B;' +
+      'font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.16em;text-transform:uppercase;">' +
+      'Commented</div>' +
+      '</div>' +
+      '<div class="group-hdr-right" style="display:flex;' +
+      'align-items:center;gap:8px;">' +
+      '<div class="group-count">' + commentedPosts.length + '</div>' +
+      '</div></div>' +
+      '<div style="font-size:8px;color:rgba(255,255,255,0.3);' +
+      'padding:0 16px 8px;letter-spacing:0.04em;">' +
+      commentedPosts.length + ' post' +
+      (commentedPosts.length > 1 ? 's' : '') +
+      ' with comments</div>' +
+      '<div class="group-post-list">' +
+      '<div class="row-list post-list">' + _cCards + '</div>' +
+      '</div></div>';
+  }
+
   const container = document.getElementById('pipeline-container');
   if (!container) return;
-  container.innerHTML = html + briefDoneGroupHtml + pubGroupHtml;
+  container.innerHTML = html + briefDoneGroupHtml + commentedHtml + pubGroupHtml;
 
   // -- Restore published expanded state --
   if (window._pipelinePubExpanded) {
