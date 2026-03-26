@@ -3430,7 +3430,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   flex: 1;
   overflow-y: auto;
   scrollbar-width: none;
-  padding-bottom: 24px;
+  padding-bottom: 80px;
 }
 .pc-scroll-body::-webkit-scrollbar { display: none; }
 

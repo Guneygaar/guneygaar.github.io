@@ -1206,7 +1206,6 @@ async function loadPcsComments(postId) {
     section.style.display = 'block';
     if (inputBar) {
       inputBar.style.display = 'flex';
-      inputBar.style.flexDirection = 'row';
     }
 
     if (!Array.isArray(rows) || rows.length === 0) {

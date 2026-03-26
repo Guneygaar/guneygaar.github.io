@@ -6,7 +6,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260326ar">
+ <link rel="stylesheet" href="styles.css?v=20260326as">
 
 </head>
 <body>
@@ -862,11 +862,11 @@
           <span id="pcs-activity-link" onclick="togglePCSActivity()" style="font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.18);cursor:pointer;">&#x2193; Show activity log</span>
         </div>
       </div>
-      <!-- STICKY COMMENT INPUT -->
-      <div id="pcs-comment-input-bar" style="display:none;position:sticky;bottom:0;background:#0e0e14;border-top:1px solid rgba(255,255,255,0.08);padding:10px 16px 16px;flex-direction:row;gap:10px;align-items:flex-end;">
-        <textarea id="pcs-comment-input" rows="1" placeholder="Add a comment..." style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;padding:8px 12px;outline:none;resize:none;caret-color:#C8A84B;min-height:36px;max-height:80px;"></textarea>
-        <button onclick="submitPcsComment()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:#C8A84B;background:rgba(200,168,75,0.08);border:1px solid rgba(200,168,75,0.3);padding:8px 14px;cursor:pointer;height:36px;white-space:nowrap;align-self:flex-end;">Send &#x2192;</button>
-      </div>
+    </div>
+    <!-- COMMENT INPUT BAR - outside scroll, inside pcs-screen -->
+    <div id="pcs-comment-input-bar" style="display:none;position:relative;flex-shrink:0;background:#0e0e14;border-top:1px solid rgba(255,255,255,0.08);padding:10px 16px 16px;gap:10px;align-items:flex-end;">
+      <textarea id="pcs-comment-input" rows="1" placeholder="Add a comment..." style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;padding:8px 12px;outline:none;resize:none;caret-color:#C8A84B;min-height:36px;max-height:80px;"></textarea>
+      <button onclick="submitPcsComment()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:#C8A84B;background:rgba(200,168,75,0.08);border:1px solid rgba(200,168,75,0.3);padding:8px 14px;cursor:pointer;height:36px;white-space:nowrap;align-self:flex-end;">Send &#x2192;</button>
     </div>
 
   </div>
@@ -925,19 +925,19 @@ window.currentRole     = window.currentRole || 'Admin';
 window.allTasks        = window.allTasks    || [];
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="01-config.js?v=20260326ar" defer></script>
-<script src="02-session.js?v=20260326ar" defer></script>
-<script src="utils.js?v=20260326ar" defer></script>
-<script src="03-auth.js?v=20260326ar" defer></script>
-<script src="05-api.js?v=20260326ar" defer></script>
-<script src="10-ui.js?v=20260326ar" defer></script>
+<script src="01-config.js?v=20260326as" defer></script>
+<script src="02-session.js?v=20260326as" defer></script>
+<script src="utils.js?v=20260326as" defer></script>
+<script src="03-auth.js?v=20260326as" defer></script>
+<script src="05-api.js?v=20260326as" defer></script>
+<script src="10-ui.js?v=20260326as" defer></script>
 
-<script src="06-post-create.js?v=20260326ar" defer></script>
-<script src="07-post-load.js?v=20260326ar" defer></script>
-<script src="08-post-actions.js?v=20260326ar" defer></script>
-<script src="09-library.js?v=20260326ar" defer></script>
-<script src="09-approval.js?v=20260326ar" defer></script>
-<script src="04-router.js?v=20260326ar" defer></script>
+<script src="06-post-create.js?v=20260326as" defer></script>
+<script src="07-post-load.js?v=20260326as" defer></script>
+<script src="08-post-actions.js?v=20260326as" defer></script>
+<script src="09-library.js?v=20260326as" defer></script>
+<script src="09-approval.js?v=20260326as" defer></script>
+<script src="04-router.js?v=20260326as" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
