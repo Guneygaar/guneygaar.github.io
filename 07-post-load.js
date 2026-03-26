@@ -2539,15 +2539,27 @@ function buildPipelineCard(p, listKey) {
   var stage = p.stage || '';
   var stageLC = stage.toLowerCase();
 
+  // Card type detection
+  var _isBrief = (p.post_id || '').indexOf('REQ-') === 0 ||
+    (p.owner || '').toLowerCase() === 'client';
+  var _hasFeedback = !_isBrief &&
+    p.client_feedback && p.client_feedback.trim().length > 0;
+
   // FIX 1 -- Color bar computation
   var tdRaw = p.targetDate || p.target_date;
   var cardIsStale = isPostStale(p);
-  var barColor = cardIsStale && stageLC === 'awaiting_approval'
+  var barColor = _isBrief ? '#C8A84B' :
+    _hasFeedback ? '#FF4B4B' :
+    cardIsStale && stageLC === 'awaiting_approval'
     ? 'var(--c-red)' :
     cardIsStale ? 'var(--c-amber)' :
     stageLC === 'scheduled' ? 'var(--c-cyan)' :
     stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
     'rgba(255,255,255,0.06)';
+
+  // Row wash background
+  var rowBg = _isBrief ? 'rgba(200,168,75,0.04)' :
+    _hasFeedback ? 'rgba(255,75,75,0.04)' : 'transparent';
 
   // FIX 2 -- Date
   var dateInfo = formatPipelineDate(tdRaw);
@@ -2557,38 +2569,69 @@ function buildPipelineCard(p, listKey) {
   var ownerStr = p.owner || '';
   var locationStr = p.location || '';
   var metaParts = [pillarShort, ownerStr, locationStr].filter(Boolean);
-  var metaLine = metaParts.join(' \u00b7 ');
+  var metaLine = metaParts.join(' \xB7 ');
 
-  // FIX 5 -- Chase button (plain text, no border)
-  var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
-  var rightHtml = '';
-  if (!_isClientCard && stage === 'awaiting_approval') {
-    var changed = p.status_changed_at ? new Date((p.status_changed_at || '') + 'Z') : null;
-    var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
-    if (daysWaiting >= 3) {
-      var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'}) : 'recently';
-      var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance';
-      rightHtml = '<button onclick="event.stopPropagation();copyChase(\'' + encodeURIComponent(chaseMsg) + '\')" ' +
-        'style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
-        'color:var(--c-red);background:transparent;border:none;cursor:pointer;padding:0;">' +
-        'CHASE ' + daysWaiting + 'D</button>';
-    }
+  // Brief cards show date/time instead of pillar/owner/location
+  if (_isBrief) {
+    var _bd = new Date((p.status_changed_at || '') + 'Z');
+    var _bdate = _bd.toLocaleDateString('en-IN',
+      {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
+    var _btime = _bd.toLocaleTimeString('en-IN',
+      {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
+    metaLine = 'Client request \xB7 ' + _bdate + ' \xB7 ' + _btime;
   }
-  // FIX 6 -- Owner badge on non-chase cards (colored initials)
-  if (!rightHtml) {
-    var ownerColors = {
-      'client': 'var(--c-red)',
-      'chitra': 'var(--c-cyan)',
-      'pranav': 'var(--c-purple)'
-    };
-    var ownerKey = (p.owner || '').toLowerCase();
-    var ownerColor = ownerColors[ownerKey] || '#666';
-    var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
-    if (ownerInitial) {
-      rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
-        'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
-        'font-size:7px;color:' + ownerColor + ';display:flex;align-items:center;' +
-        'justify-content:center;flex-shrink:0;">' + esc(ownerInitial) + '</div>';
+
+  // Chip HTML for brief/feedback card types
+  var chipHtml = '';
+  if (_isBrief) {
+    chipHtml =
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'background:#C8A84B;color:#000;font-weight:600;' +
+      'padding:4px 8px;flex-shrink:0;">BRIEF</div>';
+  } else if (_hasFeedback) {
+    chipHtml =
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'background:#FF4B4B;color:#fff;font-weight:600;' +
+      'padding:4px 8px;flex-shrink:0;">FEEDBACK</div>';
+  }
+
+  // Right side: chip for brief/feedback, chase/owner badge for normal
+  var rightHtml = '';
+  if (_isBrief || _hasFeedback) {
+    rightHtml = chipHtml;
+  } else {
+    // FIX 5 -- Chase button (plain text, no border)
+    var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
+    if (!_isClientCard && stage === 'awaiting_approval') {
+      var changed = p.status_changed_at ? new Date((p.status_changed_at || '') + 'Z') : null;
+      var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
+      if (daysWaiting >= 3) {
+        var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'}) : 'recently';
+        var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance';
+        rightHtml = '<button onclick="event.stopPropagation();copyChase(\'' + encodeURIComponent(chaseMsg) + '\')" ' +
+          'style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
+          'color:var(--c-red);background:transparent;border:none;cursor:pointer;padding:0;">' +
+          'CHASE ' + daysWaiting + 'D</button>';
+      }
+    }
+    // FIX 6 -- Owner badge on non-chase cards (colored initials)
+    if (!rightHtml) {
+      var ownerColors = {
+        'client': 'var(--c-red)',
+        'chitra': 'var(--c-cyan)',
+        'pranav': 'var(--c-purple)'
+      };
+      var ownerKey = (p.owner || '').toLowerCase();
+      var ownerColor = ownerColors[ownerKey] || '#666';
+      var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
+      if (ownerInitial) {
+        rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
+          'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
+          'font-size:7px;color:' + ownerColor + ';display:flex;align-items:center;' +
+          'justify-content:center;flex-shrink:0;">' + esc(ownerInitial) + '</div>';
+      }
     }
   }
 
@@ -2604,7 +2647,7 @@ function buildPipelineCard(p, listKey) {
     '</div>';
 
   // FIX 1 -- Outer wrapper with 3px color bar + bottom divider
-  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;">' +
+  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;background:' + rowBg + ';">' +
     '<div style="width:3px;flex-shrink:0;background:' + barColor + ';"></div>' +
     '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
@@ -3205,7 +3248,27 @@ function _renderPipelineInner() {
 
   let isFirstCard = true;
   const html = stages.map(stage => {
-    const posts   = prioritySort(grouped[stage]);
+    var posts;
+    if (stage === 'in_production') {
+      posts = (grouped[stage] || []).slice().sort(function(a, b) {
+        var aIsBrief = (a.post_id||'').indexOf('REQ-')===0 ||
+          (a.owner||'').toLowerCase()==='client';
+        var bIsBrief = (b.post_id||'').indexOf('REQ-')===0 ||
+          (b.owner||'').toLowerCase()==='client';
+        var aHasFeedback = !aIsBrief &&
+          a.client_feedback && a.client_feedback.trim().length > 0;
+        var bHasFeedback = !bIsBrief &&
+          b.client_feedback && b.client_feedback.trim().length > 0;
+        var aPriority = aIsBrief ? 0 : aHasFeedback ? 1 : 2;
+        var bPriority = bIsBrief ? 0 : bHasFeedback ? 1 : 2;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        var aTime = new Date((a.status_changed_at||'')+'Z').getTime();
+        var bTime = new Date((b.status_changed_at||'')+'Z').getTime();
+        return aTime - bTime;
+      });
+    } else {
+      posts = prioritySort(grouped[stage]);
+    }
     const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
     _postLists[listKey] = posts;
     const { label } = stageStyle(stage);
