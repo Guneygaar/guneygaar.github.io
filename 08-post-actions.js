@@ -36,17 +36,18 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
+    var _qsPost = (typeof getPostById === 'function')
+      ? getPostById(postId) : null;
+    var _qsTitle = _qsPost ? (_qsPost.title || postId) : postId;
+    var _qsPostId = _qsPost ? _qsPost.post_id : postId;
     if (newStage === 'awaiting_approval') {
-      var _qaPost = (typeof getPostById === 'function')
-        ? getPostById(postId) : null;
-      var _qaTitle = _qaPost ? _qaPost.title : postId;
       apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
           user_role: 'Client',
-          post_id:   postId,
+          post_id:   _qsPostId,
           type:      'awaiting_approval',
-          message:   _qaTitle + ' is ready for your approval'
+          message:   _qsTitle + ' is ready for your approval'
         })
       }).catch(function(){});
     }
@@ -54,10 +55,9 @@ async function quickStage(postId, newStage) {
       method: 'POST',
       body: JSON.stringify({
         user_role: 'Admin',
-        post_id:   postId,
+        post_id:   _qsPostId,
         type:      'stage_change',
-        message:   resolveActor() + ' moved ' +
-                   ((typeof getPostById === 'function' && getPostById(postId)) ? getPostById(postId).title : postId) + ' to ' + newStage
+        message:   resolveActor() + ' moved ' + _qsTitle + ' to ' + newStage
       })
     }).catch(function(){});
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
@@ -175,12 +175,13 @@ async function clientApprove(postId, btn) {
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
     var _approvedTitle = post.title || postId;
+    var _approvedPostId = post.post_id || postId;
     ['Servicing', 'Admin'].forEach(function(role) {
       apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
           user_role: role,
-          post_id:   postId,
+          post_id:   _approvedPostId,
           type:      'awaiting_approval',
           message:   'Client approved -- ' + _approvedTitle +
                      ' is ready to schedule'
@@ -226,13 +227,14 @@ async function submitClientChanges(postId) {
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Client feedback: ' + text });
     var _changesPost = (typeof getPostById === 'function')
       ? getPostById(postId) : null;
-    var _changesTitle = _changesPost ? _changesPost.title : postId;
+    var _changesTitle = _changesPost ? (_changesPost.title || postId) : postId;
+    var _changesPostId = _changesPost ? _changesPost.post_id : postId;
     ['Servicing', 'Admin'].forEach(function(role) {
       apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
           user_role: role,
-          post_id:   postId,
+          post_id:   _changesPostId,
           type:      'awaiting_brand_input',
           message:   'Client requested changes -- ' + _changesTitle
         })
@@ -1063,15 +1065,18 @@ function _confirmPublish(postId) {
       actor_role: window.effectiveRole || 'Admin',
       action: 'published'
     });
+    var _notifPost = (allPosts||[]).find(function(p) {
+      return p.post_id === postId || p.id === postId;
+    });
+    var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;
     apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
         user_role: 'Admin',
-        post_id: postId,
+        post_id: (_notifPost ? _notifPost.post_id : postId),
         type: 'published',
         message: (window.currentUserName || 'Shubham') +
-          ' published ' +
-          ((allPosts[idx] || {}).title || postId)
+          ' published ' + _notifTitle
       })
     }).catch(function(){});
 
@@ -1098,10 +1103,14 @@ async function _skipPublish(postId) {
 window._skipPublish = _skipPublish;
 
 function _saveLiUrlInline(postId) {
-  var input = document.getElementById('li-url-input-' + postId);
+  var input = document.getElementById('li-url-input-' + postId)
+    || document.getElementById('pcs-li-inline-input');
   if (!input) return;
   var url = (input.value || '').trim();
-  if (!url) return;
+  if (!url) {
+    showToast('Please enter a URL', 'error');
+    return;
+  }
 
   var btn = document.getElementById('li-save-btn-' + postId);
   if (btn) {

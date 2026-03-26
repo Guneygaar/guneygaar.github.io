@@ -4333,7 +4333,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-time {
   font-family: var(--mono);
   font-size: 8px;
-  color: var(--muted);
+  color: rgba(255,255,255,0.55);
   white-space: nowrap;
 }
 
