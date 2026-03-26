@@ -3219,6 +3219,43 @@ function _renderPipelineInner() {
     source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
   }
 
+  // -- ROLE-BASED PIPELINE FILTERING --
+  var _rolePL = (effectiveRole || '').toLowerCase();
+  var _isPranavPL = _rolePL === 'creative' ||
+    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+  var _isChitraPL = _rolePL === 'servicing' && !_isPranavPL;
+  var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
+
+  if (_isPranavPL) {
+    source = source.filter(function(p) {
+      var stage = p.stage || '';
+      var owner = (p.owner || '').toLowerCase();
+      var isMine = owner === 'pranav';
+      if (stage === 'brief') return isMine;
+      if (stage === 'in_production') return isMine;
+      if (stage === 'ready') return isMine;
+      return false;
+    });
+  }
+
+  if (_isChitraPL) {
+    var _chitraStages = [
+      'brief',
+      'awaiting_approval',
+      'awaiting_brand_input',
+      'ready',
+      'scheduled'
+    ];
+    source = source.filter(function(p) {
+      var stage = p.stage || '';
+      if (!_chitraStages.includes(stage)) return false;
+      if (stage === 'brief') {
+        return (p.owner || '').toLowerCase() === 'chitra';
+      }
+      return true;
+    });
+  }
+
   // -- PRIORITY SORT: overdue first, then soonest date --
   function prioritySort(posts) {
     var now = new Date().setHours(0,0,0,0);
