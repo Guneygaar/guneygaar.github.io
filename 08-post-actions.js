@@ -1240,7 +1240,7 @@ async function loadPcsComments(postId) {
       var _initial = (c.author||'?').charAt(0).toUpperCase();
       var _ts = '';
       if (c.created_at) {
-        var _d = new Date((c.created_at||'').replace(' ','T').replace('+00','Z'));
+        var _d = new Date((c.created_at||'').replace(' ','T').replace('+00:00','Z').replace('+00','Z'));
         if (!isNaN(_d.getTime())) {
           _ts = _d.toLocaleDateString('en-IN',{
             day:'numeric',month:'short',
