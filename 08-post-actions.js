@@ -1440,9 +1440,9 @@ function _buildNotes(post, canEdit, id) {
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.08em;color:rgba(255,255,255,0.4);margin-top:8px;">' +
       (post.status_changed_at
-        ? new Date(post.status_changed_at).toLocaleDateString('en-IN',
+        ? new Date((post.status_changed_at || '') + 'Z').toLocaleDateString('en-IN',
             {day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) + ' -- ' +
-          new Date(post.status_changed_at).toLocaleTimeString('en-IN',
+          new Date((post.status_changed_at || '') + 'Z').toLocaleTimeString('en-IN',
             {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})
         : ''
       ) +
