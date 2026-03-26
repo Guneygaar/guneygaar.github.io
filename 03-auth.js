@@ -210,6 +210,7 @@ function activateRole(role) {
   if (rolePreview && rolePreview !== 'Admin') {
     window.effectiveRole = _normaliseRole(rolePreview);
     window.currentRole = _normaliseRole(rolePreview);
+    _buildUserMenu();
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
     return;
@@ -221,6 +222,7 @@ function activateRole(role) {
   if ((role || '').toLowerCase() === 'client') {
     window.currentRole = _normaliseRole('Client');
     window.effectiveRole = _normaliseRole('Client');
+    _buildUserMenu();
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');

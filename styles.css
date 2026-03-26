@@ -566,19 +566,14 @@ a:hover { text-decoration: underline; }
 .user-menu-wrap { position: relative; }
 .user-menu {
   display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
   min-width: 180px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-lift);
-  z-index: 200;
   overflow: hidden;
   padding: var(--sp-1) 0;
 }
-.user-menu.open { display: block; }
 
 .user-menu-item {
   display: flex;
