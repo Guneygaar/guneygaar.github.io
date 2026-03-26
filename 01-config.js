@@ -33,6 +33,7 @@ const STAGE_META = {
   'published':            { label: 'Published',        hex: '#22c55e' },
   'parked':               { label: 'Parked',           hex: '#64748b' },
   'rejected':             { label: 'Rejected',         hex: '#ef4444' },
+  'brief':                { label: 'Brief',            hex: '#C8A84B' },
 };
 
 // Canonical stage order  -  single source of truth for all dropdowns and rendering
@@ -45,6 +46,7 @@ const STAGE_ORDER = [
   'published',
   'parked',
   'rejected',
+  'brief',
 ];
 
 // Active DB stages (same order)
@@ -63,6 +65,7 @@ const PIPELINE_RENDER_ORDER = [
   'scheduled',
   'ready',
   'in_production',
+  'brief',
 ];
 
 // Backward-compatible aliases
