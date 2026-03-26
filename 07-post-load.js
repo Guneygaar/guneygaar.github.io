@@ -5546,13 +5546,13 @@ function _openClientEditorial(postId) {
     'padding:16px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
     '&#x2713; Approve Post</button>' +
 
-    // Request Changes button
+    // Comment button
     '<button onclick="_editorialChanges(\'' + postId + '\')" ' +
     'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.2em;text-transform:uppercase;color:#555;' +
+    'letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.7);' +
     'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
     'padding:14px 0;cursor:pointer;display:block;">' +
-    'Request Changes</button>' +
+    '&#x1F4AC; Comment</button>' +
 
     '</div>';
 
@@ -5592,25 +5592,97 @@ window._editorialApprove = _editorialApprove;
 
 function _editorialChanges(postId) {
   var overlay = document.getElementById('client-editorial-overlay');
-  if (overlay) {
-    overlay.innerHTML =
-      '<div style="position:fixed;inset:0;background:#0a0a0f;' +
-      'display:flex;flex-direction:column;align-items:center;' +
-      'justify-content:center;gap:14px;z-index:6000;">' +
-      '<div style="font-size:28px;color:#C8A84B;line-height:1;">&#x1F4AC;</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;' +
-      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Opening comments...</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
-      'Leave a comment or question.</div>' +
-      '</div>';
-  }
+  if (!overlay) return;
+
+  overlay.innerHTML =
+    '<div style="position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;z-index:9500;">' +
+
+    '<div style="display:flex;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
+    '<button onclick="_closeClientEditorial()" style="background:transparent;border:none;color:rgba(255,255,255,0.6);font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;padding:4px 0;">&#x2190; Back</button>' +
+    '</div>' +
+
+    '<div style="flex:1;padding:24px 16px;display:flex;flex-direction:column;gap:16px;">' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;font-weight:600;color:#e8e2d9;">Leave a comment</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.35);">Ask a question or share feedback</div>' +
+    '<textarea id="editorial-comment-input-' + esc(postId) + '" placeholder="Type your comment here..." style="flex:1;min-height:160px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:\'DM Sans\',sans-serif;font-size:15px;line-height:1.6;padding:14px;outline:none;resize:none;caret-color:#C8A84B;"></textarea>' +
+    '</div>' +
+
+    '<div style="padding:12px 16px 32px;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
+    '<button onclick="_submitEditorialComment(\'' + esc(postId) + '\')" style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#C8A84B;background:rgba(200,168,75,0.08);border:1px solid rgba(200,168,75,0.3);padding:16px 0;cursor:pointer;">Send Comment &#x2192;</button>' +
+    '</div>' +
+
+    '</div>';
+
   setTimeout(function() {
-    _closeClientEditorial();
-    if (typeof showBoardingComment === 'function') showBoardingComment(postId);
-  }, 1200);
+    var ta = document.getElementById('editorial-comment-input-' + postId);
+    if (ta) ta.focus();
+  }, 100);
 }
 window._editorialChanges = _editorialChanges;
+
+function _submitEditorialComment(postId) {
+  var ta = document.getElementById('editorial-comment-input-' + postId);
+  if (!ta) return;
+  var message = (ta.value || '').trim();
+  if (!message) {
+    showToast('Please write a comment first', 'error');
+    return;
+  }
+
+  var _post = (allPosts||[]).find(function(p) {
+    return p.post_id === postId || p.id === postId;
+  });
+  var _realPostId = _post ? _post.post_id : postId;
+  var _title = _post ? (_post.title || postId) : postId;
+  var _author = window.currentUserName || 'Client';
+  var _role = window.effectiveRole || 'Client';
+  var _normalRole = _role.charAt(0).toUpperCase() + _role.slice(1).toLowerCase();
+
+  var btn = document.querySelector('[onclick*="_submitEditorialComment"]');
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+
+  apiFetch('/post_comments', {
+    method: 'POST',
+    body: JSON.stringify({
+      post_id: _realPostId,
+      author: _author,
+      author_role: _normalRole,
+      message: message
+    })
+  }).then(function() {
+
+    ['Servicing', 'Admin'].forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id: _realPostId,
+          type: 'comment',
+          message: _author + ' commented on ' + _title
+        })
+      }).catch(function(){});
+    });
+
+    var overlay = document.getElementById('client-editorial-overlay');
+    if (overlay) {
+      overlay.innerHTML =
+        '<div style="position:fixed;inset:0;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;">' +
+        '<div style="font-size:32px;">&#x1F4AC;</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:600;color:#e8e2d9;">Comment sent</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.16em;text-transform:uppercase;color:#C8A84B;">Team has been notified</div>' +
+        '</div>';
+    }
+
+    setTimeout(function() {
+      _closeClientEditorial();
+    }, 1500);
+
+  }).catch(function() {
+    showToast('Failed to send. Try again.', 'error');
+    if (btn) { btn.textContent = 'Send Comment \u2192'; btn.disabled = false; }
+  });
+}
+window._submitEditorialComment = _submitEditorialComment;
 
 function _edUpdateDots(stripId, dotsId, total) {
   var strip = document.getElementById(stripId);
