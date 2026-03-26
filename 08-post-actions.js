@@ -151,7 +151,23 @@ async function clientApprove(postId, btn) {
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
-    if (confirmEl) confirmEl.classList.add('active');
+    if (confirmEl) confirmEl.classList.add('show');
+    var cardEl = document.getElementById('approved-confirm-' + postId);
+    if (cardEl) {
+      var parent = cardEl.parentNode;
+      if (parent) {
+        var actions = parent.querySelector('[style*="display:flex;border-top"]') ||
+          parent.querySelector('.bp-actions');
+        if (actions) {
+          actions.innerHTML =
+            '<div style="flex:1;padding:13px 16px;' +
+            'font-family:\'IBM Plex Mono\',monospace;' +
+            'font-size:10px;letter-spacing:0.1em;text-transform:uppercase;' +
+            'color:#3ECF8E;display:flex;align-items:center;gap:8px;">' +
+            '&#x2713; Approved -- team notified</div>';
+        }
+      }
+    }
     setStage(post, 'scheduled', 'clientApprove');
     setTimeout(() => loadPostsForClient(), 1200);
   } catch { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); }
@@ -172,7 +188,16 @@ async function submitClientChanges(postId) {
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Client feedback: ' + text });
     const item = document.getElementById(`apv-item-${postId}`);
-    if (item) item.innerHTML = `<div style="padding:var(--sp-4);text-align:center;color:var(--text2);font-size:14px">Changes sent  -  the team will take care of it.</div>`;
+    if (item) item.innerHTML =
+      '<div style="padding:20px 16px;text-align:center;' +
+      'border-top:1px dashed rgba(255,255,255,0.07);">' +
+      '<div style="font-size:20px;color:#F6A623;margin-bottom:10px;">&#x25C8;</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:16px;' +
+      'font-weight:600;color:#e8e2d9;margin-bottom:6px;">Feedback sent.</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.08em;color:rgba(255,255,255,0.5);">' +
+      'The team will take care of it.</div>' +
+      '</div>';
     setTimeout(() => loadPostsForClient(), 1000);
   } catch { showToast('Failed  -  try again', 'error'); }
 }
@@ -1412,9 +1437,16 @@ function _buildNotes(post, canEdit, id) {
       'color:#e8e2d9;line-height:1.6;">' +
       esc(post.client_feedback) +
       '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#333;margin-top:8px;">' +
-      'Read only</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.08em;color:rgba(255,255,255,0.4);margin-top:8px;">' +
+      (post.status_changed_at
+        ? new Date(post.status_changed_at).toLocaleDateString('en-IN',
+            {day:'numeric',month:'short'}) + ' -- ' +
+          new Date(post.status_changed_at).toLocaleTimeString('en-IN',
+            {hour:'numeric',minute:'2-digit',hour12:true})
+        : ''
+      ) +
+      '</div>' +
       '</div>';
   }
 

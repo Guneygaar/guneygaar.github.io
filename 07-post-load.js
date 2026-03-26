@@ -3862,17 +3862,6 @@ function _renderClientViewInner() {
 
       '<div style="padding:16px 16px 0;position:relative;z-index:2;">' +
 
-      // Pulsing status line
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.18em;text-transform:uppercase;' +
-      'color:#3ECF8E;display:flex;align-items:center;gap:8px;' +
-      'margin-bottom:14px;">' +
-      '<div style="width:5px;height:5px;border-radius:50%;' +
-      'background:#3ECF8E;animation:clientPulse 2s infinite;' +
-      'flex-shrink:0;"></div>' +
-      'Posts require your decision' +
-      '</div>' +
-
       // Big count
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:64px;' +
       'font-weight:600;line-height:1;letter-spacing:-0.03em;' +
@@ -4126,11 +4115,20 @@ function _renderClientViewInner() {
         '</div>' +
 
         '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
+        '<div style="display:flex;align-items:center;' +
+        'justify-content:space-between;margin-bottom:10px;">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+        'letter-spacing:0.16em;text-transform:uppercase;color:#F6A623;">' +
+        'What needs to change?</div>' +
+        '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+        'color:rgba(255,255,255,0.4);background:transparent;border:none;' +
+        'cursor:pointer;padding:2px 6px;">&#x2715;</button>' +
+        '</div>' +
         '<textarea class="change-textarea" id="change-text-' + esc(id) + '" ' +
-        'placeholder="What would you like changed? Be as specific as possible..." ' +
-        'rows="3"></textarea>' +
+        'placeholder="Be specific -- tone, image, hashtags..." rows="3"></textarea>' +
         '<button class="btn-send-changes" ' +
-        'onclick="submitClientChanges(\'' + esc(id) + '\')">Send Change Request</button>' +
+        'onclick="submitClientChanges(\'' + esc(id) + '\')">&#x2192; Send Feedback</button>' +
         '</div>' +
 
         '<div class="approval-confirmed" ' +

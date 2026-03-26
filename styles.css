@@ -1482,12 +1482,12 @@ tr:hover td { background: var(--surface2); }
 .approval-confirmed {
   display: none;
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--c-green);
-  padding: 9px 12px;
-  margin-top: 8px;
+  color: #3ECF8E;
+  padding: 13px 16px;
+  border-top: 1px dashed rgba(255,255,255,0.07);
 }
 .approval-confirmed.show { display: block; }
 
