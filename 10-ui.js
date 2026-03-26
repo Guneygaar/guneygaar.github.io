@@ -316,10 +316,10 @@ function renderNotifications(name, role) {
         parts.push('<span class="bk-item bk-urgent" onclick="setNotifFilter(\'action\', document.querySelectorAll(\'.nftab\')[1])">'
           + urgent.length + ' urgent</span>');
       if (newItems.length > 0)
-        parts.push('<span class="bk-item bk-new" onclick="setNotifFilter(\'unread\', document.querySelectorAll(\'.nftab\')[2])">'
+        parts.push('<span class="bk-item bk-new">'
           + newItems.length + ' new</span>');
       if (infoItems.length > 0)
-        parts.push('<span class="bk-item bk-info" onclick="setNotifFilter(\'info\', document.querySelectorAll(\'.nftab\')[3])">'
+        parts.push('<span class="bk-item bk-info" onclick="setNotifFilter(\'info\', document.querySelectorAll(\'.nftab\')[2])">'
           + infoItems.length + ' ' + (infoItems.length === 1 ? 'update' : 'updates') + '</span>');
       if (unread.length > 0)
         parts.push('<span class="bk-item bk-unread">'
@@ -328,13 +328,29 @@ function renderNotifications(name, role) {
     }
   }
   var badgeAll = document.getElementById('nftab-badge-all');
-  var badgeUnread = document.getElementById('nftab-badge-unread');
   if (badgeAll) { badgeAll.textContent = notifs.length; badgeAll.style.display = notifs.length ? '' : 'none'; }
-  if (badgeUnread) { badgeUnread.textContent = unread.length; badgeUnread.style.display = unread.length ? '' : 'none'; }
   var filtered = notifs;
-  if (_notifFilter === 'action') filtered = notifs.filter(function(n) { return ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
-  if (_notifFilter === 'unread') filtered = notifs.filter(function(n) { return !n.read; });
-  if (_notifFilter === 'info') filtered = notifs.filter(function(n) { return ['scheduled','published','in_production','stage_change'].includes(n.type); });
+  if (_notifFilter === 'action') filtered = notifs.filter(function(n) {
+    return n.type === 'awaiting_approval' ||
+      n.type === 'awaiting_brand_input' ||
+      n.type === 'brief' ||
+      (n.type === 'stage_change' && (
+        (n.message||'').toLowerCase().includes('brief') ||
+        (n.message||'').toLowerCase().includes('feedback') ||
+        (n.message||'').toLowerCase().includes('changes') ||
+        (n.message||'').toLowerCase().includes('assigned')
+      ));
+  });
+  if (_notifFilter === 'info') filtered = notifs.filter(function(n) {
+    return n.type === 'published' ||
+      n.type === 'scheduled' ||
+      (n.type === 'stage_change' && !(
+        (n.message||'').toLowerCase().includes('brief') ||
+        (n.message||'').toLowerCase().includes('feedback') ||
+        (n.message||'').toLowerCase().includes('changes') ||
+        (n.message||'').toLowerCase().includes('assigned')
+      ));
+  });
   var scroll = document.getElementById('notif-list-scroll');
   var empty = document.getElementById('notif-empty');
   if (!scroll) return;
@@ -587,6 +603,17 @@ async function markAllNotificationsRead() {
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, currentRole);
     updateNotifBadge();
+    var unreadEls = document.querySelectorAll(
+      '#panel-updates .notif-item.unread');
+    unreadEls.forEach(function(el) {
+      el.classList.remove('unread');
+    });
+    ['notif-bell-badge','notif-pipeline-badge',
+     'notif-lib-badge','notif-ins-badge',
+     'notif-client-badge'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
     var _marRole = (window.effectiveRole || 'Admin');
     await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_marRole), {
       method: 'PATCH',
@@ -1393,7 +1420,7 @@ function openNotifications() {
     overlay.appendChild(panel);
   }
   overlay.style.display = 'flex';
-  panel.style.cssText = 'width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:#0e0e0e;display:block;';
+  panel.style.cssText = 'width:100%;max-width:480px;max-height:62vh;min-height:40vh;overflow-y:auto;background:#0e0e0e;display:block;';
   document.body.style.overflow = 'hidden';
   window._modalOpen = true;
   loadNotifications();
