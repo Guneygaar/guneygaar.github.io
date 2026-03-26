@@ -5717,9 +5717,12 @@ function _openBriefSheet(postId) {
     briefText = briefText.replace(/\[CHITRA NOTE\][\s\S]*/i, '').trim();
   }
 
-  // Linked post lookup for brief_done
+  var _isAssignedToPranav =
+    (post.owner || '').toLowerCase() === 'pranav' &&
+    !_isBriefDone;
+  var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
-  if (_isBriefDone && post.linked_post_id) {
+  if (_hasLinkedPost) {
     linkedPost = (allPosts || []).find(function(p) {
       return p.post_id === post.linked_post_id;
     });
@@ -5769,22 +5772,19 @@ function _openBriefSheet(postId) {
       '</div>'
       : '') +
 
-    // Linked post (if brief_done and linked)
-    (_isBriefDone && linkedPost ?
+    // Linked post info (if linked)
+    (_hasLinkedPost && linkedPost ?
       '<div style="padding:12px 18px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.2em;text-transform:uppercase;' +
       'color:rgba(255,255,255,0.4);margin-bottom:8px;">Linked Post</div>' +
-      '<div onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
-      'document.body.style.overflow=\'\';openPCS(\'' +
-      esc(linkedPost.post_id) + '\',\'\')" ' +
-      'style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:12px 14px;border:1px dashed rgba(200,168,75,0.25);cursor:pointer;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;' +
+      'padding:12px 14px;border:1px dashed rgba(200,168,75,0.25);">' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
       'font-weight:600;color:#e8e2d9;">' + esc(linkedPost.title) + '</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);">' +
-      esc((linkedPost.stage || '').replace(/_/g,' ')) + ' &#x2192;</div>' +
+      esc((linkedPost.stage || '').replace(/_/g,' ')) + '</div>' +
       '</div></div>'
       : '') +
 
@@ -5845,10 +5845,24 @@ function _openBriefSheet(postId) {
       '</div></div>'
       : '') +
 
-    // Role-based bottom action
-    (_isBriefDone ?
-      // Brief is closed - show only Reopen for Chitra/Admin
-      ((_isChitra) ?
+    // Role-based bottom action (state machine)
+    (function() {
+      var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
+        '<div style="padding:0 18px 32px;">' +
+        '<button onclick="(function(){' +
+        'var o=document.getElementById(\'brief-sheet-overlay\');' +
+        'if(o)o.remove();' +
+        'document.body.style.overflow=\'\';' +
+        'setTimeout(function(){openPCS(\'' +
+        esc(linkedPost.post_id) + '\',\'\');},150);' +
+        '})()" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+        'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
+        'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
+        '&#x2192; View Post</button>' +
+        '</div>' : '';
+      var _reopenBtn =
         '<div style="padding:0 18px 32px;">' +
         '<button onclick="_reopenBrief(\'' + postId + '\')" ' +
         'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
@@ -5856,31 +5870,8 @@ function _openBriefSheet(postId) {
         'color:rgba(255,255,255,0.4);background:transparent;' +
         'border:1px solid rgba(255,255,255,0.12);' +
         'padding:14px 0;cursor:pointer;">&#x21BA; Reopen Brief</button>' +
-        '</div>'
-        : '')
-      :
-      // Brief is open - normal actions
-      (_isChitra ?
-        '<div style="padding:0 18px 24px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;' +
-        'color:#C8A84B;margin-bottom:10px;">Your Direction for Pranav</div>' +
-        '<textarea id="brief-direction-' + postId + '" rows="4" ' +
-        'placeholder="Add your creative direction, angle, key message..." ' +
-        'style="width:100%;background:transparent;border:none;' +
-        'border-bottom:1px solid rgba(200,168,75,0.3);color:#e8e2d9;' +
-        'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-        'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
-        'caret-color:#C8A84B;"></textarea>' +
-        '</div>' +
-        '<div style="padding:0 18px 32px;">' +
-        '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-        'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
-        'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
-        'padding:16px 0;cursor:pointer;' +
-        'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
-        '</div>' +
+        '</div>';
+      var _closeBtn =
         '<div style="padding:12px 18px 0;">' +
         '<button onclick="_closeBriefConfirm(\'' + postId + '\')" ' +
         'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
@@ -5888,33 +5879,74 @@ function _openBriefSheet(postId) {
         'color:rgba(255,255,255,0.4);background:transparent;' +
         'border:1px solid rgba(255,255,255,0.12);' +
         'padding:14px 0;cursor:pointer;">&#x2715; Close Brief</button>' +
-        '</div>'
-        : _isPranav ?
-        '<div style="padding:0 18px 32px;">' +
-        '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:#C8A84B;background:rgba(200,168,75,0.06);' +
-        'border:1px solid #C8A84B;padding:16px 0;cursor:pointer;' +
-        'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Create Post</button>' +
-        '</div>' +
-        '<div style="padding:12px 18px 0;">' +
-        '<button onclick="_closeBriefConfirm(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.4);background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">&#x2715; Close Brief</button>' +
-        '</div>'
-        :
+        '</div>';
+      var _readOnly =
         '<div style="padding:0 18px 32px;">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.12em;text-transform:uppercase;' +
         'color:rgba(255,255,255,0.35);text-align:center;">' +
         'The team is working on this</div>' +
-        '</div>'
-      )
-    );
+        '</div>';
+
+      // STATE: brief_done
+      if (_isBriefDone) {
+        return _viewPostBtn +
+          (_isChitra ? _reopenBtn : '');
+      }
+      // STATE: has linked post (post already created)
+      if (_hasLinkedPost && linkedPost) {
+        return _viewPostBtn +
+          (_isChitra ? _closeBtn : '');
+      }
+      // STATE: assigned to Pranav, no linked post yet
+      if (_isAssignedToPranav) {
+        if (_isChitra) {
+          return '<div style="padding:0 18px 32px;">' +
+            '<div style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+            'color:rgba(255,255,255,0.4);background:transparent;' +
+            'border:1px solid rgba(255,255,255,0.1);' +
+            'padding:14px 0;text-align:center;">' +
+            '&#x2713; Assigned to Pranav</div>' +
+            '</div>' + _closeBtn;
+        }
+        if (_isPranav) {
+          return '<div style="padding:0 18px 32px;">' +
+            '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
+            'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+            'color:#C8A84B;background:rgba(200,168,75,0.06);' +
+            'border:1px solid #C8A84B;padding:16px 0;cursor:pointer;' +
+            'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Create Post</button>' +
+            '</div>' + _closeBtn;
+        }
+        return _readOnly;
+      }
+      // STATE: unassigned (owner=Chitra)
+      if (_isChitra) {
+        return '<div style="padding:0 18px 24px;">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.18em;text-transform:uppercase;' +
+          'color:#C8A84B;margin-bottom:10px;">Your Direction for Pranav</div>' +
+          '<textarea id="brief-direction-' + postId + '" rows="4" ' +
+          'placeholder="Add your creative direction, angle, key message..." ' +
+          'style="width:100%;background:transparent;border:none;' +
+          'border-bottom:1px solid rgba(200,168,75,0.3);color:#e8e2d9;' +
+          'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+          'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
+          'caret-color:#C8A84B;"></textarea>' +
+          '</div>' +
+          '<div style="padding:0 18px 32px;">' +
+          '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
+          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+          'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
+          'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
+          'padding:16px 0;cursor:pointer;' +
+          'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
+          '</div>' + _closeBtn;
+      }
+      return _readOnly;
+    }());
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
