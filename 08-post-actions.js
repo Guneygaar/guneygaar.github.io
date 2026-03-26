@@ -93,6 +93,11 @@ function openAdminEdit(postId) {
     showToast('Post not found', 'error');
     return;
   }
+  var _aeRole = (effectiveRole || '').toLowerCase();
+  var _aeDeleteBtn = document.getElementById('ae-delete-btn');
+  if (_aeDeleteBtn) {
+    _aeDeleteBtn.style.display = _aeRole === 'admin' ? '' : 'none';
+  }
   window._modalOpen = true;
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
@@ -498,6 +503,11 @@ async function flagIssue(postId) {
 
 // -- Delete post (Admin only) ------------------
 async function deletePost(postId) {
+  var _delRole = (effectiveRole || '').toLowerCase();
+  if (_delRole !== 'admin') {
+    showToast('Only Admin can delete posts', 'error');
+    return;
+  }
   const post = getPostById(postId);
   const title = post ? getTitle(post) : postId;
   if (!confirm(`Delete "${title}"?\n\nThis cannot be undone.`)) return;
@@ -682,9 +692,12 @@ function _renderPCS(postId) {
     }
   }
 
-  // Hide delete button for Client role
+  // Hide delete button for non-Admin roles
   var _pcsDelBtn = document.querySelector('.pc-topbar .pc-icon-btn.danger');
-  if (_pcsDelBtn) _pcsDelBtn.style.display = canEdit ? '' : 'none';
+  if (_pcsDelBtn) {
+    var _isAdminDel = (_pcsRole === 'admin');
+    _pcsDelBtn.style.display = _isAdminDel ? '' : 'none';
+  }
 
   _updateSubtitle(post);
   if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
@@ -1889,11 +1902,22 @@ function pcsConfirmDelete() {
 }
 
 async function pcsDoDelete() {
+  var _delRole = (effectiveRole || '').toLowerCase();
+  if (_delRole !== 'admin') {
+    showToast('Only Admin can delete posts', 'error');
+    return;
+  }
   _removePcsConfirm();
   const id = _pcs.postId;
   if (!id) return;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    logActivity({
+      post_id: id,
+      actor: window.currentUserName || 'Admin',
+      actor_role: 'Admin',
+      action: 'deleted post'
+    });
     showToast('Post deleted');
     closePCS();
     await loadPosts();
