@@ -3974,7 +3974,8 @@ function _renderClientViewInner() {
         var waLink = 'https://wa.me/?text=' + waText;
 
         return (
-        '<div style="background:#0d0d14;position:relative;overflow:hidden;' +
+        '<div id="apv-item-' + esc(id) + '" ' +
+        'style="background:#0d0d14;position:relative;overflow:hidden;' +
         'border-bottom:1px solid rgba(255,255,255,0.05);">' +
 
         '<div style="height:3px;background:linear-gradient(to right,' +
@@ -5227,20 +5228,46 @@ function _closeClientEditorial() {
 window._closeClientEditorial = _closeClientEditorial;
 
 function _editorialApprove(postId) {
-  _closeClientEditorial();
-  if (typeof clientApprove === 'function') {
-    clientApprove(postId);
-  } else if (typeof quickStage === 'function') {
-    quickStage(postId, 'scheduled');
+  var overlay = document.getElementById('client-editorial-overlay');
+  if (overlay) {
+    overlay.innerHTML =
+      '<div style="position:fixed;inset:0;background:#0a0a0f;' +
+      'display:flex;flex-direction:column;align-items:center;' +
+      'justify-content:center;gap:14px;z-index:6000;">' +
+      '<div style="font-size:32px;color:#3ECF8E;line-height:1;">&#x2713;</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Approved.</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
+      'Team has been notified.</div>' +
+      '</div>';
   }
+  setTimeout(function() {
+    _closeClientEditorial();
+    if (typeof clientApprove === 'function') clientApprove(postId);
+  }, 1500);
 }
 window._editorialApprove = _editorialApprove;
 
 function _editorialChanges(postId) {
-  _closeClientEditorial();
-  if (typeof showChangeInput === 'function') {
-    showChangeInput(postId);
+  var overlay = document.getElementById('client-editorial-overlay');
+  if (overlay) {
+    overlay.innerHTML =
+      '<div style="position:fixed;inset:0;background:#0a0a0f;' +
+      'display:flex;flex-direction:column;align-items:center;' +
+      'justify-content:center;gap:14px;z-index:6000;">' +
+      '<div style="font-size:28px;color:#F6A623;line-height:1;">&#x25C8;</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;' +
+      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Opening feedback...</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
+      'Tell us what to change.</div>' +
+      '</div>';
   }
+  setTimeout(function() {
+    _closeClientEditorial();
+    if (typeof showChangeInput === 'function') showChangeInput(postId);
+  }, 1200);
 }
 window._editorialChanges = _editorialChanges;
 
