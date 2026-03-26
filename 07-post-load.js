@@ -3575,15 +3575,29 @@ function _renderClientViewInner() {
   }
 
   // CHANGE 3 - Greeting
+  var now = new Date();
+  var timeStr = now.toLocaleDateString('en-IN', {
+    weekday:'short', day:'numeric', month:'short'
+  }) + ' \xB7 ' + now.toLocaleTimeString('en-IN', {
+    hour:'numeric', minute:'2-digit', hour12:true
+  });
+
   var greetEl = document.getElementById('client-greeting');
   if (greetEl) {
     greetEl.innerHTML =
-      '<div style="padding:10px 18px;' +
-      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:var(--sans);font-size:13px;' +
-      'color:#777;">Good ' + esc(timeOfDay) + ', ' +
-      '<span style="color:var(--c-gold);font-weight:500;">' +
-      esc(clientName) + '</span></div></div>';
+      '<div style="padding:14px 16px 13px;' +
+      'border-bottom:1px solid rgba(255,255,255,0.06);' +
+      'display:flex;align-items:baseline;' +
+      'justify-content:space-between;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;letter-spacing:0.04em;' +
+      'color:rgba(255,255,255,0.55);">Good ' + esc(timeOfDay) + ', ' +
+      '<span style="color:#C8A84B;font-weight:500;">' +
+      esc(clientName) + '</span></div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:9px;letter-spacing:0.04em;' +
+      'color:rgba(255,255,255,0.35);">' + esc(timeStr) + '</div>' +
+      '</div>';
   }
 
   // Input needed section
@@ -3593,15 +3607,23 @@ function _renderClientViewInner() {
   var inputEyebrow = document.getElementById('client-input-eyebrow');
   if (inputEyebrow) {
     inputEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;' +
-      'padding:14px 18px 8px;">' +
-      '<div style="font-size:13px;color:#F6A623;flex-shrink:0;">&#x26A0;</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#999;flex:1;">' +
-      'Awaiting Input</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'color:#777;border:1px solid rgba(255,255,255,0.15);padding:2px 7px;">' +
-      inputPosts.length + '</div>' +
+      '<div style="background:#0a0a10;' +
+      'border-top:1px solid rgba(255,255,255,0.05);' +
+      'border-bottom:1px solid rgba(255,255,255,0.05);' +
+      'padding:10px 16px;display:flex;align-items:center;' +
+      'justify-content:space-between;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<span style="color:#F6A623;font-size:13px;">&#x25C8;</span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
+      'font-weight:500;color:rgba(255,255,255,0.55);">' +
+      'Awaiting Input</span>' +
+      '</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.1em;' +
+      'color:rgba(255,255,255,0.4);' +
+      'border:1px dashed rgba(255,255,255,0.12);' +
+      'padding:2px 8px;">' + inputPosts.length + '</div>' +
       '</div>';
   }
 
@@ -3609,51 +3631,121 @@ function _renderClientViewInner() {
   var inputItems = document.getElementById('client-input-items');
   if (inputItems) {
     if (!inputPosts.length) {
-      inputItems.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07);">All clear</div>';
+      inputItems.innerHTML = '<div style="padding:10px 16px;' +
+        'border-bottom:1px solid rgba(255,255,255,0.04);' +
+        'display:flex;align-items:center;gap:8px;">' +
+        '<div style="width:5px;height:5px;border-radius:50%;' +
+        'background:rgba(62,207,142,0.4);flex-shrink:0;"></div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.35);">' +
+        'All clear -- nothing needs your input</div>' +
+        '</div>';
     } else {
       inputItems.innerHTML = inputPosts.map(function(p) {
         var id   = getPostId(p);
         var days = daysInStage(p);
-        var staleLabel = days >= 1 ? days + 'd waiting' : 'New';
-        var _pillar = (p.content_pillar || p.contentPillar || '').toUpperCase();
-        var _loc = (p.location || '').toUpperCase();
-        var metaLine = _pillar + (_loc ? ' / ' + _loc : '');
+        var staleLabel = days >= 1 ? days + 'd' : 'New';
+        var _pillar = (p.content_pillar || p.contentPillar || '--').toUpperCase();
+        var _loc = (p.location || '--').toUpperCase();
 
-        return '<div style="margin:0 0 0 0;' +
-          'border-bottom:1px solid rgba(255,255,255,0.06);' +
-          'background:rgba(255,255,255,0.015);' +
-          'position:relative;overflow:hidden;">' +
-          '<div style="position:absolute;top:0;left:0;bottom:0;' +
-          'width:3px;background:#F6A623;"></div>' +
-          '<div style="display:flex;align-items:center;gap:8px;' +
-          'padding:10px 14px 8px 16px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-          'letter-spacing:0.14em;text-transform:uppercase;' +
-          'color:#FF4B4B;background:rgba(255,75,75,0.12);' +
-          'border:1px solid rgba(255,75,75,0.3);padding:3px 7px;">' +
-          'Action Needed</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.08em;color:#555;flex:1;">' +
-          esc(staleLabel) + '</div>' +
+        var sentLine = (function() {
+          if (!p.status_changed_at) return 'Submitted recently';
+          var d = new Date(p.status_changed_at);
+          var date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+          return 'Changes requested \xB7 ' + date;
+        })();
+
+        return '<div style="background:#0d0d16;' +
+          'border-bottom:1px solid rgba(255,255,255,0.04);' +
+          'position:relative;overflow:hidden;' +
+          'box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);">' +
+
+          // Amber top bar
+          '<div style="height:3px;' +
+          'background:linear-gradient(to right,#F6A623,rgba(246,166,35,0));"></div>' +
+
+          // Header row: title + status
+          '<div style="display:flex;align-items:flex-start;' +
+          'justify-content:space-between;padding:16px 16px;' +
+          'border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+          '<div style="flex:3;min-width:0;">' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
+          'font-weight:600;color:#e8e2d9;line-height:1.2;' +
+          'word-wrap:break-word;overflow-wrap:break-word;">' +
+          esc(getTitle(p)) + '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:10px;letter-spacing:0.04em;' +
+          'color:rgba(255,255,255,0.55);margin-top:6px;">' +
+          esc(sentLine) + '</div>' +
           '</div>' +
-          '<div style="font-family:\'DM Sans\',sans-serif;font-size:17px;' +
-          'font-weight:600;color:#e8e2d9;padding:0 14px 3px 16px;' +
-          'line-height:1.3;">' + esc(getTitle(p)) + '</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.1em;text-transform:uppercase;color:#555;' +
-          'padding:0 14px 12px 16px;">' +
-          esc(metaLine) + '</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
+          '<div style="flex-shrink:0;display:flex;flex-direction:column;' +
+          'align-items:flex-end;">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+          'letter-spacing:0.08em;text-transform:uppercase;' +
+          'color:rgba(255,255,255,0.45);margin-bottom:4px;">Status</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;' +
+          'font-weight:500;color:#F6A623;">' + esc(staleLabel) + '</div>' +
+          '</div>' +
+          '</div>' +
+
+          // Info grid: Pillar | Location | Target
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
+          'border-bottom:1px dashed rgba(255,255,255,0.08);">' +
+
+          '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+          'letter-spacing:0.08em;text-transform:uppercase;' +
+          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Pillar</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' +
+          esc(_pillar) + '</div>' +
+          '</div>' +
+
+          '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+          'letter-spacing:0.08em;text-transform:uppercase;' +
+          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Location</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' +
+          esc(_loc) + '</div>' +
+          '</div>' +
+
+          '<div style="padding:9px 16px;">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+          'letter-spacing:0.08em;text-transform:uppercase;' +
+          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Target</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
+          'overflow:hidden;text-overflow:ellipsis;">' +
+          (p.target_date ? new Date(p.target_date + 'T00:00:00')
+            .toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '--') +
+          '</div>' +
+          '</div>' +
+
+          '</div>' +
+
+          // Brief section
+          '<div style="padding:12px 16px;' +
+          'border-bottom:1px dashed rgba(255,255,255,0.07);">' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
           'letter-spacing:0.18em;text-transform:uppercase;color:#F6A623;' +
-          'padding:0 14px 5px 16px;">What we need</div>' +
+          'margin-bottom:6px;">What we need</div>' +
           '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-          'color:#888;line-height:1.55;padding:0 14px 14px 16px;">' +
+          'color:rgba(255,255,255,0.55);line-height:1.55;">' +
           esc(p.comments || 'No brief added yet.') + '</div>' +
-          '<div style="display:flex;gap:8px;padding:0 14px 14px 16px;">' +
+          '</div>' +
+
+          // Action row
+          '<div style="display:flex;' +
+          'border-bottom:1px solid rgba(255,255,255,0.04);">' +
           '<label style="flex:1;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:7px;letter-spacing:0.14em;text-transform:uppercase;' +
-          'color:#F6A623;background:transparent;' +
-          'border:1px solid rgba(246,166,35,0.35);padding:10px 0;cursor:pointer;' +
+          'font-size:8px;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#F6A623;background:rgba(246,166,35,0.04);' +
+          'border:none;border-right:1px dashed rgba(255,255,255,0.08);' +
+          'padding:13px 0;cursor:pointer;' +
           'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
           (function() {
             var inputMsg = 'Hi, we need something from you for the post: ' +
@@ -3661,10 +3753,11 @@ function _renderClientViewInner() {
               (p.comments || '') + '\n\nPlease upload or send it here.';
             var inputWaUrl = 'https://wa.me/?text=' + encodeURIComponent(inputMsg);
             return '<a href="' + inputWaUrl + '" target="_blank" ' +
-              'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-              'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
-              'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-              'padding:10px 0;cursor:pointer;text-align:center;' +
+              'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+              'letter-spacing:0.14em;text-transform:uppercase;' +
+              'color:rgba(255,255,255,0.55);' +
+              'background:transparent;border:none;' +
+              'padding:13px 0;cursor:pointer;text-align:center;' +
               'text-decoration:none;display:block;">Send on WhatsApp</a>';
           })() +
           '</div>' +
@@ -3686,66 +3779,135 @@ function _renderClientViewInner() {
   // CHANGE 4 - Approval eyebrow
   var approvalEyebrow = document.getElementById('client-approval-eyebrow');
   if (approvalEyebrow) {
-    approvalEyebrow.innerHTML =
-      '<div style="padding:20px 18px 0;' +
-      'border-bottom:1px solid rgba(255,255,255,0.05);">' +
 
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
-      '<span style="font-size:11px;color:#3ECF8E;">&#x2713;</span>' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#3ECF8E;">' +
+    // compute stats
+    var now2 = Date.now();
+    var waitTimes = approvalPosts.map(function(p) {
+      return p.status_changed_at
+        ? Math.floor((now2 - new Date(p.status_changed_at).getTime()) / 86400000)
+        : 0;
+    });
+    var oldest = waitTimes.length ? Math.max.apply(null, waitTimes) : 0;
+    var overdue = waitTimes.filter(function(d){ return d >= 5; }).length;
+
+    // count color
+    var countColor = '#e8e2d9';
+    if (approvalPosts.length >= 13) countColor = '#FF4B4B';
+    else if (approvalPosts.length >= 8) countColor = '#FF8C00';
+    else if (approvalPosts.length >= 4) countColor = '#F6A623';
+
+    approvalEyebrow.innerHTML =
+
+      // Zone header
+      '<div style="background:#0a0a10;' +
+      'border-top:2px solid rgba(62,207,142,0.1);' +
+      'border-bottom:1px solid rgba(255,255,255,0.05);' +
+      'padding:10px 16px;display:flex;align-items:center;' +
+      'justify-content:space-between;">' +
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+      '<span style="color:#3ECF8E;font-size:13px;">&#x25C8;</span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
+      'font-weight:500;color:rgba(255,255,255,0.55);">' +
       'Awaiting Your Approval</span>' +
       '</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.1em;' +
+      'color:rgba(62,207,142,0.7);' +
+      'border:1px dashed rgba(62,207,142,0.2);' +
+      'padding:2px 8px;">' + approvalPosts.length + '</div>' +
+      '</div>' +
 
-      (function() {
-        var countColor = '#e8e2d9';
-        if (approvalPosts.length >= 13) countColor = '#FF4B4B';
-        else if (approvalPosts.length >= 8) countColor = '#FF8C00';
-        else if (approvalPosts.length >= 4) countColor = '#F6A623';
-        return '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
-        'font-weight:600;color:#e8e2d9;line-height:1.2;margin-bottom:10px;' +
-        'letter-spacing:-0.01em;">' +
-        '<span style="color:' + countColor + ';">' +
-        approvalPosts.length + '</span> posts are<br>waiting for your OK' +
-        '</div>';
-      })() +
+      // Departure board
+      '<div style="background:#08080e;' +
+      'border-bottom:1px solid rgba(255,255,255,0.05);' +
+      'position:relative;overflow:hidden;">' +
 
-      (function() {
-        var now = Date.now();
-        var waitTimes = approvalPosts.map(function(p) {
-          return p.status_changed_at
-            ? Math.floor((now - new Date(p.status_changed_at).getTime()) / 86400000)
-            : 0;
-        });
-        var oldest = Math.max.apply(null, waitTimes);
-        var overdue = waitTimes.filter(function(d) { return d >= 5; }).length;
-        var deckHtml =
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.1em;color:#999;">Oldest waiting: </span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.1em;color:#F6A623;font-weight:500;">' + oldest + ' days</span>';
-        if (overdue > 0) {
-          deckHtml +=
-            '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-            'letter-spacing:0.1em;color:#999;"> &middot; </span>' +
-            '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-            'letter-spacing:0.1em;color:#FF4B4B;font-weight:500;">' +
-            overdue + ' overdue</span>';
-        }
-        return '<div style="margin-bottom:14px;">' + deckHtml + '</div>';
-      })() +
+      // Scanlines overlay
+      '<div style="position:absolute;inset:0;' +
+      'background:repeating-linear-gradient(0deg,transparent,' +
+      'transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);' +
+      'pointer-events:none;z-index:1;"></div>' +
 
-      '<div style="height:1px;background:linear-gradient(to right,' +
-      'rgba(62,207,142,0.5),transparent);"></div>' +
+      '<div style="padding:16px 16px 0;position:relative;z-index:2;">' +
 
-      '</div>';
+      // Pulsing status line
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.18em;text-transform:uppercase;' +
+      'color:#3ECF8E;display:flex;align-items:center;gap:8px;' +
+      'margin-bottom:14px;">' +
+      '<div style="width:5px;height:5px;border-radius:50%;' +
+      'background:#3ECF8E;animation:clientPulse 2s infinite;' +
+      'flex-shrink:0;"></div>' +
+      'Posts require your decision' +
+      '</div>' +
+
+      // Big count
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:64px;' +
+      'font-weight:600;line-height:1;letter-spacing:-0.03em;' +
+      'color:' + countColor + ';margin-bottom:6px;">' +
+      approvalPosts.length + '</div>' +
+
+      // Subtitle
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:11px;letter-spacing:0.04em;' +
+      'color:rgba(255,255,255,0.55);margin-bottom:16px;' +
+      'line-height:1.4;">posts are waiting for your OK</div>' +
+
+      '</div>' +
+
+      // Stats grid
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
+      'border-top:1px solid rgba(255,255,255,0.06);' +
+      'position:relative;z-index:2;">' +
+
+      '<div style="padding:10px 16px;' +
+      'border-right:1px solid rgba(255,255,255,0.06);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Total</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+      'font-weight:500;letter-spacing:0.04em;color:#e8e2d9;">' +
+      approvalPosts.length + '</div>' +
+      '</div>' +
+
+      '<div style="padding:10px 16px;' +
+      'border-right:1px solid rgba(255,255,255,0.06);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Oldest</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+      'font-weight:500;letter-spacing:0.04em;color:#F6A623;">' +
+      oldest + ' days</div>' +
+      '</div>' +
+
+      '<div style="padding:10px 16px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Overdue</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+      'font-weight:500;letter-spacing:0.04em;color:#FF4B4B;">' +
+      overdue + '</div>' +
+      '</div>' +
+
+      '</div>' + // end stats grid
+      '</div>'; // end departure board
   }
 
   // CHANGE 5 - Approval post cards
   var approvalItems = document.getElementById('client-approval-items');
   if (approvalItems) {
     if (!approvalPosts.length) {
-      approvalItems.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.07);">Nothing to approve</div>';
+      approvalItems.innerHTML = '<div style="padding:10px 16px;' +
+        'border-bottom:1px solid rgba(255,255,255,0.04);' +
+        'display:flex;align-items:center;gap:8px;">' +
+        '<div style="width:5px;height:5px;border-radius:50%;' +
+        'background:rgba(62,207,142,0.4);flex-shrink:0;"></div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.35);">' +
+        'Nothing to approve</div>' +
+        '</div>';
     } else {
       var now = Date.now();
       approvalItems.innerHTML = approvalPosts.map(function(p) {
@@ -3809,7 +3971,7 @@ function _renderClientViewInner() {
         esc(p.title || '') + '</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;' +
         'font-size:10px;letter-spacing:0.04em;' +
-        'color:rgba(255,255,255,0.45);margin-top:6px;line-height:1;">' +
+        'color:rgba(255,255,255,0.55);margin-top:6px;line-height:1;">' +
         (function() {
           if (!p.status_changed_at) return 'Sent recently';
           var d = new Date(p.status_changed_at);
@@ -3828,7 +3990,7 @@ function _renderClientViewInner() {
         '<div style="flex:1;flex-shrink:0;display:flex;flex-direction:column;' +
         'align-items:flex-end;padding-top:0;margin-top:0;">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
         'line-height:1;margin-bottom:4px;margin-top:0;padding-top:0;">Waiting</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:24px;' +
         'font-weight:500;line-height:1;color:' + waitColor + ';">' +
@@ -3842,7 +4004,7 @@ function _renderClientViewInner() {
 
         '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Pillar</div>' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Pillar</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
@@ -3851,7 +4013,7 @@ function _renderClientViewInner() {
 
         '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Location</div>' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Location</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
@@ -3860,7 +4022,7 @@ function _renderClientViewInner() {
 
         '<div style="padding:9px 16px;">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:3px;">Target</div>' +
+        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Target</div>' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
         'overflow:hidden;text-overflow:ellipsis;">' +
@@ -3892,7 +4054,7 @@ function _renderClientViewInner() {
               ? '<div onclick="_openClientEditorial(\'' + esc(p.post_id) + '\')" ' +
                 'style="padding:12px 16px;cursor:pointer;">' +
                 '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-                'color:#666;line-height:1.6;max-height:52px;overflow:hidden;' +
+                'color:rgba(255,255,255,0.55);line-height:1.6;max-height:52px;overflow:hidden;' +
                 '-webkit-mask-image:linear-gradient(to bottom,black 20px,transparent 50px);">' +
                 esc(p.caption) + '</div>' +
                 '<div style="text-align:right;font-family:\'IBM Plex Mono\',monospace;' +
@@ -3911,11 +4073,11 @@ function _renderClientViewInner() {
         'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
         'background:rgba(62,207,142,0.06);border:none;' +
         'border-right:1px dashed rgba(255,255,255,0.08);' +
-        'padding:13px 0;cursor:pointer;">&#x2713; Approve</button>' +
+        'padding:13px 0;cursor:pointer;">&#x25C8; Approve</button>' +
 
         '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
         'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:#666;' +
+        'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
         'background:transparent;border:none;' +
         'border-right:1px dashed rgba(255,255,255,0.08);' +
         'padding:13px 0;cursor:pointer;">&#x21A9; Changes</button>' +
@@ -3960,7 +4122,7 @@ function _renderClientViewInner() {
           '}.bind(this));' +
           '})()" ' +
           'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.1em;text-transform:uppercase;color:#888;' +
+          'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
           'background:transparent;border:1px solid rgba(255,255,255,0.1);' +
           'padding:10px 0;cursor:pointer;">' +
           'Copy to Share</button>' +
