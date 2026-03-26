@@ -4198,11 +4198,11 @@ function _renderClientViewInner() {
       'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;">' +
       'New Request</span>' +
       '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#444;">' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);">' +
       '-- We\'ll handle everything</span>' +
       '</div>' +
       '<button onclick="_closeReqForm()" ' +
-      'style="font-size:15px;color:#555;background:transparent;' +
+      'style="font-size:15px;color:rgba(255,255,255,0.55);background:transparent;' +
       'border:none;cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
 
@@ -4211,7 +4211,7 @@ function _renderClientViewInner() {
 
       // 01 -- Name (mandatory, 30 char max)
       '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">01</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
@@ -4226,13 +4226,13 @@ function _renderClientViewInner() {
       'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
       'padding:6px 0 8px;outline:none;caret-color:#C8A84B;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#333;margin-top:5px;">' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-top:5px;">' +
       'Max 30 characters -- becomes the post title</div>' +
       '</div>' +
 
       // 02 -- Brief (mandatory)
       '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">02</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
@@ -4252,39 +4252,61 @@ function _renderClientViewInner() {
 
       // 03 -- Content type (optional)
       '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">03</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
-      'Content type ' +
-      '<span style="color:#444;font-size:11px;font-weight:400;' +
-      'font-family:\'IBM Plex Mono\',monospace;">optional</span></div>' +
+      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
+      'Content type</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.12em;' +
+      'text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
       '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
       ['Photo','Carousel','Video','Text','Creative'].map(function(t) {
         return '<button onclick="_reqToggleChip(this)" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:#444;' +
-        'border:1px solid rgba(255,255,255,0.08);padding:6px 11px;' +
+        'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
+        'border:1px solid rgba(255,255,255,0.18);padding:6px 11px;' +
         'cursor:pointer;background:transparent;">' + t + '</button>';
       }).join('') +
       '</div></div>' +
 
       // 04 -- Target date (optional)
       '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.05);">' +
+      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">04</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
-      'Target date ' +
-      '<span style="color:#444;font-size:11px;font-weight:400;' +
-      'font-family:\'IBM Plex Mono\',monospace;">optional</span></div>' +
+      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
+      'Target date</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.12em;' +
+      'text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
+      '<div style="position:relative;display:flex;' +
+      'align-items:center;justify-content:space-between;' +
+      'border:1px solid rgba(255,255,255,0.18);' +
+      'padding:11px 14px;cursor:pointer;margin-top:4px;' +
+      'background:rgba(255,255,255,0.02);">' +
+      '<span id="req-date-label" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:11px;letter-spacing:0.04em;' +
+      'color:rgba(255,255,255,0.45);">Pick a date</span>' +
+      '<span style="font-size:10px;color:rgba(255,255,255,0.4);">&#x25BE;</span>' +
       '<input type="date" id="req-date" ' +
-      'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(255,255,255,0.1);' +
-      'color:#888;font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-      'padding:8px 0 10px;outline:none;color-scheme:dark;cursor:pointer;">' +
+      'onchange="(function(v){' +
+      'var d=new Date(v+\'T00:00:00\');' +
+      'var el=document.getElementById(\'req-date-label\');' +
+      'el.textContent=d.toLocaleDateString(\'en-IN\',' +
+      '{day:\'numeric\',month:\'short\',year:\'numeric\'});' +
+      'el.style.color=\'#e8e2d9\';' +
+      '})(this.value)" ' +
+      'style="position:absolute;inset:0;opacity:0;' +
+      'width:100%;height:100%;cursor:pointer;' +
+      'color-scheme:dark;border:none;' +
+      'background:transparent;padding:0;outline:none;">' +
+      '</div>' +
       '</div>' +
 
       // 05 -- Reference photos (optional) -- grid + progress bar
@@ -4292,10 +4314,12 @@ function _renderClientViewInner() {
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">05</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
-      'Reference photos ' +
-      '<span style="color:#444;font-size:11px;font-weight:400;' +
-      'font-family:\'IBM Plex Mono\',monospace;">optional</span></div>' +
+      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
+      'Reference photos</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:8px;letter-spacing:0.12em;' +
+      'text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
 
       // Progress bar -- hidden by default
       '<div id="req-progress-wrap" style="display:none;margin-bottom:10px;">' +
@@ -4320,11 +4344,11 @@ function _renderClientViewInner() {
       'cursor:pointer;gap:4px;">' +
       '<div style="font-size:20px;color:rgba(200,168,75,0.4);line-height:1;">+</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#444;">Add photos</div>' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Add photos</div>' +
       '</div></div>' +
       '<div id="req-photo-count" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#555;margin-top:6px;">' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-top:6px;">' +
       'No photos added</div>' +
       '<input type="file" id="req-file" accept="image/*" multiple ' +
       'style="display:none;" onchange="_reqAddPhotos(this)">' +
@@ -4344,8 +4368,8 @@ function _renderClientViewInner() {
       'display:flex;gap:10px;">' +
       '<button onclick="_closeReqForm()" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#444;' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);' +
+      'background:transparent;border:1px solid rgba(255,255,255,0.18);' +
       'padding:13px 16px;cursor:pointer;flex-shrink:0;">Cancel</button>' +
       '<button id="req-submit-btn" onclick="submitClientRequest()" disabled ' +
       'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
@@ -4380,12 +4404,14 @@ function _closeReqForm() {
   if (topic) topic.value = '';
   var date = document.getElementById('req-date');
   if (date) date.value = '';
+  var dateLabel = document.getElementById('req-date-label');
+  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.45)'; }
   // Reset chips
   var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
   chips.forEach(function(c) {
-    c.style.color = '#444';
+    c.style.color = 'rgba(255,255,255,0.55)';
     c.style.background = 'transparent';
-    c.style.borderColor = 'rgba(255,255,255,0.08)';
+    c.style.borderColor = 'rgba(255,255,255,0.18)';
   });
   // Reset photo grid
   window._reqStoredFiles = [];
@@ -4416,9 +4442,9 @@ window._closeReqForm = _closeReqForm;
 function _reqToggleChip(el) {
   var allChips = el.parentNode.querySelectorAll('button');
   allChips.forEach(function(chip) {
-    chip.style.color = '#666';
+    chip.style.color = 'rgba(255,255,255,0.55)';
     chip.style.background = 'transparent';
-    chip.style.borderColor = 'rgba(255,255,255,0.1)';
+    chip.style.borderColor = 'rgba(255,255,255,0.18)';
   });
   el.style.color = '#C8A84B';
   el.style.background = 'rgba(200,168,75,0.07)';
