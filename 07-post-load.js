@@ -3250,10 +3250,8 @@ function _renderPipelineInner() {
     var posts;
     if (stage === 'in_production') {
       posts = (grouped[stage] || []).slice().sort(function(a, b) {
-        var aIsBrief = (a.post_id||'').indexOf('REQ-')===0 ||
-          (a.owner||'').toLowerCase()==='client';
-        var bIsBrief = (b.post_id||'').indexOf('REQ-')===0 ||
-          (b.owner||'').toLowerCase()==='client';
+        var aIsBrief = (a.stage || '') === 'brief';
+        var bIsBrief = (b.stage || '') === 'brief';
         var aHasFeedback = !aIsBrief &&
           a.client_feedback && a.client_feedback.trim().length > 0;
         var bHasFeedback = !bIsBrief &&
@@ -5013,8 +5011,7 @@ document.addEventListener('click', function _cardClickDelegate(e) {
   var clickedPost = (typeof getPostById === 'function')
     ? getPostById(postId) : null;
   var _isBriefPost = clickedPost &&
-    (clickedPost.stage === 'brief' ||
-     (clickedPost.post_id||'').indexOf('REQ-') === 0);
+    (clickedPost.stage === 'brief');
   if (_isBriefPost) {
     _openBriefSheet(postId);
     return;
