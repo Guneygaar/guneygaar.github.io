@@ -5493,6 +5493,16 @@ function _openBriefSheet(postId) {
       {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
   }
 
+  var rawComments = post.comments || '';
+  var contentType = '';
+  var typeMatch = rawComments.match(/\[Type:\s*([^\]]+)\]/);
+  if (typeMatch) {
+    contentType = typeMatch[1].trim();
+    rawComments = rawComments.replace(/\s*\[Type:[^\]]+\]/, '').trim();
+  }
+  var briefText = rawComments;
+  briefText = briefText.replace(/^\[URGENT\]\s*/, '').trim();
+
   var overlay = document.createElement('div');
   overlay.id = 'brief-sheet-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
@@ -5518,7 +5528,7 @@ function _openBriefSheet(postId) {
     '<div style="padding:24px 18px 20px;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
     'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);' +
-    'margin-bottom:8px;">Client Request</div>' +
+    'margin-bottom:8px;">Brief Title</div>' +
     '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;' +
     'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:6px;">' +
     esc(post.title || '') + '</div>' +
@@ -5527,6 +5537,24 @@ function _openBriefSheet(postId) {
     esc(sentTime) + '</div>' +
     '</div>' +
 
+    // Divider
+    '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
+
+    // Content type (extracted from comments)
+    (contentType ?
+      '<div style="padding:16px 18px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;' +
+      'color:#C8A84B;margin-bottom:10px;display:block;">Content Type</div>' +
+      '<div style="display:inline-flex;align-items:center;' +
+      'border:1px dashed rgba(200,168,75,0.3);padding:5px 10px;">' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;' +
+      'color:#e8e2d9;font-weight:500;">' + esc(contentType) + '</span>' +
+      '</div></div>' +
+      '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>'
+      : '') +
+
     // Brief text
     '<div style="padding:0 18px 24px;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
@@ -5534,7 +5562,7 @@ function _openBriefSheet(postId) {
     'color:#C8A84B;margin-bottom:10px;">The Brief</div>' +
     '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
     'color:#e8e2d9;line-height:1.7;white-space:pre-wrap;">' +
-    esc(post.comments || 'No brief text provided.') + '</div>' +
+    esc(briefText || 'No brief text provided.') + '</div>' +
     '</div>' +
 
     // Reference photos
