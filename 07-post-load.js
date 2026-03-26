@@ -81,6 +81,15 @@ function closePipelineSearch() {
 
 // -- Pipeline critical header line --
 function updatePipelineCritical(posts) {
+  var _critRole = (effectiveRole || '').toLowerCase();
+  var _isPranavCrit = _critRole === 'creative' ||
+    _critRole === 'pranav' ||
+    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+  if (_isPranavCrit) {
+    var el = document.getElementById('pipeline-critical');
+    if (el) el.style.display = 'none';
+    return;
+  }
   var el = document.getElementById('pipeline-critical');
   if (!el) return;
   var _isClientCrit = (effectiveRole || '').toLowerCase() === 'client';
@@ -2660,19 +2669,33 @@ function buildPipelineCard(p, listKey) {
 // -- Pipeline chip count updater ----------------
 function updatePipelineChipCounts() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var pipelinePosts = posts.filter(function(p) {
-    return !['published', 'parked', 'rejected'].includes(p.stage);
+  var _chipRole = (effectiveRole || '').toLowerCase();
+  var _isPranavChip = _chipRole === 'creative' ||
+    _chipRole === 'pranav' ||
+    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+  var _isChitraChip = (_chipRole === 'servicing' ||
+    _chipRole === 'chitra') && !_isPranavChip;
+  var chipPosts = posts.filter(function(p) {
+    var s = p.stage || '';
+    if (s === 'published' || s === 'parked' || s === 'rejected') return false;
+    if (_isPranavChip) {
+      var owner = (p.owner || '').toLowerCase();
+      var isMine = owner === 'pranav';
+      return (s === 'brief' || s === 'in_production' || s === 'ready') && isMine;
+    }
+    return true;
   });
   var stageCounts = {
-    all:                  pipelinePosts.length,
-    in_production:        pipelinePosts.filter(function(p) { return p.stage === 'in_production'; }).length,
-    ready:                pipelinePosts.filter(function(p) { return p.stage === 'ready'; }).length,
-    awaiting_approval:    pipelinePosts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
-    awaiting_brand_input: pipelinePosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
-    scheduled:            pipelinePosts.filter(function(p) { return p.stage === 'scheduled'; }).length,
+    all:                  chipPosts.length,
+    brief:                chipPosts.filter(function(p) { return p.stage === 'brief'; }).length,
+    in_production:        chipPosts.filter(function(p) { return p.stage === 'in_production'; }).length,
+    ready:                chipPosts.filter(function(p) { return p.stage === 'ready'; }).length,
+    awaiting_approval:    chipPosts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
+    awaiting_brand_input: chipPosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
+    scheduled:            chipPosts.filter(function(p) { return p.stage === 'scheduled'; }).length,
   };
   var chipMap = {
-    all: 'all', in_production: 'in_production', ready: 'ready',
+    all: 'all', brief: 'brief', in_production: 'in_production', ready: 'ready',
     awaiting_approval: 'awaiting_approval', awaiting_brand_input: 'awaiting_brand_input',
     scheduled: 'scheduled'
   };
@@ -2695,6 +2718,31 @@ function updatePipelineChipCounts() {
     var count = stageCounts[stage] || 0;
     chip.style.display = count > 0 ? 'flex' : 'none';
   });
+  if (_isPranavChip) {
+    // Hide chips Pranav doesn't need
+    ['awaiting_approval','awaiting_brand_input',
+     'scheduled'].forEach(function(stage) {
+      var chip = document.querySelector(
+        '.stage-chip[data-stage="' + stage + '"]');
+      if (chip) chip.style.display = 'none';
+    });
+    // Show only relevant chips
+    ['brief','in_production','ready'].forEach(function(stage) {
+      var chip = document.querySelector(
+        '.stage-chip[data-stage="' + stage + '"]');
+      if (chip) chip.style.display = '';
+    });
+  } else {
+    // Restore all chips for non-Pranav roles
+    // (existing zero-count hiding logic handles this)
+    ['awaiting_approval','awaiting_brand_input',
+     'scheduled','brief','in_production','ready'].forEach(
+      function(stage) {
+        var chip = document.querySelector(
+          '.stage-chip[data-stage="' + stage + '"]');
+        if (chip) chip.style.display = '';
+      });
+  }
   // Inject colored dots into stage chips (after counts and visibility)
   var dotColors = {
     all: '#666',
@@ -3022,6 +3070,47 @@ function updatePipelineNarrative(posts) {
   if (!wrapEl) return;
   var el = document.getElementById('pipeline-narrative-text');
   if (!el) el = wrapEl;
+
+  var _narrRole = (effectiveRole || '').toLowerCase();
+  var _isPranavNarr = _narrRole === 'creative' ||
+    _narrRole === 'pranav' ||
+    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+
+  if (_isPranavNarr) {
+    var narrEl = document.getElementById('pipeline-narrative-text')
+      || document.getElementById('pipeline-narrative');
+    if (narrEl) {
+      var _myProd = (allPosts || []).filter(function(p) {
+        return (p.stage === 'in_production') &&
+          (p.owner || '').toLowerCase() === 'pranav';
+      }).length;
+      var _myBriefs = (allPosts || []).filter(function(p) {
+        return (p.stage === 'brief') &&
+          (p.owner || '').toLowerCase() === 'pranav';
+      }).length;
+      var _myReady = (allPosts || []).filter(function(p) {
+        return (p.stage === 'ready') &&
+          (p.owner || '').toLowerCase() === 'pranav';
+      }).length;
+
+      if (_myBriefs > 0) {
+        narrEl.textContent = _myBriefs + ' brief' +
+          (_myBriefs > 1 ? 's' : '') + ' waiting to start';
+        narrEl.style.color = 'var(--c-gold)';
+      } else if (_myProd > 0) {
+        narrEl.textContent = _myProd + ' in production';
+        narrEl.style.color = 'var(--c-purple)';
+      } else if (_myReady > 0) {
+        narrEl.textContent = _myReady + ' ready for approval';
+        narrEl.style.color = 'var(--c-green)';
+      } else {
+        narrEl.textContent = 'All clear';
+        narrEl.style.color = 'rgba(255,255,255,0.4)';
+      }
+    }
+    return;
+  }
+
   var allP = posts || allPosts || [];
   var now = new Date(); now.setHours(0,0,0,0);
 
