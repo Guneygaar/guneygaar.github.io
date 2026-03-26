@@ -621,7 +621,11 @@ function _renderPCS(postId) {
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
-  const canEdit     = effectiveRole !== 'Client';
+  var _pcsRole = (effectiveRole || '').toLowerCase();
+  var _isPranavPCS = _pcsRole === 'creative' ||
+    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+  const canEdit = _pcsRole !== 'client' && !_isPranavPCS;
+  const canEditCreative = _isPranavPCS;
   const dateValue   = post.targetDate || '';
 
   // 3. Render into DOM
@@ -652,7 +656,7 @@ function _renderPCS(postId) {
 
   // -- Photo strip --
   var imgs = Array.isArray(post.images) ? post.images : [];
-  var showPhotoSection = canEdit || imgs.length > 0;
+  var showPhotoSection = (canEdit || canEditCreative) || imgs.length > 0;
   var photoStripHtml = '';
   if (showPhotoSection) {
     photoStripHtml =
@@ -663,7 +667,7 @@ function _renderPCS(postId) {
       'letter-spacing:0.14em;text-transform:uppercase;color:#555;">' +
       'Photos <span style="color:' + (imgs.length ? '#777' : '#333') + ';">' +
       imgs.length + '</span></div>' +
-      (canEdit ?
+      ((canEdit || canEditCreative) ?
         '<button onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
         'letter-spacing:0.1em;text-transform:uppercase;color:#F6A623;' +
@@ -681,7 +685,7 @@ function _renderPCS(postId) {
             '<div style="position:absolute;bottom:3px;right:4px;font-family:' +
             '\'IBM Plex Mono\',monospace;font-size:7px;color:rgba(255,255,255,0.4);' +
             'background:rgba(0,0,0,0.5);padding:1px 4px;">' + (idx + 1) + '</div>' +
-            (canEdit ?
+            ((canEdit || canEditCreative) ?
               '<button onclick="event.stopPropagation();_pcsRemovePhoto(\'' +
               esc(id) + '\',' + idx + ')" ' +
               'style="position:absolute;top:4px;right:4px;width:28px;height:28px;' +
@@ -691,7 +695,7 @@ function _renderPCS(postId) {
               : '') +
             '</div>';
         }).join('') +
-        (canEdit ?
+        ((canEdit || canEditCreative) ?
           '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
           'style="flex-shrink:0;width:100px;height:100px;' +
           'border:1px dashed rgba(246,166,35,0.2);display:flex;' +
@@ -705,7 +709,7 @@ function _renderPCS(postId) {
           : '') +
         '</div>'
         :
-        (canEdit ?
+        ((canEdit || canEditCreative) ?
           '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
           'style="margin:10px 18px 12px;border:1px dashed rgba(255,255,255,0.07);' +
           'padding:20px;display:flex;flex-direction:column;align-items:center;' +
@@ -718,7 +722,7 @@ function _renderPCS(postId) {
           '</div>'
           : '')
       ) +
-      (canEdit ?
+      ((canEdit || canEditCreative) ?
         '<input type="file" id="pcs-photo-input" accept="image/*" ' +
         'multiple style="display:none;" ' +
         'onchange="_pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
@@ -786,14 +790,14 @@ function _renderPCS(postId) {
   if (elDesign) elDesign.innerHTML = photoStripHtml;
 
   var captionHtml = '';
-  if (post.caption || canEdit) {
+  if (post.caption || canEdit || canEditCreative) {
     captionHtml = '<div id="pcs-caption-section" style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.18em;text-transform:uppercase;color:#555;' +
       'margin-bottom:8px;display:flex;align-items:center;' +
       'justify-content:space-between;">' +
       '<span>Copy / Caption</span>' +
-      (canEdit ?
+      ((canEdit || canEditCreative) ?
         '<button onclick="_startCaptionEdit(\'' + esc(id) + '\')" ' +
         'id="pcs-caption-edit-btn" ' +
         'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
@@ -1508,9 +1512,9 @@ function _buildInfoGrid(post, canEdit, id) {
           return '<select onchange="handleOwnerChange(\'' + esc(id) + '\',this.value)">' + opts + '</select>';
         })()
       : mkRo(formatOwner(post.owner))) +
-    cell('Pillar', canEdit ? mkSel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : mkRo(formatPillarDisplay(post.contentPillar) || ' - ')) +
-    cell('Location', canEdit ? mkSel('location', LOCS, post.location||'', 'location') : mkRo(post.location)) +
-    cell('Format', canEdit ? mkSel('format', FORMATS, post.format||'', 'format') : mkRo(post.format)) +
+    cell('Pillar', (canEdit || canEditCreative) ? mkSel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : mkRo(formatPillarDisplay(post.contentPillar) || ' - ')) +
+    cell('Location', (canEdit || canEditCreative) ? mkSel('location', LOCS, post.location||'', 'location') : mkRo(post.location)) +
+    cell('Format', (canEdit || canEditCreative) ? mkSel('format', FORMATS, post.format||'', 'format') : mkRo(post.format)) +
     cell(dateLabel, dateInput, dateColorCls) +
   '</div></div>';
 }
@@ -1553,7 +1557,7 @@ function _buildNotes(post, canEdit, id) {
 
   if (!canEdit && !post.comments) return feedbackHtml;
 
-  var notesInput = canEdit
+  var notesInput = (canEdit || canEditCreative)
     ? '<textarea class="pc-notes-area" placeholder="Brief or caption..."' +
       ' onblur="updatePost(\'' + esc(id) + '\',\'comments\',this.value)">' + esc(post.comments || '') + '</textarea>'
     : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
@@ -1580,7 +1584,10 @@ var _ADVANCE_CLS = {
 };
 
 function _renderAdvanceButton(stageLC) {
-  if ((effectiveRole || '').toLowerCase() === 'client') return '';
+  var _advRole = (effectiveRole || '').toLowerCase();
+  var _isPranavAdv = _advRole === 'creative' ||
+    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+  if (_advRole === 'client' || _isPranavAdv) return '';
   var block = document.getElementById('pc-advance-block');
   var btn = document.getElementById('pc-advance-btn');
   var label = document.getElementById('pc-advance-label');
