@@ -3797,37 +3797,32 @@ function _renderClientViewInner() {
     headerEl.innerHTML =
       '<div style="display:flex;align-items:center;' +
       'justify-content:space-between;padding:13px 18px;' +
-      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:var(--mono);font-size:13px;' +
-      'color:var(--c-gold);letter-spacing:0.08em;">srtd.io</div>' +
-      '<div style="display:flex;align-items:center;gap:8px;">' +
+      'border-bottom:1px solid rgba(255,255,255,0.06);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:11px;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.5);">srtd.io</div>' +
+      '<div style="display:flex;align-items:center;gap:4px;">' +
       '<button onclick="openNotifications()" ' +
       'style="background:transparent;border:none;cursor:pointer;' +
-      'position:relative;padding:4px;display:flex;' +
+      'position:relative;padding:6px;display:flex;' +
       'align-items:center;justify-content:center;">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" ' +
-      'fill="none" stroke="rgba(255,255,255,0.7)" ' +
-      'stroke-width="2" stroke-linecap="round" ' +
-      'stroke-linejoin="round">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="rgba(255,255,255,0.6)" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
       '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
       '<path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
-      '<span id="notif-client-badge" ' +
-      'style="display:none;position:absolute;top:0;right:0;' +
-      'background:#FF4B4B;color:#fff;border-radius:50%;' +
-      'width:14px;height:14px;font-size:8px;' +
-      'align-items:center;justify-content:center;' +
-      'font-family:\'IBM Plex Mono\',monospace;">0</span>' +
-      '</button>' +
-      '<button style="font-family:var(--mono);font-size:8px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:var(--c-gold);background:transparent;' +
-      'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
-      'cursor:pointer;" onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o){o.style.display=\'flex\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'none\';var _mn=new Date();_mn.setDate(_mn.getDate()+2);var _ms=_mn.toISOString().split(\'T\')[0];var _di=document.getElementById(\'req-date\');if(_di)_di.min=_ms;}})()">+ New Request</button>' +
-      '<button onclick="logout()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-      'padding:6px 10px;cursor:pointer;">Sign Out</button>' +
+      '<span id="notif-client-badge" style="display:none;' +
+      'position:absolute;top:2px;right:2px;background:#FF4B4B;' +
+      'color:#fff;border-radius:50%;width:14px;height:14px;' +
+      'font-size:8px;align-items:center;' +
+      'justify-content:center;font-family:\'IBM Plex Mono\',monospace;">' +
+      '0</span></button>' +
+      '<button onclick="toggleUserMenu()" ' +
+      'style="background:transparent;border:none;cursor:pointer;' +
+      'padding:6px;display:flex;align-items:center;' +
+      'justify-content:center;color:rgba(255,255,255,0.6);' +
+      'font-size:18px;letter-spacing:2px;">' +
+      '&#xB7;&#xB7;&#xB7;</button>' +
       '</div></div>';
   }
 
@@ -4666,7 +4661,39 @@ function _renderClientViewInner() {
   }
 
   renderClientApproved();
+
+  // Client FAB for New Request
+  var clientFab = document.getElementById('client-req-fab');
+  if (!clientFab) {
+    clientFab = document.createElement('div');
+    clientFab.id = 'client-req-fab';
+    clientFab.style.cssText = 'position:fixed;bottom:84px;right:20px;z-index:900;';
+    clientFab.innerHTML =
+      '<button onclick="openClientRequestForm()" ' +
+      'style="width:52px;height:52px;border-radius:50%;' +
+      'background:#C8A84B;border:none;cursor:pointer;' +
+      'display:flex;align-items:center;justify-content:center;' +
+      'box-shadow:0 4px 16px rgba(200,168,75,0.4);' +
+      'font-size:24px;color:#000;">+</button>';
+    document.body.appendChild(clientFab);
+  }
+  clientFab.style.display = '';
 }
+
+function openClientRequestForm() {
+  var o = document.getElementById('req-overlay');
+  if (o) {
+    o.style.display = 'flex';
+    var nav = document.getElementById('bottom-nav');
+    if (nav) nav.style.display = 'none';
+    var _mn = new Date();
+    _mn.setDate(_mn.getDate() + 2);
+    var _ms = _mn.toISOString().split('T')[0];
+    var _di = document.getElementById('req-date');
+    if (_di) _di.min = _ms;
+  }
+}
+window.openClientRequestForm = openClientRequestForm;
 
 function _closeReqForm() {
   var o = document.getElementById('req-overlay');
