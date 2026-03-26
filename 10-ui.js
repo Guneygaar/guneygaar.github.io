@@ -227,6 +227,7 @@ function switchTab(btn) {
     if (greetHdr) greetHdr.style.display = '';
     var appHdr = document.querySelector('.app-header');
     if (appHdr) appHdr.style.display = 'flex';
+    if (typeof loadPosts === 'function') loadPosts();
   } else {
     if (titleEl) { titleEl.style.display = ''; titleEl.textContent = _TAB_TITLES[tab] || tab; }
     if (greetHdr) greetHdr.style.display = 'none';
