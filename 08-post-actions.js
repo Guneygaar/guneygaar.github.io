@@ -36,6 +36,30 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
+    if (newStage === 'awaiting_approval') {
+      var _qaPost = (typeof getPostById === 'function')
+        ? getPostById(postId) : null;
+      var _qaTitle = _qaPost ? _qaPost.title : postId;
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: 'Client',
+          post_id:   postId,
+          type:      'awaiting_approval',
+          message:   _qaTitle + ' is ready for your approval'
+        })
+      }).catch(function(){});
+    }
+    apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: 'Admin',
+        post_id:   postId,
+        type:      'stage_change',
+        message:   resolveActor() + ' moved ' +
+                   ((typeof getPostById === 'function' && getPostById(postId)) ? getPostById(postId).title : postId) + ' to ' + newStage
+      })
+    }).catch(function(){});
     showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
   } catch (err) {
     post._isSaving = false;
@@ -150,6 +174,19 @@ async function clientApprove(postId, btn) {
       body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+    var _approvedTitle = post.title || postId;
+    ['Servicing', 'Admin'].forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id:   postId,
+          type:      'awaiting_approval',
+          message:   'Client approved -- ' + _approvedTitle +
+                     ' is ready to schedule'
+        })
+      }).catch(function(){});
+    });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('show');
     var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -187,6 +224,20 @@ async function submitClientChanges(postId) {
       body: JSON.stringify({ stage: 'in_production', client_feedback: text, status_changed_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Client feedback: ' + text });
+    var _changesPost = (typeof getPostById === 'function')
+      ? getPostById(postId) : null;
+    var _changesTitle = _changesPost ? _changesPost.title : postId;
+    ['Servicing', 'Admin'].forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id:   postId,
+          type:      'awaiting_brand_input',
+          message:   'Client requested changes -- ' + _changesTitle
+        })
+      }).catch(function(){});
+    });
     const item = document.getElementById(`apv-item-${postId}`);
     if (item) item.innerHTML =
       '<div style="padding:20px 16px;text-align:center;' +
@@ -340,6 +391,19 @@ async function submitClientRequest() {
     });
     console.log('[REQUEST] API SUCCESS');
     await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    var _reqTitle = (document.getElementById('req-name') || {}).value ||
+      'New request';
+    ['Servicing', 'Admin'].forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id:   postId,
+          type:      'stage_change',
+          message:   'Client submitted a brief -- ' + _reqTitle
+        })
+      }).catch(function(){});
+    });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
     var nameResetEl = document.getElementById('req-name');
