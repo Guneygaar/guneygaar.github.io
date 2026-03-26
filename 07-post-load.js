@@ -2540,8 +2540,7 @@ function buildPipelineCard(p, listKey) {
   var stageLC = stage.toLowerCase();
 
   // Card type detection
-  var _isBrief = (p.post_id || '').indexOf('REQ-') === 0 ||
-    (p.owner || '').toLowerCase() === 'client';
+  var _isBrief = (p.stage || '') === 'brief';
   var _hasFeedback = !_isBrief &&
     p.client_feedback && p.client_feedback.trim().length > 0;
 
@@ -3192,7 +3191,7 @@ function _renderPipelineInner() {
 
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
   var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
-    'scheduled', 'published'];
+    'scheduled', 'published', 'brief'];
   var _isClient = (effectiveRole || '').toLowerCase() === 'client';
   const base = allPosts.filter(p => {
     if (_isClient && !_clientStages.includes(p.stage || '')) return false;
@@ -5011,6 +5010,15 @@ document.addEventListener('click', function _cardClickDelegate(e) {
   if (card.dataset.closeParked) {
     try { closeParked(); } catch (_) {}
   }
+  var clickedPost = (typeof getPostById === 'function')
+    ? getPostById(postId) : null;
+  var _isBriefPost = clickedPost &&
+    (clickedPost.stage === 'brief' ||
+     (clickedPost.post_id||'').indexOf('REQ-') === 0);
+  if (_isBriefPost) {
+    _openBriefSheet(postId);
+    return;
+  }
   openPCS(postId, listKey);
 });
 
@@ -5467,3 +5475,155 @@ function _edLbNav(dir) {
   }
 }
 window._edLbNav = _edLbNav;
+
+// ===============================================
+// Brief Sheet - full-screen overlay for brief/REQ posts
+// ===============================================
+function _openBriefSheet(postId) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+
+  var existing = document.getElementById('brief-sheet-overlay');
+  if (existing) existing.remove();
+
+  var isChitra = (window.effectiveRole || '').toLowerCase() !== 'client';
+  var sentTime = '';
+  if (post.status_changed_at) {
+    var d = new Date((post.status_changed_at || '') + 'Z');
+    sentTime = d.toLocaleDateString('en-IN',
+      {day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
+      d.toLocaleTimeString('en-IN',
+      {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'brief-sheet-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
+    'background:#0a0a0f;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+
+  overlay.innerHTML =
+    // Topbar
+    '<div style="position:sticky;top:0;z-index:10;' +
+    'background:rgba(10,10,15,0.95);backdrop-filter:blur(8px);' +
+    'display:flex;align-items:center;justify-content:space-between;' +
+    'padding:14px 18px;border-bottom:1px solid rgba(200,168,75,0.15);">' +
+    '<button onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
+    'document.body.style.overflow=\'\';" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5);' +
+    'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:0.18em;text-transform:uppercase;color:#C8A84B;">Brief</div>' +
+    '<div style="width:60px;"></div>' +
+    '</div>' +
+
+    // Title + meta
+    '<div style="padding:24px 18px 20px;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);' +
+    'margin-bottom:8px;">Client Request</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;' +
+    'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:6px;">' +
+    esc(post.title || '') + '</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'letter-spacing:0.04em;color:rgba(255,255,255,0.4);">' +
+    esc(sentTime) + '</div>' +
+    '</div>' +
+
+    // Brief text
+    '<div style="padding:0 18px 24px;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.18em;text-transform:uppercase;' +
+    'color:#C8A84B;margin-bottom:10px;">The Brief</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
+    'color:#e8e2d9;line-height:1.7;white-space:pre-wrap;">' +
+    esc(post.comments || 'No brief text provided.') + '</div>' +
+    '</div>' +
+
+    // Reference photos
+    (Array.isArray(post.images) && post.images.length ?
+      '<div style="padding:0 18px 24px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.18em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.4);margin-bottom:10px;">Reference Photos</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">' +
+      post.images.map(function(url, i) {
+        return '<img src="' + url + '" loading="lazy" ' +
+        'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
+        'style="aspect-ratio:1/1;width:100%;object-fit:cover;' +
+        'display:block;cursor:pointer;">';
+      }).join('') +
+      '</div></div>'
+      : '') +
+
+    // Chitra direction input (agency only)
+    (isChitra ?
+      '<div style="padding:0 18px 24px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+      'letter-spacing:0.18em;text-transform:uppercase;' +
+      'color:#C8A84B;margin-bottom:10px;">Your Direction for Pranav</div>' +
+      '<textarea id="brief-direction-' + postId + '" rows="4" ' +
+      'placeholder="Add your creative direction, angle, key message..." ' +
+      'style="width:100%;background:transparent;border:none;' +
+      'border-bottom:1px solid rgba(200,168,75,0.3);color:#e8e2d9;' +
+      'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+      'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
+      'caret-color:#C8A84B;"></textarea>' +
+      '</div>' +
+      // Assign to Pranav button
+      '<div style="padding:0 18px 32px;">' +
+      '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
+      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
+      'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
+      'padding:16px 0;cursor:pointer;' +
+      'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
+      '</div>'
+      :
+      // Client view - read only
+      '<div style="padding:0 18px 32px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:rgba(255,255,255,0.35);text-align:center;">' +
+      'The team is working on this</div>' +
+      '</div>'
+    );
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+window._openBriefSheet = _openBriefSheet;
+
+function _assignBriefToPranav(postId) {
+  var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  var updatedComments = (post ? (post.comments || '') : '');
+  if (direction.trim()) {
+    updatedComments += '\n\n[CHITRA NOTE] ' + direction.trim();
+  }
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+    method: 'PATCH',
+    body: JSON.stringify({
+      stage: 'in_production',
+      owner: 'Pranav',
+      comments: updatedComments,
+      status_changed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+  }).then(function() {
+    logActivity({
+      post_id: postId,
+      actor: 'Chitra',
+      actor_role: 'Servicing',
+      action: 'Brief assigned to Pranav' +
+        (direction.trim() ? ' with direction' : '')
+    });
+    document.getElementById('brief-sheet-overlay').remove();
+    document.body.style.overflow = '';
+    showToast('Assigned to Pranav', 'success');
+    loadPosts();
+  }).catch(function() {
+    showToast('Failed - try again', 'error');
+  });
+}
+window._assignBriefToPranav = _assignBriefToPranav;

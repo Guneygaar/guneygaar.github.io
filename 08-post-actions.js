@@ -302,8 +302,8 @@ async function submitClientRequest() {
     const payload = {
       post_id:     postId,
       title:       reqName.trim() || fallbackTitle,
-      stage:       'in_production',
-      owner:       'Client',
+      stage:       'brief',
+      owner:       'Chitra',
       comments:    brief,
       target_date: reqDate,
       created_at:  new Date().toISOString(),
