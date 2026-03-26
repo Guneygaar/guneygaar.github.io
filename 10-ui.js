@@ -481,7 +481,8 @@ async function markAllNotificationsRead() {
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, currentRole);
     updateNotifBadge();
-    await apiFetch('/notifications?read=eq.false', {
+    var _marRole = (window.effectiveRole || 'Admin');
+    await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_marRole), {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
     });
