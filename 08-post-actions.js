@@ -3,6 +3,22 @@
 =============================================== */
 console.log("LOADED:", "08-post-actions.js");
 
+function _stageLabel(stage) {
+  var map = {
+    'brief': 'Brief',
+    'brief_done': 'Closed Brief',
+    'in_production': 'In Production',
+    'awaiting_approval': 'Awaiting Approval',
+    'awaiting_brand_input': 'Awaiting Input',
+    'scheduled': 'Scheduled',
+    'published': 'Published',
+    'ready': 'Ready',
+    'parked': 'Parked',
+    'rejected': 'Rejected'
+  };
+  return map[stage] || stage;
+}
+
 function isAssetUrl(url) {
   if (!url) return false;
   return url.includes('supabase.co/storage') ||
@@ -57,10 +73,10 @@ async function quickStage(postId, newStage) {
         user_role: 'Admin',
         post_id:   _qsPostId,
         type:      'stage_change',
-        message:   resolveActor() + ' moved ' + _qsTitle + ' to ' + newStage
+        message:   resolveActor() + ' moved ' + _qsTitle + ' to ' + _stageLabel(newStage)
       })
     }).catch(function(){});
-    showUndoToast(`Moved to ${newStage}`, () => quickStage(postId, oldStage));
+    showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
     post._isSaving = false;
     setStage(post, oldStage, 'quickStage_rollback');
