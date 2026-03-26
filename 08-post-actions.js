@@ -296,9 +296,9 @@ async function submitClientRequest() {
     var reqName = (document.getElementById('req-name') || {}).value || '';
     var now = new Date();
     var fallbackTitle = 'Request - ' +
-      now.toLocaleDateString('en-IN', { day:'numeric', month:'short' }) +
+      now.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' }) +
       ' - ' +
-      now.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit' });
+      now.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit', timeZone:'Asia/Kolkata' });
     const payload = {
       post_id:     postId,
       title:       reqName.trim() || fallbackTitle,
@@ -1441,9 +1441,9 @@ function _buildNotes(post, canEdit, id) {
       'letter-spacing:0.08em;color:rgba(255,255,255,0.4);margin-top:8px;">' +
       (post.status_changed_at
         ? new Date(post.status_changed_at).toLocaleDateString('en-IN',
-            {day:'numeric',month:'short'}) + ' -- ' +
+            {day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) + ' -- ' +
           new Date(post.status_changed_at).toLocaleTimeString('en-IN',
-            {hour:'numeric',minute:'2-digit',hour12:true})
+            {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})
         : ''
       ) +
       '</div>' +
