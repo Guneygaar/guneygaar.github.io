@@ -623,6 +623,7 @@ function _renderPCS(postId) {
   const linkedinUrl = post.linkedinUrl || '';
   var _pcsRole = (effectiveRole || '').toLowerCase();
   var _isPranavPCS = _pcsRole === 'creative' ||
+    _pcsRole === 'pranav' ||
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
   const canEdit = _pcsRole !== 'client' && !_isPranavPCS;
   const canEditCreative = _isPranavPCS;
@@ -1586,6 +1587,7 @@ var _ADVANCE_CLS = {
 function _renderAdvanceButton(stageLC) {
   var _advRole = (effectiveRole || '').toLowerCase();
   var _isPranavAdv = _advRole === 'creative' ||
+    _advRole === 'pranav' ||
     (window.currentUserEmail||'').toLowerCase().includes('pranav');
   if (_advRole === 'client' || _isPranavAdv) return '';
   var block = document.getElementById('pc-advance-block');
