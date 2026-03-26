@@ -3780,6 +3780,37 @@ function _renderClientViewInner() {
   var approvalEyebrow = document.getElementById('client-approval-eyebrow');
   if (approvalEyebrow) {
 
+    if (approvalPosts.length === 0) {
+      approvalEyebrow.innerHTML =
+        '<div style="background:#0a0a10;' +
+        'border-top:2px solid rgba(62,207,142,0.1);' +
+        'border-bottom:1px solid rgba(255,255,255,0.05);' +
+        'padding:10px 16px;display:flex;align-items:center;' +
+        'justify-content:space-between;">' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<span style="color:#3ECF8E;font-size:13px;">&#x25C8;</span>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
+        'font-weight:500;color:rgba(255,255,255,0.55);">' +
+        'Awaiting Your Approval</span>' +
+        '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:8px;letter-spacing:0.1em;' +
+        'color:rgba(62,207,142,0.7);' +
+        'border:1px dashed rgba(62,207,142,0.2);' +
+        'padding:2px 8px;">0</div>' +
+        '</div>' +
+        '<div style="padding:32px 16px;text-align:center;' +
+        'border-bottom:1px solid rgba(255,255,255,0.04);">' +
+        '<div style="font-size:20px;color:#3ECF8E;margin-bottom:12px;">&#x25C8;</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
+        'font-weight:600;color:#e8e2d9;margin-bottom:6px;">All approved.</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+        'letter-spacing:0.06em;color:rgba(255,255,255,0.45);">' +
+        'Nothing awaiting your approval.</div>' +
+        '</div>';
+    } else {
+
     // compute stats
     var now2 = Date.now();
     var waitTimes = approvalPosts.map(function(p) {
@@ -3892,6 +3923,7 @@ function _renderClientViewInner() {
 
       '</div>' + // end stats grid
       '</div>'; // end departure board
+    } // end else (has approval posts)
   }
 
   // CHANGE 5 - Approval post cards
