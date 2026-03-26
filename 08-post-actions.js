@@ -1136,7 +1136,8 @@ window._skipPublish = _skipPublish;
 
 function _saveLiUrlInline(postId) {
   var input = document.getElementById('li-url-input-' + postId)
-    || document.getElementById('pcs-li-inline-input');
+    || document.getElementById('pcs-li-inline-input')
+    || document.querySelector('.pcs-li-url-input');
   if (!input) return;
   var url = (input.value || '').trim();
   if (!url) {
@@ -1144,18 +1145,24 @@ function _saveLiUrlInline(postId) {
     return;
   }
 
+  var _liPost = (allPosts||[]).find(function(p) {
+    return p.post_id === postId ||
+           (p.id && p.id === postId);
+  });
+  var _liPostId = _liPost ? _liPost.post_id : postId;
+
   var btn = document.getElementById('li-save-btn-' + postId);
   if (btn) {
     btn.textContent = 'Saving...';
     btn.disabled = true;
   }
 
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(_liPostId), {
     method: 'PATCH',
     body: JSON.stringify({ linkedin_link: url })
   }).then(function() {
     var idx = (allPosts || []).findIndex(function(p) {
-      return p.post_id === postId;
+      return p.post_id === _liPostId;
     });
     if (idx !== -1) {
       allPosts[idx].linkedin_link = url;
