@@ -399,7 +399,7 @@ function renderNotifications(name, role) {
   }
   function formatTime(created_at) {
     var d = new Date(created_at);
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
   }
   var html = '';
   ['Today','Yesterday','Earlier'].forEach(function(day) {

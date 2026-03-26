@@ -3687,7 +3687,7 @@ function _renderClientViewInner() {
   var approvalEyebrow = document.getElementById('client-approval-eyebrow');
   if (approvalEyebrow) {
     approvalEyebrow.innerHTML =
-      '<div style="padding:20px 18px 18px;' +
+      '<div style="padding:20px 18px 0;' +
       'border-bottom:1px solid rgba(255,255,255,0.05);">' +
 
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
@@ -3727,7 +3727,7 @@ function _renderClientViewInner() {
         if (overdue > 0) {
           deckHtml +=
             '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-            'letter-spacing:0.1em;color:#999;"> &nbsp;&middot;&nbsp; </span>' +
+            'letter-spacing:0.1em;color:#999;"> &middot; </span>' +
             '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
             'letter-spacing:0.1em;color:#FF4B4B;font-weight:500;">' +
             overdue + ' overdue</span>';

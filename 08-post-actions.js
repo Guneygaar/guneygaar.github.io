@@ -273,7 +273,7 @@ async function submitClientRequest() {
     var fallbackTitle = 'Request - ' +
       now.toLocaleDateString('en-IN', { day:'numeric', month:'short' }) +
       ' - ' +
-      now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+      now.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit' });
     const payload = {
       post_id:     postId,
       title:       reqName.trim() || fallbackTitle,
