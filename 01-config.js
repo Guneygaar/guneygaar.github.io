@@ -46,6 +46,7 @@ const STAGE_ORDER = [
   'published',
   'parked',
   'rejected',
+  'brief',
 ];
 
 // Active DB stages (same order)
