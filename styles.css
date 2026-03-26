@@ -1349,6 +1349,10 @@ tr:hover td { background: var(--surface2); }
 /* 
    CLIENT VIEW
  */
+@keyframes clientPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
 #client-view {
   flex-direction: column;
   min-height: 100vh;
