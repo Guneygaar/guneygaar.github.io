@@ -3973,9 +3973,24 @@ function _renderClientViewInner() {
         );
         var waLink = 'https://wa.me/?text=' + waText;
 
-        var urgencyBorder = daysWaiting >= 5
-          ? 'rgba(255,75,75,0.45)'
-          : (daysWaiting >= 2 ? 'rgba(246,166,35,0.45)' : 'rgba(62,207,142,0.45)');
+        var seatLabel, seatNum, seatColor, seatBorder;
+        if (daysWaiting === 0) {
+          seatLabel = '';
+          seatNum = 'New';
+          seatColor = '#3ECF8E';
+          seatBorder = 'rgba(62,207,142,0.45)';
+        } else if (daysWaiting >= 5) {
+          seatLabel = 'WAITING';
+          seatNum = daysWaiting + 'D';
+          seatColor = '#FF4B4B';
+          seatBorder = 'rgba(255,75,75,0.45)';
+        } else {
+          seatLabel = 'WAITING';
+          seatNum = daysWaiting + 'D';
+          seatColor = '#F6A623';
+          seatBorder = 'rgba(246,166,35,0.45)';
+        }
+
         var urgencyGrad = daysWaiting >= 5
           ? 'linear-gradient(to right,#FF4B4B,rgba(255,75,75,0))'
           : (daysWaiting >= 2
@@ -4017,12 +4032,16 @@ function _renderClientViewInner() {
 
         '<div style="flex-shrink:0;text-align:center;' +
         'padding:7px 12px 8px;min-width:64px;' +
-        'border:1px dashed ' + urgencyBorder + ';">' +
-        '<span style="font-size:7px;letter-spacing:0.18em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.45);display:block;margin-bottom:3px;line-height:1;">Waiting</span>' +
+        'border:1px dashed ' + seatBorder + ';">' +
+        (seatLabel
+          ? '<span style="font-size:7px;letter-spacing:0.18em;' +
+            'text-transform:uppercase;color:rgba(255,255,255,0.45);' +
+            'display:block;margin-bottom:3px;line-height:1;">' +
+            seatLabel + '</span>'
+          : '') +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:28px;font-weight:700;' +
-        'line-height:1;display:block;color:' + waitColor + ';">' +
-        waitLabel + '</span>' +
+        'line-height:1;display:block;color:' + seatColor + ';">' +
+        seatNum + '</span>' +
         '</div>' +
 
         '</div>' +
@@ -4178,15 +4197,7 @@ function _renderClientViewInner() {
 
   // CHANGE 8 - New Request section
   var reqEyebrow = document.getElementById('client-request-eyebrow');
-  if (reqEyebrow) {
-    reqEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;' +
-      'padding:8px 18px;font-family:var(--mono);font-size:7px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;' +
-      'color:var(--c-gold);' +
-      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      'New Request</div>';
-  }
+  if (reqEyebrow) reqEyebrow.style.display = 'none';
 
   var reqForm = document.getElementById('client-request-form');
   if (reqForm && !reqForm.dataset.init) {
