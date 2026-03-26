@@ -451,7 +451,7 @@ async function openNotifItem(id, postId) {
 async function handleNotifAction(action, postId, notifId, event) {
   event.stopPropagation();
   await markNotifRead(notifId);
-  if (action === 'view' && postId) {
+  if ((action === 'view' || action === 'approve') && postId) {
     closeNotifications();
     setTimeout(function() {
       openPCS(postId, '');
@@ -464,13 +464,6 @@ async function handleNotifAction(action, postId, notifId, event) {
     var msg = 'Hi! Following up on ' + title + ' sent for approval. Please review when you get a chance.';
     if (navigator.clipboard) { navigator.clipboard.writeText(msg); }
     showChaseToast('Copied to clipboard');
-    return;
-  }
-  if (action === 'approve' && postId) {
-    closeNotifications();
-    setTimeout(function() {
-      openPCS(postId, '');
-    }, 150);
     return;
   }
 }
@@ -502,17 +495,30 @@ async function markAllNotificationsRead() {
 }
 
 function updateNotifBadge() {
-  var unread = _notifData.filter(function(n) { return !n.read; }).length;
-  var badge = document.getElementById('notif-nav-badge');
-  if (badge) {
-    badge.textContent = unread;
-    badge.style.display = unread > 0 ? '' : 'none';
-  }
-  var bellBadge = document.getElementById('notif-bell-badge');
-  if (bellBadge) {
-    bellBadge.textContent = unread;
-    bellBadge.style.display = unread > 0 ? '' : 'none';
-  }
+  var role = (window.effectiveRole || 'Admin');
+  var _badgeRole = role.charAt(0).toUpperCase() +
+    role.slice(1).toLowerCase();
+
+  apiFetch('/notifications?read=eq.false&user_role=eq.' +
+    encodeURIComponent(_badgeRole) + '&select=id')
+  .then(function(rows) {
+    var count = Array.isArray(rows) ? rows.length : 0;
+    var show = count > 0;
+    var countStr = count > 9 ? '9+' : String(count);
+
+    [
+      'notif-bell-badge',
+      'notif-pipeline-badge',
+      'notif-lib-badge',
+      'notif-ins-badge',
+      'notif-client-badge'
+    ].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = countStr;
+      el.style.display = show ? 'flex' : 'none';
+    });
+  }).catch(function() {});
 }
 
 // -- PCS Activity toggle -----------------------
