@@ -60,12 +60,12 @@ const PIPELINE_ORDER = [...STAGE_ORDER];
 
 // Pipeline RENDER order  -  visual pipeline excludes parked/rejected (they live in Library only)
 const PIPELINE_RENDER_ORDER = [
+  'brief',
   'awaiting_approval',
   'awaiting_brand_input',
   'scheduled',
   'ready',
   'in_production',
-  'brief',
 ];
 
 // Backward-compatible aliases
