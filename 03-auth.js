@@ -278,7 +278,20 @@ window.resetRolePreview = function() {
 function _buildUserMenu() {
   const menu = document.getElementById('user-menu');
   if (!menu) return;
+  var _roleLower = (window.effectiveRole || window.currentRole || '').toLowerCase();
   let html = '';
+
+  // Client gets a dedicated slim menu
+  if (_roleLower === 'client') {
+    html += '<button class="user-menu-item" onclick="openClientRequestForm(); closeUserMenu()" style="color:#C8A84B;">+ New Request</button>';
+    html += '<div class="um-divider"></div>';
+    html += '<button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()"><span id="theme-icon">\u2600</span> Dark / Light</button>';
+    html += '<div class="um-divider"></div>';
+    html += '<button class="user-menu-item danger" onclick="logout()" style="color:#FF4B4B;">\u21A9 Sign Out</button>';
+    menu.innerHTML = html;
+    return;
+  }
+
   // Role-switch section (Admin only) - shown first
   if (currentRole === 'Admin' ||
       localStorage.getItem('hinglish_role') === 'Admin' ||

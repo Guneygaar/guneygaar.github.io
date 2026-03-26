@@ -82,6 +82,16 @@ function toggleTheme() {
 function toggleUserMenu() {
   const m = document.getElementById('user-menu');
   if (!m) return;
+  var _isClient = (window.effectiveRole || '').toLowerCase() === 'client';
+  if (_isClient) {
+    m.style.position = 'fixed';
+    m.style.top = '52px';
+    m.style.right = '12px';
+  } else {
+    m.style.position = '';
+    m.style.top = '';
+    m.style.right = '';
+  }
   const open = m.classList.toggle('open');
   if (open) setTimeout(() => document.addEventListener('click', closeUserMenu, { once: true }), 0);
 }

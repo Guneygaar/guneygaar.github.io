@@ -3821,8 +3821,8 @@ function _renderClientViewInner() {
       'style="background:transparent;border:none;cursor:pointer;' +
       'padding:6px;display:flex;align-items:center;' +
       'justify-content:center;color:rgba(255,255,255,0.6);' +
-      'font-size:18px;letter-spacing:2px;">' +
-      '&#xB7;&#xB7;&#xB7;</button>' +
+      'font-size:20px;line-height:1;">' +
+      '&#8942;</button>' +
       '</div></div>';
   }
 
