@@ -3801,6 +3801,23 @@ function _renderClientViewInner() {
       '<div style="font-family:var(--mono);font-size:13px;' +
       'color:var(--c-gold);letter-spacing:0.08em;">srtd.io</div>' +
       '<div style="display:flex;align-items:center;gap:8px;">' +
+      '<button onclick="openNotifications()" ' +
+      'style="background:transparent;border:none;cursor:pointer;' +
+      'position:relative;padding:4px;display:flex;' +
+      'align-items:center;justify-content:center;">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" ' +
+      'fill="none" stroke="rgba(255,255,255,0.7)" ' +
+      'stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round">' +
+      '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
+      '<path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
+      '<span id="notif-client-badge" ' +
+      'style="display:none;position:absolute;top:0;right:0;' +
+      'background:#FF4B4B;color:#fff;border-radius:50%;' +
+      'width:14px;height:14px;font-size:8px;' +
+      'align-items:center;justify-content:center;' +
+      'font-family:\'IBM Plex Mono\',monospace;">0</span>' +
+      '</button>' +
       '<button style="font-family:var(--mono);font-size:8px;' +
       'letter-spacing:0.12em;text-transform:uppercase;' +
       'color:var(--c-gold);background:transparent;' +
