@@ -1023,39 +1023,61 @@ function _removePublishSheet() {
   if (sheet) sheet.remove();
 }
 
-async function _confirmPublish(postId) {
-  var input = document.getElementById('pcs-li-url-input');
-  var url = input ? input.value.trim() : '';
-  _removePublishSheet();
+function _confirmPublish(postId) {
+  var input = document.getElementById('publish-li-input-' + postId)
+    || document.getElementById('li-url-input-' + postId);
+  var url = input ? (input.value || '').trim() : '';
 
-  // Save LinkedIn URL if provided
-  if (url) {
-    try {
-      await apiFetch('/posts?post_id=eq.' + postId, {
-        method: 'PATCH',
-        body: JSON.stringify({ linkedin_link: url })
-      });
-      // Update allPosts in memory
-      if (window.allPosts && Array.isArray(window.allPosts)) {
-        var idx = window.allPosts.findIndex(function(p) {
-          return p.post_id === postId || p.id === postId;
-        });
-        if (idx !== -1) {
-          window.allPosts[idx].linkedinUrl = url;
-          window.allPosts[idx].linkedin_link = url;
-        }
+  var btn = document.getElementById('confirm-publish-btn-' + postId);
+  if (btn) { btn.textContent = 'Publishing...'; btn.disabled = true; }
+
+  var payload = {
+    stage: 'published',
+    status_changed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  if (url) payload.linkedin_link = url;
+
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  }).then(function() {
+    var idx = (allPosts || []).findIndex(function(p) {
+      return p.post_id === postId;
+    });
+    if (idx !== -1) {
+      allPosts[idx].stage = 'published';
+      if (url) {
+        allPosts[idx].linkedin_link = url;
+        allPosts[idx].linkedinUrl = url;
       }
-    } catch(e) {
-      console.warn('[PUBLISH] Failed to save LinkedIn URL:', e);
     }
-  }
+    logActivity({
+      post_id: postId,
+      actor: window.currentUserName || 'Shubham',
+      actor_role: window.effectiveRole || 'Admin',
+      action: 'published'
+    });
+    apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: 'Admin',
+        post_id: postId,
+        type: 'published',
+        message: (window.currentUserName || 'Shubham') +
+          ' published ' +
+          ((allPosts[idx] || {}).title || postId)
+      })
+    }).catch(function(){});
 
-  // Now change stage to published
-  if (typeof quickStage === 'function') {
-    quickStage(postId, 'published');
-  } else if (typeof _showStageConfirm === 'function') {
-    _showStageConfirm(postId, 'published');
-  }
+    showToast('Published', 'success');
+    if (typeof closePCS === 'function') closePCS();
+    loadPosts();
+  }).catch(function(err) {
+    console.error('Publish failed:', err);
+    showToast('Publish failed - try again', 'error');
+    if (btn) { btn.textContent = 'Publish'; btn.disabled = false; }
+  });
 }
 window._confirmPublish = _confirmPublish;
 
@@ -1070,28 +1092,40 @@ async function _skipPublish(postId) {
 }
 window._skipPublish = _skipPublish;
 
-async function _saveLiUrlInline(postId) {
-  var input = document.getElementById('pcs-li-inline-input');
-  var url = input ? input.value.trim() : '';
+function _saveLiUrlInline(postId) {
+  var input = document.getElementById('li-url-input-' + postId);
+  if (!input) return;
+  var url = (input.value || '').trim();
   if (!url) return;
-  try {
-    await apiFetch('/posts?post_id=eq.' + postId, {
-      method: 'PATCH',
-      body: JSON.stringify({ linkedin_link: url })
-    });
-    if (window.allPosts && Array.isArray(window.allPosts)) {
-      var idx = window.allPosts.findIndex(function(p) {
-        return p.post_id === postId || p.id === postId;
-      });
-      if (idx !== -1) {
-        window.allPosts[idx].linkedinUrl = url;
-        window.allPosts[idx].linkedin_link = url;
-      }
-    }
-    if (typeof openPCS === 'function') openPCS(postId, '');
-  } catch(e) {
-    alert('Failed to save. Please try again.');
+
+  var btn = document.getElementById('li-save-btn-' + postId);
+  if (btn) {
+    btn.textContent = 'Saving...';
+    btn.disabled = true;
   }
+
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+    method: 'PATCH',
+    body: JSON.stringify({ linkedin_link: url })
+  }).then(function() {
+    var idx = (allPosts || []).findIndex(function(p) {
+      return p.post_id === postId;
+    });
+    if (idx !== -1) {
+      allPosts[idx].linkedin_link = url;
+      allPosts[idx].linkedinUrl = url;
+    }
+    showToast('LinkedIn link saved', 'success');
+    if (typeof openPCS === 'function') openPCS(postId, '');
+    loadPosts();
+  }).catch(function(err) {
+    console.error('LinkedIn save failed:', err);
+    showToast('Save failed - try again', 'error');
+    if (btn) {
+      btn.textContent = 'Save';
+      btn.disabled = false;
+    }
+  });
 }
 window._saveLiUrlInline = _saveLiUrlInline;
 

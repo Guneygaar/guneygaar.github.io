@@ -979,8 +979,6 @@ function getScoreboardData() {
   // B-01 FIX: Count ready posts for Chitra context-aware action
   var readyCount = c.ready || 0;
 
-  console.log('[SCOREBOARD]', { counts: c, runwayCount: runwayCount, pranavDeficit: pranavDeficit, failedPublish: failedPublishCount });
-
   window._lastScoreboardData = {
     runwayCount: runwayCount,
     pranavDeficit: pranavDeficit,
