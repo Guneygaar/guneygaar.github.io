@@ -3822,7 +3822,7 @@ function _renderClientViewInner() {
       'letter-spacing:0.12em;text-transform:uppercase;' +
       'color:var(--c-gold);background:transparent;' +
       'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
-      'cursor:pointer;" onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o){o.style.display=\'flex\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'none\';}})()">+ New Request</button>' +
+      'cursor:pointer;" onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o){o.style.display=\'flex\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'none\';var _mn=new Date();_mn.setDate(_mn.getDate()+2);var _ms=_mn.toISOString().split(\'T\')[0];var _di=document.getElementById(\'req-date\');if(_di)_di.min=_ms;}})()">+ New Request</button>' +
       '<button onclick="logout()" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
