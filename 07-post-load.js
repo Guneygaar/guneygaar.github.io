@@ -3222,8 +3222,9 @@ function _renderPipelineInner() {
   // -- ROLE-BASED PIPELINE FILTERING --
   var _rolePL = (effectiveRole || '').toLowerCase();
   var _isPranavPL = _rolePL === 'creative' ||
+    _rolePL === 'pranav' ||
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
-  var _isChitraPL = _rolePL === 'servicing' && !_isPranavPL;
+  var _isChitraPL = (_rolePL === 'servicing' || _rolePL === 'chitra') && !_isPranavPL;
   var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
 
   if (_isPranavPL) {
@@ -5576,6 +5577,7 @@ function _openBriefSheet(postId) {
   var _role = (window.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
   var _isPranav = _role === 'creative' ||
+    _role === 'pranav' ||
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
   var _isChitra = !_isClient && !_isPranav;
   var _isBriefDone = (post.stage || '') === 'brief_done';
