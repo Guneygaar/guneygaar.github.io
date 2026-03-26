@@ -323,6 +323,19 @@ if (npo) {
 
 await loadPosts();
 
+// Park the brief post if this was created from a brief
+if (window._activeBriefPostId) {
+  var _bid = window._activeBriefPostId;
+  window._activeBriefPostId = null;
+  apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
+    method: 'PATCH',
+    body: JSON.stringify({
+      stage: 'parked',
+      updated_at: new Date().toISOString()
+    })
+  }).catch(function(){});
+}
+
 setTimeout(function() {
   // Restore original form DOM before closing
   if (npo && _npoOriginalHTML) npo.innerHTML = _npoOriginalHTML;

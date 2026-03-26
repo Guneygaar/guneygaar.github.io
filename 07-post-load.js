@@ -3238,6 +3238,18 @@ function _renderPipelineInner() {
 
   const grouped = {};
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
+  // Pranav only sees briefs assigned to him
+  if (grouped['brief']) {
+    var _roleBF = (effectiveRole || '').toLowerCase();
+    var _isPranavBF = _roleBF === 'creative' ||
+      (window.currentUserEmail || '').toLowerCase().includes('pranav');
+    if (_isPranavBF) {
+      grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
+        return (p.owner || '').toLowerCase() === 'pranav';
+      });
+      if (!grouped['brief'].length) delete grouped['brief'];
+    }
+  }
   const stages = Object.keys(grouped).sort((a,b) => {
     const ia = PIPELINE_RENDER_ORDER.indexOf(a), ib = PIPELINE_RENDER_ORDER.indexOf(b);
     if (ia===-1 && ib===-1) return a.localeCompare(b);
@@ -5483,7 +5495,11 @@ function _openBriefSheet(postId) {
   var existing = document.getElementById('brief-sheet-overlay');
   if (existing) existing.remove();
 
-  var isChitra = (window.effectiveRole || '').toLowerCase() !== 'client';
+  var _role = (window.effectiveRole || '').toLowerCase();
+  var _isClient = _role === 'client';
+  var _isPranav = _role === 'creative' ||
+    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+  var _isChitra = !_isClient && !_isPranav;
   var sentTime = '';
   if (post.status_changed_at) {
     var d = new Date((post.status_changed_at || '') + 'Z');
@@ -5525,12 +5541,12 @@ function _openBriefSheet(postId) {
     '</div>' +
 
     // Title + meta
-    '<div style="padding:24px 18px 20px;">' +
+    '<div style="padding:28px 18px 0;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
     'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);' +
     'margin-bottom:8px;">Brief Title</div>' +
     '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;' +
-    'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:6px;">' +
+    'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:10px;">' +
     esc(post.title || '') + '</div>' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'letter-spacing:0.04em;color:rgba(255,255,255,0.4);">' +
@@ -5581,8 +5597,8 @@ function _openBriefSheet(postId) {
       '</div></div>'
       : '') +
 
-    // Chitra direction input (agency only)
-    (isChitra ?
+    // Role-based bottom action
+    (_isChitra ?
       '<div style="padding:0 18px 24px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.18em;text-transform:uppercase;' +
@@ -5595,7 +5611,6 @@ function _openBriefSheet(postId) {
       'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
       'caret-color:#C8A84B;"></textarea>' +
       '</div>' +
-      // Assign to Pranav button
       '<div style="padding:0 18px 32px;">' +
       '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
       'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
@@ -5604,8 +5619,16 @@ function _openBriefSheet(postId) {
       'padding:16px 0;cursor:pointer;' +
       'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
       '</div>'
+      : _isPranav ?
+      '<div style="padding:0 18px 32px;">' +
+      '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
+      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+      'color:#C8A84B;background:rgba(200,168,75,0.06);' +
+      'border:1px solid #C8A84B;padding:16px 0;cursor:pointer;' +
+      'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Create Post</button>' +
+      '</div>'
       :
-      // Client view - read only
       '<div style="padding:0 18px 32px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.12em;text-transform:uppercase;' +
@@ -5652,3 +5675,52 @@ function _assignBriefToPranav(postId) {
   });
 }
 window._assignBriefToPranav = _assignBriefToPranav;
+
+function _createPostFromBrief(briefPostId) {
+  var brief = (typeof getPostById === 'function')
+    ? getPostById(briefPostId) : null;
+  if (!brief) return;
+
+  // Close brief sheet
+  var overlay = document.getElementById('brief-sheet-overlay');
+  if (overlay) overlay.remove();
+  document.body.style.overflow = '';
+
+  // Open new post form
+  if (typeof openNewPostModal === 'function') {
+    openNewPostModal();
+  }
+
+  // Pre-fill after short delay to let form render
+  setTimeout(function() {
+    var titleEl = document.getElementById('new-post-title');
+    var captionEl = document.getElementById('new-post-caption');
+    var ownerEl = document.getElementById('new-post-owner');
+
+    if (titleEl) {
+      titleEl.value = brief.title || '';
+      titleEl.dispatchEvent(new Event('input'));
+    }
+    if (captionEl && brief.comments) {
+      // Strip [CHITRA NOTE] and [URGENT] from comments
+      var cleanBrief = (brief.comments || '')
+        .replace(/\[URGENT\]\s*/g, '')
+        .replace(/\[CHITRA NOTE\][^]*/gi, '')
+        .trim();
+      captionEl.value = cleanBrief;
+      captionEl.style.height = 'auto';
+      captionEl.style.height = captionEl.scrollHeight + 'px';
+    }
+    if (ownerEl) {
+      ownerEl.value = 'Pranav';
+      ownerEl.dispatchEvent(new Event('change'));
+    }
+
+    // Trigger validation so Create Post button enables
+    if (typeof _npsCheckValid === 'function') _npsCheckValid();
+
+    // Store brief post ID so we can park it after creation
+    window._activeBriefPostId = briefPostId;
+  }, 150);
+}
+window._createPostFromBrief = _createPostFromBrief;
