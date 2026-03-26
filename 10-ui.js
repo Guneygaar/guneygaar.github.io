@@ -407,28 +407,139 @@ function renderNotifications(name, role) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var tc = typeClass[n.type] || 'ntype-info';
-      var actor = parseActor(n.message);
-      var actions = getActions(n);
-      var pill = stagePills[n.type];
-      var msgText = (n.message || '').replace(/^\S+\s*/, '');
-      var actHtml = actions.map(function(a) {
-        return '<button class="notif-action-link ' + a.cls + '" onclick="handleNotifAction(\'' + a.action + '\',\'' + (n.post_id||'') + '\',' + n.id + ',event)">' + a.label + '</button>';
-      }).join('');
-      html += '<div class="notif-item ' + tc + ' ' + (n.read ? '' : 'unread') + '" onclick="openNotifItem(' + n.id + ',\'' + (n.post_id||'') + '\')">';
-      html += '<div class="notif-avatar ' + actor.cls + '">' + actor.initials + '</div>';
-      html += '<div class="notif-body">';
-      html += '<div class="notif-msg"><span class="actor">' + actor.name + '</span> ' + msgText + '</div>';
-      html += '<div class="notif-meta">';
-      if (pill) html += '<span class="notif-stage-pill ' + pill.cls + '">' + pill.label + '</span> ';
-      html += '<span class="notif-time">' + formatTime(n.created_at) + '</span>';
-      html += '</div>';
-      if (actHtml) html += '<div class="notif-actions-inline">' + actHtml + '</div>';
-      html += '</div>';
-      html += '<div class="notif-right">';
-      if (!n.read) html += '<div class="notif-unread-dot"></div>';
-      html += '</div>';
-      html += '</div>';
+      var _notifPost = (window.allPosts||[]).find(function(p) {
+        return p.post_id === n.post_id;
+      });
+      var _thumb = _notifPost && Array.isArray(_notifPost.images) &&
+        _notifPost.images[0] ? _notifPost.images[0] : '';
+      var _postTitle = _notifPost ? (_notifPost.title || '') : '';
+      var _postStage = _notifPost ? (_notifPost.stage || '') :
+        (n.type || '');
+
+      var _chipColor = '#888';
+      var _chipBg = 'rgba(255,255,255,0.06)';
+      if (_postStage === 'published')  { _chipColor='#22c55e'; _chipBg='rgba(34,197,94,0.12)'; }
+      if (_postStage === 'awaiting_approval') { _chipColor='#3b82f6'; _chipBg='rgba(59,130,246,0.12)'; }
+      if (_postStage === 'brief')      { _chipColor='#C8A84B'; _chipBg='rgba(200,168,75,0.12)'; }
+      if (_postStage === 'in_production') { _chipColor='#9b87f5'; _chipBg='rgba(155,135,245,0.12)'; }
+      if (n.type === 'awaiting_brand_input') { _chipColor='#F6A623'; _chipBg='rgba(246,166,35,0.12)'; }
+      if (_postStage === 'in_production' && _notifPost &&
+          _notifPost.client_feedback) {
+        _chipColor='#FF4B4B'; _chipBg='rgba(255,75,75,0.12)';
+      }
+
+      var _stageLabel = (_postStage||'').replace(/_/g,' ');
+      if (_postStage === 'awaiting_approval') _stageLabel = 'Awaiting Approval';
+      if (_postStage === 'in_production' && _notifPost &&
+          _notifPost.client_feedback) _stageLabel = 'Feedback';
+
+      var _actorName = parseActor(n.message).name;
+      var _initial = _actorName ? _actorName.charAt(0).toUpperCase() : 'S';
+      var _avatarColor = '#C8A84B';
+      if (_actorName === 'Pranav') { _avatarColor = '#9b87f5'; }
+      if (_actorName === 'Chitra') { _avatarColor = '#22D3EE'; }
+      if (_actorName === 'Client' || _actorName === 'Manisha' ||
+          _actorName === 'Shivangini') { _avatarColor = '#FF4B4B'; }
+
+      var _ts = '';
+      if (n.created_at) {
+        var _d = new Date((n.created_at||'').replace(' ','T').replace('+00','Z'));
+        if (!isNaN(_d.getTime())) {
+          _ts = _d.toLocaleDateString('en-IN',{
+            weekday:'short',day:'numeric',month:'short',
+            timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
+            _d.toLocaleTimeString('en-IN',{
+            hour:'numeric',minute:'2-digit',
+            hour12:true,timeZone:'Asia/Kolkata'});
+        }
+      }
+
+      var _onclick = '';
+      if (n.post_id) {
+        var _isBriefNotif = _postStage === 'brief';
+        if (_isBriefNotif) {
+          _onclick = 'closeNotifications();setTimeout(function(){' +
+            '_openBriefSheet(' + JSON.stringify(n.post_id) + ');},150);';
+        } else {
+          _onclick = 'closeNotifications();setTimeout(function(){' +
+            'openPCS(' + JSON.stringify(n.post_id) + ',\'\');},150);';
+        }
+      }
+
+      var _isUnread = !n.read;
+
+      var _msgParts = (n.message||'').split(' ');
+      var _msgHtml = _msgParts.length > 1 ?
+        '<strong>' + esc(_msgParts[0]) + '</strong> ' +
+        esc(_msgParts.slice(1).join(' '))
+        : esc(n.message||'');
+
+      var itemHtml =
+        '<div class="notif-item' + (_isUnread ? ' unread' : '') + '" ' +
+        'style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.05);' +
+        'cursor:default;">' +
+
+        '<div style="display:flex;align-items:flex-start;gap:10px;' +
+        'margin-bottom:' + (n.post_id ? '10px' : '0') + ';">' +
+
+        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
+        'background:' + _avatarColor + '22;border:1px solid ' + _avatarColor + '55;' +
+        'display:flex;align-items:center;justify-content:center;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
+        'color:' + _avatarColor + ';">' + _initial + '</div>' +
+
+        '<div style="flex:1;min-width:0;">' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+        'color:' + (_isUnread ? '#e8e2d9' : 'rgba(255,255,255,0.5)') + ';' +
+        'line-height:1.4;margin-bottom:3px;">' +
+        _msgHtml + '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'letter-spacing:0.06em;color:rgba(255,255,255,0.45);">' + _ts + '</div>' +
+        '</div>' +
+
+        (_isUnread ? '<div style="width:6px;height:6px;border-radius:50%;' +
+        'background:#C8A84B;flex-shrink:0;margin-top:5px;"></div>' : '') +
+        '</div>' +
+
+        (n.post_id && (_postTitle || _thumb) ?
+          '<div onclick="' + _onclick + '" ' +
+          'style="display:flex;align-items:center;gap:10px;' +
+          'background:rgba(255,255,255,0.03);' +
+          'border:1px solid rgba(255,255,255,0.07);' +
+          'padding:8px 10px 8px 8px;cursor:pointer;' +
+          'margin-left:38px;' +
+          'transition:background 0.15s;">' +
+
+          (_thumb ?
+            '<img src="' + _thumb + '" style="width:44px;height:44px;' +
+            'object-fit:cover;flex-shrink:0;display:block;" />'
+            :
+            '<div style="width:44px;height:44px;background:#111118;' +
+            'flex-shrink:0;display:flex;align-items:center;' +
+            'justify-content:center;font-size:16px;opacity:0.4;">' +
+            (_postStage === 'brief' ? '&#x1F4CB;' : '&#x1F5BC;') +
+            '</div>') +
+
+          '<div style="flex:1;min-width:0;">' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+          'font-weight:600;color:#e8e2d9;line-height:1.2;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+          'margin-bottom:4px;">' + esc(_postTitle) + '</div>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+          'letter-spacing:0.1em;text-transform:uppercase;' +
+          'padding:2px 6px;font-weight:600;' +
+          'background:' + _chipBg + ';color:' + _chipColor + ';">' +
+          _stageLabel + '</span>' +
+          '</div>' +
+
+          '<div style="color:rgba(255,255,255,0.2);font-size:14px;' +
+          'flex-shrink:0;">&#x203A;</div>' +
+          '</div>'
+          : '') +
+
+        '</div>';
+
+      html += itemHtml;
     });
   });
   scroll.innerHTML = html;
