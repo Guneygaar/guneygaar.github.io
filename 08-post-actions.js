@@ -877,7 +877,7 @@ function _renderPCS(postId) {
       '</div>';
   }
 
-  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, id) + _buildNotes(post, canEdit, id) + liHtml + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
+  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, canEditCreative, id) + _buildNotes(post, canEdit, id) + liHtml + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
 
   // Stage advance button
   _renderAdvanceButton(stageLC);
@@ -1439,7 +1439,7 @@ function _loadPCSActivity(postId, bodyEl) {
   bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
 }
 
-function _buildInfoGrid(post, canEdit, id) {
+function _buildInfoGrid(post, canEdit, canEditCreative, id) {
   var LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
   var OWNERS   = ALLOWED_OWNERS;
   var FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
