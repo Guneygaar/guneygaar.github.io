@@ -1874,7 +1874,7 @@ async function _updateStreakLines() {
       });
       if (!actorLogs.length) return '';
       var d = new Date(actorLogs[0].created_at);
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'Asia/Kolkata' });
     }
 
     var pEl = document.getElementById('metric-pranav-streak');
@@ -1931,7 +1931,7 @@ async function _updateStreakLines() {
       } else if (clientLogs.length) {
         var clLast = new Date(clientLogs[0].created_at);
         var clDiff = Math.floor((today - clLast) / (1000 * 60 * 60 * 24));
-        var clLastStr = clLast.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+        var clLastStr = clLast.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'Asia/Kolkata' });
         if (clDiff === 1) {
           clEl.innerHTML = '<span class="dms-good">- approved yesterday</span>';
         } else if (clDiff >= 5) {
@@ -2566,7 +2566,7 @@ function buildPipelineCard(p, listKey) {
     var changed = p.status_changed_at ? new Date(p.status_changed_at) : null;
     var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
     if (daysWaiting >= 3) {
-      var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : 'recently';
+      var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'}) : 'recently';
       var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance';
       rightHtml = '<button onclick="event.stopPropagation();copyChase(\'' + encodeURIComponent(chaseMsg) + '\')" ' +
         'style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
@@ -3577,9 +3577,9 @@ function _renderClientViewInner() {
   // CHANGE 3 - Greeting
   var now = new Date();
   var timeStr = now.toLocaleDateString('en-IN', {
-    weekday:'short', day:'numeric', month:'short'
+    weekday:'short', day:'numeric', month:'short', timeZone:'Asia/Kolkata'
   }) + ' \xB7 ' + now.toLocaleTimeString('en-IN', {
-    hour:'numeric', minute:'2-digit', hour12:true
+    hour:'numeric', minute:'2-digit', hour12:true, timeZone:'Asia/Kolkata'
   });
 
   var greetEl = document.getElementById('client-greeting');
@@ -3652,7 +3652,7 @@ function _renderClientViewInner() {
         var sentLine = (function() {
           if (!p.status_changed_at) return 'Submitted recently';
           var d = new Date(p.status_changed_at);
-          var date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+          var date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' });
           return 'Changes requested \xB7 ' + date;
         })();
 
@@ -3721,7 +3721,7 @@ function _renderClientViewInner() {
           'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
           'overflow:hidden;text-overflow:ellipsis;">' +
           (p.target_date ? new Date(p.target_date + 'T00:00:00')
-            .toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '--') +
+            .toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) : '--') +
           '</div>' +
           '</div>' +
 
@@ -3973,95 +3973,100 @@ function _renderClientViewInner() {
         );
         var waLink = 'https://wa.me/?text=' + waText;
 
+        var urgencyBorder = daysWaiting >= 5
+          ? 'rgba(255,75,75,0.45)'
+          : (daysWaiting >= 2 ? 'rgba(246,166,35,0.45)' : 'rgba(62,207,142,0.45)');
+        var urgencyGrad = daysWaiting >= 5
+          ? 'linear-gradient(to right,#FF4B4B,rgba(255,75,75,0))'
+          : (daysWaiting >= 2
+              ? 'linear-gradient(to right,#F6A623,rgba(246,166,35,0))'
+              : 'linear-gradient(to right,#3ECF8E,rgba(62,207,142,0))');
+
         return (
         '<div id="apv-item-' + esc(id) + '" ' +
         'style="background:#0d0d14;position:relative;overflow:hidden;' +
         'border-bottom:1px solid rgba(255,255,255,0.05);">' +
 
-        '<div style="height:3px;background:linear-gradient(to right,' +
-        barColor + ',rgba(0,0,0,0));"></div>' +
+        '<div style="height:3px;background:' + urgencyGrad + ';"></div>' +
 
-        '<div style="padding:14px 16px 12px;display:flex;' +
-        'align-items:flex-start;justify-content:space-between;' +
-        'gap:10px;border-bottom:1px dashed rgba(255,255,255,0.08);">' +
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;' +
+        'padding:14px 16px 12px;gap:12px;">' +
 
-        '<div style="flex:3;min-width:0;padding-top:0;margin-top:0;">' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:21px;' +
-        'font-weight:600;color:#e8e2d9;line-height:1;margin-top:0;padding-top:0;' +
-        'letter-spacing:-0.01em;word-wrap:break-word;' +
-        'overflow-wrap:break-word;min-width:0;">' +
+        '<div style="min-width:0;">' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
+        'font-weight:700;color:#e8e2d9;line-height:1.1;' +
+        'letter-spacing:-0.01em;margin-bottom:5px;' +
+        'word-wrap:break-word;overflow-wrap:break-word;min-width:0;">' +
         esc(p.title || '') + '</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:10px;letter-spacing:0.04em;' +
-        'color:rgba(255,255,255,0.55);margin-top:6px;line-height:1;">' +
+        '<div style="font-size:10px;letter-spacing:0.04em;' +
+        'color:rgba(255,255,255,0.5);line-height:1;">' +
         (function() {
-          if (!p.status_changed_at) return 'Sent recently';
+          if (!p.status_changed_at) return '';
           var d = new Date(p.status_changed_at);
           var date = d.toLocaleDateString('en-IN', {
-            day: 'numeric', month: 'short'
+            day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata'
           });
           var time = d.toLocaleTimeString('en-IN', {
             hour: '2-digit', minute: '2-digit',
-            hour12: true
+            hour12: true, timeZone: 'Asia/Kolkata'
           });
-          return 'Sent ' + date + ' \xB7 ' + time;
+          return date + ' \xB7 ' + time;
         })() +
         '</div>' +
         '</div>' +
 
-        '<div style="flex:1;flex-shrink:0;display:flex;flex-direction:column;' +
-        'align-items:flex-end;padding-top:0;margin-top:0;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
-        'line-height:1;margin-bottom:4px;margin-top:0;padding-top:0;">Waiting</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:24px;' +
-        'font-weight:500;line-height:1;color:' + waitColor + ';">' +
-        waitLabel + '</div>' +
+        '<div style="flex-shrink:0;text-align:center;' +
+        'padding:7px 12px 8px;min-width:64px;' +
+        'border:1px dashed ' + urgencyBorder + ';">' +
+        '<span style="font-size:7px;letter-spacing:0.18em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.45);display:block;margin-bottom:3px;line-height:1;">Waiting</span>' +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:28px;font-weight:700;' +
+        'line-height:1;display:block;color:' + waitColor + ';">' +
+        waitLabel + '</span>' +
         '</div>' +
 
         '</div>' +
 
         '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
-        'border-bottom:1px dashed rgba(255,255,255,0.08);">' +
+        'border-top:1px dashed rgba(255,255,255,0.08);">' +
 
-        '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Pillar</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-        'overflow:hidden;text-overflow:ellipsis;">' +
-        esc((p.content_pillar||p.contentPillar||'--').toUpperCase()) + '</div>' +
+        '<div style="padding:9px 16px 10px;border-right:1px dashed rgba(255,255,255,0.08);">' +
+        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Pillar</span>' +
+        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
+        'color:#e8e2d9;display:block;line-height:1.1;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+        esc(p.content_pillar||p.contentPillar||'--') + '</span>' +
         '</div>' +
 
-        '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Location</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-        'overflow:hidden;text-overflow:ellipsis;">' +
-        esc((p.location||'--').toUpperCase()) + '</div>' +
+        '<div style="padding:9px 16px 10px;border-right:1px dashed rgba(255,255,255,0.08);">' +
+        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Location</span>' +
+        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
+        'color:#e8e2d9;display:block;line-height:1.1;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+        esc(p.location||'--') + '</span>' +
         '</div>' +
 
-        '<div style="padding:9px 16px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.55);margin-bottom:3px;">Target</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-        'overflow:hidden;text-overflow:ellipsis;">' +
+        '<div style="padding:9px 16px 10px;">' +
+        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
+        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Target</span>' +
+        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
+        'color:#e8e2d9;display:block;line-height:1.1;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
         (p.target_date ? new Date(p.target_date + 'T00:00:00')
-          .toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '--') +
-        '</div>' +
-        '</div>' +
-
+          .toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) : '--') +
+        '</span>' +
         '</div>' +
 
-        '<div style="display:flex;align-items:center;' +
-        'margin:0 -1px;background:#0a0a0f;height:12px;">' +
-        '<div style="width:12px;height:12px;border-radius:0 50% 50% 0;' +
+        '</div>' +
+
+        '<div style="height:14px;background:#080808;margin:0 -1px;display:flex;align-items:center;">' +
+        '<div style="width:14px;height:14px;border-radius:0 50% 50% 0;' +
         'background:#0d0d14;border:1px solid rgba(255,255,255,0.07);' +
         'border-left:none;flex-shrink:0;"></div>' +
         '<div style="flex:1;border-top:1px dashed rgba(255,255,255,0.12);"></div>' +
-        '<div style="width:12px;height:12px;border-radius:50% 0 0 50%;' +
+        '<div style="width:14px;height:14px;border-radius:50% 0 0 50%;' +
         'background:#0d0d14;border:1px solid rgba(255,255,255,0.07);' +
         'border-right:none;flex-shrink:0;"></div>' +
         '</div>' +
@@ -4070,8 +4075,7 @@ function _renderClientViewInner() {
           ? '<div onclick="_openClientEditorial(\'' + esc(p.post_id) + '\')" ' +
             'style="cursor:pointer;">' +
             '<img src="' + hero + '" loading="eager" decoding="async" ' +
-            'style="aspect-ratio:1/1;width:100%;object-fit:cover;' +
-            'height:auto;display:block;"></div>'
+            'style="aspect-ratio:1/1;width:100%;object-fit:cover;display:block;"></div>'
           : (p.caption
               ? '<div onclick="_openClientEditorial(\'' + esc(p.post_id) + '\')" ' +
                 'style="padding:12px 16px;cursor:pointer;">' +
@@ -4087,27 +4091,31 @@ function _renderClientViewInner() {
             )
         ) +
 
-        '<div style="display:flex;' +
-        'border-top:1px dashed rgba(255,255,255,0.08);">' +
+        '<div style="display:flex;border-top:1px dashed rgba(255,255,255,0.08);position:relative;">' +
 
         '<button onclick="clientApprove(\'' + esc(id) + '\',this)" ' +
-        'style="flex:5;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'style="flex:5;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
         'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
-        'background:rgba(62,207,142,0.06);border:none;' +
-        'border-right:1px dashed rgba(255,255,255,0.08);' +
-        'padding:13px 0;cursor:pointer;">&#x25C8; Approve</button>' +
+        'background:transparent;border:none;' +
+        'border-right:1px solid rgba(255,255,255,0.22);' +
+        'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
+        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x25C8; Approve</button>' +
 
         '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
+        'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+        'letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
         'background:transparent;border:none;' +
-        'border-right:1px dashed rgba(255,255,255,0.08);' +
-        'padding:13px 0;cursor:pointer;">&#x21A9; Changes</button>' +
+        'border-right:1px solid rgba(255,255,255,0.22);' +
+        'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
+        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x21A9; Changes</button>' +
 
         '<a href="' + esc(waLink) + '" target="_blank" ' +
         'style="flex:2;display:flex;align-items:center;justify-content:center;' +
-        'background:rgba(37,211,102,0.06);border:none;' +
-        'color:#25D366;cursor:pointer;text-decoration:none;padding:13px 0;">' +
+        'background:rgba(37,211,102,0.04);border:none;' +
+        'color:#25D366;cursor:pointer;text-decoration:none;padding:14px 0;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.14em;' +
+        'text-transform:uppercase;gap:6px;' +
+        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366">' +
         '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>' +
         '</svg>' +
@@ -4300,7 +4308,7 @@ function _renderClientViewInner() {
       'var d=new Date(v+\'T00:00:00\');' +
       'var el=document.getElementById(\'req-date-label\');' +
       'el.textContent=d.toLocaleDateString(\'en-IN\',' +
-      '{day:\'numeric\',month:\'short\',year:\'numeric\'});' +
+      '{day:\'numeric\',month:\'short\',year:\'numeric\',timeZone:\'Asia/Kolkata\'});' +
       'el.style.color=\'#e8e2d9\';' +
       '})(this.value)" ' +
       'style="position:absolute;inset:0;opacity:0;' +
@@ -5007,12 +5015,12 @@ function chaseAll() {
     var sentDate = 'recently';
     if (p.status_changed_at) {
       var d = new Date(p.status_changed_at);
-      sentDate = d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+      sentDate = d.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'});
     }
     return '- ' + (p.title || 'Untitled') + ' (sent ' + sentDate + ')';
   });
 
-  var msg = 'Hi! Following up on ' + overduePosts.length + ' posts awaiting approval:\n' + lines.join('\n') + '\nPlease review when you get a chance \uD83D\uDE4F';
+  var msg = 'Hi! Following up on ' + overduePosts.length + ' posts awaiting approval:\n' + lines.join('\n') + '\nPlease review when you get a chance';
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(msg).then(function() {
