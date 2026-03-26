@@ -329,6 +329,22 @@ async function submitClientRequest() {
     showToast('Please describe what you need', 'error');
     return;
   }
+  var reqDateVal = (document.getElementById('req-date')||{}).value;
+  if (reqDateVal) {
+    var _today = new Date();
+    _today.setHours(0,0,0,0);
+    var _minAllowed = new Date(_today);
+    _minAllowed.setDate(_minAllowed.getDate() + 2);
+    var _selectedDate = new Date(reqDateVal + 'T00:00:00');
+    if (_selectedDate < _minAllowed) {
+      showToast(
+        'Target date must be at least 2 days from today. ' +
+        'Our system needs 48 hours to publish your request. This time also incorporates feedback and changes.',
+        'error'
+      );
+      return;
+    }
+  }
   var btn       = document.getElementById('req-submit-btn');
   var files = (window._reqStoredFiles || []).filter(function(f) {
     return f !== null;
