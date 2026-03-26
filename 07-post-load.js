@@ -2572,12 +2572,19 @@ function buildPipelineCard(p, listKey) {
 
   // Brief cards show date/time instead of pillar/owner/location
   if (_isBrief) {
-    var _bd = new Date((p.status_changed_at || '') + 'Z');
-    var _bdate = _bd.toLocaleDateString('en-IN',
-      {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
-    var _btime = _bd.toLocaleTimeString('en-IN',
-      {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
-    metaLine = 'Client request \xB7 ' + _bdate + ' \xB7 ' + _btime;
+    var sentTime = '';
+    if (p.status_changed_at && p.status_changed_at !== 'null') {
+      var _d = new Date((p.status_changed_at || '') + 'Z');
+      if (!isNaN(_d.getTime())) {
+        var _date = _d.toLocaleDateString('en-IN',
+          {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
+        var _time = _d.toLocaleTimeString('en-IN',
+          {hour:'numeric',minute:'2-digit',hour12:true,
+          timeZone:'Asia/Kolkata'});
+        sentTime = _date + ' \xB7 ' + _time;
+      }
+    }
+    metaLine = 'Client request' + (sentTime ? ' \xB7 ' + sentTime : '');
   }
 
   // Chip HTML for brief/feedback card types
@@ -5501,12 +5508,16 @@ function _openBriefSheet(postId) {
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
   var _isChitra = !_isClient && !_isPranav;
   var sentTime = '';
-  if (post.status_changed_at) {
-    var d = new Date((post.status_changed_at || '') + 'Z');
-    sentTime = d.toLocaleDateString('en-IN',
-      {day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
-      d.toLocaleTimeString('en-IN',
-      {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'});
+  if (post.status_changed_at && post.status_changed_at !== 'null') {
+    var _d = new Date((post.status_changed_at || '') + 'Z');
+    if (!isNaN(_d.getTime())) {
+      var _date = _d.toLocaleDateString('en-IN',
+        {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
+      var _time = _d.toLocaleTimeString('en-IN',
+        {hour:'numeric',minute:'2-digit',hour12:true,
+        timeZone:'Asia/Kolkata'});
+      sentTime = _date + ' \xB7 ' + _time;
+    }
   }
 
   var rawComments = post.comments || '';
