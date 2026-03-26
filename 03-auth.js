@@ -4,6 +4,19 @@
 =============================================== */
 console.log("LOADED:", "03-auth.js");
 
+function _normaliseRole(r) {
+  if (!r) return 'Admin';
+  var map = {
+    'admin': 'Admin',
+    'servicing': 'Servicing',
+    'creative': 'Creative',
+    'client': 'Client',
+    'pranav': 'Pranav',
+    'chitra': 'Chitra'
+  };
+  return map[r.toLowerCase()] || r;
+}
+
 let _refreshInProgress = null;
 
 async function refreshSession() {
@@ -195,8 +208,8 @@ function logout() {
 function activateRole(role) {
   var rolePreview = localStorage.getItem('pcs_role_preview');
   if (rolePreview && rolePreview !== 'Admin') {
-    window.effectiveRole = rolePreview;
-    window.currentRole = rolePreview;
+    window.effectiveRole = _normaliseRole(rolePreview);
+    window.currentRole = _normaliseRole(rolePreview);
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
     return;
@@ -206,8 +219,8 @@ function activateRole(role) {
 
   // Client DB role takes absolute priority - real clients always go to client portal
   if ((role || '').toLowerCase() === 'client') {
-    window.currentRole = 'Client';
-    window.effectiveRole = 'Client';
+    window.currentRole = _normaliseRole('Client');
+    window.effectiveRole = _normaliseRole('Client');
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
@@ -218,9 +231,9 @@ function activateRole(role) {
   // Resolve effectiveRole: Admin can preview other roles via localStorage
   if (role === 'Admin') {
     const preview = localStorage.getItem('pcs_role_preview');
-    effectiveRole = (preview && preview !== 'Admin') ? preview : 'Admin';
+    effectiveRole = _normaliseRole((preview && preview !== 'Admin') ? preview : 'Admin');
   } else {
-    effectiveRole = role;
+    effectiveRole = _normaliseRole(role);
   }
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
