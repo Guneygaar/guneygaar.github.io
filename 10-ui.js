@@ -451,7 +451,13 @@ async function openNotifItem(id, postId) {
 async function handleNotifAction(action, postId, notifId, event) {
   event.stopPropagation();
   await markNotifRead(notifId);
-  if (action === 'view' && postId) { openPCS(postId); return; }
+  if (action === 'view' && postId) {
+    closeNotifications();
+    setTimeout(function() {
+      openPCS(postId, '');
+    }, 150);
+    return;
+  }
   if (action === 'chase' && postId) {
     var post = (window.allPosts || []).find(function(p) { return p.post_id === postId || p.id === postId; });
     var title = post ? post.title : 'this post';
@@ -460,7 +466,13 @@ async function handleNotifAction(action, postId, notifId, event) {
     showChaseToast('Copied to clipboard');
     return;
   }
-  if (action === 'approve' && postId) { openPCS(postId); return; }
+  if (action === 'approve' && postId) {
+    closeNotifications();
+    setTimeout(function() {
+      openPCS(postId, '');
+    }, 150);
+    return;
+  }
 }
 
 async function markNotifRead(id) {
