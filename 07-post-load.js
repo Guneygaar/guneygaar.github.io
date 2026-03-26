@@ -807,7 +807,7 @@ function _ttAgingAwaiting() {
   return allPosts.filter(function(p) {
     return p.stage === 'awaiting_approval' &&
       p.status_changed_at &&
-      new Date(p.status_changed_at) < twoDaysAgo;
+      new Date((p.status_changed_at || '') + 'Z') < twoDaysAgo;
   });
 }
 
@@ -948,7 +948,7 @@ function getScoreboardData() {
     return (p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input') &&
       p.status_changed_at !== null &&
       p.status_changed_at !== undefined &&
-      new Date(p.status_changed_at) < threeDaysAgo;
+      new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
   }).length;
   var chitraReady = posts.filter(function(p) {
     return p.stage === 'ready';
@@ -959,7 +959,7 @@ function getScoreboardData() {
   var approvalCount = posts.filter(function(p) {
     return p.stage === 'awaiting_approval' && (
       !p.status_changed_at ||
-      new Date(p.status_changed_at) >= threeDaysAgo
+      new Date((p.status_changed_at || '') + 'Z') >= threeDaysAgo
     );
   }).length;
 
@@ -967,7 +967,7 @@ function getScoreboardData() {
   var inputCount = posts.filter(function(p) {
     return p.stage === 'awaiting_brand_input' && (
       !p.status_changed_at ||
-      new Date(p.status_changed_at) >= threeDaysAgo
+      new Date((p.status_changed_at || '') + 'Z') >= threeDaysAgo
     );
   }).length;
 
@@ -1591,8 +1591,8 @@ function openStageSheet(stage) {
       return s === 'awaiting_approval' ||
              s === 'awaiting_brand_input';
     }).sort(function(a,b) {
-      return new Date(a.status_changed_at||a.updated_at||'') -
-             new Date(b.status_changed_at||b.updated_at||'');
+      return new Date((a.status_changed_at||a.updated_at||'') + 'Z') -
+             new Date((b.status_changed_at||b.updated_at||'') + 'Z');
     });
     title = 'Chitra \u00b7 Awaiting Action';
   } else if (stage === 'chitra_overdue') {
@@ -1614,8 +1614,8 @@ function openStageSheet(stage) {
       return (owner === 'pranav' || owner === 'creative') &&
              s === 'in_production';
     }).sort(function(a,b) {
-      return new Date(a.status_changed_at||a.updated_at||'') -
-             new Date(b.status_changed_at||b.updated_at||'');
+      return new Date((a.status_changed_at||a.updated_at||'') + 'Z') -
+             new Date((b.status_changed_at||b.updated_at||'') + 'Z');
     });
     title = 'Pranav \u00b7 In Production';
   } else if (stage === 'pranav_overdue') {
@@ -1737,9 +1737,9 @@ function _buildDoThisNowItems(role) {
   if (role === 'Admin' || role === 'Servicing') {
     var overdueApprovalPosts = allPosts.filter(function(p) {
       return p.stage === 'awaiting_approval' &&
-        p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+        p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
-      return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
+      return new Date((a.status_changed_at || '') + 'Z') - new Date((b.status_changed_at || '') + 'Z');
     });
     for (var c = 0; c < overdueApprovalPosts.length && items.length < 7; c++) {
       var op = overdueApprovalPosts[c];
@@ -1753,9 +1753,9 @@ function _buildDoThisNowItems(role) {
     }
     var overdueBrandPosts = allPosts.filter(function(p) {
       return p.stage === 'awaiting_brand_input' &&
-        p.status_changed_at && new Date(p.status_changed_at) < threeDaysAgo;
+        p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
-      return new Date(a.status_changed_at || 0) - new Date(b.status_changed_at || 0);
+      return new Date((a.status_changed_at || '') + 'Z') - new Date((b.status_changed_at || '') + 'Z');
     });
     for (var bi = 0; bi < overdueBrandPosts.length && items.length < 8; bi++) {
       var bp = overdueBrandPosts[bi];
@@ -2064,8 +2064,8 @@ function _updateTodaysFocus(allP) {
     return p.stage === 'awaiting_approval' ||
            p.stageLC === 'awaiting_approval';
   }).sort(function(a,b) {
-    return new Date(a.status_changed_at||a.statusChangedAt||a.updated_at||0) -
-           new Date(b.status_changed_at||b.statusChangedAt||b.updated_at||0);
+    return new Date((a.status_changed_at||a.statusChangedAt||a.updated_at||'') + 'Z') -
+           new Date((b.status_changed_at||b.statusChangedAt||b.updated_at||'') + 'Z');
   });
   var focus = candidates.length ? candidates : allP.filter(function(p) {
     return p.stage === 'in_production' || p.stage === 'ready';
@@ -2109,7 +2109,7 @@ function _updateLastMove(allP) {
   var moved = allP.filter(function(p) {
     return p.status_changed_at;
   }).sort(function(a, b) {
-    return new Date(b.status_changed_at) - new Date(a.status_changed_at);
+    return new Date((b.status_changed_at || '') + 'Z') - new Date((a.status_changed_at || '') + 'Z');
   });
   if (moved.length) {
     var last = moved[0];
@@ -2563,7 +2563,7 @@ function buildPipelineCard(p, listKey) {
   var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
   var rightHtml = '';
   if (!_isClientCard && stage === 'awaiting_approval') {
-    var changed = p.status_changed_at ? new Date(p.status_changed_at) : null;
+    var changed = p.status_changed_at ? new Date((p.status_changed_at || '') + 'Z') : null;
     var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
     if (daysWaiting >= 3) {
       var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'}) : 'recently';
@@ -3230,7 +3230,7 @@ function _renderPipelineInner() {
       threeDaysAgoCA.setDate(threeDaysAgoCA.getDate() - 3);
       var overdueCount = posts.filter(function(p) {
         if (!p.status_changed_at) return true;
-        return new Date(p.status_changed_at) < threeDaysAgoCA;
+        return new Date((p.status_changed_at || '') + 'Z') < threeDaysAgoCA;
       }).length;
       if (overdueCount >= 1) {
         chaseAllBtn = '<button class="chase-all-btn" onclick="chaseAll()" id="chase-all-btn">Chase All</button>';
@@ -3651,7 +3651,7 @@ function _renderClientViewInner() {
 
         var sentLine = (function() {
           if (!p.status_changed_at) return 'Submitted recently';
-          var d = new Date(p.status_changed_at);
+          var d = new Date((p.status_changed_at || '') + 'Z');
           var date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' });
           return 'Changes requested \xB7 ' + date;
         })();
@@ -3771,8 +3771,8 @@ function _renderClientViewInner() {
   var approvalPosts = allPosts.filter(function(p) {
     return p.stage === 'awaiting_approval';
   }).sort(function(a, b) {
-    var aTime = a.status_changed_at ? new Date(a.status_changed_at).getTime() : 0;
-    var bTime = b.status_changed_at ? new Date(b.status_changed_at).getTime() : 0;
+    var aTime = a.status_changed_at ? new Date((a.status_changed_at || '') + 'Z').getTime() : 0;
+    var bTime = b.status_changed_at ? new Date((b.status_changed_at || '') + 'Z').getTime() : 0;
     return aTime - bTime;
   });
 
@@ -3815,7 +3815,7 @@ function _renderClientViewInner() {
     var now2 = Date.now();
     var waitTimes = approvalPosts.map(function(p) {
       return p.status_changed_at
-        ? Math.floor((now2 - new Date(p.status_changed_at).getTime()) / 86400000)
+        ? Math.floor((now2 - new Date((p.status_changed_at || '') + 'Z').getTime()) / 86400000)
         : 0;
     });
     var oldest = waitTimes.length ? Math.max.apply(null, waitTimes) : 0;
@@ -3933,7 +3933,7 @@ function _renderClientViewInner() {
       var now = Date.now();
       approvalItems.innerHTML = approvalPosts.map(function(p) {
         var daysWaiting = p.status_changed_at
-          ? Math.floor((Date.now() - new Date(p.status_changed_at).getTime()) / 86400000)
+          ? Math.floor((Date.now() - new Date((p.status_changed_at || '') + 'Z').getTime()) / 86400000)
           : 0;
 
         var barColor, waitColor, waitLabel;
@@ -4002,7 +4002,7 @@ function _renderClientViewInner() {
         'color:rgba(255,255,255,0.5);line-height:1;">' +
         (function() {
           if (!p.status_changed_at) return '';
-          var d = new Date(p.status_changed_at);
+          var d = new Date((p.status_changed_at || '') + 'Z');
           var date = d.toLocaleDateString('en-IN', {
             day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata'
           });
@@ -5006,7 +5006,7 @@ function chaseAll() {
   var overduePosts = posts.filter(function(p) {
     if (p.stage !== 'awaiting_approval') return false;
     if (!p.status_changed_at) return true;
-    return new Date(p.status_changed_at) < threeDaysAgo;
+    return new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
   });
 
   if (overduePosts.length === 0) return;
@@ -5014,7 +5014,7 @@ function chaseAll() {
   var lines = overduePosts.map(function(p) {
     var sentDate = 'recently';
     if (p.status_changed_at) {
-      var d = new Date(p.status_changed_at);
+      var d = new Date((p.status_changed_at || '') + 'Z');
       sentDate = d.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'});
     }
     return '- ' + (p.title || 'Untitled') + ' (sent ' + sentDate + ')';
