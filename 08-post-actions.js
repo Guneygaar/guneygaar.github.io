@@ -238,43 +238,86 @@ function showChangeInput(postId) {
 }
 
 async function submitClientChanges(postId) {
-  const text = (document.getElementById(`change-text-${postId}`)?.value||'').trim();
-  if (!text) { showToast('Please describe what you want changed', 'error'); return; }
+  submitBoardingComment(postId);
+}
+window.submitClientChanges = submitClientChanges;
+
+function showBoardingComment(postId) {
+  var wrap = document.getElementById('boarding-comment-wrap-' + postId);
+  if (!wrap) return;
+  var isOpen = wrap.style.display === 'block';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    var input = document.getElementById('boarding-comment-input-' + postId);
+    if (input) input.focus();
+  }
+}
+window.showBoardingComment = showBoardingComment;
+
+async function submitBoardingComment(postId) {
+  var input = document.getElementById('boarding-comment-input-' + postId);
+  if (!input) return;
+  var message = (input.value || '').trim();
+  if (!message) {
+    showToast('Please write a comment first', 'error');
+    return;
+  }
+
+  var _post = (allPosts||[]).find(function(p) {
+    return p.post_id === postId || p.id === postId;
+  });
+  var _realPostId = _post ? _post.post_id : postId;
+  var _title = _post ? (_post.title || postId) : postId;
+  var _author = window.currentUserName || 'Client';
+  var _role = window.effectiveRole || 'Client';
+  var _normalRole = _role.charAt(0).toUpperCase() + _role.slice(1).toLowerCase();
+
   try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ stage: 'in_production', client_feedback: text, status_changed_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
+    await apiFetch('/post_comments', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: _realPostId,
+        author: _author,
+        author_role: _normalRole,
+        message: message
+      })
     });
-    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Client feedback: ' + text });
-    var _changesPost = (typeof getPostById === 'function')
-      ? getPostById(postId) : null;
-    var _changesTitle = _changesPost ? (_changesPost.title || postId) : postId;
-    var _changesPostId = _changesPost ? _changesPost.post_id : postId;
+
+    logActivity({
+      post_id: _realPostId,
+      actor: _author,
+      actor_role: _normalRole,
+      action: 'Commented: ' + message
+    });
+
     ['Servicing', 'Admin'].forEach(function(role) {
       apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
           user_role: role,
-          post_id:   _changesPostId,
-          type:      'awaiting_brand_input',
-          message:   'Client requested changes -- ' + _changesTitle
+          post_id: _realPostId,
+          type: 'comment',
+          message: _author + ' commented on ' + _title
         })
       }).catch(function(){});
     });
-    const item = document.getElementById(`apv-item-${postId}`);
-    if (item) item.innerHTML =
-      '<div style="padding:20px 16px;text-align:center;' +
-      'border-top:1px dashed rgba(255,255,255,0.07);">' +
-      '<div style="font-size:20px;color:#F6A623;margin-bottom:10px;">&#x25C8;</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:16px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:6px;">Feedback sent.</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.08em;color:rgba(255,255,255,0.5);">' +
-      'The team will take care of it.</div>' +
-      '</div>';
-    setTimeout(() => loadPostsForClient(), 1000);
-  } catch { showToast('Failed  -  try again', 'error'); }
+
+    var item = document.getElementById('apv-item-' + postId);
+    if (item) {
+      item.innerHTML =
+        '<div style="padding:20px 16px;text-align:center;">' +
+        '<div style="font-size:20px;margin-bottom:8px;">&#x1F4AC;</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.16em;text-transform:uppercase;color:#C8A84B;">Comment sent</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:rgba(255,255,255,0.4);margin-top:6px;">The team has been notified.</div>' +
+        '</div>';
+    }
+
+  } catch(e) {
+    console.error('submitBoardingComment failed:', e);
+    showToast('Failed to send comment', 'error');
+  }
 }
+window.submitBoardingComment = submitBoardingComment;
 
 async function clientAcknowledge(postId) {
   try {
@@ -1754,49 +1797,17 @@ function _buildInfoGrid(post, canEdit, canEditCreative, id) {
 }
 
 function _buildNotes(post, canEdit, id) {
-  // Client feedback banner - read only, always visible if exists
-  var feedbackHtml = '';
-  if (post.client_feedback && post.client_feedback.trim()) {
-    feedbackHtml =
-      '<div style="background:rgba(255,75,75,0.06);' +
-      'border:1px solid rgba(255,75,75,0.25);' +
-      'border-left:3px solid #FF4B4B;' +
-      'padding:12px 14px;margin-bottom:14px;">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
-      '<div style="width:6px;height:6px;border-radius:50%;' +
-      'background:#FF4B4B;flex-shrink:0;"></div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.16em;text-transform:uppercase;color:#FF4B4B;">' +
-      'Client Feedback</div>' +
-      '</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-      'color:#e8e2d9;line-height:1.6;">' +
-      esc(post.client_feedback) +
-      '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.08em;color:rgba(255,255,255,0.4);margin-top:8px;">' +
-      (post.status_changed_at
-        ? new Date((post.status_changed_at || '') + 'Z').toLocaleDateString('en-IN',
-            {day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) + ' -- ' +
-          new Date((post.status_changed_at || '') + 'Z').toLocaleTimeString('en-IN',
-            {hour:'numeric',minute:'2-digit',hour12:true,timeZone:'Asia/Kolkata'})
-        : ''
-      ) +
-      '</div>' +
-      '</div>';
-  }
-
   var _isClient = (window.effectiveRole || '').toLowerCase() === 'client';
-  if (_isClient) return feedbackHtml || '';
+  if (_isClient) return '';
 
-  if (!canEdit && !post.comments) return feedbackHtml;
+  if (!canEdit && !post.comments) return '';
 
   var notesInput = (canEdit || canEditCreative)
     ? '<textarea class="pc-notes-area" placeholder="Brief or caption..."' +
       ' onblur="updatePost(\'' + esc(id) + '\',\'comments\',this.value)">' + esc(post.comments || '') + '</textarea>'
     : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
 
-  return feedbackHtml + '<div class="pc-notes-block">' +
+  return '<div class="pc-notes-block">' +
     '<div class="pc-notes-lbl" style="display:flex;align-items:center;gap:8px;">Internal Notes' +
     '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;color:rgba(255,166,35,0.6);background:rgba(255,166,35,0.08);padding:2px 6px;letter-spacing:0.1em;text-transform:uppercase;">Agency only</span></div>' +
     (notesInput || '<div class="pcs-activity-empty">No notes.</div>') +

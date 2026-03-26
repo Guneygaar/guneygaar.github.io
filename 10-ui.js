@@ -456,15 +456,8 @@ function renderNotifications(name, role) {
       if (_postStage === 'brief')      { _chipColor='#C8A84B'; _chipBg='rgba(200,168,75,0.12)'; }
       if (_postStage === 'in_production') { _chipColor='#9b87f5'; _chipBg='rgba(155,135,245,0.12)'; }
       if (n.type === 'awaiting_brand_input') { _chipColor='#F6A623'; _chipBg='rgba(246,166,35,0.12)'; }
-      if (_postStage === 'in_production' && _notifPost &&
-          _notifPost.client_feedback) {
-        _chipColor='#FF4B4B'; _chipBg='rgba(255,75,75,0.12)';
-      }
-
       var _stageLabel = (_postStage||'').replace(/_/g,' ');
       if (_postStage === 'awaiting_approval') _stageLabel = 'Awaiting Approval';
-      if (_postStage === 'in_production' && _notifPost &&
-          _notifPost.client_feedback) _stageLabel = 'Feedback';
 
       var _actorName = parseActor(n.message).name;
       var _initial = _actorName ? _actorName.charAt(0).toUpperCase() : 'S';
