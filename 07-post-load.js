@@ -4721,22 +4721,6 @@ function _renderClientViewInner() {
 
   renderClientApproved();
 
-  // Client FAB for New Request
-  var clientFab = document.getElementById('client-req-fab');
-  if (!clientFab) {
-    clientFab = document.createElement('div');
-    clientFab.id = 'client-req-fab';
-    clientFab.style.cssText = 'position:fixed;bottom:84px;right:20px;z-index:900;';
-    clientFab.innerHTML =
-      '<button onclick="openClientRequestForm()" ' +
-      'style="width:52px;height:52px;border-radius:50%;' +
-      'background:#C8A84B;border:none;cursor:pointer;' +
-      'display:flex;align-items:center;justify-content:center;' +
-      'box-shadow:0 4px 16px rgba(200,168,75,0.4);' +
-      'font-size:24px;color:#000;">+</button>';
-    document.body.appendChild(clientFab);
-  }
-  clientFab.style.display = '';
 }
 
 function openClientRequestForm() {
