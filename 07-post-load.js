@@ -2643,9 +2643,9 @@ function buildPipelineCard(p, listKey) {
   var innerCard =
     '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:' + dateInfo.color + ';">' + esc(dateInfo.text) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:rgba(255,255,255,0.6);">' + esc(dateInfo.text) + '</div>' +
         '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#ccc;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(title) + '</div>' +
-        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
+        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.55);letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
       '</div>' +
       (rightHtml ? '<div style="flex-shrink:0;">' + rightHtml + '</div>' : '') +
     '</div>';
