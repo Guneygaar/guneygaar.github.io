@@ -80,22 +80,28 @@ function toggleTheme() {
 
 // -- User menu ---------------------------------
 function toggleUserMenu() {
-  const m = document.getElementById('user-menu');
+  var m = document.getElementById('user-menu');
   if (!m) return;
-  var _isClient = (window.effectiveRole || '').toLowerCase() === 'client';
-  if (_isClient) {
-    m.style.position = 'fixed';
-    m.style.top = '52px';
-    m.style.right = '12px';
-  } else {
-    m.style.position = '';
-    m.style.top = '';
-    m.style.right = '';
+  if (typeof _buildUserMenu === 'function') _buildUserMenu();
+  var isOpen = m.style.display === 'block';
+  if (isOpen) {
+    m.style.display = 'none';
+    return;
   }
-  const open = m.classList.toggle('open');
-  if (open) setTimeout(() => document.addEventListener('click', closeUserMenu, { once: true }), 0);
+  m.style.display = 'block';
+  setTimeout(function() {
+    document.addEventListener('click', function _close(e) {
+      if (!m.contains(e.target)) {
+        m.style.display = 'none';
+        document.removeEventListener('click', _close);
+      }
+    });
+  }, 0);
 }
-function closeUserMenu() { document.getElementById('user-menu')?.classList.remove('open'); }
+function closeUserMenu() {
+  var m = document.getElementById('user-menu');
+  if (m) m.style.display = 'none';
+}
 
 // -- Client menu -------------------------------
 function toggleClientMenu() {

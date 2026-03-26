@@ -6,7 +6,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260326bb">
+ <link rel="stylesheet" href="styles.css?v=20260326bc">
 
 </head>
 <body>
@@ -117,7 +117,6 @@
         <button class="app-icon-btn" onclick="toggleUserMenu()" title="Menu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
         </button>
-        <div class="user-menu" id="user-menu"></div>
       </div>
     </div>
   </header>
@@ -264,7 +263,7 @@
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="notif-pipeline-badge" style="position:absolute;top:10px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--c-red);border:1px solid #080808;display:none;"></span>
         </button>
-        <button onclick="showPipelineMenu()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;">
+        <button onclick="toggleUserMenu()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;">
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
         </button>
       </div>
@@ -925,19 +924,19 @@ window.currentRole     = window.currentRole || 'Admin';
 window.allTasks        = window.allTasks    || [];
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="01-config.js?v=20260326bb" defer></script>
-<script src="02-session.js?v=20260326bb" defer></script>
-<script src="utils.js?v=20260326bb" defer></script>
-<script src="03-auth.js?v=20260326bb" defer></script>
-<script src="05-api.js?v=20260326bb" defer></script>
-<script src="10-ui.js?v=20260326bb" defer></script>
+<script src="01-config.js?v=20260326bc" defer></script>
+<script src="02-session.js?v=20260326bc" defer></script>
+<script src="utils.js?v=20260326bc" defer></script>
+<script src="03-auth.js?v=20260326bc" defer></script>
+<script src="05-api.js?v=20260326bc" defer></script>
+<script src="10-ui.js?v=20260326bc" defer></script>
 
-<script src="06-post-create.js?v=20260326bb" defer></script>
-<script src="07-post-load.js?v=20260326bb" defer></script>
-<script src="08-post-actions.js?v=20260326bb" defer></script>
-<script src="09-library.js?v=20260326bb" defer></script>
-<script src="09-approval.js?v=20260326bb" defer></script>
-<script src="04-router.js?v=20260326bb" defer></script>
+<script src="06-post-create.js?v=20260326bc" defer></script>
+<script src="07-post-load.js?v=20260326bc" defer></script>
+<script src="08-post-actions.js?v=20260326bc" defer></script>
+<script src="09-library.js?v=20260326bc" defer></script>
+<script src="09-approval.js?v=20260326bc" defer></script>
+<script src="04-router.js?v=20260326bc" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -976,6 +975,9 @@ window.allTasks        = window.allTasks    || [];
       <button class="lib-icon-btn" onclick="openNotifications()" title="Notifications" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
         <span class="nav-badge" id="notif-lib-badge" style="display:none"></span>
+      </button>
+      <button class="lib-icon-btn" onclick="toggleUserMenu()" style="position:relative;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
       </button>
       <button class="lib-icon-btn" onclick="libOpenFilterSheet()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
@@ -1516,6 +1518,8 @@ window.allTasks        = window.allTasks    || [];
       font-size:16px;cursor:pointer;">&#x2192;</button>
   </div>
 </div>
+
+<div class="user-menu" id="user-menu" style="position:fixed;top:56px;right:12px;z-index:3000;display:none;"></div>
 
 </body>
 </html>
