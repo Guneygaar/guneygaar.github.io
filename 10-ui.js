@@ -334,6 +334,7 @@ function renderNotifications(name, role) {
     return n.type === 'awaiting_approval' ||
       n.type === 'awaiting_brand_input' ||
       n.type === 'brief' ||
+      n.type === 'comment' ||
       (n.type === 'stage_change' && (
         (n.message||'').toLowerCase().includes('brief') ||
         (n.message||'').toLowerCase().includes('feedback') ||

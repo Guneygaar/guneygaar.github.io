@@ -2247,3 +2247,72 @@ function _sharePostOnWhatsApp(postId) {
   window.open(waUrl, '_blank');
 }
 window._sharePostOnWhatsApp = _sharePostOnWhatsApp;
+
+function submitPcsComment() {
+  var input = document.getElementById('pcs-comment-input');
+  if (!input) return;
+  var message = (input.value || '').trim();
+  if (!message) return;
+
+  var postIdEl = document.getElementById('pcs-post-id');
+  var postId = postIdEl ? postIdEl.value : '';
+  if (!postId) return;
+
+  var _post = (allPosts||[]).find(function(p) {
+    return p.post_id === postId || p.id === postId;
+  });
+  var _realPostId = _post ? _post.post_id : postId;
+  var _title = _post ? (_post.title || _realPostId) : _realPostId;
+
+  var _author = window.currentUserName || 'Team';
+  var _role = window.effectiveRole || 'Admin';
+  var _normalRole = _role.charAt(0).toUpperCase() +
+    _role.slice(1).toLowerCase();
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  apiFetch('/post_comments', {
+    method: 'POST',
+    body: JSON.stringify({
+      post_id: _realPostId,
+      author: _author,
+      author_role: _normalRole,
+      message: message
+    })
+  }).then(function() {
+    if (typeof loadPcsComments === 'function')
+      loadPcsComments(_realPostId);
+
+    var _targets = [];
+    if (_normalRole === 'Client') {
+      _targets = ['Servicing', 'Admin'];
+    } else if (_normalRole === 'Pranav' ||
+               _normalRole === 'Creative') {
+      _targets = ['Servicing', 'Admin'];
+    } else if (_normalRole === 'Servicing' ||
+               _normalRole === 'Chitra') {
+      _targets = ['Admin', 'Client'];
+    } else {
+      _targets = ['Client', 'Servicing'];
+    }
+
+    _targets.forEach(function(role) {
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: role,
+          post_id: _realPostId,
+          type: 'comment',
+          message: _author + ' commented on ' + _title
+        })
+      }).catch(function(){});
+    });
+
+  }).catch(function(err) {
+    console.error('submitPcsComment failed:', err);
+    showToast('Failed to send comment', 'error');
+    input.value = message;
+  });
+}
+window.submitPcsComment = submitPcsComment;
