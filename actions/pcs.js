@@ -1213,7 +1213,7 @@ window._pcsLbDownload = function() {
   a.download = url.split('/').pop() || 'photo.jpg';
   a.target = '_blank';
   a.click();
-}
+};
 
 (function() {
   var tx = 0;
