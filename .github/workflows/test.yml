@@ -16,4 +16,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
+      - name: Run tests
+        env:
+          TZ: Asia/Kolkata
+        run: npm test
