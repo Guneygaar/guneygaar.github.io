@@ -1,0 +1,7 @@
+name = "srtd-og-inject"
+main = "src/index.js"
+compatibility_date = "2026-03-27"
+
+[[kv_namespaces]]
+binding = "PREVIEWS_KV"
+id = "91e985ed81d5418eb4dfd4381aa2794d"
