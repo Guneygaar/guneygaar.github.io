@@ -1363,44 +1363,74 @@ window._saveCaptionEdit = async function(postId) {
   }
 }
 
-window._sharePostOnWhatsApp = function(postId) {
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) { alert('Post not found'); return; }
-
-  var caption  = post.caption || '';
-  var title    = post.title   || 'New Post';
-  var firstImage = (Array.isArray(post.images) && post.images.length)
-    ? post.images[0] : '';
-
-  var rawSlug = title.toLowerCase()
+window._generatePreviewSlug = function(title) {
+  var base = title.toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .trim()
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .slice(0, 50);
+  return base + '-' + Date.now();
+};
 
-  var approveUrl = 'https://srtd.io/ok/?p=' + rawSlug;
-  var changesUrl = 'https://srtd.io/no/?p=' + rawSlug;
+window._buildPreviewHtml = function(post, slug) {
+  var title = post.title || 'Review Post';
+  var caption = (post.caption || '').slice(0, 150);
+  var imgUrl = (Array.isArray(post.images) &&
+    post.images.length) ? post.images[0] : '';
+  var approveUrl = 'https://srtd.io/ok/?p=' + slug;
+  return '<!DOCTYPE html><html><head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
+    '<title>' + title + '</title>' +
+    '<meta property="og:title" content="' + title + '">' +
+    '<meta property="og:description" content="' + caption + '">' +
+    '<meta property="og:image" content="' + imgUrl + '">' +
+    '<meta property="og:image:width" content="1200">' +
+    '<meta property="og:image:height" content="630">' +
+    '<meta property="og:type" content="website">' +
+    '<meta property="og:url" content="' + approveUrl + '">' +
+    '<meta name="twitter:card" content="summary_large_image">' +
+    '<meta name="twitter:image" content="' + imgUrl + '">' +
+    '<meta http-equiv="refresh" content="0; url=' + approveUrl + '">' +
+    '</head><body>Opening Sorted...</body></html>';
+};
 
-  var _isClient = (effectiveRole || '').toLowerCase() === 'client';
+window._sharePostOnWhatsApp = function(postId) {
+  var post = (typeof getPostById === 'function')
+    ? getPostById(postId) : null;
+  if (!post) { alert('Post not found'); return; }
 
-  var message;
-  if (_isClient) {
-    message =
-      title + '\n\n' +
-      caption + '\n\n' +
-      'Please review and let me know.';
-  } else {
-    message =
-      'Hi, ' + title + ' is ready for your review.\n\n' +
-      caption + '\n\n' +
-      'Approve: ' + approveUrl + '\n' +
-      'Request changes: ' + changesUrl;
-  }
+  var title = post.title || 'New Post';
+  var caption = post.caption || '';
 
-  var waUrl = 'https://wa.me/?text=' + encodeURIComponent(message);
+  var slug = window._generatePreviewSlug(title);
+  var html = window._buildPreviewHtml(post, slug);
+
+  var approveUrl = 'https://srtd.io/ok/?p=' + slug;
+  var changesUrl = 'https://srtd.io/no/?p=' + slug;
+
+  var message =
+    'Hi, ' + title + ' is ready for your review.\n\n' +
+    caption + '\n\n' +
+    'Approve: ' + approveUrl + '\n' +
+    'Request changes: ' + changesUrl;
+
+  var waUrl = 'https://wa.me/?text=' +
+    encodeURIComponent(message);
   window.open(waUrl, '_blank');
-}
+
+  fetch('https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/store-preview', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Preview-Secret': 'srtd2026xK9mN3pQ'
+    },
+    body: JSON.stringify({ slug: slug, html: html })
+  }).catch(function(err) {
+    console.error('Preview store failed:', err);
+  });
+};
 
 window.submitPcsComment = function() {
   var input = document.getElementById('pcs-comment-input');
