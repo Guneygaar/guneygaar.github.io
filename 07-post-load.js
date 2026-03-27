@@ -49,10 +49,10 @@ function _staleDays(p) {
 window.isPostStale = isPostStale;
 
 // -- Pipeline search state --
-var _pipelineSearchOpen = false;
+window._pipelineSearchOpen = false;
 
 function openPipelineSearch() {
-  _pipelineSearchOpen = true;
+  window._pipelineSearchOpen = true;
   var hdr = document.querySelector('.app-header');
   var bar = document.getElementById('pipeline-search-bar');
   if (hdr) hdr.classList.add('searching');
@@ -64,7 +64,7 @@ function openPipelineSearch() {
 }
 
 function closePipelineSearch() {
-  _pipelineSearchOpen = false;
+  window._pipelineSearchOpen = false;
   var hdr = document.querySelector('.app-header');
   var bar = document.getElementById('pipeline-search-bar');
   var results = document.getElementById('pipeline-search-results');
@@ -289,20 +289,20 @@ function handlePipelineSearch(query) {
 }
 
 // -- Batch selection state --
-var _batchMode = false;
-var _batchSelected = new Set();
+window._batchMode = false;
+window._batchSelected = new Set();
 
 // -- Person filter state --
-var _activePerson = null;
+window._activePerson = null;
 
 // -- Group collapse state (persists across re-renders) --
-var _collapsedGroups = {};
+window._collapsedGroups = {};
 
 function togglePipelineGroup(stage) {
-  _collapsedGroups[stage] = !_collapsedGroups[stage];
+  window._collapsedGroups[stage] = !window._collapsedGroups[stage];
   var section = document.getElementById('group-section-' + stage);
   if (section) {
-    section.classList.toggle('collapsed', !!_collapsedGroups[stage]);
+    section.classList.toggle('collapsed', !!window._collapsedGroups[stage]);
   }
 }
 
@@ -477,7 +477,7 @@ async function loadPostsForClient() {
 }
 
 // Background token refresh interval handle (separate from data poll)
-let _tokenRefreshTimer = null;
+window._tokenRefreshTimer = null;
 
 // Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
 function _postsFingerprint(posts) {
@@ -511,8 +511,8 @@ function startRealtime() {
 
   // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
-  if (!_tokenRefreshTimer) {
-    _tokenRefreshTimer = setInterval(async () => {
+  if (!window._tokenRefreshTimer) {
+    window._tokenRefreshTimer = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       const newToken = await refreshSession();
       if (!newToken) {
@@ -525,8 +525,8 @@ function startRealtime() {
 function stopRealtime() {
   clearInterval(_realtimeTimer);
   _realtimeTimer = null;
-  clearInterval(_tokenRefreshTimer);
-  _tokenRefreshTimer = null;
+  clearInterval(window._tokenRefreshTimer);
+  window._tokenRefreshTimer = null;
 }
 
 async function loadTasks() {
@@ -917,7 +917,7 @@ function _safeStage(p) {
 }
 
 // Config  -  single source for all thresholds
-var SCOREBOARD_CONFIG = {
+window.SCOREBOARD_CONFIG = {
   MONTHLY_TARGET: 35,
   CRITICAL_THRESHOLD: 7
 };
@@ -947,7 +947,7 @@ function getScoreboardCounts(posts) {
 function getScoreboardData() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
   var c = getScoreboardCounts(posts);
-  var MONTHLY_TARGET = SCOREBOARD_CONFIG.MONTHLY_TARGET;
+  var MONTHLY_TARGET = window.SCOREBOARD_CONFIG.MONTHLY_TARGET;
 
   // FIX 6: Runway = scheduled posts with target_date >= today
   var todayStr = new Date().toISOString().split('T')[0];
@@ -2502,7 +2502,7 @@ function toggleHeroComments(id, btn) {
 }
 
 // -- Unified post list registry -----------------
-const _postLists = {};
+window._postLists = {};
 
 function buildPostCard(p, listKey) {
   const id     = getPostId(p);
@@ -2809,11 +2809,11 @@ function updatePersonStripCounts() {
 
 // -- Person filter handler -----------------------
 function filterPipelineByPerson(person) {
-  if (_activePerson === person) {
-    _activePerson = null;
+  if (window._activePerson === person) {
+    window._activePerson = null;
     document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
   } else {
-    _activePerson = person;
+    window._activePerson = person;
     document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
     var btn = document.getElementById('person-btn-' + person);
     if (btn) btn.classList.add('active');
@@ -2851,7 +2851,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // -- Task stage chip filter ---------------------
-let _taskFilter = null; // null = show all, string = bucket key
+window._taskFilter = null; // null = show all, string = bucket key
 
 function renderTaskStageChips() {
   const el = document.getElementById('task-stage-chips');
@@ -2863,7 +2863,7 @@ function renderTaskStageChips() {
     const count = allPosts.filter(p =>
       bucket.stages.includes(p.stage || '')
     ).length;
-    const active = _taskFilter === bucket.key ? ' chip-active' : '';
+    const active = window._taskFilter === bucket.key ? ' chip-active' : '';
     // Find color from STRIP_STAGES
     const stripStage = (window.STRIP_STAGES||[]).find(s => s.bucket === bucket.key);
     const color = stripStage ? stripStage.color : 'var(--text3)';
@@ -2880,7 +2880,7 @@ function renderTaskStageChips() {
 }
 
 function filterTasksByChip(bucketKey) {
-  _taskFilter = _taskFilter === bucketKey ? null : bucketKey;
+  window._taskFilter = window._taskFilter === bucketKey ? null : bucketKey;
   renderTaskStageChips();
   _renderFilteredTasks();
 }
@@ -2891,20 +2891,20 @@ function _renderFilteredTasks() {
   const buckets = ROLE_BUCKETS[effectiveRole];
   if (!buckets) return;
 
-  if (!_taskFilter) {
+  if (!window._taskFilter) {
     // Show all buckets
     renderTasks();
     return;
   }
 
-  const bucket = buckets.find(b => b.key === _taskFilter);
+  const bucket = buckets.find(b => b.key === window._taskFilter);
   if (!bucket) { renderTasks(); return; }
 
   const posts = allPosts.filter(p =>
     bucket.stages.includes(p.stage || '')
   );
   const listKey = `tasks-${bucket.key}`;
-  _postLists[listKey] = posts;
+  window._postLists[listKey] = posts;
 
   if (!posts.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">OK</div><p>Nothing in ${esc(bucket.label)} right now.</p></div>`;
@@ -2925,14 +2925,14 @@ function _renderTasksInner() {
   renderTaskStageChips();
 
   // If a chip filter is active, let _renderFilteredTasks handle it
-  if (_taskFilter) { _renderFilteredTasks(); return; }
+  if (window._taskFilter) { _renderFilteredTasks(); return; }
 
   const container = document.getElementById('tasks-container');
   if (!container) return;
   const buckets = ROLE_BUCKETS[effectiveRole];
   if (!buckets) {
     const posts = getMyTasks();
-    _postLists['tasks'] = posts;
+    window._postLists['tasks'] = posts;
     container.innerHTML = posts.length
       ? `<div class="row-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
       : `<div class="empty-state"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div>`;
@@ -2943,7 +2943,7 @@ function _renderTasksInner() {
       .filter(p => bucket.stages.includes(p.stage || ''))
       .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
-    _postLists[listKey] = posts;
+    window._postLists[listKey] = posts;
     const count    = posts.length;
     const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
     const LIMIT    = 8;
@@ -2987,17 +2987,17 @@ function toggleStageOverflow(btn, totalHidden) {
 // Batch selection mode for Ready group
 // ===============================================
 function toggleBatchMode() {
-  _batchMode = !_batchMode;
-  _batchSelected.clear();
+  window._batchMode = !window._batchMode;
+  window._batchSelected.clear();
 
   var btn = document.getElementById('batch-select-btn');
   var bar = document.getElementById('batch-bar');
 
-  if (btn) btn.classList.toggle('active', _batchMode);
-  if (bar) bar.style.display = _batchMode ? 'flex' : 'none';
+  if (btn) btn.classList.toggle('active', window._batchMode);
+  if (bar) bar.style.display = window._batchMode ? 'flex' : 'none';
 
   document.querySelectorAll('[data-post-id][data-stage="ready"]').forEach(function(card) {
-    if (_batchMode) {
+    if (window._batchMode) {
       card.classList.add('batch-mode');
       var cb = document.createElement('div');
       cb.className = 'batch-checkbox';
@@ -3014,12 +3014,12 @@ function toggleBatchMode() {
 }
 
 function toggleBatchCard(postId, cardEl) {
-  if (!_batchMode) return;
-  if (_batchSelected.has(postId)) {
-    _batchSelected.delete(postId);
+  if (!window._batchMode) return;
+  if (window._batchSelected.has(postId)) {
+    window._batchSelected.delete(postId);
     cardEl.classList.remove('batch-selected');
   } else {
-    _batchSelected.add(postId);
+    window._batchSelected.add(postId);
     cardEl.classList.add('batch-selected');
   }
   updateBatchCount();
@@ -3027,13 +3027,13 @@ function toggleBatchCard(postId, cardEl) {
 
 function updateBatchCount() {
   var countEl = document.getElementById('batch-count');
-  if (countEl) countEl.textContent = _batchSelected.size;
+  if (countEl) countEl.textContent = window._batchSelected.size;
 }
 
 async function executeBatchAction(targetStage) {
-  if (_batchSelected.size === 0) return;
+  if (window._batchSelected.size === 0) return;
 
-  var ids = Array.from(_batchSelected);
+  var ids = Array.from(window._batchSelected);
   var now = new Date().toISOString();
   var dbStage = toDbStage(targetStage);
   var actor = resolveActor();
@@ -3320,11 +3320,11 @@ function _renderPipelineInner() {
 
   // -- Person filter --
   var source = stageFiltered;
-  if (_activePerson === 'client') {
+  if (window._activePerson === 'client') {
     source = stageFiltered.filter(function(p) { return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (_activePerson === 'chitra') {
+  } else if (window._activePerson === 'chitra') {
     source = stageFiltered.filter(function(p) { return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (_activePerson === 'pranav') {
+  } else if (window._activePerson === 'pranav') {
     source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
   }
 
@@ -3432,7 +3432,7 @@ function _renderPipelineInner() {
       posts = prioritySort(grouped[stage]);
     }
     const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
-    _postLists[listKey] = posts;
+    window._postLists[listKey] = posts;
     const { label } = stageStyle(stage);
     const sk = _pipelineStageKey(stage);
     const cards = posts.map((p, i) => {
@@ -3523,7 +3523,7 @@ function _renderPipelineInner() {
       var dB = new Date((b.status_changed_at||'')+'Z').getTime();
       return dB - dA;
     });
-    _postLists[bdListKey] = bdSorted;
+    window._postLists[bdListKey] = bdSorted;
     briefDoneCardsHtml = bdSorted.map(function(p) {
       return buildPipelineCard(p, bdListKey);
     }).join('');
@@ -3558,7 +3558,7 @@ function _renderPipelineInner() {
       if (dA) return -1; if (dB) return 1;
       return 0;
     });
-    _postLists[pubListKey] = pubSorted;
+    window._postLists[pubListKey] = pubSorted;
     pubCardsHtml = pubSorted.map(function(p) { return buildPipelineCard(p, pubListKey); }).join('');
   }
   var pubGroupHtml = '<div class="group-section pipeline-pub-group" id="pipeline-pub-group">' +
@@ -3583,7 +3583,7 @@ function _renderPipelineInner() {
   var commentedHtml = '';
   if (commentedPosts.length > 0) {
     var _cListKey = 'pipeline-commented';
-    _postLists[_cListKey] = commentedPosts;
+    window._postLists[_cListKey] = commentedPosts;
     var _cCards = commentedPosts.map(function(p) {
       return buildPipelineCard(p, _cListKey);
     }).join('');
@@ -3622,8 +3622,8 @@ function _renderPipelineInner() {
   }
 
   // -- Restore collapsed state across re-renders --
-  Object.keys(_collapsedGroups).forEach(function(stage) {
-    if (_collapsedGroups[stage]) {
+  Object.keys(window._collapsedGroups).forEach(function(stage) {
+    if (window._collapsedGroups[stage]) {
       var section = document.getElementById('group-section-' + stage);
       if (section) section.classList.add('collapsed');
     }
@@ -3720,8 +3720,8 @@ function filterLibrary() {
     return true;
   });
 
-  if (_currentLibraryView === 'list')          renderLibraryRows(filtered);
-  else if (_currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
+  if (window._currentLibraryView === 'list')          renderLibraryRows(filtered);
+  else if (window._currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
 }
 
 function renderLibrary() {
@@ -3788,7 +3788,7 @@ function renderLibraryRows(posts) {
   var listView = document.getElementById('library-list-view');
   if (!listView) return;
   posts = posts.slice().sort(function(a, b) { return (parseDate(a.targetDate) || new Date(9999,0)) - (parseDate(b.targetDate) || new Date(9999,0)); });
-  _postLists['library'] = posts;
+  window._postLists['library'] = posts;
   if (!posts.length) {
     listView.innerHTML = '<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>';
     return;
@@ -5025,29 +5025,29 @@ function renderCreativeTracker() {
 }
 
 // -- Fix 17: Library view switch ---------------
-let _currentLibraryView = 'list';
+window._currentLibraryView = 'list';
 
 function switchLibraryView(btn) {
   document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  _currentLibraryView = btn.dataset.view;
+  window._currentLibraryView = btn.dataset.view;
 
   const llv = document.getElementById('library-list-view');
   const lcv = document.getElementById('library-calendar-view');
-  if (llv) llv.style.display = _currentLibraryView === 'list'     ? '' : 'none';
-  if (lcv) lcv.style.display = _currentLibraryView === 'calendar' ? '' : 'none';
+  if (llv) llv.style.display = window._currentLibraryView === 'list'     ? '' : 'none';
+  if (lcv) lcv.style.display = window._currentLibraryView === 'calendar' ? '' : 'none';
 
   filterLibrary();
 }
 
 
-let _calMonth = new Date().getMonth();
-let _calYear  = new Date().getFullYear();
+window._calMonth = new Date().getMonth();
+window._calYear  = new Date().getFullYear();
 
 function _calNav(delta) {
-  _calMonth += delta;
-  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
-  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
+  window._calMonth += delta;
+  if (window._calMonth > 11) { window._calMonth = 0; window._calYear++; }
+  if (window._calMonth < 0)  { window._calMonth = 11; window._calYear--; }
   filterLibrary();
 }
 
@@ -5063,19 +5063,19 @@ function groupPostsByDay(posts, month, year) {
   return map;
 }
 
-var _calDayMap = {}; // stored for drawer access
+window._calDayMap = {}; // stored for drawer access
 
 function renderLibraryCalendar(posts) {
   var container = document.getElementById('library-calendar-view');
   if (!container) return;
   posts = posts || allPosts;
 
-  var dayMap = groupPostsByDay(posts, _calMonth, _calYear);
-  _calDayMap = dayMap;
-  var monthLabel = MONTHS[_calMonth] + ' ' + _calYear;
+  var dayMap = groupPostsByDay(posts, window._calMonth, window._calYear);
+  window._calDayMap = dayMap;
+  var monthLabel = MONTHS[window._calMonth] + ' ' + window._calYear;
 
-  var firstDay = new Date(_calYear, _calMonth, 1).getDay();
-  var numDays = new Date(_calYear, _calMonth + 1, 0).getDate();
+  var firstDay = new Date(window._calYear, window._calMonth, 1).getDay();
+  var numDays = new Date(window._calYear, window._calMonth + 1, 0).getDate();
   var totalCells = firstDay + numDays <= 35 ? 35 : 42;
 
   var today = new Date(); today.setHours(0,0,0,0);
@@ -5123,9 +5123,9 @@ function renderLibraryCalendar(posts) {
     }
 
     var dd = String(dayNum).padStart(2, '0');
-    var mm = String(_calMonth + 1).padStart(2, '0');
-    var key = _calYear + '-' + mm + '-' + dd;
-    var cellDate = new Date(_calYear, _calMonth, dayNum);
+    var mm = String(window._calMonth + 1).padStart(2, '0');
+    var key = window._calYear + '-' + mm + '-' + dd;
+    var cellDate = new Date(window._calYear, window._calMonth, dayNum);
     var isToday = cellDate.getTime() === today.getTime();
     var dayPosts = dayMap[key] || [];
 
@@ -5206,7 +5206,7 @@ function _openDayDrawer(dateKey, cell) {
   var d = parseDate(dateKey);
   if (dateEl) dateEl.textContent = d ? (d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : dateKey;
 
-  var posts = _calDayMap[dateKey] || [];
+  var posts = window._calDayMap[dateKey] || [];
   if (!posts.length) {
     postsEl.innerHTML = '<div class="drawer-empty">No posts on this day</div>';
   } else {
@@ -5252,7 +5252,7 @@ document.addEventListener('click', function _cardClickDelegate(e) {
   var listKey = card.dataset.list || '';
   if (!postId) return;
   // Batch mode intercept: clicking a ready card toggles selection
-  if (_batchMode && card.dataset.stage === 'ready') {
+  if (window._batchMode && card.dataset.stage === 'ready') {
     toggleBatchCard(postId, card);
     return;
   }
@@ -5283,7 +5283,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   document.addEventListener('click', function(e) {
-    if (!_pipelineSearchOpen) return;
+    if (!window._pipelineSearchOpen) return;
     var bar = document.getElementById('pipeline-search-bar');
     var trigger = document.getElementById('pipeline-search-trigger');
     var resultsEl = document.getElementById('pipeline-search-results');

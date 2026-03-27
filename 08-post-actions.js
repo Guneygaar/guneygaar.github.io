@@ -574,20 +574,20 @@ async function deletePost(postId) {
 // PCS  -  Post Control Screen
 // ===============================================
 
-const _pcs = {
+window._pcs = {
   postId:  null,
   listKey: null,
   list:    [],
   idx:     0,
 };
-let _pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
-let _pcsEditingTarget = null; // 'canva' | 'linkedin'  -  which link the attach input saves to
+window._pcsCloseTimer = null; // tracks deferred forcePCSReset from closePCS
+window._pcsEditingTarget = null; // 'canva' | 'linkedin'  -  which link the attach input saves to
 
 function openPCS(postId, listKey) {
   // Cancel any deferred forcePCSReset from a previous closePCS()  - 
   // without this, a rapid close->open reopens the sheet, then the
   // stale timer fires 300ms later and nukes it back to hidden.
-  if (_pcsCloseTimer) { clearTimeout(_pcsCloseTimer); _pcsCloseTimer = null; }
+  if (window._pcsCloseTimer) { clearTimeout(window._pcsCloseTimer); window._pcsCloseTimer = null; }
 
   // Force-clean any stale PCS state from a previous session
   forcePCSReset();
@@ -596,10 +596,10 @@ function openPCS(postId, listKey) {
     ? _postLists[listKey]
     : allPosts;
   var idx = list.findIndex(function(p) { return getPostId(p) === postId; });
-  _pcs.listKey = listKey || '';
-  _pcs.list    = list;
-  _pcs.idx     = idx >= 0 ? idx : 0;
-  _pcs.postId  = postId;
+  window._pcs.listKey = listKey || '';
+  window._pcs.list    = list;
+  window._pcs.idx     = idx >= 0 ? idx : 0;
+  window._pcs.postId  = postId;
 
   var overlay = document.getElementById('pcs-overlay');
   if (!overlay) return;
@@ -642,9 +642,9 @@ function closePCS() {
   forcePCSReset();
   // Safety: re-verify after animations settle (catches mobile compositor lag).
   // Store the timer so openPCS can cancel it if the user reopens quickly.
-  if (_pcsCloseTimer) clearTimeout(_pcsCloseTimer);
-  _pcsCloseTimer = setTimeout(function() {
-    _pcsCloseTimer = null;
+  if (window._pcsCloseTimer) clearTimeout(window._pcsCloseTimer);
+  window._pcsCloseTimer = setTimeout(function() {
+    window._pcsCloseTimer = null;
     forcePCSReset();
   }, 300);
 }
@@ -687,7 +687,7 @@ function forcePCSReset() {
   window._modalOpen = false;
 
   // 6. Clear PCS context
-  _pcs.postId = null;
+  window._pcs.postId = null;
 
   // 7. Flush any deferred background renders
   _drainDeferredRender();
@@ -1054,7 +1054,7 @@ function _pcsTitleEdit(el, postId) {
 
 // -- Unified stage change with confirmation --
 function changeStage(newStage) {
-  const postId = _pcs.postId;
+  const postId = window._pcs.postId;
   if (!postId) return;
   if (newStage === 'published') {
     _showPublishSheet(postId);
@@ -1413,7 +1413,7 @@ window.submitPcsComment = submitPcsComment;
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
   // Close any open attach editor  -  only one interactive layer at a time
-  if (_pcs.postId) pcsCloseAttach(_pcs.postId);
+  if (window._pcs.postId) pcsCloseAttach(window._pcs.postId);
   const displayName = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[newStage]) || newStage;
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
@@ -1571,7 +1571,7 @@ function _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId
 }
 
 function _pcsEditLink(postId, target) {
-  _pcsEditingTarget = target; // 'canva' or 'linkedin'
+  window._pcsEditingTarget = target; // 'canva' or 'linkedin'
   const row = document.getElementById(`pcs-attach-row-${postId}`);
   const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
   if (!row) return;
@@ -1591,7 +1591,7 @@ function _pcsEditLink(postId, target) {
 }
 
 function pcsCloseAttach(postId) {
-  _pcsEditingTarget = null;
+  window._pcsEditingTarget = null;
   const row = document.getElementById(`pcs-attach-row-${postId}`);
   const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
   if (row) row.style.display = 'none';
@@ -1603,10 +1603,10 @@ async function pcsSaveAttach(postId) {
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
   // Save to the field that matches the editing target  -  never infer from stage
-  const field = _pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
+  const field = window._pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
   await updatePost(postId, field, url);
   // Clear editing state and hide attach row (auto-disappear)
-  _pcsEditingTarget = null;
+  window._pcsEditingTarget = null;
   pcsCloseAttach(postId);
   // Re-render design section with updated links
   const post = getPostById(postId);
@@ -1815,14 +1815,14 @@ function _buildNotes(post, canEdit, id) {
 }
 
 // -- Stage advance button (FIX 7) --
-var _ADVANCE_SEQ = ['in_production', 'ready', 'awaiting_approval', 'scheduled', 'published'];
-var _ADVANCE_LABELS = {
+window._ADVANCE_SEQ = ['in_production', 'ready', 'awaiting_approval', 'scheduled', 'published'];
+window._ADVANCE_LABELS = {
   'ready': 'Move to Ready',
   'awaiting_approval': 'Send for Approval',
   'scheduled': 'Mark Scheduled',
   'published': 'Mark Published'
 };
-var _ADVANCE_CLS = {
+window._ADVANCE_CLS = {
   'ready': 'to-ready',
   'awaiting_approval': 'to-approval',
   'scheduled': 'to-scheduled',
@@ -1856,18 +1856,18 @@ function _renderAdvanceButton(stageLC) {
     return;
   }
 
-  var idx = _ADVANCE_SEQ.indexOf(stageLC);
-  if (idx < 0 || idx >= _ADVANCE_SEQ.length - 1) {
+  var idx = window._ADVANCE_SEQ.indexOf(stageLC);
+  if (idx < 0 || idx >= window._ADVANCE_SEQ.length - 1) {
     block.style.display = 'none';
     return;
   }
 
-  var nextStage = _ADVANCE_SEQ[idx + 1];
-  label.textContent = _ADVANCE_LABELS[nextStage] || ('Move to ' + nextStage);
+  var nextStage = window._ADVANCE_SEQ[idx + 1];
+  label.textContent = window._ADVANCE_LABELS[nextStage] || ('Move to ' + nextStage);
 
   // Remove old color classes
   btn.className = 'pc-advance-btn';
-  var cls = _ADVANCE_CLS[nextStage];
+  var cls = window._ADVANCE_CLS[nextStage];
   if (cls) btn.classList.add(cls);
 
   btn.onclick = function() { changeStage(nextStage); };
@@ -1894,7 +1894,7 @@ function _removePcsConfirm() {
 function pcsConfirmDelete() {
   // Guard: don't create if PCS is already closed (handles race with delayed click after close)
   const pcsOpen = document.getElementById('pcs-overlay')?.classList.contains('open');
-  if (!pcsOpen || !_pcs.postId) return;
+  if (!pcsOpen || !window._pcs.postId) return;
   // Only one confirm overlay may exist at a time
   _removePcsConfirm();
   const overlay = document.createElement('div');
@@ -1919,7 +1919,7 @@ async function pcsDoDelete() {
     return;
   }
   _removePcsConfirm();
-  const id = _pcs.postId;
+  const id = window._pcs.postId;
   if (!id) return;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -2029,13 +2029,13 @@ async function _pcsRemovePhoto(postId, idx) {
 window._pcsRemovePhoto = _pcsRemovePhoto;
 
 // -- Lightbox --
-var _pcsLbImages = [];
-var _pcsLbIdx = 0;
+window._pcsLbImages = [];
+window._pcsLbIdx = 0;
 
 function _pcsOpenLightbox(postId, idx) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  _pcsLbImages = (post && Array.isArray(post.images)) ? post.images : [];
-  _pcsLbIdx = idx || 0;
+  window._pcsLbImages = (post && Array.isArray(post.images)) ? post.images : [];
+  window._pcsLbIdx = idx || 0;
   _pcsLbRender();
   var lb = document.getElementById('pcs-lightbox');
   if (lb) { lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
@@ -2048,29 +2048,29 @@ function _pcsLbRender() {
   var filename = document.getElementById('pcs-lb-filename');
   var dots = document.getElementById('pcs-lb-dots');
   if (!img) return;
-  var url = _pcsLbImages[_pcsLbIdx] || '';
+  var url = window._pcsLbImages[window._pcsLbIdx] || '';
   img.src = url;
-  if (counter) counter.textContent = (_pcsLbIdx + 1) + ' / ' + _pcsLbImages.length;
+  if (counter) counter.textContent = (window._pcsLbIdx + 1) + ' / ' + window._pcsLbImages.length;
   if (filename) {
     var parts = url.split('/');
     filename.textContent = parts[parts.length - 1] || '';
   }
   if (dots) {
-    dots.innerHTML = _pcsLbImages.map(function(u, i) {
+    dots.innerHTML = window._pcsLbImages.map(function(u, i) {
       return '<div style="width:5px;height:5px;border-radius:50%;background:' +
-        (i === _pcsLbIdx ? '#e8e2d9' : '#2a2a2a') + ';"></div>';
+        (i === window._pcsLbIdx ? '#e8e2d9' : '#2a2a2a') + ';"></div>';
     }).join('');
   }
 }
 
 function _pcsLbNext() {
-  _pcsLbIdx = (_pcsLbIdx + 1) % _pcsLbImages.length;
+  window._pcsLbIdx = (window._pcsLbIdx + 1) % window._pcsLbImages.length;
   _pcsLbRender();
 }
 window._pcsLbNext = _pcsLbNext;
 
 function _pcsLbPrev() {
-  _pcsLbIdx = (_pcsLbIdx - 1 + _pcsLbImages.length) % _pcsLbImages.length;
+  window._pcsLbIdx = (window._pcsLbIdx - 1 + window._pcsLbImages.length) % window._pcsLbImages.length;
   _pcsLbRender();
 }
 window._pcsLbPrev = _pcsLbPrev;
@@ -2082,7 +2082,7 @@ function _pcsLbClose() {
 window._pcsLbClose = _pcsLbClose;
 
 function _pcsLbDownload() {
-  var url = _pcsLbImages[_pcsLbIdx];
+  var url = window._pcsLbImages[window._pcsLbIdx];
   if (!url) return;
   var a = document.createElement('a');
   a.href = url;
