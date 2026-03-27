@@ -743,7 +743,7 @@ function renderAdminInsight() {
   const readyPillClass = readyCount >= READY_TO_SEND_TARGET ? 'green' : readyCount >= READY_TO_SEND_TARGET * 0.5 ? 'amber' : 'red';
 
   section.innerHTML = `
-    <div class="insight-summary-bar" onclick="openInsights()">
+    <div class="insight-summary-bar" onclick="showInsights()">
       <span class="insight-summary-pill ${blockPillClass}">[!] ${blockers === 0 ? 'No blockers' : `${blockers} blocked`}</span>
       <span class="insight-summary-pill ${readyPillClass}">OK ${readyCount}/${READY_TO_SEND_TARGET} ready</span>
       <span class="insight-summary-pill blue">[date] ${published} published this week</span>
