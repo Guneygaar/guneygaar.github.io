@@ -232,16 +232,6 @@ async function clientApprove(postId, btn) {
   } catch { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); }
 }
 
-function showChangeInput(postId) {
-  const wrap = document.getElementById(`change-wrap-${postId}`);
-  if (wrap) { wrap.classList.toggle('active'); document.getElementById(`change-text-${postId}`)?.focus(); }
-}
-
-async function submitClientChanges(postId) {
-  submitBoardingComment(postId);
-}
-window.submitClientChanges = submitClientChanges;
-
 function showBoardingComment(postId) {
   var wrap = document.getElementById('boarding-comment-wrap-' + postId);
   if (!wrap) return;
@@ -379,10 +369,6 @@ async function handleClientUpload(input, postId) {
     if (label) label.textContent = '+ Upload Here';
     showToast('Upload failed - try again', 'error');
   }
-}
-
-function scrollToNewRequest() {
-  document.getElementById('client-request-section')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 async function submitClientRequest() {
@@ -1346,69 +1332,6 @@ async function loadPcsComments(postId) {
   }
 }
 window.loadPcsComments = loadPcsComments;
-
-async function submitPcsComment() {
-  var input = document.getElementById('pcs-comment-input');
-  if (!input) return;
-  var message = (input.value || '').trim();
-  if (!message) return;
-
-  var postIdEl = document.getElementById('pcs-post-id');
-  var postId = postIdEl ? postIdEl.value : '';
-  if (!postId) return;
-
-  var _post = (allPosts||[]).find(function(p) {
-    return p.post_id === postId || p.id === postId;
-  });
-  var _realPostId = _post ? _post.post_id : postId;
-
-  var _author = window.currentUserName ||
-    window.effectiveRole || 'Team';
-  var _role = window.effectiveRole || 'Admin';
-
-  input.value = '';
-  input.style.height = 'auto';
-
-  try {
-    await apiFetch('/post_comments', {
-      method: 'POST',
-      body: JSON.stringify({
-        post_id: _realPostId,
-        author: _author,
-        author_role: _role,
-        message: message
-      })
-    });
-
-    loadPcsComments(_realPostId);
-
-    var _notifRoles = [];
-    var _roleLower = (_role||'').toLowerCase();
-    if (_roleLower === 'client') {
-      _notifRoles = ['Servicing', 'Admin'];
-    } else {
-      _notifRoles = ['Client'];
-    }
-    var _title = _post ? (_post.title || _realPostId) : _realPostId;
-    _notifRoles.forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id: _realPostId,
-          type: 'stage_change',
-          message: _author + ' commented on ' + _title
-        })
-      }).catch(function(){});
-    });
-
-  } catch(e) {
-    console.error('submitPcsComment failed:', e);
-    showToast('Failed to send comment', 'error');
-    input.value = message;
-  }
-}
-window.submitPcsComment = submitPcsComment;
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
