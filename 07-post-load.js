@@ -455,7 +455,12 @@ async function loadPosts() {
 async function loadPostsForClient() {
   const reqId = _newPostsRequest();
   try {
-    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    const allowedStages =
+      'awaiting_approval,awaiting_brand_input,published';
+    const data  = await apiFetch(
+      '/posts?stage=in.(' + allowedStages +
+      ')&select=*&order=created_at.desc'
+    );
     if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
     hideErrorBanner();
