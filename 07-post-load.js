@@ -491,12 +491,10 @@ function renderAll() {
   if (activeTab === 'tasks') {
     run('dashboard',          renderDashboard);
     run('dashHdr',            updateDashboardHeader);
-    run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
     run('taskBanner',         renderTaskBanner);
     run('adminTaskPanel',     renderAdminTaskPanel);
-    run('creativeTracker',    renderCreativeTracker);
     run('nextPost',           renderNextPost);
     run('tasks',              renderTasks);
     run('taskStageChips',     renderTaskStageChips);
@@ -598,97 +596,6 @@ function _ttAgingAwaiting() {
       p.status_changed_at &&
       new Date((p.status_changed_at || '') + 'Z') < twoDaysAgo;
   });
-}
-
-function getTopTask() {
-  const postMap = Object.fromEntries(
-    allPosts.map(p => [getPostId(p), p])
-  );
-  function _ttPostTitle(postId) {
-    if (!postId) return '';
-    const p = postMap[postId];
-    return p ? getTitle(p) : '';
-  }
-
-  const role = _ttNorm(window.effectiveRole || '');
-  const email = localStorage.getItem('hinglish_email') || '';
-  const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
-
-  // B-02 FIX: PRIORITY 1  Failed publish (scheduled post past target_date) is same-day emergency
-  const failedPub = _ttFailedPublish();
-  if (failedPub.length) {
-    return { type: 'failed_publish', text: 'FIX PUBLISH  ' + getTitle(failedPub[0]), postId: getPostId(failedPub[0]) };
-  }
-
-  // 2. ASSIGNED TASKS (high priority for all roles)
-  const myTasks = (window.allTasks || [])
-    .filter(t => !t.done && _ttIsMine(t, role, emailPrefix))
-    .sort(_ttOldestFirst);
-  if (myTasks.length) {
-    const t = myTasks[0];
-    const msg = t.message || 'Complete assigned task';
-    const title = _ttPostTitle(t.post_id);
-    return { type: 'assigned', text: title ? msg + ' \u2014 ' + _ttTruncate(title) : msg, postId: t.post_id || null };
-  }
-
-  // 3. ROLE-BASED PRIORITY
-
-  if (role === 'pranav') {
-    const prod = _ttByStage('in_production');
-    if (prod.length) return { type: 'production', text: 'Create post -- ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
-    return null;
-  }
-
-  if (role === 'chitra') {
-    const ready = _ttByStage('ready');
-    const agingAwaiting = _ttAgingAwaiting();
-
-    // B-01 FIX: When aging awaiting exists, distinguish between FOLLOW UP + SEND vs FOLLOW UP ONLY
-    if (agingAwaiting.length && ready.length) {
-      return { type: 'approval', text: 'Follow up + Send -- ' + getTitle(agingAwaiting[0]), postId: getPostId(agingAwaiting[0]) };
-    }
-    if (agingAwaiting.length && !ready.length) {
-      return { type: 'approval', text: 'Follow up only -- ' + getTitle(agingAwaiting[0]), postId: getPostId(agingAwaiting[0]) };
-    }
-
-    // Non-aging awaiting_approval  schedule/send first
-    const approval = _ttByStage('awaiting_approval');
-    if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
-    if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
-    return null;
-  }
-
-  // Admin  -  sees everything: failed_publish already handled above, then approval -> ready -> production
-  const approval = _ttByStage('awaiting_approval');
-  if (approval.length) return { type: 'approval', text: 'Follow up -- ' + getTitle(approval[0]), postId: getPostId(approval[0]) };
-  const ready = _ttByStage('ready');
-  if (ready.length) return { type: 'ready', text: 'Send for approval -- ' + getTitle(ready[0]), postId: getPostId(ready[0]) };
-  const prod = _ttByStage('in_production');
-  if (prod.length) return { type: 'production', text: 'Create post -- ' + getTitle(prod[0]), postId: getPostId(prod[0]) };
-
-  return null;
-}
-
-function renderPipelineStrip() {
-  const strip = document.getElementById('pipeline-strip');
-  const wrap  = document.getElementById('pipeline-strip-wrap');
-  if (!strip) return;
-  // Pipeline strip tiles removed - always keep hidden
-  if (wrap) wrap.style.display = 'none';
-  return;
-  const html = STRIP_STAGES.map((group) => {
-    const count = allPosts.filter(p =>
-      group.stages.includes(p.stage || '')
-    ).length;
-    let cClass = '';
-    if (group.target) cClass = count < READY_TO_SEND_TARGET ? ' warn' : ' ok';
-    return `
-      <div class="ps-stage" onclick="${group.tab === 'library' ? `goToLibraryFiltered('${group.stages[0]}')` : group.bucket ? `goToTab('tasks');scrollToBucket('${group.bucket}')` : `goToTab('${group.tab}')`}">\n        <span class="ps-dot" style="background:${group.color}"></span>
-        <span class="ps-label">${group.label}</span>
-        <span class="ps-count${cClass}">${count}</span>
-      </div>`;
-  }).join('');
-  strip.innerHTML = html;
 }
 
 function renderProductionMeter() {
