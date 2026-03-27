@@ -1627,7 +1627,6 @@ function refreshSystemViews() {
   try {
     if (activeTab === 'tasks')    renderTasks();
     else if (activeTab === 'pipeline') renderPipeline();
-    else if (activeTab === 'library')  renderLibrary();
   } catch(e) { console.error('refreshSystemViews:', e); }
 }
 

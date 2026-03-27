@@ -163,12 +163,6 @@ function navigateWithFilter(tab, filter) {
   goToTab(tab);
 }
 
-function goToLibraryFiltered(stage) {
-  goToTab('library');
-  const sel = document.getElementById('filter-stage');
-  if (sel) { sel.value = stage; filterLibrary(); }
-}
-
 function scrollToBucket(bucketKey) {
   setTimeout(() => {
     const grid = document.getElementById('tasks-container');
