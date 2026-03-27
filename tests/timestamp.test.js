@@ -58,17 +58,19 @@ describe('created_at parsing', () => {
 describe('IST conversion', () => {
   it('"2026-03-26T06:30:00Z" -> IST hour should be 12', () => {
     const d = new Date('2026-03-26T06:30:00Z');
-    const istHour = Number(
+    var istHour = Number(
       d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false })
     );
+    istHour = istHour % 24; // normalize 24 to 0
     expect(istHour).toBe(12);
   });
 
   it('"2026-03-26T18:30:00Z" -> IST hour should be 0 (midnight next day)', () => {
     const d = new Date('2026-03-26T18:30:00Z');
-    const istHour = Number(
+    var istHour = Number(
       d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', hour12: false })
     );
+    istHour = istHour % 24; // normalize 24 to 0
     expect(istHour).toBe(0);
   });
 });
