@@ -103,14 +103,6 @@ function closeUserMenu() {
   if (m) m.style.display = 'none';
 }
 
-// -- Client menu -------------------------------
-function toggleClientMenu() {
-  const m = document.getElementById('client-menu');
-  if (!m) return;
-  const open = m.classList.toggle('open');
-  if (open) setTimeout(() => document.addEventListener('click', closeClientMenu, { once: true }), 0);
-}
-function closeClientMenu() { document.getElementById('client-menu')?.classList.remove('open'); }
 
 // -- Global Admin Menu -------------------------
 function gamSwitchRole(role) {
@@ -163,25 +155,6 @@ function navigateWithFilter(tab, filter) {
   goToTab(tab);
 }
 
-function scrollToBucket(bucketKey) {
-  setTimeout(() => {
-    const grid = document.getElementById('tasks-container');
-    if (!grid) return;
-    const buckets = grid.querySelectorAll('.bucket-card');
-    for (const card of buckets) {
-      const name = card.querySelector('.bucket-name')?.textContent?.toLowerCase() || '';
-      const keyMap = { production:'in_production', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
-      const match = keyMap[bucketKey] || bucketKey;
-      if (name.includes(match)) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        card.style.outline = '2px solid var(--accent)';
-        card.style.outlineOffset = '2px';
-        setTimeout(() => { card.style.outline = ''; card.style.outlineOffset = ''; }, 1200);
-        break;
-      }
-    }
-  }, 80);
-}
 
 const _TAB_TITLES = {
   tasks: null,
@@ -564,30 +537,7 @@ function setNotifFilter(filter, btn) {
   renderNotifications(currentName, currentRole);
 }
 
-async function openNotifItem(id, postId) {
-  await markNotifRead(id);
-  if (postId) openPCS(postId);
-}
 
-async function handleNotifAction(action, postId, notifId, event) {
-  event.stopPropagation();
-  await markNotifRead(notifId);
-  if ((action === 'view' || action === 'approve') && postId) {
-    closeNotifications();
-    setTimeout(function() {
-      openPCS(postId, '');
-    }, 150);
-    return;
-  }
-  if (action === 'chase' && postId) {
-    var post = (window.allPosts || []).find(function(p) { return p.post_id === postId || p.id === postId; });
-    var title = post ? post.title : 'this post';
-    var msg = 'Hi! Following up on ' + title + ' sent for approval. Please review when you get a chance.';
-    if (navigator.clipboard) { navigator.clipboard.writeText(msg); }
-    showChaseToast('Copied to clipboard');
-    return;
-  }
-}
 
 async function markNotifRead(id) {
   try {
@@ -680,11 +630,9 @@ function closeZen() {
 }
 
 // -- Snooze ------------------------------------
-let _snoozePostId = null;
 function closeSnooze() {
   document.getElementById('snooze-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
-  _snoozePostId = null;
 }
 function isSnoozed(postId) {
   const key = `snooze_${postId}`;
@@ -1518,23 +1466,7 @@ function closeTaskModal() {
   if (overlay) overlay.classList.remove('open');
 }
 
-// -- Pipeline icon stubs ---------------------------
-function togglePipelineSearch() {
-  if (typeof openPipelineSearch === 'function') {
-    openPipelineSearch();
-  } else {
-    var bar = document.getElementById('pipeline-search-bar');
-    if (bar) bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
-  }
-}
 
-function showPipelineMenu() {
-  var menu = document.getElementById('pipeline-menu');
-  if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-}
-
-window.togglePipelineSearch = togglePipelineSearch;
-window.showPipelineMenu = showPipelineMenu;
 
 // -- Pipeline filter sheet functions ---------------
 var _PF = { stage: 'all', owner: 'all', urgency: 'all' };
