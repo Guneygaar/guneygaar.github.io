@@ -317,11 +317,26 @@
 
   /* ---- card 3-dot menu (singleton, repositioned on open) ---- */
 
+  var _menuBtnStyle = 'display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;';
+  var _menuBtnBorder = 'border-top:1px solid rgba(255,255,255,0.06);';
+
   function _cardMenuHtml() {
-    return '<div id="client-card-menu" style="display:none;position:fixed;z-index:300;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
-      '<button data-action="cardMenuWA" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Share on WhatsApp</button>' +
-      '<button data-action="cardMenuRequest" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">New Request</button>' +
-    '</div>';
+    return '<div id="client-card-menu" style="display:none;position:fixed;z-index:300;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>';
+  }
+
+  function _populateCardMenu(menuEl, stage) {
+    var html = '';
+    if (stage === 'awaiting_approval') {
+      html += '<button data-action="cardMenuApprove" style="' + _menuBtnStyle + '">Approve Post</button>';
+      html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+    } else if (stage === 'awaiting_brand_input') {
+      html += '<button data-action="cardMenuInput" style="' + _menuBtnStyle + '">Add Your Input</button>';
+      html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+    } else if (stage === 'published') {
+      html += '<button data-action="cardMenuLinkedIn" style="' + _menuBtnStyle + '">View on LinkedIn</button>';
+      html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+    }
+    menuEl.innerHTML = html;
   }
 
   /* ---- comments display ---- */
@@ -387,7 +402,7 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" style="padding:14px;margin-bottom:8px;background:#000000;' + opacity + '">' +
+    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:8px;background:#000000;' + opacity + '">' +
       /* header row */
       '<div style="display:flex;align-items:flex-start;gap:10px;">' +
         _avatarHtml(post) +
@@ -427,12 +442,16 @@
 
   function _topBarHtml(awaitCount) {
     var clientName = _esc(window.currentUserName || '');
+    var pill = awaitCount > 0
+      ? '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,0.12);color:#f59e0b;">' + awaitCount + ' awaiting</span>'
+      : '';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.96);z-index:100;">' +
       '<div style="display:flex;align-items:baseline;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#888;">' + _greeting() + '</span>' +
         (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:14px;">' +
+        pill +
         '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#666;cursor:pointer;padding:4px;">' +
           ICON_BELL +
           '<span data-bell-dot style="position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>' +
@@ -627,6 +646,9 @@
             break;
           }
           _cardMenuActiveId = id;
+          var cardEl = btn.closest('[data-card-id]');
+          var cardStage = cardEl ? cardEl.getAttribute('data-stage') : '';
+          _populateCardMenu(cm, cardStage);
           var rect = btn.getBoundingClientRect();
           cm.style.top = (rect.bottom + 4) + 'px';
           cm.style.left = Math.max(0, rect.right - 170) + 'px';
@@ -634,8 +656,43 @@
           break;
 
         case 'cardMenuWA':
+          var waId1 = _cardMenuActiveId || id;
           _closeCardMenu();
-          if (typeof window._clientShareWA === 'function') window._clientShareWA(_cardMenuActiveId || id);
+          if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(waId1);
+          break;
+
+        case 'cardMenuApprove':
+          var cmApId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          _pendingApproveId = cmApId;
+          var cmPopup = document.getElementById('client-approve-popup');
+          var cmTitleEl = document.getElementById('client-approve-title');
+          var cmPost = (window.allPosts || []).find(function (p) { return p.post_id === cmApId || p.id === cmApId; });
+          if (cmTitleEl) cmTitleEl.textContent = cmPost ? (cmPost.title || '') : '';
+          if (cmPopup) cmPopup.style.display = 'flex';
+          break;
+
+        case 'cardMenuInput':
+          var cmInId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var cmIn = document.getElementById('comment-input-' + cmInId);
+          if (cmIn) {
+            cmIn.focus();
+            var cmCard = cmIn.closest('[data-card-id]');
+            if (cmCard) cmCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          break;
+
+        case 'cardMenuLinkedIn':
+          var liId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var liPost = (window.allPosts || []).find(function (p) { return p.post_id === liId || p.id === liId; });
+          var liUrl = liPost ? (liPost.linkedinUrl || liPost.linkedin_link || '') : '';
+          if (liUrl) {
+            window.open(liUrl, '_blank');
+          } else {
+            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet.', 'info');
+          }
           break;
 
         case 'cardMenuRequest':
@@ -693,7 +750,7 @@
           break;
 
         case 'shareWA':
-          if (typeof window._clientShareWA === 'function') window._clientShareWA(id);
+          if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(id);
           break;
 
         default:
