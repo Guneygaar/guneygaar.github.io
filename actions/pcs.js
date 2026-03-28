@@ -378,20 +378,18 @@ window._renderPCS = function(postId) {
           'var slug=(post.title||\'\').toLowerCase()' +
           '.replace(/[^a-z0-9\\s]/g,\' \').trim()' +
           '.replace(/\\s+/g,\'-\').replace(/-+/g,\'-\').slice(0,50);' +
-          'var msg=(post.title||\'\')+\'\\n\\n\'+(post.caption||\'\')+' +
-          '\'\\n\\nApprove: https://srtd.io/ok/?p=\'+slug+' +
-          '\'\\nChanges: https://srtd.io/no/?p=\'+slug;' +
+          'var msg=(post.title||\'\')+\' -- Awaiting your approval.\\n\\nhttps://srtd.io/preview/?p=\'+slug;' +
           'navigator.clipboard.writeText(msg).then(function(){' +
           'var b=document.getElementById(\'pcs-copy-btn\');' +
           'if(b){b.textContent=\'Copied\';' +
-          'setTimeout(function(){b.textContent=\'\u2398 Copy to Share\';},2000);}' +
+          'setTimeout(function(){b.textContent=\'Copy to Share\';},2000);}' +
           '});' +
           '})()" id="pcs-copy-btn" ' +
           'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
           'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
           'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
           'padding:10px 0;cursor:pointer;margin-top:6px;">' +
-          '\u2398 Copy to Share</button>'
+          'Copy to Share</button>'
           : '';
         return _copyHtml;
       })() +
@@ -1373,63 +1371,32 @@ window._generatePreviewSlug = function(title) {
   return base + '-' + Date.now();
 };
 
-window._buildPreviewHtml = function(post, slug) {
-  var title = post.title || 'Review Post';
-  var caption = (post.caption || '').slice(0, 150);
-  var imgUrl = (Array.isArray(post.images) &&
-    post.images.length) ? post.images[0] : '';
-  var approveUrl = 'https://srtd.io/ok/?p=' + slug;
-  return '<!DOCTYPE html><html><head>' +
-    '<meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
-    '<title>' + title + '</title>' +
-    '<meta property="og:title" content="' + title + '">' +
-    '<meta property="og:description" content="' + caption + '">' +
-    '<meta property="og:image" content="' + imgUrl + '">' +
-    '<meta property="og:image:width" content="1200">' +
-    '<meta property="og:image:height" content="630">' +
-    '<meta property="og:type" content="website">' +
-    '<meta property="og:url" content="' + approveUrl + '">' +
-    '<meta name="twitter:card" content="summary_large_image">' +
-    '<meta name="twitter:image" content="' + imgUrl + '">' +
-    '<meta http-equiv="refresh" content="0; url=' + approveUrl + '">' +
-    '</head><body>Opening Sorted...</body></html>';
-};
-
 window._sharePostOnWhatsApp = function(postId) {
   var post = (typeof getPostById === 'function')
     ? getPostById(postId) : null;
-  if (!post) { alert('Post not found'); return; }
+  if (!post) {
+    if (typeof showToast === 'function')
+      showToast('Post not found', 'error');
+    return;
+  }
 
   var title = post.title || 'New Post';
-  var caption = post.caption || '';
 
-  var slug = window._generatePreviewSlug(title);
-  var html = window._buildPreviewHtml(post, slug);
+  var slug = (title).toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, 50);
 
-  var approveUrl = 'https://srtd.io/ok/?p=' + slug;
-  var changesUrl = 'https://srtd.io/no/?p=' + slug;
+  var previewUrl = 'https://srtd.io/preview/?p=' + slug;
 
-  var message =
-    'Hi, ' + title + ' is ready for your review.\n\n' +
-    caption + '\n\n' +
-    'Approve: ' + approveUrl + '\n' +
-    'Request changes: ' + changesUrl;
+  var message = title + ' -- Awaiting your approval.\n\n'
+    + previewUrl;
 
-  var waUrl = 'https://wa.me/?text=' +
-    encodeURIComponent(message);
+  var waUrl = 'https://wa.me/?text='
+    + encodeURIComponent(message);
   window.open(waUrl, '_blank');
-
-  fetch('https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/store-preview', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Preview-Secret': 'srtd2026xK9mN3pQ'
-    },
-    body: JSON.stringify({ slug: slug, html: html })
-  }).catch(function(err) {
-    console.error('Preview store failed:', err);
-  });
 };
 
 window.submitPcsComment = function() {
