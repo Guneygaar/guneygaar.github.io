@@ -1,10 +1,19 @@
-/* render/client.js -- Client portal feed (Pass 3 of 3) */
+/* render/client.js -- Client portal feed (style pass) */
 (function () {
   'use strict';
 
   /* ---- helpers ---- */
 
   var SUPABASE_URL = window.SUPABASE_URL || '';
+
+  function _greeting() {
+    var h = new Date().toLocaleString('en-IN', { hour: 'numeric', hour12: false, timeZone: 'Asia/Kolkata' });
+    var hr = parseInt(h, 10);
+    if (isNaN(hr)) hr = 12;
+    if (hr < 12) return 'Good morning,';
+    if (hr < 17) return 'Good afternoon,';
+    return 'Good evening,';
+  }
 
   function _esc(s) { return typeof esc === 'function' ? esc(s) : String(s || ''); }
 
@@ -37,7 +46,7 @@
   var ICON_CLOCK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
   var ICON_COMMENT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   var ICON_THUMBUP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>';
-  var ICON_WA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
+  var ICON_WA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
   var ICON_COMMENT_SM = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   var ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
 
@@ -111,17 +120,17 @@
 
   function _badgeHtml(stage) {
     if (stage === 'awaiting_approval') {
-      return '<span style="display:inline-flex;align-items:center;gap:5px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;color:#f59e0b;">' +
-        '<span style="width:7px;height:7px;border-radius:50%;background:#f59e0b;animation:clientPulse 2s infinite;"></span>' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#f59e0b;">' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:#f59e0b;animation:clientPulse 2s infinite;"></span>' +
         'Awaiting Approval</span>';
     }
     if (stage === 'awaiting_brand_input') {
-      return '<span style="display:inline-flex;align-items:center;gap:5px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;color:#06b6d4;">' +
-        '<span style="width:7px;height:7px;border-radius:50%;background:#06b6d4;animation:clientPulse 2s infinite;"></span>' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#06b6d4;">' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:#06b6d4;animation:clientPulse 2s infinite;"></span>' +
         'Needs Your Input</span>';
     }
     if (stage === 'published') {
-      return '<span style="display:inline-flex;align-items:center;gap:5px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;color:#22c55e;">' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#22c55e;">' +
         ICON_CHECK + ' Published</span>';
     }
     return '';
@@ -213,13 +222,13 @@
     if (post.location) parts.push(_esc(post.location));
     if (post.owner) parts.push(_esc(post.owner));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#444;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
   }
 
   function _metaRow2(post) {
     if (!post.targetDate) return '';
-    return '<div style="display:flex;align-items:center;gap:4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#444;margin-top:2px;">' +
-      ICON_GLOBE + ' ' + _esc(_fmtDate(post.targetDate)) +
+    return '<div style="display:flex;align-items:center;gap:4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;margin-top:2px;">' +
+      '<span style="color:#333;">' + ICON_GLOBE + '</span> ' + _esc(_fmtDate(post.targetDate)) +
       '</div>';
   }
 
@@ -256,7 +265,7 @@
     var count = _commentCount(post);
     var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
       ICON_COMMENT_SM + ' ' + count + '</span>';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 0;font-family:\'IBM Plex Mono\',monospace;font-size:9px;">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;">' +
       left + right + '</div>';
   }
 
@@ -267,27 +276,26 @@
     var pid = _esc(post.post_id || post.id || '');
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;align-items:center;justify-content:center;gap:5px;' +
-      'background:none;border:none;border-right:1px solid rgba(255,255,255,0.06);' +
-      'padding:10px 0;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.03em;';
-    var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.06);', '');
+      'background:none;border:none;' +
+      'padding:10px 0;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.03em;color:#666;';
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
-      btn1 = '<button data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + 'color:#22c55e;">' +
+      btn1 = '<button data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + '">' +
         ICON_THUMBUP + ' Approve</button>';
     } else {
       btn1 = '<div style="flex:1;"></div>';
     }
 
-    var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + 'color:#888;">' +
+    var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + '">' +
       ICON_COMMENT + ' Comment</button>';
 
-    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + 'color:#25D366;">' +
+    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + btnStyle + '">' +
       ICON_WA + ' WhatsApp</button>';
 
-    return '<div data-engagement="' + pid + '" style="display:flex;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px;">' +
+    return '<div data-engagement="' + pid + '" style="display:flex;margin-top:6px;">' +
       btn1 + btn2 + btn3 + '</div>' +
-      '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#444;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px;">' +
+      '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3ECF8E;background:rgba(62,207,142,0.05);margin-top:6px;">' +
       '</div>';
   }
 
@@ -365,10 +373,12 @@
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
       : 'Add your thoughts...';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid rgba(255,255,255,0.04);">' +
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
       '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#FF4B4B;background:rgba(255,75,75,0.1);">' + _esc(initial) + '</div>' +
-      '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:6px 0;" data-post-id="' + pid + '">' +
-      '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
+      '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:0 4px 0 14px;">' +
+        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:8px 0;" data-post-id="' + pid + '">' +
+        '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
+      '</div>' +
     '</div>';
   }
 
@@ -377,7 +387,7 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" style="padding:14px;border-bottom:1px solid rgba(255,255,255,0.06);' + opacity + '">' +
+    return '<div data-card-id="' + pid + '" style="padding:14px;margin-bottom:8px;background:#000000;' + opacity + '">' +
       /* header row */
       '<div style="display:flex;align-items:flex-start;gap:10px;">' +
         _avatarHtml(post) +
@@ -410,29 +420,28 @@
   /* ---- section label ---- */
 
   function _sectionLabel(text) {
-    return '<div style="padding:14px 14px 6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;color:#666;text-transform:uppercase;">' + text + '</div>';
+    return '<div style="padding:20px 14px 6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.16em;color:#333;text-transform:uppercase;">' + text + '</div>';
   }
 
   /* ---- top bar ---- */
 
   function _topBarHtml(awaitCount) {
-    var pill = awaitCount > 0
-      ? '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,0.12);color:#f59e0b;margin-left:10px;">' + awaitCount + ' awaiting</span>'
-      : '';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);position:sticky;top:0;background:#0a0a0a;z-index:100;">' +
-      '<div style="display:flex;align-items:center;">' +
-        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.22em;color:#888;">SRTD.IO</span>' +
-        pill +
+    var clientName = _esc(window.currentUserName || '');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.96);z-index:100;">' +
+      '<div style="display:flex;align-items:baseline;">' +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#888;">' + _greeting() + '</span>' +
+        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:14px;">' +
-        '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#888;cursor:pointer;padding:4px;">' +
+        '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#666;cursor:pointer;padding:4px;">' +
           ICON_BELL +
           '<span data-bell-dot style="position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>' +
         '</button>' +
         '<div style="position:relative;">' +
-          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#888;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
+          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#666;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
           '<div data-top-menu style="display:none;position:absolute;right:0;top:28px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
+            '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Light Mode</button>' +
             '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Sign Out</button>' +
           '</div>' +
         '</div>' +
@@ -443,7 +452,7 @@
   /* ---- bottom nav ---- */
 
   function _bottomNavHtml() {
-    return '<div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#0a0a0a;border-top:1px solid rgba(255,255,255,0.06);z-index:100;">' +
+    return '<div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;">' +
       '<button data-action="nav-feed" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#C8A84B;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
         ICON_FEED + 'Feed</button>' +
       '<button data-action="nav-requests" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
@@ -573,6 +582,12 @@
           var menu2 = root.querySelector('[data-top-menu]');
           if (menu2) menu2.style.display = 'none';
           if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
+          break;
+
+        case 'light-mode':
+          var menu3a = root.querySelector('[data-top-menu]');
+          if (menu3a) menu3a.style.display = 'none';
+          if (typeof window.showToast === 'function') window.showToast('Coming soon', 'info');
           break;
 
         case 'sign-out':
@@ -705,6 +720,12 @@
     if (!cv) return;
 
     _ensurePulseStyle();
+    cv.style.background = '#1b1f23';
+
+    var fab = document.getElementById('fab-add');
+    if (fab) fab.style.display = 'none';
+    var agencyNav = document.getElementById('main-bottom-nav');
+    if (agencyNav) agencyNav.style.display = 'none';
 
     var posts = window.allPosts || [];
     var buckets = _bucket(posts);
