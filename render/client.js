@@ -224,7 +224,7 @@
 
     var imgsJson = _esc(JSON.stringify(imgs));
     var wrap = function (src, idx, css, overlay) {
-      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;">' +
+      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
         '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;" loading="lazy">' +
         (overlay || '') + '</div>';
     };
