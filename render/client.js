@@ -669,19 +669,31 @@
 
   var _savedNavHtml = '';
 
+  var ICON_NAV_LIST = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  var ICON_NAV_BOOK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+  var ICON_NAV_CHART = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>';
+
+  var _clientActiveNav = 'feed';
+
   function _setClientNav() {
     var nav = document.getElementById('bottom-nav');
     if (!nav) return;
     if (!_savedNavHtml) _savedNavHtml = nav.innerHTML;
+    var btnStyle = function(action) {
+      var color = _clientActiveNav === action ? '#C8A84B' : '#555';
+      return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
+    };
     nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;';
     nav.className = '';
     nav.innerHTML =
-      '<button data-action="nav-feed" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#C8A84B;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
+      '<button data-action="nav-feed" style="' + btnStyle('feed') + '">' +
         ICON_FEED + 'Feed</button>' +
-      '<button data-action="nav-requests" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
-        ICON_REQ + 'Requests</button>' +
-      '<button data-action="nav-alerts" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
-        ICON_ALERTS + 'Alerts</button>';
+      '<button data-action="nav-pipeline" style="' + btnStyle('pipeline') + '">' +
+        ICON_NAV_LIST + 'Pipeline</button>' +
+      '<button data-action="nav-library" style="' + btnStyle('library') + '">' +
+        ICON_NAV_BOOK + 'Library</button>' +
+      '<button data-action="nav-insights" style="' + btnStyle('insights') + '">' +
+        ICON_NAV_CHART + 'Insights</button>';
   }
 
   window._restoreAgencyNav = function () {
@@ -698,6 +710,16 @@
     if (fabBtn) fabBtn.style.display = '';
   };
 
+  function _updateNavActive(action) {
+    _clientActiveNav = action;
+    var nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+    nav.querySelectorAll('[data-action]').forEach(function(b) {
+      var a = b.getAttribute('data-action');
+      b.style.color = (a === 'nav-' + action) ? '#C8A84B' : '#555';
+    });
+  }
+
   function _wireNavEvents() {
     var nav = document.getElementById('bottom-nav');
     if (!nav || nav._clientNavWired) return;
@@ -706,11 +728,29 @@
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
-      if (action === 'nav-feed') { /* no-op */ }
-      else if (action === 'nav-requests') {
-        if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
-      } else if (action === 'nav-alerts') {
-        if (typeof window.openNotifications === 'function') window.openNotifications();
+      if (action === 'nav-feed') {
+        _updateNavActive('feed');
+        var cv = document.getElementById('client-view');
+        if (cv && !cv.classList.contains('active')) {
+          document.getElementById('dashboard-view')?.classList.remove('active');
+          document.getElementById('insights-view')?.classList.remove('active');
+          document.getElementById('library-view')?.classList.remove('active');
+          cv.classList.add('active');
+        }
+        if (typeof renderClientView === 'function') renderClientView();
+      } else if (action === 'nav-pipeline') {
+        _updateNavActive('pipeline');
+        var cv2 = document.getElementById('client-view');
+        if (cv2) cv2.classList.remove('active');
+        if (typeof switchTab === 'function') switchTab('pipeline');
+      } else if (action === 'nav-library') {
+        _updateNavActive('library');
+        var cv3 = document.getElementById('client-view');
+        if (cv3) cv3.classList.remove('active');
+        if (typeof showLibrary === 'function') showLibrary();
+      } else if (action === 'nav-insights') {
+        _updateNavActive('insights');
+        if (typeof showInsights === 'function') showInsights();
       }
     });
   }
@@ -1135,6 +1175,66 @@
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
+  };
+
+  /* ---- client post overlay (single card, full-screen) ---- */
+
+  window._openClientPostOverlay = function(postId) {
+    var post = (window.allPosts || []).find(function(p) {
+      return p.post_id === postId || p.id === postId;
+    });
+    if (!post) {
+      if (typeof window.showToast === 'function') window.showToast('Post not found', 'error');
+      return;
+    }
+
+    var existing = document.getElementById('client-post-overlay');
+    if (existing) existing.remove();
+
+    _ensurePulseStyle();
+
+    var isPublished = post.stage === 'published';
+    var pid = _esc(post.post_id || post.id || '');
+
+    var cardHtml =
+      _cardHeaderHtml(post, pid) +
+      _captionHtml(post) +
+      _imgGridHtml(post.images) +
+      _statsBarHtml(post, isPublished) +
+      (isPublished ? '' : _engagementBarHtml(post)) +
+      _commentsListHtml(post) +
+      (isPublished ? '' : _commentInputHtml(post));
+
+    var overlay = document.createElement('div');
+    overlay.id = 'client-post-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
+    overlay.innerHTML =
+      '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.95);backdrop-filter:blur(8px);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+        '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
+      '</div>' +
+      '<div style="padding-bottom:72px;">' +
+        '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '">' +
+          cardHtml +
+        '</div>' +
+      '</div>' +
+      _approvePopupHtml() +
+      _lightboxHtml();
+
+    document.body.appendChild(overlay);
+    window._modalOpen = true;
+    document.body.style.overflow = 'hidden';
+
+    _wireEvents(overlay);
+    _wireLightboxTouch();
+
+    var closeBtn = document.getElementById('client-overlay-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        overlay.remove();
+        window._modalOpen = false;
+        document.body.style.overflow = '';
+      });
+    }
   };
 
 })();

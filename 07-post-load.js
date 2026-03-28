@@ -2472,7 +2472,25 @@ function toggleStageOverflow(btn, totalHidden) {
 // ===============================================
 document.addEventListener('click', function _cardClickDelegate(e) {
   if (!window.effectiveRole) return;
-  if (window.effectiveRole === 'Client' || window.effectiveRole === 'client') return;
+  var _role = (window.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    var card = e.target.closest('[data-post-id]');
+    if (!card) return;
+    var pid = card.getAttribute('data-post-id');
+    if (!pid) return;
+    var post = (window.allPosts || []).find(function(p) {
+      return p.post_id === pid;
+    });
+    var stage = post ? post.stage : '';
+    if (stage === 'brief' || stage === 'brief_done') {
+      if (typeof window._openBriefSheet === 'function')
+        window._openBriefSheet(pid);
+    } else {
+      if (typeof window._openClientPostOverlay === 'function')
+        window._openClientPostOverlay(pid);
+    }
+    return;
+  }
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
   var postId  = card.dataset.postId;
