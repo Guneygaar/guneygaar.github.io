@@ -1146,6 +1146,12 @@ window.libOpenPostCard = libOpenPostCard;
 
 // --------------- post card overlay ---------------
 function libOpenCard(postId) {
+  var _role = (window.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    if (typeof window._openClientPostOverlay === 'function')
+      window._openClientPostOverlay(postId);
+    return;
+  }
   // FIX 2: dismiss calendar popup before opening card
   var calPopup = document.getElementById('lib-cal-popup');
   if (calPopup) calPopup.style.display = 'none';
@@ -1318,6 +1324,12 @@ function libInitSearch() {
 
 // --------------- libGoToPipeline ---------------
 function libGoToPipeline(postId) {
+  var _role = (window.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    if (typeof window._openClientPostOverlay === 'function')
+      window._openClientPostOverlay(postId);
+    return;
+  }
   var overlay = document.getElementById('lib-card-overlay');
   if (overlay) overlay.style.display = 'none';
   window._pipelinePubExpanded = true;

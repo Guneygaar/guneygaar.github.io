@@ -219,8 +219,8 @@ async function loadPostsForClient() {
   const reqId = _newPostsRequest();
   try {
     const allowedStages =
-      'awaiting_approval,awaiting_brand_input,published';
-    const data  = await apiFetch(
+      'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
+    var data  = await apiFetch(
       '/posts?stage=in.(' + allowedStages +
       ')&select=*&order=created_at.desc'
     );
@@ -241,6 +241,13 @@ async function loadPostsForClient() {
         }
       } catch (_) { /* comments fetch failed - render without them */ }
     }
+
+    data = data.filter(function(p) {
+      if (p.stage === 'in_production') {
+        return p.post_comments && p.post_comments.length > 0;
+      }
+      return true;
+    });
 
     mergePosts(normalise(data));
     hideErrorBanner();
