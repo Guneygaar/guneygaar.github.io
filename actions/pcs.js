@@ -1361,16 +1361,6 @@ window._saveCaptionEdit = async function(postId) {
   }
 }
 
-window._generatePreviewSlug = function(title) {
-  var base = title.toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 50);
-  return base + '-' + Date.now();
-};
-
 window._sharePostOnWhatsApp = function(postId) {
   var post = (typeof getPostById === 'function')
     ? getPostById(postId) : null;
@@ -1381,14 +1371,22 @@ window._sharePostOnWhatsApp = function(postId) {
   }
 
   var title = post.title || 'New Post';
+  var images = Array.isArray(post.images)
+    ? post.images : [];
+  var firstImage = images.length ? images[0] : '';
 
   var postIdRaw = post.post_id || post.id || '';
-  var shortId = postIdRaw.replace(/[^0-9]/g, '').slice(-4);
+  var shortId = postIdRaw.replace(/[^0-9]/g, '')
+    .slice(-4);
   if (!shortId) shortId = postIdRaw.slice(-4);
   var previewUrl = 'https://srtd.io/p/' + shortId;
 
-  var message = title + ' -- Awaiting your approval.\n\n'
-    + previewUrl;
+  var message = '';
+  if (firstImage) {
+    message = firstImage + '\n\n';
+  }
+  message += title + ' -- Awaiting your approval.'
+    + '\n\n' + previewUrl;
 
   var waUrl = 'https://wa.me/?text='
     + encodeURIComponent(message);
