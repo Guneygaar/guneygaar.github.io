@@ -5517,6 +5517,16 @@ body.client-mode .bottom-nav {
   box-shadow: none !important;
 }
 
+body.client-mode #bottom-nav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  max-width: 430px !important;
+  margin: 0 auto !important;
+  z-index: 100 !important;
+}
+
 body.client-mode {
   --space-1: 0.25rem;
   --space-2: 0.5rem;

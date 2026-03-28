@@ -505,7 +505,7 @@
           document.removeEventListener('click', closeMenu);
         }
       });
-    }, 100);
+    }, 200);
   };
 
   function _makeSlug(title) {
@@ -683,7 +683,7 @@
       var color = _clientActiveNav === action ? '#C8A84B' : '#555';
       return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
     };
-    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;';
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;max-width:430px;margin:0 auto;';
     nav.className = '';
     nav.innerHTML =
       '<button data-action="nav-feed" style="' + btnStyle('feed') + '">' +
@@ -1237,25 +1237,27 @@
     }
   };
 
+  /* ---- client request form (moved inside IIFE for load-order safety) ---- */
+
+  window.openClientRequestForm = function() {
+    var o = document.getElementById('req-overlay');
+    if (o) {
+      o.style.display = 'flex';
+      var nav = document.getElementById('bottom-nav');
+      if (nav) nav.style.display = 'none';
+      var _mn = new Date();
+      _mn.setDate(_mn.getDate() + 2);
+      var _ms = _mn.toISOString().split('T')[0];
+      var _di = document.getElementById('req-date');
+      if (_di) _di.min = _ms;
+    }
+  };
+
 })();
 
 /* ============================================================
    Preserved functions below -- untouched from original
    ============================================================ */
-
-window.openClientRequestForm = function() {
-  var o = document.getElementById('req-overlay');
-  if (o) {
-    o.style.display = 'flex';
-    var nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = 'none';
-    var _mn = new Date();
-    _mn.setDate(_mn.getDate() + 2);
-    var _ms = _mn.toISOString().split('T')[0];
-    var _di = document.getElementById('req-date');
-    if (_di) _di.min = _ms;
-  }
-}
 
 window._closeReqForm = function() {
   var o = document.getElementById('req-overlay');
