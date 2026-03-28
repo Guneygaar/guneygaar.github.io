@@ -187,7 +187,8 @@
     if (document.getElementById('client-pulse-style')) return;
     var style = document.createElement('style');
     style.id = 'client-pulse-style';
-    style.textContent = '@keyframes clientPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}';
+    style.textContent = '@keyframes clientPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}' +
+      '.menu-root-absolute{position:absolute!important;z-index:999999;transform:none!important;background:#1c1c26;border:1px solid rgba(255,255,255,0.13);border-radius:8px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}';
     document.head.appendChild(style);
   }
 
@@ -369,83 +370,97 @@
   var _menuBtnStyle = 'display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;';
   var _menuBtnBorder = 'border-top:1px solid rgba(255,255,255,0.06);';
 
-  function _ensureCardMenu() {
-    var el = document.getElementById('client-card-menu');
-    if (el) return;
-    el = document.createElement('div');
-    el.id = 'client-card-menu';
-    el.style.cssText = 'display:none;position:fixed;z-index:600;background:#1c1c26;border:1px solid rgba(255,255,255,0.13);border-radius:8px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
-    document.body.appendChild(el);
-    el.addEventListener('click', function (e) {
-      var btn = e.target.closest('[data-action]');
-      if (!btn) return;
-      var action = btn.getAttribute('data-action');
-      var id = btn.getAttribute('data-id');
-      switch (action) {
-        case 'cardMenuWA':
-          var waId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(waId);
-          break;
-        case 'cardMenuApprove':
-          var apId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          _pendingApproveId = apId;
-          var apPopup = document.getElementById('client-approve-popup');
-          var apTitle = document.getElementById('client-approve-title');
-          var apPost = (window.allPosts || []).find(function (p) { return p.post_id === apId || p.id === apId; });
-          if (apTitle) apTitle.textContent = apPost ? (apPost.title || '') : '';
-          if (apPopup) apPopup.style.display = 'flex';
-          break;
-        case 'cardMenuInput':
-          var inId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var inEl = document.getElementById('comment-input-' + inId);
-          if (inEl) {
-            inEl.focus();
-            var inCard = inEl.closest('[data-card-id]');
-            if (inCard) inCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          break;
-        case 'cardMenuLinkedIn':
-          var lnId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var lnPost = (window.allPosts || []).find(function (p) { return p.post_id === lnId || p.id === lnId; });
-          var lnUrl = lnPost ? (lnPost.linkedinUrl || lnPost.linkedin_link || '') : '';
-          if (lnUrl) { window.open(lnUrl, '_blank'); }
-          else { if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info'); }
-          break;
-        case 'cardMenuCopyApproval':
-          var cpId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var cpPost = (window.allPosts || []).find(function (p) { return p.post_id === cpId || p.id === cpId; });
-          if (cpPost) {
-            var cpSlug = _makeSlug(cpPost.title || '');
-            navigator.clipboard.writeText('https://srtd.io/ok/?p=' + cpSlug).then(function () {
-              if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
-            }).catch(function () {
-              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
-            });
-          }
-          break;
-        case 'cardMenuCopyLink':
-          var clId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var clPost = (window.allPosts || []).find(function (p) { return p.post_id === clId || p.id === clId; });
-          var clUrl = clPost ? (clPost.linkedinUrl || clPost.linkedin_link || '') : '';
-          if (clUrl) {
-            navigator.clipboard.writeText(clUrl).then(function () {
-              if (typeof window.showToast === 'function') window.showToast('Post link copied', 'success');
-            }).catch(function () {
-              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
-            });
-          } else {
-            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info');
-          }
-          break;
-      }
-    });
+  function _handleCardMenuAction(action, postId) {
+    var post = (window.allPosts || []).find(function (p) { return p.post_id === postId || p.id === postId; });
+    switch (action) {
+      case 'cardMenuWA':
+        if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(postId);
+        break;
+      case 'cardMenuApprove':
+        _pendingApproveId = postId;
+        var apPopup = document.getElementById('client-approve-popup');
+        var apTitle = document.getElementById('client-approve-title');
+        if (apTitle) apTitle.textContent = post ? (post.title || '') : '';
+        if (apPopup) apPopup.style.display = 'flex';
+        break;
+      case 'cardMenuInput':
+        var inEl = document.getElementById('comment-input-' + postId);
+        if (inEl) {
+          inEl.focus();
+          var inCard = inEl.closest('[data-card-id]');
+          if (inCard) inCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        break;
+      case 'cardMenuLinkedIn':
+        var lnUrl = post ? (post.linkedinUrl || post.linkedin_link || '') : '';
+        if (lnUrl) { window.open(lnUrl, '_blank'); }
+        else { if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info'); }
+        break;
+      case 'cardMenuCopyApproval':
+        if (post) {
+          var cpSlug = _makeSlug(post.title || '');
+          navigator.clipboard.writeText('https://srtd.io/ok/?p=' + cpSlug).then(function () {
+            if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
+          }).catch(function () {
+            if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+          });
+        }
+        break;
+      case 'cardMenuCopyLink':
+        var clUrl = post ? (post.linkedinUrl || post.linkedin_link || '') : '';
+        if (clUrl) {
+          navigator.clipboard.writeText(clUrl).then(function () {
+            if (typeof window.showToast === 'function') window.showToast('Post link copied', 'success');
+          }).catch(function () {
+            if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+          });
+        } else {
+          if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info');
+        }
+        break;
+    }
   }
+
+  // TODO Phase 2: Replace floating menus with Bottom Sheet pattern for mobile-first UX
+
+  window._openClientCardMenu = function (buttonElement, postId, stage) {
+    var existing = document.getElementById('dynamic-card-menu');
+    if (existing) existing.remove();
+
+    var menu = document.createElement('div');
+    menu.id = 'dynamic-card-menu';
+    menu.className = 'menu-root-absolute';
+    _populateCardMenu(menu, stage, postId);
+    document.body.appendChild(menu);
+
+    menu.addEventListener('click', function (e) {
+      var mbtn = e.target.closest('[data-action]');
+      if (!mbtn) return;
+      menu.remove();
+      _handleCardMenuAction(mbtn.getAttribute('data-action'), postId);
+    });
+
+    requestAnimationFrame(function () {
+      var rect = buttonElement.getBoundingClientRect();
+      if (rect.top === 0 && rect.left === 0 && rect.width === 0) {
+        menu.remove();
+        return;
+      }
+      var topPos = rect.bottom + window.scrollY + 8;
+      var leftPos = rect.right + window.scrollX - menu.offsetWidth;
+      menu.style.top = topPos + 'px';
+      menu.style.left = leftPos + 'px';
+    });
+
+    setTimeout(function () {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target)) {
+          menu.remove();
+          document.removeEventListener('click', closeMenu);
+        }
+      });
+    }, 10);
+  };
 
   function _makeSlug(title) {
     if (typeof window._generatePreviewSlug === 'function') return window._generatePreviewSlug(title);
@@ -670,13 +685,10 @@
 
   var _pendingApproveId = '';
 
-  function _closeCardMenu() {
-    var m = document.getElementById('client-card-menu');
-    if (m) m.style.display = 'none';
-    _cardMenuActiveId = '';
+  function _closeDynamicCardMenu() {
+    var m = document.getElementById('dynamic-card-menu');
+    if (m) m.remove();
   }
-
-  var _cardMenuActiveId = '';
 
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
@@ -784,13 +796,18 @@
             if (menu.style.display !== 'none') {
               menu.style.display = 'none';
             } else {
+              menu.style.display = 'block';
               var tmBtn = e.target.closest('[data-action="top-menu-toggle"]');
-              if (tmBtn) {
+              requestAnimationFrame(function () {
+                if (!tmBtn) return;
                 var tmRect = tmBtn.getBoundingClientRect();
+                if (tmRect.top === 0 && tmRect.width === 0) {
+                  menu.style.display = 'none';
+                  return;
+                }
                 menu.style.top = (tmRect.bottom + 4) + 'px';
                 menu.style.right = (window.innerWidth - tmRect.right) + 'px';
-              }
-              menu.style.display = 'block';
+              });
             }
           }
           break;
@@ -837,20 +854,9 @@
         /* -- card 3-dot menu -- */
         case 'openCardMenu':
           e.stopPropagation();
-          var cm = document.getElementById('client-card-menu');
-          if (!cm) break;
-          if (_cardMenuActiveId === id && cm.style.display !== 'none') {
-            _closeCardMenu();
-            break;
-          }
-          _cardMenuActiveId = id;
           var cardEl = btn.closest('[data-card-id]');
           var cardStage = cardEl ? cardEl.getAttribute('data-stage') : '';
-          _populateCardMenu(cm, cardStage);
-          var rect = btn.getBoundingClientRect();
-          cm.style.top = (rect.bottom + 4) + 'px';
-          cm.style.left = Math.max(0, rect.right - 170) + 'px';
-          cm.style.display = 'block';
+          window._openClientCardMenu(btn, id, cardStage);
           break;
 
         /* -- engagement bar actions -- */
@@ -931,14 +937,11 @@
       }
     });
 
-    /* close top menu + card menu on outside click */
+    /* close top menu on outside click */
     document.addEventListener('click', function (e) {
       if (!e.target.closest('[data-action="top-menu-toggle"]')) {
         var tmenu = root.querySelector('[data-top-menu]');
         if (tmenu) tmenu.style.display = 'none';
-      }
-      if (!e.target.closest('[data-action="openCardMenu"]') && !e.target.closest('#client-card-menu')) {
-        _closeCardMenu();
       }
     });
   }
@@ -1040,7 +1043,6 @@
     var cv = document.getElementById('client-view');
     if (!cv) return;
 
-    _ensureCardMenu();
     _ensurePulseStyle();
     cv.style.background = '#1b1f23';
 
