@@ -267,7 +267,7 @@
     if (post.location) parts.push(_esc(_toTitleCase(post.location)));
     if (post.contentPillar) parts.push(_esc(_toTitleCase(post.contentPillar)));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#4a4a55;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#4a4a55;margin-bottom:1px;">' + parts.join(' &middot; ') + '</div>';
   }
 
   function _metaRow2(post) {
@@ -277,7 +277,7 @@
     if (sent) parts.push('Sent ' + _esc(sent));
     if (target) parts.push('Target ' + _esc(target));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#363640;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#363640;">' + parts.join(' &middot; ') + '</div>';
   }
 
   /* ---- stats bar ---- */
@@ -373,30 +373,45 @@
     return '<div id="client-card-menu" style="display:none;position:fixed;z-index:300;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>';
   }
 
+  function _makeSlug(title) {
+    if (typeof window._generatePreviewSlug === 'function') return window._generatePreviewSlug(title);
+    return (title || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim().replace(/\s+/g, '-').replace(/-+/g, '-').slice(0, 50) + '-' + Date.now();
+  }
+
   function _populateCardMenu(menuEl, stage) {
     var html = '';
     if (stage === 'awaiting_approval') {
       html += '<button data-action="cardMenuApprove" style="' + _menuBtnStyle + '">Approve Post</button>';
       html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+      html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
     } else if (stage === 'awaiting_brand_input') {
       html += '<button data-action="cardMenuInput" style="' + _menuBtnStyle + '">Add Your Input</button>';
-      html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+      html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
     } else if (stage === 'published') {
       html += '<button data-action="cardMenuLinkedIn" style="' + _menuBtnStyle + '">View on LinkedIn</button>';
-      html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
+      html += '<button data-action="cardMenuCopyLink" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Post Link</button>';
     }
     menuEl.innerHTML = html;
   }
 
   /* ---- comments display ---- */
 
+  var ICON_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+
   function _singleCommentHtml(c) {
+    var isClient = (c.author_role || '').toLowerCase() === 'client';
     var color = _roleColor(c.author_role);
     var initial = (c.author || '?').charAt(0).toUpperCase();
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
+    var avatarInner = isClient
+      ? ICON_PERSON
+      : _esc(initial);
+    var avatarStyle = isClient
+      ? 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);'
+      : 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);';
     return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
-      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);">' + _esc(initial) + '</div>' +
+      '<div style="' + avatarStyle + '">' + avatarInner + '</div>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
           '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:12px;color:#ccc;">' + _esc(c.author) + '</span>' +
@@ -438,7 +453,7 @@
       ? 'Share the information here...'
       : 'Add your thoughts...';
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
-      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#FF4B4B;background:rgba(255,75,75,0.1);">' + _esc(initial) + '</div>' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
       '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
         '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
@@ -451,13 +466,13 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:6px;background:#000000;' + opacity + '">' +
+    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:4px;background:#000000;' + opacity + '">' +
       /* header row */
       '<div style="display:flex;align-items:flex-start;gap:10px;">' +
         _avatarHtml(post) +
         '<div style="flex:1;min-width:0;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:14px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(post.title || 'Untitled') + '</div>' +
+            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:14px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">' + _esc(post.title || 'Untitled') + '</div>' +
             '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
           '</div>' +
           _metaRow1(post) +
@@ -465,7 +480,7 @@
         '</div>' +
       '</div>' +
       /* badge */
-      '<div style="margin:7px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
+      '<div style="margin:10px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
       /* caption */
       _captionHtml(post) +
       /* images */
@@ -504,7 +519,7 @@
       var pc = _pillColor(awaitCount);
       pill = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;padding:3px 9px;border-radius:10px;background:' + pc.bg + ';color:' + pc.c + ';border:1px dotted ' + pc.bc + ';">' + awaitCount + ' AWAITING</span>';
     }
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.97);z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
       '<div style="display:flex;align-items:baseline;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#555;">' + _greeting() + '</span>' +
         (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
@@ -788,6 +803,37 @@
             window.open(liUrl, '_blank');
           } else {
             if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet.', 'info');
+          }
+          break;
+
+        case 'cardMenuCopyApproval':
+          var cpApId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var cpApPost = (window.allPosts || []).find(function (p) { return p.post_id === cpApId || p.id === cpApId; });
+          if (cpApPost) {
+            var slug = _makeSlug(cpApPost.title || '');
+            var link = 'https://srtd.io/ok/?p=' + slug;
+            navigator.clipboard.writeText(link).then(function () {
+              if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
+            }).catch(function () {
+              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+            });
+          }
+          break;
+
+        case 'cardMenuCopyLink':
+          var cpLnId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var cpLnPost = (window.allPosts || []).find(function (p) { return p.post_id === cpLnId || p.id === cpLnId; });
+          var cpLnUrl = cpLnPost ? (cpLnPost.linkedinUrl || cpLnPost.linkedin_link || '') : '';
+          if (cpLnUrl) {
+            navigator.clipboard.writeText(cpLnUrl).then(function () {
+              if (typeof window.showToast === 'function') window.showToast('Post link copied', 'success');
+            }).catch(function () {
+              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+            });
+          } else {
+            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info');
           }
           break;
 
