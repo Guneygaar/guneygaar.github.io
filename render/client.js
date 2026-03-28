@@ -1387,13 +1387,14 @@
       '</div>';
 
     document.body.appendChild(overlay);
-    window._modalOpen = true;
-    document.body.style.overflow = 'hidden';
-
-    _wireEvents(overlay);
-    overlay.addEventListener('click', function(e) {
+    function _overlayImgHandler(e) {
+      var overlay = document.getElementById('client-post-overlay');
+      if (!overlay) {
+        document.removeEventListener('click', _overlayImgHandler, true);
+        return;
+      }
       var cell = e.target.closest('[data-action="openLightbox"]');
-      if (!cell) return;
+      if (!cell || !overlay.contains(cell)) return;
       e.stopPropagation();
       try {
         var imgs = JSON.parse(
@@ -1402,7 +1403,12 @@
           cell.getAttribute('data-index') || '0', 10);
         if (imgs.length) _lbOpen(imgs, idx);
       } catch (_e) {}
-    });
+    }
+    document.addEventListener('click', _overlayImgHandler, true);
+    window._modalOpen = true;
+    document.body.style.overflow = 'hidden';
+
+    _wireEvents(overlay);
     var approvePopup = document.getElementById('client-approve-popup');
     if (approvePopup && !approvePopup.dataset.wired) {
       _wireEvents(approvePopup);
@@ -1420,6 +1426,7 @@
     var closeBtn = document.getElementById('client-overlay-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', function() {
+        document.removeEventListener('click', _overlayImgHandler, true);
         overlay.remove();
         window._modalOpen = false;
         document.body.style.overflow = '';
