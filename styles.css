@@ -5677,6 +5677,14 @@ body.client-mode .img-quad {
   max-height: 400px;
 }
 
+.lb-trigger-cell img {
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  pointer-events: auto !important;
+}
+
 body.client-mode .stage-chip[data-stage="scheduled"],
 body.client-mode .stage-chip[data-stage="ready"],
 body.client-mode .stage-chip[data-stage="in_production"],

@@ -224,8 +224,14 @@
 
     var imgsJson = _esc(JSON.stringify(imgs));
     var wrap = function (src, idx, css, overlay) {
-      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
-        '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;" loading="lazy">' +
+      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;">' +
+        '<img src="' + _esc(src) + '"' +
+        ' data-action="openLightbox"' +
+        ' data-images=\'' + imgsJson + '\'' +
+        ' data-index="' + idx + '"' +
+        ' draggable="false"' +
+        ' alt="" loading="lazy"' +
+        ' style="cursor:pointer;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none;pointer-events:auto;">' +
         (overlay || '') + '</div>';
     };
 
