@@ -1383,7 +1383,7 @@
     overlay.id = 'client-post-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;user-select:none;-webkit-user-select:none;';
     overlay.innerHTML =
-      '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.95);backdrop-filter:blur(8px);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+      '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.98);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding-bottom:72px;">' +
