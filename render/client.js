@@ -1387,28 +1387,28 @@
       '</div>';
 
     document.body.appendChild(overlay);
-    window._modalOpen = true;
-    document.body.style.overflow = 'hidden';
-
-    _wireEvents(overlay);
-    overlay.addEventListener('click', function(e) {
+    function _overlayImgHandler(e) {
+      var overlay = document.getElementById('client-post-overlay');
+      if (!overlay) {
+        document.removeEventListener('click', _overlayImgHandler, true);
+        return;
+      }
       var cell = e.target.closest('[data-action="openLightbox"]');
-      console.log('OVL CLICK',
-        e.target.tagName,
-        cell ? 'CELL FOUND' : 'NO CELL',
-        !!document.getElementById('client-lightbox'));
-      if (!cell) return;
+      if (!cell || !overlay.contains(cell)) return;
       e.stopPropagation();
       try {
         var imgs = JSON.parse(
           cell.getAttribute('data-images') || '[]');
         var idx = parseInt(
           cell.getAttribute('data-index') || '0', 10);
-        console.log('IMGS', imgs.length);
         if (imgs.length) _lbOpen(imgs, idx);
-        console.log('LB OPEN DONE');
-      } catch (_e) { console.log('ERROR', _e); }
-    });
+      } catch (_e) {}
+    }
+    document.addEventListener('click', _overlayImgHandler, true);
+    window._modalOpen = true;
+    document.body.style.overflow = 'hidden';
+
+    _wireEvents(overlay);
     var approvePopup = document.getElementById('client-approve-popup');
     if (approvePopup && !approvePopup.dataset.wired) {
       _wireEvents(approvePopup);
@@ -1426,6 +1426,7 @@
     var closeBtn = document.getElementById('client-overlay-close');
     if (closeBtn) {
       closeBtn.addEventListener('click', function() {
+        document.removeEventListener('click', _overlayImgHandler, true);
         overlay.remove();
         window._modalOpen = false;
         document.body.style.overflow = '';
