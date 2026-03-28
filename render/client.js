@@ -143,13 +143,13 @@
   function _avatarHtml(post) {
     var imgs = post.images;
     if (imgs && imgs.length && imgs[0]) {
-      return '<img src="' + _esc(imgs[0]) + '" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;">';
+      return '<img class="cf-avatar" src="' + _esc(imgs[0]) + '" alt="" style="display:block;">';
     }
     if (post.stage === 'awaiting_brand_input') {
-      return '<div style="width:48px;height:48px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
+      return '<div class="cf-avatar" style="background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
     }
     var initial = (post.title || '?').charAt(0).toUpperCase();
-    return '<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:17px;color:#C8A84B;">' + _esc(initial) + '</div>';
+    return '<div class="cf-avatar" style="background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:17px;color:#C8A84B;">' + _esc(initial) + '</div>';
   }
 
   /* ---- status badge ---- */
@@ -265,6 +265,50 @@
 
   /* ---- metadata rows ---- */
 
+  function _inlineStatus(post) {
+    var stage = post.stage;
+    var days = _waitDays(post);
+    if (stage === 'awaiting_approval') {
+      if (days > 2) return { text: days + 'd overdue', cls: 'cf-overdue' };
+      return { text: '', cls: '' };
+    }
+    if (stage === 'awaiting_brand_input') return { text: 'needs input', cls: 'cf-input-needed' };
+    if (stage === 'published') return { text: 'live', cls: 'cf-live' };
+    return { text: '', cls: '' };
+  }
+
+  function _cardHeaderHtml(post, pid) {
+    var loc = post.location ? _esc(_toTitleCase(post.location)) : '';
+    var pil = post.contentPillar ? _esc(_toTitleCase(post.contentPillar)) : '';
+    var st = _inlineStatus(post);
+    var sent = _fmtShortDate(post.status_changed_at || post.statusChangedAt || '');
+    var target = _fmtShortDate(post.targetDate || '');
+
+    var metaParts = '';
+    if (loc) metaParts += '<span>' + loc + '</span>';
+    if (loc && pil) metaParts += '<span class="cf-dot">&middot;</span>';
+    if (pil) metaParts += '<span>' + pil + '</span>';
+    if ((loc || pil) && st.text) metaParts += '<span class="cf-dot">&middot;</span>';
+    if (st.text) metaParts += '<span class="cf-status ' + st.cls + '">' + _esc(st.text) + '</span>';
+
+    var dateParts = '';
+    if (sent) dateParts += 'Sent ' + _esc(sent);
+    if (sent && target) dateParts += ' &middot; ';
+    if (target) dateParts += 'Target ' + _esc(target);
+
+    return '<div class="cf-header">' +
+      _avatarHtml(post) +
+      '<div class="cf-headtext">' +
+        '<div class="cf-title">' + _esc(post.title || 'Untitled') + '</div>' +
+        (metaParts ? '<div class="cf-meta-line">' + metaParts + '</div>' : '') +
+        (dateParts ? '<div class="cf-date-line">' + dateParts + '</div>' : '') +
+      '</div>' +
+      '<button data-action="openCardMenu" data-id="' + pid + '" class="cf-dots" style="background:none;border:none;">' + ICON_DOTS + '</button>' +
+    '</div>';
+  }
+
+  /* ---- metadata rows (kept for reference, no longer called) ---- */
+
   function _metaRow1(post) {
     var parts = [];
     if (post.location) parts.push(_esc(_toTitleCase(post.location)));
@@ -316,7 +360,7 @@
     var count = _commentCount(post);
     var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
       ICON_COMMENT_SM + ' ' + count + '</span>';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#666;background:#0d0d0d;">' +
+    return '<div class="stats-bar" style="display:flex;align-items:center;justify-content:space-between;">' +
       left + right + '</div>';
   }
 
@@ -328,24 +372,24 @@
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;' +
       'background:none;border:none;border-right:1px solid rgba(255,255,255,0.03);' +
-      'padding:8px 4px;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#555;';
+      'cursor:pointer;';
     var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.03);', '');
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
-      btn1 = '<button data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + '">' +
+      btn1 = '<button class="eng-btn" data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + '">' +
         ICON_THUMBUP + '<span>Approve</span></button>';
     } else {
       btn1 = '<div style="flex:1;"></div>';
     }
 
-    var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + '">' +
+    var btn2 = '<button class="eng-btn" data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + '">' +
       ICON_COMMENT + '<span>Comment</span></button>';
 
-    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + '">' +
+    var btn3 = '<button class="eng-btn" data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + '">' +
       ICON_WA + '<span>WhatsApp</span></button>';
 
-    return '<div data-engagement="' + pid + '" style="display:flex;background:#0d0d0d;border-top:1px solid rgba(255,255,255,0.03);">' +
+    return '<div class="eng-bar" data-engagement="' + pid + '" style="display:flex;">' +
       btn1 + btn2 + btn3 + '</div>' +
       '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3ECF8E;background:rgba(62,207,142,0.05);margin-top:6px;">' +
       '</div>';
@@ -558,21 +602,8 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:1px;border-bottom:1px solid rgba(255,255,255,0.06);background:#000000;' + opacity + '">' +
-      /* header row */
-      '<div style="display:flex;align-items:flex-start;gap:10px;">' +
-        _avatarHtml(post) +
-        '<div style="flex:1;min-width:0;">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:15px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">' + _esc(post.title || 'Untitled') + '</div>' +
-            '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
-          '</div>' +
-          _metaRow1(post) +
-          _metaRow2(post) +
-        '</div>' +
-      '</div>' +
-      /* badge */
-      '<div style="margin:4px 0 10px 58px;">' + _badgeHtml(post) + '</div>' +
+    return '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="' + opacity + '">' +
+      _cardHeaderHtml(post, pid) +
       /* caption */
       _captionHtml(post) +
       /* images */
@@ -591,7 +622,7 @@
   /* ---- section label ---- */
 
   function _sectionLabel(text) {
-    return '<div style="padding:10px 16px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;color:#2e3338;text-transform:uppercase;">' + text + '</div>';
+    return '<div class="section-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;">' + text + '</div>';
   }
 
   /* ---- top bar ---- */
