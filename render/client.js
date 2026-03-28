@@ -1,4 +1,4 @@
-/* render/client.js -- Client portal feed (Pass 1 of 3) */
+/* render/client.js -- Client portal feed (Pass 2 of 3) */
 (function () {
   'use strict';
 
@@ -34,6 +34,11 @@
   var ICON_FEED = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>';
   var ICON_REQ = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>';
   var ICON_ALERTS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  var ICON_CLOCK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
+  var ICON_COMMENT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  var ICON_THUMBUP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>';
+  var ICON_WA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
+  var ICON_COMMENT_SM = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 
   /* ---- bucket helpers ---- */
 
@@ -180,6 +185,99 @@
       '</div>';
   }
 
+  /* ---- stats bar ---- */
+
+  function _waitDays(post) {
+    var ref = post.status_changed_at || post.statusChangedAt || post.updated_at || '';
+    if (!ref) return 0;
+    var then = new Date(ref).getTime();
+    if (isNaN(then)) return 0;
+    return Math.max(0, Math.floor((Date.now() - then) / 86400000));
+  }
+
+  function _commentCount(post) {
+    if (Array.isArray(post.post_comments)) return post.post_comments.length;
+    return 0;
+  }
+
+  function _statsBarHtml(post, isPublished) {
+    var left = '';
+    if (isPublished) {
+      var approvedDate = post.status_changed_at || post.statusChangedAt || post.updated_at || '';
+      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:#22c55e;">' +
+        ICON_CHECK + ' Approved' +
+        (approvedDate ? ' &middot; ' + _esc(_fmtDate(approvedDate)) : '') +
+        '</span>';
+    } else {
+      var days = _waitDays(post);
+      var dColor = days > 2 ? '#FF4B4B' : '#444';
+      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:' + dColor + ';">' +
+        ICON_CLOCK + ' Waiting ' + days + ' day' + (days !== 1 ? 's' : '') +
+        '</span>';
+    }
+    var count = _commentCount(post);
+    var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
+      ICON_COMMENT_SM + ' ' + count + '</span>';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 0;font-family:\'IBM Plex Mono\',monospace;font-size:9px;">' +
+      left + right + '</div>';
+  }
+
+  /* ---- engagement bar ---- */
+
+  function _engagementBarHtml(post) {
+    if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
+    var pid = _esc(post.post_id || post.id || '');
+    var title = _esc(post.title || '');
+    var btnStyle = 'flex:1;display:flex;align-items:center;justify-content:center;gap:5px;' +
+      'background:none;border:none;border-right:1px solid rgba(255,255,255,0.06);' +
+      'padding:10px 0;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.03em;';
+    var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.06);', '');
+
+    var btn1 = '';
+    if (post.stage === 'awaiting_approval') {
+      btn1 = '<button data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + 'color:#22c55e;">' +
+        ICON_THUMBUP + ' Approve</button>';
+    } else {
+      btn1 = '<div style="flex:1;"></div>';
+    }
+
+    var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + 'color:#888;">' +
+      ICON_COMMENT + ' Comment</button>';
+
+    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + 'color:#25D366;">' +
+      ICON_WA + ' WhatsApp</button>';
+
+    return '<div data-engagement="' + pid + '" style="display:flex;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px;">' +
+      btn1 + btn2 + btn3 + '</div>' +
+      '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#444;border-top:1px solid rgba(255,255,255,0.06);margin-top:8px;">' +
+      '</div>';
+  }
+
+  /* ---- approve popup (singleton) ---- */
+
+  function _approvePopupHtml() {
+    return '<div id="client-approve-popup" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;">' +
+      '<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center;">' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:16px;color:#e8e2d9;">Approve this post?</div>' +
+        '<div id="client-approve-title" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#C8A84B;margin-top:10px;"></div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#666;margin-top:10px;line-height:1.5;">This will send it for scheduling. Your team will be notified immediately.</div>' +
+        '<div style="display:flex;gap:10px;margin-top:20px;justify-content:center;">' +
+          '<button data-action="approveCancel" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>' +
+          '<button data-action="approveConfirm" style="flex:1;padding:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;color:#22c55e;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Yes, Approve</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* ---- card 3-dot menu (singleton, repositioned on open) ---- */
+
+  function _cardMenuHtml() {
+    return '<div id="client-card-menu" style="display:none;position:fixed;z-index:300;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
+      '<button data-action="cardMenuWA" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Share on WhatsApp</button>' +
+      '<button data-action="cardMenuRequest" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">New Request</button>' +
+    '</div>';
+  }
+
   /* ---- single card ---- */
 
   function _cardHtml(post, isPublished) {
@@ -192,7 +290,7 @@
         '<div style="flex:1;min-width:0;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;">' +
             '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:15px;color:#e8e2d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(post.title || 'Untitled') + '</div>' +
-            '<button data-action="card-menu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
+            '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
           '</div>' +
           _metaRow1(post) +
           _metaRow2(post) +
@@ -204,6 +302,10 @@
       _captionHtml(post) +
       /* images */
       _imgGridHtml(post.images) +
+      /* stats bar */
+      _statsBarHtml(post, isPublished) +
+      /* engagement bar (not on published) */
+      (isPublished ? '' : _engagementBarHtml(post)) +
     '</div>';
   }
 
@@ -255,6 +357,16 @@
 
   /* ---- event delegation ---- */
 
+  var _pendingApproveId = '';
+
+  function _closeCardMenu() {
+    var m = document.getElementById('client-card-menu');
+    if (m) m.style.display = 'none';
+    _cardMenuActiveId = '';
+  }
+
+  var _cardMenuActiveId = '';
+
   function _wireEvents(root) {
     root.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-action]');
@@ -285,7 +397,6 @@
           break;
 
         case 'nav-feed':
-          /* already on feed -- no-op */
           break;
 
         case 'nav-requests':
@@ -306,8 +417,74 @@
           }
           break;
 
-        case 'card-menu':
-          /* placeholder for Pass 2 */
+        /* -- card 3-dot menu -- */
+        case 'openCardMenu':
+          e.stopPropagation();
+          var cm = document.getElementById('client-card-menu');
+          if (!cm) break;
+          if (_cardMenuActiveId === id && cm.style.display !== 'none') {
+            _closeCardMenu();
+            break;
+          }
+          _cardMenuActiveId = id;
+          var rect = btn.getBoundingClientRect();
+          cm.style.top = (rect.bottom + 4) + 'px';
+          cm.style.left = Math.max(0, rect.right - 170) + 'px';
+          cm.style.display = 'block';
+          break;
+
+        case 'cardMenuWA':
+          _closeCardMenu();
+          if (typeof window._clientShareWA === 'function') window._clientShareWA(_cardMenuActiveId || id);
+          break;
+
+        case 'cardMenuRequest':
+          _closeCardMenu();
+          if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
+          break;
+
+        /* -- engagement bar actions -- */
+        case 'clientApprovePrompt':
+          _pendingApproveId = id;
+          var popup = document.getElementById('client-approve-popup');
+          var titleEl = document.getElementById('client-approve-title');
+          if (titleEl) titleEl.textContent = btn.getAttribute('data-title') || '';
+          if (popup) popup.style.display = 'flex';
+          break;
+
+        case 'approveCancel':
+          _pendingApproveId = '';
+          var popup2 = document.getElementById('client-approve-popup');
+          if (popup2) popup2.style.display = 'none';
+          break;
+
+        case 'approveConfirm':
+          var pid = _pendingApproveId;
+          _pendingApproveId = '';
+          var popup3 = document.getElementById('client-approve-popup');
+          if (popup3) popup3.style.display = 'none';
+          if (pid) {
+            var eng = root.querySelector('[data-engagement="' + pid + '"]');
+            if (eng) eng.style.display = 'none';
+            var strip = document.getElementById('approved-strip-' + pid);
+            if (strip) {
+              var now = new Date();
+              var dateStr = now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              var timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+              strip.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;">' +
+                ICON_CHECK + ' Approved on ' + _esc(dateStr) + ' &middot; ' + _esc(timeStr) + '</span>';
+              strip.style.display = 'block';
+            }
+            if (typeof window.clientApprove === 'function') window.clientApprove(pid);
+          }
+          break;
+
+        case 'focusComment':
+          if (typeof window._clientFocusComment === 'function') window._clientFocusComment(id);
+          break;
+
+        case 'shareWA':
+          if (typeof window._clientShareWA === 'function') window._clientShareWA(id);
           break;
 
         default:
@@ -315,11 +492,14 @@
       }
     });
 
-    /* close top menu on outside click */
+    /* close top menu + card menu on outside click */
     document.addEventListener('click', function (e) {
       if (!e.target.closest('[data-action="top-menu-toggle"]')) {
-        var menu = root.querySelector('[data-top-menu]');
-        if (menu) menu.style.display = 'none';
+        var tmenu = root.querySelector('[data-top-menu]');
+        if (tmenu) tmenu.style.display = 'none';
+      }
+      if (!e.target.closest('[data-action="openCardMenu"]') && !e.target.closest('#client-card-menu')) {
+        _closeCardMenu();
       }
     });
   }
@@ -367,6 +547,8 @@
 
     html += '</div>';
     html += _bottomNavHtml();
+    html += _approvePopupHtml();
+    html += _cardMenuHtml();
 
     cv.innerHTML = html;
     _wireEvents(cv);
