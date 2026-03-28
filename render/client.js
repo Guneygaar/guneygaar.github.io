@@ -236,20 +236,20 @@
     };
 
     if (n === 1) {
-      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
+      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -261,7 +261,7 @@
     var overlayHtml = extra > 0
       ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
@@ -1392,52 +1392,35 @@
         '</div>' +
       '</div>';
 
-    document.body.appendChild(overlay);
-    function _overlayImgHandler(e) {
-      var overlay = document.getElementById('client-post-overlay');
-      if (!overlay) {
-        document.removeEventListener('click', _overlayImgHandler, true);
-        return;
+    var _self_overlay = overlay;
+    requestAnimationFrame(function() {
+      document.body.appendChild(_self_overlay);
+      window._modalOpen = true;
+      document.body.style.overflow = 'hidden';
+      _wireEvents(_self_overlay);
+      var approvePopup =
+        document.getElementById('client-approve-popup');
+      if (approvePopup && !approvePopup.dataset.wired) {
+        _wireEvents(approvePopup);
+        approvePopup.dataset.wired = '1';
       }
-      var cell = e.target.closest('[data-action="openLightbox"]');
-      if (!cell || !overlay.contains(cell)) return;
-      e.stopPropagation();
-      try {
-        var imgs = JSON.parse(
-          cell.getAttribute('data-images') || '[]');
-        var idx = parseInt(
-          cell.getAttribute('data-index') || '0', 10);
-        if (imgs.length) _lbOpen(imgs, idx);
-      } catch (_e) {}
-    }
-    document.addEventListener('click', _overlayImgHandler, true);
-    window._modalOpen = true;
-    document.body.style.overflow = 'hidden';
-
-    _wireEvents(overlay);
-    var approvePopup = document.getElementById('client-approve-popup');
-    if (approvePopup && !approvePopup.dataset.wired) {
-      _wireEvents(approvePopup);
-      approvePopup.dataset.wired = '1';
-    }
-    _wireLightboxTouch();
-    _wireLightboxKeyboard();
-
-    var lbEl = document.getElementById('client-lightbox');
-    if (lbEl && !lbEl.dataset.clickWired) {
-      _wireEvents(lbEl);
-      lbEl.dataset.clickWired = '1';
-    }
-
-    var closeBtn = document.getElementById('client-overlay-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        document.removeEventListener('click', _overlayImgHandler, true);
-        overlay.remove();
-        window._modalOpen = false;
-        document.body.style.overflow = '';
-      });
-    }
+      _wireLightboxTouch();
+      _wireLightboxKeyboard();
+      var lbEl = document.getElementById('client-lightbox');
+      if (lbEl && !lbEl.dataset.clickWired) {
+        _wireEvents(lbEl);
+        lbEl.dataset.clickWired = '1';
+      }
+      var closeBtn =
+        document.getElementById('client-overlay-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          _self_overlay.remove();
+          window._modalOpen = false;
+          document.body.style.overflow = '';
+        });
+      }
+    });
   };
 
   /* ---- client request form (moved inside IIFE for load-order safety) ---- */

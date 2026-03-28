@@ -5678,11 +5678,11 @@ body.client-mode .img-quad {
 }
 
 .lb-trigger-cell img {
-  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto !important;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: manipulation;
-  pointer-events: auto !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 body.client-mode .stage-chip[data-stage="scheduled"],
