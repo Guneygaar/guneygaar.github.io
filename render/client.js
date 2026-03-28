@@ -469,17 +469,50 @@
     '</div>';
   }
 
-  /* ---- bottom nav ---- */
+  /* ---- bottom nav (reuse existing #bottom-nav) ---- */
 
-  function _bottomNavHtml() {
-    return '<div id="bottom-nav" style="position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;">' +
+  var _savedNavHtml = '';
+
+  function _setClientNav() {
+    var nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+    if (!_savedNavHtml) _savedNavHtml = nav.innerHTML;
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;';
+    nav.className = '';
+    nav.innerHTML =
       '<button data-action="nav-feed" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#C8A84B;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
         ICON_FEED + 'Feed</button>' +
       '<button data-action="nav-requests" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
         ICON_REQ + 'Requests</button>' +
       '<button data-action="nav-alerts" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
-        ICON_ALERTS + 'Alerts</button>' +
-    '</div>';
+        ICON_ALERTS + 'Alerts</button>';
+  }
+
+  window._restoreAgencyNav = function () {
+    if (!_savedNavHtml) return;
+    var nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+    nav.innerHTML = _savedNavHtml;
+    nav.style.cssText = '';
+    nav.className = 'bottom-nav';
+    _savedNavHtml = '';
+  };
+
+  function _wireNavEvents() {
+    var nav = document.getElementById('bottom-nav');
+    if (!nav || nav._clientNavWired) return;
+    nav._clientNavWired = true;
+    nav.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      if (action === 'nav-feed') { /* no-op */ }
+      else if (action === 'nav-requests') {
+        if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
+      } else if (action === 'nav-alerts') {
+        if (typeof window.openNotifications === 'function') window.openNotifications();
+      }
+    });
   }
 
   /* ---- event delegation ---- */
@@ -893,8 +926,7 @@
 
     var fab = document.getElementById('fab-add');
     if (fab) fab.style.display = 'none';
-    var agencyNav = document.getElementById('main-bottom-nav');
-    if (agencyNav) agencyNav.style.display = 'none';
+    _setClientNav();
 
     var posts = window.allPosts || [];
     var buckets = _bucket(posts);
@@ -930,13 +962,13 @@
     }
 
     html += '</div>';
-    html += _bottomNavHtml();
     html += _approvePopupHtml();
     html += _cardMenuHtml();
     html += _lightboxHtml();
 
     cv.innerHTML = html;
     _wireEvents(cv);
+    _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
   };
