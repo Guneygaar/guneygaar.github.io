@@ -206,6 +206,13 @@ function logout() {
 }
 
 function activateRole(role) {
+  // Clear stale preview role for non-admin users
+  var _dbRole = (role || '').toLowerCase();
+  if (_dbRole !== 'admin') {
+    localStorage.removeItem('pcs_role_preview');
+    window._previewRole = null;
+  }
+
   var rolePreview = localStorage.getItem('pcs_role_preview');
   if (rolePreview && rolePreview !== 'Admin') {
     window.effectiveRole = _normaliseRole(rolePreview);
@@ -266,8 +273,6 @@ function activateRole(role) {
   }
   // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();
-  // Show/hide exit-preview bar
-  if (typeof updateExitPreviewBar === 'function') updateExitPreviewBar();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 
