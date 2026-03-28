@@ -230,20 +230,20 @@
     };
 
     if (n === 1) {
-      return '<div class="img-single" style="padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
         wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
         wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -255,7 +255,7 @@
     var overlayHtml = extra > 0
       ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;touch-action:manipulation;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
@@ -1375,7 +1375,7 @@
 
     var overlay = document.createElement('div');
     overlay.id = 'client-post-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;user-select:none;-webkit-user-select:none;';
     overlay.innerHTML =
       '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.95);backdrop-filter:blur(8px);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
