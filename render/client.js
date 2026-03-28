@@ -1,4 +1,4 @@
-/* render/client.js -- Client portal feed (style pass) */
+/* render/client.js -- Client portal feed (polish pass) */
 (function () {
   'use strict';
 
@@ -25,13 +25,46 @@
     } catch (_) { return ''; }
   }
 
+  function _fmtShortDate(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch (_) { return ''; }
+  }
+
+  function _toTitleCase(str) {
+    if (!str) return '';
+    return str.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
   function _truncate(text, max) {
     if (!text || text.length <= max) return null;
     return text.slice(0, max);
   }
 
+  function _nl2br(s) {
+    return s.replace(/\n/g, '<br>');
+  }
+
   function _hashtagHtml(text) {
-    return _esc(text).replace(/(#\w[\w]*)/g, '<span style="color:#378fe9;">$1</span>');
+    return _nl2br(_esc(text)).replace(/(#\w[\w]*)/g, '<span style="color:#378fe9;">$1</span>');
+  }
+
+  function _sortAsc(arr) {
+    arr.sort(function (a, b) {
+      var ta = a.status_changed_at || a.statusChangedAt || a.updated_at || '';
+      var tb = b.status_changed_at || b.statusChangedAt || b.updated_at || '';
+      return (new Date(ta || 0)).getTime() - (new Date(tb || 0)).getTime();
+    });
+  }
+
+  function _sortDesc(arr) {
+    arr.sort(function (a, b) {
+      var ta = a.status_changed_at || a.statusChangedAt || a.updated_at || '';
+      var tb = b.status_changed_at || b.statusChangedAt || b.updated_at || '';
+      return (new Date(tb || 0)).getTime() - (new Date(ta || 0)).getTime();
+    });
   }
 
   /* SVG icons */
@@ -99,6 +132,9 @@
       else if (p.stage === 'awaiting_brand_input') input.push(p);
       else if (p.stage === 'published') published.push(p);
     }
+    _sortAsc(approval);
+    _sortAsc(input);
+    _sortDesc(published);
     return { approval: approval, input: input, published: published };
   }
 
@@ -107,31 +143,40 @@
   function _avatarHtml(post) {
     var imgs = post.images;
     if (imgs && imgs.length && imgs[0]) {
-      return '<img src="' + _esc(imgs[0]) + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover;display:block;">';
+      return '<img src="' + _esc(imgs[0]) + '" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;display:block;">';
     }
     if (post.stage === 'awaiting_brand_input') {
-      return '<div style="width:46px;height:46px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
+      return '<div style="width:42px;height:42px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
     }
     var initial = (post.title || '?').charAt(0).toUpperCase();
-    return '<div style="width:46px;height:46px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:18px;color:#C8A84B;">' + _esc(initial) + '</div>';
+    return '<div style="width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:17px;color:#C8A84B;">' + _esc(initial) + '</div>';
   }
 
   /* ---- status badge ---- */
 
-  function _badgeHtml(stage) {
+  var ICON_CHECK_SM = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  function _badgeHtml(post) {
+    var stage = post.stage;
+    var days = _waitDays(post);
     if (stage === 'awaiting_approval') {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#f59e0b;">' +
-        '<span style="width:4px;height:4px;border-radius:50%;background:#f59e0b;animation:clientPulse 2s infinite;"></span>' +
-        'Awaiting Approval</span>';
+      if (days > 2) {
+        return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(255,75,75,0.05);border:1px dotted rgba(255,75,75,0.18);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#FF4B4B;">' +
+          '<span style="width:4px;height:4px;border-radius:50%;background:#FF4B4B;animation:clientPulse 2s infinite;"></span>' +
+          'WAITING ' + days + ' DAYS &middot; OVERDUE</span>';
+      }
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(246,166,35,0.05);border:1px dotted rgba(246,166,35,0.18);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#F6A623;">' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:#F6A623;animation:clientPulse 2s infinite;"></span>' +
+        'AWAITING YOUR APPROVAL</span>';
     }
     if (stage === 'awaiting_brand_input') {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(6,182,212,0.04);border:1px solid rgba(6,182,212,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#06b6d4;">' +
-        '<span style="width:4px;height:4px;border-radius:50%;background:#06b6d4;animation:clientPulse 2s infinite;"></span>' +
-        'Needs Your Input</span>';
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(34,211,238,0.04);border:1px dotted rgba(34,211,238,0.16);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#22D3EE;">' +
+        '<span style="width:4px;height:4px;border-radius:50%;background:#22D3EE;animation:clientPulse 2s infinite;"></span>' +
+        'TEAM NEEDS YOUR INPUT</span>';
     }
     if (stage === 'published') {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(34,197,94,0.04);border:1px solid rgba(34,197,94,0.15);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.04em;color:#22c55e;">' +
-        ICON_CHECK + ' Published</span>';
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(62,207,142,0.04);border:1px dotted rgba(62,207,142,0.16);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#3ECF8E;">' +
+        ICON_CHECK_SM + ' LIVE ON LINKEDIN</span>';
     }
     return '';
   }
@@ -159,7 +204,7 @@
     if (short) {
       return '<div id="' + _esc(id) + '" style="font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55;color:#ccc;padding:0 14px;margin-top:8px;">' +
         _hashtagHtml(short) +
-        '<span data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#378fe9;cursor:pointer;font-size:12px;">...more</span>' +
+        '<span data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#555;cursor:pointer;font-size:12px;">...more</span>' +
         '<span style="display:none;" data-full>' + _hashtagHtml(text) + '</span>' +
         '</div>';
     }
@@ -219,18 +264,20 @@
 
   function _metaRow1(post) {
     var parts = [];
-    if (post.contentPillar) parts.push(_esc(post.contentPillar));
-    if (post.location) parts.push(_esc(post.location));
-    if (post.owner) parts.push(_esc(post.owner));
+    if (post.location) parts.push(_esc(_toTitleCase(post.location)));
+    if (post.contentPillar) parts.push(_esc(_toTitleCase(post.contentPillar)));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#4a4a55;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
   }
 
   function _metaRow2(post) {
-    if (!post.targetDate) return '';
-    return '<div style="display:flex;align-items:center;gap:4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;margin-top:2px;">' +
-      '<span style="color:#333;">' + ICON_GLOBE + '</span> ' + _esc(_fmtDate(post.targetDate)) +
-      '</div>';
+    var sent = _fmtShortDate(post.status_changed_at || post.statusChangedAt || '');
+    var target = _fmtShortDate(post.targetDate || '');
+    var parts = [];
+    if (sent) parts.push('Sent ' + _esc(sent));
+    if (target) parts.push('Target ' + _esc(target));
+    if (!parts.length) return '';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#363640;margin-top:2px;">' + parts.join(' &middot; ') + '</div>';
   }
 
   /* ---- stats bar ---- */
@@ -266,7 +313,7 @@
     var count = _commentCount(post);
     var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
       ICON_COMMENT_SM + ' ' + count + '</span>';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;background:#0d0d0d;">' +
       left + right + '</div>';
   }
 
@@ -277,8 +324,9 @@
     var pid = _esc(post.post_id || post.id || '');
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;align-items:center;justify-content:center;gap:5px;' +
-      'background:none;border:none;' +
-      'padding:10px 0;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.03em;color:#666;';
+      'background:none;border:none;border-right:1px solid rgba(255,255,255,0.03);' +
+      'padding:10px 0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#555;';
+    var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.03);', '');
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
@@ -291,10 +339,10 @@
     var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + '">' +
       ICON_COMMENT + ' Comment</button>';
 
-    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + btnStyle + '">' +
+    var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + '">' +
       ICON_WA + ' WhatsApp</button>';
 
-    return '<div data-engagement="' + pid + '" style="display:flex;margin-top:6px;">' +
+    return '<div data-engagement="' + pid + '" style="display:flex;background:#0d0d0d;border-top:1px solid rgba(255,255,255,0.03);">' +
       btn1 + btn2 + btn3 + '</div>' +
       '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3ECF8E;background:rgba(62,207,142,0.05);margin-top:6px;">' +
       '</div>';
@@ -348,14 +396,14 @@
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
     return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
-      '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);">' + _esc(initial) + '</div>' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);">' + _esc(initial) + '</div>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
-          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:13px;color:#e8e2d9;">' + _esc(c.author) + '</span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#444;">' + roleLabel + '</span>' +
-          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#444;">' + ts + '</span>' +
+          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:12px;color:#ccc;">' + _esc(c.author) + '</span>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#333;">' + roleLabel + '</span>' +
+          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#333;">' + ts + '</span>' +
         '</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#efefef;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#999;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
       '</div>' +
     '</div>';
   }
@@ -390,9 +438,9 @@
       ? 'Share the information here...'
       : 'Add your thoughts...';
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
-      '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#FF4B4B;background:rgba(255,75,75,0.1);">' + _esc(initial) + '</div>' +
-      '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:0 4px 0 14px;">' +
-        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:8px 0;" data-post-id="' + pid + '">' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#FF4B4B;background:rgba(255,75,75,0.1);">' + _esc(initial) + '</div>' +
+      '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
+        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
         '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
       '</div>' +
     '</div>';
@@ -403,13 +451,13 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:8px;background:#000000;' + opacity + '">' +
+    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:6px;background:#000000;' + opacity + '">' +
       /* header row */
       '<div style="display:flex;align-items:flex-start;gap:10px;">' +
         _avatarHtml(post) +
         '<div style="flex:1;min-width:0;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:15px;color:#e8e2d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(post.title || 'Untitled') + '</div>' +
+            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:14px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + _esc(post.title || 'Untitled') + '</div>' +
             '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
           '</div>' +
           _metaRow1(post) +
@@ -417,7 +465,7 @@
         '</div>' +
       '</div>' +
       /* badge */
-      '<div style="padding:8px 14px 0 56px;">' + _badgeHtml(post.stage) + '</div>' +
+      '<div style="margin:7px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
       /* caption */
       _captionHtml(post) +
       /* images */
@@ -436,29 +484,39 @@
   /* ---- section label ---- */
 
   function _sectionLabel(text) {
-    return '<div style="padding:20px 14px 6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.16em;color:#333;text-transform:uppercase;">' + text + '</div>';
+    return '<div style="padding:16px 16px 6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;color:#2e3338;text-transform:uppercase;">' + text + '</div>';
   }
 
   /* ---- top bar ---- */
 
+  function _pillColor(n) {
+    if (n >= 14) return { c: '#FF4B4B', bg: 'rgba(255,75,75,0.07)', bc: 'rgba(255,75,75,0.3)' };
+    if (n >= 7)  return { c: '#F6A623', bg: 'rgba(246,166,35,0.07)', bc: 'rgba(246,166,35,0.3)' };
+    return { c: '#C8A84B', bg: 'rgba(200,168,75,0.07)', bc: 'rgba(200,168,75,0.3)' };
+  }
+
+  var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+
   function _topBarHtml(awaitCount) {
     var clientName = _esc(window.currentUserName || '');
-    var pill = awaitCount > 0
-      ? '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,0.12);color:#f59e0b;">' + awaitCount + ' awaiting</span>'
-      : '';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.96);z-index:100;">' +
+    var pill = '';
+    if (awaitCount > 0) {
+      var pc = _pillColor(awaitCount);
+      pill = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;padding:3px 9px;border-radius:10px;background:' + pc.bg + ';color:' + pc.c + ';border:1px dotted ' + pc.bc + ';">' + awaitCount + ' AWAITING</span>';
+    }
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.97);z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
       '<div style="display:flex;align-items:baseline;">' +
-        '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#888;">' + _greeting() + '</span>' +
-        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:14px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#555;">' + _greeting() + '</span>' +
+        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:14px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;">' +
         pill +
-        '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#666;cursor:pointer;padding:4px;">' +
-          ICON_BELL +
-          '<span data-bell-dot style="position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#ef4444;"></span>' +
+        '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#444;cursor:pointer;padding:4px;">' +
+          ICON_BELL_SM +
+          '<span data-bell-dot style="position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#ef4444;"></span>' +
         '</button>' +
         '<div style="position:relative;">' +
-          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#666;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
+          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#444;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
           '<div data-top-menu style="display:none;position:absolute;right:0;top:28px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
             '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Light Mode</button>' +
@@ -496,6 +554,10 @@
     nav.style.cssText = '';
     nav.className = 'bottom-nav';
     _savedNavHtml = '';
+    var fab = document.getElementById('fab');
+    if (fab) fab.style.display = '';
+    var fabBtn = document.getElementById('main-fab-btn');
+    if (fabBtn) fabBtn.style.display = '';
   };
 
   function _wireNavEvents() {
@@ -924,8 +986,10 @@
     _ensurePulseStyle();
     cv.style.background = '#1b1f23';
 
-    var fab = document.getElementById('fab-add');
+    var fab = document.getElementById('fab');
     if (fab) fab.style.display = 'none';
+    var fabBtn = document.getElementById('main-fab-btn');
+    if (fabBtn) fabBtn.style.display = 'none';
     _setClientNav();
 
     var posts = window.allPosts || [];
