@@ -116,23 +116,21 @@ async function _compressImage(file) {
 
 async function uploadPostAsset(file, postId) {
   file = await _compressImage(file);
-  const ext      = file.name.split('.').pop();
-  const filename = `${postId}/${Date.now()}.${ext}`;
-  const url      = `${SUPABASE_URL}/storage/v1/object/post-assets/${filename}`;
-  const res = await fetch(url, {
+  var ext = file.name.split('.').pop();
+  var filename = 'post-assets/' + postId + '/' + Date.now() + '.' + ext;
+  var workerUrl = 'https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/upload'
+    + '?filename=' + encodeURIComponent(filename);
+  var res = await fetch(workerUrl, {
     method: 'POST',
-    headers: getAuthHeaders({
-      'Content-Type':  file.type,
-      'Cache-Control': '3600',
-    }),
+    headers: {
+      'Content-Type': file.type,
+      'X-Upload-Secret': 'srtd2026xK9mN3pQ',
+    },
     body: file,
   });
-  if (!res.ok) throw new Error(`Upload ${res.status}`);
-  var publicUrl = `${SUPABASE_URL}/storage/v1/object/public/post-assets/${filename}`;
-  try {
-    fetch(publicUrl, { method: 'GET', mode: 'no-cors' });
-  } catch (e) {}
-  return publicUrl;
+  if (!res.ok) throw new Error('Upload ' + res.status);
+  var data = await res.json();
+  return data.url;
 }
 
 async function logActivity({ post_id, actor, actor_role, action }) {
