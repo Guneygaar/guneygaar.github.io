@@ -1314,6 +1314,12 @@
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
+
+    var lbEl = document.getElementById('client-lightbox');
+    if (lbEl && !lbEl.dataset.clickWired) {
+      _wireEvents(lbEl);
+      lbEl.dataset.clickWired = '1';
+    }
   };
 
   /* ---- client post overlay (single card, full-screen) ---- */
@@ -1380,6 +1386,12 @@
     }
     _wireLightboxTouch();
     _wireLightboxKeyboard();
+
+    var lbEl = document.getElementById('client-lightbox');
+    if (lbEl && !lbEl.dataset.clickWired) {
+      _wireEvents(lbEl);
+      lbEl.dataset.clickWired = '1';
+    }
 
     var closeBtn = document.getElementById('client-overlay-close');
     if (closeBtn) {
