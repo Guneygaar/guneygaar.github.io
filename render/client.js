@@ -1,4 +1,4 @@
-/* render/client.js -- Client portal feed (Pass 2 of 3) */
+/* render/client.js -- Client portal feed (Pass 3 of 3) */
 (function () {
   'use strict';
 
@@ -39,6 +39,44 @@
   var ICON_THUMBUP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>';
   var ICON_WA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
   var ICON_COMMENT_SM = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  var ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
+
+  /* ---- role color map ---- */
+
+  var ROLE_COLORS = {
+    'chitra': '#22D3EE',
+    'servicing': '#22D3EE',
+    'pranav': '#9b87f5',
+    'creative': '#9b87f5',
+    'client': '#FF4B4B',
+    'admin': '#C8A84B'
+  };
+
+  function _roleColor(role) {
+    return ROLE_COLORS[(role || '').toLowerCase()] || '#C8A84B';
+  }
+
+  /* ---- relative timestamp ---- */
+
+  function _relativeTime(isoStr) {
+    if (!isoStr) return '';
+    var ts = isoStr.replace(' ', 'T').replace('+00:00', 'Z').replace('+00', 'Z');
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    var diffMs = Date.now() - d.getTime();
+    var diffMin = Math.floor(diffMs / 60000);
+    var diffHr = Math.floor(diffMs / 3600000);
+    if (diffMs < 0 || diffHr >= 12) {
+      return d.toLocaleDateString('en-IN', {
+        day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata'
+      }) + ' &middot; ' + d.toLocaleTimeString('en-IN', {
+        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata'
+      });
+    }
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return diffMin + 'm ago';
+    return diffHr + 'h ago';
+  }
 
   /* ---- bucket helpers ---- */
 
@@ -278,6 +316,62 @@
     '</div>';
   }
 
+  /* ---- comments display ---- */
+
+  function _singleCommentHtml(c) {
+    var color = _roleColor(c.author_role);
+    var initial = (c.author || '?').charAt(0).toUpperCase();
+    var roleLabel = _esc((c.author_role || '').toUpperCase());
+    var ts = _relativeTime(c.created_at);
+    return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
+      '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);">' + _esc(initial) + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
+          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:13px;color:#e8e2d9;">' + _esc(c.author) + '</span>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#444;">' + roleLabel + '</span>' +
+          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#444;">' + ts + '</span>' +
+        '</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#efefef;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _hexToRgb(hex) {
+    var h = hex.replace('#', '');
+    var r = parseInt(h.substring(0, 2), 16);
+    var g = parseInt(h.substring(2, 4), 16);
+    var b = parseInt(h.substring(4, 6), 16);
+    return r + ',' + g + ',' + b;
+  }
+
+  function _commentsListHtml(post) {
+    var comments = Array.isArray(post.post_comments) ? post.post_comments : [];
+    if (!comments.length) return '';
+    var html = '<div data-comments-list="' + _esc(post.post_id || post.id || '') + '" style="margin-top:6px;">';
+    for (var i = 0; i < comments.length; i++) {
+      html += _singleCommentHtml(comments[i]);
+    }
+    html += '</div>';
+    return html;
+  }
+
+  /* ---- comment input row ---- */
+
+  function _commentInputHtml(post) {
+    if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
+    var pid = _esc(post.post_id || post.id || '');
+    var userName = (window.currentUserName || 'C');
+    var initial = userName.charAt(0).toUpperCase();
+    var placeholder = post.stage === 'awaiting_brand_input'
+      ? 'Share the information here...'
+      : 'Add your thoughts...';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid rgba(255,255,255,0.04);">' +
+      '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#FF4B4B;background:rgba(255,75,75,0.1);">' + _esc(initial) + '</div>' +
+      '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:6px 0;" data-post-id="' + pid + '">' +
+      '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
+    '</div>';
+  }
+
   /* ---- single card ---- */
 
   function _cardHtml(post, isPublished) {
@@ -306,6 +400,10 @@
       _statsBarHtml(post, isPublished) +
       /* engagement bar (not on published) */
       (isPublished ? '' : _engagementBarHtml(post)) +
+      /* comments */
+      _commentsListHtml(post) +
+      /* comment input (not on published) */
+      (isPublished ? '' : _commentInputHtml(post)) +
     '</div>';
   }
 
@@ -366,6 +464,93 @@
   }
 
   var _cardMenuActiveId = '';
+
+  function _handleSubmitComment(postId, root) {
+    var input = document.getElementById('comment-input-' + postId);
+    if (!input) return;
+    var message = input.value.trim();
+    if (!message) return;
+    var savedValue = input.value;
+    input.value = '';
+
+    var authorName = window.currentUserName || 'Client';
+    var post = (window.allPosts || []).find(function (p) {
+      return p.post_id === postId || p.id === postId;
+    });
+    var realPostId = post ? (post.post_id || postId) : postId;
+    var postTitle = post ? (post.title || realPostId) : realPostId;
+
+    var commentObj = {
+      post_id: realPostId,
+      author: authorName,
+      author_role: 'Client',
+      message: message,
+      created_at: new Date().toISOString()
+    };
+
+    var listEl = root.querySelector('[data-comments-list="' + postId + '"]');
+    if (!listEl) {
+      var engBar = root.querySelector('[data-engagement="' + postId + '"]');
+      var stripEl = document.getElementById('approved-strip-' + postId);
+      var insertAfter = stripEl || engBar;
+      if (insertAfter) {
+        var newList = document.createElement('div');
+        newList.setAttribute('data-comments-list', postId);
+        newList.style.marginTop = '6px';
+        insertAfter.parentNode.insertBefore(newList, insertAfter.nextSibling);
+        listEl = newList;
+      }
+    }
+    if (listEl) {
+      listEl.insertAdjacentHTML('beforeend', _singleCommentHtml(commentObj));
+    }
+
+    if (post && Array.isArray(post.post_comments)) {
+      post.post_comments.push(commentObj);
+    }
+
+    if (typeof window.apiFetch !== 'function') return;
+
+    window.apiFetch('/post_comments', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: realPostId,
+        author: authorName,
+        author_role: 'Client',
+        message: message
+      })
+    }).then(function () {
+      window.apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: 'Servicing',
+          type: 'comment',
+          post_id: realPostId,
+          message: authorName + ' commented on ' + postTitle
+        })
+      }).catch(function () {});
+      window.apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: 'Admin',
+          type: 'comment',
+          post_id: realPostId,
+          message: authorName + ' commented on ' + postTitle
+        })
+      }).catch(function () {});
+    }).catch(function () {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Failed to send comment', 'error');
+      }
+      input.value = savedValue;
+      if (listEl && listEl.lastChild) {
+        listEl.removeChild(listEl.lastChild);
+      }
+      if (post && Array.isArray(post.post_comments)) {
+        post.post_comments.pop();
+      }
+    });
+  }
 
   function _wireEvents(root) {
     root.addEventListener('click', function (e) {
@@ -480,7 +665,16 @@
           break;
 
         case 'focusComment':
-          if (typeof window._clientFocusComment === 'function') window._clientFocusComment(id);
+          var cInput = document.getElementById('comment-input-' + id);
+          if (cInput) {
+            cInput.focus();
+            var card = cInput.closest('[data-card-id]');
+            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          break;
+
+        case 'submitComment':
+          _handleSubmitComment(id, root);
           break;
 
         case 'shareWA':
