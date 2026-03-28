@@ -1394,7 +1394,10 @@
 
     var _self_overlay = overlay;
     requestAnimationFrame(function() {
-      document.body.appendChild(_self_overlay);
+      document.body.insertBefore(
+        _self_overlay,
+        document.getElementById('client-lightbox')
+      );
       window._modalOpen = true;
       document.body.style.overflow = 'hidden';
       _wireEvents(_self_overlay);
