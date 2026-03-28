@@ -519,7 +519,7 @@
       var pc = _pillColor(awaitCount);
       pill = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;padding:3px 9px;border-radius:10px;background:' + pc.bg + ';color:' + pc.c + ';border:1px dotted ' + pc.bc + ';">' + awaitCount + ' AWAITING</span>';
     }
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:rgba(27,31,35,0.97);z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
       '<div style="display:flex;align-items:baseline;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#555;">' + _greeting() + '</span>' +
         (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
