@@ -292,6 +292,22 @@ window._openBriefSheet = function(postId) {
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
+
+  overlay.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'clientViewPost') {
+      var postId = btn.dataset.id;
+      var sheet = document.getElementById('brief-sheet-overlay');
+      if (sheet) sheet.remove();
+      document.body.style.overflow = '';
+      if (typeof window._openClientPostOverlay === 'function') {
+        setTimeout(function() {
+          window._openClientPostOverlay(postId);
+        }, 150);
+      }
+    }
+  });
 }
 
 window._assignBriefToPranav = function(postId) {

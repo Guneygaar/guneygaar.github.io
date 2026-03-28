@@ -933,7 +933,7 @@
 
       switch (action) {
         case 'expand-caption':
-          var capEl = document.getElementById(id);
+          var capEl = root.querySelector('#' + id);
           if (capEl) {
             var full = capEl.querySelector('[data-full]');
             if (full) {
@@ -987,15 +987,15 @@
           break;
 
         case 'focusComment':
-          var cInput = document.getElementById('comment-input-' + id);
+          var cInput = root.querySelector('#comment-input-' + id);
           if (cInput) {
             cInput.focus();
             var fcCard = cInput.closest('[data-card-id]');
             if (fcCard) fcCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
           } else {
-            var fcAnchor = document.querySelector('[data-comments-list="' + id + '"]') ||
-              document.querySelector('[data-engagement="' + id + '"]') ||
-              document.getElementById('approved-strip-' + id);
+            var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
+              root.querySelector('[data-engagement="' + id + '"]') ||
+              root.querySelector('#approved-strip-' + id);
             if (fcAnchor) {
               var fcInputHtml = '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
                 '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
@@ -1004,7 +1004,7 @@
                   '<button data-action="submitComment" data-id="' + _esc(id) + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
                 '</div></div>';
               fcAnchor.insertAdjacentHTML('afterend', fcInputHtml);
-              var fcNew = document.getElementById('comment-input-' + id);
+              var fcNew = root.querySelector('#comment-input-' + id);
               if (fcNew) {
                 fcNew.focus();
                 var fcCard2 = fcNew.closest('[data-card-id]');
@@ -1015,7 +1015,7 @@
           break;
 
         case 'expandComments':
-          var clDiv = document.querySelector('[data-comments-list="' + id + '"]');
+          var clDiv = root.querySelector('[data-comments-list="' + id + '"]');
           if (clDiv) {
             try {
               var allComments = JSON.parse(clDiv.getAttribute('data-full-comments') || '[]');
