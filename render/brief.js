@@ -150,8 +150,8 @@ window._openBriefSheet = function(postId) {
     esc(briefText || 'No brief text provided.') + '</div>' +
     '</div>' +
 
-    // Chitra Note section
-    (chitraNote ?
+    // Chitra Note section (hidden from client - internal creative direction)
+    (!_isClient && chitraNote ?
       '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
       '<div style="padding:16px 18px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
@@ -183,6 +183,14 @@ window._openBriefSheet = function(postId) {
     (function() {
       var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
         '<div style="padding:0 18px 32px;">' +
+        (_isClient ?
+        '<button data-action="clientViewPost" data-id="' + esc(linkedPost.post_id) + '" ' +
+        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
+        'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
+        'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
+        '&#x2192; View Post</button>'
+        :
         '<button onclick="(function(){' +
         'var o=document.getElementById(\'brief-sheet-overlay\');' +
         'if(o)o.remove();' +
@@ -194,7 +202,7 @@ window._openBriefSheet = function(postId) {
         'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
         'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
         'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
-        '&#x2192; View Post</button>' +
+        '&#x2192; View Post</button>') +
         '</div>' : '';
       var _reopenBtn =
         '<div style="padding:0 18px 32px;">' +
