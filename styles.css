@@ -5676,3 +5676,11 @@ body.client-mode .img-trio,
 body.client-mode .img-quad {
   max-height: 400px;
 }
+
+body.client-mode .stage-chip[data-stage="scheduled"],
+body.client-mode .stage-chip[data-stage="ready"],
+body.client-mode .stage-chip[data-stage="in_production"],
+body.client-mode .stage-chip[data-stage="brief"],
+body.client-mode .stage-chip[data-stage="brief_done"] {
+  display: none !important;
+}
