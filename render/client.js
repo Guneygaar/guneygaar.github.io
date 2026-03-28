@@ -1393,6 +1393,10 @@
     _wireEvents(overlay);
     overlay.addEventListener('click', function(e) {
       var cell = e.target.closest('[data-action="openLightbox"]');
+      console.log('OVL CLICK',
+        e.target.tagName,
+        cell ? 'CELL FOUND' : 'NO CELL',
+        !!document.getElementById('client-lightbox'));
       if (!cell) return;
       e.stopPropagation();
       try {
@@ -1400,8 +1404,10 @@
           cell.getAttribute('data-images') || '[]');
         var idx = parseInt(
           cell.getAttribute('data-index') || '0', 10);
+        console.log('IMGS', imgs.length);
         if (imgs.length) _lbOpen(imgs, idx);
-      } catch (_e) {}
+        console.log('LB OPEN DONE');
+      } catch (_e) { console.log('ERROR', _e); }
     });
     var approvePopup = document.getElementById('client-approve-popup');
     if (approvePopup && !approvePopup.dataset.wired) {
