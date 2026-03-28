@@ -224,26 +224,32 @@
 
     var imgsJson = _esc(JSON.stringify(imgs));
     var wrap = function (src, idx, css, overlay) {
-      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;">' +
-        '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;" loading="lazy">' +
+      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;">' +
+        '<img src="' + _esc(src) + '"' +
+        ' data-action="openLightbox"' +
+        ' data-images=\'' + imgsJson + '\'' +
+        ' data-index="' + idx + '"' +
+        ' draggable="false"' +
+        ' alt="" loading="lazy"' +
+        ' style="cursor:pointer;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none;pointer-events:auto;">' +
         (overlay || '') + '</div>';
     };
 
     if (n === 1) {
-      return '<div class="img-single" style="padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -255,7 +261,7 @@
     var overlayHtml = extra > 0
       ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
@@ -925,10 +931,7 @@
   }
 
   function _wireEvents(root) {
-    console.log('[WIRE]', root ? (root.id || root.tagName) : 'NULL');
     root.addEventListener('click', function (e) {
-      var _btn = e.target.closest('[data-action]');
-      console.log('[CLICK]', e.target.tagName, e.target.className, _btn ? _btn.dataset.action : 'NO-ACTION');
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
@@ -1040,7 +1043,6 @@
           break;
 
         case 'openLightbox':
-          if (typeof window.showToast === 'function') window.showToast('LIGHTBOX TAP', 'success');
           try {
             var lbImgs = JSON.parse(btn.getAttribute('data-images') || '[]');
             var lbIdx = parseInt(btn.getAttribute('data-index') || '0', 10);
@@ -1315,19 +1317,18 @@
     cv.innerHTML = html;
     _wireTopNavOnce();
     _wireEvents(cv);
-    cv.querySelectorAll('[data-action="openLightbox"]')
-      .forEach(function(cell) {
-        cell.addEventListener('click', function(e) {
-          e.stopPropagation();
-          try {
-            var imgs = JSON.parse(
-              cell.getAttribute('data-images') || '[]');
-            var idx = parseInt(
-              cell.getAttribute('data-index') || '0', 10);
-            if (imgs.length) _lbOpen(imgs, idx);
-          } catch (_e) {}
-        });
-      });
+    cv.addEventListener('click', function(e) {
+      var cell = e.target.closest('[data-action="openLightbox"]');
+      if (!cell) return;
+      e.stopPropagation();
+      try {
+        var imgs = JSON.parse(
+          cell.getAttribute('data-images') || '[]');
+        var idx = parseInt(
+          cell.getAttribute('data-index') || '0', 10);
+        if (imgs.length) _lbOpen(imgs, idx);
+      } catch (_e) {}
+    });
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
@@ -1380,7 +1381,7 @@
 
     var overlay = document.createElement('div');
     overlay.id = 'client-post-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;user-select:none;-webkit-user-select:none;';
     overlay.innerHTML =
       '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.98);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
@@ -1391,46 +1392,35 @@
         '</div>' +
       '</div>';
 
-    document.body.appendChild(overlay);
-    window._modalOpen = true;
-    document.body.style.overflow = 'hidden';
-
-    _wireEvents(overlay);
-    overlay.querySelectorAll('[data-action="openLightbox"]')
-      .forEach(function(cell) {
-        cell.addEventListener('click', function(e) {
-          e.stopPropagation();
-          try {
-            var imgs = JSON.parse(
-              cell.getAttribute('data-images') || '[]');
-            var idx = parseInt(
-              cell.getAttribute('data-index') || '0', 10);
-            if (imgs.length) _lbOpen(imgs, idx);
-          } catch (_e) {}
+    var _self_overlay = overlay;
+    requestAnimationFrame(function() {
+      document.body.appendChild(_self_overlay);
+      window._modalOpen = true;
+      document.body.style.overflow = 'hidden';
+      _wireEvents(_self_overlay);
+      var approvePopup =
+        document.getElementById('client-approve-popup');
+      if (approvePopup && !approvePopup.dataset.wired) {
+        _wireEvents(approvePopup);
+        approvePopup.dataset.wired = '1';
+      }
+      _wireLightboxTouch();
+      _wireLightboxKeyboard();
+      var lbEl = document.getElementById('client-lightbox');
+      if (lbEl && !lbEl.dataset.clickWired) {
+        _wireEvents(lbEl);
+        lbEl.dataset.clickWired = '1';
+      }
+      var closeBtn =
+        document.getElementById('client-overlay-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          _self_overlay.remove();
+          window._modalOpen = false;
+          document.body.style.overflow = '';
         });
-      });
-    var approvePopup = document.getElementById('client-approve-popup');
-    if (approvePopup && !approvePopup.dataset.wired) {
-      _wireEvents(approvePopup);
-      approvePopup.dataset.wired = '1';
-    }
-    _wireLightboxTouch();
-    _wireLightboxKeyboard();
-
-    var lbEl = document.getElementById('client-lightbox');
-    if (lbEl && !lbEl.dataset.clickWired) {
-      _wireEvents(lbEl);
-      lbEl.dataset.clickWired = '1';
-    }
-
-    var closeBtn = document.getElementById('client-overlay-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function() {
-        overlay.remove();
-        window._modalOpen = false;
-        document.body.style.overflow = '';
-      });
-    }
+      }
+    });
   };
 
   /* ---- client request form (moved inside IIFE for load-order safety) ---- */
