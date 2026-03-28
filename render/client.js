@@ -925,10 +925,7 @@
   }
 
   function _wireEvents(root) {
-    console.log('[WIRE]', root ? (root.id || root.tagName) : 'NULL');
     root.addEventListener('click', function (e) {
-      var _btn = e.target.closest('[data-action]');
-      console.log('[CLICK]', e.target.tagName, e.target.className, _btn ? _btn.dataset.action : 'NO-ACTION');
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
@@ -1040,7 +1037,6 @@
           break;
 
         case 'openLightbox':
-          if (typeof window.showToast === 'function') window.showToast('LIGHTBOX TAP', 'success');
           try {
             var lbImgs = JSON.parse(btn.getAttribute('data-images') || '[]');
             var lbIdx = parseInt(btn.getAttribute('data-index') || '0', 10);
