@@ -1371,26 +1371,65 @@ window._sharePostOnWhatsApp = function(postId) {
   }
 
   var title = post.title || 'New Post';
-  var images = Array.isArray(post.images)
-    ? post.images : [];
-  var firstImage = images.length ? images[0] : '';
-
   var postIdRaw = post.post_id || post.id || '';
   var shortId = postIdRaw.replace(/[^0-9]/g, '')
     .slice(-4);
   if (!shortId) shortId = postIdRaw.slice(-4);
   var previewUrl = 'https://srtd.io/p/' + shortId;
+  var textMessage = title
+    + ' -- Awaiting your approval.\n\n'
+    + previewUrl;
 
-  var message = '';
-  if (firstImage) {
-    message = firstImage + '\n\n';
+  var cardEl = document.querySelector(
+    '[data-card-id="' + postId + '"]');
+
+  if (!cardEl || typeof html2canvas === 'undefined'
+    || !navigator.canShare) {
+    var waUrl = 'https://wa.me/?text='
+      + encodeURIComponent(textMessage);
+    window.open(waUrl, '_blank');
+    return;
   }
-  message += title + ' -- Awaiting your approval.'
-    + '\n\n' + previewUrl;
 
-  var waUrl = 'https://wa.me/?text='
-    + encodeURIComponent(message);
-  window.open(waUrl, '_blank');
+  if (typeof showToast === 'function')
+    showToast('Preparing image...', 'success');
+
+  html2canvas(cardEl, {
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: '#000000',
+    scale: 2,
+    logging: false
+  }).then(function(canvas) {
+    canvas.toBlob(function(blob) {
+      if (!blob) {
+        var waUrl = 'https://wa.me/?text='
+          + encodeURIComponent(textMessage);
+        window.open(waUrl, '_blank');
+        return;
+      }
+      var file = new File([blob], 'post-preview.png',
+        { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          text: textMessage
+        }).catch(function() {
+          var waUrl = 'https://wa.me/?text='
+            + encodeURIComponent(textMessage);
+          window.open(waUrl, '_blank');
+        });
+      } else {
+        var waUrl = 'https://wa.me/?text='
+          + encodeURIComponent(textMessage);
+        window.open(waUrl, '_blank');
+      }
+    }, 'image/png');
+  }).catch(function() {
+    var waUrl = 'https://wa.me/?text='
+      + encodeURIComponent(textMessage);
+    window.open(waUrl, '_blank');
+  });
 };
 
 window.submitPcsComment = function() {
