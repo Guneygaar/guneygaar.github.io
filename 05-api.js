@@ -118,7 +118,7 @@ async function uploadPostAsset(file, postId) {
   file = await _compressImage(file);
   var ext = file.name.split('.').pop();
   var filename = 'post-assets/' + postId + '/' + Date.now() + '.' + ext;
-  var workerUrl = 'https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/upload'
+  var workerUrl = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/upload'
     + '?filename=' + encodeURIComponent(filename);
   var res = await fetch(workerUrl, {
     method: 'POST',
