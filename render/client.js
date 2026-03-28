@@ -270,7 +270,7 @@
     if (post.location) parts.push(_esc(_toTitleCase(post.location)));
     if (post.contentPillar) parts.push(_esc(_toTitleCase(post.contentPillar)));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#4a4a55;margin-bottom:1px;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#555;margin-bottom:1px;">' + parts.join(' &middot; ') + '</div>';
   }
 
   function _metaRow2(post) {
@@ -280,7 +280,7 @@
     if (sent) parts.push('Sent ' + _esc(sent));
     if (target) parts.push('Target ' + _esc(target));
     if (!parts.length) return '';
-    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#363640;">' + parts.join(' &middot; ') + '</div>';
+    return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3a3a4a;">' + parts.join(' &middot; ') + '</div>';
   }
 
   /* ---- stats bar ---- */
@@ -564,7 +564,7 @@
         _avatarHtml(post) +
         '<div style="flex:1;min-width:0;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:14px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">' + _esc(post.title || 'Untitled') + '</div>' +
+            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">' + _esc(post.title || 'Untitled') + '</div>' +
             '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
           '</div>' +
           _metaRow1(post) +
@@ -572,7 +572,7 @@
         '</div>' +
       '</div>' +
       /* badge */
-      '<div style="margin:5px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
+      '<div style="margin:4px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
       /* caption */
       _captionHtml(post) +
       /* images */
@@ -591,15 +591,15 @@
   /* ---- section label ---- */
 
   function _sectionLabel(text) {
-    return '<div style="padding:16px 16px 6px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;color:#2e3338;text-transform:uppercase;">' + text + '</div>';
+    return '<div style="padding:10px 16px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;color:#2e3338;text-transform:uppercase;">' + text + '</div>';
   }
 
   /* ---- top bar ---- */
 
   function _pillColor(n) {
-    if (n >= 14) return { c: '#FF4B4B', bg: 'rgba(255,75,75,0.07)', bc: 'rgba(255,75,75,0.3)' };
-    if (n >= 7)  return { c: '#F6A623', bg: 'rgba(246,166,35,0.07)', bc: 'rgba(246,166,35,0.3)' };
-    return { c: '#C8A84B', bg: 'rgba(200,168,75,0.07)', bc: 'rgba(200,168,75,0.3)' };
+    if (n >= 14) return { c: '#FF4B4B', bg: 'rgba(255,75,75,0.04)', bc: 'rgba(255,75,75,0.3)' };
+    if (n >= 7)  return { c: '#F6A623', bg: 'rgba(246,166,35,0.04)', bc: 'rgba(246,166,35,0.3)' };
+    return { c: '#C8A84B', bg: 'rgba(200,168,75,0.04)', bc: 'rgba(200,168,75,0.3)' };
   }
 
   var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
@@ -780,12 +780,14 @@
     });
   }
 
-  function _wireEvents(root) {
-    root.addEventListener('click', function (e) {
+  function _wireTopNavOnce() {
+    if (window._clientTopNavWired) return;
+    window._clientTopNavWired = true;
+    document.body.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
-      var id = btn.getAttribute('data-id');
+      var cv = document.getElementById('client-view');
 
       switch (action) {
         case 'open-notifications':
@@ -793,8 +795,7 @@
           break;
 
         case 'top-menu-toggle':
-          console.log('TOP MENU TOGGLE');
-          var menu = root.querySelector('[data-top-menu]');
+          var menu = cv ? cv.querySelector('[data-top-menu]') : null;
           if (menu) {
             if (menu.style.display !== 'none') {
               menu.style.display = 'none';
@@ -817,34 +818,45 @@
 
         case 'new-request':
           e.stopPropagation();
-          var menu2 = root.querySelector('[data-top-menu]');
+          var menu2 = cv ? cv.querySelector('[data-top-menu]') : null;
           if (menu2) menu2.style.display = 'none';
           if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
           break;
 
         case 'light-mode':
-          var menu3a = root.querySelector('[data-top-menu]');
+          var menu3a = cv ? cv.querySelector('[data-top-menu]') : null;
           if (menu3a) menu3a.style.display = 'none';
           if (typeof window.showToast === 'function') window.showToast('Coming soon', 'info');
           break;
 
         case 'sign-out':
-          var menu3 = root.querySelector('[data-top-menu]');
+          var menu3 = cv ? cv.querySelector('[data-top-menu]') : null;
           if (menu3) menu3.style.display = 'none';
           if (typeof window.logout === 'function') window.logout();
           break;
 
-        case 'nav-feed':
+        default:
           break;
+      }
+    });
 
-        case 'nav-requests':
-          if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
-          break;
+    document.body.addEventListener('click', function (e) {
+      if (!e.target.closest('[data-action="top-menu-toggle"]') && !e.target.closest('[data-top-menu]')) {
+        var cv = document.getElementById('client-view');
+        var tmenu = cv ? cv.querySelector('[data-top-menu]') : null;
+        if (tmenu) tmenu.style.display = 'none';
+      }
+    });
+  }
 
-        case 'nav-alerts':
-          if (typeof window.openNotifications === 'function') window.openNotifications();
-          break;
+  function _wireEvents(root) {
+    root.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      var id = btn.getAttribute('data-id');
 
+      switch (action) {
         case 'expand-caption':
           var capEl = document.getElementById(id);
           if (capEl) {
@@ -941,13 +953,6 @@
       }
     });
 
-    /* close top menu on outside click */
-    document.addEventListener('click', function (e) {
-      if (!e.target.closest('[data-action="top-menu-toggle"]')) {
-        var tmenu = root.querySelector('[data-top-menu]');
-        if (tmenu) tmenu.style.display = 'none';
-      }
-    });
   }
 
   /* ---- lightbox ---- */
@@ -1094,6 +1099,7 @@
     html += _lightboxHtml();
 
     cv.innerHTML = html;
+    _wireTopNavOnce();
     _wireEvents(cv);
     _wireNavEvents();
     _wireLightboxTouch();
