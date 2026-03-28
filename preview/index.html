@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRTD.IO Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1b1f23;
+  font-family: 'DM Sans', sans-serif;
+  color: #e6edf3;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* TOP BAR */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #1b1f23;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.top-bar-logo {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e6edf3;
+  letter-spacing: 1px;
+}
+.review-pill {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #d4a017;
+  border: 1.5px dotted #d4a017;
+  border-radius: 20px;
+  padding: 4px 12px;
+  letter-spacing: 0.5px;
+}
+
+/* CARD */
+.card-wrapper {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 12px 40px;
+}
+.card {
+  background: #000000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* CARD HEADER */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+.card-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 4px;
+  background: #fff;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.card-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.company-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e6edf3;
+  line-height: 1.3;
+}
+.card-sub {
+  font-size: 12px;
+  color: #8b949e;
+  line-height: 1.4;
+}
+
+/* CAPTION */
+.caption {
+  padding: 12px 16px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #d1d5db;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.caption .hashtag {
+  color: #378fe9;
+}
+.caption .more-btn {
+  color: #8b949e;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+}
+
+/* IMAGE GRID */
+.image-grid {
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+}
+.image-grid img,
+.image-grid .grid-cell {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  pointer-events: auto;
+  cursor: pointer;
+  display: block;
+}
+.grid-1 img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+.grid-2 .grid-cell {
+  height: 260px;
+  overflow: hidden;
+  position: relative;
+}
+.grid-2 .grid-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  height: 260px;
+}
+.grid-3 .grid-cell:first-child {
+  grid-row: 1 / 3;
+}
+.grid-3 .grid-cell {
+  overflow: hidden;
+  position: relative;
+}
+.grid-3 .grid-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.grid-4plus {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 150px 150px;
+  gap: 2px;
+  height: 300px;
+}
+.grid-4plus .grid-cell {
+  overflow: hidden;
+  position: relative;
+}
+.grid-4plus .grid-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.overlay-count {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: #fff;
+  pointer-events: none;
+}
+
+/* LIGHTBOX */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox.active { display: flex; }
+.lightbox-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  z-index: 2;
+}
+.lightbox-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  font-family: 'DM Sans', sans-serif;
+}
+.lightbox-counter {
+  color: #8b949e;
+  font-size: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.lightbox-img {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 50%;
+  z-index: 2;
+  line-height: 1;
+}
+.lightbox-prev { left: 8px; }
+.lightbox-next { right: 8px; }
+
+/* FOOTER */
+.page-footer {
+  text-align: center;
+  padding: 32px 16px 24px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.page-footer span {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #2a2a35;
+  letter-spacing: 1px;
+}
+.page-footer .sorted-text {
+  color: rgba(200,168,75,0.4);
+}
+
+/* STATUS */
+.status-msg {
+  text-align: center;
+  padding: 80px 16px;
+  font-size: 16px;
+  color: #8b949e;
+  max-width: 560px;
+  margin: 0 auto;
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-logo">SRTD.IO</div>
+  <div class="review-pill">FOR REVIEW ONLY</div>
+</div>
+
+<div id="app"></div>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-top">
+    <button class="lightbox-close" id="lb-close" type="button">&#10005;</button>
+    <span class="lightbox-counter" id="lb-counter"></span>
+  </div>
+  <button class="lightbox-nav lightbox-prev" id="lb-prev" type="button">&#8249;</button>
+  <img class="lightbox-img" id="lb-img" alt="Preview image">
+  <button class="lightbox-nav lightbox-next" id="lb-next" type="button">&#8250;</button>
+</div>
+
+<script>
+(function() {
+  var SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
+
+  var app = document.getElementById('app');
+
+  function makeSlug(title) {
+    return (title || '').toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .trim().replace(/\s+/g, '-')
+      .replace(/-+/g, '-').slice(0, 50);
+  }
+
+  function esc(str) {
+    var el = document.createElement('div');
+    el.textContent = str;
+    return el.innerHTML;
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    try {
+      var d = new Date(dateStr);
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function renderHashtags(text) {
+    return esc(text).replace(/#(\w+)/g, '<span class="hashtag">#$1</span>');
+  }
+
+  function renderCaption(caption) {
+    if (!caption) return '';
+    var fullHtml = renderHashtags(caption).replace(/\n/g, '<br>');
+    if (caption.length <= 210) {
+      return '<div class="caption">' + fullHtml + '</div>';
+    }
+    var truncText = caption.slice(0, 210);
+    var truncHtml = renderHashtags(truncText).replace(/\n/g, '<br>');
+    return '<div class="caption">' +
+      '<span id="caption-short">' + truncHtml + '...<button class="more-btn" id="more-btn" type="button">more</button></span>' +
+      '<span id="caption-full" style="display:none">' + fullHtml + '</span>' +
+      '</div>';
+  }
+
+  function renderImageGrid(images) {
+    if (!images || images.length === 0) return '';
+    var count = images.length;
+    var html = '';
+
+    if (count === 1) {
+      html = '<div class="image-grid grid-1">' +
+        '<img src="' + esc(images[0]) + '" alt="Post image" data-idx="0">' +
+        '</div>';
+    } else if (count === 2) {
+      html = '<div class="image-grid grid-2">';
+      for (var i = 0; i < 2; i++) {
+        html += '<div class="grid-cell" data-idx="' + i + '"><img src="' + esc(images[i]) + '" alt="Post image"></div>';
+      }
+      html += '</div>';
+    } else if (count === 3) {
+      html = '<div class="image-grid grid-3">';
+      for (var i = 0; i < 3; i++) {
+        html += '<div class="grid-cell" data-idx="' + i + '"><img src="' + esc(images[i]) + '" alt="Post image"></div>';
+      }
+      html += '</div>';
+    } else {
+      html = '<div class="image-grid grid-4plus">';
+      var show = Math.min(count, 4);
+      for (var i = 0; i < show; i++) {
+        html += '<div class="grid-cell" data-idx="' + i + '">';
+        html += '<img src="' + esc(images[i]) + '" alt="Post image">';
+        if (i === 3 && count > 4) {
+          html += '<div class="overlay-count">+' + (count - 4) + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    return html;
+  }
+
+  function renderPost(post) {
+    var date = post.status_changed_at || post.created_at;
+    var caption = post.caption || post.description || '';
+    var images = post.images || [];
+
+    var html = '<div class="card-wrapper"><div class="card">' +
+      '<div class="card-header">' +
+        '<img class="card-logo" src="https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/post-assets/Godavari.jpg" alt="Godavari">' +
+        '<div class="card-header-text">' +
+          '<div class="company-name">Godavari Biorefineries Limited</div>' +
+          '<div class="card-sub">Sent for review &middot; ' + esc(formatDate(date)) + ' &middot; &#127760;</div>' +
+        '</div>' +
+      '</div>' +
+      renderCaption(caption) +
+      renderImageGrid(images) +
+      '</div></div>' +
+      '<div class="page-footer"><span>POWERED BY <span class="sorted-text">SORTED</span></span></div>';
+
+    app.innerHTML = html;
+    bindEvents(images);
+  }
+
+  /* Caption expand */
+  function bindEvents(images) {
+    var moreBtn = document.getElementById('more-btn');
+    if (moreBtn) {
+      moreBtn.addEventListener('click', function() {
+        document.getElementById('caption-short').style.display = 'none';
+        document.getElementById('caption-full').style.display = '';
+      });
+    }
+
+    /* Image grid click */
+    var cells = app.querySelectorAll('.grid-cell, .grid-1 img');
+    for (var i = 0; i < cells.length; i++) {
+      cells[i].addEventListener('click', function() {
+        var idx = parseInt(this.getAttribute('data-idx') || this.querySelector('[data-idx]') && this.querySelector('[data-idx]').getAttribute('data-idx') || '0', 10);
+        openLightbox(images, idx);
+      });
+    }
+  }
+
+  /* Lightbox */
+  var lbEl = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lb-img');
+  var lbCounter = document.getElementById('lb-counter');
+  var lbImages = [];
+  var lbIdx = 0;
+  var touchStartX = 0;
+
+  function openLightbox(imgs, idx) {
+    lbImages = imgs;
+    lbIdx = idx;
+    showLbImage();
+    lbEl.classList.add('active');
+  }
+
+  function closeLightbox() {
+    lbEl.classList.remove('active');
+  }
+
+  function showLbImage() {
+    lbImg.src = lbImages[lbIdx];
+    lbCounter.textContent = (lbIdx + 1) + '/' + lbImages.length;
+  }
+
+  function lbPrev() {
+    lbIdx = (lbIdx - 1 + lbImages.length) % lbImages.length;
+    showLbImage();
+  }
+
+  function lbNext() {
+    lbIdx = (lbIdx + 1) % lbImages.length;
+    showLbImage();
+  }
+
+  document.getElementById('lb-close').addEventListener('click', closeLightbox);
+  document.getElementById('lb-prev').addEventListener('click', lbPrev);
+  document.getElementById('lb-next').addEventListener('click', lbNext);
+
+  document.addEventListener('keydown', function(e) {
+    if (!lbEl.classList.contains('active')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft') lbPrev();
+    if (e.key === 'ArrowRight') lbNext();
+  });
+
+  lbEl.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+
+  lbEl.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 50) {
+      if (dx < 0) lbNext(); else lbPrev();
+    }
+  }, { passive: true });
+
+  /* Init */
+  function init() {
+    var params = new URLSearchParams(window.location.search);
+    var slug = params.get('p');
+    if (!slug) {
+      app.innerHTML = '<div class="status-msg">Post not found.</div>';
+      return;
+    }
+
+    app.innerHTML = '<div class="status-msg">Loading...</div>';
+
+    fetch(SUPABASE_URL + '/rest/v1/posts?select=*', {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(posts) {
+      var match = null;
+      for (var i = 0; i < posts.length; i++) {
+        if (makeSlug(posts[i].title) === slug) {
+          match = posts[i];
+          break;
+        }
+      }
+      if (!match) {
+        app.innerHTML = '<div class="status-msg">Post not found.</div>';
+        return;
+      }
+      renderPost(match);
+    })
+    .catch(function() {
+      app.innerHTML = '<div class="status-msg">Post not found.</div>';
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
