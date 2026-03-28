@@ -77,9 +77,9 @@
   var ICON_REQ = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>';
   var ICON_ALERTS = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
   var ICON_CLOCK = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>';
-  var ICON_COMMENT = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-  var ICON_THUMBUP = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>';
-  var ICON_WA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
+  var ICON_COMMENT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  var ICON_THUMBUP = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>';
+  var ICON_WA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>';
   var ICON_COMMENT_SM = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
   var ICON_SEND = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
 
@@ -143,13 +143,13 @@
   function _avatarHtml(post) {
     var imgs = post.images;
     if (imgs && imgs.length && imgs[0]) {
-      return '<img src="' + _esc(imgs[0]) + '" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;display:block;">';
+      return '<img src="' + _esc(imgs[0]) + '" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;">';
     }
     if (post.stage === 'awaiting_brand_input') {
-      return '<div style="width:42px;height:42px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
+      return '<div style="width:48px;height:48px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;">' + ICON_EYE + '</div>';
     }
     var initial = (post.title || '?').charAt(0).toUpperCase();
-    return '<div style="width:42px;height:42px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:17px;color:#C8A84B;">' + _esc(initial) + '</div>';
+    return '<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:17px;color:#C8A84B;">' + _esc(initial) + '</div>';
   }
 
   /* ---- status badge ---- */
@@ -207,7 +207,7 @@
     if (short) {
       return '<div id="' + _esc(id) + '" style="font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55;color:#ccc;padding:0 14px;margin-top:8px;">' +
         _hashtagHtml(short) +
-        '<span data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#555;cursor:pointer;font-size:12px;">...more</span>' +
+        '<span data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#0a66c2;cursor:pointer;font-size:12px;">...more</span>' +
         '<span style="display:none;" data-full>' + _hashtagHtml(text) + '</span>' +
         '</div>';
     }
@@ -316,7 +316,7 @@
     var count = _commentCount(post);
     var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
       ICON_COMMENT_SM + ' ' + count + '</span>';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;background:#0d0d0d;">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#666;background:#0d0d0d;">' +
       left + right + '</div>';
   }
 
@@ -326,24 +326,24 @@
     if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
     var pid = _esc(post.post_id || post.id || '');
     var title = _esc(post.title || '');
-    var btnStyle = 'flex:1;display:flex;align-items:center;justify-content:center;gap:5px;' +
+    var btnStyle = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;' +
       'background:none;border:none;border-right:1px solid rgba(255,255,255,0.03);' +
-      'padding:10px 0;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#555;';
+      'padding:8px 4px;cursor:pointer;font-family:\'DM Sans\',sans-serif;font-size:12px;color:#555;';
     var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.03);', '');
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
       btn1 = '<button data-action="clientApprovePrompt" data-id="' + pid + '" data-title="' + title + '" style="' + btnStyle + '">' +
-        ICON_THUMBUP + ' Approve</button>';
+        ICON_THUMBUP + '<span>Approve</span></button>';
     } else {
       btn1 = '<div style="flex:1;"></div>';
     }
 
     var btn2 = '<button data-action="focusComment" data-id="' + pid + '" style="' + btnStyle + '">' +
-      ICON_COMMENT + ' Comment</button>';
+      ICON_COMMENT + '<span>Comment</span></button>';
 
     var btn3 = '<button data-action="shareWA" data-id="' + pid + '" style="' + lastBtnStyle + '">' +
-      ICON_WA + ' WhatsApp</button>';
+      ICON_WA + '<span>WhatsApp</span></button>';
 
     return '<div data-engagement="' + pid + '" style="display:flex;background:#0d0d0d;border-top:1px solid rgba(255,255,255,0.03);">' +
       btn1 + btn2 + btn3 + '</div>' +
@@ -558,13 +558,13 @@
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:4px;background:#000000;' + opacity + '">' +
+    return '<div data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="padding:14px;margin-bottom:1px;border-bottom:1px solid rgba(255,255,255,0.06);background:#000000;' + opacity + '">' +
       /* header row */
       '<div style="display:flex;align-items:flex-start;gap:10px;">' +
         _avatarHtml(post) +
         '<div style="flex:1;min-width:0;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;">' +
-            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px;">' + _esc(post.title || 'Untitled') + '</div>' +
+            '<div style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:15px;color:#e8e8e8;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;">' + _esc(post.title || 'Untitled') + '</div>' +
             '<button data-action="openCardMenu" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:2px;flex-shrink:0;">' + ICON_DOTS + '</button>' +
           '</div>' +
           _metaRow1(post) +
@@ -572,7 +572,7 @@
         '</div>' +
       '</div>' +
       /* badge */
-      '<div style="margin:4px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
+      '<div style="margin:4px 0 10px 58px;">' + _badgeHtml(post) + '</div>' +
       /* caption */
       _captionHtml(post) +
       /* images */
