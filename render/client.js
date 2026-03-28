@@ -174,43 +174,44 @@
     var n = imgs.length;
     if (n === 0) return '';
 
-    var wrap = function (src, css, overlay) {
-      return '<div style="' + css + 'overflow:hidden;position:relative;background:#111;">' +
-        '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">' +
+    var imgsJson = _esc(JSON.stringify(imgs));
+    var wrap = function (src, idx, css, overlay) {
+      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;">' +
+        '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;" loading="lazy">' +
         (overlay || '') + '</div>';
     };
 
     if (n === 1) {
       return '<div style="padding:0 14px;margin-top:10px;">' +
-        wrap(imgs[0], 'aspect-ratio:4/3;border-radius:8px;') +
+        wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
       return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
-        wrap(imgs[0], 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
-        wrap(imgs[1], 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
+        wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
+        wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
       return '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
-        wrap(imgs[0], 'grid-row:1/3;border-radius:8px 0 0 8px;') +
-        wrap(imgs[1], 'border-radius:0 8px 0 0;') +
-        wrap(imgs[2], 'border-radius:0 0 8px 0;') +
+        wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
+        wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
+        wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
         '</div>';
     }
 
     /* 4+ : 2x2 grid with +N overlay on last cell */
     var extra = n > 4 ? n - 4 : 0;
     var overlayHtml = extra > 0
-      ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;">+' + extra + '</div>'
+      ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
     return '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
-      wrap(imgs[0], 'border-radius:8px 0 0 0;') +
-      wrap(imgs[1], 'border-radius:0 8px 0 0;') +
-      wrap(imgs[2], 'border-radius:0 0 0 8px;') +
-      wrap(imgs[3] || imgs[2], 'border-radius:0 0 8px 0;', overlayHtml) +
+      wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
+      wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
+      wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
+      wrap(imgs[3] || imgs[2], 3, 'border-radius:0 0 8px 0;', overlayHtml) +
       '</div>';
   }
 
@@ -753,6 +754,26 @@
           if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(id);
           break;
 
+        case 'openLightbox':
+          try {
+            var lbImgs = JSON.parse(btn.getAttribute('data-images') || '[]');
+            var lbIdx = parseInt(btn.getAttribute('data-index') || '0', 10);
+            if (lbImgs.length) _lbOpen(lbImgs, lbIdx);
+          } catch (_e) {}
+          break;
+
+        case 'lbClose':
+          _lbClose();
+          break;
+
+        case 'lbPrev':
+          _lbPrev();
+          break;
+
+        case 'lbNext':
+          _lbNext();
+          break;
+
         default:
           break;
       }
@@ -767,6 +788,97 @@
       if (!e.target.closest('[data-action="openCardMenu"]') && !e.target.closest('#client-card-menu')) {
         _closeCardMenu();
       }
+    });
+  }
+
+  /* ---- lightbox ---- */
+
+  var _lbImages = [];
+  var _lbIndex = 0;
+  var _lbTouchX = 0;
+
+  function _lightboxHtml() {
+    return '<div id="client-lightbox" style="display:none;position:fixed;inset:0;z-index:9000;background:#000000;flex-direction:column;align-items:center;justify-content:center;">' +
+      '<button data-action="lbClose" style="position:absolute;top:14px;left:14px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;z-index:1;padding:8px;">&#x2715;</button>' +
+      '<span id="client-lb-counter" style="position:absolute;top:18px;right:14px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#666;z-index:1;"></span>' +
+      '<button id="client-lb-prev" data-action="lbPrev" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#888;font-size:28px;cursor:pointer;z-index:1;padding:12px;">&#x2039;</button>' +
+      '<button id="client-lb-next" data-action="lbNext" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#888;font-size:28px;cursor:pointer;z-index:1;padding:12px;">&#x203A;</button>' +
+      '<img id="client-lb-img" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;">' +
+    '</div>';
+  }
+
+  function _lbUpdate() {
+    var img = document.getElementById('client-lb-img');
+    var counter = document.getElementById('client-lb-counter');
+    var prev = document.getElementById('client-lb-prev');
+    var next = document.getElementById('client-lb-next');
+    if (img) img.src = _lbImages[_lbIndex] || '';
+    var multi = _lbImages.length > 1;
+    if (counter) {
+      counter.textContent = multi ? (_lbIndex + 1) + ' / ' + _lbImages.length : '';
+    }
+    if (prev) prev.style.display = multi ? 'block' : 'none';
+    if (next) next.style.display = multi ? 'block' : 'none';
+  }
+
+  function _lbOpen(images, index) {
+    _lbImages = images;
+    _lbIndex = Math.max(0, Math.min(index, images.length - 1));
+    var el = document.getElementById('client-lightbox');
+    if (el) {
+      el.style.display = 'flex';
+      _lbUpdate();
+      window._modalOpen = true;
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function _lbClose() {
+    var el = document.getElementById('client-lightbox');
+    if (el) el.style.display = 'none';
+    _lbImages = [];
+    _lbIndex = 0;
+    window._modalOpen = false;
+    document.body.style.overflow = '';
+  }
+
+  function _lbPrev() {
+    if (_lbImages.length < 2) return;
+    _lbIndex = (_lbIndex - 1 + _lbImages.length) % _lbImages.length;
+    _lbUpdate();
+  }
+
+  function _lbNext() {
+    if (_lbImages.length < 2) return;
+    _lbIndex = (_lbIndex + 1) % _lbImages.length;
+    _lbUpdate();
+  }
+
+  function _wireLightboxTouch() {
+    var el = document.getElementById('client-lightbox');
+    if (!el || el._touchWired) return;
+    el._touchWired = true;
+    el.addEventListener('touchstart', function (e) {
+      _lbTouchX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    el.addEventListener('touchend', function (e) {
+      var diff = e.changedTouches[0].clientX - _lbTouchX;
+      if (Math.abs(diff) >= 50) {
+        if (diff < 0) _lbNext();
+        else _lbPrev();
+      }
+    }, { passive: true });
+  }
+
+  function _wireLightboxKeyboard() {
+    if (window._clientLbKeyWired) return;
+    window._clientLbKeyWired = true;
+    document.addEventListener('keydown', function (e) {
+      var el = document.getElementById('client-lightbox');
+      if (!el || el.style.display === 'none') return;
+      if (e.key === 'Escape') _lbClose();
+      else if (e.key === 'ArrowLeft') _lbPrev();
+      else if (e.key === 'ArrowRight') _lbNext();
     });
   }
 
@@ -821,9 +933,12 @@
     html += _bottomNavHtml();
     html += _approvePopupHtml();
     html += _cardMenuHtml();
+    html += _lightboxHtml();
 
     cv.innerHTML = html;
     _wireEvents(cv);
+    _wireLightboxTouch();
+    _wireLightboxKeyboard();
   };
 
 })();
