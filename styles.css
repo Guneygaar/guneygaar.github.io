@@ -5499,3 +5499,20 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 #lib-card-overlay .pc-action-btn:hover { background: var(--surface2); }
 .pf-chip { font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--dotline);color:#555;cursor:pointer;background:transparent;min-width:80px;text-align:center;transition:all 0.1s; }
 .pf-chip.pf-on { border-color:var(--c-gold);color:var(--c-gold);background:rgba(200,168,75,0.06); }
+
+body.client-mode .topbar,
+body.client-mode header,
+body.client-mode #top-bar {
+  background: #1b1f23 !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+body.client-mode .bottom-nav {
+  background: #1b1f23 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
