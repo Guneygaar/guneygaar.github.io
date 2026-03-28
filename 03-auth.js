@@ -222,6 +222,13 @@ function activateRole(role) {
   if ((role || '').toLowerCase() === 'client') {
     window.currentRole = _normaliseRole('Client');
     window.effectiveRole = _normaliseRole('Client');
+    var fab = document.getElementById('fab');
+    var fab2 = document.getElementById('main-fab-btn');
+    var nav = document.getElementById('bottom-nav');
+    if (fab) fab.style.display = 'none';
+    if (fab2) fab2.style.display = 'none';
+    if (nav) nav.style.display = 'none';
+    document.body.classList.add('client-mode');
     _buildUserMenu();
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');

@@ -33,9 +33,9 @@
     } catch (_) { return ''; }
   }
 
-  function _toTitleCase(str) {
-    if (!str) return '';
-    return str.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  function _toTitleCase(value) {
+    if (!value) return '';
+    return String(value).replace(/\b\w/g, function (c) { return c.toUpperCase(); });
   }
 
   function _truncate(text, max) {
@@ -188,7 +188,8 @@
     var style = document.createElement('style');
     style.id = 'client-pulse-style';
     style.textContent = '@keyframes clientPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}' +
-      '.menu-root-absolute{position:absolute!important;z-index:999999;transform:none!important;background:#1c1c26;border:1px solid rgba(255,255,255,0.13);border-radius:8px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}';
+      '.menu-root-absolute{position:absolute!important;z-index:999999!important;transform:none!important;background:#0d0d0d;border:1px dotted rgba(255,255,255,0.12);border-radius:0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}' +
+      '#app,#root,#client-view{transform:none!important;}';
     document.head.appendChild(style);
   }
 
@@ -200,6 +201,7 @@
     var noTruncate = post.stage === 'awaiting_brand_input';
     var limit = 210;
     var short = noTruncate ? null : _truncate(text, limit);
+    if (short) short = short.replace(/\)\s*$/, '');
     var id = 'cap-' + (post.post_id || post.id || '');
 
     if (short) {
@@ -459,7 +461,7 @@
           document.removeEventListener('click', closeMenu);
         }
       });
-    }, 10);
+    }, 100);
   };
 
   function _makeSlug(title) {
@@ -468,14 +470,15 @@
   }
 
   function _populateCardMenu(menuEl, stage) {
+    var isDesktop = window.matchMedia('(min-width: 768px)').matches;
     var html = '';
     if (stage === 'awaiting_approval') {
       html += '<button data-action="cardMenuApprove" style="' + _menuBtnStyle + '">Approve Post</button>';
       html += '<button data-action="cardMenuWA" style="' + _menuBtnStyle + _menuBtnBorder + '">Share on WhatsApp</button>';
-      html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
+      if (isDesktop) html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
     } else if (stage === 'awaiting_brand_input') {
       html += '<button data-action="cardMenuInput" style="' + _menuBtnStyle + '">Add Your Input</button>';
-      html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
+      if (isDesktop) html += '<button data-action="cardMenuCopyApproval" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Approval Link</button>';
     } else if (stage === 'published') {
       html += '<button data-action="cardMenuLinkedIn" style="' + _menuBtnStyle + '">View on LinkedIn</button>';
       html += '<button data-action="cardMenuCopyLink" style="' + _menuBtnStyle + _menuBtnBorder + '">Copy Post Link</button>';
@@ -569,7 +572,7 @@
         '</div>' +
       '</div>' +
       /* badge */
-      '<div style="margin:10px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
+      '<div style="margin:5px 0 10px 52px;">' + _badgeHtml(post) + '</div>' +
       /* caption */
       _captionHtml(post) +
       /* images */
@@ -621,7 +624,7 @@
         '</button>' +
         '<div style="position:relative;">' +
           '<button data-action="top-menu-toggle" style="background:none;border:none;color:#444;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
-          '<div data-top-menu style="display:none;position:fixed;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:160px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
+          '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px dotted rgba(255,255,255,0.12);border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
             '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Light Mode</button>' +
             '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Sign Out</button>' +
@@ -813,6 +816,7 @@
           break;
 
         case 'new-request':
+          e.stopPropagation();
           var menu2 = root.querySelector('[data-top-menu]');
           if (menu2) menu2.style.display = 'none';
           if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
