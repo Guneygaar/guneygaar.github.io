@@ -222,7 +222,7 @@ async function loadPostsForClient() {
       'awaiting_approval,awaiting_brand_input,published';
     const data  = await apiFetch(
       '/posts?stage=in.(' + allowedStages +
-      ')&select=*&order=created_at.desc'
+      ')&select=*,post_comments(*)&order=created_at.desc'
     );
     if (!_commitPostsResult(reqId, 'network')) return;
     mergePosts(normalise(data));
