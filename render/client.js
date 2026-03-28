@@ -1070,7 +1070,7 @@
   var _lbTouchX = 0;
 
   function _lightboxHtml() {
-    return '<div id="client-lightbox" style="display:none;position:fixed;inset:0;z-index:9000;background:#000000;flex-direction:column;align-items:center;justify-content:center;">' +
+    return '<div id="client-lightbox" style="display:none;position:fixed;inset:0;z-index:9500;background:#000000;flex-direction:column;align-items:center;justify-content:center;">' +
       '<button data-action="lbClose" style="position:absolute;top:14px;left:14px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;z-index:1;padding:8px;">&#x2715;</button>' +
       '<span id="client-lb-counter" style="position:absolute;top:18px;right:14px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#666;z-index:1;"></span>' +
       '<button id="client-lb-prev" data-action="lbPrev" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#888;font-size:28px;cursor:pointer;z-index:1;padding:12px;">&#x2039;</button>' +
@@ -1417,7 +1417,10 @@ window._closeReqForm = function() {
   var o = document.getElementById('req-overlay');
   if (o) o.style.display = 'none';
   var nav = document.getElementById('bottom-nav');
-  if (nav) nav.style.display = '';
+  if (nav) {
+    var _isClientMode = document.body.classList.contains('client-mode');
+    nav.style.display = _isClientMode ? 'flex' : '';
+  }
   // Reset name field
   var nameEl = document.getElementById('req-name');
   if (nameEl) nameEl.value = '';
@@ -1429,7 +1432,7 @@ window._closeReqForm = function() {
   var dateLabel = document.getElementById('req-date-label');
   if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.45)'; }
   // Reset chips
-  var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
+  var chips = document.querySelectorAll('#req-overlay [data-action="reqChip"]');
   chips.forEach(function(c) {
     c.style.color = 'rgba(255,255,255,0.55)';
     c.style.background = 'transparent';
