@@ -606,7 +606,7 @@
         '</button>' +
         '<div style="position:relative;">' +
           '<button data-action="top-menu-toggle" style="background:none;border:none;color:#444;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
-          '<div data-top-menu style="display:none;position:absolute;right:0;top:28px;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:160px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
+          '<div data-top-menu style="display:none;position:fixed;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:160px;z-index:500;box-shadow:0 8px 24px rgba(0,0,0,0.5);">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
             '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Light Mode</button>' +
             '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Sign Out</button>' +
@@ -780,7 +780,19 @@
         case 'top-menu-toggle':
           console.log('TOP MENU TOGGLE');
           var menu = root.querySelector('[data-top-menu]');
-          if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+          if (menu) {
+            if (menu.style.display !== 'none') {
+              menu.style.display = 'none';
+            } else {
+              var tmBtn = e.target.closest('[data-action="top-menu-toggle"]');
+              if (tmBtn) {
+                var tmRect = tmBtn.getBoundingClientRect();
+                menu.style.top = (tmRect.bottom + 4) + 'px';
+                menu.style.right = (window.innerWidth - tmRect.right) + 'px';
+              }
+              menu.style.display = 'block';
+            }
+          }
           break;
 
         case 'new-request':
@@ -1028,6 +1040,7 @@
     var cv = document.getElementById('client-view');
     if (!cv) return;
 
+    _ensureCardMenu();
     _ensurePulseStyle();
     cv.style.background = '#1b1f23';
 
@@ -1075,7 +1088,6 @@
     html += _lightboxHtml();
 
     cv.innerHTML = html;
-    _ensureCardMenu();
     _wireEvents(cv);
     _wireNavEvents();
     _wireLightboxTouch();
