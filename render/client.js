@@ -369,8 +369,82 @@
   var _menuBtnStyle = 'display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;';
   var _menuBtnBorder = 'border-top:1px solid rgba(255,255,255,0.06);';
 
-  function _cardMenuHtml() {
-    return '<div id="client-card-menu" style="display:none;position:fixed;z-index:300;background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:8px;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>';
+  function _ensureCardMenu() {
+    var el = document.getElementById('client-card-menu');
+    if (el) return;
+    el = document.createElement('div');
+    el.id = 'client-card-menu';
+    el.style.cssText = 'display:none;position:fixed;z-index:600;background:#1c1c26;border:1px solid rgba(255,255,255,0.13);border-radius:8px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+    document.body.appendChild(el);
+    el.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-action');
+      var id = btn.getAttribute('data-id');
+      switch (action) {
+        case 'cardMenuWA':
+          var waId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(waId);
+          break;
+        case 'cardMenuApprove':
+          var apId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          _pendingApproveId = apId;
+          var apPopup = document.getElementById('client-approve-popup');
+          var apTitle = document.getElementById('client-approve-title');
+          var apPost = (window.allPosts || []).find(function (p) { return p.post_id === apId || p.id === apId; });
+          if (apTitle) apTitle.textContent = apPost ? (apPost.title || '') : '';
+          if (apPopup) apPopup.style.display = 'flex';
+          break;
+        case 'cardMenuInput':
+          var inId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var inEl = document.getElementById('comment-input-' + inId);
+          if (inEl) {
+            inEl.focus();
+            var inCard = inEl.closest('[data-card-id]');
+            if (inCard) inCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          break;
+        case 'cardMenuLinkedIn':
+          var lnId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var lnPost = (window.allPosts || []).find(function (p) { return p.post_id === lnId || p.id === lnId; });
+          var lnUrl = lnPost ? (lnPost.linkedinUrl || lnPost.linkedin_link || '') : '';
+          if (lnUrl) { window.open(lnUrl, '_blank'); }
+          else { if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info'); }
+          break;
+        case 'cardMenuCopyApproval':
+          var cpId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var cpPost = (window.allPosts || []).find(function (p) { return p.post_id === cpId || p.id === cpId; });
+          if (cpPost) {
+            var cpSlug = _makeSlug(cpPost.title || '');
+            navigator.clipboard.writeText('https://srtd.io/ok/?p=' + cpSlug).then(function () {
+              if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
+            }).catch(function () {
+              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+            });
+          }
+          break;
+        case 'cardMenuCopyLink':
+          var clId = _cardMenuActiveId || id;
+          _closeCardMenu();
+          var clPost = (window.allPosts || []).find(function (p) { return p.post_id === clId || p.id === clId; });
+          var clUrl = clPost ? (clPost.linkedinUrl || clPost.linkedin_link || '') : '';
+          if (clUrl) {
+            navigator.clipboard.writeText(clUrl).then(function () {
+              if (typeof window.showToast === 'function') window.showToast('Post link copied', 'success');
+            }).catch(function () {
+              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
+            });
+          } else {
+            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info');
+          }
+          break;
+      }
+    });
   }
 
   function _makeSlug(title) {
@@ -704,6 +778,7 @@
           break;
 
         case 'top-menu-toggle':
+          console.log('TOP MENU TOGGLE');
           var menu = root.querySelector('[data-top-menu]');
           if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
           break;
@@ -764,82 +839,6 @@
           cm.style.top = (rect.bottom + 4) + 'px';
           cm.style.left = Math.max(0, rect.right - 170) + 'px';
           cm.style.display = 'block';
-          break;
-
-        case 'cardMenuWA':
-          var waId1 = _cardMenuActiveId || id;
-          _closeCardMenu();
-          if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(waId1);
-          break;
-
-        case 'cardMenuApprove':
-          var cmApId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          _pendingApproveId = cmApId;
-          var cmPopup = document.getElementById('client-approve-popup');
-          var cmTitleEl = document.getElementById('client-approve-title');
-          var cmPost = (window.allPosts || []).find(function (p) { return p.post_id === cmApId || p.id === cmApId; });
-          if (cmTitleEl) cmTitleEl.textContent = cmPost ? (cmPost.title || '') : '';
-          if (cmPopup) cmPopup.style.display = 'flex';
-          break;
-
-        case 'cardMenuInput':
-          var cmInId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var cmIn = document.getElementById('comment-input-' + cmInId);
-          if (cmIn) {
-            cmIn.focus();
-            var cmCard = cmIn.closest('[data-card-id]');
-            if (cmCard) cmCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          break;
-
-        case 'cardMenuLinkedIn':
-          var liId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var liPost = (window.allPosts || []).find(function (p) { return p.post_id === liId || p.id === liId; });
-          var liUrl = liPost ? (liPost.linkedinUrl || liPost.linkedin_link || '') : '';
-          if (liUrl) {
-            window.open(liUrl, '_blank');
-          } else {
-            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet.', 'info');
-          }
-          break;
-
-        case 'cardMenuCopyApproval':
-          var cpApId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var cpApPost = (window.allPosts || []).find(function (p) { return p.post_id === cpApId || p.id === cpApId; });
-          if (cpApPost) {
-            var slug = _makeSlug(cpApPost.title || '');
-            var link = 'https://srtd.io/ok/?p=' + slug;
-            navigator.clipboard.writeText(link).then(function () {
-              if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
-            }).catch(function () {
-              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
-            });
-          }
-          break;
-
-        case 'cardMenuCopyLink':
-          var cpLnId = _cardMenuActiveId || id;
-          _closeCardMenu();
-          var cpLnPost = (window.allPosts || []).find(function (p) { return p.post_id === cpLnId || p.id === cpLnId; });
-          var cpLnUrl = cpLnPost ? (cpLnPost.linkedinUrl || cpLnPost.linkedin_link || '') : '';
-          if (cpLnUrl) {
-            navigator.clipboard.writeText(cpLnUrl).then(function () {
-              if (typeof window.showToast === 'function') window.showToast('Post link copied', 'success');
-            }).catch(function () {
-              if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');
-            });
-          } else {
-            if (typeof window.showToast === 'function') window.showToast('LinkedIn link not available yet', 'info');
-          }
-          break;
-
-        case 'cardMenuRequest':
-          _closeCardMenu();
-          if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
           break;
 
         /* -- engagement bar actions -- */
@@ -1073,10 +1072,10 @@
 
     html += '</div>';
     html += _approvePopupHtml();
-    html += _cardMenuHtml();
     html += _lightboxHtml();
 
     cv.innerHTML = html;
+    _ensureCardMenu();
     _wireEvents(cv);
     _wireNavEvents();
     _wireLightboxTouch();
