@@ -230,20 +230,20 @@
     };
 
     if (n === 1) {
-      return '<div style="padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-single" style="padding:0 14px;margin-top:10px;">' +
         wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
         wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
-      return '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -255,7 +255,7 @@
     var overlayHtml = extra > 0
       ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
@@ -1100,7 +1100,7 @@
 
     var hasContent = buckets.approval.length || buckets.input.length || buckets.published.length;
 
-    html += '<div style="padding-bottom:72px;">';
+    html += '<div style="padding-bottom:72px;max-width:560px;margin:0 auto;">';
 
     if (!hasContent) {
       html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:rgba(255,255,255,0.35);">Nothing awaiting your review.</div>';

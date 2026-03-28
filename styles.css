@@ -5653,3 +5653,16 @@ body.client-mode .section-label {
   color: var(--text-tertiary);
   padding: var(--space-3) var(--space-4) var(--space-2);
 }
+
+body.client-mode .img-single {
+  max-height: 480px;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+body.client-mode .img-duo,
+body.client-mode .img-trio,
+body.client-mode .img-quad {
+  max-height: 400px;
+}
