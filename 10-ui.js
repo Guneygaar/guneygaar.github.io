@@ -1353,9 +1353,14 @@ function openNotifications() {
       if (!pid) return;
       closeNotifications();
       setTimeout(function() {
+        var _role = (window.effectiveRole || '').toLowerCase();
+        var _isClient = _role === 'client';
         if (isBrief) {
           if (typeof _openBriefSheet === 'function')
             _openBriefSheet(pid);
+        } else if (_isClient) {
+          if (typeof window._openClientPostOverlay === 'function')
+            window._openClientPostOverlay(pid);
         } else {
           openPCS(pid, '');
         }
