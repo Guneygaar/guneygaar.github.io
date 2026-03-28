@@ -1037,6 +1037,7 @@
           break;
 
         case 'openLightbox':
+          if (typeof window.showToast === 'function') window.showToast('LIGHTBOX TAP', 'success');
           try {
             var lbImgs = JSON.parse(btn.getAttribute('data-images') || '[]');
             var lbIdx = parseInt(btn.getAttribute('data-index') || '0', 10);
