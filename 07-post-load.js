@@ -239,7 +239,7 @@ async function loadPostsForClient() {
             p.post_comments = comments.filter(function(c) { return c.post_id === pid; });
           });
         }
-      } catch (_) { /* comments fetch failed — render without them */ }
+      } catch (_) { /* comments fetch failed - render without them */ }
     }
 
     mergePosts(normalise(data));
@@ -2471,6 +2471,8 @@ function toggleStageOverflow(btn, totalHidden) {
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ===============================================
 document.addEventListener('click', function _cardClickDelegate(e) {
+  if (!window.effectiveRole) return;
+  if (window.effectiveRole === 'Client' || window.effectiveRole === 'client') return;
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
   var postId  = card.dataset.postId;
