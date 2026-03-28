@@ -222,9 +222,26 @@ async function loadPostsForClient() {
       'awaiting_approval,awaiting_brand_input,published';
     const data  = await apiFetch(
       '/posts?stage=in.(' + allowedStages +
-      ')&select=*,post_comments(*)&order=created_at.desc'
+      ')&select=*&order=created_at.desc'
     );
     if (!_commitPostsResult(reqId, 'network')) return;
+
+    var postIds = data.map(function(p) { return p.post_id || p.id; }).filter(Boolean);
+    if (postIds.length) {
+      try {
+        var comments = await apiFetch(
+          '/post_comments?post_id=in.(' + postIds.join(',') +
+          ')&order=created_at.asc'
+        );
+        if (Array.isArray(comments)) {
+          data.forEach(function(p) {
+            var pid = p.post_id || p.id;
+            p.post_comments = comments.filter(function(c) { return c.post_id === pid; });
+          });
+        }
+      } catch (_) { /* comments fetch failed — render without them */ }
+    }
+
     mergePosts(normalise(data));
     hideErrorBanner();
     renderClientView();
