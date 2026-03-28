@@ -1315,19 +1315,18 @@
     cv.innerHTML = html;
     _wireTopNavOnce();
     _wireEvents(cv);
-    cv.querySelectorAll('[data-action="openLightbox"]')
-      .forEach(function(cell) {
-        cell.addEventListener('click', function(e) {
-          e.stopPropagation();
-          try {
-            var imgs = JSON.parse(
-              cell.getAttribute('data-images') || '[]');
-            var idx = parseInt(
-              cell.getAttribute('data-index') || '0', 10);
-            if (imgs.length) _lbOpen(imgs, idx);
-          } catch (_e) {}
-        });
-      });
+    cv.addEventListener('click', function(e) {
+      var cell = e.target.closest('[data-action="openLightbox"]');
+      if (!cell) return;
+      e.stopPropagation();
+      try {
+        var imgs = JSON.parse(
+          cell.getAttribute('data-images') || '[]');
+        var idx = parseInt(
+          cell.getAttribute('data-index') || '0', 10);
+        if (imgs.length) _lbOpen(imgs, idx);
+      } catch (_e) {}
+    });
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
@@ -1396,19 +1395,18 @@
     document.body.style.overflow = 'hidden';
 
     _wireEvents(overlay);
-    overlay.querySelectorAll('[data-action="openLightbox"]')
-      .forEach(function(cell) {
-        cell.addEventListener('click', function(e) {
-          e.stopPropagation();
-          try {
-            var imgs = JSON.parse(
-              cell.getAttribute('data-images') || '[]');
-            var idx = parseInt(
-              cell.getAttribute('data-index') || '0', 10);
-            if (imgs.length) _lbOpen(imgs, idx);
-          } catch (_e) {}
-        });
-      });
+    overlay.addEventListener('click', function(e) {
+      var cell = e.target.closest('[data-action="openLightbox"]');
+      if (!cell) return;
+      e.stopPropagation();
+      try {
+        var imgs = JSON.parse(
+          cell.getAttribute('data-images') || '[]');
+        var idx = parseInt(
+          cell.getAttribute('data-index') || '0', 10);
+        if (imgs.length) _lbOpen(imgs, idx);
+      } catch (_e) {}
+    });
     var approvePopup = document.getElementById('client-approve-popup');
     if (approvePopup && !approvePopup.dataset.wired) {
       _wireEvents(approvePopup);
