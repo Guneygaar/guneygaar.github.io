@@ -320,13 +320,6 @@ body {
 
   var app = document.getElementById('app');
 
-  function makeSlug(title) {
-    return (title || '').toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .trim().replace(/\s+/g, '-')
-      .replace(/-+/g, '-').slice(0, 50);
-  }
-
   function esc(str) {
     var el = document.createElement('div');
     el.textContent = str;
@@ -501,9 +494,9 @@ body {
 
   /* Init */
   function init() {
-    var params = new URLSearchParams(window.location.search);
-    var slug = params.get('p');
-    if (!slug) {
+    var shortId = new URL(window.location.href)
+      .searchParams.get('p') || '';
+    if (!shortId) {
       app.innerHTML = '<div class="status-msg">Post not found.</div>';
       return;
     }
@@ -520,7 +513,9 @@ body {
     .then(function(posts) {
       var match = null;
       for (var i = 0; i < posts.length; i++) {
-        if (makeSlug(posts[i].title) === slug) {
+        var pid = (posts[i].post_id || posts[i].id || '');
+        var digits = pid.replace(/[^0-9]/g, '').slice(-4);
+        if (digits === shortId) {
           match = posts[i];
           break;
         }

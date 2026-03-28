@@ -375,10 +375,10 @@ window._renderPCS = function(postId) {
           '<button onclick="(function(){' +
           'var post=(typeof getPostById===\'function\')?getPostById(\'' + postId + '\'):null;' +
           'if(!post)return;' +
-          'var slug=(post.title||\'\').toLowerCase()' +
-          '.replace(/[^a-z0-9\\s]/g,\' \').trim()' +
-          '.replace(/\\s+/g,\'-\').replace(/-+/g,\'-\').slice(0,50);' +
-          'var msg=(post.title||\'\')+\' -- Awaiting your approval.\\n\\nhttps://srtd.io/preview/?p=\'+slug;' +
+          'var pid=(post.post_id||post.id||\'\');' +
+          'var sid=pid.replace(/[^0-9]/g,\'\').slice(-4);' +
+          'if(!sid)sid=pid.slice(-4);' +
+          'var msg=(post.title||\'\')+\' -- Awaiting your approval.\\n\\nhttps://srtd.io/p/\'+sid;' +
           'navigator.clipboard.writeText(msg).then(function(){' +
           'var b=document.getElementById(\'pcs-copy-btn\');' +
           'if(b){b.textContent=\'Copied\';' +
@@ -1382,14 +1382,10 @@ window._sharePostOnWhatsApp = function(postId) {
 
   var title = post.title || 'New Post';
 
-  var slug = (title).toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 50);
-
-  var previewUrl = 'https://srtd.io/preview/?p=' + slug;
+  var postIdRaw = post.post_id || post.id || '';
+  var shortId = postIdRaw.replace(/[^0-9]/g, '').slice(-4);
+  if (!shortId) shortId = postIdRaw.slice(-4);
+  var previewUrl = 'https://srtd.io/p/' + shortId;
 
   var message = title + ' -- Awaiting your approval.\n\n'
     + previewUrl;
