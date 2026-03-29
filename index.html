@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260329u">
+ <link rel="stylesheet" href="styles.css?v=20260329v">
 
 </head>
 <body>
@@ -901,21 +901,53 @@
       <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
       <!-- COMMENTS -->
       <div id="pcs-comments-section" style="display:none;">
-        <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 16px;"></div>
-        <div style="display:flex;align-items:center;gap:8px;padding:14px 16px 10px;border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Comments</div>
-          <span id="pcs-comments-count" style="background:rgba(200,168,75,0.15);color:#C8A84B;font-size:7px;padding:1px 6px;letter-spacing:0.1em;display:none;">0</span>
+
+        <!-- SECTION 1: CLIENT COMMENTS -->
+        <div class="pcs-section-header">
+          <div class="pcs-section-label">COMMENTS <span id="pcs-comments-count" class="pcs-count-badge" style="display:none;">0</span></div>
         </div>
-        <div id="pcs-comments-list" style="padding:0 0 8px;"></div>
-        <div style="text-align:center;padding:4px 0 12px;">
-          <span id="pcs-activity-link" onclick="togglePCSActivity()" style="font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.18);cursor:pointer;">&#x2193; Show activity log</span>
+        <div id="pcs-comments-list" class="pcs-thread-list"></div>
+
+        <!-- SECTION 2: INTERNAL NOTES (agency only) -->
+        <div id="pcs-notes-section" class="pcs-notes-section" style="display:none;">
+          <div class="pcs-section-header pcs-notes-header">
+            <div class="pcs-section-label">INTERNAL NOTES <span class="pcs-lock-icon">&#128274;</span> <span id="pcs-notes-count" class="pcs-count-badge pcs-notes-badge" style="display:none;">0</span></div>
+            <div class="pcs-vis-selector" id="pcs-vis-selector">
+              <div class="pcs-vis-chip active" data-vis="all" onclick="setPcsVisibility(this,'all')">ALL</div>
+              <div class="pcs-vis-chip" data-vis="admin" onclick="setPcsVisibility(this,'admin')">ADMIN</div>
+              <div class="pcs-vis-chip" data-vis="servicing" onclick="setPcsVisibility(this,'servicing')">SERV</div>
+              <div class="pcs-vis-chip" data-vis="creative" onclick="setPcsVisibility(this,'creative')">CREATIVE</div>
+            </div>
+          </div>
+          <div id="pcs-notes-list" class="pcs-thread-list pcs-notes-list"></div>
+
+          <!-- NOTES INPUT BAR -->
+          <div class="pcs-input-bar pcs-notes-input-bar">
+            <textarea id="pcs-note-input" class="pcs-textarea pcs-note-textarea" rows="1" placeholder="Add internal note... @mention to notify"></textarea>
+            <button class="pcs-send-btn pcs-note-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-note-input').value,window._pcsNoteVisibility||'all')">NOTE</button>
+          </div>
         </div>
+
+        <!-- CONFIRMATION DIALOG -->
+        <div id="pcs-comment-confirm" class="pcs-confirm-overlay" style="display:none;">
+          <div class="pcs-confirm-sheet">
+            <div class="pcs-confirm-title">SEND TO CLIENT?</div>
+            <div id="pcs-comment-confirm-preview" class="pcs-confirm-preview"></div>
+            <div class="pcs-confirm-warn1">Client will see this.</div>
+            <div class="pcs-confirm-warn2">This cannot be unsaid.</div>
+            <div class="pcs-confirm-btns">
+              <button class="pcs-confirm-cancel" onclick="document.getElementById('pcs-comment-confirm').style.display='none';window._pendingComment=null;">CANCEL</button>
+              <button class="pcs-confirm-send" onclick="document.getElementById('pcs-comment-confirm').style.display='none';if(window._pendingComment){window._doSubmitComment(window._pendingComment);window._pendingComment=null;}">SEND &#x2192;</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
     <!-- COMMENT INPUT BAR - outside scroll, inside pcs-screen -->
-    <div id="pcs-comment-input-bar" style="display:none;position:relative;flex-shrink:0;background:#0e0e14;border-top:1px solid rgba(255,255,255,0.08);padding:10px 16px 16px;gap:10px;align-items:flex-end;">
-      <textarea id="pcs-comment-input" rows="1" placeholder="Add a comment..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var btn=document.getElementById('pcs-send-btn');if(btn){if(this.value.trim()){btn.style.color='#C8A84B';btn.style.background='rgba(200,168,75,0.08)';btn.style.borderColor='rgba(200,168,75,0.35)';btn.style.boxShadow='0 0 10px rgba(200,168,75,0.1)';}else{btn.style.color='rgba(200,168,75,0.4)';btn.style.background='transparent';btn.style.borderColor='rgba(200,168,75,0.15)';btn.style.boxShadow='none';}}" style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;padding:8px 12px;outline:none;resize:none;caret-color:#C8A84B;min-height:36px;max-height:80px;"></textarea>
-      <button id="pcs-send-btn" onclick="submitPcsComment()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(200,168,75,0.4);background:transparent;border:1px solid rgba(200,168,75,0.15);padding:8px 14px;cursor:pointer;height:36px;white-space:nowrap;align-self:flex-end;">Send &#x2192;</button>
+    <div id="pcs-comment-input-bar" class="pcs-input-bar" style="display:none;">
+      <textarea id="pcs-comment-input" class="pcs-textarea" rows="1" placeholder="Reply to client..."></textarea>
+      <button class="pcs-send-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-comment-input').value,'all')">Send &#x2192;</button>
     </div>
 
   </div>
@@ -972,26 +1004,32 @@ window.allPosts        = window.allPosts    || [];
 window.cachedPosts     = window.cachedPosts || [];
 window.currentRole     = window.currentRole || 'Admin';
 window.allTasks        = window.allTasks    || [];
+window._pcsNoteVisibility = 'all';
+window.setPcsVisibility = function(el, vis) {
+  window._pcsNoteVisibility = vis;
+  document.querySelectorAll('.pcs-vis-chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+};
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="01-config.js?v=20260329u" defer></script>
-<script src="02-session.js?v=20260329u" defer></script>
-<script src="utils.js?v=20260329u" defer></script>
-<script src="03-auth.js?v=20260329u" defer></script>
-<script src="05-api.js?v=20260329u" defer></script>
-<script src="10-ui.js?v=20260329u" defer></script>
+<script src="01-config.js?v=20260329v" defer></script>
+<script src="02-session.js?v=20260329v" defer></script>
+<script src="utils.js?v=20260329v" defer></script>
+<script src="03-auth.js?v=20260329v" defer></script>
+<script src="05-api.js?v=20260329v" defer></script>
+<script src="10-ui.js?v=20260329v" defer></script>
 
-<script src="06-post-create.js?v=20260329u" defer></script>
-<script defer src="render/dashboard.js?v=20260329u"></script>
-<script defer src="render/client.js?v=20260329u"></script>
-<script defer src="render/pipeline.js?v=20260329u"></script>
-<script defer src="render/brief.js?v=20260329u"></script>
-<script defer src="actions/pcs.js?v=20260329u"></script>
-<script src="07-post-load.js?v=20260329u" defer></script>
-<script src="08-post-actions.js?v=20260329u" defer></script>
-<script src="09-library.js?v=20260329u" defer></script>
-<script src="09-approval.js?v=20260329u" defer></script>
-<script src="04-router.js?v=20260329u" defer></script>
+<script src="06-post-create.js?v=20260329v" defer></script>
+<script defer src="render/dashboard.js?v=20260329v"></script>
+<script defer src="render/client.js?v=20260329v"></script>
+<script defer src="render/pipeline.js?v=20260329v"></script>
+<script defer src="render/brief.js?v=20260329v"></script>
+<script defer src="actions/pcs.js?v=20260329v"></script>
+<script src="07-post-load.js?v=20260329v" defer></script>
+<script src="08-post-actions.js?v=20260329v" defer></script>
+<script src="09-library.js?v=20260329v" defer></script>
+<script src="09-approval.js?v=20260329v" defer></script>
+<script src="04-router.js?v=20260329v" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
