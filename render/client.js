@@ -1169,48 +1169,62 @@
     overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:2000;background:#080808;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;';
     var mono = "'IBM Plex Mono',monospace";
     var sans = "'DM Sans',sans-serif";
-    var labelStyle = 'font-family:' + mono + ';font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px;';
+    var numStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;color:rgba(255,255,255,0.2);margin-bottom:4px;';
+    var labelStyle = 'font-family:' + sans + ';font-size:14px;color:#e8e2d9;margin-bottom:8px;';
     var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.12);color:#e8e2d9;font-family:' + sans + ';font-size:15px;padding:10px 0;outline:none;caret-color:#C8A84B;';
+    var hintStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-top:6px;';
     var chipBtnStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);background:transparent;border:1px solid rgba(255,255,255,0.18);padding:8px 14px;cursor:pointer;';
+    var separatorStyle = 'border:none;border-top:1px dotted #C8A84B;margin:24px 0;opacity:0.3;';
+    var optSubStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.08em;color:#555;margin-left:6px;';
     overlay.innerHTML =
       '<div style="position:sticky;top:0;z-index:10;background:rgba(8,8,8,0.97);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
-        '<div style="font-family:' + mono + ';font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;">New Request</div>' +
+        '<div><span style="font-family:' + mono + ';font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
+        '<span style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;color:#555;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
         '<button data-action="reqClose" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding:24px 18px 120px;max-width:430px;margin:0 auto;width:100%;">' +
-        '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Title</div>' +
-          '<input id="req-name" type="text" placeholder="Give your request a short title" style="' + inputStyle + '">' +
+        /* FIELD 01 */
+        '<div style="margin-bottom:0;">' +
+          '<div style="' + numStyle + '">01</div>' +
+          '<div style="' + labelStyle + '">Name this request <span style="color:#FF4B4B;">*</span></div>' +
+          '<input id="req-name" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women\'s Day" style="' + inputStyle + '">' +
+          '<div style="' + hintStyle + '">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
         '</div>' +
-        '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Brief</div>' +
-          '<textarea id="req-topic" rows="4" placeholder="Describe what you need..." style="' + inputStyle + 'resize:none;line-height:1.7;"></textarea>' +
+        '<hr style="' + separatorStyle + '">' +
+        /* FIELD 02 */
+        '<div style="margin-bottom:0;">' +
+          '<div style="' + numStyle + '">02</div>' +
+          '<div style="' + labelStyle + '">What\'s the brief? <span style="color:#FF4B4B;">*</span></div>' +
+          '<textarea id="req-topic" rows="4" placeholder="Write the brief here -- topic, story, key message..." style="' + inputStyle + 'resize:none;line-height:1.7;"></textarea>' +
         '</div>' +
-        '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Content Type</div>' +
+        '<hr style="' + separatorStyle + '">' +
+        /* FIELD 03 */
+        '<div style="margin-bottom:0;">' +
+          '<div style="' + numStyle + '">03</div>' +
+          '<div style="' + labelStyle + '">Content type <span style="' + optSubStyle + '">OPTIONAL</span></div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Photo</button>' +
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Carousel</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Static</button>' +
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Video</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Article</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Text</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Creative</button>' +
           '</div>' +
         '</div>' +
-        '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Target Date</div>' +
+        '<hr style="' + separatorStyle + '">' +
+        /* FIELD 04 */
+        '<div style="margin-bottom:0;">' +
+          '<div style="' + numStyle + '">04</div>' +
+          '<div style="' + labelStyle + '">Target date <span style="' + optSubStyle + '">OPTIONAL</span></div>' +
           '<div style="position:relative;">' +
             '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:rgba(255,255,255,0.45);">Pick a date</span>' +
             '<input id="req-date" type="date" style="position:absolute;inset:0;opacity:0;cursor:pointer;">' +
           '</div>' +
         '</div>' +
+        '<hr style="' + separatorStyle + '">' +
+        /* FIELD 05 */
         '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Urgency</div>' +
-          '<div style="display:flex;gap:8px;">' +
-            '<button id="req-urgency-normal" data-action="reqUrgency" data-type="normal" style="' + chipBtnStyle + 'color:#3ECF8E;background:rgba(62,207,142,0.08);border-color:rgba(62,207,142,0.3);">Normal</button>' +
-            '<button id="req-urgency-urgent" data-action="reqUrgency" data-type="urgent" style="' + chipBtnStyle + '">Urgent</button>' +
-          '</div>' +
-        '</div>' +
-        '<div style="margin-bottom:24px;">' +
-          '<div style="' + labelStyle + '">Photos</div>' +
+          '<div style="' + numStyle + '">05</div>' +
+          '<div style="' + labelStyle + '">Reference photos</div>' +
           '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
             '<div id="req-add-tile" data-action="reqAddPhoto" style="aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(255,255,255,0.15);cursor:pointer;color:rgba(255,255,255,0.3);font-size:20px;">+</div>' +
           '</div>' +
@@ -1223,7 +1237,11 @@
             '<div id="req-progress-text" style="font-family:' + mono + ';font-size:8px;color:#555;margin-top:4px;"></div>' +
           '</div>' +
         '</div>' +
-        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="width:100%;font-family:' + mono + ';font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#444;background:transparent;border:1px solid rgba(255,255,255,0.1);padding:16px 0;cursor:not-allowed;">&#x2192; Send Request</button>' +
+      '</div>' +
+      /* FOOTER - sticky bottom */
+      '<div style="position:sticky;bottom:0;z-index:10;background:rgba(8,8,8,0.97);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,0.06);padding:12px 18px;display:flex;gap:12px;max-width:430px;margin:0 auto;width:100%;box-sizing:border-box;">' +
+        '<button data-action="reqClose" style="flex:1;font-family:' + mono + ';font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.5);background:transparent;border:1px dotted rgba(255,255,255,0.25);padding:14px 0;cursor:pointer;">CANCEL</button>' +
+        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="flex:1;font-family:' + mono + ';font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#080808;background:#C8A84B;border:none;padding:14px 0;cursor:not-allowed;opacity:0.4;">&#x2192; SEND REQUEST</button>' +
       '</div>';
     document.body.appendChild(overlay);
     // Wire delegated events on request overlay
@@ -1233,7 +1251,6 @@
       var act = btn.getAttribute('data-action');
       if (act === 'reqClose') { if (typeof _closeReqForm === 'function') _closeReqForm(); }
       else if (act === 'reqChip') { if (typeof _reqToggleChip === 'function') _reqToggleChip(btn); }
-      else if (act === 'reqUrgency') { if (typeof _reqSetUrgency === 'function') _reqSetUrgency(btn, btn.getAttribute('data-type')); }
       else if (act === 'reqAddPhoto') { var fi = document.getElementById('req-file'); if (fi) fi.click(); }
       else if (act === 'reqSubmit') { if (typeof submitClientRequest === 'function') submitClientRequest(); }
       else if (act === 'reqRemovePhoto') {
@@ -1487,24 +1504,26 @@ window._closeReqForm = function() {
   var btn = document.getElementById('req-submit-btn');
   if (btn) {
     btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
+    btn.style.color = '#080808';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
+    btn.style.opacity = '0.4';
+    btn.innerHTML = '&#x2192; SEND REQUEST';
   }
 }
 
 window._reqToggleChip = function(el) {
-  var allChips = el.parentNode.querySelectorAll('button');
-  allChips.forEach(function(chip) {
-    chip.style.color = 'rgba(255,255,255,0.55)';
-    chip.style.background = 'transparent';
-    chip.style.borderColor = 'rgba(255,255,255,0.18)';
-  });
-  el.style.color = '#C8A84B';
-  el.style.background = 'rgba(200,168,75,0.07)';
-  el.style.borderColor = 'rgba(200,168,75,0.4)';
+  var isSelected = el.style.color === 'rgb(200, 168, 75)';
+  if (isSelected) {
+    el.style.color = 'rgba(255,255,255,0.55)';
+    el.style.background = 'transparent';
+    el.style.borderColor = 'rgba(255,255,255,0.18)';
+  } else {
+    el.style.color = '#C8A84B';
+    el.style.background = 'transparent';
+    el.style.borderColor = '#C8A84B';
+  }
 }
 
 window._reqSetUrgency = function(el, type) {
@@ -1569,10 +1588,8 @@ window._reqAddPhotos = function(input) {
   var sendBtn = document.getElementById('req-submit-btn');
   if (sendBtn) {
     sendBtn.disabled = true;
-    sendBtn.style.color = '#444';
-    sendBtn.style.borderColor = 'rgba(255,255,255,0.1)';
     sendBtn.style.cursor = 'not-allowed';
-    sendBtn.style.boxShadow = 'none';
+    sendBtn.style.opacity = '0.4';
     sendBtn.textContent = 'Loading photos...';
   }
 
@@ -1640,18 +1657,18 @@ window._reqValidate = function() {
   var valid = name.trim().length > 0 && brief.trim().length > 0;
   if (valid) {
     btn.disabled = false;
-    btn.style.color = '#C8A84B';
-    btn.style.borderColor = '#C8A84B';
-    btn.style.background = 'rgba(200,168,75,0.06)';
+    btn.style.color = '#080808';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'pointer';
-    btn.style.boxShadow = '0 0 12px rgba(200,168,75,0.12)';
-    btn.innerHTML = '&#x2192; Send Request';
+    btn.style.opacity = '1';
+    btn.innerHTML = '&#x2192; SEND REQUEST';
   } else {
     btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
+    btn.style.color = '#080808';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
+    btn.style.opacity = '0.4';
   }
 }
