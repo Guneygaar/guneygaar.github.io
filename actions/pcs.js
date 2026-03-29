@@ -1607,6 +1607,7 @@ window._doSubmitComment = async function(opts) {
       method: 'POST',
       body: JSON.stringify({
         post_id: opts.postId,
+        post_title: opts.title || null,
         author: opts.author,
         author_role: _normalRole,
         message: opts.message,
