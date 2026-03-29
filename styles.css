@@ -5731,11 +5731,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   overflow-y: auto;
 }
 .pcs-notes-list {
-  background: rgba(246,166,35,0.015);
+  background: transparent;
 }
 .pcs-notes-section {
-  border-top: 1px solid rgba(246,166,35,0.08);
-  background: rgba(246,166,35,0.015);
+  border-top: 1px solid rgba(246,166,35,0.12);
+  background: rgba(246,166,35,0.03);
 }
 .pcs-notes-header {
   border-top: none;

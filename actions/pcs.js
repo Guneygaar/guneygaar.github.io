@@ -635,9 +635,17 @@ window.loadPcsComments = async function(postId) {
     var internalRows = rows.filter(function(c) {
       if (c.visibility === 'all' || !c.visibility) return false;
       if (_roleLower === 'admin') return true;
-      if (c.visibility === _roleLower) return true;
-      var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
-      return _mu.indexOf(_name) !== -1;
+      if (_roleLower === 'servicing' || _roleLower === 'chitra') {
+        if (c.visibility === 'all' || c.visibility === 'servicing') return true;
+        var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
+        return _mu.indexOf(_name) !== -1;
+      }
+      if (_roleLower === 'creative' || _roleLower === 'pranav') {
+        if (c.visibility === 'all' || c.visibility === 'creative') return true;
+        var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
+        return _mu.indexOf(_name) !== -1;
+      }
+      return false;
     });
 
     section.style.display = 'block';
@@ -695,7 +703,7 @@ window.loadPcsComments = async function(postId) {
     var emptyClient =
       '<div class="pcs-empty-thread">' +
       '<div class="pcs-empty-icon">&#x1F4AC;</div>' +
-      '<div class="pcs-empty-text">No comments yet.<br>Client and team see this thread.</div>' +
+      '<div class="pcs-empty-text">No client comments yet.<br>Client and team see this thread.</div>' +
       '</div>';
 
     list.innerHTML = _renderThread(clientRows, emptyClient);
@@ -979,22 +987,8 @@ window._buildInfoGrid = function(post, canEdit, canEditCreative, id) {
   '</div></div>';
 }
 
-window._buildNotes = function(post, canEdit, id) {
-  var _isClient = (window.effectiveRole || '').toLowerCase() === 'client';
-  if (_isClient) return '';
-
-  if (!canEdit && !post.comments) return '';
-
-  var notesInput = (canEdit || canEditCreative)
-    ? '<textarea class="pc-notes-area" placeholder="Brief or caption..."' +
-      ' onblur="updatePost(\'' + esc(id) + '\',\'comments\',this.value)">' + esc(post.comments || '') + '</textarea>'
-    : (post.comments ? '<div class="pc-notes-ro">' + esc(post.comments) + '</div>' : '');
-
-  return '<div class="pc-notes-block">' +
-    '<div class="pc-notes-lbl" style="display:flex;align-items:center;gap:8px;">Internal Notes' +
-    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;color:rgba(255,166,35,0.6);background:rgba(255,166,35,0.08);padding:2px 6px;letter-spacing:0.1em;text-transform:uppercase;">Agency only</span></div>' +
-    (notesInput || '<div class="pcs-activity-empty">No notes.</div>') +
-  '</div>';
+window._buildNotes = function() {
+  return '';
 }
 
 // -- Stage advance button (FIX 7) --
