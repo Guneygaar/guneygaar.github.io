@@ -5720,7 +5720,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .client-sublabel {
   font-family: var(--mono);
   font-size: 7px;
-  color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.28);
   letter-spacing: 0.08em;
 }
 .client-input-zone {
@@ -5734,7 +5734,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* INTERNAL NOTES SECTION */
 .pcs-notes-section {
-  background: #111008;
+  background: #191920;
   border: 1px solid rgba(246,166,35,0.15);
   border-top: 2px solid rgba(246,166,35,0.25);
   margin-bottom: 3px;
