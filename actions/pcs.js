@@ -628,6 +628,19 @@ window.loadPcsComments = async function(postId) {
     );
     if (!Array.isArray(rows)) rows = [];
 
+    var _unreadIds = rows
+      .filter(function(r) { return !r.read; })
+      .map(function(r) { return r.id; });
+    if (_unreadIds.length > 0) {
+      _unreadIds.forEach(function(id) {
+        apiFetch('/post_comments?id=eq.' + id, {
+          method: 'PATCH',
+          headers: {'Prefer': 'return=minimal'},
+          body: JSON.stringify({ read: true })
+        }).catch(function(){});
+      });
+    }
+
     var clientRows = rows.filter(function(c) {
       return c.visibility === 'all' || !c.visibility;
     });
@@ -1552,6 +1565,27 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   });
 };
 
+async function _lookupMentionEmails(names) {
+  if (!names || !names.length) return [];
+  try {
+    var results = [];
+    for (var i = 0; i < names.length; i++) {
+      var rows = await apiFetch(
+        '/user_roles?name=eq.' +
+        encodeURIComponent(names[i]) +
+        '&select=email,name&limit=1'
+      );
+      if (Array.isArray(rows) && rows[0] && rows[0].email) {
+        results.push({ name: rows[0].name, email: rows[0].email });
+      }
+    }
+    return results;
+  } catch(e) {
+    console.error('_lookupMentionEmails failed:', e);
+    return [];
+  }
+}
+
 window._doSubmitComment = async function(opts) {
   var _roleLower = (opts.role||'').toLowerCase();
   var _normalRole = opts.role.charAt(0).toUpperCase() +
@@ -1610,6 +1644,9 @@ window._doSubmitComment = async function(opts) {
         })
       }).catch(function(){});
     });
+
+    var _mentionContacts = await _lookupMentionEmails(opts.mentioned);
+    window._lastMentionContacts = _mentionContacts;
 
     if (typeof loadPcsComments === 'function') {
       loadPcsComments(opts.postId);

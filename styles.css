@@ -2999,7 +2999,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
   width: var(--pcs-modal-width);
   max-width: var(--pcs-modal-width);
-  height: 92vh;
   color: var(--text-primary);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3354,16 +3353,6 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .pcs-activity-empty { font-size: 12px; color: var(--text-tertiary); padding: var(--pcs-space-1) 0; }
 
 /*  Delete confirm  theme-aware  */
-.pcs-confirm-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9501;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--pcs-space-5);
-}
 .pcs-confirm-sheet {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -3427,6 +3416,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   overflow-y: auto;
   scrollbar-width: none;
   min-height: 0;
+  padding-bottom: env(safe-area-inset-bottom, 20px);
 }
 .pc-scroll-body::-webkit-scrollbar { display: none; }
 
@@ -5723,7 +5713,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .client-sublabel {
   font-family: var(--mono);
   font-size: 7px;
-  color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.35);
   letter-spacing: 0.08em;
 }
 .client-input-zone {
@@ -5759,7 +5749,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.55);
   display: flex;
   align-items: center;
   gap: 6px;
