@@ -1385,43 +1385,35 @@ window._sharePostOnWhatsApp = function(postId) {
       + encodeURIComponent(textMessage);
   };
 
-  var cardEl = document.querySelector(
-    '[data-card-id="' + postId + '"]');
+  var images = Array.isArray(post.images)
+    ? post.images : [];
+  var firstImage = images.length ? images[0] : '';
 
-  if (!cardEl || typeof html2canvas === 'undefined'
-    || !navigator.canShare) {
+  if (!firstImage || !navigator.canShare) {
     waFallback();
     return;
   }
 
   if (typeof showToast === 'function')
-    showToast('Preparing image...', 'success');
+    showToast('Preparing...', 'success');
 
-  html2canvas(cardEl, {
-    useCORS: true,
-    allowTaint: true,
-    backgroundColor: '#000000',
-    scale: 2,
-    logging: false
-  })
-  .then(function(canvas) {
-    canvas.toBlob(function(blob) {
-      if (!blob) { waFallback(); return; }
-      var file = new File([blob], 'post-preview.png',
-        { type: 'image/png' });
+  fetch(firstImage)
+    .then(function(r) { return r.blob(); })
+    .then(function(blob) {
+      var file = new File([blob], 'post.jpg',
+        { type: blob.type || 'image/jpeg' });
       if (navigator.canShare({ files: [file] })) {
-        navigator.share({
+        return navigator.share({
           files: [file],
           text: textMessage
-        }).catch(waFallback);
+        });
       } else {
         waFallback();
       }
-    }, 'image/png');
-  })
-  .catch(function() {
-    waFallback();
-  });
+    })
+    .catch(function() {
+      waFallback();
+    });
 };
 
 window.submitPcsComment = function() {
