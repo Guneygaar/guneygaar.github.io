@@ -674,10 +674,29 @@ window.loadPcsComments = async function(postId) {
       return 'pcs-avatar av-admin';
     }
 
+    function _highlightMentions(text) {
+      return text.replace(/@([a-zA-Z0-9_]+)/g,
+        '<span style="color:#9b87f5;background:rgba(155,135,245,0.1);padding:0 3px;font-weight:500;">@$1</span>');
+    }
+
+    function _parseTask(c) {
+      try {
+        var _att = typeof c.attachments === 'string' ? JSON.parse(c.attachments) : (c.attachments || []);
+        if (_att && _att.type === 'task') return true;
+      } catch(e) {}
+      return false;
+    }
+
     function _renderClientThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
       return threadRows.map(function(c) {
         var _initial = (c.author||'?').charAt(0).toUpperCase();
+        var _isTask = _parseTask(c);
+        var _taskPrefix = _isTask
+          ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
+            '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+            (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
+          : '';
         return '<div class="pcs-comment-item">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
@@ -686,7 +705,9 @@ window.loadPcsComments = async function(postId) {
               '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
               '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
             '</div>' +
-            '<div class="pcs-comment-text">' + esc(c.message) + '</div>' +
+            '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
+            ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+            _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -703,6 +724,12 @@ window.loadPcsComments = async function(postId) {
         var _vis = (c.visibility||'all').toUpperCase();
         if (_vis === 'SERVICING') _vis = 'SERV';
         var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
+        var _isTask = _parseTask(c);
+        var _taskPrefix = _isTask
+          ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
+            '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+            (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
+          : '';
 
         return '<div class="pcs-note-item' +
           (c.resolved ? ' pcs-resolved' : '') + '">' +
@@ -715,7 +742,9 @@ window.loadPcsComments = async function(postId) {
               _mentionBadge +
               _visTag +
             '</div>' +
-            '<div class="pcs-comment-text">' + esc(c.message) + '</div>' +
+            '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
+            ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+            _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -749,7 +778,7 @@ window.loadPcsComments = async function(postId) {
 
       var emptyNotes =
         '<div class="pcs-empty-thread">' +
-        '<div class="pcs-empty-icon">&#x1F512;</div>' +
+        '<div class="pcs-empty-icon" style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:rgba(255,255,255,0.15);opacity:1;">PRIVATE</div>' +
         '<div class="pcs-empty-text">No internal notes yet.</div></div>';
 
       var notesHtml = _renderNoteThread(activeRows, emptyNotes);
@@ -1471,7 +1500,8 @@ window._sharePostOnWhatsApp = function(postId) {
     + encodeURIComponent(message);
 };
 
-window.submitPcsComment = async function(postId, message, visibility) {
+window.submitPcsComment = async function(postId, message, visibility, isTask) {
+  isTask = isTask || false;
   visibility = visibility || 'all';
 
   if (!postId || !message || !(message = message.trim())) return;
@@ -1498,7 +1528,8 @@ window.submitPcsComment = async function(postId, message, visibility) {
       mentioned: _mentioned,
       author: _author,
       role: _role,
-      title: _title
+      title: _title,
+      isTask: isTask
     };
     var confirmEl = document.getElementById('pcs-comment-confirm');
     var previewEl = document.getElementById('pcs-comment-confirm-preview');
@@ -1516,7 +1547,8 @@ window.submitPcsComment = async function(postId, message, visibility) {
     mentioned: _mentioned,
     author: _author,
     role: _role,
-    title: _title
+    title: _title,
+    isTask: isTask
   });
 };
 
@@ -1534,7 +1566,10 @@ window._doSubmitComment = async function(opts) {
         author_role: _normalRole,
         message: opts.message,
         visibility: opts.visibility,
-        mentioned_users: opts.mentioned
+        mentioned_users: opts.mentioned,
+        resolved: false,
+        resolved_by: null,
+        attachments: opts.isTask ? JSON.stringify({type:'task'}) : '[]'
       })
     });
 
@@ -1595,5 +1630,20 @@ window._doSubmitComment = async function(opts) {
     console.error('_doSubmitComment failed:', e);
     showToast('Failed to send. Try again.', 'error');
   }
+};
+
+window.toggleTaskResolve = function(commentId, postId) {
+  apiFetch('/post_comments?id=eq.' + commentId, {
+    method: 'PATCH',
+    headers: {'Prefer': 'return=minimal'},
+    body: JSON.stringify({
+      resolved: true,
+      resolved_by: window.currentUserName || 'Admin'
+    })
+  }).then(function() {
+    loadPcsComments(postId);
+  }).catch(function(e) {
+    console.error('toggleTaskResolve failed:', e);
+  });
 };
 

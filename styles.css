@@ -6104,3 +6104,33 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 4px 0;
   list-style: none;
 }
+
+/* TASK COMMENTS */
+.pcs-task-check {
+  cursor: pointer;
+  font-size: 14px;
+  margin-right: 4px;
+  color: rgba(255,255,255,0.4);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pcs-task-check.pcs-task-done {
+  color: #3ECF8E;
+}
+.pcs-task-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+.pcs-task-text.pcs-task-done {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+.pcs-task-btn {
+  border-color: rgba(62,207,142,0.2);
+  color: rgba(62,207,142,0.35);
+}
+.pcs-task-btn.active {
+  border-color: rgba(62,207,142,0.5);
+  color: #3ECF8E;
+}
