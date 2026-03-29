@@ -1166,43 +1166,42 @@
     if (document.getElementById('req-overlay')) return;
     var overlay = document.createElement('div');
     overlay.id = 'req-overlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:2000;background:#080808;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:2000;background:#080808;flex-direction:column;';
     var mono = "'IBM Plex Mono',monospace";
     var sans = "'DM Sans',sans-serif";
-    var numStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;color:rgba(255,255,255,0.2);margin-bottom:4px;';
-    var labelStyle = 'font-family:' + sans + ';font-size:14px;color:#e8e2d9;margin-bottom:8px;';
-    var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.12);color:#e8e2d9;font-family:' + sans + ';font-size:15px;padding:10px 0;outline:none;caret-color:#C8A84B;';
-    var hintStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;color:rgba(255,255,255,0.25);margin-top:6px;';
-    var chipBtnStyle = 'font-family:' + mono + ';font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);background:transparent;border:1px solid rgba(255,255,255,0.18);padding:6px 12px;cursor:pointer;';
-    var separatorStyle = 'border:none;border-top:1px dotted #C8A84B;margin:16px 0;opacity:0.3;';
-    var optSubStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.08em;color:#555;margin-left:6px;';
+    var numStyle = 'font-family:' + mono + ';font-size:9px;color:#C8A84B;opacity:0.7;margin-bottom:4px;';
+    var labelStyle = 'font-family:' + sans + ';font-size:16px;font-weight:600;color:rgba(255,255,255,0.9);';
+    var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:' + sans + ';font-size:14px;padding:10px 0;outline:none;caret-color:#C8A84B;margin-top:10px;';
+    var chipBtnStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.05em;text-transform:uppercase;color:#4a4a4a;background:transparent;border:1px dotted #2e2e2e;padding:6px 11px;cursor:pointer;';
+    var optLine = '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.08em;color:#383838;text-transform:uppercase;margin-bottom:10px;">OPTIONAL</div>';
+    var fieldBorder = 'padding:16px 16px 14px;border-bottom:1px dotted rgba(200,168,75,0.2);';
     overlay.innerHTML =
-      '<div style="position:sticky;top:0;z-index:10;background:rgba(8,8,8,0.97);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
-        '<div><span style="font-family:' + mono + ';font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
-        '<span style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;color:#555;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
-        '<button data-action="reqClose" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer;padding:4px;">&#x2715;</button>' +
+      /* HEADER */
+      '<div style="padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">' +
+        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
+        '<span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;color:#3a3a3a;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
+        '<button data-action="reqClose" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
-      '<div style="padding:16px 18px 100px;max-width:430px;margin:0 auto;width:100%;">' +
-        /* FIELD 01 */
-        '<div style="margin-bottom:0;">' +
-          '<div style="' + numStyle + '">01</div>' +
+      /* SCROLLABLE BODY */
+      '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;">' +
+        /* FIELD 01 -- no number */
+        '<div style="' + fieldBorder + '">' +
           '<div style="' + labelStyle + '">Name this request <span style="color:#FF4B4B;">*</span></div>' +
           '<input id="req-name" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women\'s Day" style="' + inputStyle + '">' +
-          '<div style="' + hintStyle + '">max 30 chars &#183; becomes the post title</div>' +
+          '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.05em;color:#2a2a2a;margin-top:6px;text-transform:uppercase;">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
         '</div>' +
-        '<hr style="' + separatorStyle + '">' +
         /* FIELD 02 */
-        '<div style="margin-bottom:0;">' +
+        '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">02</div>' +
           '<div style="' + labelStyle + '">What\'s the brief? <span style="color:#FF4B4B;">*</span></div>' +
-          '<textarea id="req-topic" rows="3" placeholder="Topic, story, key message..." style="' + inputStyle + 'resize:none;line-height:1.7;min-height:80px;max-height:100px;overflow-y:auto;"></textarea>' +
+          '<textarea id="req-topic" placeholder="Topic, story, key message..." style="' + inputStyle + 'height:90px;resize:none;line-height:1.7;overflow-y:auto;"></textarea>' +
         '</div>' +
-        '<hr style="' + separatorStyle + '">' +
         /* FIELD 03 */
-        '<div style="margin-bottom:0;">' +
+        '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">03</div>' +
-          '<div style="' + labelStyle + '">Content type <span style="' + optSubStyle + '">OPTIONAL</span></div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:8px;">' +
+          '<div style="' + labelStyle + '">Content type</div>' +
+          optLine +
+          '<div style="display:flex;flex-wrap:wrap;gap:7px;">' +
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Photo</button>' +
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Carousel</button>' +
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Video</button>' +
@@ -1210,26 +1209,26 @@
             '<button data-action="reqChip" style="' + chipBtnStyle + '">Creative</button>' +
           '</div>' +
         '</div>' +
-        '<hr style="' + separatorStyle + '">' +
         /* FIELD 04 */
-        '<div style="margin-bottom:0;">' +
+        '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">04</div>' +
-          '<div style="' + labelStyle + '">Target date <span style="' + optSubStyle + '">OPTIONAL</span></div>' +
-          '<div style="position:relative;border:1px solid rgba(255,255,255,0.12);padding:10px 12px;background:transparent;cursor:pointer;">' +
-            '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:rgba(255,255,255,0.5);">Pick a date &#9662;</span>' +
+          '<div style="' + labelStyle + '">Target date</div>' +
+          optLine +
+          '<div style="position:relative;border:1px solid rgba(255,255,255,0.1);padding:10px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">' +
+            '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:rgba(255,255,255,0.3);">Pick a date</span>' +
+            '<span style="color:#333;font-size:12px;">&#9662;</span>' +
             '<input id="req-date" type="date" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">' +
           '</div>' +
         '</div>' +
-        '<hr style="' + separatorStyle + '">' +
-        /* FIELD 05 */
-        '<div style="margin-bottom:16px;">' +
+        /* FIELD 05 -- no border-bottom */
+        '<div style="padding:16px 16px 14px;">' +
           '<div style="' + numStyle + '">05</div>' +
           '<div style="' + labelStyle + '">Reference photos</div>' +
-          '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
-            '<div id="req-add-tile" data-action="reqAddPhoto" style="aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border:1px dashed rgba(255,255,255,0.15);cursor:pointer;color:rgba(255,255,255,0.3);font-size:20px;">+</div>' +
+          '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px;">' +
+            '<div id="req-add-tile" data-action="reqAddPhoto" style="width:76px;height:76px;display:flex;align-items:center;justify-content:center;border:1px dashed #222;cursor:pointer;color:rgba(255,255,255,0.3);font-size:20px;">+</div>' +
           '</div>' +
           '<input id="req-file" type="file" accept="image/*" multiple style="display:none;">' +
-          '<div id="req-photo-count" style="font-family:' + mono + ';font-size:9px;color:#444;margin-top:6px;">No photos added</div>' +
+          '<div id="req-photo-count" style="font-family:' + mono + ';font-size:8px;color:#222;margin-top:6px;text-transform:uppercase;">NO PHOTOS ADDED</div>' +
           '<div id="req-progress-wrap" style="display:none;margin-top:8px;">' +
             '<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">' +
               '<div id="req-progress-fill" style="height:100%;width:0%;background:#C8A84B;transition:width 0.3s;"></div>' +
@@ -1238,10 +1237,10 @@
           '</div>' +
         '</div>' +
       '</div>' +
-      /* FOOTER - sticky bottom */
-      '<div style="position:sticky;bottom:0;z-index:10;background:rgba(8,8,8,0.97);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,0.06);padding:12px 18px;display:flex;gap:12px;max-width:430px;margin:0 auto;width:100%;box-sizing:border-box;">' +
-        '<button data-action="reqClose" style="flex:1;font-family:' + mono + ';font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.5);background:transparent;border:1px dotted rgba(255,255,255,0.25);padding:14px 0;cursor:pointer;">CANCEL</button>' +
-        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="flex:1;font-family:' + mono + ';font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#000;background:#C8A84B;border:none;padding:14px 0;cursor:not-allowed;opacity:0.4;">&#x2192; SEND REQUEST</button>' +
+      /* STICKY FOOTER */
+      '<div style="position:sticky;bottom:0;z-index:10;background:#080808;border-top:1px solid rgba(255,255,255,0.05);padding:10px 16px 14px;display:grid;grid-template-columns:1fr 2.2fr;gap:8px;">' +
+        '<button data-action="reqClose" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#3a3a3a;background:none;border:1px dotted #222;padding:12px 8px;cursor:pointer;">CANCEL</button>' +
+        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:#C8A84B;border:none;padding:12px 8px;cursor:not-allowed;opacity:0.35;">-- SEND REQUEST</button>' +
       '</div>';
     document.body.appendChild(overlay);
     // Wire delegated events on request overlay
@@ -1272,7 +1271,7 @@
     if (reqTopic) reqTopic.addEventListener('input', function() { if (typeof _reqValidate === 'function') _reqValidate(); });
     if (reqDate) reqDate.addEventListener('change', function() {
       var l = document.getElementById('req-date-label');
-      if (l) { l.innerHTML = this.value + ' &#9662;'; l.style.color = '#e8e2d9'; }
+      if (l) { l.textContent = this.value; l.style.color = '#e8e2d9'; }
     });
     if (reqFile) reqFile.addEventListener('change', function() { if (typeof _reqAddPhotos === 'function') _reqAddPhotos(this); });
   }
@@ -1479,13 +1478,14 @@ window._closeReqForm = function() {
   var date = document.getElementById('req-date');
   if (date) date.value = '';
   var dateLabel = document.getElementById('req-date-label');
-  if (dateLabel) { dateLabel.innerHTML = 'Pick a date &#9662;'; dateLabel.style.color = 'rgba(255,255,255,0.5)'; }
+  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.3)'; }
   // Reset chips
   var chips = document.querySelectorAll('#req-overlay [data-action="reqChip"]');
   chips.forEach(function(c) {
-    c.style.color = 'rgba(255,255,255,0.55)';
+    c.style.color = '#4a4a4a';
     c.style.background = 'transparent';
-    c.style.borderColor = 'rgba(255,255,255,0.18)';
+    c.style.borderColor = '#2e2e2e';
+    c.style.borderStyle = 'dotted';
   });
   // Reset photo grid
   window._reqStoredFiles = [];
@@ -1495,7 +1495,7 @@ window._closeReqForm = function() {
     thumbs.forEach(function(t) { t.remove(); });
   }
   var countEl = document.getElementById('req-photo-count');
-  if (countEl) countEl.textContent = 'No photos added';
+  if (countEl) countEl.textContent = 'NO PHOTOS ADDED';
   var fi = document.getElementById('req-file');
   if (fi) fi.value = '';
   var pw = document.getElementById('req-progress-wrap');
@@ -1508,21 +1508,21 @@ window._closeReqForm = function() {
     btn.style.background = '#C8A84B';
     btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.opacity = '0.4';
-    btn.innerHTML = '&#x2192; SEND REQUEST';
+    btn.style.opacity = '0.35';
+    btn.textContent = '-- SEND REQUEST';
   }
 }
 
 window._reqToggleChip = function(el) {
   var isSelected = el.style.color === 'rgb(200, 168, 75)';
   if (isSelected) {
-    el.style.color = 'rgba(255,255,255,0.55)';
+    el.style.color = '#4a4a4a';
     el.style.background = 'transparent';
-    el.style.borderColor = 'rgba(255,255,255,0.18)';
+    el.style.borderColor = '#2e2e2e';
   } else {
     el.style.color = '#C8A84B';
     el.style.background = 'transparent';
-    el.style.borderColor = '#C8A84B';
+    el.style.borderColor = 'rgba(200,168,75,0.45)';
   }
 }
 
@@ -1662,13 +1662,13 @@ window._reqValidate = function() {
     btn.style.border = 'none';
     btn.style.cursor = 'pointer';
     btn.style.opacity = '1';
-    btn.innerHTML = '&#x2192; SEND REQUEST';
+    btn.textContent = '-- SEND REQUEST';
   } else {
     btn.disabled = true;
     btn.style.color = '#000';
     btn.style.background = '#C8A84B';
     btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.opacity = '0.4';
+    btn.style.opacity = '0.35';
   }
 }
