@@ -1394,22 +1394,23 @@ window._sharePostOnWhatsApp = function(postId) {
     return;
   }
 
-  if (typeof showToast === 'function')
-    showToast('Preparing...', 'success');
-
   fetch(firstImage)
     .then(function(r) { return r.blob(); })
     .then(function(blob) {
       var file = new File([blob], 'post.jpg',
         { type: blob.type || 'image/jpeg' });
-      if (navigator.canShare({ files: [file] })) {
-        return navigator.share({
-          files: [file],
-          text: textMessage
-        });
-      } else {
+      var shareData = { files: [file] };
+      if (!navigator.canShare(shareData)) {
         waFallback();
+        return;
       }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textMessage)
+          .catch(function() {});
+      }
+      if (typeof showToast === 'function')
+        showToast('Link copied - share the image then paste the link', 'success');
+      return navigator.share(shareData);
     })
     .catch(function() {
       waFallback();
