@@ -428,6 +428,10 @@ window._renderPCS = function(postId) {
     var _r = (window.effectiveRole||'').toLowerCase();
     notesSection.style.display = _r === 'client' ? 'none' : 'block';
   }
+
+  if (typeof window._initMentionDropup === 'function') {
+    window._initMentionDropup();
+  }
 }
 
 // -- Subtitle sync (single source of truth) --------------
@@ -1603,6 +1607,11 @@ window._doSubmitComment = async function(opts) {
     opts.role.slice(1).toLowerCase();
 
   try {
+    var _sendBtn = document.getElementById('pcs-send-btn-client');
+    var _noteBtn = document.getElementById('pcs-send-btn-note');
+    if (_sendBtn) { _sendBtn.textContent = 'SENDING...'; _sendBtn.style.opacity = '0.5'; _sendBtn.disabled = true; }
+    if (_noteBtn) { _noteBtn.textContent = 'SAVING...'; _noteBtn.style.opacity = '0.5'; _noteBtn.disabled = true; }
+
     await apiFetch('/post_comments', {
       method: 'POST',
       body: JSON.stringify({
@@ -1678,6 +1687,11 @@ window._doSubmitComment = async function(opts) {
   } catch(e) {
     console.error('_doSubmitComment failed:', e);
     showToast('Failed to send. Try again.', 'error');
+  } finally {
+    var _sendBtn2 = document.getElementById('pcs-send-btn-client');
+    var _noteBtn2 = document.getElementById('pcs-send-btn-note');
+    if (_sendBtn2) { _sendBtn2.textContent = 'SEND \u2192'; _sendBtn2.style.opacity = ''; _sendBtn2.disabled = false; }
+    if (_noteBtn2) { _noteBtn2.textContent = 'NOTE'; _noteBtn2.style.opacity = ''; _noteBtn2.disabled = false; }
   }
 };
 
@@ -1694,5 +1708,124 @@ window.toggleTaskResolve = function(commentId, postId) {
   }).catch(function(e) {
     console.error('toggleTaskResolve failed:', e);
   });
+};
+
+// -- @mention dropup system --
+var _AGENCY_MEMBERS = [
+  { name: 'Shubham', role: 'Admin' },
+  { name: 'Pranav', role: 'Creative' },
+  { name: 'Chitra', role: 'Servicing' }
+];
+
+function _hideMentionDropup() {
+  var dropup = document.getElementById('pcs-mention-dropup');
+  if (dropup) dropup.style.display = 'none';
+}
+
+window._initMentionDropup = function() {
+  var textarea = document.getElementById('pcs-note-input');
+  if (!textarea) return;
+  var dropup = document.getElementById('pcs-mention-dropup');
+  if (!dropup) return;
+
+  var _currentMentionStart = -1;
+
+  textarea.addEventListener('input', function() {
+    var val = textarea.value;
+    var cursor = textarea.selectionStart;
+    var textBeforeCursor = val.slice(0, cursor);
+    var atIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (atIndex === -1) { _hideMentionDropup(); return; }
+
+    var query = textBeforeCursor.slice(atIndex + 1);
+    if (/\s/.test(query)) { _hideMentionDropup(); return; }
+
+    _currentMentionStart = atIndex;
+    var filtered = _AGENCY_MEMBERS.filter(function(m) {
+      return m.name.toLowerCase().startsWith(query.toLowerCase());
+    });
+
+    if (!filtered.length) { _hideMentionDropup(); return; }
+
+    dropup.innerHTML = filtered.map(function(m) {
+      return '<div class="pcs-mention-item" data-name="' + m.name + '">' +
+        '<span class="pcs-mention-name">@' + m.name + '</span>' +
+        '<span class="pcs-mention-role">' + m.role + '</span>' +
+        '</div>';
+    }).join('');
+
+    dropup.style.display = 'block';
+
+    dropup.querySelectorAll('.pcs-mention-item').forEach(function(item) {
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        var name = item.getAttribute('data-name');
+        var before = val.slice(0, _currentMentionStart);
+        var after = val.slice(cursor);
+        textarea.value = before + '@' + name + ' ' + after;
+        textarea.dispatchEvent(new Event('input'));
+        _hideMentionDropup();
+        textarea.focus();
+      });
+    });
+  });
+
+  textarea.addEventListener('blur', function() {
+    setTimeout(_hideMentionDropup, 150);
+  });
+};
+
+// -- Task assignment dropup --
+window._showTaskAssign = function(inputId, taskBtnId) {
+  var existing = document.getElementById('pcs-task-assign-dropup');
+  if (existing) { existing.remove(); return; }
+
+  var btn = document.getElementById(taskBtnId);
+  if (!btn) return;
+
+  var dropup = document.createElement('div');
+  dropup.id = 'pcs-task-assign-dropup';
+  dropup.innerHTML = _AGENCY_MEMBERS.map(function(m) {
+    return '<div class="pcs-mention-item" data-name="' + m.name + '">' +
+      '<span class="pcs-mention-name">@' + m.name + '</span>' +
+      '<span class="pcs-mention-role">' + m.role + '</span>' +
+      '</div>';
+  }).join('');
+
+  btn.parentNode.insertBefore(dropup, btn.parentNode.firstChild);
+
+  dropup.querySelectorAll('.pcs-mention-item').forEach(function(item) {
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var name = item.getAttribute('data-name');
+      var input = document.getElementById(inputId);
+      if (input) {
+        input.value = '@' + name + ' ';
+        input.focus();
+        input.dispatchEvent(new Event('input'));
+      }
+      dropup.remove();
+      window.submitPcsTask(inputId, taskBtnId);
+    });
+  });
+
+  setTimeout(function() {
+    document.addEventListener('click', function _dismiss(e) {
+      if (!dropup.contains(e.target) && e.target.id !== taskBtnId) {
+        dropup.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 10);
+};
+
+window.submitPcsTask = function(inputId, taskBtnId) {
+  var postIdEl = document.getElementById('pcs-post-id');
+  if (!postIdEl) return;
+  var input = document.getElementById(inputId);
+  var message = input ? input.value.trim() : '';
+  if (!message) return;
+  window.submitPcsComment(postIdEl.value, message, 'all', true);
 };
 
