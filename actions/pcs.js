@@ -699,16 +699,17 @@ window.loadPcsComments = async function(postId) {
     function _parseTask(c) {
       try {
         var _att = typeof c.attachments === 'string' ? JSON.parse(c.attachments) : (c.attachments || []);
-        if (_att && _att.type === 'task') return true;
+        if (_att && _att.type === 'task') return _att;
       } catch(e) {}
-      return false;
+      return null;
     }
 
     function _renderClientThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
       return threadRows.map(function(c) {
         var _initial = (c.author||'?').charAt(0).toUpperCase();
-        var _isTask = _parseTask(c);
+        var _taskObj = _parseTask(c);
+        var _isTask = !!_taskObj;
         var _taskPrefix = _isTask
           ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
             '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
@@ -741,11 +742,17 @@ window.loadPcsComments = async function(postId) {
         var _vis = (c.visibility||'all').toUpperCase();
         if (_vis === 'SERVICING') _vis = 'SERV';
         var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
-        var _isTask = _parseTask(c);
+        var _taskObj = _parseTask(c);
+        var _isTask = !!_taskObj;
+        var _assignedTo = (_taskObj && _taskObj.assigned_to) ? _taskObj.assigned_to : null;
+        var _assignedLabel = _assignedTo
+          ? '<span class="pcs-task-assignee">@' + esc(_assignedTo) + '</span> '
+          : '';
         var _taskPrefix = _isTask
           ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
             '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
             (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
+            + _assignedLabel
           : '';
 
         return '<div class="pcs-note-item' +
@@ -1624,7 +1631,9 @@ window._doSubmitComment = async function(opts) {
         mentioned_users: opts.mentioned,
         resolved: false,
         resolved_by: null,
-        attachments: opts.isTask ? JSON.stringify({type:'task'}) : '[]'
+        attachments: opts.isTask
+          ? JSON.stringify({type:'task', assigned_to: (opts.mentioned && opts.mentioned[0]) || null})
+          : '[]'
       })
     });
 
