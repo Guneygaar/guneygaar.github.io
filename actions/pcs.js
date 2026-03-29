@@ -422,6 +422,12 @@ window._renderPCS = function(postId) {
   if (typeof loadPcsComments === 'function') {
     loadPcsComments(_pcsPostId);
   }
+
+  var notesSection = document.getElementById('pcs-notes-section');
+  if (notesSection) {
+    var _r = (window.effectiveRole||'').toLowerCase();
+    notesSection.style.display = _r === 'client' ? 'none' : 'block';
+  }
 }
 
 // -- Subtitle sync (single source of truth) --------------
@@ -606,9 +612,13 @@ window._saveLiUrlInline = function(postId) {
 // -- PCS Comments --------------------------------------------------
 window.loadPcsComments = async function(postId) {
   var section = document.getElementById('pcs-comments-section');
-  var inputBar = document.getElementById('pcs-comment-input-bar');
   var list = document.getElementById('pcs-comments-list');
+  var notesList = document.getElementById('pcs-notes-list');
   if (!section || !list) return;
+
+  var _role = (window.effectiveRole || 'Admin');
+  var _roleLower = _role.toLowerCase();
+  var _name = window.currentUserName || '';
 
   try {
     var rows = await apiFetch(
@@ -616,88 +626,128 @@ window.loadPcsComments = async function(postId) {
       encodeURIComponent(postId) +
       '&order=created_at.asc&limit=100'
     );
+    if (!Array.isArray(rows)) rows = [];
+
+    var clientRows = rows.filter(function(c) {
+      return c.visibility === 'all' || !c.visibility;
+    });
+
+    var internalRows = rows.filter(function(c) {
+      if (c.visibility === 'all' || !c.visibility) return false;
+      if (_roleLower === 'admin') return true;
+      if (c.visibility === _roleLower) return true;
+      var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
+      return _mu.indexOf(_name) !== -1;
+    });
 
     section.style.display = 'block';
-    if (inputBar) {
-      inputBar.style.display = 'flex';
+    var inputBar = document.getElementById('pcs-comment-input-bar');
+    if (inputBar) inputBar.style.display = 'flex';
+
+    function _renderThread(threadRows, isEmpty) {
+      if (!threadRows.length) return isEmpty;
+      return threadRows.map(function(c) {
+        var _initial = (c.author||'?').charAt(0).toUpperCase();
+        var _ts = '';
+        if (c.created_at) {
+          var _d = new Date((c.created_at||'')
+            .replace(' ','T')
+            .replace('+00:00','Z')
+            .replace('+00','Z'));
+          if (!isNaN(_d.getTime())) {
+            _ts = _d.toLocaleDateString('en-IN',{
+              day:'numeric',month:'short',
+              timeZone:'Asia/Kolkata'}) +
+              ' \xB7 ' +
+              _d.toLocaleTimeString('en-IN',{
+              hour:'numeric',minute:'2-digit',
+              hour12:true,timeZone:'Asia/Kolkata'});
+          }
+        }
+        var _r = (c.author_role||'').toLowerCase();
+        var _avClass = 'pcs-avatar';
+        if (_r==='client') _avClass += ' av-client';
+        else if (_r==='servicing'||_r==='chitra') _avClass += ' av-servicing';
+        else if (_r==='creative'||_r==='pranav') _avClass += ' av-creative';
+        else _avClass += ' av-admin';
+
+        var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
+        var _mentionBadge = _mu.length
+          ? '<span class="pcs-mention-badge">@' + esc(_mu.join(', @')) + '</span>'
+          : '';
+
+        return '<div class="pcs-comment-item' +
+          (c.resolved ? ' pcs-resolved' : '') + '">' +
+          (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
+          '<div class="' + _avClass + '">' + esc(_initial) + '</div>' +
+          '<div class="pcs-comment-body">' +
+            '<div class="pcs-comment-meta">' +
+              '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+              '<span class="pcs-comment-time">' + _ts + '</span>' +
+              _mentionBadge +
+            '</div>' +
+            '<div class="pcs-comment-text">' + esc(c.message) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
     }
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      list.innerHTML =
-        '<div style="padding:20px 16px;text-align:center;">' +
-        '<div style="font-size:18px;opacity:0.25;margin-bottom:8px;">&#x1F4AC;</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-        'color:rgba(255,255,255,0.25);line-height:1.5;">' +
-        'Start the conversation.<br>Client and team see all comments.</div>' +
-        '</div>';
-      var countEl = document.getElementById('pcs-comments-count');
-      if (countEl) countEl.style.display = 'none';
-      return;
-    }
+    var emptyClient =
+      '<div class="pcs-empty-thread">' +
+      '<div class="pcs-empty-icon">&#x1F4AC;</div>' +
+      '<div class="pcs-empty-text">No comments yet.<br>Client and team see this thread.</div>' +
+      '</div>';
+
+    list.innerHTML = _renderThread(clientRows, emptyClient);
 
     var countEl = document.getElementById('pcs-comments-count');
     if (countEl) {
-      countEl.textContent = rows.length;
-      countEl.style.display = 'inline';
-      countEl.style.cssText = 'background:rgba(200,168,75,0.15);color:#C8A84B;font-size:7px;padding:2px 7px;letter-spacing:0.08em;font-weight:600;display:inline;';
+      if (clientRows.length) {
+        countEl.textContent = clientRows.length;
+        countEl.style.display = 'inline';
+      } else {
+        countEl.style.display = 'none';
+      }
     }
 
-    function _commentAvatarStyle(role) {
-      var r = (role||'').toLowerCase();
-      if (r === 'client') return 'background:rgba(255,75,75,0.15);color:#FF4B4B;border:1px solid rgba(255,75,75,0.2);';
-      if (r === 'servicing' || r === 'chitra') return 'background:rgba(34,211,238,0.15);color:#22D3EE;border:1px solid rgba(34,211,238,0.2);';
-      if (r === 'creative' || r === 'pranav') return 'background:rgba(155,135,245,0.15);color:#9b87f5;border:1px solid rgba(155,135,245,0.2);';
-      return 'background:rgba(200,168,75,0.15);color:#C8A84B;border:1px solid rgba(200,168,75,0.2);';
-    }
+    if (notesList && _roleLower !== 'client') {
+      var resolvedRows = internalRows.filter(function(c) { return c.resolved; });
+      var activeRows = internalRows.filter(function(c) { return !c.resolved; });
 
-    list.innerHTML = rows.map(function(c) {
-      var _initial = (c.author||'?').charAt(0).toUpperCase();
-      var _ts = '';
-      if (c.created_at) {
-        var _d = new Date((c.created_at||'').replace(' ','T').replace('+00:00','Z').replace('+00','Z'));
-        if (!isNaN(_d.getTime())) {
-          _ts = _d.toLocaleDateString('en-IN',{
-            day:'numeric',month:'short',
-            timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
-            _d.toLocaleTimeString('en-IN',{
-            hour:'numeric',minute:'2-digit',
-            hour12:true,timeZone:'Asia/Kolkata'});
+      var emptyNotes =
+        '<div class="pcs-empty-thread">' +
+        '<div class="pcs-empty-icon">&#x1F512;</div>' +
+        '<div class="pcs-empty-text">No internal notes yet.</div></div>';
+
+      var notesHtml = _renderThread(activeRows, emptyNotes);
+
+      if (resolvedRows.length) {
+        notesHtml +=
+          '<details class="pcs-resolved-wrap">' +
+          '<summary class="pcs-resolved-summary">' +
+          '\u21B3 ' + resolvedRows.length +
+          ' Resolved Note' +
+          (resolvedRows.length > 1 ? 's' : '') +
+          ' (click to expand)</summary>' +
+          _renderThread(resolvedRows, '') +
+          '</details>';
+      }
+
+      notesList.innerHTML = notesHtml;
+
+      var notesCountEl = document.getElementById('pcs-notes-count');
+      if (notesCountEl) {
+        if (internalRows.length) {
+          notesCountEl.textContent = activeRows.length;
+          notesCountEl.style.display = 'inline';
+        } else {
+          notesCountEl.style.display = 'none';
         }
       }
-      return '<div style="display:flex;gap:10px;padding:10px 16px;' +
-        'border-radius:2px;position:relative;" ' +
-        'onmouseover="this.style.background=\'rgba(255,255,255,0.02)\'" ' +
-        'onmouseout="this.style.background=\'transparent\'">' +
-        (!c.read ? '<div style="position:absolute;left:6px;top:14px;' +
-        'width:4px;height:4px;border-radius:50%;background:#C8A84B;"></div>' : '') +
-        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
-        'display:flex;align-items:center;justify-content:center;' +
-        'font-size:9px;font-weight:700;margin-top:1px;' +
-        'font-family:\'IBM Plex Mono\',monospace;' +
-        _commentAvatarStyle(c.author_role) + '">' +
-        esc(_initial) + '</div>' +
-        '<div style="flex:1;min-width:0;">' +
-        '<div style="display:flex;align-items:baseline;' +
-        'gap:6px;margin-bottom:4px;flex-wrap:wrap;">' +
-        '<span style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:12px;font-weight:700;color:#e8e2d9;line-height:1;">' +
-        esc(c.author) + '</span>' +
-        '<div style="width:2px;height:2px;border-radius:50%;' +
-        'background:rgba(255,255,255,0.2);flex-shrink:0;margin-bottom:1px;"></div>' +
-        '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.04em;' +
-        'color:rgba(255,255,255,0.35);line-height:1;">' + _ts + '</span>' +
-        '</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:13px;color:rgba(255,255,255,0.78);' +
-        'line-height:1.6;white-space:pre-wrap;">' +
-        esc(c.message) + '</div>' +
-        '</div></div>' +
-        '<div style="height:1px;background:rgba(255,255,255,0.03);' +
-        'margin:0 16px;"></div>';
-    }).join('');
+    }
 
     list.scrollTop = list.scrollHeight;
+    if (notesList) notesList.scrollTop = notesList.scrollHeight;
 
   } catch(e) {
     console.error('loadPcsComments failed:', e);
@@ -1385,53 +1435,91 @@ window._sharePostOnWhatsApp = function(postId) {
     + encodeURIComponent(message);
 };
 
-window.submitPcsComment = function() {
-  var input = document.getElementById('pcs-comment-input');
-  if (!input) return;
-  var message = (input.value || '').trim();
-  if (!message) return;
+window.submitPcsComment = async function(postId, message, visibility) {
+  visibility = visibility || 'all';
 
-  var postIdEl = document.getElementById('pcs-post-id');
-  var postId = postIdEl ? postIdEl.value : '';
-  if (!postId) return;
+  if (!postId || !message || !(message = message.trim())) return;
 
   var _post = (allPosts||[]).find(function(p) {
     return p.post_id === postId || p.id === postId;
   });
   var _realPostId = _post ? _post.post_id : postId;
-  var _title = _post ? (_post.title || _realPostId) : _realPostId;
-
+  var _title = _post ? (_post.title || postId) : postId;
   var _author = window.currentUserName || 'Team';
-  var _role = window.effectiveRole || 'Admin';
-  var _normalRole = _role.charAt(0).toUpperCase() +
-    _role.slice(1).toLowerCase();
+  var _role = (window.effectiveRole || 'Admin');
+  var _roleLower = _role.toLowerCase();
 
-  input.value = '';
-  input.style.height = 'auto';
+  var _mentionMatches = message.match(/@([a-zA-Z0-9_]+)/g) || [];
+  var _mentioned = _mentionMatches.map(function(m) {
+    return m.slice(1);
+  });
 
-  apiFetch('/post_comments', {
-    method: 'POST',
-    body: JSON.stringify({
-      post_id: _realPostId,
+  if (visibility === 'all' && _roleLower !== 'client') {
+    window._pendingComment = {
+      postId: _realPostId,
+      message: message,
+      visibility: visibility,
+      mentioned: _mentioned,
       author: _author,
-      author_role: _normalRole,
-      message: message
-    })
-  }).then(function() {
-    if (typeof loadPcsComments === 'function')
-      loadPcsComments(_realPostId);
+      role: _role,
+      title: _title
+    };
+    var confirmEl = document.getElementById('pcs-comment-confirm');
+    var previewEl = document.getElementById('pcs-comment-confirm-preview');
+    if (confirmEl && previewEl) {
+      previewEl.textContent = '"' + message + '"';
+      confirmEl.style.display = 'flex';
+    }
+    return;
+  }
+
+  await window._doSubmitComment({
+    postId: _realPostId,
+    message: message,
+    visibility: visibility,
+    mentioned: _mentioned,
+    author: _author,
+    role: _role,
+    title: _title
+  });
+};
+
+window._doSubmitComment = async function(opts) {
+  var _roleLower = (opts.role||'').toLowerCase();
+  var _normalRole = opts.role.charAt(0).toUpperCase() +
+    opts.role.slice(1).toLowerCase();
+
+  try {
+    await apiFetch('/post_comments', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: opts.postId,
+        author: opts.author,
+        author_role: _normalRole,
+        message: opts.message,
+        visibility: opts.visibility,
+        mentioned_users: opts.mentioned
+      })
+    });
+
+    logActivity({
+      post_id: opts.postId,
+      actor: opts.author,
+      actor_role: _normalRole,
+      action: 'Commented: ' + opts.message
+    });
 
     var _targets = [];
-    if (_normalRole === 'Client') {
-      _targets = ['Servicing', 'Admin'];
-    } else if (_normalRole === 'Pranav' ||
-               _normalRole === 'Creative') {
-      _targets = ['Servicing', 'Admin'];
-    } else if (_normalRole === 'Servicing' ||
-               _normalRole === 'Chitra') {
-      _targets = ['Admin', 'Client'];
+    if (opts.visibility === 'all') {
+      if (_roleLower === 'client') {
+        _targets = ['Servicing', 'Admin', 'Creative'];
+      } else {
+        _targets = ['Client'];
+      }
     } else {
-      _targets = ['Client', 'Servicing'];
+      if (opts.mentioned && opts.mentioned.length) {
+        _targets = opts.mentioned;
+      }
     }
 
     _targets.forEach(function(role) {
@@ -1439,17 +1527,31 @@ window.submitPcsComment = function() {
         method: 'POST',
         body: JSON.stringify({
           user_role: role,
-          post_id: _realPostId,
+          post_id: opts.postId,
           type: 'comment',
-          message: _author + ' commented on ' + _title
+          message: opts.author + ' commented on ' + opts.title
         })
       }).catch(function(){});
     });
 
-  }).catch(function(err) {
-    console.error('submitPcsComment failed:', err);
-    showToast('Failed to send comment', 'error');
-    input.value = message;
-  });
-}
+    if (typeof loadPcsComments === 'function') {
+      loadPcsComments(opts.postId);
+    }
+
+    var inputEl = document.getElementById('pcs-comment-input');
+    var noteEl = document.getElementById('pcs-note-input');
+    if (inputEl) {
+      inputEl.value = '';
+      inputEl.style.height = 'auto';
+    }
+    if (noteEl) {
+      noteEl.value = '';
+      noteEl.style.height = 'auto';
+    }
+
+  } catch(e) {
+    console.error('_doSubmitComment failed:', e);
+    showToast('Failed to send. Try again.', 'error');
+  }
+};
 
