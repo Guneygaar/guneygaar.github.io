@@ -1514,6 +1514,7 @@ window._sharePostOnWhatsApp = function(postId) {
 };
 
 window.submitPcsComment = async function(postId, message, visibility, isTask) {
+  try {
   isTask = isTask || false;
   visibility = visibility || 'all';
 
@@ -1545,6 +1546,12 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
       isTask: isTask
     };
     var confirmEl = document.getElementById('pcs-comment-confirm');
+    if (!confirmEl) {
+      await window._doSubmitComment({ postId:_realPostId, message:message,
+        visibility:visibility, mentioned:_mentioned, author:_author,
+        role:_role, title:_title, isTask:isTask });
+      return;
+    }
     var previewEl = document.getElementById('pcs-comment-confirm-preview');
     if (confirmEl && previewEl) {
       previewEl.textContent = '"' + message + '"';
@@ -1563,6 +1570,10 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     title: _title,
     isTask: isTask
   });
+  } catch(e) {
+    console.error('submitPcsComment failed:', e);
+    showToast('Failed to send. Try again.', 'error');
+  }
 };
 
 async function _lookupMentionEmails(names) {
