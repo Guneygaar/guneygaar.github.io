@@ -5734,11 +5734,12 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   background: transparent;
 }
 .pcs-notes-section {
-  border-top: 1px solid rgba(246,166,35,0.12);
-  background: rgba(246,166,35,0.03);
+  border-top: 2px solid rgba(246,166,35,0.2);
+  background: rgba(246,166,35,0.06);
 }
 .pcs-notes-header {
   border-top: none;
+  background: rgba(246,166,35,0.04);
 }
 .pcs-comment-item {
   display: flex;
@@ -5850,8 +5851,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   flex-shrink: 0;
 }
 .pcs-notes-input-bar {
-  border-top: 1px dotted rgba(246,166,35,0.1);
-  background: rgba(246,166,35,0.02);
+  border-top: 1px solid rgba(246,166,35,0.15);
+  background: rgba(246,166,35,0.05);
 }
 .pcs-textarea {
   flex: 1;
@@ -5866,10 +5867,24 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   height: 36px;
   line-height: 1.4;
   border-radius: 0;
+  caret-color: #C8A84B;
+}
+.pcs-textarea:focus {
+  border-color: rgba(200,168,75,0.4);
+  background: rgba(255,255,255,0.06);
+  outline: none;
+  caret-color: #C8A84B;
 }
 .pcs-note-textarea {
   background: rgba(246,166,35,0.03);
   border-color: rgba(246,166,35,0.1);
+  caret-color: #F6A623;
+}
+.pcs-note-textarea:focus {
+  border-color: rgba(246,166,35,0.35);
+  background: rgba(246,166,35,0.06);
+  outline: none;
+  caret-color: #F6A623;
 }
 .pcs-textarea::placeholder {
   color: rgba(255,255,255,0.2);
@@ -5886,6 +5901,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.pcs-send-btn:not(:disabled) {
+  transition: color 0.15s, border-color 0.15s;
 }
 .pcs-note-btn {
   border-color: rgba(246,166,35,0.2);

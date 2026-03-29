@@ -424,9 +424,12 @@ window._renderPCS = function(postId) {
   }
 
   var notesSection = document.getElementById('pcs-notes-section');
+  var notesInputBar = document.getElementById('pcs-notes-input-bar');
   if (notesSection) {
     var _r = (window.effectiveRole||'').toLowerCase();
-    notesSection.style.display = _r === 'client' ? 'none' : 'block';
+    var _showNotes = _r !== 'client';
+    notesSection.style.display = _showNotes ? 'block' : 'none';
+    if (notesInputBar) notesInputBar.style.display = _showNotes ? 'flex' : 'none';
   }
 }
 
