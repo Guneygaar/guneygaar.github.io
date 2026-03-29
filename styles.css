@@ -5735,14 +5735,14 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* INTERNAL NOTES SECTION */
 .pcs-notes-section {
   background: #1a1a24;
-  border: 1px solid rgba(246,166,35,0.15);
-  border-top: 2px solid rgba(246,166,35,0.25);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-top: 2px solid rgba(255,255,255,0.12);
   margin-bottom: 3px;
 }
 .pcs-notes-header {
   padding: 12px 16px 10px;
-  border-bottom: 1px solid rgba(246,166,35,0.08);
-  background: rgba(246,166,35,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.02);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5752,27 +5752,36 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.15em;
-  color: rgba(246,166,35,0.6);
+  color: rgba(255,255,255,0.35);
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .pcs-lock-icon {
   font-size: 10px;
-  color: rgba(246,166,35,0.6);
+  color: rgba(255,255,255,0.25);
 }
 .pcs-notes-list {
   padding: 4px 0;
-  background: rgba(246,166,35,0.02);
+  background: transparent;
   min-height: 60px;
 }
 .notes-input-zone {
-  border-top: 1px solid rgba(246,166,35,0.1);
+  border-top: 1px solid rgba(255,255,255,0.05);
   padding: 10px 16px 12px;
-  background: rgba(246,166,35,0.03);
+  background: #1a1a24;
   display: flex;
   gap: 8px;
   align-items: flex-end;
+  flex-wrap: wrap;
+}
+.pcs-note-recipient {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 0.04em;
+  margin-top: -4px;
 }
 
 /* SHARED COMMENT ITEMS */
@@ -5789,7 +5798,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   gap: 10px;
   padding: 10px 16px;
   position: relative;
-  border-bottom: 1px solid rgba(246,166,35,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.03);
 }
 .pcs-note-item:last-child { border-bottom: none; }
 .pcs-unread-dot {
@@ -5854,8 +5863,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-vis-tag {
   font-family: var(--mono);
   font-size: 7px;
-  color: rgba(246,166,35,0.4);
-  border: 1px dotted rgba(246,166,35,0.2);
+  color: rgba(255,255,255,0.25);
+  border: 1px dotted rgba(255,255,255,0.12);
   padding: 1px 4px;
   margin-left: auto;
   flex-shrink: 0;
@@ -5916,16 +5925,16 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-textarea::placeholder { color: rgba(255,255,255,0.18); }
 .pcs-note-textarea {
-  background: rgba(246,166,35,0.04);
-  border-color: rgba(246,166,35,0.12);
-  caret-color: #F6A623;
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.08);
+  caret-color: rgba(255,255,255,0.6);
 }
 .pcs-note-textarea:focus {
-  border-color: rgba(246,166,35,0.35);
-  background: rgba(246,166,35,0.07);
+  border-color: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.05);
 }
 .pcs-note-textarea::placeholder {
-  color: rgba(246,166,35,0.25);
+  color: rgba(255,255,255,0.15);
 }
 
 /* SEND BUTTONS */
@@ -5948,12 +5957,12 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-color: rgba(200,168,75,0.4);
 }
 .pcs-note-btn {
-  border-color: rgba(246,166,35,0.15);
-  color: rgba(246,166,35,0.3);
+  border-color: rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.22);
 }
 .pcs-note-btn.active {
-  color: #F6A623;
-  border-color: rgba(246,166,35,0.5);
+  color: rgba(255,255,255,0.7);
+  border-color: rgba(255,255,255,0.35);
 }
 
 /* VIS CHIPS */
@@ -5966,17 +5975,17 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 7px;
   letter-spacing: 0.06em;
   padding: 3px 7px;
-  border: 1px dotted rgba(246,166,35,0.15);
-  color: rgba(246,166,35,0.3);
+  border: 1px dotted rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.2);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   transition: all 0.15s;
 }
 .pcs-vis-chip.active {
-  color: #F6A623;
-  border-color: rgba(246,166,35,0.45);
-  background: rgba(246,166,35,0.06);
+  color: rgba(255,255,255,0.7);
+  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.05);
 }
 
 /* COUNT BADGES */
@@ -5988,8 +5997,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: var(--mono);
 }
 .pcs-notes-count-badge {
-  background: rgba(246,166,35,0.1);
-  color: rgba(246,166,35,0.5);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.3);
   font-size: 8px;
   padding: 1px 5px;
   font-family: var(--mono);
