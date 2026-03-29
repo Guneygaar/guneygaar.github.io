@@ -1376,45 +1376,13 @@ window._sharePostOnWhatsApp = function(postId) {
     .slice(-4);
   if (!shortId) shortId = postIdRaw.slice(-4);
   var previewUrl = 'https://srtd.io/p/' + shortId;
-  var textMessage = title
+
+  var message = title
     + ' -- Awaiting your approval.\n\n'
     + previewUrl;
 
-  var waFallback = function() {
-    location.href = 'https://wa.me/?text='
-      + encodeURIComponent(textMessage);
-  };
-
-  var images = Array.isArray(post.images)
-    ? post.images : [];
-  var firstImage = images.length ? images[0] : '';
-
-  if (!firstImage || !navigator.canShare) {
-    waFallback();
-    return;
-  }
-
-  fetch(firstImage)
-    .then(function(r) { return r.blob(); })
-    .then(function(blob) {
-      var file = new File([blob], 'post.jpg',
-        { type: blob.type || 'image/jpeg' });
-      var shareData = { files: [file] };
-      if (!navigator.canShare(shareData)) {
-        waFallback();
-        return;
-      }
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(textMessage)
-          .catch(function() {});
-      }
-      if (typeof showToast === 'function')
-        showToast('Link copied - share the image then paste the link', 'success');
-      return navigator.share(shareData);
-    })
-    .catch(function() {
-      waFallback();
-    });
+  location.href = 'https://wa.me/?text='
+    + encodeURIComponent(message);
 };
 
 window.submitPcsComment = function() {
