@@ -5734,7 +5734,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* INTERNAL NOTES SECTION */
 .pcs-notes-section {
-  background: #191920;
+  background: #1a1a24;
   border: 1px solid rgba(246,166,35,0.15);
   border-top: 2px solid rgba(246,166,35,0.25);
   margin-bottom: 3px;
