@@ -6124,6 +6124,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-color: rgba(62,207,142,0.5);
   color: #3ECF8E;
 }
+.pcs-task-assignee {
+  color: #9b87f5;
+  font-weight: 500;
+  margin-right: 4px;
+}
 
 /* MENTION / TASK ASSIGN DROPUPS */
 #pcs-mention-dropup,
