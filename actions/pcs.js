@@ -1552,6 +1552,12 @@ window._doSubmitComment = async function(opts) {
       } else {
         _targets = ['Client'];
       }
+    } else if (opts.visibility === 'admin') {
+      _targets = ['Admin'];
+    } else if (opts.visibility === 'servicing') {
+      _targets = ['Servicing'];
+    } else if (opts.visibility === 'creative') {
+      _targets = ['Creative'];
     } else {
       if (opts.mentioned && opts.mentioned.length) {
         _targets = opts.mentioned;
