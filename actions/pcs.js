@@ -740,8 +740,12 @@ window.loadPcsComments = async function(postId) {
     }
 
     if (notesList && _roleLower !== 'client') {
-      var resolvedRows = internalRows.filter(function(c) { return c.resolved; });
-      var activeRows = internalRows.filter(function(c) { return !c.resolved; });
+      var _activeVis = window._pcsNoteVisibility || 'all';
+      var filteredNotes = internalRows.filter(function(c) {
+        return (c.visibility || 'all') === _activeVis;
+      });
+      var resolvedRows = filteredNotes.filter(function(c) { return c.resolved; });
+      var activeRows = filteredNotes.filter(function(c) { return !c.resolved; });
 
       var emptyNotes =
         '<div class="pcs-empty-thread">' +
@@ -766,13 +770,30 @@ window.loadPcsComments = async function(postId) {
 
       var notesCountEl = document.getElementById('pcs-notes-count');
       if (notesCountEl) {
-        if (internalRows.length) {
+        if (filteredNotes.length) {
           notesCountEl.textContent = activeRows.length;
           notesCountEl.style.display = 'inline';
         } else {
           notesCountEl.style.display = 'none';
         }
       }
+
+      // Per-chip counts
+      var allCount = internalRows.filter(function(r) { return (r.visibility||'all')==='all'; }).length;
+      var adminCount = internalRows.filter(function(r) { return r.visibility==='admin'; }).length;
+      var servCount = internalRows.filter(function(r) { return r.visibility==='servicing'; }).length;
+      var creativeCount = internalRows.filter(function(r) { return r.visibility==='creative'; }).length;
+      var chips = document.querySelectorAll('.pcs-vis-chip');
+      chips.forEach(function(chip) {
+        var v = chip.getAttribute('data-vis');
+        var cnt = 0;
+        if (v === 'all') cnt = allCount;
+        else if (v === 'admin') cnt = adminCount;
+        else if (v === 'servicing') cnt = servCount;
+        else if (v === 'creative') cnt = creativeCount;
+        var label = v === 'all' ? 'ALL' : v === 'admin' ? 'ADMIN' : v === 'servicing' ? 'SERV' : 'CREATIVE';
+        chip.textContent = cnt > 0 ? label + ' (' + cnt + ')' : label;
+      });
     }
 
     list.scrollTop = list.scrollHeight;
