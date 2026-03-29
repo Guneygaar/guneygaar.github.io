@@ -1361,33 +1361,6 @@ window._saveCaptionEdit = async function(postId) {
   }
 }
 
-window._convertImagesToDataUrls = function(container) {
-  var imgs = container.querySelectorAll('img');
-  var promises = [];
-  for (var i = 0; i < imgs.length; i++) {
-    (function(img) {
-      if (!img.src || img.src.indexOf('data:') === 0) return;
-      var p = fetch(img.src, { mode: 'cors' })
-        .then(function(r) { return r.blob(); })
-        .then(function(blob) {
-          return new Promise(function(resolve) {
-            var reader = new FileReader();
-            reader.onloadend = function() {
-              img.src = reader.result;
-              resolve();
-            };
-            reader.readAsDataURL(blob);
-          });
-        })
-        .catch(function() {
-          img.style.display = 'none';
-        });
-      promises.push(p);
-    })(imgs[i]);
-  }
-  return Promise.all(promises);
-};
-
 window._sharePostOnWhatsApp = function(postId) {
   var post = (typeof getPostById === 'function')
     ? getPostById(postId) : null;
@@ -1408,9 +1381,8 @@ window._sharePostOnWhatsApp = function(postId) {
     + previewUrl;
 
   var waFallback = function() {
-    var waUrl = 'https://wa.me/?text='
+    location.href = 'https://wa.me/?text='
       + encodeURIComponent(textMessage);
-    window.open(waUrl, '_blank');
   };
 
   var cardEl = document.querySelector(
@@ -1425,42 +1397,31 @@ window._sharePostOnWhatsApp = function(postId) {
   if (typeof showToast === 'function')
     showToast('Preparing image...', 'success');
 
-  var clone = cardEl.cloneNode(true);
-  clone.style.position = 'absolute';
-  clone.style.left = '-9999px';
-  clone.style.width = cardEl.offsetWidth + 'px';
-  document.body.appendChild(clone);
-
-  window._convertImagesToDataUrls(clone)
-    .then(function() {
-      return html2canvas(clone, {
-        useCORS: false,
-        allowTaint: false,
-        backgroundColor: '#000000',
-        scale: 2,
-        logging: false
-      });
-    })
-    .then(function(canvas) {
-      clone.remove();
-      canvas.toBlob(function(blob) {
-        if (!blob) { waFallback(); return; }
-        var file = new File([blob], 'post-preview.png',
-          { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({
-            files: [file],
-            text: textMessage
-          }).catch(waFallback);
-        } else {
-          waFallback();
-        }
-      }, 'image/png');
-    })
-    .catch(function() {
-      if (clone.parentNode) clone.remove();
-      waFallback();
-    });
+  html2canvas(cardEl, {
+    useCORS: true,
+    allowTaint: true,
+    backgroundColor: '#000000',
+    scale: 2,
+    logging: false
+  })
+  .then(function(canvas) {
+    canvas.toBlob(function(blob) {
+      if (!blob) { waFallback(); return; }
+      var file = new File([blob], 'post-preview.png',
+        { type: 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          text: textMessage
+        }).catch(waFallback);
+      } else {
+        waFallback();
+      }
+    }, 'image/png');
+  })
+  .catch(function() {
+    waFallback();
+  });
 };
 
 window.submitPcsComment = function() {
