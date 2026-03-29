@@ -5772,6 +5772,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #E8E8E8;
 }
 .notes-input-zone {
+  position: relative;
   border-top: 1px solid rgba(255,255,255,0.05);
   padding: 10px 16px 12px;
   background: #191924;
@@ -6135,13 +6136,22 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* MENTION / TASK ASSIGN DROPUPS */
-#pcs-mention-dropup,
-#pcs-task-assign-dropup {
+#pcs-mention-dropup {
   background: #1a1a2e;
   border: 1px solid rgba(155,135,245,0.25);
   position: relative;
   z-index: 10;
   width: 100%;
+  margin-bottom: 4px;
+}
+#pcs-task-assign-dropup {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  background: #1a1a2e;
+  border: 1px solid rgba(155,135,245,0.25);
   margin-bottom: 4px;
 }
 .pcs-mention-item {
