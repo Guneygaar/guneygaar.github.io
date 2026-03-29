@@ -5735,7 +5735,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* INTERNAL NOTES SECTION */
 .pcs-notes-section {
-  background: #16130A;
+  background: #191924;
   border: 1px solid rgba(168,114,255,0.15);
   border-top: 2px solid rgba(168,114,255,0.2);
   margin-top: 8px;
@@ -5774,7 +5774,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .notes-input-zone {
   border-top: 1px solid rgba(255,255,255,0.05);
   padding: 10px 16px 12px;
-  background: #16130A;
+  background: #191924;
   display: flex;
   gap: 8px;
   align-items: flex-end;
