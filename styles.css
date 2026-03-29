@@ -5698,7 +5698,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* CLIENT COMMENTS SECTION */
 .client-comments-section {
   background: #0d0d12;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.06);
   margin-bottom: 3px;
 }
 .client-section-header {
@@ -5734,9 +5734,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* INTERNAL NOTES SECTION */
 .pcs-notes-section {
-  background: #1a1a24;
+  background: #181820;
   border: 1px solid rgba(255,255,255,0.09);
-  border-top: 2px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.08);
   margin-bottom: 3px;
 }
 .pcs-notes-header {
@@ -5758,18 +5758,19 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   gap: 6px;
 }
 .pcs-lock-icon {
-  font-size: 10px;
-  color: rgba(255,255,255,0.25);
+  font-family: var(--mono);
+  font-size: 7px;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.08em;
 }
 .pcs-notes-list {
   padding: 4px 0;
   background: transparent;
-  min-height: 60px;
 }
 .notes-input-zone {
   border-top: 1px solid rgba(255,255,255,0.05);
   padding: 10px 16px 12px;
-  background: #1a1a24;
+  background: #181820;
   display: flex;
   gap: 8px;
   align-items: flex-end;
