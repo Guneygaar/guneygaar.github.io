@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260329x">
+ <link rel="stylesheet" href="styles.css?v=20260329y">
 
 </head>
 <body>
@@ -921,11 +921,6 @@
           </div>
           <div id="pcs-notes-list" class="pcs-thread-list pcs-notes-list"></div>
 
-          <!-- NOTES INPUT BAR -->
-          <div class="pcs-input-bar pcs-notes-input-bar">
-            <textarea id="pcs-note-input" class="pcs-textarea pcs-note-textarea" rows="1" placeholder="Add internal note... @mention to notify"></textarea>
-            <button class="pcs-send-btn pcs-note-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-note-input').value,window._pcsNoteVisibility||'all')">NOTE</button>
-          </div>
         </div>
 
         <!-- CONFIRMATION DIALOG -->
@@ -944,10 +939,15 @@
 
       </div>
     </div>
+    <!-- NOTES INPUT BAR - outside scroll, inside pcs-screen -->
+    <div id="pcs-notes-input-bar" class="pcs-input-bar pcs-notes-input-bar" style="display:none;">
+      <textarea id="pcs-note-input" class="pcs-textarea pcs-note-textarea" rows="1" placeholder="Add internal note... @mention to notify" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-note');if(b){if(this.value.trim()){b.style.color='#F6A623';b.style.borderColor='rgba(246,166,35,0.5)';}else{b.style.color='rgba(246,166,35,0.4)';b.style.borderColor='rgba(246,166,35,0.15)';}}"></textarea>
+      <button id="pcs-send-btn-note" class="pcs-send-btn pcs-note-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-note-input').value,window._pcsNoteVisibility||'all')">NOTE</button>
+    </div>
     <!-- COMMENT INPUT BAR - outside scroll, inside pcs-screen -->
     <div id="pcs-comment-input-bar" class="pcs-input-bar" style="display:none;">
-      <textarea id="pcs-comment-input" class="pcs-textarea" rows="1" placeholder="Reply to client..."></textarea>
-      <button class="pcs-send-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-comment-input').value,'all')">Send &#x2192;</button>
+      <textarea id="pcs-comment-input" class="pcs-textarea" rows="1" placeholder="Reply to client..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-client');if(b){if(this.value.trim()){b.style.color='#C8A84B';b.style.borderColor='rgba(200,168,75,0.4)';}else{b.style.color='rgba(255,255,255,0.3)';b.style.borderColor='rgba(255,255,255,0.1)';}}"></textarea>
+      <button id="pcs-send-btn-client" class="pcs-send-btn" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-comment-input').value,'all')">Send &#x2192;</button>
     </div>
 
   </div>
@@ -1012,24 +1012,24 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="01-config.js?v=20260329x" defer></script>
-<script src="02-session.js?v=20260329x" defer></script>
-<script src="utils.js?v=20260329x" defer></script>
-<script src="03-auth.js?v=20260329x" defer></script>
-<script src="05-api.js?v=20260329x" defer></script>
-<script src="10-ui.js?v=20260329x" defer></script>
+<script src="01-config.js?v=20260329y" defer></script>
+<script src="02-session.js?v=20260329y" defer></script>
+<script src="utils.js?v=20260329y" defer></script>
+<script src="03-auth.js?v=20260329y" defer></script>
+<script src="05-api.js?v=20260329y" defer></script>
+<script src="10-ui.js?v=20260329y" defer></script>
 
-<script src="06-post-create.js?v=20260329x" defer></script>
-<script defer src="render/dashboard.js?v=20260329x"></script>
-<script defer src="render/client.js?v=20260329x"></script>
-<script defer src="render/pipeline.js?v=20260329x"></script>
-<script defer src="render/brief.js?v=20260329x"></script>
-<script defer src="actions/pcs.js?v=20260329x"></script>
-<script src="07-post-load.js?v=20260329x" defer></script>
-<script src="08-post-actions.js?v=20260329x" defer></script>
-<script src="09-library.js?v=20260329x" defer></script>
-<script src="09-approval.js?v=20260329x" defer></script>
-<script src="04-router.js?v=20260329x" defer></script>
+<script src="06-post-create.js?v=20260329y" defer></script>
+<script defer src="render/dashboard.js?v=20260329y"></script>
+<script defer src="render/client.js?v=20260329y"></script>
+<script defer src="render/pipeline.js?v=20260329y"></script>
+<script defer src="render/brief.js?v=20260329y"></script>
+<script defer src="actions/pcs.js?v=20260329y"></script>
+<script src="07-post-load.js?v=20260329y" defer></script>
+<script src="08-post-actions.js?v=20260329y" defer></script>
+<script src="09-library.js?v=20260329y" defer></script>
+<script src="09-approval.js?v=20260329y" defer></script>
+<script src="04-router.js?v=20260329y" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
