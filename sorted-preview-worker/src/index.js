@@ -1,3 +1,6 @@
+const SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -13,6 +16,67 @@ function getFallbackHtml(slug) {
     '<meta property="og:title" content="Review this post on Sorted">' +
     '<meta property="og:description" content="Tap to open and approve this post.">' +
     '</head><body>Opening Sorted...</body></html>';
+}
+
+function escAttr(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function findPostByShortId(shortId) {
+  const res = await fetch(
+    SUPABASE_URL + '/rest/v1/posts?select=post_id,title,caption,images',
+    {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+      }
+    }
+  );
+  if (!res.ok) return null;
+  const posts = await res.json();
+  if (!Array.isArray(posts)) return null;
+  for (let i = 0; i < posts.length; i++) {
+    const pid = (posts[i].post_id || posts[i].id || '');
+    const digits = pid.replace(/[^0-9]/g, '').slice(-4);
+    if (digits === shortId) return posts[i];
+  }
+  return null;
+}
+
+async function handlePreview(url) {
+  const shortId = url.searchParams.get('p') || '';
+  if (!shortId) return fetch(url.toString());
+
+  const post = await findPostByShortId(shortId);
+  if (!post) return fetch(url.toString());
+
+  const title = escAttr(post.title || 'Review Post');
+  const imgUrl = (Array.isArray(post.images) && post.images.length)
+    ? escAttr(post.images[0]) : '';
+
+  const ogTags = '\n' +
+    '<meta property="og:title" content="' + title + '">\n' +
+    '<meta property="og:description" content="Awaiting your approval - Sorted by Hinglish Agency">\n' +
+    '<meta property="og:image" content="' + imgUrl + '">\n' +
+    '<meta property="og:image:width" content="1200">\n' +
+    '<meta property="og:image:height" content="630">\n' +
+    '<meta property="og:type" content="website">\n' +
+    '<meta property="og:url" content="https://srtd.io/p/' + escAttr(shortId) + '">\n' +
+    '<meta name="twitter:card" content="summary_large_image">\n' +
+    '<meta name="twitter:image" content="' + imgUrl + '">';
+
+  const originRes = await fetch(
+    'https://guneygaar.github.io/preview/index.html?p=' + shortId
+  );
+  let html = await originRes.text();
+  html = html.replace('<head>', '<head>' + ogTags);
+
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=UTF-8',
+      ...CORS_HEADERS
+    }
+  });
 }
 
 export default {
@@ -61,6 +125,11 @@ export default {
           headers: CORS_HEADERS
         });
       }
+    }
+
+    if (request.method === 'GET' &&
+        url.pathname.startsWith('/preview')) {
+      return handlePreview(url);
     }
 
     if (request.method === 'GET' &&
