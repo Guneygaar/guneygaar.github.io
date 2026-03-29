@@ -424,12 +424,9 @@ window._renderPCS = function(postId) {
   }
 
   var notesSection = document.getElementById('pcs-notes-section');
-  var notesInputBar = document.getElementById('pcs-notes-input-bar');
   if (notesSection) {
     var _r = (window.effectiveRole||'').toLowerCase();
-    var _showNotes = _r !== 'client';
-    notesSection.style.display = _showNotes ? 'block' : 'none';
-    if (notesInputBar) notesInputBar.style.display = _showNotes ? 'flex' : 'none';
+    notesSection.style.display = _r === 'client' ? 'none' : 'block';
   }
 }
 
@@ -652,50 +649,71 @@ window.loadPcsComments = async function(postId) {
     });
 
     section.style.display = 'block';
-    var inputBar = document.getElementById('pcs-comment-input-bar');
-    if (inputBar) inputBar.style.display = 'flex';
 
-    function _renderThread(threadRows, isEmpty) {
+    function _formatTs(c) {
+      if (!c.created_at) return '';
+      var _d = new Date((c.created_at||'')
+        .replace(' ','T')
+        .replace('+00:00','Z')
+        .replace('+00','Z'));
+      if (isNaN(_d.getTime())) return '';
+      return _d.toLocaleDateString('en-IN',{
+        day:'numeric',month:'short',
+        timeZone:'Asia/Kolkata'}) +
+        ' \xB7 ' +
+        _d.toLocaleTimeString('en-IN',{
+        hour:'numeric',minute:'2-digit',
+        hour12:true,timeZone:'Asia/Kolkata'});
+    }
+
+    function _avatarClass(c) {
+      var _r = (c.author_role||'').toLowerCase();
+      if (_r==='client') return 'pcs-avatar av-client';
+      if (_r==='servicing'||_r==='chitra') return 'pcs-avatar av-servicing';
+      if (_r==='creative'||_r==='pranav') return 'pcs-avatar av-creative';
+      return 'pcs-avatar av-admin';
+    }
+
+    function _renderClientThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
       return threadRows.map(function(c) {
         var _initial = (c.author||'?').charAt(0).toUpperCase();
-        var _ts = '';
-        if (c.created_at) {
-          var _d = new Date((c.created_at||'')
-            .replace(' ','T')
-            .replace('+00:00','Z')
-            .replace('+00','Z'));
-          if (!isNaN(_d.getTime())) {
-            _ts = _d.toLocaleDateString('en-IN',{
-              day:'numeric',month:'short',
-              timeZone:'Asia/Kolkata'}) +
-              ' \xB7 ' +
-              _d.toLocaleTimeString('en-IN',{
-              hour:'numeric',minute:'2-digit',
-              hour12:true,timeZone:'Asia/Kolkata'});
-          }
-        }
-        var _r = (c.author_role||'').toLowerCase();
-        var _avClass = 'pcs-avatar';
-        if (_r==='client') _avClass += ' av-client';
-        else if (_r==='servicing'||_r==='chitra') _avClass += ' av-servicing';
-        else if (_r==='creative'||_r==='pranav') _avClass += ' av-creative';
-        else _avClass += ' av-admin';
+        return '<div class="pcs-comment-item">' +
+          (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
+          '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
+          '<div class="pcs-comment-body">' +
+            '<div class="pcs-comment-meta">' +
+              '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+              '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
+            '</div>' +
+            '<div class="pcs-comment-text">' + esc(c.message) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
 
+    function _renderNoteThread(threadRows, isEmpty) {
+      if (!threadRows.length) return isEmpty;
+      return threadRows.map(function(c) {
+        var _initial = (c.author||'?').charAt(0).toUpperCase();
         var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
         var _mentionBadge = _mu.length
           ? '<span class="pcs-mention-badge">@' + esc(_mu.join(', @')) + '</span>'
           : '';
+        var _vis = (c.visibility||'all').toUpperCase();
+        if (_vis === 'SERVICING') _vis = 'SERV';
+        var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
 
-        return '<div class="pcs-comment-item' +
+        return '<div class="pcs-note-item' +
           (c.resolved ? ' pcs-resolved' : '') + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
-          '<div class="' + _avClass + '">' + esc(_initial) + '</div>' +
+          '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
           '<div class="pcs-comment-body">' +
             '<div class="pcs-comment-meta">' +
               '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
-              '<span class="pcs-comment-time">' + _ts + '</span>' +
+              '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
               _mentionBadge +
+              _visTag +
             '</div>' +
             '<div class="pcs-comment-text">' + esc(c.message) + '</div>' +
           '</div>' +
@@ -709,7 +727,7 @@ window.loadPcsComments = async function(postId) {
       '<div class="pcs-empty-text">No client comments yet.<br>Client and team see this thread.</div>' +
       '</div>';
 
-    list.innerHTML = _renderThread(clientRows, emptyClient);
+    list.innerHTML = _renderClientThread(clientRows, emptyClient);
 
     var countEl = document.getElementById('pcs-comments-count');
     if (countEl) {
@@ -730,7 +748,7 @@ window.loadPcsComments = async function(postId) {
         '<div class="pcs-empty-icon">&#x1F512;</div>' +
         '<div class="pcs-empty-text">No internal notes yet.</div></div>';
 
-      var notesHtml = _renderThread(activeRows, emptyNotes);
+      var notesHtml = _renderNoteThread(activeRows, emptyNotes);
 
       if (resolvedRows.length) {
         notesHtml +=
@@ -740,7 +758,7 @@ window.loadPcsComments = async function(postId) {
           ' Resolved Note' +
           (resolvedRows.length > 1 ? 's' : '') +
           ' (click to expand)</summary>' +
-          _renderThread(resolvedRows, '') +
+          _renderNoteThread(resolvedRows, '') +
           '</details>';
       }
 
