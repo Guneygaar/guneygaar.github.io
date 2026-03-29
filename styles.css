@@ -126,8 +126,9 @@
   --purple-bg:rgba(155,135,245,0.08);
 
   /* Semantic tokens  dark-only design */
-  --text-primary: #FFFFFF;
-  --text-secondary: #BBBBBB;
+  --text-primary:   #FFFFFF;
+  --text-secondary: #EBEBF5;
+  --text-muted:     #8E8E93;
   --text-tertiary: #555555;
   --surface-bg: #0a0a0f;
 
@@ -148,6 +149,9 @@
   --c-pub:    #3ECF8E;  --c-pub-dim:    rgba(62,207,142,0.14);
   --c-gold:   #C8A84B;  --c-gold-dim:   rgba(200,168,75,0.14);
   --c-muted:  #555555;  --c-muted-dim:  rgba(85,85,85,0.14);
+
+  --border-faint:   rgba(255,255,255,0.08);
+  --border-soft:    rgba(255,255,255,0.15);
 
   /* Legacy aliases  semantic tokens */
   --text3:      var(--text-tertiary);
@@ -1385,7 +1389,7 @@ tr:hover td { background: var(--surface2); }
 }
 .cp-status.red   { color: var(--c-red); }
 .cp-status.amber { color: var(--c-amber); }
-.cp-status.muted { color: rgba(255,255,255,0.3); }
+.cp-status.muted { color: var(--text-muted); }
 .cp-title {
   font-family: var(--sans);
   font-size: 15px;
@@ -4319,7 +4323,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-time {
   font-family: var(--mono);
   font-size: 8px;
-  color: rgba(255,255,255,0.55);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -5945,7 +5949,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   letter-spacing: 0.08em;
   background: none;
   border: 1px dotted rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.25);
+  color: var(--text-muted);
   padding: 8px 12px;
   height: 36px;
   cursor: pointer;
