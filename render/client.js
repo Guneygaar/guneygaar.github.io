@@ -561,6 +561,15 @@
           '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#333;">' + ts + '</span>' +
         '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#999;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
+        '<div class="pcs-comment-actions">' +
+        '<span class="pcs-comment-action" ' +
+          'onclick="window._clientSetReply(\'' +
+          _esc(c.id || '') + '\',\'' + _esc(c.author || '') + '\',\'' +
+          _esc(c.post_id || '') + '\')">REPLY</span>' +
+        '<span class="pcs-comment-action" ' +
+          'onclick="window._pcsCopyComment(\'' +
+          _esc(c.message || '') + '\')">COPY</span>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }
@@ -602,12 +611,18 @@
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
       : 'Add your thoughts...';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
+    return '<div id="client-reply-indicator-' + pid + '" ' +
+      'class="pcs-reply-indicator-bar" style="display:none;">' +
+      '<span id="client-reply-text-' + pid + '"></span>' +
+      '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
+        'class="pcs-reply-cancel">x</span>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
       '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
       '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
         '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
-        '<button class="pcs-img-btn" style="font-size:13px;" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">&#128204;</button>' +
+        '<button class="pcs-img-btn" style="font-size:13px;" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">&#128206;</button>' +
         '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
       '</div>' +
     '</div>';
@@ -778,6 +793,29 @@
     if (m) m.remove();
   }
 
+  window._clientSetReply = function(commentId, author, postId) {
+    window._clientReplyTo = window._clientReplyTo || {};
+    window._clientReplyTo[postId] = { id: commentId, author: author };
+    var indicator = document.getElementById(
+      'client-reply-indicator-' + postId
+    );
+    var text = document.getElementById(
+      'client-reply-text-' + postId
+    );
+    if (text) text.textContent = 'Replying to ' + author;
+    if (indicator) indicator.style.display = 'flex';
+    var input = document.getElementById('comment-input-' + postId);
+    if (input) input.focus();
+  };
+
+  window._clientClearReply = function(postId) {
+    if (window._clientReplyTo) delete window._clientReplyTo[postId];
+    var indicator = document.getElementById(
+      'client-reply-indicator-' + postId
+    );
+    if (indicator) indicator.style.display = 'none';
+  };
+
   window._clientFeedHandleImg = async function(postId) {
     var input = document.getElementById('client-feed-img-input-' + postId);
     if (!input || !input.files || !input.files[0]) return;
@@ -838,13 +876,20 @@
 
     if (typeof window.apiFetch !== 'function') return;
 
+    var _replyTo = (window._clientReplyTo &&
+      window._clientReplyTo[postId])
+      ? window._clientReplyTo[postId].id
+      : null;
+    window._clientClearReply(postId);
+
     var _pendingImg = window._clientFeedPendingImg || null;
     window._clientFeedPendingImg = null;
     var _commentBody = {
       post_id: realPostId,
       author: authorName,
       author_role: 'Client',
-      message: message
+      message: message,
+      reply_to: _replyTo || null
     };
     if (_pendingImg) {
       _commentBody.attachments = JSON.stringify({type:'images', urls:[_pendingImg]});

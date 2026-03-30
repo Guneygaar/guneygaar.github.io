@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260329W">
+ <link rel="stylesheet" href="styles.css?v=20260329X">
 
 </head>
 <body>
@@ -910,6 +910,10 @@
           </div>
           <div id="pcs-comments-list" class="pcs-thread-list" style="min-height:60px;"></div>
           <div id="pcs-client-img-previews" class="pcs-img-previews"></div>
+          <div id="pcs-client-reply-indicator" class="pcs-reply-indicator-bar" style="display:none;">
+            <span></span>
+            <span onclick="window._pcsClearReply('client')" class="pcs-reply-cancel">x</span>
+          </div>
           <div class="client-input-zone">
             <textarea id="pcs-comment-input" class="pcs-textarea" rows="1" placeholder="Reply to client..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-client');var t=document.getElementById('pcs-task-btn-client');var v=!!this.value.trim();if(b)b.classList.toggle('active',v);if(t)t.classList.toggle('active',v)"></textarea>
             <input type="file" id="pcs-client-img-input" accept="image/*" style="display:none" onchange="window._pcsHandleCommentImg('client')">
@@ -935,6 +939,10 @@
           <div id="pcs-notes-list" class="pcs-notes-list"></div>
           <div id="pcs-mention-dropup" style="display:none;"></div>
           <div id="pcs-note-img-previews" class="pcs-img-previews"></div>
+          <div id="pcs-note-reply-indicator" class="pcs-reply-indicator-bar" style="display:none;">
+            <span></span>
+            <span onclick="window._pcsClearReply('note')" class="pcs-reply-cancel">x</span>
+          </div>
           <div class="notes-input-zone">
             <textarea id="pcs-note-input" class="pcs-textarea pcs-note-textarea" rows="1" placeholder="Add note... @mention" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-note');var t=document.getElementById('pcs-task-btn-note');var v=!!this.value.trim();if(b)b.classList.toggle('active',v);if(t)t.classList.toggle('active',v)"></textarea>
             <input type="file" id="pcs-note-img-input" accept="image/*" style="display:none" onchange="window._pcsHandleCommentImg('note')">
@@ -1033,24 +1041,24 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="01-config.js?v=20260329W" defer></script>
-<script src="02-session.js?v=20260329W" defer></script>
-<script src="utils.js?v=20260329W" defer></script>
-<script src="03-auth.js?v=20260329W" defer></script>
-<script src="05-api.js?v=20260329W" defer></script>
-<script src="10-ui.js?v=20260329W" defer></script>
+<script src="01-config.js?v=20260329X" defer></script>
+<script src="02-session.js?v=20260329X" defer></script>
+<script src="utils.js?v=20260329X" defer></script>
+<script src="03-auth.js?v=20260329X" defer></script>
+<script src="05-api.js?v=20260329X" defer></script>
+<script src="10-ui.js?v=20260329X" defer></script>
 
-<script src="06-post-create.js?v=20260329W" defer></script>
-<script defer src="render/dashboard.js?v=20260329W"></script>
-<script defer src="render/client.js?v=20260329W"></script>
-<script defer src="render/pipeline.js?v=20260329W"></script>
-<script defer src="render/brief.js?v=20260329W"></script>
-<script defer src="actions/pcs.js?v=20260329W"></script>
-<script src="07-post-load.js?v=20260329W" defer></script>
-<script src="08-post-actions.js?v=20260329W" defer></script>
-<script src="09-library.js?v=20260329W" defer></script>
-<script src="09-approval.js?v=20260329W" defer></script>
-<script src="04-router.js?v=20260329W" defer></script>
+<script src="06-post-create.js?v=20260329X" defer></script>
+<script defer src="render/dashboard.js?v=20260329X"></script>
+<script defer src="render/client.js?v=20260329X"></script>
+<script defer src="render/pipeline.js?v=20260329X"></script>
+<script defer src="render/brief.js?v=20260329X"></script>
+<script defer src="actions/pcs.js?v=20260329X"></script>
+<script src="07-post-load.js?v=20260329X" defer></script>
+<script src="08-post-actions.js?v=20260329X" defer></script>
+<script src="09-library.js?v=20260329X" defer></script>
+<script src="09-approval.js?v=20260329X" defer></script>
+<script src="04-router.js?v=20260329X" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
