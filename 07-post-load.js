@@ -289,7 +289,7 @@ function startRealtime() {
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     // Skip poll while user is in a modal  -  they'll get fresh data on close
-    if (window._modalOpen) return;
+    if (window.AppState.ui.modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
@@ -503,7 +503,7 @@ function renderAll() {
     if (typeof renderClientView === 'function') renderClientView();
     return;
   }
-  if (window._modalOpen) return;
+  if (window.AppState.ui.modalOpen) return;
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
 
   // Always render: lightweight stats & role visibility

@@ -5,7 +5,7 @@
 console.log("LOADED:", "01-config.js");
 
 // Global modal state  -  must exist before any other script runs
-if (window._modalOpen === undefined)      window._modalOpen = false;
+if (window.AppState.ui.modalOpen === undefined)      window.AppState.ui.modalOpen = false;
 if (window._deferredRender === undefined) window._deferredRender = false;
 
 const SUPABASE_URL          = 'https://vxokfscjzytpgdrmertk.supabase.co';

@@ -177,7 +177,7 @@ if (dateEl && !dateEl.value) dateEl.value = today;
 var createBtn = document.getElementById('nps-create-btn');
 if (createBtn) createBtn.disabled = true;
 
-window._modalOpen = true;
+window.AppState.ui.modalOpen = true;
 var _npoEl = document.getElementById('new-post-overlay');
 if (_npoEl) _npoEl.style.display = 'flex';
 var nav = document.getElementById('bottom-nav');
@@ -213,7 +213,7 @@ document.getElementById('new-post-overlay').style.display = 'none';
 var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = '';
 document.body.style.overflow = '';
-window._modalOpen = false;
+window.AppState.ui.modalOpen = false;
 _drainDeferredRender();
 }
 

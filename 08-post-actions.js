@@ -98,7 +98,7 @@ function openAdminEdit(postId) {
   if (_aeDeleteBtn) {
     _aeDeleteBtn.style.display = _aeRole === 'admin' ? '' : 'none';
   }
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
   const _ae = id => document.getElementById(id);
   const aePostid = _ae('ae-postid');    if (aePostid) aePostid.textContent = postId;
   const aeTitle  = _ae('ae-title');     if (aeTitle) aeTitle.value = getTitle(post);
@@ -120,7 +120,7 @@ function openAdminEdit(postId) {
 function closeAdminEdit() {
   document.getElementById('admin-edit-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
   _drainDeferredRender();
 }
 

@@ -241,7 +241,7 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(commentInput).toBeFocused({ timeout: 3000 });
 
     // Verify PCS overlay is NOT open
-    const modalOpen = await page.evaluate(() => window._modalOpen);
+    const modalOpen = await page.evaluate(() => window.AppState.ui.modalOpen);
     expect(modalOpen).toBeFalsy();
   });
 
@@ -272,8 +272,8 @@ test.describe('Client Feed Smoke Tests', () => {
     const commentText = card.locator('div').nth(3);
     await commentText.click({ force: true });
 
-    // Verify _modalOpen remains false throughout
-    const modalOpen = await page.evaluate(() => window._modalOpen);
+    // Verify AppState.ui.modalOpen remains false throughout
+    const modalOpen = await page.evaluate(() => window.AppState.ui.modalOpen);
     expect(modalOpen).toBeFalsy();
   });
 
@@ -302,7 +302,7 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(longCapCard.locator('[data-action="expand-caption"]')).toHaveCount(0);
 
     // Verify no navigation occurs (still on same page)
-    const modalOpen = await page.evaluate(() => window._modalOpen);
+    const modalOpen = await page.evaluate(() => window.AppState.ui.modalOpen);
     expect(modalOpen).toBeFalsy();
   });
 

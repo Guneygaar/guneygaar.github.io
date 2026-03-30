@@ -1128,7 +1128,7 @@ function libOpenPostCard(postId) {
     overlay.style.zIndex = '1200';
     overlay.style.pointerEvents = 'auto';
     document.body.style.overflow = 'hidden';
-    window._modalOpen = true;
+    window.AppState.ui.modalOpen = true;
 
     _renderPCS(postId);
 
@@ -1139,7 +1139,7 @@ function libOpenPostCard(postId) {
     overlay.style.display = 'none';
     overlay.classList.remove('open');
     document.body.style.overflow = '';
-    window._modalOpen = false;
+    window.AppState.ui.modalOpen = false;
   }
 }
 window.libOpenPostCard = libOpenPostCard;
