@@ -17,6 +17,8 @@ window._pcsLbImages = [];
 window._pcsLbIdx = 0;
 window._pcsClientImgs = [];
 window._pcsNoteImgs = [];
+window._pcsReplyTo = null;
+window._pcsReplyToAuthor = null;
 window._modalOpen = window._modalOpen || false;
 
 window.openPCS = function(postId, listKey) {
@@ -633,6 +635,16 @@ window.loadPcsComments = async function(postId) {
     );
     if (!Array.isArray(rows)) rows = [];
 
+    var _commentMap = {};
+    rows.forEach(function(c) {
+      _commentMap[c.id] = c.author;
+    });
+    rows.forEach(function(c) {
+      if (c.reply_to && _commentMap[c.reply_to]) {
+        c.reply_to_author = _commentMap[c.reply_to];
+      }
+    });
+
     var _unreadIds = rows
       .filter(function(r) { return !r.read; })
       .map(function(r) { return r.id; });
@@ -734,7 +746,8 @@ window.loadPcsComments = async function(postId) {
             }).join('') +
           '</div>';
         }
-        return '<div class="pcs-comment-item">' +
+        return '<div class="pcs-comment-item' +
+          (c.reply_to ? ' pcs-comment-reply' : '') + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
           '<div class="pcs-comment-body">' +
@@ -742,10 +755,23 @@ window.loadPcsComments = async function(postId) {
               '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
               '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
             '</div>' +
+            (c.reply_to && c.reply_to_author ?
+              '<div class="pcs-reply-indicator">' +
+              '&#8629; ' + esc(c.reply_to_author) + '</div>'
+              : '') +
             '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
             ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
+            '<div class="pcs-comment-actions">' +
+            '<span class="pcs-comment-action" ' +
+              'onclick="window._pcsSetReply(\'client\',\'' +
+              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+              esc(c.message) + '\')">REPLY</span>' +
+            '<span class="pcs-comment-action" ' +
+              'onclick="window._pcsCopyComment(\'' +
+              esc(c.message) + '\')">COPY</span>' +
+            '</div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -794,6 +820,7 @@ window.loadPcsComments = async function(postId) {
           '</div>';
         }
         return '<div class="pcs-note-item' +
+          (c.reply_to ? ' pcs-comment-reply' : '') +
           (c.resolved ? ' pcs-resolved' : '') + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
@@ -804,10 +831,23 @@ window.loadPcsComments = async function(postId) {
               _mentionBadge +
               _visTag +
             '</div>' +
+            (c.reply_to && c.reply_to_author ?
+              '<div class="pcs-reply-indicator">' +
+              '&#8629; ' + esc(c.reply_to_author) + '</div>'
+              : '') +
             '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
             ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
+            '<div class="pcs-comment-actions">' +
+            '<span class="pcs-comment-action" ' +
+              'onclick="window._pcsSetReply(\'note\',\'' +
+              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+              esc(c.message) + '\')">REPLY</span>' +
+            '<span class="pcs-comment-action" ' +
+              'onclick="window._pcsCopyComment(\'' +
+              esc(c.message) + '\')">COPY</span>' +
+            '</div>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -1762,6 +1802,13 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   _pcsRenderImgPreviews('client');
   _pcsRenderImgPreviews('note');
 
+  var _replyTo = window._pcsReplyTo || null;
+  var _replyToAuthor = window._pcsReplyToAuthor || null;
+  window._pcsReplyTo = null;
+  window._pcsReplyToAuthor = null;
+  window._pcsClearReply('client');
+  window._pcsClearReply('note');
+
   if (visibility === 'all' && _roleLower !== 'client') {
     window._pendingComment = {
       postId: _realPostId,
@@ -1772,13 +1819,16 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
       role: _role,
       title: _title,
       isTask: isTask,
-      images: _imgs
+      images: _imgs,
+      reply_to: _replyTo,
+      reply_to_author: _replyToAuthor
     };
     var confirmEl = document.getElementById('pcs-comment-confirm');
     if (!confirmEl) {
       await window._doSubmitComment({ postId:_realPostId, message:message,
         visibility:visibility, mentioned:_mentioned, author:_author,
-        role:_role, title:_title, isTask:isTask, images:_imgs });
+        role:_role, title:_title, isTask:isTask, images:_imgs,
+        reply_to:_replyTo, reply_to_author:_replyToAuthor });
       return;
     }
     var previewEl = document.getElementById('pcs-comment-confirm-preview');
@@ -1798,7 +1848,9 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     role: _role,
     title: _title,
     isTask: isTask,
-    images: _imgs
+    images: _imgs,
+    reply_to: _replyTo,
+    reply_to_author: _replyToAuthor
   });
   } catch(e) {
     console.error('submitPcsComment failed:', e);
@@ -1848,6 +1900,7 @@ window._doSubmitComment = async function(opts) {
         message: opts.message,
         visibility: opts.visibility,
         mentioned_users: opts.mentioned,
+        reply_to: opts.reply_to || null,
         resolved: false,
         resolved_by: null,
         attachments: opts.isTask
@@ -2122,5 +2175,57 @@ window._pcsRemoveCommentImg = function(zone, idx) {
     window._pcsNoteImgs.splice(idx, 1);
   }
   _pcsRenderImgPreviews(zone);
+};
+
+window._pcsSetReply = function(zone, commentId, author, message) {
+  window._pcsReplyTo = commentId;
+  window._pcsReplyToAuthor = author;
+  var inputId = zone === 'client'
+    ? 'pcs-comment-input'
+    : 'pcs-note-input';
+  var input = document.getElementById(inputId);
+  var indicator = document.getElementById(
+    zone === 'client'
+      ? 'pcs-client-reply-indicator'
+      : 'pcs-note-reply-indicator'
+  );
+  if (indicator) {
+    indicator.textContent = 'Replying to ' + author;
+    indicator.style.display = 'flex';
+  }
+  if (input) {
+    input.focus();
+    input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+};
+
+window._pcsClearReply = function(zone) {
+  window._pcsReplyTo = null;
+  window._pcsReplyToAuthor = null;
+  var indicator = document.getElementById(
+    zone === 'client'
+      ? 'pcs-client-reply-indicator'
+      : 'pcs-note-reply-indicator'
+  );
+  if (indicator) {
+    indicator.style.display = 'none';
+    indicator.textContent = '';
+  }
+};
+
+window._pcsCopyComment = function(message) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(message).then(function() {
+      showToast('Copied.', 'success');
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = message;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied.', 'success');
+  }
 };
 

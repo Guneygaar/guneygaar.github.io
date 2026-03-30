@@ -6263,3 +6263,58 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-menu-item-danger {
   color: #FF4B4B;
 }
+
+.pcs-comment-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 5px;
+  justify-content: flex-end;
+}
+
+.pcs-comment-action {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8E8E93;
+  cursor: pointer;
+}
+
+.pcs-comment-action:hover,
+.pcs-comment-action:active {
+  color: #AEAEB2;
+}
+
+.pcs-comment-reply {
+  margin-left: 20px;
+  border-left: 2px solid rgba(255,255,255,0.08);
+  padding-left: 10px;
+}
+
+.pcs-reply-indicator {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #9b87f5;
+  margin-bottom: 2px;
+  letter-spacing: 0.06em;
+}
+
+.pcs-reply-indicator-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 14px;
+  background: rgba(155,135,245,0.08);
+  border-top: 1px solid rgba(155,135,245,0.15);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #9b87f5;
+  letter-spacing: 0.06em;
+}
+
+.pcs-reply-cancel {
+  cursor: pointer;
+  color: #8E8E93;
+  font-size: 11px;
+  padding: 0 4px;
+}
