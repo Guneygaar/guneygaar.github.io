@@ -1423,7 +1423,7 @@ window._pcsPhotoMenu = function(postId) {
       '+ Add More</div>' +
     (imgs.length > 0
       ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
-          postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+          postId + '\');var _m=document.getElementById(\'pcs-photo-menu-drop\');if(_m)_m.remove();">' +
           'Save All</div>'
       : '');
   var section = document.getElementById('pcs-photo-section');
