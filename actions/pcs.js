@@ -19,15 +19,15 @@ window._pcsClientImgs = [];
 window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
-window._pcsActiveMenu = null;
+window.AppState.pcs.activeMenu = null;
 window._modalOpen = window._modalOpen || false;
 
 document.addEventListener('click', function(e) {
-  if (!window._pcsActiveMenu) return;
+  if (!window.AppState.pcs.activeMenu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
-  if (!window._pcsActiveMenu.contains(e.target)) {
-    window._pcsActiveMenu.remove();
-    window._pcsActiveMenu = null;
+  if (!window.AppState.pcs.activeMenu.contains(e.target)) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
   }
 });
 
@@ -1414,9 +1414,9 @@ window._pcsRemovePhoto = async function(postId, idx) {
 
 window._pcsPhotoMenu = function(postId, e) {
   if (e) e.stopPropagation();
-  if (window._pcsActiveMenu) {
-    window._pcsActiveMenu.remove();
-    window._pcsActiveMenu = null;
+  if (window.AppState.pcs.activeMenu) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
     return;
   }
   var menu = document.createElement('div');
@@ -1430,18 +1430,18 @@ window._pcsPhotoMenu = function(postId, e) {
   var imgs = (post && post.images) ? post.images : [];
   menu.innerHTML =
     '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
-      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
+      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
       '+ Add More</div>' +
     (imgs.length > 0
       ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
-          postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
+          postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
           'Save All</div>'
       : '');
   var section = document.getElementById('pcs-photo-section');
   if (section) {
     section.style.position = 'relative';
     section.appendChild(menu);
-    window._pcsActiveMenu = menu;
+    window.AppState.pcs.activeMenu = menu;
   }
 };
 
@@ -1473,9 +1473,9 @@ window._pcsSaveAllPhotos = async function(postId) {
 
 window._pcsCaptionMenu = function(postId, e) {
   if (e) e.stopPropagation();
-  if (window._pcsActiveMenu) {
-    window._pcsActiveMenu.remove();
-    window._pcsActiveMenu = null;
+  if (window.AppState.pcs.activeMenu) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
     return;
   }
   var menu = document.createElement('div');
@@ -1485,20 +1485,20 @@ window._pcsCaptionMenu = function(postId, e) {
     'z-index:200;min-width:140px;overflow:hidden;';
   menu.innerHTML =
     '<div class="pcs-menu-item" onclick="window._pcsCopyCaption(\'' +
-      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
+      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
       'Copy</div>' +
     '<div class="pcs-menu-item" onclick="_startCaptionEdit(\'' +
-      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
+      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
       'Edit</div>' +
     '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}window._pcsConfirmReplace(\'' +
+      'onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window._pcsConfirmReplace(\'' +
       postId + '\');">' +
       'Replace</div>';
   var section = document.getElementById('pcs-caption-section');
   if (section) {
     section.style.position = 'relative';
     section.appendChild(menu);
-    window._pcsActiveMenu = menu;
+    window.AppState.pcs.activeMenu = menu;
   }
 };
 
