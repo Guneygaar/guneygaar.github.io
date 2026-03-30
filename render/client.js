@@ -1176,7 +1176,7 @@
     if (el) {
       el.style.display = 'flex';
       _lbUpdate();
-      window._modalOpen = true;
+      window.AppState.ui.modalOpen = true;
       document.body.style.overflow = 'hidden';
     }
   }
@@ -1186,7 +1186,7 @@
     if (el) el.style.display = 'none';
     _lbImages = [];
     _lbIndex = 0;
-    window._modalOpen = false;
+    window.AppState.ui.modalOpen = false;
     document.body.style.overflow = '';
   }
 
@@ -1481,7 +1481,7 @@
     var _self_overlay = overlay;
     requestAnimationFrame(function() {
       document.body.appendChild(_self_overlay);
-      window._modalOpen = true;
+      window.AppState.ui.modalOpen = true;
       document.body.style.overflow = 'hidden';
       _wireEvents(_self_overlay);
       var approvePopup =
@@ -1502,7 +1502,7 @@
       if (closeBtn) {
         closeBtn.addEventListener('click', function() {
           _self_overlay.remove();
-          window._modalOpen = false;
+          window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
         });
       }

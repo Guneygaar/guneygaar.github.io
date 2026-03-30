@@ -23,7 +23,7 @@ function safeRender() {
 }
 
 function scheduleRender() {
-  if (window._modalOpen) { window._deferredRender = true; return; }
+  if (window.AppState.ui.modalOpen) { window._deferredRender = true; return; }
   clearTimeout(window.AppState.timers.renderTimer);
   window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
 }
@@ -1357,7 +1357,7 @@ function openNotifications() {
   overlay.style.display = 'flex';
   panel.style.cssText = 'width:100%;max-width:480px;max-height:62vh;min-height:40vh;overflow-y:auto;background:#0e0e0e;display:block;';
   document.body.style.overflow = 'hidden';
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
   loadNotifications();
 }
 
@@ -1365,7 +1365,7 @@ function closeNotifications() {
   var overlay = document.getElementById('notif-overlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
 }
 
 async function loadNotifBadge() {
@@ -1473,7 +1473,7 @@ function openPipelineFilter() {
   ]);
   overlay.style.display = 'block';
   document.body.style.overflow = 'hidden';
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
 }
 
 function _buildPFChips(containerId, key, options) {
@@ -1532,7 +1532,7 @@ function closePipelineFilter() {
   var overlay = document.getElementById('pipeline-filter-overlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
 }
 
 window.openPipelineFilter = openPipelineFilter;

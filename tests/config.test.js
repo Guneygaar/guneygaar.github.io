@@ -7,7 +7,7 @@ const configSrc = readFileSync(resolve(__dirname, '..', '01-config.js'), 'utf8')
 
 function loadConfig() {
   // Provide window stub for the initialization guards
-  const window = { _modalOpen: undefined, _deferredRender: undefined };
+  const window = { AppState: { ui: { modalOpen: undefined } }, _deferredRender: undefined };
   const fn = new Function('window', configSrc + `
     return {
       STAGE_META, STAGES_DB, PIPELINE_ORDER, STAGE_DISPLAY, STAGE_COLORS,

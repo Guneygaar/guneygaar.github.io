@@ -20,7 +20,7 @@ window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
 window.AppState.pcs.activeMenu = null;
-window._modalOpen = window._modalOpen || false;
+window.AppState.ui.modalOpen = window.AppState.ui.modalOpen || false;
 
 document.addEventListener('click', function(e) {
   if (!window.AppState.pcs.activeMenu) return;
@@ -64,7 +64,7 @@ window.openPCS = function(postId, listKey) {
   overlay.style.display       = 'flex';
   overlay.style.pointerEvents = '';
 
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
   document.body.style.overflow = 'hidden';
 
   try {
@@ -132,7 +132,7 @@ window.forcePCSReset = function() {
   document.body.style.overflow = '';
 
   // 5. Reset all state flags
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
 
   // 6. Clear PCS context
   window._pcs.postId = null;
