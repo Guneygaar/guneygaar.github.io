@@ -224,26 +224,32 @@
 
     var imgsJson = _esc(JSON.stringify(imgs));
     var wrap = function (src, idx, css, overlay) {
-      return '<div data-action="openLightbox" data-images="' + imgsJson + '" data-index="' + idx + '" style="' + css + 'overflow:hidden;position:relative;background:#111;cursor:pointer;">' +
-        '<img src="' + _esc(src) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;" loading="lazy">' +
+      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;">' +
+        '<img src="' + _esc(src) + '"' +
+        ' data-action="openLightbox"' +
+        ' data-images=\'' + imgsJson + '\'' +
+        ' data-index="' + idx + '"' +
+        ' draggable="false"' +
+        ' alt="" loading="lazy"' +
+        ' style="cursor:pointer;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none;pointer-events:auto;">' +
         (overlay || '') + '</div>';
     };
 
     if (n === 1) {
-      return '<div class="img-single" style="padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;">' +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
         '</div>';
     }
 
     if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -255,7 +261,7 @@
     var overlayHtml = extra > 0
       ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
@@ -505,7 +511,7 @@
           document.removeEventListener('click', closeMenu);
         }
       });
-    }, 100);
+    }, 200);
   };
 
   function _makeSlug(title) {
@@ -555,6 +561,15 @@
           '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#333;">' + ts + '</span>' +
         '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#999;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
+        '<div class="pcs-comment-actions">' +
+        '<span class="pcs-comment-action" ' +
+          'onclick="window._clientSetReply(\'' +
+          _esc(c.id || '') + '\',\'' + _esc(c.author || '') + '\',\'' +
+          _esc(c.post_id || '') + '\')">REPLY</span>' +
+        '<span class="pcs-comment-action" ' +
+          'onclick="window._pcsCopyComment(\'' +
+          _esc(c.message || '') + '\')">COPY</span>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }
@@ -568,11 +583,19 @@
   }
 
   function _commentsListHtml(post) {
-    var comments = Array.isArray(post.post_comments) ? post.post_comments : [];
-    if (!comments.length) return '';
-    var html = '<div data-comments-list="' + _esc(post.post_id || post.id || '') + '" style="margin-top:6px;">';
-    for (var i = 0; i < comments.length; i++) {
-      html += _singleCommentHtml(comments[i]);
+    var visibleComments = (post.post_comments || []).filter(function(c) {
+      return c.visibility === 'all' || !c.visibility;
+    });
+    if (!visibleComments.length) return '';
+    var pid = _esc(post.post_id || post.id || '');
+    var show = visibleComments.length <= 3 ? visibleComments : visibleComments.slice(0, 3);
+    var remaining = visibleComments.length - show.length;
+    var html = '<div data-comments-list="' + pid + '" data-full-comments="' + _esc(JSON.stringify(visibleComments)) + '" style="margin-top:6px;">';
+    for (var i = 0; i < show.length; i++) {
+      html += _singleCommentHtml(show[i]);
+    }
+    if (remaining > 0) {
+      html += '<div data-action="expandComments" data-id="' + pid + '" style="font-size:12px;color:#555;padding:4px 14px 8px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">View ' + remaining + ' more comment' + (remaining > 1 ? 's' : '') + '</div>';
     }
     html += '</div>';
     return html;
@@ -581,171 +604,29 @@
   /* ---- comment input row ---- */
 
   function _commentInputHtml(post) {
-    if (post.stage !== 'awaiting_approval' &&
-        post.stage !== 'awaiting_brand_input') return '';
+    if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
     var pid = _esc(post.post_id || post.id || '');
     var userName = (window.currentUserName || 'C');
     var initial = userName.charAt(0).toUpperCase();
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
       : 'Add your thoughts...';
-    return '<div class="client-comment-input-wrap" data-post-id="' + pid + '">' +
-      '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 6px;">' +
-        '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;' +
-          'display:flex;align-items:center;justify-content:center;' +
-          'background:#C8A84B;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:12px;font-weight:600;color:#000;">' + initial + '</div>' +
-        '<div style="flex:1;display:flex;align-items:center;' +
-          'background:#111118;border:1px solid #1e1e2e;' +
-          'border-radius:20px;padding:0 6px 0 14px;height:38px;">' +
-          '<input id="comment-input-' + pid + '" type="text" ' +
-            'placeholder="' + _esc(placeholder) + '" ' +
-            'style="flex:1;background:transparent;border:none;outline:none;' +
-            'font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-            'color:#E8E8E8;padding:7px 0;" ' +
-            'data-post-id="' + pid + '">' +
-          '<button data-action="submitComment" data-id="' + pid + '" ' +
-            'style="width:30px;height:30px;background:#C8A84B;border:none;' +
-            'border-radius:50%;cursor:pointer;flex-shrink:0;' +
-            'display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
-              'stroke="#000" stroke-width="2.5">' +
-              '<line x1="22" y1="2" x2="11" y2="13"/>' +
-              '<polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
-            '</svg>' +
-          '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div id="client-img-preview-' + pid + '" ' +
-        'style="display:none;flex-wrap:wrap;gap:6px;' +
-        'padding:0 14px 8px 54px;"></div>' +
-      '<div id="client-mention-drop-' + pid + '" ' +
-        'style="display:none;margin:0 14px 8px 54px;' +
-        'background:#1e1e26;border:1px solid #2a2a36;overflow:hidden;"></div>' +
-      '<div style="display:flex;align-items:center;gap:6px;' +
-        'padding:0 14px 10px 54px;">' +
-        '<input type="file" id="client-img-input-' + pid + '" ' +
-          'accept="image/*" style="display:none;" ' +
-          'onchange="window._clientHandleImg(\'' + pid + '\')">' +
-        '<button onclick="document.getElementById(' +
-          '\'client-img-input-' + pid + '\').click()" ' +
-          'style="display:flex;align-items:center;gap:6px;' +
-          'padding:6px 12px;background:#111118;border:1px solid #1e1e2e;' +
-          'cursor:pointer;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:10px;letter-spacing:0.06em;color:#AEAEB2;">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
-            'stroke="#AEAEB2" stroke-width="2">' +
-            '<rect x="3" y="3" width="18" height="18" rx="2"/>' +
-            '<circle cx="8.5" cy="8.5" r="1.5"/>' +
-            '<polyline points="21 15 16 10 5 21"/>' +
-          '</svg>' +
-          'PHOTO</button>' +
-        '<button onclick="window._clientToggleMention(\'' + pid + '\')" ' +
-          'style="display:flex;align-items:center;gap:6px;' +
-          'padding:6px 12px;background:#111118;border:1px solid #1e1e2e;' +
-          'cursor:pointer;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:10px;letter-spacing:0.06em;color:#AEAEB2;">@ MENTION</button>' +
+    return '<div id="client-reply-indicator-' + pid + '" ' +
+      'class="pcs-reply-indicator-bar" style="display:none;">' +
+      '<span id="client-reply-text-' + pid + '"></span>' +
+      '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
+        'class="pcs-reply-cancel">x</span>' +
+    '</div>' +
+    '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
+      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
+      '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
+        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
+        '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
+        '<button class="pcs-img-btn" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">ATTACH</button>' +
+        '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
       '</div>' +
     '</div>';
   }
-
-  window._clientPendingImgs = {};
-
-  window._clientHandleImg = async function(postId) {
-    var input = document.getElementById('client-img-input-' + postId);
-    if (!input || !input.files || !input.files[0]) return;
-    var file = input.files[0];
-    input.value = '';
-    try {
-      var url = await window.uploadPostAsset(file, postId + '-client');
-      if (!window._clientPendingImgs[postId]) {
-        window._clientPendingImgs[postId] = [];
-      }
-      window._clientPendingImgs[postId].push(url);
-      _clientRenderImgPreview(postId);
-    } catch(e) {
-      if (typeof window.showToast === 'function') {
-        window.showToast('Image upload failed.', 'error');
-      }
-    }
-  };
-
-  function _clientRenderImgPreview(postId) {
-    var el = document.getElementById('client-img-preview-' + postId);
-    if (!el) return;
-    var imgs = window._clientPendingImgs[postId] || [];
-    if (!imgs.length) { el.style.display = 'none'; return; }
-    el.style.display = 'flex';
-    el.innerHTML = imgs.map(function(url, i) {
-      return '<div style="position:relative;width:56px;height:56px;">' +
-        '<img src="' + url + '" style="width:56px;height:56px;' +
-          'object-fit:cover;border:1px solid #2a2a36;">' +
-        '<span onclick="window._clientRemoveImg(\'' + postId + '\',' + i + ')" ' +
-          'style="position:absolute;top:-4px;right:-4px;background:#FF4B4B;' +
-          'color:#fff;width:14px;height:14px;border-radius:50%;' +
-          'display:flex;align-items:center;justify-content:center;' +
-          'font-size:8px;cursor:pointer;">x</span>' +
-      '</div>';
-    }).join('');
-  }
-
-  window._clientRemoveImg = function(postId, idx) {
-    if (window._clientPendingImgs[postId]) {
-      window._clientPendingImgs[postId].splice(idx, 1);
-    }
-    _clientRenderImgPreview(postId);
-  };
-
-  window._clientToggleMention = async function(postId) {
-    var drop = document.getElementById('client-mention-drop-' + postId);
-    if (!drop) return;
-    if (drop.style.display !== 'none') {
-      drop.style.display = 'none';
-      return;
-    }
-    drop.innerHTML = '<div style="padding:8px 14px;font-family:\'IBM Plex Mono\',' +
-      'monospace;font-size:9px;color:#8E8E93;">Loading...</div>';
-    drop.style.display = 'block';
-    try {
-      if (!window._clientMentionUsers) {
-        var users = await window.apiFetch('/user_roles?select=name,role');
-        window._clientMentionUsers = Array.isArray(users) ? users : [];
-      }
-      var input = document.getElementById('comment-input-' + postId);
-      drop.innerHTML = window._clientMentionUsers.map(function(u) {
-        return '<div style="display:flex;justify-content:space-between;' +
-          'align-items:center;padding:10px 14px;cursor:pointer;' +
-          'border-bottom:1px solid #2a2a36;" ' +
-          'onclick="window._clientInsertMention(\'' + postId + '\',\'' +
-            _esc(u.name) + '\')">' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:12px;color:#9b87f5;">@' + _esc(u.name) + '</span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:9px;letter-spacing:0.08em;text-transform:uppercase;' +
-            'color:#8E8E93;">' + _esc(u.role) + '</span>' +
-          '</div>';
-      }).join('');
-    } catch(e) {
-      drop.innerHTML = '<div style="padding:8px 14px;font-family:\'IBM Plex Mono\',' +
-        'monospace;font-size:9px;color:#FF4B4B;">Failed to load users.</div>';
-    }
-  };
-
-  window._clientInsertMention = function(postId, name) {
-    var input = document.getElementById('comment-input-' + postId);
-    var drop = document.getElementById('client-mention-drop-' + postId);
-    if (input) {
-      var cur = input.value;
-      var lastAt = cur.lastIndexOf('@');
-      if (lastAt !== -1) {
-        input.value = cur.slice(0, lastAt) + '@' + name + ' ';
-      } else {
-        input.value = cur + '@' + name + ' ';
-      }
-      input.focus();
-    }
-    if (drop) drop.style.display = 'none';
-  };
 
   /* ---- single card ---- */
 
@@ -764,8 +645,6 @@
       (isPublished ? '' : _engagementBarHtml(post)) +
       /* comments */
       _commentsListHtml(post) +
-      /* comment input (not on published) */
-      (isPublished ? '' : _commentInputHtml(post)) +
     '</div>';
   }
 
@@ -819,19 +698,31 @@
 
   var _savedNavHtml = '';
 
+  var ICON_NAV_LIST = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  var ICON_NAV_BOOK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+  var ICON_NAV_CHART = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>';
+
+  var _clientActiveNav = 'feed';
+
   function _setClientNav() {
     var nav = document.getElementById('bottom-nav');
     if (!nav) return;
     if (!_savedNavHtml) _savedNavHtml = nav.innerHTML;
-    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;';
+    var btnStyle = function(action) {
+      var color = _clientActiveNav === action ? '#C8A84B' : '#555';
+      return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
+    };
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;max-width:430px;margin:0 auto;';
     nav.className = '';
     nav.innerHTML =
-      '<button data-action="nav-feed" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#C8A84B;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
+      '<button class="tab-btn" data-tab="tasks" data-action="nav-feed" style="' + btnStyle('feed') + '">' +
         ICON_FEED + 'Feed</button>' +
-      '<button data-action="nav-requests" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
-        ICON_REQ + 'Requests</button>' +
-      '<button data-action="nav-alerts" style="display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:#555;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;">' +
-        ICON_ALERTS + 'Alerts</button>';
+      '<button class="tab-btn" data-tab="pipeline" data-action="nav-pipeline" style="' + btnStyle('pipeline') + '">' +
+        ICON_NAV_LIST + 'Pipeline</button>' +
+      '<button class="tab-btn" data-tab="library" data-action="nav-library" style="' + btnStyle('library') + '">' +
+        ICON_NAV_BOOK + 'Library</button>' +
+      '<button class="tab-btn" data-tab="insights" data-action="nav-insights" style="' + btnStyle('insights') + '">' +
+        ICON_NAV_CHART + 'Insights</button>';
   }
 
   window._restoreAgencyNav = function () {
@@ -848,6 +739,16 @@
     if (fabBtn) fabBtn.style.display = '';
   };
 
+  function _updateNavActive(action) {
+    _clientActiveNav = action;
+    var nav = document.getElementById('bottom-nav');
+    if (!nav) return;
+    nav.querySelectorAll('[data-action]').forEach(function(b) {
+      var a = b.getAttribute('data-action');
+      b.style.color = (a === 'nav-' + action) ? '#C8A84B' : '#555';
+    });
+  }
+
   function _wireNavEvents() {
     var nav = document.getElementById('bottom-nav');
     if (!nav || nav._clientNavWired) return;
@@ -856,11 +757,29 @@
       var btn = e.target.closest('[data-action]');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
-      if (action === 'nav-feed') { /* no-op */ }
-      else if (action === 'nav-requests') {
-        if (typeof window.openClientRequestForm === 'function') window.openClientRequestForm();
-      } else if (action === 'nav-alerts') {
-        if (typeof window.openNotifications === 'function') window.openNotifications();
+      if (action === 'nav-feed') {
+        _updateNavActive('feed');
+        document.getElementById('dashboard-view')?.classList.remove('active');
+        document.getElementById('insights-view')?.classList.remove('active');
+        document.getElementById('library-view')?.classList.remove('active');
+        var cv = document.getElementById('client-view');
+        if (cv) { cv.style.display = 'block'; cv.classList.add('active'); }
+        if (typeof renderClientView === 'function') renderClientView();
+      } else if (action === 'nav-pipeline') {
+        _updateNavActive('pipeline');
+        var cv2 = document.getElementById('client-view');
+        if (cv2) { cv2.style.display = 'none'; cv2.classList.remove('active'); }
+        if (typeof switchTab === 'function') switchTab('pipeline');
+      } else if (action === 'nav-library') {
+        _updateNavActive('library');
+        var cv3 = document.getElementById('client-view');
+        if (cv3) { cv3.style.display = 'none'; cv3.classList.remove('active'); }
+        if (typeof showLibrary === 'function') showLibrary();
+      } else if (action === 'nav-insights') {
+        _updateNavActive('insights');
+        var cv4 = document.getElementById('client-view');
+        if (cv4) { cv4.style.display = 'none'; cv4.classList.remove('active'); }
+        if (typeof showInsights === 'function') showInsights();
       }
     });
   }
@@ -874,15 +793,48 @@
     if (m) m.remove();
   }
 
+  window._clientSetReply = function(commentId, author, postId) {
+    window._clientReplyTo = window._clientReplyTo || {};
+    window._clientReplyTo[postId] = { id: commentId, author: author };
+    var indicator = document.getElementById(
+      'client-reply-indicator-' + postId
+    );
+    var text = document.getElementById(
+      'client-reply-text-' + postId
+    );
+    if (text) text.textContent = 'Replying to ' + author;
+    if (indicator) indicator.style.display = 'flex';
+    var input = document.getElementById('comment-input-' + postId);
+    if (input) input.focus();
+  };
+
+  window._clientClearReply = function(postId) {
+    if (window._clientReplyTo) delete window._clientReplyTo[postId];
+    var indicator = document.getElementById(
+      'client-reply-indicator-' + postId
+    );
+    if (indicator) indicator.style.display = 'none';
+  };
+
+  window._clientFeedHandleImg = async function(postId) {
+    var input = document.getElementById('client-feed-img-input-' + postId);
+    if (!input || !input.files || !input.files[0]) return;
+    var file = input.files[0];
+    input.value = '';
+    try {
+      var url = await uploadPostAsset(file, postId + '-comment');
+      window._clientFeedPendingImg = url;
+      showToast('Image ready. Add a message and send.', 'success');
+    } catch(e) {
+      showToast('Image upload failed.', 'error');
+    }
+  };
+
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
     var message = input.value.trim();
-    var hasPendingImg = window._clientPendingImgs &&
-      window._clientPendingImgs[postId] &&
-      window._clientPendingImgs[postId].length > 0;
-    if (!message && !hasPendingImg) return;
-    if (!message) message = '';
+    if (!message) return;
     var savedValue = input.value;
     input.value = '';
 
@@ -924,25 +876,29 @@
 
     if (typeof window.apiFetch !== 'function') return;
 
+    var _replyTo = (window._clientReplyTo &&
+      window._clientReplyTo[postId])
+      ? window._clientReplyTo[postId].id
+      : null;
+    window._clientClearReply(postId);
+
+    var _pendingImg = window._clientFeedPendingImg || null;
+    window._clientFeedPendingImg = null;
+    var _commentBody = {
+      post_id: realPostId,
+      author: authorName,
+      author_role: 'Client',
+      message: message,
+      reply_to: _replyTo || null
+    };
+    if (_pendingImg) {
+      _commentBody.attachments = JSON.stringify({type:'images', urls:[_pendingImg]});
+    }
+
     window.apiFetch('/post_comments', {
       method: 'POST',
-      body: JSON.stringify({
-        post_id: realPostId,
-        post_title: postTitle,
-        author: authorName,
-        author_role: 'Client',
-        message: message,
-        attachments: (window._clientPendingImgs[postId] &&
-          window._clientPendingImgs[postId].length)
-          ? JSON.stringify({
-              type: 'images',
-              urls: window._clientPendingImgs[postId]
-            })
-          : '[]'
-      })
+      body: JSON.stringify(_commentBody)
     }).then(function () {
-      window._clientPendingImgs[postId] = [];
-      _clientRenderImgPreview(postId);
       window.apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
@@ -1053,7 +1009,7 @@
 
       switch (action) {
         case 'expand-caption':
-          var capEl = document.getElementById(id);
+          var capEl = root.querySelector('#' + id);
           if (capEl) {
             var full = capEl.querySelector('[data-full]');
             if (full) {
@@ -1091,7 +1047,7 @@
           var popup3 = document.getElementById('client-approve-popup');
           if (popup3) popup3.style.display = 'none';
           if (pid) {
-            var eng = root.querySelector('[data-engagement="' + pid + '"]');
+            var eng = document.querySelector('[data-engagement="' + pid + '"]');
             if (eng) eng.style.display = 'none';
             var strip = document.getElementById('approved-strip-' + pid);
             if (strip) {
@@ -1107,11 +1063,44 @@
           break;
 
         case 'focusComment':
-          var cInput = document.getElementById('comment-input-' + id);
+          var cInput = root.querySelector('#comment-input-' + id);
           if (cInput) {
             cInput.focus();
-            var card = cInput.closest('[data-card-id]');
-            if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var fcCard = cInput.closest('[data-card-id]');
+            if (fcCard) fcCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
+              root.querySelector('[data-engagement="' + id + '"]') ||
+              root.querySelector('#approved-strip-' + id);
+            if (fcAnchor) {
+              var fcInputHtml = '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
+                '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
+                '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
+                  '<input id="comment-input-' + _esc(id) + '" type="text" placeholder="Add your thoughts..." style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + _esc(id) + '">' +
+                  '<button data-action="submitComment" data-id="' + _esc(id) + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
+                '</div></div>';
+              fcAnchor.insertAdjacentHTML('afterend', fcInputHtml);
+              var fcNew = root.querySelector('#comment-input-' + id);
+              if (fcNew) {
+                fcNew.focus();
+                var fcCard2 = fcNew.closest('[data-card-id]');
+                if (fcCard2) fcCard2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }
+          }
+          break;
+
+        case 'expandComments':
+          var clDiv = root.querySelector('[data-comments-list="' + id + '"]');
+          if (clDiv) {
+            try {
+              var allComments = JSON.parse(clDiv.getAttribute('data-full-comments') || '[]');
+              var ecHtml = '';
+              for (var ecI = 0; ecI < allComments.length; ecI++) {
+                ecHtml += _singleCommentHtml(allComments[ecI]);
+              }
+              clDiv.innerHTML = ecHtml;
+            } catch (_ec) {}
           }
           break;
 
@@ -1157,7 +1146,7 @@
   var _lbTouchX = 0;
 
   function _lightboxHtml() {
-    return '<div id="client-lightbox" style="display:none;position:fixed;inset:0;z-index:9000;background:#000000;flex-direction:column;align-items:center;justify-content:center;">' +
+    return '<div id="client-lightbox" style="display:none;position:fixed;inset:0;z-index:9500;background:#000000;flex-direction:column;align-items:center;justify-content:center;">' +
       '<button data-action="lbClose" style="position:absolute;top:14px;left:14px;background:none;border:none;color:#888;font-size:24px;cursor:pointer;z-index:1;padding:8px;">&#x2715;</button>' +
       '<span id="client-lb-counter" style="position:absolute;top:18px;right:14px;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#666;z-index:1;"></span>' +
       '<button id="client-lb-prev" data-action="lbPrev" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#888;font-size:28px;cursor:pointer;z-index:1;padding:12px;">&#x2039;</button>' +
@@ -1241,6 +1230,122 @@
     });
   }
 
+  /* ---- ensure request overlay on document.body ---- */
+
+  function _ensureReqOverlay() {
+    if (document.getElementById('req-overlay')) return;
+    var overlay = document.createElement('div');
+    overlay.id = 'req-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:2000;background:#080808;flex-direction:column;';
+    var mono = "'IBM Plex Mono',monospace";
+    var sans = "'DM Sans',sans-serif";
+    var numStyle = 'font-family:' + mono + ';font-size:9px;color:#C8A84B;opacity:0.7;margin-bottom:4px;';
+    var labelStyle = 'font-family:' + sans + ';font-size:16px;font-weight:600;color:rgba(255,255,255,0.9);';
+    var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:' + sans + ';font-size:14px;padding:10px 0;outline:none;caret-color:#C8A84B;margin-top:10px;';
+    var chipBtnStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.05em;text-transform:uppercase;color:#4a4a4a;background:transparent;border:1px dotted #2e2e2e;padding:6px 11px;cursor:pointer;';
+    var optLine = '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.08em;color:#383838;text-transform:uppercase;margin-bottom:10px;">OPTIONAL</div>';
+    var fieldBorder = 'padding:16px 16px 14px;border-bottom:1px dotted rgba(200,168,75,0.2);';
+    overlay.innerHTML =
+      /* HEADER */
+      '<div style="padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">' +
+        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
+        '<span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;color:#3a3a3a;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
+        '<button data-action="reqClose" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer;padding:4px;">&#x2715;</button>' +
+      '</div>' +
+      /* SCROLLABLE BODY */
+      '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;">' +
+        /* FIELD 01 -- no number */
+        '<div style="' + fieldBorder + '">' +
+          '<div style="' + labelStyle + '">Name this request <span style="color:#FF4B4B;">*</span></div>' +
+          '<input id="req-name" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women\'s Day" style="' + inputStyle + '">' +
+          '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.05em;color:#2a2a2a;margin-top:6px;text-transform:uppercase;">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
+        '</div>' +
+        /* FIELD 02 */
+        '<div style="' + fieldBorder + '">' +
+          '<div style="' + numStyle + '">02</div>' +
+          '<div style="' + labelStyle + '">What\'s the brief? <span style="color:#FF4B4B;">*</span></div>' +
+          '<textarea id="req-topic" placeholder="Topic, story, key message..." style="' + inputStyle + 'height:90px;resize:none;line-height:1.7;overflow-y:auto;"></textarea>' +
+        '</div>' +
+        /* FIELD 03 */
+        '<div style="' + fieldBorder + '">' +
+          '<div style="' + numStyle + '">03</div>' +
+          '<div style="' + labelStyle + '">Content type</div>' +
+          optLine +
+          '<div style="display:flex;flex-wrap:wrap;gap:7px;">' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Photo</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Carousel</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Video</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Text</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">Creative</button>' +
+          '</div>' +
+        '</div>' +
+        /* FIELD 04 */
+        '<div style="' + fieldBorder + '">' +
+          '<div style="' + numStyle + '">04</div>' +
+          '<div style="' + labelStyle + '">Target date</div>' +
+          optLine +
+          '<div style="position:relative;border:1px solid rgba(255,255,255,0.1);padding:10px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">' +
+            '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:rgba(255,255,255,0.3);">Pick a date</span>' +
+            '<span style="color:#333;font-size:12px;">&#9662;</span>' +
+            '<input id="req-date" type="date" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">' +
+          '</div>' +
+        '</div>' +
+        /* FIELD 05 -- no border-bottom */
+        '<div style="padding:16px 16px 14px;">' +
+          '<div style="' + numStyle + '">05</div>' +
+          '<div style="' + labelStyle + '">Reference photos</div>' +
+          '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px;">' +
+            '<div id="req-add-tile" data-action="reqAddPhoto" style="width:76px;height:76px;display:flex;align-items:center;justify-content:center;border:1px dashed #222;cursor:pointer;color:rgba(255,255,255,0.3);font-size:20px;">+</div>' +
+          '</div>' +
+          '<input id="req-file" type="file" accept="image/*" multiple style="display:none;">' +
+          '<div id="req-photo-count" style="font-family:' + mono + ';font-size:8px;color:#222;margin-top:6px;text-transform:uppercase;">NO PHOTOS ADDED</div>' +
+          '<div id="req-progress-wrap" style="display:none;margin-top:8px;">' +
+            '<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">' +
+              '<div id="req-progress-fill" style="height:100%;width:0%;background:#C8A84B;transition:width 0.3s;"></div>' +
+            '</div>' +
+            '<div id="req-progress-text" style="font-family:' + mono + ';font-size:8px;color:#555;margin-top:4px;"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      /* STICKY FOOTER */
+      '<div style="position:sticky;bottom:0;z-index:10;background:#080808;border-top:1px solid rgba(255,255,255,0.05);padding:10px 16px 14px;display:grid;grid-template-columns:1fr 2.2fr;gap:8px;">' +
+        '<button data-action="reqClose" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#3a3a3a;background:none;border:1px dotted #222;padding:12px 8px;cursor:pointer;">CANCEL</button>' +
+        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:#C8A84B;border:none;padding:12px 8px;cursor:not-allowed;opacity:0.35;">-- SEND REQUEST</button>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    // Wire delegated events on request overlay
+    overlay.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      var act = btn.getAttribute('data-action');
+      if (act === 'reqClose') { if (typeof _closeReqForm === 'function') _closeReqForm(); }
+      else if (act === 'reqChip') { if (typeof _reqToggleChip === 'function') _reqToggleChip(btn); }
+      else if (act === 'reqAddPhoto') { var fi = document.getElementById('req-file'); if (fi) fi.click(); }
+      else if (act === 'reqSubmit') { if (typeof submitClientRequest === 'function') submitClientRequest(); }
+      else if (act === 'reqRemovePhoto') {
+        var tile = btn.closest('[data-file-idx]');
+        if (tile) {
+          var idx = tile.dataset.fileIdx;
+          if (window._reqStoredFiles && idx !== undefined) window._reqStoredFiles[idx] = null;
+          tile.remove();
+          if (typeof _reqUpdatePhotoCount === 'function') _reqUpdatePhotoCount();
+        }
+      }
+    });
+    // Wire input/change events
+    var reqName = document.getElementById('req-name');
+    var reqTopic = document.getElementById('req-topic');
+    var reqDate = document.getElementById('req-date');
+    var reqFile = document.getElementById('req-file');
+    if (reqName) reqName.addEventListener('input', function() { if (typeof _reqValidate === 'function') _reqValidate(); });
+    if (reqTopic) reqTopic.addEventListener('input', function() { if (typeof _reqValidate === 'function') _reqValidate(); });
+    if (reqDate) reqDate.addEventListener('change', function() {
+      var l = document.getElementById('req-date-label');
+      if (l) { l.textContent = this.value; l.style.color = '#e8e2d9'; }
+    });
+    if (reqFile) reqFile.addEventListener('change', function() { if (typeof _reqAddPhotos === 'function') _reqAddPhotos(this); });
+  }
+
   /* ---- main render ---- */
 
   window.renderClientView = function () {
@@ -1248,6 +1353,8 @@
     if (!cv) return;
 
     _ensurePulseStyle();
+    _ensureReqOverlay();
+    cv.style.display = 'block';
     cv.style.background = '#1b1f23';
 
     var fab = document.getElementById('fab');
@@ -1296,9 +1403,126 @@
     cv.innerHTML = html;
     _wireTopNavOnce();
     _wireEvents(cv);
+    cv.addEventListener('click', function(e) {
+      var cell = e.target.closest('[data-action="openLightbox"]');
+      if (!cell) return;
+      e.stopPropagation();
+      try {
+        var imgs = JSON.parse(
+          cell.getAttribute('data-images') || '[]');
+        var idx = parseInt(
+          cell.getAttribute('data-index') || '0', 10);
+        if (imgs.length) _lbOpen(imgs, idx);
+      } catch (_e) {}
+    });
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
+
+    var lbEl = document.getElementById('client-lightbox');
+    if (lbEl && !lbEl.dataset.clickWired) {
+      _wireEvents(lbEl);
+      lbEl.dataset.clickWired = '1';
+    }
+  };
+
+  /* ---- client post overlay (single card, full-screen) ---- */
+
+  window._openClientPostOverlay = function(postId) {
+    var post = (window.allPosts || []).find(function(p) {
+      return p.post_id === postId || p.id === postId;
+    });
+    if (!post) {
+      if (typeof window.showToast === 'function') window.showToast('Post not found', 'error');
+      return;
+    }
+
+    var existing = document.getElementById('client-post-overlay');
+    if (existing) existing.remove();
+
+    _ensurePulseStyle();
+
+    // Ensure singleton lightbox + approve popup on document.body
+    if (!document.getElementById('client-lightbox')) {
+      var lbDiv = document.createElement('div');
+      lbDiv.innerHTML = _lightboxHtml();
+      document.body.appendChild(lbDiv.firstChild);
+    }
+    if (!document.getElementById('client-approve-popup')) {
+      var apDiv = document.createElement('div');
+      apDiv.innerHTML = _approvePopupHtml();
+      document.body.appendChild(apDiv.firstChild);
+    }
+
+    var isPublished = post.stage === 'published';
+    var pid = _esc(post.post_id || post.id || '');
+
+    var cardHtml =
+      _cardHeaderHtml(post, pid) +
+      _captionHtml(post) +
+      _imgGridHtml(post.images) +
+      _statsBarHtml(post, isPublished) +
+      (isPublished ? '' : _engagementBarHtml(post)) +
+      _commentsListHtml(post);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'client-post-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;user-select:none;-webkit-user-select:none;';
+    overlay.innerHTML =
+      '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.98);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+        '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
+      '</div>' +
+      '<div style="padding-bottom:72px;">' +
+        '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '">' +
+          cardHtml +
+        '</div>' +
+      '</div>';
+
+    var _self_overlay = overlay;
+    requestAnimationFrame(function() {
+      document.body.appendChild(_self_overlay);
+      window._modalOpen = true;
+      document.body.style.overflow = 'hidden';
+      _wireEvents(_self_overlay);
+      var approvePopup =
+        document.getElementById('client-approve-popup');
+      if (approvePopup && !approvePopup.dataset.wired) {
+        _wireEvents(approvePopup);
+        approvePopup.dataset.wired = '1';
+      }
+      _wireLightboxTouch();
+      _wireLightboxKeyboard();
+      var lbEl = document.getElementById('client-lightbox');
+      if (lbEl && !lbEl.dataset.clickWired) {
+        _wireEvents(lbEl);
+        lbEl.dataset.clickWired = '1';
+      }
+      var closeBtn =
+        document.getElementById('client-overlay-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          _self_overlay.remove();
+          window._modalOpen = false;
+          document.body.style.overflow = '';
+        });
+      }
+    });
+  };
+
+  /* ---- client request form (moved inside IIFE for load-order safety) ---- */
+
+  window.openClientRequestForm = function() {
+    var o = document.getElementById('req-overlay');
+    if (o) {
+      o.style.display = 'flex';
+      var nav = document.getElementById('bottom-nav');
+      if (nav) nav.style.display = 'none';
+      var _mn = new Date();
+      _mn.setDate(_mn.getDate() + 2);
+      var _ms = _mn.toISOString().split('T')[0];
+      var _di = document.getElementById('req-date');
+      if (_di) _di.min = _ms;
+    }
   };
 
 })();
@@ -1307,25 +1531,14 @@
    Preserved functions below -- untouched from original
    ============================================================ */
 
-window.openClientRequestForm = function() {
-  var o = document.getElementById('req-overlay');
-  if (o) {
-    o.style.display = 'flex';
-    var nav = document.getElementById('bottom-nav');
-    if (nav) nav.style.display = 'none';
-    var _mn = new Date();
-    _mn.setDate(_mn.getDate() + 2);
-    var _ms = _mn.toISOString().split('T')[0];
-    var _di = document.getElementById('req-date');
-    if (_di) _di.min = _ms;
-  }
-}
-
 window._closeReqForm = function() {
   var o = document.getElementById('req-overlay');
   if (o) o.style.display = 'none';
   var nav = document.getElementById('bottom-nav');
-  if (nav) nav.style.display = '';
+  if (nav) {
+    var _isClientMode = document.body.classList.contains('client-mode');
+    nav.style.display = _isClientMode ? 'flex' : '';
+  }
   // Reset name field
   var nameEl = document.getElementById('req-name');
   if (nameEl) nameEl.value = '';
@@ -1335,13 +1548,14 @@ window._closeReqForm = function() {
   var date = document.getElementById('req-date');
   if (date) date.value = '';
   var dateLabel = document.getElementById('req-date-label');
-  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.45)'; }
+  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.3)'; }
   // Reset chips
-  var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
+  var chips = document.querySelectorAll('#req-overlay [data-action="reqChip"]');
   chips.forEach(function(c) {
-    c.style.color = 'rgba(255,255,255,0.55)';
+    c.style.color = '#4a4a4a';
     c.style.background = 'transparent';
-    c.style.borderColor = 'rgba(255,255,255,0.18)';
+    c.style.borderColor = '#2e2e2e';
+    c.style.borderStyle = 'dotted';
   });
   // Reset photo grid
   window._reqStoredFiles = [];
@@ -1351,7 +1565,7 @@ window._closeReqForm = function() {
     thumbs.forEach(function(t) { t.remove(); });
   }
   var countEl = document.getElementById('req-photo-count');
-  if (countEl) countEl.textContent = 'No photos added';
+  if (countEl) countEl.textContent = 'NO PHOTOS ADDED';
   var fi = document.getElementById('req-file');
   if (fi) fi.value = '';
   var pw = document.getElementById('req-progress-wrap');
@@ -1360,24 +1574,26 @@ window._closeReqForm = function() {
   var btn = document.getElementById('req-submit-btn');
   if (btn) {
     btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
+    btn.style.color = '#000';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
+    btn.style.opacity = '0.35';
+    btn.textContent = '-- SEND REQUEST';
   }
 }
 
 window._reqToggleChip = function(el) {
-  var allChips = el.parentNode.querySelectorAll('button');
-  allChips.forEach(function(chip) {
-    chip.style.color = 'rgba(255,255,255,0.55)';
-    chip.style.background = 'transparent';
-    chip.style.borderColor = 'rgba(255,255,255,0.18)';
-  });
-  el.style.color = '#C8A84B';
-  el.style.background = 'rgba(200,168,75,0.07)';
-  el.style.borderColor = 'rgba(200,168,75,0.4)';
+  var isSelected = el.style.color === 'rgb(200, 168, 75)';
+  if (isSelected) {
+    el.style.color = '#4a4a4a';
+    el.style.background = 'transparent';
+    el.style.borderColor = '#2e2e2e';
+  } else {
+    el.style.color = '#C8A84B';
+    el.style.background = 'transparent';
+    el.style.borderColor = 'rgba(200,168,75,0.45)';
+  }
 }
 
 window._reqSetUrgency = function(el, type) {
@@ -1442,10 +1658,8 @@ window._reqAddPhotos = function(input) {
   var sendBtn = document.getElementById('req-submit-btn');
   if (sendBtn) {
     sendBtn.disabled = true;
-    sendBtn.style.color = '#444';
-    sendBtn.style.borderColor = 'rgba(255,255,255,0.1)';
     sendBtn.style.cursor = 'not-allowed';
-    sendBtn.style.boxShadow = 'none';
+    sendBtn.style.opacity = '0.4';
     sendBtn.textContent = 'Loading photos...';
   }
 
@@ -1467,12 +1681,7 @@ window._reqAddPhotos = function(input) {
       div.innerHTML =
         '<img src="' + e.target.result + '" ' +
         'style="width:100%;height:100%;object-fit:cover;display:block;">' +
-        '<button onclick="(function(el){' +
-        'var idx=el.closest(\'div\').dataset.fileIdx;' +
-        'if(window._reqStoredFiles&&idx!==undefined)' +
-        'window._reqStoredFiles[idx]=null;' +
-        'el.closest(\'div\').remove();' +
-        '_reqUpdatePhotoCount();})(this)" ' +
+        '<button data-action="reqRemovePhoto" ' +
         'style="position:absolute;top:3px;right:3px;width:22px;height:22px;' +
         'background:rgba(0,0,0,0.85);border-radius:50%;display:flex;' +
         'align-items:center;justify-content:center;font-size:11px;' +
@@ -1518,18 +1727,18 @@ window._reqValidate = function() {
   var valid = name.trim().length > 0 && brief.trim().length > 0;
   if (valid) {
     btn.disabled = false;
-    btn.style.color = '#C8A84B';
-    btn.style.borderColor = '#C8A84B';
-    btn.style.background = 'rgba(200,168,75,0.06)';
+    btn.style.color = '#000';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'pointer';
-    btn.style.boxShadow = '0 0 12px rgba(200,168,75,0.12)';
-    btn.innerHTML = '&#x2192; Send Request';
+    btn.style.opacity = '1';
+    btn.textContent = '-- SEND REQUEST';
   } else {
     btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
+    btn.style.color = '#000';
+    btn.style.background = '#C8A84B';
+    btn.style.border = 'none';
     btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
+    btn.style.opacity = '0.35';
   }
 }
