@@ -15,6 +15,8 @@ window._pcsCloseTimer = null;
 window._pcsEditingTarget = null;
 window._pcsLbImages = [];
 window._pcsLbIdx = 0;
+window._pcsClientImgs = [];
+window._pcsNoteImgs = [];
 window._modalOpen = window._modalOpen || false;
 
 window.openPCS = function(postId, listKey) {
@@ -715,6 +717,24 @@ window.loadPcsComments = async function(postId) {
             '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
             (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
           : '';
+        var _att = (function() {
+          try {
+            return typeof c.attachments === 'string'
+              ? JSON.parse(c.attachments)
+              : c.attachments;
+          } catch(e) { return null; }
+        })();
+        var _imgHtml = '';
+        if (_att && _att.type === 'images' && _att.urls) {
+          _imgHtml = '<div class="pcs-comment-imgs">' +
+            _att.urls.map(function(u) {
+              return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
+                'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
+                _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
+                '],' + _att.urls.indexOf(u) + ')">';
+            }).join('') +
+          '</div>';
+        }
         return '<div class="pcs-comment-item">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
@@ -726,6 +746,7 @@ window.loadPcsComments = async function(postId) {
             '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
             ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+            _imgHtml +
           '</div>' +
         '</div>';
       }).join('');
@@ -755,6 +776,24 @@ window.loadPcsComments = async function(postId) {
             + _assignedLabel
           : '';
 
+        var _att = (function() {
+          try {
+            return typeof c.attachments === 'string'
+              ? JSON.parse(c.attachments)
+              : c.attachments;
+          } catch(e) { return null; }
+        })();
+        var _imgHtml = '';
+        if (_att && _att.type === 'images' && _att.urls) {
+          _imgHtml = '<div class="pcs-comment-imgs">' +
+            _att.urls.map(function(u) {
+              return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
+                'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
+                _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
+                '],' + _att.urls.indexOf(u) + ')">';
+            }).join('') +
+          '</div>';
+        }
         return '<div class="pcs-note-item' +
           (c.resolved ? ' pcs-resolved' : '') + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
@@ -769,6 +808,7 @@ window.loadPcsComments = async function(postId) {
             '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
             ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+            _imgHtml +
           '</div>' +
         '</div>';
       }).join('');
@@ -1545,6 +1585,15 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     return m.slice(1);
   });
 
+  var _imgs = (visibility === 'all' && !isTask)
+    ? window._pcsClientImgs.slice()
+    : window._pcsNoteImgs.slice();
+
+  window._pcsClientImgs = [];
+  window._pcsNoteImgs = [];
+  _pcsRenderImgPreviews('client');
+  _pcsRenderImgPreviews('note');
+
   if (visibility === 'all' && _roleLower !== 'client') {
     window._pendingComment = {
       postId: _realPostId,
@@ -1554,13 +1603,14 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
       author: _author,
       role: _role,
       title: _title,
-      isTask: isTask
+      isTask: isTask,
+      images: _imgs
     };
     var confirmEl = document.getElementById('pcs-comment-confirm');
     if (!confirmEl) {
       await window._doSubmitComment({ postId:_realPostId, message:message,
         visibility:visibility, mentioned:_mentioned, author:_author,
-        role:_role, title:_title, isTask:isTask });
+        role:_role, title:_title, isTask:isTask, images:_imgs });
       return;
     }
     var previewEl = document.getElementById('pcs-comment-confirm-preview');
@@ -1579,7 +1629,8 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     author: _author,
     role: _role,
     title: _title,
-    isTask: isTask
+    isTask: isTask,
+    images: _imgs
   });
   } catch(e) {
     console.error('submitPcsComment failed:', e);
@@ -1633,7 +1684,9 @@ window._doSubmitComment = async function(opts) {
         resolved_by: null,
         attachments: opts.isTask
           ? JSON.stringify({type:'task', assigned_to: (opts.mentioned && opts.mentioned[0]) || null})
-          : '[]'
+          : (opts.images && opts.images.length
+              ? JSON.stringify({type:'images', urls: opts.images})
+              : '[]')
       })
     });
 
@@ -1836,5 +1889,70 @@ window.submitPcsTask = function(inputId, taskBtnId) {
   var message = input ? input.value.trim() : '';
   if (!message) return;
   window.submitPcsComment(postIdEl.value, message, 'all', true);
+};
+
+window._pcsHandleCommentImg = async function(zone) {
+  var inputId = zone === 'client'
+    ? 'pcs-client-img-input'
+    : 'pcs-note-img-input';
+  var input = document.getElementById(inputId);
+  if (!input || !input.files || !input.files[0]) return;
+  var file = input.files[0];
+  input.value = '';
+
+  var postIdEl = document.getElementById('pcs-post-id');
+  var postId = postIdEl ? postIdEl.value : 'comment';
+
+  try {
+    var btn = document.querySelector(
+      zone === 'client'
+        ? '#pcs-client-img-input + .pcs-img-btn'
+        : '#pcs-note-img-input + .pcs-img-btn'
+    );
+    if (btn) { btn.textContent = '...'; btn.disabled = true; }
+
+    var url = await uploadPostAsset(file, postId + '-comment');
+
+    if (zone === 'client') {
+      window._pcsClientImgs.push(url);
+    } else {
+      window._pcsNoteImgs.push(url);
+    }
+
+    if (btn) { btn.textContent = '\uD83D\uDCF7'; btn.disabled = false; }
+
+    _pcsRenderImgPreviews(zone);
+
+  } catch(e) {
+    console.error('Comment img upload failed:', e);
+    showToast('Image upload failed. Try again.', 'error');
+  }
+};
+
+window._pcsRenderImgPreviews = function(zone) {
+  var imgs = zone === 'client'
+    ? window._pcsClientImgs
+    : window._pcsNoteImgs;
+  var containerId = zone === 'client'
+    ? 'pcs-client-img-previews'
+    : 'pcs-note-img-previews';
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = imgs.map(function(url, i) {
+    return '<div class="pcs-img-preview-wrap">' +
+      '<img src="' + esc(url) + '" class="pcs-img-preview">' +
+      '<span class="pcs-img-remove" onclick="window._pcsRemoveCommentImg(\'' +
+        zone + '\',' + i + ')">x</span>' +
+      '</div>';
+  }).join('');
+};
+
+window._pcsRemoveCommentImg = function(zone, idx) {
+  if (zone === 'client') {
+    window._pcsClientImgs.splice(idx, 1);
+  } else {
+    window._pcsNoteImgs.splice(idx, 1);
+  }
+  _pcsRenderImgPreviews(zone);
 };
 
