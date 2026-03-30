@@ -622,7 +622,7 @@
       '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
         '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
-        '<button class="pcs-img-btn" style="font-size:13px;" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">&#128206;</button>' +
+        '<button class="pcs-img-btn" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">ATTACH</button>' +
         '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
       '</div>' +
     '</div>';
