@@ -902,6 +902,8 @@ window._renderPipelineInner = function() {
       if (stage === 'brief') return isMine;
       if (stage === 'in_production') return isMine;
       if (stage === 'ready') return isMine;
+      if (stage === 'awaiting_approval') return true;
+      if (stage === 'awaiting_brand_input') return true;
       return false;
     });
   }
