@@ -1525,6 +1525,7 @@ window._pcsConfirmReplace = function(postId) {
   var overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
   overlay.addEventListener('click', function(e) {
+    e.stopPropagation();
     if (e.target === overlay) _removePcsConfirm();
   });
   overlay.innerHTML =
