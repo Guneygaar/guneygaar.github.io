@@ -195,11 +195,10 @@ window._renderPCS = function(postId) {
       'Photos <span style="color:' + (imgs.length ? '#777' : '#333') + ';">' +
       imgs.length + '</span></div>' +
       ((canEdit || canEditCreative) ?
-        '<button onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:#F6A623;' +
-        'background:transparent;border:1px solid rgba(246,166,35,0.3);' +
-        'padding:4px 10px;cursor:pointer;">+ Add More</button>'
+        '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\')" ' +
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
+        'color:#F6A623;background:transparent;border:1px dotted ' +
+        'rgba(246,166,35,0.3);padding:4px 10px;cursor:pointer;">...</button>'
         : '') +
       '</div>' +
       (imgs.length > 0 ?
@@ -325,11 +324,11 @@ window._renderPCS = function(postId) {
       'justify-content:space-between;">' +
       '<span>Copy / Caption</span>' +
       ((canEdit || canEditCreative) ?
-        '<button onclick="_startCaptionEdit(\'' + esc(id) + '\')" ' +
+        '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\')" ' +
         'id="pcs-caption-edit-btn" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:#F6A623;' +
-        'background:transparent;border:none;cursor:pointer;">Edit</button>'
+        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
+        'color:#F6A623;background:transparent;border:1px dotted ' +
+        'rgba(246,166,35,0.3);padding:4px 10px;cursor:pointer;">...</button>'
         : '') +
       '</div>' +
       (post.caption ?
@@ -1337,6 +1336,208 @@ window._pcsRemovePhoto = async function(postId, idx) {
   }
 }
 
+window._pcsPhotoMenu = function(postId) {
+  var existing = document.getElementById('pcs-photo-menu-drop');
+  if (existing) { existing.remove(); return; }
+  var btn = document.querySelector(
+    '[onclick*="_pcsPhotoMenu"]'
+  );
+  if (!btn) return;
+  var menu = document.createElement('div');
+  menu.id = 'pcs-photo-menu-drop';
+  menu.style.cssText = 'position:absolute;right:18px;' +
+    'background:#1a1a26;border:1px solid rgba(255,255,255,0.12);' +
+    'z-index:200;min-width:140px;';
+  var post = (window.allPosts||[]).find(function(p) {
+    return p.post_id === postId;
+  });
+  var imgs = (post && post.images) ? post.images : [];
+  menu.innerHTML =
+    '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
+      postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+      '+ Add More</div>' +
+    '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
+      postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+      'Save All</div>' +
+    '<div class="pcs-menu-item pcs-menu-item-danger" ' +
+      'onclick="window._pcsConfirmRemoveAll(\'' + postId + '\');' +
+      'document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+      'Remove All</div>';
+  var section = document.getElementById('pcs-photo-section');
+  if (section) section.style.position = 'relative';
+  if (section) section.appendChild(menu);
+  setTimeout(function() {
+    document.addEventListener('click', function _dismiss(e) {
+      var m = document.getElementById('pcs-photo-menu-drop');
+      if (m && !m.contains(e.target)) {
+        m.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 10);
+};
+
+window._pcsSaveAllPhotos = function(postId) {
+  var post = (window.allPosts||[]).find(function(p) {
+    return p.post_id === postId;
+  });
+  var imgs = (post && post.images) ? post.images : [];
+  imgs.forEach(function(img, i) {
+    var url = typeof img === 'string' ? img : (img.url || img);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'image-' + (i+1) + '.jpg';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+};
+
+window._pcsConfirmRemoveAll = function(postId) {
+  _removePcsConfirm();
+  var overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) _removePcsConfirm();
+  });
+  var post = (window.allPosts||[]).find(function(p) {
+    return p.post_id === postId;
+  });
+  var count = (post && post.images) ? post.images.length : 0;
+  overlay.innerHTML =
+    '<div class="pcs-confirm-sheet">' +
+    '<div class="pcs-confirm-msg">Remove all ' + count +
+      ' photos from this post? This cannot be undone.</div>' +
+    '<div class="pcs-confirm-btns">' +
+    '<button class="pcs-confirm-cancel" ' +
+      'onclick="_removePcsConfirm()">CANCEL</button>' +
+    '<button class="pcs-confirm-delete" ' +
+      'onclick="window._pcsDoRemoveAll(\'' + postId + '\')">REMOVE ALL</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+};
+
+window._pcsDoRemoveAll = async function(postId) {
+  _removePcsConfirm();
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ images: [] })
+    });
+    var idx = (window.allPosts||[]).findIndex(function(p) {
+      return p.post_id === postId;
+    });
+    if (idx > -1) window.allPosts[idx].images = [];
+    openPCS(postId, '');
+  } catch(e) {
+    showToast('Failed to remove photos.', 'error');
+  }
+};
+
+window._pcsCaptionMenu = function(postId) {
+  var existing = document.getElementById('pcs-caption-menu-drop');
+  if (existing) { existing.remove(); return; }
+  var menu = document.createElement('div');
+  menu.id = 'pcs-caption-menu-drop';
+  menu.style.cssText = 'position:absolute;right:18px;' +
+    'background:#1a1a26;border:1px solid rgba(255,255,255,0.12);' +
+    'z-index:200;min-width:140px;';
+  menu.innerHTML =
+    '<div class="pcs-menu-item" onclick="window._pcsCopyCaption(\'' +
+      postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      'Copy</div>' +
+    '<div class="pcs-menu-item" onclick="_startCaptionEdit(\'' +
+      postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      'Edit</div>' +
+    '<div class="pcs-menu-item pcs-menu-item-danger" ' +
+      'onclick="window._pcsConfirmReplace(\'' + postId + '\');' +
+      'document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      'Replace</div>';
+  var section = document.getElementById('pcs-caption-section');
+  if (section) section.style.position = 'relative';
+  if (section) section.appendChild(menu);
+  setTimeout(function() {
+    document.addEventListener('click', function _dismiss(e) {
+      var m = document.getElementById('pcs-caption-menu-drop');
+      if (m && !m.contains(e.target)) {
+        m.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 10);
+};
+
+window._pcsCopyCaption = function(postId) {
+  var el = document.getElementById('pcs-caption-text');
+  var text = el ? (el.dataset.raw || el.textContent || '') : '';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('Caption copied.', 'success');
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Caption copied.', 'success');
+  }
+};
+
+window._pcsConfirmReplace = function(postId) {
+  _removePcsConfirm();
+  var overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) _removePcsConfirm();
+  });
+  overlay.innerHTML =
+    '<div class="pcs-confirm-sheet">' +
+    '<div class="pcs-confirm-msg">This will clear the entire ' +
+      'caption. Paste your new copy to replace it.</div>' +
+    '<div class="pcs-confirm-btns">' +
+    '<button class="pcs-confirm-cancel" ' +
+      'onclick="_removePcsConfirm()">CANCEL</button>' +
+    '<button class="pcs-confirm-stage" ' +
+      'onclick="window._pcsDoReplace(\'' + postId + '\')">REPLACE</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+};
+
+window._pcsDoReplace = function(postId) {
+  _removePcsConfirm();
+  var textEl = document.getElementById('pcs-caption-text');
+  var editBtn = document.getElementById('pcs-caption-edit-btn');
+  if (!textEl) return;
+  if (textEl) textEl.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+  var ta = document.createElement('textarea');
+  ta.id = 'pcs-caption-textarea';
+  ta.value = '';
+  ta.placeholder = 'Paste new caption here...';
+  ta.style.cssText = 'width:100%;min-height:80px;background:rgba(255,255,255,0.04);' +
+    'border:1px solid rgba(246,166,35,0.3);color:#E8E8E8;' +
+    'font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+    'padding:8px;resize:vertical;';
+  var btnRow = document.createElement('div');
+  btnRow.id = 'pcs-caption-btnrow';
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
+  btnRow.innerHTML =
+    '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'color:#3ECF8E;border:1px dotted rgba(62,207,142,0.4);' +
+      'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
+    '<button onclick="_cancelCaptionEdit()" ' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'color:#8E8E93;border:1px dotted rgba(255,255,255,0.15);' +
+      'background:transparent;padding:6px 12px;cursor:pointer;">CANCEL</button>';
+  textEl.parentNode.insertBefore(ta, textEl.nextSibling);
+  textEl.parentNode.insertBefore(btnRow, ta.nextSibling);
+  ta.focus();
+};
+
 window._pcsOpenLightbox = function(postId, idx) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   window._pcsLbImages = (post && Array.isArray(post.images)) ? post.images : [];
@@ -1919,7 +2120,7 @@ window._pcsHandleCommentImg = async function(zone) {
       window._pcsNoteImgs.push(url);
     }
 
-    if (btn) { btn.textContent = '\uD83D\uDCF7'; btn.disabled = false; }
+    if (btn) { btn.textContent = '\uD83D\uDCCC'; btn.disabled = false; }
 
     _pcsRenderImgPreviews(zone);
 

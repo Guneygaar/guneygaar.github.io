@@ -6240,3 +6240,26 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border: 1px solid rgba(255,255,255,0.12);
   cursor: pointer;
 }
+
+.pcs-menu-item {
+  padding: 10px 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #E8E8E8;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  letter-spacing: 0.04em;
+}
+
+.pcs-menu-item:last-child {
+  border-bottom: none;
+}
+
+.pcs-menu-item:hover,
+.pcs-menu-item:active {
+  background: rgba(255,255,255,0.06);
+}
+
+.pcs-menu-item-danger {
+  color: #FF4B4B;
+}
