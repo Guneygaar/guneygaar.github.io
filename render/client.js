@@ -574,12 +574,14 @@
   }
 
   function _commentsListHtml(post) {
-    var comments = Array.isArray(post.post_comments) ? post.post_comments : [];
-    if (!comments.length) return '';
+    var visibleComments = (post.post_comments || []).filter(function(c) {
+      return c.visibility === 'all' || !c.visibility;
+    });
+    if (!visibleComments.length) return '';
     var pid = _esc(post.post_id || post.id || '');
-    var show = comments.length <= 3 ? comments : comments.slice(0, 3);
-    var remaining = comments.length - show.length;
-    var html = '<div data-comments-list="' + pid + '" data-full-comments="' + _esc(JSON.stringify(comments)) + '" style="margin-top:6px;">';
+    var show = visibleComments.length <= 3 ? visibleComments : visibleComments.slice(0, 3);
+    var remaining = visibleComments.length - show.length;
+    var html = '<div data-comments-list="' + pid + '" data-full-comments="' + _esc(JSON.stringify(visibleComments)) + '" style="margin-top:6px;">';
     for (var i = 0; i < show.length; i++) {
       html += _singleCommentHtml(show[i]);
     }
