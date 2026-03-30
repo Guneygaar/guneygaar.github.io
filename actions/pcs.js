@@ -1574,7 +1574,8 @@ window._pcsDoReplace = function(postId) {
     '<button onclick="_cancelCaptionEdit()" ' +
       'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
       'color:#8E8E93;border:1px dotted rgba(255,255,255,0.15);' +
-      'background:transparent;padding:6px 12px;cursor:pointer;">CANCEL</button>';
+      'background:transparent;padding:6px 12px;cursor:pointer;' +
+      'margin-left:6px;">CANCEL</button>';
   textEl.parentNode.insertBefore(ta, textEl.nextSibling);
   textEl.parentNode.insertBefore(btnRow, ta.nextSibling);
   ta.focus();
@@ -1692,15 +1693,14 @@ window._startCaptionEdit = function(postId) {
   btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
   btnRow.innerHTML =
     '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
-    'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.1em;text-transform:uppercase;color:#3ECF8E;' +
-    'background:transparent;border:1px solid rgba(62,207,142,0.3);' +
-    'padding:9px 0;cursor:pointer;">Save</button>' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'color:#3ECF8E;border:1px dotted rgba(62,207,142,0.4);' +
+    'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
     '<button onclick="_cancelCaptionEdit()" ' +
-    'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.1em;text-transform:uppercase;color:#555;' +
-    'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-    'padding:9px 0;cursor:pointer;">Cancel</button>';
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'color:#8E8E93;border:1px dotted rgba(255,255,255,0.15);' +
+    'background:transparent;padding:6px 12px;cursor:pointer;' +
+    'margin-left:6px;">CANCEL</button>';
   ta.parentNode.insertBefore(btnRow, ta.nextSibling);
   ta.focus();
 }
