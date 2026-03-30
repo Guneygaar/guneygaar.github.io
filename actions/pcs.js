@@ -1443,7 +1443,7 @@ window._pcsPhotoMenu = function(postId) {
   }, 10);
 };
 
-window._pcsSaveAllPhotos = async function(postId) {
+window._pcsSaveAllPhotos = function(postId) {
   var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
@@ -1452,25 +1452,11 @@ window._pcsSaveAllPhotos = async function(postId) {
     showToast('No images to save.', 'error');
     return;
   }
-  showToast('Saving ' + imgs.length + ' images...', 'success');
-  for (var i = 0; i < imgs.length; i++) {
-    try {
-      var url = typeof imgs[i] === 'string'
-        ? imgs[i] : (imgs[i].url || imgs[i]);
-      var res = await fetch(url);
-      var blob = await res.blob();
-      var objUrl = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = objUrl;
-      a.download = 'image-' + (i+1) + '.jpg';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(objUrl); }, 1000);
-    } catch(e) {
-      console.error('Save image failed:', e);
-    }
-  }
+  imgs.forEach(function(img) {
+    var url = typeof img === 'string' ? img : (img.url || img);
+    window.open(url, '_blank');
+  });
+  showToast('Opening ' + imgs.length + ' images. Long press each to save.', 'success');
 };
 
 window._pcsCaptionMenu = function(postId) {
