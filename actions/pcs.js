@@ -19,6 +19,7 @@ window._pcsClientImgs = [];
 window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
+window._pcsMenuActionFired = false;
 window._modalOpen = window._modalOpen || false;
 
 window.openPCS = function(postId, listKey) {
@@ -199,8 +200,8 @@ window._renderPCS = function(postId) {
       ((canEdit || canEditCreative) ?
         '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\')" ' +
         'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
-        'rgba(255,255,255,0.2);padding:4px 10px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;">...</button>'
+        'rgba(255,255,255,0.2);padding:8px 12px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;height:36px;">...</button>'
         : '') +
       '</div>' +
       (imgs.length > 0 ?
@@ -329,8 +330,8 @@ window._renderPCS = function(postId) {
         '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\')" ' +
         'id="pcs-caption-edit-btn" ' +
         'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
-        'rgba(255,255,255,0.2);padding:4px 10px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;">...</button>'
+        'rgba(255,255,255,0.2);padding:8px 12px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;height:36px;">...</button>'
         : '') +
       '</div>' +
       (post.caption ?
@@ -720,6 +721,13 @@ window.loadPcsComments = async function(postId) {
     function _renderClientThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
       return threadRows.map(function(c) {
+        if (c.deleted) {
+          return '<div class="pcs-comment-item">' +
+            '<div class="pcs-avatar av-muted">?</div>' +
+            '<div class="pcs-comment-body">' +
+            '<div class="pcs-deleted-msg">This message was deleted.</div>' +
+            '</div></div>';
+        }
         var _initial = (c.author||'?').charAt(0).toUpperCase();
         var _taskObj = _parseTask(c);
         var _isTask = !!_taskObj;
@@ -747,7 +755,7 @@ window.loadPcsComments = async function(postId) {
           '</div>';
         }
         return '<div class="pcs-comment-item' +
-          (c.reply_to ? ' pcs-comment-reply' : '') + '">' +
+          (c.reply_to ? ' pcs-comment-reply' : '') + '" data-comment-id="' + esc(c.id) + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
           '<div class="pcs-comment-body">' +
@@ -764,6 +772,11 @@ window.loadPcsComments = async function(postId) {
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
             '<div class="pcs-comment-actions">' +
+            (_roleLower === 'admin' ?
+              '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
+              'onclick="window._pcsConfirmDeleteComment(\'' +
+              esc(c.id) + '\',\'' + esc(postId) + '\')">DELETE</span>'
+              : '') +
             '<span class="pcs-comment-action" ' +
               'onclick="window._pcsSetReply(\'client\',\'' +
               esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
@@ -780,6 +793,13 @@ window.loadPcsComments = async function(postId) {
     function _renderNoteThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
       return threadRows.map(function(c) {
+        if (c.deleted) {
+          return '<div class="pcs-note-item">' +
+            '<div class="pcs-avatar av-muted">?</div>' +
+            '<div class="pcs-comment-body">' +
+            '<div class="pcs-deleted-msg">This message was deleted.</div>' +
+            '</div></div>';
+        }
         var _initial = (c.author||'?').charAt(0).toUpperCase();
         var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
         var _mentionBadge = _mu.length
@@ -821,7 +841,7 @@ window.loadPcsComments = async function(postId) {
         }
         return '<div class="pcs-note-item' +
           (c.reply_to ? ' pcs-comment-reply' : '') +
-          (c.resolved ? ' pcs-resolved' : '') + '">' +
+          (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '">' +
           (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
           '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
           '<div class="pcs-comment-body">' +
@@ -840,6 +860,11 @@ window.loadPcsComments = async function(postId) {
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
             '<div class="pcs-comment-actions">' +
+            (_roleLower === 'admin' ?
+              '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
+              'onclick="window._pcsConfirmDeleteComment(\'' +
+              esc(c.id) + '\',\'' + esc(postId) + '\')">DELETE</span>'
+              : '') +
             '<span class="pcs-comment-action" ' +
               'onclick="window._pcsSetReply(\'note\',\'' +
               esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
@@ -1404,6 +1429,11 @@ window._pcsPhotoMenu = function(postId) {
   if (section) section.appendChild(menu);
   setTimeout(function() {
     document.addEventListener('click', function _dismiss(e) {
+      if (window._pcsMenuActionFired) {
+        window._pcsMenuActionFired = false;
+        document.removeEventListener('click', _dismiss);
+        return;
+      }
       var m = document.getElementById('pcs-photo-menu-drop');
       if (m && !m.contains(e.target)) {
         m.remove();
@@ -1459,13 +1489,18 @@ window._pcsCaptionMenu = function(postId) {
       postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
       'Edit</div>' +
     '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="var m=document.getElementById(\'pcs-caption-menu-drop\');if(m)m.remove();setTimeout(function(){window._pcsConfirmReplace(\'' + postId + '\');},50);">' +
+      'onclick="window._pcsMenuActionFired=true;var m=document.getElementById(\'pcs-caption-menu-drop\');if(m)m.remove();window._pcsConfirmReplace(\'' + postId + '\');">' +
       'Replace</div>';
   var section = document.getElementById('pcs-caption-section');
   if (section) section.style.position = 'relative';
   if (section) section.appendChild(menu);
   setTimeout(function() {
     document.addEventListener('click', function _dismiss(e) {
+      if (window._pcsMenuActionFired) {
+        window._pcsMenuActionFired = false;
+        document.removeEventListener('click', _dismiss);
+        return;
+      }
       var m = document.getElementById('pcs-caption-menu-drop');
       if (m && !m.contains(e.target)) {
         m.remove();
@@ -2140,7 +2175,7 @@ window._pcsHandleCommentImg = async function(zone) {
       window._pcsNoteImgs.push(url);
     }
 
-    if (btn) { btn.textContent = '\uD83D\uDCCE'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'ATTACH'; btn.disabled = false; }
 
     _pcsRenderImgPreviews(zone);
 
@@ -2190,12 +2225,26 @@ window._pcsSetReply = function(zone, commentId, author, message) {
       : 'pcs-note-reply-indicator'
   );
   if (indicator) {
-    indicator.textContent = 'Replying to ' + author;
+    indicator.innerHTML =
+      '<span>Replying to ' + author + '</span>';
     indicator.style.display = 'flex';
+  }
+  document.querySelectorAll(
+    '.pcs-comment-item, .pcs-note-item'
+  ).forEach(function(el) {
+    el.classList.remove('pcs-comment-replying-to');
+  });
+  var replyTarget = document.querySelector(
+    '[data-comment-id="' + commentId + '"]'
+  );
+  if (replyTarget) {
+    replyTarget.classList.add('pcs-comment-replying-to');
+    replyTarget.scrollIntoView({
+      behavior: 'smooth', block: 'nearest'
+    });
   }
   if (input) {
     input.focus();
-    input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 };
 
@@ -2211,6 +2260,10 @@ window._pcsClearReply = function(zone) {
     indicator.style.display = 'none';
     indicator.textContent = '';
   }
+  document.querySelectorAll('.pcs-comment-replying-to')
+    .forEach(function(el) {
+      el.classList.remove('pcs-comment-replying-to');
+    });
 };
 
 window._pcsCopyComment = function(message) {
@@ -2226,6 +2279,40 @@ window._pcsCopyComment = function(message) {
     document.execCommand('copy');
     document.body.removeChild(ta);
     showToast('Copied.', 'success');
+  }
+};
+
+window._pcsConfirmDeleteComment = function(commentId, postId) {
+  _removePcsConfirm();
+  var overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) _removePcsConfirm();
+  });
+  overlay.innerHTML =
+    '<div class="pcs-confirm-sheet">' +
+    '<div class="pcs-confirm-msg">Delete this comment? ' +
+    'It will show as deleted to everyone.</div>' +
+    '<div class="pcs-confirm-btns">' +
+    '<button class="pcs-confirm-cancel" ' +
+    'onclick="_removePcsConfirm()">CANCEL</button>' +
+    '<button class="pcs-confirm-delete" ' +
+    'onclick="window._pcsDoDeleteComment(\'' +
+    commentId + '\',\'' + postId + '\')">DELETE</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+};
+
+window._pcsDoDeleteComment = async function(commentId, postId) {
+  _removePcsConfirm();
+  try {
+    await apiFetch('/post_comments?id=eq.' + commentId, {
+      method: 'PATCH',
+      body: JSON.stringify({ deleted: true })
+    });
+    loadPcsComments(postId);
+  } catch(e) {
+    showToast('Failed to delete comment.', 'error');
   }
 };
 
