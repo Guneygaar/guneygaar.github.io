@@ -19,8 +19,18 @@ window._pcsClientImgs = [];
 window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
-window._pcsMenuActionFired = false;
+window._pcsActiveMenu = null;
 window._modalOpen = window._modalOpen || false;
+
+document.addEventListener('click', function(e) {
+  if (!window._pcsActiveMenu) return;
+  if (e.target.closest('.pcs-confirm-overlay')) return;
+  if (e.target.closest('[onclick*="_pcsPhotoMenu"],[onclick*="_pcsCaptionMenu"]')) return;
+  if (!window._pcsActiveMenu.contains(e.target)) {
+    window._pcsActiveMenu.remove();
+    window._pcsActiveMenu = null;
+  }
+});
 
 window.openPCS = function(postId, listKey) {
   // Cancel any deferred forcePCSReset from a previous closePCS()  - 
@@ -199,9 +209,10 @@ window._renderPCS = function(postId) {
       imgs.length + '</span></div>' +
       ((canEdit || canEditCreative) ?
         '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\')" ' +
-        'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
-        'rgba(255,255,255,0.2);padding:8px 12px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;height:36px;">...</button>'
+        'style="color:#8E8E93;background:transparent;border:none;' +
+        'padding:8px 12px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+        'height:36px;letter-spacing:0.2em;">...</button>'
         : '') +
       '</div>' +
       (imgs.length > 0 ?
@@ -329,9 +340,10 @@ window._renderPCS = function(postId) {
       ((canEdit || canEditCreative) ?
         '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\')" ' +
         'id="pcs-caption-edit-btn" ' +
-        'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
-        'rgba(255,255,255,0.2);padding:8px 12px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;height:36px;">...</button>'
+        'style="color:#8E8E93;background:transparent;border:none;' +
+        'padding:8px 12px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
+        'height:36px;letter-spacing:0.2em;">...</button>'
         : '') +
       '</div>' +
       (post.caption ?
@@ -1402,47 +1414,35 @@ window._pcsRemovePhoto = async function(postId, idx) {
 }
 
 window._pcsPhotoMenu = function(postId) {
-  var existing = document.getElementById('pcs-photo-menu-drop');
-  if (existing) { existing.remove(); return; }
-  var btn = document.querySelector(
-    '[onclick*="_pcsPhotoMenu"]'
-  );
-  if (!btn) return;
+  if (window._pcsActiveMenu) {
+    window._pcsActiveMenu.remove();
+    window._pcsActiveMenu = null;
+    return;
+  }
   var menu = document.createElement('div');
   menu.id = 'pcs-photo-menu-drop';
   menu.style.cssText = 'position:absolute;right:18px;' +
-    'background:#1a1a26;border:1px solid rgba(255,255,255,0.12);' +
-    'z-index:200;min-width:140px;';
+    'background:#1e1e26;border:1px solid #2a2a36;' +
+    'z-index:200;min-width:140px;overflow:hidden;';
   var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
   menu.innerHTML =
     '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
-      postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
       '+ Add More</div>' +
     (imgs.length > 0
       ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
-          postId + '\');var _m=document.getElementById(\'pcs-photo-menu-drop\');if(_m)_m.remove();">' +
+          postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
           'Save All</div>'
       : '');
   var section = document.getElementById('pcs-photo-section');
-  if (section) section.style.position = 'relative';
-  if (section) section.appendChild(menu);
-  setTimeout(function() {
-    document.addEventListener('click', function _dismiss(e) {
-      if (window._pcsMenuActionFired) {
-        window._pcsMenuActionFired = false;
-        document.removeEventListener('click', _dismiss);
-        return;
-      }
-      var m = document.getElementById('pcs-photo-menu-drop');
-      if (m && !m.contains(e.target)) {
-        m.remove();
-        document.removeEventListener('click', _dismiss);
-      }
-    });
-  }, 10);
+  if (section) {
+    section.style.position = 'relative';
+    section.appendChild(menu);
+    window._pcsActiveMenu = menu;
+  }
 };
 
 window._pcsSaveAllPhotos = async function(postId) {
@@ -1472,40 +1472,33 @@ window._pcsSaveAllPhotos = async function(postId) {
 };
 
 window._pcsCaptionMenu = function(postId) {
-  var existing = document.getElementById('pcs-caption-menu-drop');
-  if (existing) { existing.remove(); return; }
+  if (window._pcsActiveMenu) {
+    window._pcsActiveMenu.remove();
+    window._pcsActiveMenu = null;
+    return;
+  }
   var menu = document.createElement('div');
   menu.id = 'pcs-caption-menu-drop';
   menu.style.cssText = 'position:absolute;right:18px;' +
-    'background:#1a1a26;border:1px solid rgba(255,255,255,0.12);' +
-    'z-index:200;min-width:140px;';
+    'background:#1e1e26;border:1px solid #2a2a36;' +
+    'z-index:200;min-width:140px;overflow:hidden;';
   menu.innerHTML =
     '<div class="pcs-menu-item" onclick="window._pcsCopyCaption(\'' +
-      postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
       'Copy</div>' +
     '<div class="pcs-menu-item" onclick="_startCaptionEdit(\'' +
-      postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      postId + '\');if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}">' +
       'Edit</div>' +
     '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="window._pcsMenuActionFired=true;var m=document.getElementById(\'pcs-caption-menu-drop\');if(m)m.remove();window._pcsConfirmReplace(\'' + postId + '\');">' +
+      'onclick="if(window._pcsActiveMenu){window._pcsActiveMenu.remove();window._pcsActiveMenu=null;}window._pcsConfirmReplace(\'' +
+      postId + '\');">' +
       'Replace</div>';
   var section = document.getElementById('pcs-caption-section');
-  if (section) section.style.position = 'relative';
-  if (section) section.appendChild(menu);
-  setTimeout(function() {
-    document.addEventListener('click', function _dismiss(e) {
-      if (window._pcsMenuActionFired) {
-        window._pcsMenuActionFired = false;
-        document.removeEventListener('click', _dismiss);
-        return;
-      }
-      var m = document.getElementById('pcs-caption-menu-drop');
-      if (m && !m.contains(e.target)) {
-        m.remove();
-        document.removeEventListener('click', _dismiss);
-      }
-    });
-  }, 10);
+  if (section) {
+    section.style.position = 'relative';
+    section.appendChild(menu);
+    window._pcsActiveMenu = menu;
+  }
 };
 
 window._pcsCopyCaption = function(postId) {
@@ -1551,27 +1544,27 @@ window._pcsDoReplace = function(postId) {
   var textEl = document.getElementById('pcs-caption-text');
   var editBtn = document.getElementById('pcs-caption-edit-btn');
   if (!textEl) return;
-  if (textEl) textEl.style.display = 'none';
+  textEl.style.display = 'none';
   if (editBtn) editBtn.style.display = 'none';
   var ta = document.createElement('textarea');
   ta.id = 'pcs-caption-textarea';
   ta.value = '';
   ta.placeholder = 'Paste new caption here...';
-  ta.style.cssText = 'width:100%;min-height:80px;background:rgba(255,255,255,0.04);' +
-    'border:1px solid rgba(246,166,35,0.3);color:#E8E8E8;' +
+  ta.style.cssText = 'width:100%;min-height:80px;background:#111116;' +
+    'border:1px solid #3a3a4a;color:#FFFFFF;' +
     'font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-    'padding:8px;resize:vertical;';
+    'padding:12px;resize:vertical;';
   var btnRow = document.createElement('div');
   btnRow.id = 'pcs-caption-btnrow';
-  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
+  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
   btnRow.innerHTML =
     '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'color:#3ECF8E;border:1px dotted rgba(62,207,142,0.4);' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+      'color:#3ECF8E;border:1px solid #3ECF8E;' +
       'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
     '<button onclick="_cancelCaptionEdit()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'color:#8E8E93;border:1px dotted rgba(255,255,255,0.15);' +
+      'style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+      'color:#8E8E93;border:1px solid #4a4a5a;' +
       'background:transparent;padding:6px 12px;cursor:pointer;' +
       'margin-left:6px;">CANCEL</button>';
   textEl.parentNode.insertBefore(ta, textEl.nextSibling);
