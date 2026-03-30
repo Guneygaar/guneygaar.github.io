@@ -1,6 +1,8 @@
 (function() {
+  // TODO: Remove srtd.io after AppState Phase C is complete
   var IS_DEV = window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1';
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === 'srtd.io';
 
   try {
     delete window.currentRole;
@@ -10,7 +12,7 @@
       configurable: true
     });
   } catch(e) {
-    if (IS_DEV) console.error('Could not alias currentRole.');
+    if (IS_DEV) console.error('Could not alias currentRole. Check for var currentRole at global scope.');
   }
 
   try {
@@ -21,7 +23,7 @@
       configurable: true
     });
   } catch(e) {
-    if (IS_DEV) console.error('Could not alias effectiveRole.');
+    if (IS_DEV) console.error('Could not alias effectiveRole. Check for var effectiveRole at global scope.');
   }
 
 })();
