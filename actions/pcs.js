@@ -25,7 +25,6 @@ window._modalOpen = window._modalOpen || false;
 document.addEventListener('click', function(e) {
   if (!window._pcsActiveMenu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
-  if (e.target.closest('[onclick*="_pcsPhotoMenu"],[onclick*="_pcsCaptionMenu"]')) return;
   if (!window._pcsActiveMenu.contains(e.target)) {
     window._pcsActiveMenu.remove();
     window._pcsActiveMenu = null;
@@ -208,7 +207,7 @@ window._renderPCS = function(postId) {
       'Photos <span style="color:' + (imgs.length ? '#E8E8E8' : '#8E8E93') + ';">' +
       imgs.length + '</span></div>' +
       ((canEdit || canEditCreative) ?
-        '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\')" ' +
+        '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\',event)" ' +
         'style="color:#8E8E93;background:transparent;border:none;' +
         'padding:8px 12px;cursor:pointer;' +
         'font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
@@ -338,7 +337,7 @@ window._renderPCS = function(postId) {
       'justify-content:space-between;">' +
       '<span>Copy / Caption</span>' +
       ((canEdit || canEditCreative) ?
-        '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\')" ' +
+        '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
         'id="pcs-caption-edit-btn" ' +
         'style="color:#8E8E93;background:transparent;border:none;' +
         'padding:8px 12px;cursor:pointer;' +
@@ -1413,7 +1412,8 @@ window._pcsRemovePhoto = async function(postId, idx) {
   }
 }
 
-window._pcsPhotoMenu = function(postId) {
+window._pcsPhotoMenu = function(postId, e) {
+  if (e) e.stopPropagation();
   if (window._pcsActiveMenu) {
     window._pcsActiveMenu.remove();
     window._pcsActiveMenu = null;
@@ -1471,7 +1471,8 @@ window._pcsSaveAllPhotos = async function(postId) {
   }
 };
 
-window._pcsCaptionMenu = function(postId) {
+window._pcsCaptionMenu = function(postId, e) {
+  if (e) e.stopPropagation();
   if (window._pcsActiveMenu) {
     window._pcsActiveMenu.remove();
     window._pcsActiveMenu = null;
