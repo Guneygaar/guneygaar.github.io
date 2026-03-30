@@ -191,14 +191,14 @@ window._renderPCS = function(postId) {
       '<div style="display:flex;align-items:center;justify-content:space-between;' +
       'padding:7px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">' +
-      'Photos <span style="color:' + (imgs.length ? '#777' : '#333') + ';">' +
+      'letter-spacing:0.14em;text-transform:uppercase;color:#AEAEB2;">' +
+      'Photos <span style="color:' + (imgs.length ? '#E8E8E8' : '#8E8E93') + ';">' +
       imgs.length + '</span></div>' +
       ((canEdit || canEditCreative) ?
         '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
-        'color:#F6A623;background:transparent;border:1px dotted ' +
-        'rgba(246,166,35,0.3);padding:4px 10px;cursor:pointer;">...</button>'
+        'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
+        'rgba(255,255,255,0.2);padding:4px 10px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;">...</button>'
         : '') +
       '</div>' +
       (imgs.length > 0 ?
@@ -326,9 +326,9 @@ window._renderPCS = function(postId) {
       ((canEdit || canEditCreative) ?
         '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\')" ' +
         'id="pcs-caption-edit-btn" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
-        'color:#F6A623;background:transparent;border:1px dotted ' +
-        'rgba(246,166,35,0.3);padding:4px 10px;cursor:pointer;">...</button>'
+        'style="color:#AEAEB2;background:transparent;border:1px dotted ' +
+        'rgba(255,255,255,0.2);padding:4px 10px;cursor:pointer;' +
+        'font-family:\'IBM Plex Mono\',monospace;font-size:11px;">...</button>'
         : '') +
       '</div>' +
       (post.caption ?
@@ -1358,11 +1358,7 @@ window._pcsPhotoMenu = function(postId) {
       '+ Add More</div>' +
     '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
       postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
-      'Save All</div>' +
-    '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="window._pcsConfirmRemoveAll(\'' + postId + '\');' +
-      'document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
-      'Remove All</div>';
+      'Save All</div>';
   var section = document.getElementById('pcs-photo-section');
   if (section) section.style.position = 'relative';
   if (section) section.appendChild(menu);
@@ -1377,61 +1373,33 @@ window._pcsPhotoMenu = function(postId) {
   }, 10);
 };
 
-window._pcsSaveAllPhotos = function(postId) {
+window._pcsSaveAllPhotos = async function(postId) {
   var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
-  imgs.forEach(function(img, i) {
-    var url = typeof img === 'string' ? img : (img.url || img);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'image-' + (i+1) + '.jpg';
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  });
-};
-
-window._pcsConfirmRemoveAll = function(postId) {
-  _removePcsConfirm();
-  var overlay = document.createElement('div');
-  overlay.className = 'pcs-confirm-overlay';
-  overlay.addEventListener('click', function(e) {
-    if (e.target === overlay) _removePcsConfirm();
-  });
-  var post = (window.allPosts||[]).find(function(p) {
-    return p.post_id === postId;
-  });
-  var count = (post && post.images) ? post.images.length : 0;
-  overlay.innerHTML =
-    '<div class="pcs-confirm-sheet">' +
-    '<div class="pcs-confirm-msg">Remove all ' + count +
-      ' photos from this post? This cannot be undone.</div>' +
-    '<div class="pcs-confirm-btns">' +
-    '<button class="pcs-confirm-cancel" ' +
-      'onclick="_removePcsConfirm()">CANCEL</button>' +
-    '<button class="pcs-confirm-delete" ' +
-      'onclick="window._pcsDoRemoveAll(\'' + postId + '\')">REMOVE ALL</button>' +
-    '</div></div>';
-  document.body.appendChild(overlay);
-};
-
-window._pcsDoRemoveAll = async function(postId) {
-  _removePcsConfirm();
-  try {
-    await apiFetch('/posts?post_id=eq.' + postId, {
-      method: 'PATCH',
-      body: JSON.stringify({ images: [] })
-    });
-    var idx = (window.allPosts||[]).findIndex(function(p) {
-      return p.post_id === postId;
-    });
-    if (idx > -1) window.allPosts[idx].images = [];
-    openPCS(postId, '');
-  } catch(e) {
-    showToast('Failed to remove photos.', 'error');
+  if (!imgs.length) {
+    showToast('No images to save.', 'error');
+    return;
+  }
+  showToast('Saving ' + imgs.length + ' images...', 'success');
+  for (var i = 0; i < imgs.length; i++) {
+    try {
+      var url = typeof imgs[i] === 'string'
+        ? imgs[i] : (imgs[i].url || imgs[i]);
+      var res = await fetch(url);
+      var blob = await res.blob();
+      var objUrl = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = objUrl;
+      a.download = 'image-' + (i+1) + '.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(objUrl); }, 1000);
+    } catch(e) {
+      console.error('Save image failed:', e);
+    }
   }
 };
 
@@ -1451,8 +1419,7 @@ window._pcsCaptionMenu = function(postId) {
       postId + '\');document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
       'Edit</div>' +
     '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="window._pcsConfirmReplace(\'' + postId + '\');' +
-      'document.getElementById(\'pcs-caption-menu-drop\').remove();">' +
+      'onclick="var m=document.getElementById(\'pcs-caption-menu-drop\');if(m)m.remove();setTimeout(function(){window._pcsConfirmReplace(\'' + postId + '\');},50);">' +
       'Replace</div>';
   var section = document.getElementById('pcs-caption-section');
   if (section) section.style.position = 'relative';
@@ -2120,7 +2087,7 @@ window._pcsHandleCommentImg = async function(zone) {
       window._pcsNoteImgs.push(url);
     }
 
-    if (btn) { btn.textContent = '\uD83D\uDCCC'; btn.disabled = false; }
+    if (btn) { btn.textContent = '\uD83D\uDCCE'; btn.disabled = false; }
 
     _pcsRenderImgPreviews(zone);
 
