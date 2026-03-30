@@ -1443,7 +1443,7 @@ window._pcsPhotoMenu = function(postId) {
   }, 10);
 };
 
-window._pcsSaveAllPhotos = function(postId) {
+window._pcsSaveAllPhotos = async function(postId) {
   var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
@@ -1452,11 +1452,21 @@ window._pcsSaveAllPhotos = function(postId) {
     showToast('No images to save.', 'error');
     return;
   }
-  imgs.forEach(function(img) {
-    var url = typeof img === 'string' ? img : (img.url || img);
-    window.open(url, '_blank');
-  });
-  showToast('Opening ' + imgs.length + ' images. Long press each to save.', 'success');
+  showToast('Downloading ' + imgs.length + ' images...', 'success');
+  var R2_BASE = 'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/';
+  var WORKER = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/download?key=';
+  for (var i = 0; i < imgs.length; i++) {
+    var url = typeof imgs[i] === 'string' ? imgs[i] : (imgs[i].url || imgs[i]);
+    var key = url.replace(R2_BASE, '');
+    var downloadUrl = WORKER + encodeURIComponent(key);
+    var a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = 'image-' + (i + 1) + '.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    await new Promise(function(resolve) { setTimeout(resolve, 300); });
+  }
 };
 
 window._pcsCaptionMenu = function(postId) {
