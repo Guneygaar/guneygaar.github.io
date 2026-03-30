@@ -143,7 +143,7 @@ function switchTab(btn) {
     btn = document.querySelector('.tab-btn[data-tab="' + btn + '"]');
     if (!btn) return;
   }
-  var role = (window.effectiveRole || '').toLowerCase();
+  var role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (role === 'client') {
     var targetTab = typeof btn === 'string' ? btn :
       (btn && btn.dataset ? btn.dataset.tab : '');
@@ -220,7 +220,7 @@ var roleDisplayMap = {
 
 async function loadNotifications() {
   try {
-    var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
     _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
     var data = await apiFetch('/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50');
@@ -235,7 +235,7 @@ async function loadNotifications() {
 
 function renderNotifications(name, role) {
   var notifs = _notifData;
-  var effectiveR = window.effectiveRole || window.currentRole || role || 'Admin';
+  var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
   var display = roleDisplayMap[effectiveR] || roleDisplayMap[role] || { name: name, label: role };
   var displayName = display.name;
   var displayLabel = display.label;
@@ -508,7 +508,7 @@ function setNotifFilter(filter, btn) {
   _notifFilter = filter;
   document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+  var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
   _notifRole = (_notifRole || '').toLowerCase();
   var currentName = resolveActor() || 'there';
   renderNotifications(currentName, _notifRole);
@@ -530,7 +530,7 @@ async function markNotifRead(id) {
 async function markAllNotificationsRead() {
   try {
     _notifData = _notifData.map(function(n) { return Object.assign({}, n, { read: true }); });
-    var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
     _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, _notifRole);
@@ -546,7 +546,7 @@ async function markAllNotificationsRead() {
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    var _marRole = (window.effectiveRole || 'Admin');
+    var _marRole = (window.AppState.user.effectiveRole || 'Admin');
     await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_marRole), {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
@@ -555,7 +555,7 @@ async function markAllNotificationsRead() {
 }
 
 function updateNotifBadge() {
-  var role = (window.effectiveRole || 'Admin');
+  var role = (window.AppState.user.effectiveRole || 'Admin');
   var _badgeRole = role.charAt(0).toUpperCase() +
     role.slice(1).toLowerCase();
 
@@ -1182,7 +1182,7 @@ function _fabOnScroll() {
 function updateFabVisibility() {
   var assignBtn = document.getElementById('fab-assign-task');
   if (!assignBtn) return;
-  assignBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
+  assignBtn.style.display = (window.AppState.user.effectiveRole === 'Admin') ? 'flex' : 'none';
 }
 
 function toggleFabMenu() {
@@ -1224,7 +1224,7 @@ async function _fabAssignTask(postId, assignee, message) {
       }),
     });
     showToast('Task assigned OK', 'success');
-    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
+    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.AppState.user.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
     if (typeof loadTasks === 'function') loadTasks();
   } catch (err) {
     console.error('[AssignTask] FAILED:', err);
@@ -1331,7 +1331,7 @@ function openNotifications() {
       if (!pid) return;
       closeNotifications();
       setTimeout(function() {
-        var _role = (window.effectiveRole || '').toLowerCase();
+        var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
         var _isClient = _role === 'client';
         if (isBrief) {
           if (typeof _openBriefSheet === 'function')

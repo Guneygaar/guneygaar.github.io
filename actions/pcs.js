@@ -156,7 +156,7 @@ window._renderPCS = function(postId) {
   const isPublished = stageLC === 'published';
   const canvaUrl    = post.postLink || '';
   const linkedinUrl = post.linkedinUrl || '';
-  var _pcsRole = (effectiveRole || '').toLowerCase();
+  var _pcsRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPCS = _pcsRole === 'creative' ||
     _pcsRole === 'pranav' ||
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
@@ -370,7 +370,7 @@ window._renderPCS = function(postId) {
 
   var whatsappHtml = '';
   var showWA = post.caption && (
-    (effectiveRole || '').toLowerCase() === 'client' ||
+    (window.AppState.user.effectiveRole || '').toLowerCase() === 'client' ||
     stageLC === 'awaiting_approval'
   );
 
@@ -440,7 +440,7 @@ window._renderPCS = function(postId) {
 
   var notesSection = document.getElementById('pcs-notes-section');
   if (notesSection) {
-    var _r = (window.effectiveRole||'').toLowerCase();
+    var _r = (window.AppState.user.effectiveRole||'').toLowerCase();
     notesSection.style.display = _r === 'client' ? 'none' : 'block';
   }
 
@@ -635,7 +635,7 @@ window.loadPcsComments = async function(postId) {
   var notesList = document.getElementById('pcs-notes-list');
   if (!section || !list) return;
 
-  var _role = (window.effectiveRole || 'Admin');
+  var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
   var _name = window.currentUserName || '';
 
@@ -1104,7 +1104,7 @@ window.pcsSaveAttach = async function(postId) {
     const isPublished = stageLC === 'published';
     const canvaUrl    = post.postLink || '';
     const linkedinUrl = post.linkedinUrl || '';
-    const canEdit = effectiveRole !== 'Client';
+    const canEdit = window.AppState.user.effectiveRole !== 'Client';
     const el = document.getElementById('pcs-action-btn-wrap');
     if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
   }
@@ -1217,7 +1217,7 @@ window._ADVANCE_CLS = {
 };
 
 window._renderAdvanceButton = function(stageLC) {
-  var _advRole = (effectiveRole || '').toLowerCase();
+  var _advRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavAdv = _advRole === 'creative' ||
     _advRole === 'pranav' ||
     (window.currentUserEmail||'').toLowerCase().includes('pranav');
@@ -1300,7 +1300,7 @@ window.pcsConfirmDelete = function() {
 }
 
 window.pcsDoDelete = async function() {
-  var _delRole = (effectiveRole || '').toLowerCase();
+  var _delRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_delRole !== 'admin') {
     showToast('Only Admin can delete posts', 'error');
     return;
@@ -1813,7 +1813,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   var _realPostId = _post ? _post.post_id : postId;
   var _title = _post ? (_post.title || postId) : postId;
   var _author = window.currentUserName || 'Team';
-  var _role = (window.effectiveRole || 'Admin');
+  var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
   var _mentionMatches = message.match(/@([a-zA-Z0-9_]+)/g) || [];

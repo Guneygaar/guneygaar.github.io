@@ -37,7 +37,7 @@ window.closePipelineSearch = function() {
 
 // -- Pipeline critical header line --
 window.updatePipelineCritical = function(posts) {
-  var _critRole = (effectiveRole || '').toLowerCase();
+  var _critRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavCrit = _critRole === 'creative' ||
     _critRole === 'pranav' ||
     (window.currentUserEmail||'').toLowerCase().includes('pranav');
@@ -48,7 +48,7 @@ window.updatePipelineCritical = function(posts) {
   }
   var el = document.getElementById('pipeline-critical');
   if (!el) return;
-  var _isClientCrit = (effectiveRole || '').toLowerCase() === 'client';
+  var _isClientCrit = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
   if (_isClientCrit) { el.textContent = ''; return; }
   var allP = posts || allPosts || [];
   var now = new Date();
@@ -338,7 +338,7 @@ window.buildPipelineCard = function(p, listKey) {
     rightHtml = chipHtml;
   } else {
     // FIX 5 -- Chase button (plain text, no border)
-    var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
+    var _isClientCard = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
     if (!_isClientCard && stage === 'awaiting_approval') {
       var changed = p.status_changed_at ? new Date((p.status_changed_at || '') + 'Z') : null;
       var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
@@ -391,7 +391,7 @@ window.buildPipelineCard = function(p, listKey) {
 // -- Pipeline chip count updater ----------------
 window.updatePipelineChipCounts = function() {
   var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var _chipRole = (effectiveRole || '').toLowerCase();
+  var _chipRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavChip = _chipRole === 'creative' ||
     _chipRole === 'pranav' ||
     (window.currentUserEmail||'').toLowerCase().includes('pranav');
@@ -428,7 +428,7 @@ window.updatePipelineChipCounts = function() {
     if (el) el.textContent = stageCounts[keys[k]];
   }
   // Hide chips with zero count (except ALL); also filter for Client role
-  var _isClientChip = (effectiveRole || '').toLowerCase() === 'client';
+  var _isClientChip = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
   var _clientVisibleStages = ['all', 'awaiting_approval', 'awaiting_brand_input', 'published'];
   document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
     var stage = chip.dataset.stage;
@@ -661,7 +661,7 @@ window.updatePipelineNarrative = function(posts) {
   var el = document.getElementById('pipeline-narrative-text');
   if (!el) el = wrapEl;
 
-  var _narrRole = (effectiveRole || '').toLowerCase();
+  var _narrRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavNarr = _narrRole === 'creative' ||
     _narrRole === 'pranav' ||
     (window.currentUserEmail||'').toLowerCase().includes('pranav');
@@ -864,7 +864,7 @@ window._renderPipelineInner = function() {
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
   var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
     'scheduled', 'published', 'brief', 'brief_done'];
-  var _isClient = (effectiveRole || '').toLowerCase() === 'client';
+  var _isClient = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
   const base = allPosts.filter(p => {
     if (_isClient && !_clientStages.includes(p.stage || '')) return false;
     return PIPELINE_RENDER_ORDER.includes(p.stage || '');
@@ -887,7 +887,7 @@ window._renderPipelineInner = function() {
   }
 
   // -- ROLE-BASED PIPELINE FILTERING --
-  var _rolePL = (effectiveRole || '').toLowerCase();
+  var _rolePL = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPL = _rolePL === 'creative' ||
     _rolePL === 'pranav' ||
     (window.currentUserEmail || '').toLowerCase().includes('pranav');
@@ -952,7 +952,7 @@ window._renderPipelineInner = function() {
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
   // Pranav only sees briefs assigned to him
   if (grouped['brief']) {
-    var _roleBF = (effectiveRole || '').toLowerCase();
+    var _roleBF = (window.AppState.user.effectiveRole || '').toLowerCase();
     var _isPranavBF = _roleBF === 'creative' ||
       (window.currentUserEmail || '').toLowerCase().includes('pranav');
     if (_isPranavBF) {
@@ -1007,7 +1007,7 @@ window._renderPipelineInner = function() {
       ? '<button class="batch-select-btn" id="batch-select-btn" onclick="event.stopPropagation();toggleBatchMode()">Select</button>'
       : '';
     // Chase All button for awaiting_approval group
-    var _isClientCA = (effectiveRole || '').toLowerCase() === 'client';
+    var _isClientCA = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
     var chaseAllBtn = '';
     if (!_isClientCA && stage === 'awaiting_approval') {
       var nowCA = new Date();
@@ -1022,7 +1022,7 @@ window._renderPipelineInner = function() {
       }
     }
     // Per-stage summary line
-    var _isClientSum = (effectiveRole || '').toLowerCase() === 'client';
+    var _isClientSum = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
     var summaryText = '';
     var now5 = new Date();
     var stageKey = stage;

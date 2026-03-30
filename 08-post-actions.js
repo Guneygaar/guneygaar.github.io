@@ -51,7 +51,7 @@ async function quickStage(postId, newStage) {
     }
     post._isSaving = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
+    await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` });
     var _qsPost = (typeof getPostById === 'function')
       ? getPostById(postId) : null;
     var _qsTitle = _qsPost ? (_qsPost.title || postId) : postId;
@@ -93,7 +93,7 @@ function openAdminEdit(postId) {
     showToast('Post not found', 'error');
     return;
   }
-  var _aeRole = (effectiveRole || '').toLowerCase();
+  var _aeRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _aeDeleteBtn = document.getElementById('ae-delete-btn');
   if (_aeDeleteBtn) {
     _aeDeleteBtn.style.display = _aeRole === 'admin' ? '' : 'none';
@@ -397,7 +397,7 @@ async function flagIssue(postId) {
       method: 'PATCH',
       body: JSON.stringify({ comments: `! ${msg}`, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor: currentRole, actor_role: currentRole, action: `Issue flagged: ${msg.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor: window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
     await loadPosts();
   } catch { showToast('Failed  -  try again', 'error'); }
@@ -405,7 +405,7 @@ async function flagIssue(postId) {
 
 // -- Delete post (Admin only) ------------------
 async function deletePost(postId) {
-  var _delRole = (effectiveRole || '').toLowerCase();
+  var _delRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_delRole !== 'admin') {
     showToast('Only Admin can delete posts', 'error');
     return;
@@ -462,7 +462,7 @@ function _confirmPublish(postId) {
     logActivity({
       post_id: postId,
       actor: window.AppState.user.name || 'Shubham',
-      actor_role: window.effectiveRole || 'Admin',
+      actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
     var _notifPost = (allPosts||[]).find(function(p) {
@@ -563,7 +563,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
-  try { logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 

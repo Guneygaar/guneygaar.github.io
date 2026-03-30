@@ -94,7 +94,7 @@ function formatIST(ts) {
 
 // Resolve actor display name from effectiveRole
 function resolveActor() {
-  var role = window.effectiveRole || window.currentRole || '';
+  var role = window.AppState.user.effectiveRole || window.AppState.user.role || '';
   if (role === 'Admin') return 'Shubham';
   if (role === 'Servicing') return 'Chitra';
   if (role === 'Creative') return 'Pranav';
