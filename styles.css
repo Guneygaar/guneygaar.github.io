@@ -6254,7 +6254,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 11px;
   color: #E8E8E8;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid #2a2a36;
   letter-spacing: 0.04em;
 }
 
@@ -6264,7 +6264,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 .pcs-menu-item:hover,
 .pcs-menu-item:active {
-  background: rgba(255,255,255,0.06);
+  background: #222235;
 }
 
 .pcs-menu-item-danger {
