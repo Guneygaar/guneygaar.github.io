@@ -24,15 +24,15 @@ function safeRender() {
 
 function scheduleRender() {
   if (window._modalOpen) { window._deferredRender = true; return; }
-  clearTimeout(_renderTimer);
-  _renderTimer = setTimeout(safeRender, 60);
+  clearTimeout(window.AppState.timers.renderTimer);
+  window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
 }
 
 function _drainDeferredRender() {
   if (window._deferredRender) {
     window._deferredRender = false;
-    clearTimeout(_renderTimer);
-    _renderTimer = setTimeout(safeRender, 60);
+    clearTimeout(window.AppState.timers.renderTimer);
+    window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
   }
 }
 

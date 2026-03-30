@@ -271,7 +271,7 @@ async function loadPostsForClient() {
 }
 
 // Background token refresh interval handle (separate from data poll)
-window._tokenRefreshTimer = null;
+window.AppState.timers.tokenRefresh = null;
 
 // Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
 function _postsFingerprint(posts) {
@@ -283,10 +283,10 @@ function _postsFingerprint(posts) {
 }
 
 function startRealtime() {
-  if (_realtimeTimer) return;
+  if (window.AppState.timers.realtimeTimer) return;
 
   // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
-  _realtimeTimer = setInterval(async () => {
+  window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     // Skip poll while user is in a modal  -  they'll get fresh data on close
     if (window._modalOpen) return;
@@ -305,8 +305,8 @@ function startRealtime() {
 
   // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
-  if (!window._tokenRefreshTimer) {
-    window._tokenRefreshTimer = setInterval(async () => {
+  if (!window.AppState.timers.tokenRefresh) {
+    window.AppState.timers.tokenRefresh = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       const newToken = await refreshSession();
       if (!newToken) {
@@ -317,10 +317,10 @@ function startRealtime() {
 }
 
 function stopRealtime() {
-  clearInterval(_realtimeTimer);
-  _realtimeTimer = null;
-  clearInterval(window._tokenRefreshTimer);
-  window._tokenRefreshTimer = null;
+  clearInterval(window.AppState.timers.realtimeTimer);
+  window.AppState.timers.realtimeTimer = null;
+  clearInterval(window.AppState.timers.tokenRefresh);
+  window.AppState.timers.tokenRefresh = null;
 }
 
 async function loadTasks() {
