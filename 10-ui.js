@@ -220,12 +220,13 @@ var roleDisplayMap = {
 
 async function loadNotifications() {
   try {
-    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+    _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
-    var data = await apiFetch('/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(currentRole) + '&order=created_at.desc&limit=50');
+    var data = await apiFetch('/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50');
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
     _notifData = data;
-    renderNotifications(currentName, currentRole);
+    renderNotifications(currentName, _notifRole);
     updateNotifBadge();
   } catch(e) {
     console.error('loadNotifications error:', e);
@@ -507,9 +508,10 @@ function setNotifFilter(filter, btn) {
   _notifFilter = filter;
   document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+  var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+  _notifRole = (_notifRole || '').toLowerCase();
   var currentName = resolveActor() || 'there';
-  renderNotifications(currentName, currentRole);
+  renderNotifications(currentName, _notifRole);
 }
 
 
@@ -528,9 +530,10 @@ async function markNotifRead(id) {
 async function markAllNotificationsRead() {
   try {
     _notifData = _notifData.map(function(n) { return Object.assign({}, n, { read: true }); });
-    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.effectiveRole || window.currentRole || 'Admin';
+    _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
-    renderNotifications(currentName, currentRole);
+    renderNotifications(currentName, _notifRole);
     updateNotifBadge();
     var unreadEls = document.querySelectorAll(
       '#panel-updates .notif-item.unread');

@@ -156,9 +156,9 @@ async function resolveRoleFromToken(accessToken, email) {
       return;
     }
     var userName = Array.isArray(roleData) && roleData[0]?.name;
-    if (userName) window.currentUserName = userName;
+    if (userName) window.AppState.user.name = userName;
     if (userName) localStorage.setItem('hinglish_name', userName);
-    window.currentUserEmail = email;
+    window.AppState.user.email = email;
     localStorage.setItem('hinglish_role', role);
     localStorage.setItem('hinglish_email', email);
     const overlay = document.getElementById('login-overlay');

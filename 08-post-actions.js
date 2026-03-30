@@ -461,7 +461,7 @@ function _confirmPublish(postId) {
     }
     logActivity({
       post_id: postId,
-      actor: window.currentUserName || 'Shubham',
+      actor: window.AppState.user.name || 'Shubham',
       actor_role: window.effectiveRole || 'Admin',
       action: 'published'
     });
@@ -475,7 +475,7 @@ function _confirmPublish(postId) {
         user_role: 'Admin',
         post_id: (_notifPost ? _notifPost.post_id : postId),
         type: 'published',
-        message: (window.currentUserName || 'Shubham') +
+        message: (window.AppState.user.name || 'Shubham') +
           ' published ' + _notifTitle
       })
     }).catch(function(){});

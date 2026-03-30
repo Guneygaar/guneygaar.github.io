@@ -606,7 +606,7 @@
   function _commentInputHtml(post) {
     if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
     var pid = _esc(post.post_id || post.id || '');
-    var userName = (window.currentUserName || 'C');
+    var userName = (window.AppState.user.name || 'C');
     var initial = userName.charAt(0).toUpperCase();
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
@@ -665,7 +665,7 @@
   var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 
   function _topBarHtml(awaitCount) {
-    var clientName = _esc(window.currentUserName || '');
+    var clientName = _esc(window.AppState.user.name || '');
     var pill = '';
     if (awaitCount > 0) {
       var pc = _pillColor(awaitCount);
@@ -838,7 +838,7 @@
     var savedValue = input.value;
     input.value = '';
 
-    var authorName = window.currentUserName || 'Client';
+    var authorName = window.AppState.user.name || 'Client';
     var post = (window.allPosts || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
     });
