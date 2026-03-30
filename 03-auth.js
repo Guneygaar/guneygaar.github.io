@@ -241,6 +241,14 @@ function activateRole(role) {
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    if (!window._clientTokenTimer) {
+      window._clientTokenTimer = setInterval(async function() {
+        var newToken = await refreshSession();
+        if (!newToken) {
+          console.warn('Client token refresh failed');
+        }
+      }, 50 * 60 * 1000);
+    }
     return;
   }
 
