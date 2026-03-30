@@ -1927,6 +1927,22 @@ async function _pcsHandlePhotoInput(postId, input) {
 }
 window._pcsHandlePhotoInput = _pcsHandlePhotoInput;
 
+window._pcsSaveAllPhotos = function(postId) {
+  var post = (window.allPosts||[]).find(function(p) {
+    return p.post_id === postId;
+  });
+  var imgs = (post && post.images) ? post.images : [];
+  if (!imgs.length) {
+    showToast('No images to save.', 'error');
+    return;
+  }
+  imgs.forEach(function(img) {
+    var url = typeof img === 'string' ? img : (img.url || img);
+    window.open(url, '_blank');
+  });
+  showToast('Opening ' + imgs.length + ' images. Long press each to save.', 'success');
+};
+
 async function _pcsRemovePhoto(postId, idx) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
