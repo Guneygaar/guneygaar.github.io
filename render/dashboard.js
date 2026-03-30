@@ -143,7 +143,7 @@ window.updateDashGreeting = function() {
   var nameEl = document.getElementById('dash-greeting-name');
   var hdrEl = document.getElementById('dash-greeting-hdr');
   if (!nameEl || !hdrEl) return;
-  var role = (window.effectiveRole || window.currentRole || 'admin').toLowerCase();
+  var role = (window.AppState.user.effectiveRole || window.AppState.user.role || 'admin').toLowerCase();
   var nameMap = {
     admin: 'Shubham', shubham: 'Shubham',
     servicing: 'Chitra', chitra: 'Chitra',
@@ -228,7 +228,7 @@ window.renderScoreboard = function() {
 
     // --- HEADLINE PRIORITY ---
     var kicker, kickerColor, headline, deck;
-    var role = window.effectiveRole || 'Admin';
+    var role = window.AppState.user.effectiveRole || 'Admin';
 
     if (role === 'Creative') {
       // Pranav-specific headline
@@ -502,7 +502,7 @@ window._renderDashTaskList = function(role) {
           'Creative':  'All sorted - keep creating',
           'Client':    'All sorted - nothing from us right now'
         };
-        var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
+        var emptyRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
         var emptyMsg = emptyMessages[emptyRole] || 'All sorted';
         container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
         return;
@@ -805,7 +805,7 @@ window._buildDoThisNowItems = function(role) {
   var todayStr = new Date().toISOString().split('T')[0];
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  role = role || window.effectiveRole || window.currentRole || 'Admin';
+  role = role || window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
 
   // B-02 FIX: PRIORITY 0  Failed publish items (scheduled posts past target_date)
   if (role !== 'Client') {
@@ -903,7 +903,7 @@ window._buildDoThisNowItems = function(role) {
 }
 
 window.renderDashboard = function() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') return;
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') return;
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
 window._renderDashboardInner = function() {

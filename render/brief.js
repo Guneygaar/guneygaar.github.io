@@ -14,7 +14,7 @@ window._openBriefSheet = function(postId) {
   var existing = document.getElementById('brief-sheet-overlay');
   if (existing) existing.remove();
 
-  var _role = (window.effectiveRole || '').toLowerCase();
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
   var _isPranav = _role === 'creative' ||
     _role === 'pranav' ||

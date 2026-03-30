@@ -162,7 +162,7 @@ function showLoadingSkeleton(containerId) {
 }
 
 async function loadPosts() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
     return;
   }
@@ -491,7 +491,7 @@ async function deleteTask(id) {
 }
 
 function renderAll() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     var clientTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
     if (clientTab === 'pipeline') {
       if (typeof renderPipeline === 'function') renderPipeline();
@@ -634,7 +634,7 @@ function getTopTask() {
     return p ? getTitle(p) : '';
   }
 
-  const role = _ttNorm(window.effectiveRole || '');
+  const role = _ttNorm(window.AppState.user.effectiveRole || '');
   const email = localStorage.getItem('hinglish_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
@@ -833,7 +833,7 @@ function getDashGreeting() {
                  hour >= 12 && hour < 17 ? 'Good afternoon' :
                  hour >= 17 && hour < 21 ? 'Good evening' :
                  'Working late';
-  var role = window.effectiveRole || window.currentRole || '';
+  var role = window.AppState.user.effectiveRole || window.AppState.user.role || '';
   var roleNames = {
     'Admin':     'Shubham',
     'Servicing': 'Chitra',
@@ -847,7 +847,7 @@ function updateDashGreeting() {
   var nameEl = document.getElementById('dash-greeting-name');
   var hdrEl = document.getElementById('dash-greeting-hdr');
   if (!nameEl || !hdrEl) return;
-  var role = (window.effectiveRole || window.currentRole || 'admin').toLowerCase();
+  var role = (window.AppState.user.effectiveRole || window.AppState.user.role || 'admin').toLowerCase();
   var nameMap = {
     admin: 'Shubham', shubham: 'Shubham',
     servicing: 'Chitra', chitra: 'Chitra',
@@ -932,7 +932,7 @@ function renderScoreboard() {
 
     // --- HEADLINE PRIORITY ---
     var kicker, kickerColor, headline, deck;
-    var role = window.effectiveRole || 'Admin';
+    var role = window.AppState.user.effectiveRole || 'Admin';
 
     if (role === 'Creative') {
       // Pranav-specific headline
@@ -1206,7 +1206,7 @@ function _renderDashTaskList(role) {
           'Creative':  'All sorted - keep creating',
           'Client':    'All sorted - nothing from us right now'
         };
-        var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
+        var emptyRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
         var emptyMsg = emptyMessages[emptyRole] || 'All sorted';
         container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
         return;
@@ -1516,7 +1516,7 @@ function _buildDoThisNowItems(role) {
   var todayStr = new Date().toISOString().split('T')[0];
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  role = role || window.effectiveRole || window.currentRole || 'Admin';
+  role = role || window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
 
   // B-02 FIX: PRIORITY 0  Failed publish items (scheduled posts past target_date)
   if (role !== 'Client') {
@@ -1614,7 +1614,7 @@ function _buildDoThisNowItems(role) {
 }
 
 function renderDashboard() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') return;
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') return;
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
 function _renderDashboardInner() {
@@ -2064,7 +2064,7 @@ function renderPipelineStrip() {
 function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const readyCount = allPosts.filter(p => p.stage === 'ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
@@ -2089,7 +2089,7 @@ function renderProductionMeter() {
 function renderAdminInsight() {
   const section = document.getElementById('admin-insight-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const now = Date.now();
   const DAY = 86400000;
   function daysSince(post) {
@@ -2174,9 +2174,9 @@ function closeParked() {
 function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
-  if (effectiveRole === 'Client') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole === 'Client') { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('hinglish_email') || '';
-  const roleName = effectiveRole;
+  const roleName = window.AppState.user.effectiveRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
@@ -2189,7 +2189,7 @@ function renderTaskBanner() {
 function renderAdminTaskPanel() {
   const section = document.getElementById('admin-task-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const openTasks = allTasks.filter(t => !t.done);
   const doneTasks = allTasks.filter(t => t.done).slice(0, 5);
   const openRows = openTasks.map(t => {
@@ -2224,7 +2224,7 @@ function staleClass(days) {
 }
 
 function getMyTasks() {
-  const allowed = ROLE_STAGES[effectiveRole];
+  const allowed = ROLE_STAGES[window.AppState.user.effectiveRole];
   if (!allowed) return allPosts;
   return allPosts.filter(p => allowed.includes(p.stage || ''));
 }
@@ -2255,7 +2255,7 @@ function getRelativeDate(rawDate) {
 function renderNextPost() {
   const section = document.getElementById('next-post-section');
   if (!section) return;
-  if (effectiveRole === 'Client') { section.innerHTML=''; return; }
+  if (window.AppState.user.effectiveRole === 'Client') { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
     section.innerHTML = `<div class="hero-card"><div class="hero-label">Most Urgent Post</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
@@ -2274,7 +2274,7 @@ function renderNextPost() {
   const days      = daysInStage(post);
   const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
-  const canUpdate = effectiveRole !== 'Client';
+  const canUpdate = window.AppState.user.effectiveRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
   if (stage === 'awaiting_brand_input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in_production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
   else if (stage === 'in_production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
@@ -2342,7 +2342,7 @@ window._taskFilter = null; // null = show all, string = bucket key
 function renderTaskStageChips() {
   const el = document.getElementById('task-stage-chips');
   if (!el) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets || !buckets.length) { el.innerHTML = ''; return; }
 
   const chips = buckets.map(bucket => {
@@ -2374,7 +2374,7 @@ function filterTasksByChip(bucketKey) {
 function _renderFilteredTasks() {
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets) return;
 
   if (!window._taskFilter) {
@@ -2415,7 +2415,7 @@ function _renderTasksInner() {
 
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets) {
     const posts = getMyTasks();
     window._postLists['tasks'] = posts;
@@ -2480,8 +2480,8 @@ function toggleStageOverflow(btn, totalHidden) {
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ===============================================
 document.addEventListener('click', function _cardClickDelegate(e) {
-  if (!window.effectiveRole) return;
-  var _role = (window.effectiveRole || '').toLowerCase();
+  if (!window.AppState.user.effectiveRole) return;
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_role === 'client') {
     var card = e.target.closest('[data-post-id]');
     if (!card) return;

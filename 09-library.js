@@ -1146,7 +1146,7 @@ window.libOpenPostCard = libOpenPostCard;
 
 // --------------- post card overlay ---------------
 function libOpenCard(postId) {
-  var _role = (window.effectiveRole || '').toLowerCase();
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_role === 'client') {
     if (typeof window._openClientPostOverlay === 'function')
       window._openClientPostOverlay(postId);
@@ -1324,7 +1324,7 @@ function libInitSearch() {
 
 // --------------- libGoToPipeline ---------------
 function libGoToPipeline(postId) {
-  var _role = (window.effectiveRole || '').toLowerCase();
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_role === 'client') {
     if (typeof window._openClientPostOverlay === 'function')
       window._openClientPostOverlay(postId);
