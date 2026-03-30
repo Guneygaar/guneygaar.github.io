@@ -6179,3 +6179,64 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   text-transform: uppercase;
   color: #8E8E93;
 }
+
+.pcs-img-btn {
+  border: 1px dotted rgba(255,255,255,0.18);
+  padding: 7px 8px;
+  font-size: 13px;
+  background: transparent;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  flex-shrink: 0;
+}
+
+.pcs-img-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 6px;
+}
+
+.pcs-img-preview-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.pcs-img-preview {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.pcs-img-remove {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #FF4B4B;
+  color: white;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.pcs-comment-imgs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pcs-comment-img-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+}
