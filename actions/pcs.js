@@ -1421,9 +1421,11 @@ window._pcsPhotoMenu = function(postId) {
     '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
       postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
       '+ Add More</div>' +
-    '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
-      postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
-      'Save All</div>';
+    (imgs.length > 0
+      ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
+          postId + '\');document.getElementById(\'pcs-photo-menu-drop\').remove();">' +
+          'Save All</div>'
+      : '');
   var section = document.getElementById('pcs-photo-section');
   if (section) section.style.position = 'relative';
   if (section) section.appendChild(menu);
