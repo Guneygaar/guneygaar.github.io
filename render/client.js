@@ -606,6 +606,8 @@
       '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
       '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
+        '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
+        '<button class="pcs-img-btn" style="font-size:13px;" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">&#128204;</button>' +
         '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
       '</div>' +
     '</div>';
@@ -776,6 +778,20 @@
     if (m) m.remove();
   }
 
+  window._clientFeedHandleImg = async function(postId) {
+    var input = document.getElementById('client-feed-img-input-' + postId);
+    if (!input || !input.files || !input.files[0]) return;
+    var file = input.files[0];
+    input.value = '';
+    try {
+      var url = await uploadPostAsset(file, postId + '-comment');
+      window._clientFeedPendingImg = url;
+      showToast('Image ready. Add a message and send.', 'success');
+    } catch(e) {
+      showToast('Image upload failed.', 'error');
+    }
+  };
+
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
@@ -822,14 +838,21 @@
 
     if (typeof window.apiFetch !== 'function') return;
 
+    var _pendingImg = window._clientFeedPendingImg || null;
+    window._clientFeedPendingImg = null;
+    var _commentBody = {
+      post_id: realPostId,
+      author: authorName,
+      author_role: 'Client',
+      message: message
+    };
+    if (_pendingImg) {
+      _commentBody.attachments = JSON.stringify({type:'images', urls:[_pendingImg]});
+    }
+
     window.apiFetch('/post_comments', {
       method: 'POST',
-      body: JSON.stringify({
-        post_id: realPostId,
-        author: authorName,
-        author_role: 'Client',
-        message: message
-      })
+      body: JSON.stringify(_commentBody)
     }).then(function () {
       window.apiFetch('/notifications', {
         method: 'POST',
