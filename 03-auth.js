@@ -210,7 +210,7 @@ function activateRole(role) {
   var _dbRole = (role || '').toLowerCase();
   if (_dbRole !== 'admin') {
     localStorage.removeItem('pcs_role_preview');
-    window._previewRole = null;
+    window.AppState.user.previewRole = null;
   }
 
   var rolePreview = localStorage.getItem('pcs_role_preview');
