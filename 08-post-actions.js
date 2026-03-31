@@ -52,30 +52,6 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: currentRole, action: `Stage -> ${newStage}` });
-    var _qsPost = (typeof getPostById === 'function')
-      ? getPostById(postId) : null;
-    var _qsTitle = _qsPost ? (_qsPost.title || postId) : postId;
-    var _qsPostId = _qsPost ? _qsPost.post_id : postId;
-    if (newStage === 'awaiting_approval') {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: 'Client',
-          post_id:   _qsPostId,
-          type:      'awaiting_approval',
-          message:   _qsTitle + ' is ready for your approval'
-        })
-      }).catch(function(){});
-    }
-    apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Admin',
-        post_id:   _qsPostId,
-        type:      'stage_change',
-        message:   resolveActor() + ' moved ' + _qsTitle + ' to ' + _stageLabel(newStage)
-      })
-    }).catch(function(){});
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
     post._isSaving = false;
@@ -190,20 +166,6 @@ async function clientApprove(postId, btn) {
       body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-    var _approvedTitle = post.title || postId;
-    var _approvedPostId = post.post_id || postId;
-    ['Servicing', 'Admin'].forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id:   _approvedPostId,
-          type:      'awaiting_approval',
-          message:   'Client approved -- ' + _approvedTitle +
-                     ' is ready to schedule'
-        })
-      }).catch(function(){});
-    });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('show');
     var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -245,17 +207,6 @@ async function submitClientChanges(postId) {
       ? getPostById(postId) : null;
     var _changesTitle = _changesPost ? (_changesPost.title || postId) : postId;
     var _changesPostId = _changesPost ? _changesPost.post_id : postId;
-    ['Servicing', 'Admin'].forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id:   _changesPostId,
-          type:      'awaiting_brand_input',
-          message:   'Client requested changes -- ' + _changesTitle
-        })
-      }).catch(function(){});
-    });
     const item = document.getElementById(`apv-item-${postId}`);
     if (item) item.innerHTML =
       '<div style="padding:20px 16px;text-align:center;' +
@@ -425,19 +376,6 @@ async function submitClientRequest() {
     });
     console.log('[REQUEST] API SUCCESS');
     await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
-    var _reqTitle = (document.getElementById('req-name') || {}).value ||
-      'New request';
-    ['Servicing', 'Admin'].forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id:   postId,
-          type:      'stage_change',
-          message:   'Client submitted a brief -- ' + _reqTitle
-        })
-      }).catch(function(){});
-    });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
     var nameResetEl = document.getElementById('req-name');
@@ -1104,21 +1042,6 @@ function _confirmPublish(postId) {
       actor_role: window.effectiveRole || 'Admin',
       action: 'published'
     });
-    var _notifPost = (allPosts||[]).find(function(p) {
-      return p.post_id === postId || p.id === postId;
-    });
-    var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;
-    apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Admin',
-        post_id: (_notifPost ? _notifPost.post_id : postId),
-        type: 'published',
-        message: (window.currentUserName || 'Shubham') +
-          ' published ' + _notifTitle
-      })
-    }).catch(function(){});
-
     showToast('Published', 'success');
     if (typeof closePCS === 'function') closePCS();
     loadPosts();
@@ -1276,69 +1199,6 @@ async function loadPcsComments(postId) {
   }
 }
 window.loadPcsComments = loadPcsComments;
-
-async function submitPcsComment() {
-  var input = document.getElementById('pcs-comment-input');
-  if (!input) return;
-  var message = (input.value || '').trim();
-  if (!message) return;
-
-  var postIdEl = document.getElementById('pcs-post-id');
-  var postId = postIdEl ? postIdEl.value : '';
-  if (!postId) return;
-
-  var _post = (allPosts||[]).find(function(p) {
-    return p.post_id === postId || p.id === postId;
-  });
-  var _realPostId = _post ? _post.post_id : postId;
-
-  var _author = window.currentUserName ||
-    window.effectiveRole || 'Team';
-  var _role = window.effectiveRole || 'Admin';
-
-  input.value = '';
-  input.style.height = 'auto';
-
-  try {
-    await apiFetch('/post_comments', {
-      method: 'POST',
-      body: JSON.stringify({
-        post_id: _realPostId,
-        author: _author,
-        author_role: _role,
-        message: message
-      })
-    });
-
-    loadPcsComments(_realPostId);
-
-    var _notifRoles = [];
-    var _roleLower = (_role||'').toLowerCase();
-    if (_roleLower === 'client') {
-      _notifRoles = ['Servicing', 'Admin'];
-    } else {
-      _notifRoles = ['Client'];
-    }
-    var _title = _post ? (_post.title || _realPostId) : _realPostId;
-    _notifRoles.forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id: _realPostId,
-          type: 'stage_change',
-          message: _author + ' commented on ' + _title
-        })
-      }).catch(function(){});
-    });
-
-  } catch(e) {
-    console.error('submitPcsComment failed:', e);
-    showToast('Failed to send comment', 'error');
-    input.value = message;
-  }
-}
-window.submitPcsComment = submitPcsComment;
 
 function _showStageConfirm(postId, newStage) {
   _removePcsConfirm();
@@ -2290,7 +2150,8 @@ function submitPcsComment() {
           user_role: role,
           post_id: _realPostId,
           type: 'comment',
-          message: _author + ' commented on ' + _title
+          message: _author + ' commented on ' + _title,
+          actor: (window.currentUserName || 'Unknown')
         })
       }).catch(function(){});
     });

@@ -264,7 +264,10 @@ async function loadNotifications() {
   try {
     var currentRole = window.effectiveRole || window.currentRole || 'Admin';
     var currentName = resolveActor() || 'there';
-    var data = await apiFetch('/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(currentRole) + '&order=created_at.desc&limit=50');
+    var _loadActor = window.currentUserName || '';
+    var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(currentRole) + '&order=created_at.desc&limit=50';
+    if (_loadActor) _loadUrl += '&actor=neq.' + encodeURIComponent(_loadActor);
+    var data = await apiFetch(_loadUrl);
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
     _notifData = data;
     renderNotifications(currentName, currentRole);
@@ -481,6 +484,7 @@ function renderNotifications(name, role) {
 
       var itemHtml =
         '<div class="notif-item' + (_isUnread ? ' unread' : '') + '" ' +
+        'data-notif-id="' + n.id + '" ' +
         'style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.05);' +
         'cursor:default;">' +
 
@@ -561,31 +565,6 @@ function setNotifFilter(filter, btn) {
   renderNotifications(currentName, currentRole);
 }
 
-async function openNotifItem(id, postId) {
-  await markNotifRead(id);
-  if (postId) openPCS(postId);
-}
-
-async function handleNotifAction(action, postId, notifId, event) {
-  event.stopPropagation();
-  await markNotifRead(notifId);
-  if ((action === 'view' || action === 'approve') && postId) {
-    closeNotifications();
-    setTimeout(function() {
-      openPCS(postId, '');
-    }, 150);
-    return;
-  }
-  if (action === 'chase' && postId) {
-    var post = (window.allPosts || []).find(function(p) { return p.post_id === postId || p.id === postId; });
-    var title = post ? post.title : 'this post';
-    var msg = 'Hi! Following up on ' + title + ' sent for approval. Please review when you get a chance.';
-    if (navigator.clipboard) { navigator.clipboard.writeText(msg); }
-    showChaseToast('Copied to clipboard');
-    return;
-  }
-}
-
 async function markNotifRead(id) {
   try {
     _notifData = _notifData.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; });
@@ -627,9 +606,12 @@ function updateNotifBadge() {
   var role = (window.effectiveRole || 'Admin');
   var _badgeRole = role.charAt(0).toUpperCase() +
     role.slice(1).toLowerCase();
+  var _badgeActor = window.currentUserName || '';
+  var _badgeUrl = '/notifications?read=eq.false&user_role=eq.' +
+    encodeURIComponent(_badgeRole) + '&select=id';
+  if (_badgeActor) _badgeUrl += '&actor=neq.' + encodeURIComponent(_badgeActor);
 
-  apiFetch('/notifications?read=eq.false&user_role=eq.' +
-    encodeURIComponent(_badgeRole) + '&select=id')
+  apiFetch(_badgeUrl)
   .then(function(rows) {
     var count = Array.isArray(rows) ? rows.length : 0;
     var show = count > 0;
@@ -1400,6 +1382,8 @@ function openNotifications() {
       var pid = card.getAttribute('data-post-id');
       var isBrief = card.getAttribute('data-is-brief') === '1';
       if (!pid) return;
+      var notifId = card.getAttribute('data-notif-id') || (card.closest('[data-notif-id]') ? card.closest('[data-notif-id]').getAttribute('data-notif-id') : null);
+      if (notifId) markNotifRead(notifId);
       closeNotifications();
       setTimeout(function() {
         if (isBrief) {
@@ -1630,5 +1614,8 @@ document.addEventListener('DOMContentLoaded', () => {
   var greetHdr = document.getElementById('dash-greeting-hdr');
   if (greetHdr) greetHdr.style.display = '';
   if (typeof updateDashGreeting === 'function') updateDashGreeting();
-  if (typeof loadNotifBadge === 'function') loadNotifBadge();
 });
+
+window._notifBadgeTimer = setInterval(function() {
+  if (typeof updateNotifBadge === 'function') updateNotifBadge();
+}, 60000);

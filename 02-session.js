@@ -12,7 +12,6 @@ window._renderTimer    = null;
 window._retryCount     = 0;
 window._retryTimer     = null;
 
-window._unreadCount    = 0;
 window._realtimeTimer  = null;
 window.allTasks        = [];
 window._modalOpen      = false;   // true while any overlay/PCS is open
