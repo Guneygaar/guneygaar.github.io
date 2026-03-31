@@ -1,179 +1,137 @@
-# CLAUDE.md — Hinglish Ops
+# SORTED — Codebase Architecture Guide
+# For Claude Code — Read this first on every session
 
-> AI assistant guide for the Hinglish Ops codebase. Read this before making changes.
+## TECH STACK
+- Vanilla JS frontend
+- Supabase backend (REST API via apiFetch)
+- GitHub Pages deployment (Guneygaar/guneygaar.github.io, main/root branch)
+- Cloudflare CDN + Workers + KV + R2
+- No build step. No bundler. Raw JS files.
 
----
+## FILE ARCHITECTURE
 
-## Project Overview
+### Core files (load order matters):
+- 00-appstate.js — AppState brain (loads FIRST)
+- 00-appstate-compat.js — illegal access guards (loads SECOND)
+- 01-config.js — constants and config
+- 02-session.js — session initialization
+- 03-auth.js — authentication and role management
+- 04-router.js — routing and session restore
+- 05-api.js — apiFetch wrapper
+- 06-post-create.js — post creation
+- 07-post-load.js — post fetching and rendering engine
+- 08-post-actions.js — post actions (stage changes etc)
+- 09-library.js — library view
+- 09-approval.js — approval flow
+- 10-ui.js — UI utilities and notifications
+- utils.js — shared utilities
+- render/dashboard.js — dashboard rendering
+- render/client.js — client feed rendering
+- render/pipeline.js — pipeline rendering
+- render/brief.js — brief rendering
+- actions/pcs.js — Post Card System (PCS) overlay
 
-**Hinglish Ops** is a content management dashboard for the Hinglish Agency, deployed as a static site on GitHub Pages (`guneygaar.github.io`). It is a vanilla JavaScript SPA with no framework, no bundler, and a Supabase backend.
+## APPSTATE — SINGLE SOURCE OF TRUTH
 
-| Aspect | Details |
-|--------|---------|
-| Stack | Vanilla JS, HTML, CSS — no framework |
-| Backend | Supabase (PostgreSQL + Auth + Storage) |
-| Testing | Vitest 4.x + jsdom |
-| CI | GitHub Actions (`npm test` on push/PR to `main`) |
-| Deployment | GitHub Pages (no build step — files served as-is) |
-| Auth | OTP via Supabase Auth (6-digit email code) |
+All state lives in window.AppState. Never use bare globals.
 
----
+### Structure:
+window.AppState = {
+  user: {
+    name,           // was: currentUserName
+    email,          // was: currentUserEmail
+    role,           // was: currentRole
+    effectiveRole,  // was: effectiveRole
+    previewRole     // was: _previewRole
+  },
+  posts: {
+    all,            // was: allPosts — READ ONLY via .find/.filter/.map
+    cached,         // was: cachedPosts
+    loaded,         // was: _postsLoaded
+    setAll(posts)   // ONLY way to write posts — enforces immutability
+  },
+  pcs: {
+    open, postId, post, editingTarget,
+    closeTimer, pendingComment,
+    lightbox: { images, index },
+    activeMenu      // was: _pcsActiveMenu
+  },
+  ui: {
+    modalOpen,      // was: _modalOpen
+    unreadCount,    // was: _unreadCount
+    deferredRender, activeTab, taskFilter,
+    pipelineFilter, nrsUrgency,
+    retryCount, retryTimer, realtimeTimer
+  },
+  timers: {
+    tokenRefresh,   // was: _tokenRefreshTimer
+    dashDatetime,
+    renderTimer     // was: _renderTimer
+  }
+};
 
-## File Structure & Load Order
+### MUTATION RULES (CRITICAL):
+Never mutate AppState.posts.all directly.
+Always use setAll with immutable patterns:
 
-Scripts load via `<script defer>` in `index.html`. **All share a single global scope (no modules).**
+// Add a post:
+window.AppState.posts.setAll(
+  window.AppState.posts.all.concat([newPost])
+);
 
-```
-01-config.js        Constants, stage/pillar definitions, role configs
-02-session.js       Mutable global state (allPosts, currentRole, flags)
-03-auth.js          OTP auth, session refresh, role activation
-04-router.js        App entry point — runs _startRouter() on DOMContentLoaded (LAST)
-05-api.js           Supabase REST wrapper, normalise(), file upload, logActivity()
-06-post-create.js   New post modal, draft autosave (localStorage)
-07-post-load.js     Data loading, realtime poll, ALL render functions (~3K lines, largest file)
-08-post-actions.js  Stage updates, PCS modal, admin edit, drag/drop, swipe
-09-approval.js      Public approval view (unauthenticated)
-09-library.js       Library tab filtering & views (board, calendar, list)
-10-ui.js            Toast, tabs, theme, overlays, utility helpers
-utils.js            Pure functions extracted for testability
-```
+// Remove a post:
+window.AppState.posts.setAll(
+  window.AppState.posts.all.filter(p => getPostId(p) !== postId)
+);
 
-Supporting files:
-```
-index.html          Single HTML entry point (~64KB)
-styles.css          All styling (~180KB), dark theme, CSS custom properties
-vitest.config.js    Test config (jsdom environment)
-package.json        Only devDependencies: vitest + jsdom
-tests/              3 test files, 47 tests
-sql/                Database migration scripts (reference only)
-SYSTEM_MAP.md       Detailed architecture reference
-```
+// Update a post property:
+window.AppState.posts.setAll(
+  window.AppState.posts.all.map(function(p) {
+    return getPostId(p) === postId
+      ? Object.assign({}, p, { stage: 'published' })
+      : p;
+  })
+);
 
----
+// NEVER do this:
+window.AppState.posts.all.push(post)     // ILLEGAL
+window.AppState.posts.all[idx].x = y    // ILLEGAL
+window.AppState.posts.all.splice(idx,1) // ILLEGAL
 
-## Development Workflow
+## DESIGN SYSTEM
+- Zero border-radius on inputs/buttons
+- No rgba for text or borders — solid hex only
+- Fonts: IBM Plex Mono (mono), DM Sans (sans)
+- Text: #E8E8E8 (primary), #AEAEB2 (secondary), #8E8E93 (tertiary)
+- Backgrounds: #080808 (app), #191924 (comments)
+- Gold: #C8A84B | Red: #FF4B4B | Green: #3ECF8E | Purple: #9b87f5
+- Owner colors: Chitra=#22D3EE, Pranav=#9b87f5, Client=#FF4B4B
 
-### Running Tests
+## DEPLOYMENT RULES
+- Version bump ALL 20 ?v= strings together on every deploy
+- Purge Cloudflare after every merge
+- One PR at a time
+- Never revert without checking cache first
+- No rgba for text or borders
 
-```bash
-npm test          # Run all tests (vitest run)
-```
+## TESTING
+- 152 Vitest tests (unit)
+- Playwright E2E tests
+- Run: npx vitest run
+- All must pass before merge
 
-Tests are in `tests/` — currently covering config integrity, utility functions, and API normalisation.
+## INFRASTRUCTURE
+- Supabase: vxokfscjzytpgdrmertk.supabase.co
+- R2 bucket: sorted-images
+- R2 Worker: srtd-r2-upload.ksg-kumarshubhamgune.workers.dev
+- OG Worker: srtd-og-inject
+- KV: sorted-whatsapp-previews
+- Resend FROM: hinglish@srtd.io
 
-### CI Pipeline
-
-GitHub Actions (`.github/workflows/test.yml`) runs `npm test` on every push/PR to `main`. Node 20, npm ci.
-
-### No Build Step
-
-There is **no bundler, transpiler, or build process**. Edit files directly; they are served as-is by GitHub Pages.
-
----
-
-## Key Conventions
-
-### File Naming
-- **Numbered prefixes** (`01-` to `10-`) indicate load order — every file depends on those loaded before it.
-- `utils.js` is the exception (loaded independently for testability).
-
-### Data Conventions
-| Data | Format |
-|------|--------|
-| Stage keys | Lowercase with spaces: `in production`, `awaiting approval`, `revisions needed` |
-| Pillar keys | Lowercase: `leadership`, `innovation`, `sustainability`, etc. |
-| Owner names | Capitalized: `Pranav`, `Chitra`, `Client` |
-| Dates | ISO 8601 (`YYYY-MM-DD`) in DB, formatted for display via locale helpers |
-| Post IDs | `POST-{timestamp}` or `REQ-{timestamp}` |
-
-### Global State
-All shared state lives on `window.*` — there is no module system:
-- `window.allPosts` — current post data array
-- `window.currentRole` — active user role
-- `window._modalOpen` — prevents renders while overlay is open
-
-### Security
-- All user data **must** be escaped via `esc()` before inserting into HTML (XSS prevention).
-- Supabase anon key is public (in `01-config.js`); RLS policies protect data server-side.
-- `apiFetch()` never calls `logout()` on 401 — only explicit user action destroys sessions.
-
-### Roles
-Four roles with different visibility: `Admin`, `Servicing`, `Creative`, `Client`.
-- Role configs are in `01-config.js` (`ROLE_STAGES`, `ROLE_TABS`, `ROLE_BUCKETS`).
-- Client role gets a completely separate view (`#client-view`).
-
-### Optimistic Updates
-`quickStage()` and `updatePost()` update in-memory state first, render immediately, then call the API. On failure, they roll back and show an error toast.
-
-### Modal Guard
-`_modalOpen` flag prevents background poll renders from destroying DOM while the user is interacting. All modal close functions call `_drainDeferredRender()` to flush pending updates.
-
-### Realtime Polling
-- Data poll every 15 seconds (skipped if tab hidden or modal open).
-- Token refresh every 50 minutes.
-- Change detection via lightweight fingerprint string (count + id:stage pairs).
-
----
-
-## Styling
-
-- Single `styles.css` with CSS custom properties (design tokens).
-- Dark theme by default (`data-theme="dark"`).
-- Fonts: DM Sans (body), IBM Plex Mono (code) via Google Fonts.
-- Spacing tokens: `--sp-1` (4px) through `--sp-7` (48px).
-- No CSS preprocessor.
-
----
-
-## Database Tables
-
-| Table | Purpose |
-|-------|---------|
-| `posts` | Core content items with stage, owner, pillar, dates |
-| `tasks` | Assigned tasks (Admin creates, assignees complete) |
-| `activity_log` | Audit trail for all post mutations |
-| `user_roles` | Email-to-role mapping (read-only from app) |
-| `post-assets` (storage) | Uploaded files per post |
-
-SQL migrations are in `sql/` for reference.
-
----
-
-## Architecture Reference
-
-For detailed function-level documentation, see `SYSTEM_MAP.md`. It covers:
-- Auth flow and localStorage keys
-- Router boot sequence
-- API wrapper behavior
-- Render pipeline and function index
-- All database write paths
-- Stage workflow diagram
-- Role-based access matrix
-- Overlay/modal z-index stack
-
----
-
-## Output Format
-
-After completing any task, always provide a final summary in a single code block covering:
-- What was changed
-- What files were affected
-- What manual steps are needed (if any)
-- Any assumptions made
-
-## Report Format
-
-When asked for an audit, test, verification, or any summary report, always return the full report in a single code block so it can be copied easily.
-
----
-
-## Common Pitfalls
-
-1. **Don't use ES modules** — all code runs in global scope via `<script defer>`. No `import`/`export`.
-2. **Don't add a bundler** — the project deliberately avoids build tools.
-3. **Escape user data** — always use `esc()` before injecting into HTML strings.
-4. **Respect load order** — a file can only reference globals set by files with lower numbers.
-5. **Don't call `logout()` from API error handlers** — 401s can be transient; only user action should destroy sessions.
-6. **Guard renders with `_modalOpen`** — never call `renderAll()` while a modal is open; use `scheduleRender()` which checks the flag.
-7. **Update `allPosts` in memory** when making changes — the optimistic update pattern requires it for responsive UI.
-8. **Log all mutations** — every post write should call `logActivity()` for the audit trail.
+## KNOWN REMAINING LEGACY
+- index.html inline script still has:
+  window._modalOpen, window._postsLoaded,
+  window.allTasks, window._pcsNoteVisibility
+  (to be migrated in future PRs)
+- tests/e2e/client-feed.spec.js still references
+  window.allPosts (e2e test — low priority)

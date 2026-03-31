@@ -100,9 +100,7 @@ function getPostLinkLabel(post) {
   return '';
 }
 
-// -- Central merge  -  the ONLY way to update allPosts from server data --
 // Skips posts with _isSaving === true (in-flight PATCH).
-// Never replaces allPosts blindly  -  always mutates existing objects in-place.
 function mergePosts(fresh) {
   // Normalize DB stage values -> UI stage values on ingest
   fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
