@@ -1107,9 +1107,17 @@ function libOpenPostCard(postId) {
       return p.id === postId || p.postId === postId || p.post_id === postId;
     });
     if (existingIdx >= 0) {
-      window.AppState.posts.all[existingIdx].post_id = postId;
-      window.AppState.posts.all[existingIdx].id = postId;
-      window.AppState.posts.all[existingIdx].postId = postId;
+      window.AppState.posts.setAll(
+        window.AppState.posts.all.map(function(p, i) {
+          return i === existingIdx
+            ? Object.assign({}, p, {
+                post_id: postId,
+                id: postId,
+                postId: postId
+              })
+            : p;
+        })
+      );
     } else {
       var next = window.AppState.posts.all.concat([normalised]);
       window.AppState.posts.setAll(next);

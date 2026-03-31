@@ -612,8 +612,21 @@ window._saveLiUrlInline = function(postId) {
       return p.post_id === _liPostId;
     });
     if (idx !== -1) {
-      window.AppState.posts.all[idx].linkedin_link = url;
-      window.AppState.posts.all[idx].linkedinUrl = url;
+      var _found3 = false;
+      var _next3 = window.AppState.posts.all.map(function(p) {
+        if (getPostId(p) === postId) {
+          _found3 = true;
+          return Object.assign({}, p, {
+            linkedin_link: url,
+            linkedinUrl: url
+          });
+        }
+        return p;
+      });
+      if (!_found3 && window._appStateDevMode) {
+        console.warn('[AppState] Post not found for mutation', postId);
+      }
+      window.AppState.posts.setAll(_next3);
     }
     showToast('LinkedIn link saved', 'success');
     if (typeof openPCS === 'function') openPCS(postId, '');
@@ -1373,10 +1386,18 @@ window._pcsHandlePhotoInput = async function(postId, input) {
       body: JSON.stringify({ images: newImages })
     });
     if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var idx = window.AppState.posts.all.findIndex(function(p) {
-        return p.post_id === postId || p.id === postId;
+      var _found4 = false;
+      var _next4 = window.AppState.posts.all.map(function(p) {
+        if (getPostId(p) === postId) {
+          _found4 = true;
+          return Object.assign({}, p, { images: newImages });
+        }
+        return p;
       });
-      if (idx !== -1) window.AppState.posts.all[idx].images = newImages;
+      if (!_found4 && window._appStateDevMode) {
+        console.warn('[AppState] Post not found for mutation', postId);
+      }
+      window.AppState.posts.setAll(_next4);
     }
     var section = document.getElementById('pcs-photo-section');
     if (section && post) {
@@ -1401,10 +1422,18 @@ window._pcsRemovePhoto = async function(postId, idx) {
       body: JSON.stringify({ images: imgs })
     });
     if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var i2 = window.AppState.posts.all.findIndex(function(p) {
-        return p.post_id === postId || p.id === postId;
+      var _found5 = false;
+      var _next5 = window.AppState.posts.all.map(function(p) {
+        if (getPostId(p) === postId) {
+          _found5 = true;
+          return Object.assign({}, p, { images: imgs });
+        }
+        return p;
       });
-      if (i2 !== -1) window.AppState.posts.all[i2].images = imgs;
+      if (!_found5 && window._appStateDevMode) {
+        console.warn('[AppState] Post not found for mutation', postId);
+      }
+      window.AppState.posts.setAll(_next5);
     }
     if (typeof openPCS === 'function') openPCS(postId, '');
   } catch(e) {
@@ -1739,12 +1768,18 @@ window._saveCaptionEdit = async function(postId) {
 
     // Update window.AppState.posts.all in memory so reopening the card shows the new caption
     if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var matchIdx = window.AppState.posts.all.findIndex(function(p) {
-        return p.post_id === postId || p.id === postId || p.postId === postId;
+      var _found6 = false;
+      var _next6 = window.AppState.posts.all.map(function(p) {
+        if (getPostId(p) === postId) {
+          _found6 = true;
+          return Object.assign({}, p, { caption: newCaption });
+        }
+        return p;
       });
-      if (matchIdx !== -1) {
-        window.AppState.posts.all[matchIdx].caption = newCaption;
+      if (!_found6 && window._appStateDevMode) {
+        console.warn('[AppState] Post not found for mutation', postId);
       }
+      window.AppState.posts.setAll(_next6);
     }
 
     if (textEl) {

@@ -455,11 +455,22 @@ function _confirmPublish(postId) {
       return p.post_id === postId;
     });
     if (idx !== -1) {
-      window.AppState.posts.all[idx].stage = 'published';
-      if (url) {
-        window.AppState.posts.all[idx].linkedin_link = url;
-        window.AppState.posts.all[idx].linkedinUrl = url;
+      var _found1 = false;
+      var _next1 = window.AppState.posts.all.map(function(p) {
+        if (getPostId(p) === postId) {
+          _found1 = true;
+          return Object.assign({}, p, {
+            stage: 'published',
+            linkedin_link: url,
+            linkedinUrl: url
+          });
+        }
+        return p;
+      });
+      if (!_found1 && window._appStateDevMode) {
+        console.warn('[AppState] Post not found for mutation', postId);
       }
+      window.AppState.posts.setAll(_next1);
     }
     logActivity({
       post_id: postId,
