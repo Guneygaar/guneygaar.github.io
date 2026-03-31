@@ -150,7 +150,7 @@ function _newPostsRequest() {
 
 function _commitPostsResult(reqId, source) {
   if (reqId !== window._postsReqId) return false;
-  window._postsLoaded = true;
+  window.AppState.posts.loaded = true;
   window._postsSource = source;
   return true;
 }
