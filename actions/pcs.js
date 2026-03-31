@@ -42,7 +42,7 @@ window.openPCS = function(postId, listKey) {
 
   var list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
-    : window.AppState.posts.all;
+    : allPosts;
   var idx = list.findIndex(function(p) { return getPostId(p) === postId; });
   window._pcs.listKey = listKey || '';
   window._pcs.list    = list;
@@ -592,7 +592,7 @@ window._saveLiUrlInline = function(postId) {
     return;
   }
 
-  var _liPost = (window.AppState.posts.all||[]).find(function(p) {
+  var _liPost = (allPosts||[]).find(function(p) {
     return p.post_id === postId ||
            (p.id && p.id === postId);
   });
@@ -608,25 +608,12 @@ window._saveLiUrlInline = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({ linkedin_link: url })
   }).then(function() {
-    var idx = (window.AppState.posts.all || []).findIndex(function(p) {
+    var idx = (allPosts || []).findIndex(function(p) {
       return p.post_id === _liPostId;
     });
     if (idx !== -1) {
-      var _found3 = false;
-      var _next3 = window.AppState.posts.all.map(function(p) {
-        if (getPostId(p) === postId) {
-          _found3 = true;
-          return Object.assign({}, p, {
-            linkedin_link: url,
-            linkedinUrl: url
-          });
-        }
-        return p;
-      });
-      if (!_found3 && window._appStateDevMode) {
-        console.warn('[AppState] Post not found for mutation', postId);
-      }
-      window.AppState.posts.setAll(_next3);
+      allPosts[idx].linkedin_link = url;
+      allPosts[idx].linkedinUrl = url;
     }
     showToast('LinkedIn link saved', 'success');
     if (typeof openPCS === 'function') openPCS(postId, '');
@@ -1385,19 +1372,11 @@ window._pcsHandlePhotoInput = async function(postId, input) {
       method: 'PATCH',
       body: JSON.stringify({ images: newImages })
     });
-    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var _found4 = false;
-      var _next4 = window.AppState.posts.all.map(function(p) {
-        if (getPostId(p) === postId) {
-          _found4 = true;
-          return Object.assign({}, p, { images: newImages });
-        }
-        return p;
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var idx = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId;
       });
-      if (!_found4 && window._appStateDevMode) {
-        console.warn('[AppState] Post not found for mutation', postId);
-      }
-      window.AppState.posts.setAll(_next4);
+      if (idx !== -1) window.allPosts[idx].images = newImages;
     }
     var section = document.getElementById('pcs-photo-section');
     if (section && post) {
@@ -1421,19 +1400,11 @@ window._pcsRemovePhoto = async function(postId, idx) {
       method: 'PATCH',
       body: JSON.stringify({ images: imgs })
     });
-    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var _found5 = false;
-      var _next5 = window.AppState.posts.all.map(function(p) {
-        if (getPostId(p) === postId) {
-          _found5 = true;
-          return Object.assign({}, p, { images: imgs });
-        }
-        return p;
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var i2 = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId;
       });
-      if (!_found5 && window._appStateDevMode) {
-        console.warn('[AppState] Post not found for mutation', postId);
-      }
-      window.AppState.posts.setAll(_next5);
+      if (i2 !== -1) window.allPosts[i2].images = imgs;
     }
     if (typeof openPCS === 'function') openPCS(postId, '');
   } catch(e) {
@@ -1453,7 +1424,7 @@ window._pcsPhotoMenu = function(postId, e) {
   menu.style.cssText = 'position:absolute;right:18px;' +
     'background:#1e1e26;border:1px solid #2a2a36;' +
     'z-index:200;min-width:140px;overflow:hidden;';
-  var post = (window.AppState.posts.all||[]).find(function(p) {
+  var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
@@ -1475,7 +1446,7 @@ window._pcsPhotoMenu = function(postId, e) {
 };
 
 window._pcsSaveAllPhotos = async function(postId) {
-  var post = (window.AppState.posts.all||[]).find(function(p) {
+  var post = (window.allPosts||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
@@ -1766,20 +1737,14 @@ window._saveCaptionEdit = async function(postId) {
       })
     });
 
-    // Update window.AppState.posts.all in memory so reopening the card shows the new caption
-    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
-      var _found6 = false;
-      var _next6 = window.AppState.posts.all.map(function(p) {
-        if (getPostId(p) === postId) {
-          _found6 = true;
-          return Object.assign({}, p, { caption: newCaption });
-        }
-        return p;
+    // Update allPosts in memory so reopening the card shows the new caption
+    if (window.allPosts && Array.isArray(window.allPosts)) {
+      var matchIdx = window.allPosts.findIndex(function(p) {
+        return p.post_id === postId || p.id === postId || p.postId === postId;
       });
-      if (!_found6 && window._appStateDevMode) {
-        console.warn('[AppState] Post not found for mutation', postId);
+      if (matchIdx !== -1) {
+        window.allPosts[matchIdx].caption = newCaption;
       }
-      window.AppState.posts.setAll(_next6);
     }
 
     if (textEl) {
@@ -1842,7 +1807,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
 
   if (!postId || !message || !(message = message.trim())) return;
 
-  var _post = (window.AppState.posts.all||[]).find(function(p) {
+  var _post = (allPosts||[]).find(function(p) {
     return p.post_id === postId || p.id === postId;
   });
   var _realPostId = _post ? _post.post_id : postId;

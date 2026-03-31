@@ -419,10 +419,8 @@ async function deletePost(postId) {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
     await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
-    var next = window.AppState.posts.all.filter(function(p) {
-      return getPostId(p) !== postId;
-    });
-    window.AppState.posts.setAll(next);
+    const idx = allPosts.findIndex(p => getPostId(p) === postId);
+    if (idx !== -1) allPosts.splice(idx, 1);
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {
@@ -451,26 +449,15 @@ function _confirmPublish(postId) {
     method: 'PATCH',
     body: JSON.stringify(payload)
   }).then(function() {
-    var idx = (window.AppState.posts.all || []).findIndex(function(p) {
+    var idx = (allPosts || []).findIndex(function(p) {
       return p.post_id === postId;
     });
     if (idx !== -1) {
-      var _found1 = false;
-      var _next1 = window.AppState.posts.all.map(function(p) {
-        if (getPostId(p) === postId) {
-          _found1 = true;
-          return Object.assign({}, p, {
-            stage: 'published',
-            linkedin_link: url,
-            linkedinUrl: url
-          });
-        }
-        return p;
-      });
-      if (!_found1 && window._appStateDevMode) {
-        console.warn('[AppState] Post not found for mutation', postId);
+      allPosts[idx].stage = 'published';
+      if (url) {
+        allPosts[idx].linkedin_link = url;
+        allPosts[idx].linkedinUrl = url;
       }
-      window.AppState.posts.setAll(_next1);
     }
     logActivity({
       post_id: postId,
@@ -478,7 +465,7 @@ function _confirmPublish(postId) {
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
-    var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
+    var _notifPost = (allPosts||[]).find(function(p) {
       return p.post_id === postId || p.id === postId;
     });
     var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;
