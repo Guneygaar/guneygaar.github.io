@@ -100,14 +100,14 @@ function getPostLinkLabel(post) {
   return '';
 }
 
-// -- Central merge  -  the ONLY way to update allPosts from server data --
+// -- Central merge  -  the ONLY way to update window.AppState.posts.all from server data --
 // Skips posts with _isSaving === true (in-flight PATCH).
-// Never replaces allPosts blindly  -  always mutates existing objects in-place.
+// Never replaces window.AppState.posts.all blindly  -  always mutates existing objects in-place.
 function mergePosts(fresh) {
   // Normalize DB stage values -> UI stage values on ingest
   fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
 
-  const map = new Map(allPosts.map(p => [getPostId(p), p]));
+  const map = new Map(window.AppState.posts.all.map(p => [getPostId(p), p]));
 
   fresh.forEach(fp => {
     const id = getPostId(fp);
@@ -137,9 +137,9 @@ function mergePosts(fresh) {
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
   // Mutate in-place  -  preserve the single array reference
-  allPosts.length = 0;
-  map.forEach(p => allPosts.push(p));
-  cachedPosts = allPosts;
+  window.AppState.posts.all.length = 0;
+  map.forEach(p => window.AppState.posts.all.push(p));
+  window.AppState.posts.cached = window.AppState.posts.all;
 }
 
 // -- Versioned load guard  -  prevents stale responses from overriding fresh data --
@@ -150,7 +150,7 @@ function _newPostsRequest() {
 
 function _commitPostsResult(reqId, source) {
   if (reqId !== window._postsReqId) return false;
-  window._postsLoaded = true;
+  window.window.AppState.posts.loaded = true;
   window._postsSource = source;
   return true;
 }
@@ -184,18 +184,18 @@ async function loadPosts() {
             counts[r.post_id] = (counts[r.post_id] || 0) + 1;
           }
         });
-        (allPosts || []).forEach(function(p) {
+        (window.AppState.posts.all || []).forEach(function(p) {
           p._commentCount = counts[p.post_id] || 0;
         });
         scheduleRender();
       }).catch(function(){});
-    showToast(`${allPosts.length} posts loaded`, 'success');
+    showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
-    if (cachedPosts.length) {
+    if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      allPosts.length = 0;
-      cachedPosts.forEach(p => allPosts.push(p));
+      window.AppState.posts.all.length = 0;
+      window.AppState.posts.cached.forEach(p => window.AppState.posts.all.push(p));
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -255,10 +255,10 @@ async function loadPostsForClient() {
     hideErrorBanner();
     renderClientView();
   } catch (err) {
-    if (cachedPosts.length) {
+    if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      allPosts.length = 0;
-      cachedPosts.forEach(p => allPosts.push(p));
+      window.AppState.posts.all.length = 0;
+      window.AppState.posts.cached.forEach(p => window.AppState.posts.all.push(p));
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -293,7 +293,7 @@ function startRealtime() {
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
-      if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
+      if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
         mergePosts(fresh);
         scheduleRender();
         updateNotifBadge();
@@ -531,9 +531,9 @@ function renderAll() {
 
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
-  if (pl) pl.textContent = `${allPosts.length} posts`;
+  if (pl) pl.textContent = `${window.AppState.posts.all.length} posts`;
   const _libDefault = ['scheduled','published'];
-  const libCount = allPosts.filter(p => _libDefault.includes(p.stage || '')).length;
+  const libCount = window.AppState.posts.all.filter(p => _libDefault.includes(p.stage || '')).length;
   if (ll) ll.textContent = `${libCount} posts`;
 }
 
@@ -541,7 +541,7 @@ function updateStats() {
   const today   = new Date(); today.setHours(0,0,0,0);
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
-  allPosts.forEach(p => {
+  window.AppState.posts.all.forEach(p => {
     const stage = p.stage || '';
     if (stage === 'published') published++;
     if (stage === 'awaiting_approval') awaitingApproval++;
@@ -553,7 +553,7 @@ function updateStats() {
       if (d < today && !['published','parked','rejected'].includes(stage)) overdue++;
     }
   });
-  setText('s-total',     allPosts.length);
+  setText('s-total',     window.AppState.posts.all.length);
   setText('s-published', published);
   setText('s-approval',  awaitingApproval);
   setText('s-pipeline',  inPipeline);
@@ -595,7 +595,7 @@ function _ttOldestFirst(a, b) {
 }
 
 function _ttByStage(stage) {
-  return allPosts
+  return window.AppState.posts.all
     .filter(p => (p.stage || '') === stage)
     .sort(_ttOldestFirst);
 }
@@ -608,7 +608,7 @@ function _ttTruncate(str, n = 42) {
 // B-02 FIX: Detect failed_publish = scheduled posts whose target_date is in the past
 function _ttFailedPublish() {
   var todayStr = new Date().toISOString().split('T')[0];
-  return allPosts
+  return window.AppState.posts.all
     .filter(function(p) { return p.stage === 'scheduled' && p.target_date && p.target_date < todayStr; })
     .sort(function(a, b) { return (a.target_date || '') < (b.target_date || '') ? -1 : 1; });
 }
@@ -617,7 +617,7 @@ function _ttFailedPublish() {
 function _ttAgingAwaiting() {
   var twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-  return allPosts.filter(function(p) {
+  return window.AppState.posts.all.filter(function(p) {
     return p.stage === 'awaiting_approval' &&
       p.status_changed_at &&
       new Date((p.status_changed_at || '') + 'Z') < twoDaysAgo;
@@ -626,7 +626,7 @@ function _ttAgingAwaiting() {
 
 function getTopTask() {
   const postMap = Object.fromEntries(
-    allPosts.map(p => [getPostId(p), p])
+    window.AppState.posts.all.map(p => [getPostId(p), p])
   );
   function _ttPostTitle(postId) {
     if (!postId) return '';
@@ -734,7 +734,7 @@ function getScoreboardCounts(posts) {
 
 // Final data model
 function getScoreboardData() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var c = getScoreboardCounts(posts);
   var MONTHLY_TARGET = SCOREBOARD_CONFIG.MONTHLY_TARGET;
 
@@ -1020,7 +1020,7 @@ function renderScoreboard() {
     if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pMsgColor; }
 
     // CHITRA
-    var cTotal = (allPosts||[]).filter(function(p) {
+    var cTotal = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' || s === 'awaiting_brand_input';
     }).length;
@@ -1036,7 +1036,7 @@ function renderScoreboard() {
     if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
-    var clientPendingPosts = allPosts.filter(function(p) {
+    var clientPendingPosts = window.AppState.posts.all.filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var stage = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -1122,7 +1122,7 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      var pranavPosts = (allPosts||[]).filter(function(p) {
+      var pranavPosts = (window.AppState.posts.all||[]).filter(function(p) {
         var s = p.stage || p.stageLC || '';
         var owner = (p.owner||'').toLowerCase();
         return (owner === 'pranav' || owner === 'creative') &&
@@ -1317,7 +1317,7 @@ async function toggleDashTask(row, taskId) {
 }
 
 function openRunwaySheet() {
-  var posts = (allPosts || []).filter(function(p) {
+  var posts = (window.AppState.posts.all || []).filter(function(p) {
     return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
   var sheet = document.getElementById('runway-sheet');
@@ -1364,7 +1364,7 @@ function openPostOverSheet(pid) {
   if (_ss) _ss.style.display = 'none';
   var _rs = document.getElementById('runway-sheet');
   if (_rs) _rs.style.display = 'none';
-  var match = (allPosts||[]).find(function(p) {
+  var match = (window.AppState.posts.all||[]).find(function(p) {
     return p.id === pid || p.post_id === pid;
   });
   var realId = match ? (match.id || match.post_id) : pid;
@@ -1388,11 +1388,11 @@ function openStageSheet(stage) {
   var posts;
   var title;
   if (stage === 'overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return isPostStale(p);
     });
   } else if (stage === 'client_pending') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -1401,7 +1401,7 @@ function openStageSheet(stage) {
     });
     title = 'Client \u00b7 Pending';
   } else if (stage === 'chitra_active') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' ||
              s === 'awaiting_brand_input';
@@ -1411,7 +1411,7 @@ function openStageSheet(stage) {
     });
     title = 'Chitra \u00b7 Awaiting Action';
   } else if (stage === 'chitra_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'chitra' || owner === 'servicing') &&
@@ -1423,7 +1423,7 @@ function openStageSheet(stage) {
     });
     title = 'Chitra \u00b7 Active Posts';
   } else if (stage === 'pranav_production') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       var owner = (p.owner||'').toLowerCase();
       return (owner === 'pranav' || owner === 'creative') &&
@@ -1434,7 +1434,7 @@ function openStageSheet(stage) {
     });
     title = 'Pranav \u00b7 In Production';
   } else if (stage === 'pranav_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'pranav' || owner === 'creative') &&
@@ -1446,7 +1446,7 @@ function openStageSheet(stage) {
     });
     title = 'Pranav \u00b7 Active Posts';
   } else {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return (p.stage||p.stageLC) === stage;
     });
   }
@@ -1550,7 +1550,7 @@ function _buildDoThisNowItems(role) {
 
   // 2. Auto-generated: overdue client posts (Admin and Servicing only)
   if (role === 'Admin' || role === 'Servicing') {
-    var overdueApprovalPosts = allPosts.filter(function(p) {
+    var overdueApprovalPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -1566,7 +1566,7 @@ function _buildDoThisNowItems(role) {
         post: op
       });
     }
-    var overdueBrandPosts = allPosts.filter(function(p) {
+    var overdueBrandPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_brand_input' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -1586,10 +1586,10 @@ function _buildDoThisNowItems(role) {
 
   // 3. Auto: Pranav deficit (Admin and Creative only)
   if (role === 'Admin' || role === 'Creative') {
-    var inSystemCount = allPosts.filter(function(p) {
+    var inSystemCount = window.AppState.posts.all.filter(function(p) {
       return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
     }).length;
-    var awaitingTotal = allPosts.filter(function(p) {
+    var awaitingTotal = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
     }).length;
     var pranavDeficitAuto = inSystemCount - 35;
@@ -1826,7 +1826,7 @@ async function _appendYesterdaysWin() {
 }
 
 function updateBelowFold(posts) {
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   _updateNextScheduled(allP);
   _updateTodaysFocus(allP);
   _updateUnsaidThing(allP);
@@ -2047,7 +2047,7 @@ function renderPipelineStrip() {
   if (wrap) wrap.style.display = 'none';
   return;
   const html = STRIP_STAGES.map((group) => {
-    const count = allPosts.filter(p =>
+    const count = window.AppState.posts.all.filter(p =>
       group.stages.includes(p.stage || '')
     ).length;
     let cClass = '';
@@ -2065,7 +2065,7 @@ function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
   if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
-  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
+  const readyCount = window.AppState.posts.all.filter(p => p.stage === 'ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
   const isOk = gap === 0;
@@ -2097,14 +2097,14 @@ function renderAdminInsight() {
     if (!t) return 0;
     return Math.floor((now - new Date(t).getTime()) / DAY);
   }
-  const stuckProduction = allPosts.filter(p => p.stage === 'in_production' && daysSince(p) >= 3);
-  const stuckClient     = allPosts.filter(p => ['awaiting_approval','awaiting_brand_input'].includes(p.stage || '') && daysSince(p) >= 3);
+  const stuckProduction = window.AppState.posts.all.filter(p => p.stage === 'in_production' && daysSince(p) >= 3);
+  const stuckClient     = window.AppState.posts.all.filter(p => ['awaiting_approval','awaiting_brand_input'].includes(p.stage || '') && daysSince(p) >= 3);
   // stuckReview removed  -  stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
-  const published = allPosts.filter(p => p.stage === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
-  const parkedPosts = allPosts.filter(p => p.stage !== 'published' && daysSince(p) >= 7);
+  const published = window.AppState.posts.all.filter(p => p.stage === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const readyCount = window.AppState.posts.all.filter(p => p.stage === 'ready').length;
+  const parkedPosts = window.AppState.posts.all.filter(p => p.stage !== 'published' && daysSince(p) >= 7);
   window._parkedPosts = parkedPosts;
 
   // Build pills for summary bar
@@ -2126,8 +2126,8 @@ function renderAdminInsight() {
     stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow - ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
     stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting - ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
   ].filter(Boolean).join('');
-  const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
-  const approved = allPosts.filter(p => ['awaiting_approval','scheduled','published'].includes(p.stage || '') && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const written  = window.AppState.posts.all.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
+  const approved = window.AppState.posts.all.filter(p => ['awaiting_approval','scheduled','published'].includes(p.stage || '') && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
 
   const body = document.getElementById('insights-body');
   if (body) {
@@ -2225,8 +2225,8 @@ function staleClass(days) {
 
 function getMyTasks() {
   const allowed = ROLE_STAGES[window.AppState.user.effectiveRole];
-  if (!allowed) return allPosts;
-  return allPosts.filter(p => allowed.includes(p.stage || ''));
+  if (!allowed) return window.AppState.posts.all;
+  return window.AppState.posts.all.filter(p => allowed.includes(p.stage || ''));
 }
 
 function getNextPost() {
@@ -2346,7 +2346,7 @@ function renderTaskStageChips() {
   if (!buckets || !buckets.length) { el.innerHTML = ''; return; }
 
   const chips = buckets.map(bucket => {
-    const count = allPosts.filter(p =>
+    const count = window.AppState.posts.all.filter(p =>
       bucket.stages.includes(p.stage || '')
     ).length;
     const active = window._taskFilter === bucket.key ? ' chip-active' : '';
@@ -2386,7 +2386,7 @@ function _renderFilteredTasks() {
   const bucket = buckets.find(b => b.key === window._taskFilter);
   if (!bucket) { renderTasks(); return; }
 
-  const posts = allPosts.filter(p =>
+  const posts = window.AppState.posts.all.filter(p =>
     bucket.stages.includes(p.stage || '')
   );
   const listKey = `tasks-${bucket.key}`;
@@ -2425,7 +2425,7 @@ function _renderTasksInner() {
     return;
   }
   const stagesHtml = buckets.map(bucket => {
-    const posts = allPosts
+    const posts = window.AppState.posts.all
       .filter(p => bucket.stages.includes(p.stage || ''))
       .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
@@ -2487,7 +2487,7 @@ document.addEventListener('click', function _cardClickDelegate(e) {
     if (!card) return;
     var pid = card.getAttribute('data-post-id');
     if (!pid) return;
-    var post = (window.allPosts || []).find(function(p) {
+    var post = (window.AppState.posts.all || []).find(function(p) {
       return p.post_id === pid;
     });
     var stage = post ? post.stage : '';

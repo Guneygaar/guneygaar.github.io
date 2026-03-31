@@ -330,7 +330,7 @@ if (window._activeBriefPostId) {
 
   var _newPostId = null;
   try {
-    var _sorted = (allPosts || []).slice().sort(function(a, b) {
+    var _sorted = (window.AppState.posts.all || []).slice().sort(function(a, b) {
       return new Date((b.status_changed_at||b.updated_at||'')+'Z') -
              new Date((a.status_changed_at||a.updated_at||'')+'Z');
     });

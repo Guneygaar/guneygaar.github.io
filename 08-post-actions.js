@@ -419,8 +419,8 @@ async function deletePost(postId) {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
     await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
-    const idx = allPosts.findIndex(p => getPostId(p) === postId);
-    if (idx !== -1) allPosts.splice(idx, 1);
+    const idx = window.AppState.posts.all.findIndex(p => getPostId(p) === postId);
+    if (idx !== -1) window.AppState.posts.all.splice(idx, 1);
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {
@@ -449,14 +449,14 @@ function _confirmPublish(postId) {
     method: 'PATCH',
     body: JSON.stringify(payload)
   }).then(function() {
-    var idx = (allPosts || []).findIndex(function(p) {
+    var idx = (window.AppState.posts.all || []).findIndex(function(p) {
       return p.post_id === postId;
     });
     if (idx !== -1) {
-      allPosts[idx].stage = 'published';
+      window.AppState.posts.all[idx].stage = 'published';
       if (url) {
-        allPosts[idx].linkedin_link = url;
-        allPosts[idx].linkedinUrl = url;
+        window.AppState.posts.all[idx].linkedin_link = url;
+        window.AppState.posts.all[idx].linkedinUrl = url;
       }
     }
     logActivity({
@@ -465,7 +465,7 @@ function _confirmPublish(postId) {
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
-    var _notifPost = (allPosts||[]).find(function(p) {
+    var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
       return p.post_id === postId || p.id === postId;
     });
     var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;

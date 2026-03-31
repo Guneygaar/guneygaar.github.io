@@ -42,7 +42,7 @@ window.openPCS = function(postId, listKey) {
 
   var list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
-    : allPosts;
+    : window.AppState.posts.all;
   var idx = list.findIndex(function(p) { return getPostId(p) === postId; });
   window._pcs.listKey = listKey || '';
   window._pcs.list    = list;
@@ -592,7 +592,7 @@ window._saveLiUrlInline = function(postId) {
     return;
   }
 
-  var _liPost = (allPosts||[]).find(function(p) {
+  var _liPost = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId ||
            (p.id && p.id === postId);
   });
@@ -608,12 +608,12 @@ window._saveLiUrlInline = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({ linkedin_link: url })
   }).then(function() {
-    var idx = (allPosts || []).findIndex(function(p) {
+    var idx = (window.AppState.posts.all || []).findIndex(function(p) {
       return p.post_id === _liPostId;
     });
     if (idx !== -1) {
-      allPosts[idx].linkedin_link = url;
-      allPosts[idx].linkedinUrl = url;
+      window.AppState.posts.all[idx].linkedin_link = url;
+      window.AppState.posts.all[idx].linkedinUrl = url;
     }
     showToast('LinkedIn link saved', 'success');
     if (typeof openPCS === 'function') openPCS(postId, '');
@@ -1372,11 +1372,11 @@ window._pcsHandlePhotoInput = async function(postId, input) {
       method: 'PATCH',
       body: JSON.stringify({ images: newImages })
     });
-    if (window.allPosts && Array.isArray(window.allPosts)) {
-      var idx = window.allPosts.findIndex(function(p) {
+    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
+      var idx = window.AppState.posts.all.findIndex(function(p) {
         return p.post_id === postId || p.id === postId;
       });
-      if (idx !== -1) window.allPosts[idx].images = newImages;
+      if (idx !== -1) window.AppState.posts.all[idx].images = newImages;
     }
     var section = document.getElementById('pcs-photo-section');
     if (section && post) {
@@ -1400,11 +1400,11 @@ window._pcsRemovePhoto = async function(postId, idx) {
       method: 'PATCH',
       body: JSON.stringify({ images: imgs })
     });
-    if (window.allPosts && Array.isArray(window.allPosts)) {
-      var i2 = window.allPosts.findIndex(function(p) {
+    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
+      var i2 = window.AppState.posts.all.findIndex(function(p) {
         return p.post_id === postId || p.id === postId;
       });
-      if (i2 !== -1) window.allPosts[i2].images = imgs;
+      if (i2 !== -1) window.AppState.posts.all[i2].images = imgs;
     }
     if (typeof openPCS === 'function') openPCS(postId, '');
   } catch(e) {
@@ -1424,7 +1424,7 @@ window._pcsPhotoMenu = function(postId, e) {
   menu.style.cssText = 'position:absolute;right:18px;' +
     'background:#1e1e26;border:1px solid #2a2a36;' +
     'z-index:200;min-width:140px;overflow:hidden;';
-  var post = (window.allPosts||[]).find(function(p) {
+  var post = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
@@ -1446,7 +1446,7 @@ window._pcsPhotoMenu = function(postId, e) {
 };
 
 window._pcsSaveAllPhotos = async function(postId) {
-  var post = (window.allPosts||[]).find(function(p) {
+  var post = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
@@ -1737,13 +1737,13 @@ window._saveCaptionEdit = async function(postId) {
       })
     });
 
-    // Update allPosts in memory so reopening the card shows the new caption
-    if (window.allPosts && Array.isArray(window.allPosts)) {
-      var matchIdx = window.allPosts.findIndex(function(p) {
+    // Update window.AppState.posts.all in memory so reopening the card shows the new caption
+    if (window.AppState.posts.all && Array.isArray(window.AppState.posts.all)) {
+      var matchIdx = window.AppState.posts.all.findIndex(function(p) {
         return p.post_id === postId || p.id === postId || p.postId === postId;
       });
       if (matchIdx !== -1) {
-        window.allPosts[matchIdx].caption = newCaption;
+        window.AppState.posts.all[matchIdx].caption = newCaption;
       }
     }
 
@@ -1807,7 +1807,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
 
   if (!postId || !message || !(message = message.trim())) return;
 
-  var _post = (allPosts||[]).find(function(p) {
+  var _post = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId || p.id === postId;
   });
   var _realPostId = _post ? _post.post_id : postId;

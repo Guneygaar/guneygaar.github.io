@@ -1102,16 +1102,16 @@ function libOpenPostCard(postId) {
   if (!normalised.postId) normalised.postId = post.id;
   if (!normalised.post_id) normalised.post_id = post.id;
 
-  if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
-    var existingIdx = allPosts.findIndex(function(p) {
+  if (typeof window.AppState.posts.all !== 'undefined' && Array.isArray(window.AppState.posts.all)) {
+    var existingIdx = window.AppState.posts.all.findIndex(function(p) {
       return p.id === postId || p.postId === postId || p.post_id === postId;
     });
     if (existingIdx >= 0) {
-      allPosts[existingIdx].post_id = postId;
-      allPosts[existingIdx].id = postId;
-      allPosts[existingIdx].postId = postId;
+      window.AppState.posts.all[existingIdx].post_id = postId;
+      window.AppState.posts.all[existingIdx].id = postId;
+      window.AppState.posts.all[existingIdx].postId = postId;
     } else {
-      allPosts.push(normalised);
+      window.AppState.posts.all.push(normalised);
     }
   }
 
