@@ -18,7 +18,7 @@ window._openBriefSheet = function(postId) {
   var _isClient = _role === 'client';
   var _isPranav = _role === 'creative' ||
     _role === 'pranav' ||
-    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+    (window.AppState.user.email || '').toLowerCase().includes('pranav');
   var _isChitra = !_isClient && !_isPranav;
   var _isBriefDone = (post.stage || '') === 'brief_done';
   var sentTime = '';
