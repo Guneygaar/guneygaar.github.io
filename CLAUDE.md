@@ -135,3 +135,13 @@ window.AppState.posts.all.splice(idx,1) // ILLEGAL
   (to be migrated in future PRs)
 - tests/e2e/client-feed.spec.js still references
   window.allPosts (e2e test — low priority)
+
+## WORKING DIRECTORY RULES
+- Sorted (srtd.io) files are ALWAYS in /sorted/ subdirectory
+- All file reads, writes, and edits for Sorted must be inside /sorted/ only
+- Hinglish Ops files are at the repo root /
+- If a prompt does not specify which product, check the version string:
+  - ?v=2026... in /sorted/index.html = Sorted
+  - ?v=2026... in /index.html = Hinglish Ops
+- NEVER assume root = Sorted
+- Every Sorted prompt will include: "Working directory is /sorted/"
