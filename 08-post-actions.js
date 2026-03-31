@@ -419,8 +419,10 @@ async function deletePost(postId) {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
     await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
-    const idx = window.AppState.posts.all.findIndex(p => getPostId(p) === postId);
-    if (idx !== -1) window.AppState.posts.all.splice(idx, 1);
+    var next = window.AppState.posts.all.filter(function(p) {
+      return getPostId(p) !== postId;
+    });
+    window.AppState.posts.setAll(next);
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {

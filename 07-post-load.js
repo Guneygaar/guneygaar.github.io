@@ -137,8 +137,13 @@ function mergePosts(fresh) {
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
   // Mutate in-place  -  preserve the single array reference
-  window.AppState.posts.all.length = 0;
-  map.forEach(p => window.AppState.posts.all.push(p));
+  var next = Array.from(map.values());
+  next.sort(function(a, b) {
+    var timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    var timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return timeB - timeA;
+  });
+  window.AppState.posts.setAll(next);
   window.AppState.posts.cached = window.AppState.posts.all;
 }
 
@@ -194,8 +199,7 @@ async function loadPosts() {
     console.error('loadPosts:', err);
     if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      window.AppState.posts.all.length = 0;
-      window.AppState.posts.cached.forEach(p => window.AppState.posts.all.push(p));
+      window.AppState.posts.setAll(window.AppState.posts.cached.slice());
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -257,8 +261,7 @@ async function loadPostsForClient() {
   } catch (err) {
     if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      window.AppState.posts.all.length = 0;
-      window.AppState.posts.cached.forEach(p => window.AppState.posts.all.push(p));
+      window.AppState.posts.setAll(window.AppState.posts.cached.slice());
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {

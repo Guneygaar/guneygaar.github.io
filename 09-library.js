@@ -1111,7 +1111,8 @@ function libOpenPostCard(postId) {
       window.AppState.posts.all[existingIdx].id = postId;
       window.AppState.posts.all[existingIdx].postId = postId;
     } else {
-      window.AppState.posts.all.push(normalised);
+      var next = window.AppState.posts.all.concat([normalised]);
+      window.AppState.posts.setAll(next);
     }
   }
 
