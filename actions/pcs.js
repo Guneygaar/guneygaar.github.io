@@ -159,7 +159,7 @@ window._renderPCS = function(postId) {
   var _pcsRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPCS = _pcsRole === 'creative' ||
     _pcsRole === 'pranav' ||
-    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+    (window.AppState.user.email || '').toLowerCase().includes('pranav');
   const canEdit = _pcsRole !== 'client' && !_isPranavPCS;
   const canEditCreative = _isPranavPCS;
   const dateValue   = post.targetDate || '';
@@ -645,7 +645,7 @@ window.loadPcsComments = async function(postId) {
 
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
-  var _name = window.currentUserName || '';
+  var _name = window.AppState.user.name || '';
 
   try {
     var rows = await apiFetch(
@@ -1228,7 +1228,7 @@ window._renderAdvanceButton = function(stageLC) {
   var _advRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavAdv = _advRole === 'creative' ||
     _advRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+    (window.AppState.user.email||'').toLowerCase().includes('pranav');
   if (_advRole === 'client' || _isPranavAdv) return '';
   var block = document.getElementById('pc-advance-block');
   var btn = document.getElementById('pc-advance-btn');
@@ -1320,7 +1320,7 @@ window.pcsDoDelete = async function() {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
     logActivity({
       post_id: id,
-      actor: window.currentUserName || 'Admin',
+      actor: window.AppState.user.name || 'Admin',
       actor_role: 'Admin',
       action: 'deleted post'
     });
@@ -1752,7 +1752,7 @@ window._saveCaptionEdit = async function(postId) {
         action:     'caption_updated',
         old_value:  oldCaption.slice(0, 1000),
         new_value:  newCaption.slice(0, 1000),
-        changed_by: (window.currentUserName || window.currentUserEmail || 'team'),
+        changed_by: (window.AppState.user.name || window.AppState.user.email || 'team'),
         changed_at: new Date().toISOString()
       })
     });
@@ -1836,7 +1836,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   });
   var _realPostId = _post ? _post.post_id : postId;
   var _title = _post ? (_post.title || postId) : postId;
-  var _author = window.currentUserName || 'Team';
+  var _author = window.AppState.user.name || 'Team';
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
@@ -2036,7 +2036,7 @@ window.toggleTaskResolve = function(commentId, postId) {
     headers: {'Prefer': 'return=minimal'},
     body: JSON.stringify({
       resolved: true,
-      resolved_by: window.currentUserName || 'Admin'
+      resolved_by: window.AppState.user.name || 'Admin'
     })
   }).then(function() {
     loadPcsComments(postId);

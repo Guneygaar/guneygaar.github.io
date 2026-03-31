@@ -40,7 +40,7 @@ window.updatePipelineCritical = function(posts) {
   var _critRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavCrit = _critRole === 'creative' ||
     _critRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+    (window.AppState.user.email||'').toLowerCase().includes('pranav');
   if (_isPranavCrit) {
     var el = document.getElementById('pipeline-critical');
     if (el) el.style.display = 'none';
@@ -394,7 +394,7 @@ window.updatePipelineChipCounts = function() {
   var _chipRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavChip = _chipRole === 'creative' ||
     _chipRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+    (window.AppState.user.email||'').toLowerCase().includes('pranav');
   var _isChitraChip = (_chipRole === 'servicing' ||
     _chipRole === 'chitra') && !_isPranavChip;
   var chipPosts = posts.filter(function(p) {
@@ -664,7 +664,7 @@ window.updatePipelineNarrative = function(posts) {
   var _narrRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavNarr = _narrRole === 'creative' ||
     _narrRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
+    (window.AppState.user.email||'').toLowerCase().includes('pranav');
 
   if (_isPranavNarr) {
     var narrEl = document.getElementById('pipeline-narrative-text')
@@ -890,7 +890,7 @@ window._renderPipelineInner = function() {
   var _rolePL = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPL = _rolePL === 'creative' ||
     _rolePL === 'pranav' ||
-    (window.currentUserEmail || '').toLowerCase().includes('pranav');
+    (window.AppState.user.email || '').toLowerCase().includes('pranav');
   var _isChitraPL = (_rolePL === 'servicing' || _rolePL === 'chitra') && !_isPranavPL;
   var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
 
@@ -954,7 +954,7 @@ window._renderPipelineInner = function() {
   if (grouped['brief']) {
     var _roleBF = (window.AppState.user.effectiveRole || '').toLowerCase();
     var _isPranavBF = _roleBF === 'creative' ||
-      (window.currentUserEmail || '').toLowerCase().includes('pranav');
+      (window.AppState.user.email || '').toLowerCase().includes('pranav');
     if (_isPranavBF) {
       grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
         return (p.owner || '').toLowerCase() === 'pranav';
