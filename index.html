@@ -1022,7 +1022,9 @@ window._deferredRender = false;
 window._postsReqId     = 0;
 window._postsLoaded    = false;
 window._postsSource    = 'none';
-window.AppState.posts.all        = window.AppState.posts.all    || [];
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.all = window.AppState.posts.all || [];
+}
 window.cachedPosts     = window.cachedPosts || [];
 if (window.AppState && window.AppState.user) { window.AppState.user.role = window.AppState.user.role || 'Admin'; }
 window.allTasks        = window.allTasks    || [];
