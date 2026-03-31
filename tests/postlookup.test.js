@@ -6,11 +6,11 @@ import { resolve } from 'path';
 const utilsSrc = readFileSync(resolve(__dirname, '..', 'utils.js'), 'utf8');
 
 function loadUtils(allPostsArr) {
-  // Provide window.AppState.posts.all that getPostById references
-  const fn = new Function('window', utilsSrc + `
+  // Provide allPosts global that getPostById references
+  const fn = new Function('allPosts', utilsSrc + `
     return { getPostById, getPostId };
   `);
-  return fn({ AppState: { posts: { all: allPostsArr } } });
+  return fn(allPostsArr);
 }
 
 const mockPosts = [
