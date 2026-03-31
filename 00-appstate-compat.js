@@ -40,35 +40,5 @@
         configurable: true
       });
     } catch(e) {}
-
-    try {
-      Object.defineProperty(window, 'allPosts', {
-        get: function() {
-          console.error('ILLEGAL READ: allPosts — use window.AppState.posts.all');
-          console.trace();
-          return undefined;
-        },
-        set: function() {
-          console.error('ILLEGAL WRITE: allPosts — use window.AppState.posts.setAll()');
-          console.trace();
-        },
-        configurable: true
-      });
-    } catch(e) {}
-
-    try {
-      Object.defineProperty(window, 'cachedPosts', {
-        get: function() {
-          console.error('ILLEGAL READ: cachedPosts — use window.AppState.posts.cached');
-          console.trace();
-          return undefined;
-        },
-        set: function() {
-          console.error('ILLEGAL WRITE: cachedPosts — use window.AppState.posts.cached');
-          console.trace();
-        },
-        configurable: true
-      });
-    } catch(e) {}
   }
 })();
