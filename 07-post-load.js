@@ -241,7 +241,7 @@ async function loadPostsForClient() {
           data.forEach(function(p) {
             var pid = p.post_id || p.id;
             p.post_comments = comments.filter(function(c) {
-              return c.post_id === pid && (c.visibility === 'all' || !c.visibility);
+              return c.post_id === pid;
             });
           });
         }

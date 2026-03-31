@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-describe('Comments separation -- client vs internal', function() {
+describe('Comments separation — client vs internal', function() {
 
   var mockClientComments = [
     { id: 'c1', post_id: 'p1', message: 'Please change',
@@ -22,7 +22,7 @@ describe('Comments separation -- client vs internal', function() {
       author_role: 'Admin', visibility: 'admin' }
   ];
 
-  // -- PART 1: Data Separation --
+  // ── PART 1: Data Separation ────────────────────────────
 
   it('1. clientRows contains only client comments', function() {
     var clientRows = mockClientComments;
@@ -60,7 +60,7 @@ describe('Comments separation -- client vs internal', function() {
     expect(internalInFeed).toBe(false);
   });
 
-  // -- PART 2: Client Filter --
+  // ── PART 2: Client Filter ──────────────────────────────
 
   it('5. Client filter shows all non-deleted comments', function() {
     var visible = mockClientComments.filter(function(c) {
@@ -78,7 +78,7 @@ describe('Comments separation -- client vs internal', function() {
     })).toBeUndefined();
   });
 
-  // -- PART 3: Visibility Chip Filtering --
+  // ── PART 3: Visibility Chip Filtering ─────────────────
 
   it('7. ALL chip shows all internal notes', function() {
     var filtered = mockInternalNotes.filter(function(n) {
@@ -111,7 +111,7 @@ describe('Comments separation -- client vs internal', function() {
     expect(filtered[0].id).toBe('n2');
   });
 
-  // -- PART 4: Submit Routing --
+  // ── PART 4: Submit Routing ─────────────────────────────
 
   it('11. isInternal true routes to internal_notes', function() {
     var opts = { isInternal: true };
