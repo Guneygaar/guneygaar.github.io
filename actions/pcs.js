@@ -967,9 +967,8 @@ window.loadPcsComments = async function(postId) {
         {val:'creative', label:'CREATIVE'}
       ].map(function(chip) {
         var count = internalRows.filter(function(r) {
-          return chip.val === 'all'
-            ? true
-            : r.visibility === chip.val;
+          return r.visibility === chip.val ||
+            (!r.visibility && chip.val === 'all');
         }).length;
         var isActive = (window._pcsNoteVisibility || 'all') === chip.val;
         return '<button class="pcs-vis-chip' +
