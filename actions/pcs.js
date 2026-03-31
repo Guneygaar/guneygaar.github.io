@@ -998,6 +998,7 @@ window._showStageConfirm = function(postId, newStage) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
 }
 
 window._buildStageProgress = function(stageLC) {
@@ -1305,6 +1306,7 @@ window.pcsConfirmDelete = function() {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
 }
 
 window.pcsDoDelete = async function() {
@@ -1559,6 +1561,7 @@ window._pcsConfirmReplace = function(postId) {
       'onclick="window._pcsDoReplace(\'' + postId + '\')">REPLACE</button>' +
     '</div></div>';
   document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
 };
 
 window._pcsDoReplace = function(postId) {
