@@ -423,7 +423,7 @@
   var _menuBtnBorder = 'border-top:1px solid rgba(255,255,255,0.06);';
 
   function _handleCardMenuAction(action, postId) {
-    var post = (window.allPosts || []).find(function (p) { return p.post_id === postId || p.id === postId; });
+    var post = (window.AppState.posts.all || []).find(function (p) { return p.post_id === postId || p.id === postId; });
     switch (action) {
       case 'cardMenuWA':
         if (typeof window._sharePostOnWhatsApp === 'function') window._sharePostOnWhatsApp(postId);
@@ -839,7 +839,7 @@
     input.value = '';
 
     var authorName = window.AppState.user.name || 'Client';
-    var post = (window.allPosts || []).find(function (p) {
+    var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
     });
     var realPostId = post ? (post.post_id || postId) : postId;
@@ -1363,7 +1363,7 @@
     if (fabBtn) fabBtn.style.display = 'none';
     _setClientNav();
 
-    var posts = window.allPosts || [];
+    var posts = window.AppState.posts.all || [];
     var buckets = _bucket(posts);
     var awaitCount = buckets.approval.length + buckets.input.length;
 
@@ -1429,7 +1429,7 @@
   /* ---- client post overlay (single card, full-screen) ---- */
 
   window._openClientPostOverlay = function(postId) {
-    var post = (window.allPosts || []).find(function(p) {
+    var post = (window.AppState.posts.all || []).find(function(p) {
       return p.post_id === postId || p.id === postId;
     });
     if (!post) {
