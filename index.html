@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260330T">
+ <link rel="stylesheet" href="styles.css?v=20260330V">
 
 </head>
 <body>
@@ -1017,13 +1017,50 @@
 
 <script>
 /* Global state  inline so it runs before any deferred script */
+  window.AppState = window.AppState || {
+    user: {
+      name: null, email: null, role: null,
+      effectiveRole: null, previewRole: null
+    },
+    posts: {
+      all: [], cached: [], loaded: false,
+      source: null, parked: [],
+      activityLogs: [], activityFetched: false,
+      setAll: function(p) {
+        window.AppState.posts.all = p;
+      }
+    },
+    pcs: {
+      open: false, postId: null, post: null,
+      editingTarget: null, closeTimer: null,
+      pendingComment: null,
+      lightbox: { images: [], index: 0 },
+      activeMenu: null
+    },
+    ui: {
+      modalOpen: false, deferredRender: false,
+      activeTab: null, taskFilter: null,
+      pipelineFilter: [], nrsUrgency: 'normal',
+      retryCount: 0, retryTimer: null,
+      realtimeTimer: null, unreadCount: 0
+    },
+    timers: {
+      tokenRefresh: null,
+      dashDatetime: null,
+      renderTimer: null
+    }
+  };
 window._modalOpen      = false;
 window._deferredRender = false;
 window._postsReqId     = 0;
 window._postsLoaded    = false;
 window._postsSource    = 'none';
-window.allPosts        = window.allPosts    || [];
-window.cachedPosts     = window.cachedPosts || [];
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.all = window.AppState.posts.all || [];
+}
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.cached = window.AppState.posts.cached || [];
+}
 if (window.AppState && window.AppState.user) { window.AppState.user.role = window.AppState.user.role || 'Admin'; }
 window.allTasks        = window.allTasks    || [];
 window._pcsNoteVisibility = 'all';
@@ -1041,26 +1078,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260330T"></script>
-<script src="00-appstate-compat.js?v=20260330T"></script>
-<script src="01-config.js?v=20260330T" defer></script>
-<script src="02-session.js?v=20260330T" defer></script>
-<script src="utils.js?v=20260330T" defer></script>
-<script src="03-auth.js?v=20260330T" defer></script>
-<script src="05-api.js?v=20260330T" defer></script>
-<script src="10-ui.js?v=20260330T" defer></script>
+<script src="00-appstate.js?v=20260330V"></script>
+<script src="00-appstate-compat.js?v=20260330V"></script>
+<script src="01-config.js?v=20260330V" defer></script>
+<script src="02-session.js?v=20260330V" defer></script>
+<script src="utils.js?v=20260330V" defer></script>
+<script src="03-auth.js?v=20260330V" defer></script>
+<script src="05-api.js?v=20260330V" defer></script>
+<script src="10-ui.js?v=20260330V" defer></script>
 
-<script src="06-post-create.js?v=20260330T" defer></script>
-<script defer src="render/dashboard.js?v=20260330T"></script>
-<script defer src="render/client.js?v=20260330T"></script>
-<script defer src="render/pipeline.js?v=20260330T"></script>
-<script defer src="render/brief.js?v=20260330T"></script>
-<script defer src="actions/pcs.js?v=20260330T"></script>
-<script src="07-post-load.js?v=20260330T" defer></script>
-<script src="08-post-actions.js?v=20260330T" defer></script>
-<script src="09-library.js?v=20260330T" defer></script>
-<script src="09-approval.js?v=20260330T" defer></script>
-<script src="04-router.js?v=20260330T" defer></script>
+<script src="06-post-create.js?v=20260330V" defer></script>
+<script defer src="render/dashboard.js?v=20260330V"></script>
+<script defer src="render/client.js?v=20260330V"></script>
+<script defer src="render/pipeline.js?v=20260330V"></script>
+<script defer src="render/brief.js?v=20260330V"></script>
+<script defer src="actions/pcs.js?v=20260330V"></script>
+<script src="07-post-load.js?v=20260330V" defer></script>
+<script src="08-post-actions.js?v=20260330V" defer></script>
+<script src="09-library.js?v=20260330V" defer></script>
+<script src="09-approval.js?v=20260330V" defer></script>
+<script src="04-router.js?v=20260330V" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
