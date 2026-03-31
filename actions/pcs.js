@@ -1838,7 +1838,7 @@ window._sharePostOnWhatsApp = function(postId) {
     + encodeURIComponent(message);
 };
 
-window.submitPcsComment = async function(postId, message, visibility, isTask) {
+window.submitPcsComment = async function(postId, message, visibility, isTask, isInternal) {
   try {
   isTask = isTask || false;
   visibility = visibility || 'all';
@@ -1875,7 +1875,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   window._pcsClearReply('client');
   window._pcsClearReply('note');
 
-  var _isInternal = visibility !== 'all' && _roleLower !== 'client';
+  var _isInternal = isInternal === true;
 
   if (visibility === 'all' && _roleLower !== 'client') {
     window._pendingComment = {
