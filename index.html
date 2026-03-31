@@ -1058,7 +1058,9 @@ window._postsSource    = 'none';
 if (window.AppState && window.AppState.posts) {
   window.AppState.posts.all = window.AppState.posts.all || [];
 }
-window.cachedPosts     = window.cachedPosts || [];
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.cached = window.AppState.posts.cached || [];
+}
 if (window.AppState && window.AppState.user) { window.AppState.user.role = window.AppState.user.role || 'Admin'; }
 window.allTasks        = window.allTasks    || [];
 window._pcsNoteVisibility = 'all';
