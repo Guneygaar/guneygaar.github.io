@@ -959,7 +959,7 @@ window.loadPcsComments = async function(postId) {
         }
       }
 
-      // Per-chip counts — dynamic builder
+      // Per-chip counts  dynamic builder
       var chipsHtml = [
         {val:'all', label:'ALL'},
         {val:'admin', label:'ADMIN'},
@@ -2016,7 +2016,8 @@ window._doSubmitComment = async function(opts) {
           user_role: role,
           post_id: opts.postId,
           type: 'comment',
-          message: opts.author + ' commented on ' + opts.title
+          message: opts.author + ' commented on ' + opts.title,
+          actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
         })
       }).catch(function(){});
     });

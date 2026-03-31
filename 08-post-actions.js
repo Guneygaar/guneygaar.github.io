@@ -52,30 +52,6 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` });
-    var _qsPost = (typeof getPostById === 'function')
-      ? getPostById(postId) : null;
-    var _qsTitle = _qsPost ? (_qsPost.title || postId) : postId;
-    var _qsPostId = _qsPost ? _qsPost.post_id : postId;
-    if (newStage === 'awaiting_approval') {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: 'Client',
-          post_id:   _qsPostId,
-          type:      'awaiting_approval',
-          message:   _qsTitle + ' is ready for your approval'
-        })
-      }).catch(function(){});
-    }
-    apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Admin',
-        post_id:   _qsPostId,
-        type:      'stage_change',
-        message:   resolveActor() + ' moved ' + _qsTitle + ' to ' + _stageLabel(newStage)
-      })
-    }).catch(function(){});
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
     post._isSaving = false;
@@ -195,20 +171,6 @@ async function clientApprove(postId, btn) {
       body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-    var _approvedTitle = post.title || postId;
-    var _approvedPostId = post.post_id || postId;
-    ['Servicing', 'Admin'].forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id:   _approvedPostId,
-          type:      'awaiting_approval',
-          message:   'Client approved -- ' + _approvedTitle +
-                     ' is ready to schedule'
-        })
-      }).catch(function(){});
-    });
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('show');
     var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -334,17 +296,17 @@ async function submitClientRequest() {
     await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
     var _reqTitle = (document.getElementById('req-name') || {}).value ||
       'New request';
-    ['Servicing', 'Admin'].forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id:   postId,
-          type:      'stage_change',
-          message:   'Client submitted a brief -- ' + _reqTitle
-        })
-      }).catch(function(){});
-    });
+    await apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: 'Servicing',
+        post_id: postId,
+        type: 'new_request',
+        message: (window.AppState.user.name || 'Client') + ' submitted a new request: ' + _reqTitle,
+        actor: window.AppState.user.name || window.currentUserName || 'Client',
+        read: false
+      })
+    }).catch(function(){});
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
     var nameResetEl = document.getElementById('req-name');
@@ -473,21 +435,6 @@ function _confirmPublish(postId) {
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
-    var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
-      return p.post_id === postId || p.id === postId;
-    });
-    var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;
-    apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Admin',
-        post_id: (_notifPost ? _notifPost.post_id : postId),
-        type: 'published',
-        message: (window.AppState.user.name || 'Shubham') +
-          ' published ' + _notifTitle
-      })
-    }).catch(function(){});
-
     showToast('Published', 'success');
     if (typeof closePCS === 'function') closePCS();
     loadPosts();
