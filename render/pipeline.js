@@ -50,7 +50,7 @@ window.updatePipelineCritical = function(posts) {
   if (!el) return;
   var _isClientCrit = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
   if (_isClientCrit) { el.textContent = ''; return; }
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   var now = new Date();
   var overdue = allP.filter(function(p) {
     return isPostStale(p);
@@ -92,7 +92,7 @@ window.updatePipelineCritical = function(posts) {
 window.updatePipelineStageBar = function(posts) {
   var bar = document.getElementById('pipeline-stage-bar');
   if (!bar) return;
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   var stageDefs = [
     { key: 'awaiting_approval', color: 'var(--c-red)' },
     { key: 'awaiting_brand_input', color: 'var(--c-purple)' },
@@ -151,7 +151,7 @@ window.handlePipelineSearch = function(query) {
   var results = document.getElementById('pipeline-search-results');
   var empty = document.getElementById('pipeline-search-empty');
   var container = document.getElementById('pipeline-container');
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
 
   var pipelineStages = ['awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
   var pipelinePosts = posts.filter(function(p) { return pipelineStages.indexOf(p.stage) > -1; });
@@ -390,7 +390,7 @@ window.buildPipelineCard = function(p, listKey) {
 
 // -- Pipeline chip count updater ----------------
 window.updatePipelineChipCounts = function() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var _chipRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavChip = _chipRole === 'creative' ||
     _chipRole === 'pranav' ||
@@ -491,7 +491,7 @@ window.updatePipelineChipCounts = function() {
 
 // -- Person strip count updater ------------------
 window.updatePersonStripCounts = function() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var clientCount = posts.filter(function(p) {
     return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
   }).length;
@@ -647,12 +647,12 @@ window.executeBatchAction = async function(targetStage) {
 // -- renderPipeline/narrative --
 window.renderPipeline = function() {
   try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
-  updatePipelineCritical(allPosts);
-  updatePipelineStageBar(allPosts);
-  updatePipelineNarrative(allPosts);
+  updatePipelineCritical(window.AppState.posts.all);
+  updatePipelineStageBar(window.AppState.posts.all);
+  updatePipelineNarrative(window.AppState.posts.all);
 }
 window.updatePipelineHeader = function() {
-  updatePipelineNarrative(allPosts);
+  updatePipelineNarrative(window.AppState.posts.all);
 }
 
 window.updatePipelineNarrative = function(posts) {
@@ -670,15 +670,15 @@ window.updatePipelineNarrative = function(posts) {
     var narrEl = document.getElementById('pipeline-narrative-text')
       || document.getElementById('pipeline-narrative');
     if (narrEl) {
-      var _myProd = (allPosts || []).filter(function(p) {
+      var _myProd = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'in_production') &&
           (p.owner || '').toLowerCase() === 'pranav';
       }).length;
-      var _myBriefs = (allPosts || []).filter(function(p) {
+      var _myBriefs = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'brief') &&
           (p.owner || '').toLowerCase() === 'pranav';
       }).length;
-      var _myReady = (allPosts || []).filter(function(p) {
+      var _myReady = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'ready') &&
           (p.owner || '').toLowerCase() === 'pranav';
       }).length;
@@ -701,7 +701,7 @@ window.updatePipelineNarrative = function(posts) {
     return;
   }
 
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   var now = new Date(); now.setHours(0,0,0,0);
 
   var stageDisplayNames = {
@@ -865,7 +865,7 @@ window._renderPipelineInner = function() {
   var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
     'scheduled', 'published', 'brief', 'brief_done'];
   var _isClient = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
-  const base = allPosts.filter(p => {
+  const base = window.AppState.posts.all.filter(p => {
     if (_isClient && !_clientStages.includes(p.stage || '')) return false;
     return PIPELINE_RENDER_ORDER.includes(p.stage || '');
   });
@@ -1071,7 +1071,7 @@ window._renderPipelineInner = function() {
   }).join('');
 
   // -- Closed Briefs collapsed group --
-  var briefDonePosts = allPosts.filter(function(p) {
+  var briefDonePosts = window.AppState.posts.all.filter(function(p) {
     return (p.stage || '') === 'brief_done';
   });
   var briefDoneCount = briefDonePosts.length;
@@ -1107,7 +1107,7 @@ window._renderPipelineInner = function() {
     '</div>' : '';
 
   // -- Published collapsed group --
-  var pubPosts = allPosts.filter(function(p) { return (p.stage || '') === 'published'; });
+  var pubPosts = window.AppState.posts.all.filter(function(p) { return (p.stage || '') === 'published'; });
   var pubCount = pubPosts.length;
   var pubCardsHtml = '';
   if (pubCount > 0) {
@@ -1266,7 +1266,7 @@ window.fallbackCopy = function(text) {
 }
 
 window.chaseAll = function() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var now = new Date();
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);

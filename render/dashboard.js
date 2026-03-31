@@ -45,7 +45,7 @@ window.getScoreboardCounts = function(posts) {
 
 // Final data model
 window.getScoreboardData = function() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var c = getScoreboardCounts(posts);
   var MONTHLY_TARGET = window.SCOREBOARD_CONFIG.MONTHLY_TARGET;
 
@@ -316,7 +316,7 @@ window.renderScoreboard = function() {
     if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pMsgColor; }
 
     // CHITRA
-    var cTotal = (allPosts||[]).filter(function(p) {
+    var cTotal = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' || s === 'awaiting_brand_input';
     }).length;
@@ -332,7 +332,7 @@ window.renderScoreboard = function() {
     if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
-    var clientPendingPosts = allPosts.filter(function(p) {
+    var clientPendingPosts = window.AppState.posts.all.filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var stage = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -418,7 +418,7 @@ window.renderScoreboard = function() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      var pranavPosts = (allPosts||[]).filter(function(p) {
+      var pranavPosts = (window.AppState.posts.all||[]).filter(function(p) {
         var s = p.stage || p.stageLC || '';
         var owner = (p.owner||'').toLowerCase();
         return (owner === 'pranav' || owner === 'creative') &&
@@ -613,7 +613,7 @@ window.toggleDashTask = async function(row, taskId) {
 }
 
 window.openRunwaySheet = function() {
-  var posts = (allPosts || []).filter(function(p) {
+  var posts = (window.AppState.posts.all || []).filter(function(p) {
     return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
   var sheet = document.getElementById('runway-sheet');
@@ -655,7 +655,7 @@ window.openRunwaySheet = function() {
 }
 
 window.openPostOverSheet = function(pid) {
-  var match = (allPosts||[]).find(function(p) {
+  var match = (window.AppState.posts.all||[]).find(function(p) {
     return p.id === pid || p.post_id === pid;
   });
   var realId = match ? (match.id || match.post_id) : pid;
@@ -678,11 +678,11 @@ window.openStageSheet = function(stage) {
   var posts;
   var title;
   if (stage === 'overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return isPostStale(p);
     });
   } else if (stage === 'client_pending') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -691,7 +691,7 @@ window.openStageSheet = function(stage) {
     });
     title = 'Client \u00b7 Pending';
   } else if (stage === 'chitra_active') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' ||
              s === 'awaiting_brand_input';
@@ -701,7 +701,7 @@ window.openStageSheet = function(stage) {
     });
     title = 'Chitra \u00b7 Awaiting Action';
   } else if (stage === 'chitra_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'chitra' || owner === 'servicing') &&
@@ -713,7 +713,7 @@ window.openStageSheet = function(stage) {
     });
     title = 'Chitra \u00b7 Active Posts';
   } else if (stage === 'pranav_production') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       var owner = (p.owner||'').toLowerCase();
       return (owner === 'pranav' || owner === 'creative') &&
@@ -724,7 +724,7 @@ window.openStageSheet = function(stage) {
     });
     title = 'Pranav \u00b7 In Production';
   } else if (stage === 'pranav_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'pranav' || owner === 'creative') &&
@@ -736,7 +736,7 @@ window.openStageSheet = function(stage) {
     });
     title = 'Pranav \u00b7 Active Posts';
   } else {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return (p.stage||p.stageLC) === stage;
     });
   }
@@ -839,7 +839,7 @@ window._buildDoThisNowItems = function(role) {
 
   // 2. Auto-generated: overdue client posts (Admin and Servicing only)
   if (role === 'Admin' || role === 'Servicing') {
-    var overdueApprovalPosts = allPosts.filter(function(p) {
+    var overdueApprovalPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -855,7 +855,7 @@ window._buildDoThisNowItems = function(role) {
         post: op
       });
     }
-    var overdueBrandPosts = allPosts.filter(function(p) {
+    var overdueBrandPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_brand_input' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -875,10 +875,10 @@ window._buildDoThisNowItems = function(role) {
 
   // 3. Auto: Pranav deficit (Admin and Creative only)
   if (role === 'Admin' || role === 'Creative') {
-    var inSystemCount = allPosts.filter(function(p) {
+    var inSystemCount = window.AppState.posts.all.filter(function(p) {
       return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
     }).length;
-    var awaitingTotal = allPosts.filter(function(p) {
+    var awaitingTotal = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
     }).length;
     var pranavDeficitAuto = inSystemCount - 35;
@@ -1055,7 +1055,7 @@ async function _updateStreakLines() {
 
 
 window.updateBelowFold = function(posts) {
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   _updateNextScheduled(allP);
   _updateTodaysFocus(allP);
   _updateUnsaidThing(allP);
@@ -1270,7 +1270,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 window.updateDashboardHeader = function() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var runway = 0, active = 0;
   posts.forEach(function(p) {
     var s = (p.stage || '').toLowerCase();

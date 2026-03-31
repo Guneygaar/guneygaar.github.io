@@ -419,8 +419,10 @@ async function deletePost(postId) {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
     await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
-    const idx = allPosts.findIndex(p => getPostId(p) === postId);
-    if (idx !== -1) allPosts.splice(idx, 1);
+    var next423 = window.AppState.posts.all.filter(function(p) {
+      return getPostId(p) !== postId;
+    });
+    window.AppState.posts.setAll(next423);
     scheduleRender();
     showToast('Post deleted', 'info');
   } catch {
@@ -449,23 +451,29 @@ function _confirmPublish(postId) {
     method: 'PATCH',
     body: JSON.stringify(payload)
   }).then(function() {
-    var idx = (allPosts || []).findIndex(function(p) {
-      return p.post_id === postId;
-    });
-    if (idx !== -1) {
-      allPosts[idx].stage = 'published';
-      if (url) {
-        allPosts[idx].linkedin_link = url;
-        allPosts[idx].linkedinUrl = url;
+    var _found_408 = false;
+    var _next_408 = window.AppState.posts.all.map(function(p) {
+      if (getPostId(p) === postId) {
+        _found_408 = true;
+        return Object.assign({}, p, {
+          stage: 'published',
+          linkedin_link: url,
+          linkedinUrl: url
+        });
       }
+      return p;
+    });
+    if (!_found_408 && window._appStateDevMode) {
+      console.warn('[AppState] Post not found', postId);
     }
+    window.AppState.posts.setAll(_next_408);
     logActivity({
       post_id: postId,
       actor: window.AppState.user.name || 'Shubham',
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
-    var _notifPost = (allPosts||[]).find(function(p) {
+    var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
       return p.post_id === postId || p.id === postId;
     });
     var _notifTitle = _notifPost ? (_notifPost.title || postId) : postId;
