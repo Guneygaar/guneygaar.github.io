@@ -135,3 +135,11 @@ window.AppState.posts.all.splice(idx,1) // ILLEGAL
   (to be migrated in future PRs)
 - tests/e2e/client-feed.spec.js still references
   window.allPosts (e2e test — low priority)
+
+## WORKING DIRECTORY RULES
+- The working directory is the repo root: guneygaar.github.io/
+- All file paths in code and config are relative to repo root
+- Never cd into subdirectories for builds — there is no build step
+- Static assets are served directly from repo root via GitHub Pages
+- Keep all JS files flat in root or in their designated folders (render/, actions/)
+- Do not create nested src/ or dist/ directories — this is a zero-build project
