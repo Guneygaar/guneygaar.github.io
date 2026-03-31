@@ -383,7 +383,7 @@ function renderNotifications(name, role) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var _notifPost = (window.allPosts||[]).find(function(p) {
+      var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
         return p.post_id === n.post_id;
       });
       var _thumb = _notifPost && Array.isArray(_notifPost.images) &&

@@ -41,4 +41,42 @@
       });
     } catch(e) {}
   }
+
+  if (window._appStateDevMode) {
+    try {
+      Object.defineProperty(window, 'allPosts', {
+        get: function() {
+          console.error('ILLEGAL READ: allPosts');
+          console.trace();
+          if (typeof showToast === 'function') {
+            showToast('ILLEGAL READ: allPosts', 'error');
+          }
+          return undefined;
+        },
+        set: function() {
+          console.error('ILLEGAL WRITE: allPosts');
+          console.trace();
+        },
+        configurable: true
+      });
+    } catch(e) {}
+
+    try {
+      Object.defineProperty(window, 'cachedPosts', {
+        get: function() {
+          console.error('ILLEGAL READ: cachedPosts');
+          console.trace();
+          if (typeof showToast === 'function') {
+            showToast('ILLEGAL READ: cachedPosts', 'error');
+          }
+          return undefined;
+        },
+        set: function() {
+          console.error('ILLEGAL WRITE: cachedPosts');
+          console.trace();
+        },
+        configurable: true
+      });
+    } catch(e) {}
+  }
 })();

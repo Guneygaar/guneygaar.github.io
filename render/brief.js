@@ -57,7 +57,7 @@ window._openBriefSheet = function(postId) {
   var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
   if (_hasLinkedPost) {
-    linkedPost = (allPosts || []).find(function(p) {
+    linkedPost = (window.AppState.posts.all || []).find(function(p) {
       return p.post_id === post.linked_post_id;
     });
   }
