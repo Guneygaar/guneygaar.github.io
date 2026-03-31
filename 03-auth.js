@@ -266,6 +266,10 @@ function activateRole(role) {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
   } else {
+    if (typeof window._restoreAgencyNav === 'function') {
+      window._restoreAgencyNav();
+    }
+    document.body.classList.remove('client-mode');
     document.getElementById('dashboard-view')?.classList.add('active');
     const lbl = document.getElementById('topbar-role-label');
     if (lbl) lbl.textContent = effectiveRole;
