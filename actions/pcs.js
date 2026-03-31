@@ -655,11 +655,19 @@ window.loadPcsComments = async function(postId) {
     );
     if (!Array.isArray(rows)) rows = [];
 
+    var internalData = await apiFetch(
+      '/internal_notes?post_id=eq.' +
+      encodeURIComponent(postId) +
+      '&order=created_at.asc&limit=100'
+    );
+    if (!Array.isArray(internalData)) internalData = [];
+
+    var _allRows = rows.concat(internalData);
     var _commentMap = {};
-    rows.forEach(function(c) {
+    _allRows.forEach(function(c) {
       _commentMap[c.id] = c.author;
     });
-    rows.forEach(function(c) {
+    _allRows.forEach(function(c) {
       if (c.reply_to && _commentMap[c.reply_to]) {
         c.reply_to_author = _commentMap[c.reply_to];
       }
@@ -678,12 +686,9 @@ window.loadPcsComments = async function(postId) {
       });
     }
 
-    var clientRows = rows.filter(function(c) {
-      return c.visibility === 'all' || !c.visibility;
-    });
+    var clientRows = rows;
 
-    var internalRows = rows.filter(function(c) {
-      if (c.visibility === 'all' || !c.visibility) return false;
+    var internalRows = internalData.filter(function(c) {
       if (_roleLower === 'admin') return true;
       if (_roleLower === 'servicing' || _roleLower === 'chitra') {
         if (c.visibility === 'all' || c.visibility === 'servicing') return true;
@@ -882,7 +887,7 @@ window.loadPcsComments = async function(postId) {
             (_roleLower === 'admin' ?
               '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
               'onclick="window._pcsConfirmDeleteComment(\'' +
-              esc(c.id) + '\',\'' + esc(postId) + '\')">DELETE</span>'
+              esc(c.id) + '\',\'' + esc(postId) + '\',true)">DELETE</span>'
               : '') +
             '<span class="pcs-comment-action" ' +
               'onclick="window._pcsSetReply(\'note\',\'' +
@@ -954,22 +959,28 @@ window.loadPcsComments = async function(postId) {
         }
       }
 
-      // Per-chip counts
-      var allCount = internalRows.filter(function(r) { return (r.visibility||'all')==='all'; }).length;
-      var adminCount = internalRows.filter(function(r) { return r.visibility==='admin'; }).length;
-      var servCount = internalRows.filter(function(r) { return r.visibility==='servicing'; }).length;
-      var creativeCount = internalRows.filter(function(r) { return r.visibility==='creative'; }).length;
-      var chips = document.querySelectorAll('.pcs-vis-chip');
-      chips.forEach(function(chip) {
-        var v = chip.getAttribute('data-vis');
-        var cnt = 0;
-        if (v === 'all') cnt = allCount;
-        else if (v === 'admin') cnt = adminCount;
-        else if (v === 'servicing') cnt = servCount;
-        else if (v === 'creative') cnt = creativeCount;
-        var label = v === 'all' ? 'ALL' : v === 'admin' ? 'ADMIN' : v === 'servicing' ? 'SERV' : 'CREATIVE';
-        chip.textContent = cnt > 0 ? label + ' (' + cnt + ')' : label;
-      });
+      // Per-chip counts — dynamic builder
+      var chipsHtml = [
+        {val:'all', label:'ALL'},
+        {val:'admin', label:'ADMIN'},
+        {val:'servicing', label:'SERV'},
+        {val:'creative', label:'CREATIVE'}
+      ].map(function(chip) {
+        var count = internalRows.filter(function(r) {
+          return chip.val === 'all'
+            ? true
+            : r.visibility === chip.val;
+        }).length;
+        var isActive = (window._pcsNoteVisibility || 'all') === chip.val;
+        return '<button class="pcs-vis-chip' +
+          (isActive ? ' active' : '') +
+          '" data-vis="' + chip.val + '" ' +
+          'onclick="window._pcsNoteVisibility=\'' + chip.val +
+          '\';loadPcsComments(\'' + postId + '\')">' +
+          chip.label + ' (' + count + ')</button>';
+      }).join('');
+      var chipsContainer = document.getElementById('pcs-vis-selector');
+      if (chipsContainer) chipsContainer.innerHTML = chipsHtml;
     }
 
     list.scrollTop = list.scrollHeight;
@@ -1864,6 +1875,8 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
   window._pcsClearReply('client');
   window._pcsClearReply('note');
 
+  var _isInternal = visibility !== 'all' && _roleLower !== 'client';
+
   if (visibility === 'all' && _roleLower !== 'client') {
     window._pendingComment = {
       postId: _realPostId,
@@ -1874,6 +1887,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
       role: _role,
       title: _title,
       isTask: isTask,
+      isInternal: false,
       images: _imgs,
       reply_to: _replyTo,
       reply_to_author: _replyToAuthor
@@ -1882,7 +1896,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     if (!confirmEl) {
       await window._doSubmitComment({ postId:_realPostId, message:message,
         visibility:visibility, mentioned:_mentioned, author:_author,
-        role:_role, title:_title, isTask:isTask, images:_imgs,
+        role:_role, title:_title, isTask:isTask, isInternal:false, images:_imgs,
         reply_to:_replyTo, reply_to_author:_replyToAuthor });
       return;
     }
@@ -1903,6 +1917,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask) {
     role: _role,
     title: _title,
     isTask: isTask,
+    isInternal: _isInternal,
     images: _imgs,
     reply_to: _replyTo,
     reply_to_author: _replyToAuthor
@@ -1945,7 +1960,10 @@ window._doSubmitComment = async function(opts) {
     if (_sendBtn) { _sendBtn.textContent = 'SENDING...'; _sendBtn.style.opacity = '0.5'; _sendBtn.disabled = true; }
     if (_noteBtn) { _noteBtn.textContent = 'SAVING...'; _noteBtn.style.opacity = '0.5'; _noteBtn.disabled = true; }
 
-    await apiFetch('/post_comments', {
+    var _submitEndpoint = opts.isInternal
+      ? '/internal_notes'
+      : '/post_comments';
+    await apiFetch(_submitEndpoint, {
       method: 'POST',
       body: JSON.stringify({
         post_id: opts.postId,
@@ -2302,7 +2320,7 @@ window._pcsCopyComment = function(message) {
   }
 };
 
-window._pcsConfirmDeleteComment = function(commentId, postId) {
+window._pcsConfirmDeleteComment = function(commentId, postId, isInternalNote) {
   _removePcsConfirm();
   var overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
@@ -2318,16 +2336,19 @@ window._pcsConfirmDeleteComment = function(commentId, postId) {
     'onclick="_removePcsConfirm()">CANCEL</button>' +
     '<button class="pcs-confirm-delete" ' +
     'onclick="window._pcsDoDeleteComment(\'' +
-    commentId + '\',\'' + postId + '\')">DELETE</button>' +
+    commentId + '\',\'' + postId + '\',' + !!isInternalNote + ')">DELETE</button>' +
     '</div></div>';
   document.body.appendChild(overlay);
   setTimeout(function() { overlay.classList.add('open'); }, 10);
 };
 
-window._pcsDoDeleteComment = async function(commentId, postId) {
+window._pcsDoDeleteComment = async function(commentId, postId, isInternalNote) {
   _removePcsConfirm();
   try {
-    await apiFetch('/post_comments?id=eq.' + commentId, {
+    var _delEndpoint = isInternalNote
+      ? '/internal_notes'
+      : '/post_comments';
+    await apiFetch(_delEndpoint + '?id=eq.' + commentId, {
       method: 'PATCH',
       body: JSON.stringify({ deleted: true })
     });

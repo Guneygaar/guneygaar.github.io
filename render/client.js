@@ -584,7 +584,7 @@
 
   function _commentsListHtml(post) {
     var visibleComments = (post.post_comments || []).filter(function(c) {
-      return c.visibility === 'all' || !c.visibility;
+      return !c.deleted;
     });
     if (!visibleComments.length) return '';
     var pid = _esc(post.post_id || post.id || '');
