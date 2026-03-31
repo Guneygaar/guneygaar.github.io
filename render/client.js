@@ -51,6 +51,14 @@
     return _nl2br(_esc(text)).replace(/(#\w[\w]*)/g, '<span style="color:#378fe9;">$1</span>');
   }
 
+  function _parseMentions(message) {
+    if (!message) return [];
+    var raw = message.match(/(?:^|[\s(])@([a-zA-Z0-9_]+)/g) || [];
+    var out = [];
+    for (var i = 0; i < raw.length; i++) out.push(raw[i].replace(/^[\s(@]+/, ''));
+    return out;
+  }
+
   function _sortAsc(arr) {
     arr.sort(function (a, b) {
       var ta = a.status_changed_at || a.statusChangedAt || a.updated_at || '';
@@ -610,20 +618,30 @@
     var initial = userName.charAt(0).toUpperCase();
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
-      : 'Add your thoughts...';
+      : 'Add a comment\u2026';
     return '<div id="client-reply-indicator-' + pid + '" ' +
       'class="pcs-reply-indicator-bar" style="display:none;">' +
       '<span id="client-reply-text-' + pid + '"></span>' +
       '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
         'class="pcs-reply-cancel">x</span>' +
     '</div>' +
-    '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
-      '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
-      '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
-        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + pid + '">' +
-        '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
-        '<button class="pcs-img-btn" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()">ATTACH</button>' +
-        '<button data-action="submitComment" data-id="' + pid + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
+    '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 14px;">' +
+      '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#C8A84B;font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:#000;">' + _esc(initial) + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="position:relative;">' +
+          '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
+            'style="width:100%;height:38px;background:#111118;border:1px solid #1e1e2e;border-radius:999px;padding:0 44px 0 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
+          '<button data-action="submitComment" data-id="' + pid + '" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#C8A84B;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;margin-top:6px;">' +
+          '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
+          '<button onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()" style="background:transparent;border:1px solid #1e1e2e;color:#AEAEB2;font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;">\uD83D\uDCCE PHOTO</button>' +
+          '<button onclick="window._clientToggleMention(\'' + pid + '\')" style="background:transparent;border:1px solid #1e1e2e;color:#AEAEB2;font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;">@ MENTION</button>' +
+        '</div>' +
+        '<div id="client-img-preview-' + pid + '" style="display:none;margin-top:6px;display:none;gap:6px;flex-wrap:wrap;"></div>' +
+        '<div id="client-mention-drop-' + pid + '" style="display:none;margin-top:4px;background:#191924;border:1px solid #1e1e2e;border-radius:4px;overflow:hidden;"></div>' +
       '</div>' +
     '</div>';
   }
@@ -816,29 +834,98 @@
     if (indicator) indicator.style.display = 'none';
   };
 
+  window._clientFeedPendingImgs = window._clientFeedPendingImgs || {};
+
+  function _clientRenderImgPreview(postId) {
+    var strip = document.getElementById('client-img-preview-' + postId);
+    if (!strip) return;
+    var urls = window._clientFeedPendingImgs[postId] || [];
+    if (urls.length === 0) {
+      strip.style.display = 'none';
+      strip.innerHTML = '';
+      return;
+    }
+    strip.style.display = 'flex';
+    strip.innerHTML = urls.map(function(url, idx) {
+      return '<div style="position:relative;width:56px;height:56px;flex-shrink:0;">' +
+        '<img src="' + _esc(url) + '" style="width:56px;height:56px;object-fit:cover;border-radius:4px;">' +
+        '<button onclick="window._clientRemoveImg(\'' + _esc(postId) + '\',' + idx + ')" style="position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#FF4B4B;border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">\u2715</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  window._clientRemoveImg = function(postId, idx) {
+    var imgs = window._clientFeedPendingImgs[postId] || [];
+    window._clientFeedPendingImgs[postId] = imgs.filter(function(_, i) { return i !== idx; });
+    _clientRenderImgPreview(postId);
+  };
+
   window._clientFeedHandleImg = async function(postId) {
     var input = document.getElementById('client-feed-img-input-' + postId);
-    if (!input || !input.files || !input.files[0]) return;
-    var file = input.files[0];
+    if (!input || !input.files || !input.files.length) return;
+    var files = Array.prototype.slice.call(input.files);
     input.value = '';
-    try {
-      var url = await uploadPostAsset(file, postId + '-comment');
-      window._clientFeedPendingImg = url;
-      showToast('Image ready. Add a message and send.', 'success');
-    } catch(e) {
-      showToast('Image upload failed.', 'error');
+    for (var i = 0; i < files.length; i++) {
+      try {
+        var url = await uploadPostAsset(files[i], postId + '-comment-' + Date.now());
+        window._clientFeedPendingImgs[postId] = (window._clientFeedPendingImgs[postId] || []).concat([url]);
+        _clientRenderImgPreview(postId);
+      } catch(e) {
+        showToast('Image upload failed.', 'error');
+      }
     }
+    if ((window._clientFeedPendingImgs[postId] || []).length > 0) {
+      showToast('Image ready. Add a message and send.', 'success');
+    }
+  };
+
+  window._clientToggleMention = function(postId) {
+    var drop = document.getElementById('client-mention-drop-' + postId);
+    if (!drop) return;
+    if (drop.style.display === 'block') { drop.style.display = 'none'; return; }
+    var _ROSTER = [
+      { name: 'Shubham', role: 'Admin' },
+      { name: 'Pranav', role: 'Creative' },
+      { name: 'Chitra', role: 'Servicing' }
+    ];
+    var currentUser = (window.AppState.user.name || '').toLowerCase();
+    var rows = _ROSTER.filter(function(m) { return m.name.toLowerCase() !== currentUser; });
+    drop.innerHTML = rows.map(function(m) {
+      return '<div onclick="window._clientInsertMention(\'' + _esc(postId) + '\',\'' + _esc(m.name) + '\')" ' +
+        'style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">' +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#E8E8E8;">@' + _esc(m.name) + '</span>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;text-transform:uppercase;">' + _esc(m.role) + '</span>' +
+      '</div>';
+    }).join('');
+    drop.style.display = 'block';
+  };
+
+  window._clientInsertMention = function(postId, name) {
+    var input = document.getElementById('comment-input-' + postId);
+    if (input) {
+      var val = input.value;
+      var pos = input.selectionStart || val.length;
+      var before = val.slice(0, pos);
+      var after = val.slice(pos);
+      var prefix = (before.length > 0 && before.charAt(before.length - 1) !== ' ') ? ' ' : '';
+      input.value = before + prefix + '@' + name + ' ' + after;
+      input.focus();
+    }
+    var drop = document.getElementById('client-mention-drop-' + postId);
+    if (drop) drop.style.display = 'none';
   };
 
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
     var message = input.value.trim();
-    if (!message) return;
+    var _urls = window._clientFeedPendingImgs[postId] || [];
+    if (!message && _urls.length === 0) return;
     var savedValue = input.value;
     input.value = '';
 
     var authorName = window.AppState.user.name || 'Client';
+    var _mentioned = _parseMentions(message);
     var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
     });
@@ -870,8 +957,9 @@
       listEl.insertAdjacentHTML('beforeend', _singleCommentHtml(commentObj));
     }
 
+    var _savedComments = post && Array.isArray(post.post_comments) ? post.post_comments : null;
     if (post && Array.isArray(post.post_comments)) {
-      post.post_comments.push(commentObj);
+      post.post_comments = post.post_comments.concat([commentObj]);
     }
 
     if (typeof window.apiFetch !== 'function') return;
@@ -882,18 +970,21 @@
       : null;
     window._clientClearReply(postId);
 
-    var _pendingImg = window._clientFeedPendingImg || null;
-    window._clientFeedPendingImg = null;
+    window._clientFeedPendingImgs[postId] = [];
+    _clientRenderImgPreview(postId);
+
     var _commentBody = {
       post_id: realPostId,
       author: authorName,
       author_role: 'Client',
       message: message,
-      reply_to: _replyTo || null
+      reply_to: _replyTo || null,
+      post_title: postTitle,
+      mentioned_users: _mentioned,
+      attachments: _urls.length > 0
+        ? JSON.stringify({ type: 'images', urls: _urls })
+        : null
     };
-    if (_pendingImg) {
-      _commentBody.attachments = JSON.stringify({type:'images', urls:[_pendingImg]});
-    }
 
     window.apiFetch('/post_comments', {
       method: 'POST',
@@ -917,6 +1008,27 @@
           message: authorName + ' commented on ' + postTitle
         })
       }).catch(function () {});
+      var _ROSTER = [
+        { name: 'Shubham', role: 'Admin' },
+        { name: 'Pranav', role: 'Creative' },
+        { name: 'Chitra', role: 'Servicing' }
+      ];
+      _mentioned.forEach(function(name) {
+        var _member = _ROSTER.find(function(m) {
+          return m.name.toLowerCase() === name.toLowerCase();
+        });
+        if (!_member) return;
+        window.apiFetch('/notifications', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_role: _member.role,
+            post_id: realPostId,
+            type: 'mention',
+            message: authorName + ' mentioned you on "' + postTitle + '"',
+            actor: window.AppState.user.email || ''
+          })
+        }).catch(function(err) { console.error('[mention notif]', err); });
+      });
     }).catch(function () {
       if (typeof window.showToast === 'function') {
         window.showToast('Failed to send comment', 'error');
@@ -925,8 +1037,8 @@
       if (listEl && listEl.lastChild) {
         listEl.removeChild(listEl.lastChild);
       }
-      if (post && Array.isArray(post.post_comments)) {
-        post.post_comments.pop();
+      if (post && _savedComments !== null) {
+        post.post_comments = _savedComments;
       }
     });
   }
