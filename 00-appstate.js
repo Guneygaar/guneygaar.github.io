@@ -1,4 +1,4 @@
-window.AppState = {
+window.AppState = window.AppState || {
 
   user: {
     name: null,
