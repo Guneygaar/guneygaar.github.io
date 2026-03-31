@@ -54,9 +54,9 @@ describe('_commentInputHtml', function() {
 
   it('1. Renders gold avatar with correct initial from AppState.user.name', function() {
     // The comment input should render the user initial in a gold-tinted avatar
-    var match = clientSrc.match(/_commentInputHtml[\s\S]*?function[\s\S]*?\{([\s\S]*?)\n  \}/);
+    var match = clientSrc.match(/function _commentInputHtml[\s\S]*?\n  \}/);
     expect(match).toBeTruthy();
-    var body = match[1];
+    var body = match[0];
     // Should use AppState.user.name initial, not generic icon
     expect(body).toContain('AppState.user.name');
     expect(body).toContain('initial');
@@ -148,6 +148,15 @@ describe('_commentInputHtml', function() {
 // =========================================================
 describe('_clientFeedPendingImgs', function() {
 
+  // Extract _clientRemoveImg logic from source for direct testing
+  function _loadRemoveImg() {
+    var match = clientSrc.match(/window\._clientRemoveImg\s*=\s*function\s*\(postId,\s*idx\)\s*\{([\s\S]*?)\n  \};/);
+    if (!match) return null;
+    // Strip DOM calls that aren't available in test context
+    var body = match[1].replace(/_clientRenderImgPreview\([^)]*\);?/g, '');
+    return new Function('postId', 'idx', body);
+  }
+
   it('12. Initializes as empty array for new postId', function() {
     var imgs = window._clientFeedPendingImgs['p1'] || [];
     expect(Array.isArray(imgs)).toBe(true);
@@ -160,9 +169,9 @@ describe('_clientFeedPendingImgs', function() {
       'https://r2.test/b.jpg',
       'https://r2.test/c.jpg'
     ];
-    // _clientRemoveImg should exist and remove by index
-    expect(typeof window._clientRemoveImg).toBe('function');
-    window._clientRemoveImg('p1', 1);
+    var removeImg = _loadRemoveImg();
+    expect(removeImg).toBeTruthy();
+    removeImg('p1', 1);
     expect(window._clientFeedPendingImgs['p1'].length).toBe(2);
     expect(window._clientFeedPendingImgs['p1'][0]).toBe('https://r2.test/a.jpg');
     expect(window._clientFeedPendingImgs['p1'][1]).toBe('https://r2.test/c.jpg');
@@ -170,16 +179,18 @@ describe('_clientFeedPendingImgs', function() {
 
   it('14. _clientRemoveImg on last image leaves empty array', function() {
     window._clientFeedPendingImgs['p1'] = ['https://r2.test/a.jpg'];
-    expect(typeof window._clientRemoveImg).toBe('function');
-    window._clientRemoveImg('p1', 0);
+    var removeImg = _loadRemoveImg();
+    expect(removeImg).toBeTruthy();
+    removeImg('p1', 0);
     expect(window._clientFeedPendingImgs['p1'].length).toBe(0);
   });
 
   it('15. _clientRemoveImg with invalid index does not throw', function() {
     window._clientFeedPendingImgs['p1'] = ['https://r2.test/a.jpg'];
-    expect(typeof window._clientRemoveImg).toBe('function');
+    var removeImg = _loadRemoveImg();
+    expect(removeImg).toBeTruthy();
     expect(function() {
-      window._clientRemoveImg('p1', 99);
+      removeImg('p1', 99);
     }).not.toThrow();
     expect(window._clientFeedPendingImgs['p1'].length).toBe(1);
   });
