@@ -15,7 +15,17 @@ window.AppState = {
     source: null,
     parked: [],
     activityLogs: [],
-    activityFetched: false
+    activityFetched: false,
+    setAll: function(newPosts) {
+      if (window._appStateDevMode) {
+        var ids = newPosts.map(function(p) { return p.post_id; });
+        var uniqueIds = new Set(ids);
+        if (ids.length !== uniqueIds.size) {
+          console.warn('LEGACY STATE WARNING: Duplicate post_ids detected entering AppState.posts.all. Check API polling logic.');
+        }
+      }
+      window.AppState.posts.all = newPosts;
+    }
   },
 
   pcs: {
