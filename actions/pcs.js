@@ -2003,10 +2003,6 @@ window._doSubmitComment = async function(opts) {
       _targets = ['Servicing'];
     } else if (opts.visibility === 'creative') {
       _targets = ['Creative'];
-    } else {
-      if (opts.mentioned && opts.mentioned.length) {
-        _targets = opts.mentioned;
-      }
     }
 
     _targets.forEach(function(role) {
@@ -2021,6 +2017,29 @@ window._doSubmitComment = async function(opts) {
         })
       }).catch(function(){});
     });
+
+    if (opts.mentioned && opts.mentioned.length > 0) {
+      opts.mentioned.forEach(function(name) {
+        var _member = _AGENCY_MEMBERS.find(function(m) {
+          return m.name.toLowerCase() === name.toLowerCase();
+        });
+        if (!_member) return;
+        if (_targets.indexOf(_member.role) !== -1) return;
+        var _mentionMsg = opts.isInternal
+          ? opts.author + ' mentioned you in a note on "' + opts.title + '"'
+          : opts.author + ' mentioned you on "' + opts.title + '"';
+        apiFetch('/notifications', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_role: _member.role,
+            post_id: opts.postId,
+            type: 'mention',
+            message: _mentionMsg,
+            actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
+          })
+        }).catch(function(){});
+      });
+    }
 
     var _mentionContacts = await _lookupMentionEmails(opts.mentioned);
     window._lastMentionContacts = _mentionContacts;

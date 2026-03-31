@@ -538,3 +538,102 @@ describe('getNotifTargets', function() {
   });
 
 });
+
+
+// =========================================================
+// GROUP 12: @mention notification system
+// =========================================================
+
+// Extract _AGENCY_MEMBERS from pcs.js for test use
+var _TEST_AGENCY_MEMBERS = [
+  { name: 'Shubham', role: 'Admin' },
+  { name: 'Pranav', role: 'Creative' },
+  { name: 'Chitra', role: 'Servicing' }
+];
+
+// Pure logic: resolve mention name to role (mirrors production code)
+function _resolveMentionRole(name) {
+  var found = _TEST_AGENCY_MEMBERS.find(function(m) {
+    return m.name.toLowerCase() === (name || '').toLowerCase();
+  });
+  return found ? found.role : null;
+}
+
+describe('@mention notification routing', function() {
+
+  it('@Pranav resolves to role Creative', function() {
+    expect(_resolveMentionRole('Pranav')).toBe('Creative');
+  });
+
+  it('@Shubham resolves to role Admin', function() {
+    expect(_resolveMentionRole('Shubham')).toBe('Admin');
+  });
+
+  it('@Chitra resolves to role Servicing', function() {
+    expect(_resolveMentionRole('Chitra')).toBe('Servicing');
+  });
+
+  it('@UnknownPerson resolves to null (skipped)', function() {
+    expect(_resolveMentionRole('UnknownPerson')).toBeNull();
+  });
+
+  it('case insensitive resolution works', function() {
+    expect(_resolveMentionRole('pranav')).toBe('Creative');
+    expect(_resolveMentionRole('CHITRA')).toBe('Servicing');
+  });
+
+});
+
+describe('@mention notifications in _doSubmitComment (source analysis)', function() {
+
+  it('pcs.js contains a mention notification loop after comment notifications', function() {
+    expect(pcsSrc).toContain("type: 'mention'");
+  });
+
+  it('mention notification maps name to role via _AGENCY_MEMBERS', function() {
+    var idx = pcsSrc.indexOf("type: 'mention'");
+    var mentionBlock = pcsSrc.substring(Math.max(0, idx - 800), idx + 200);
+    expect(mentionBlock).toContain('_AGENCY_MEMBERS');
+  });
+
+  it('mention notification skips names not in _AGENCY_MEMBERS', function() {
+    var mentionBlock = pcsSrc.substring(
+      pcsSrc.indexOf("type: 'mention'") - 500,
+      pcsSrc.indexOf("type: 'mention'") + 200
+    );
+    expect(mentionBlock).toMatch(/if\s*\(\s*!|continue/);
+  });
+
+  it('mention notification skips roles already in _targets to avoid doubles', function() {
+    var mentionBlock = pcsSrc.substring(
+      pcsSrc.indexOf("type: 'mention'") - 500,
+      pcsSrc.indexOf("type: 'mention'") + 200
+    );
+    expect(mentionBlock).toContain('_targets');
+    expect(mentionBlock).toMatch(/indexOf|includes/);
+  });
+
+  it('mention notification only runs when opts.mentioned has entries', function() {
+    var idx = pcsSrc.indexOf("type: 'mention'");
+    var mentionBlock = pcsSrc.substring(Math.max(0, idx - 800), idx + 200);
+    expect(mentionBlock).toMatch(/opts\.mentioned[\s\S]*?length/);
+  });
+
+  it('the old buggy fallback (targets = opts.mentioned) is removed', function() {
+    var targetBlock = pcsSrc.match(
+      /var _targets = \[\];[\s\S]*?_targets\.forEach/
+    );
+    expect(targetBlock).not.toBeNull();
+    var body = targetBlock[0];
+    expect(body).not.toContain('_targets = opts.mentioned');
+  });
+
+  it('mention message differs for internal notes vs client comments', function() {
+    var mentionBlock = pcsSrc.substring(
+      pcsSrc.indexOf("type: 'mention'") - 500,
+      pcsSrc.indexOf("type: 'mention'") + 300
+    );
+    expect(mentionBlock).toMatch(/isInternal|internal/i);
+  });
+
+});
