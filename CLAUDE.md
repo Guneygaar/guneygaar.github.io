@@ -167,6 +167,19 @@ When asked for an audit, test, verification, or any summary report, always retur
 
 ---
 
+## Working Directory Rules
+
+- Sorted (srtd.io) files are ALWAYS in `/sorted/` subdirectory
+- All file reads, writes, and edits for Sorted must be inside `/sorted/` only
+- Hinglish Ops files are at the repo root `/`
+- If a prompt does not specify which product, check the version string:
+  - `?v=2026...` in `/sorted/index.html` = Sorted
+  - `?v=2026...` in `/index.html` = Hinglish Ops
+- NEVER assume root = Sorted
+- Every Sorted prompt will include: "Working directory is `/sorted/`"
+
+---
+
 ## Common Pitfalls
 
 1. **Don't use ES modules** — all code runs in global scope via `<script defer>`. No `import`/`export`.
