@@ -1102,16 +1102,26 @@ function libOpenPostCard(postId) {
   if (!normalised.postId) normalised.postId = post.id;
   if (!normalised.post_id) normalised.post_id = post.id;
 
-  if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
-    var existingIdx = allPosts.findIndex(function(p) {
+  if (Array.isArray(window.AppState.posts.all)) {
+    var existingIdx = window.AppState.posts.all.findIndex(function(p) {
       return p.id === postId || p.postId === postId || p.post_id === postId;
     });
     if (existingIdx >= 0) {
-      allPosts[existingIdx].post_id = postId;
-      allPosts[existingIdx].id = postId;
-      allPosts[existingIdx].postId = postId;
+      window.AppState.posts.setAll(
+        window.AppState.posts.all.map(function(p, i) {
+          return i === existingIdx
+            ? Object.assign({}, p, {
+                post_id: postId,
+                id: postId,
+                postId: postId
+              })
+            : p;
+        })
+      );
     } else {
-      allPosts.push(normalised);
+      window.AppState.posts.setAll(
+        window.AppState.posts.all.concat([normalised])
+      );
     }
   }
 
@@ -1128,7 +1138,7 @@ function libOpenPostCard(postId) {
     overlay.style.zIndex = '1200';
     overlay.style.pointerEvents = 'auto';
     document.body.style.overflow = 'hidden';
-    window._modalOpen = true;
+    window.AppState.ui.modalOpen = true;
 
     _renderPCS(postId);
 
@@ -1139,13 +1149,19 @@ function libOpenPostCard(postId) {
     overlay.style.display = 'none';
     overlay.classList.remove('open');
     document.body.style.overflow = '';
-    window._modalOpen = false;
+    window.AppState.ui.modalOpen = false;
   }
 }
 window.libOpenPostCard = libOpenPostCard;
 
 // --------------- post card overlay ---------------
 function libOpenCard(postId) {
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    if (typeof window._openClientPostOverlay === 'function')
+      window._openClientPostOverlay(postId);
+    return;
+  }
   // FIX 2: dismiss calendar popup before opening card
   var calPopup = document.getElementById('lib-cal-popup');
   if (calPopup) calPopup.style.display = 'none';
@@ -1318,6 +1334,12 @@ function libInitSearch() {
 
 // --------------- libGoToPipeline ---------------
 function libGoToPipeline(postId) {
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    if (typeof window._openClientPostOverlay === 'function')
+      window._openClientPostOverlay(postId);
+    return;
+  }
   var overlay = document.getElementById('lib-card-overlay');
   if (overlay) overlay.style.display = 'none';
   window._pipelinePubExpanded = true;

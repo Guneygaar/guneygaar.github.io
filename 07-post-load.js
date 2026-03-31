@@ -49,139 +49,6 @@ function _staleDays(p) {
 window.isPostStale = isPostStale;
 
 // -- Pipeline search state --
-var _pipelineSearchOpen = false;
-
-function openPipelineSearch() {
-  _pipelineSearchOpen = true;
-  var hdr = document.querySelector('.app-header');
-  var bar = document.getElementById('pipeline-search-bar');
-  if (hdr) hdr.classList.add('searching');
-  if (bar) bar.classList.add('open');
-  setTimeout(function() {
-    var input = document.getElementById('pipeline-search-input');
-    if (input) input.focus();
-  }, 200);
-}
-
-function closePipelineSearch() {
-  _pipelineSearchOpen = false;
-  var hdr = document.querySelector('.app-header');
-  var bar = document.getElementById('pipeline-search-bar');
-  var results = document.getElementById('pipeline-search-results');
-  var empty = document.getElementById('pipeline-search-empty');
-  var container = document.getElementById('pipeline-container');
-  var input = document.getElementById('pipeline-search-input');
-  if (hdr) hdr.classList.remove('searching');
-  if (bar) bar.classList.remove('open');
-  if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
-  if (empty) empty.classList.remove('visible');
-  if (container) container.classList.remove('search-dimmed');
-  if (input) input.value = '';
-}
-
-// -- Pipeline critical header line --
-function updatePipelineCritical(posts) {
-  var _critRole = (effectiveRole || '').toLowerCase();
-  var _isPranavCrit = _critRole === 'creative' ||
-    _critRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
-  if (_isPranavCrit) {
-    var el = document.getElementById('pipeline-critical');
-    if (el) el.style.display = 'none';
-    return;
-  }
-  var el = document.getElementById('pipeline-critical');
-  if (!el) return;
-  var _isClientCrit = (effectiveRole || '').toLowerCase() === 'client';
-  if (_isClientCrit) { el.textContent = ''; return; }
-  var allP = posts || allPosts || [];
-  var now = new Date();
-  var overdue = allP.filter(function(p) {
-    return isPostStale(p);
-  }).sort(function(a,b) {
-    var ac = a.status_changed_at||a.statusChangedAt||a.updated_at||a.updatedAt||'';
-    var bc = b.status_changed_at||b.statusChangedAt||b.updated_at||b.updatedAt||'';
-    return new Date(ac) - new Date(bc);
-  });
-  if (overdue.length) {
-    var oldest = overdue[0];
-    var changedAt = oldest.status_changed_at||oldest.statusChangedAt||oldest.updated_at||oldest.updatedAt;
-    var daysOver = changedAt ? Math.floor((Date.now() - new Date(changedAt).getTime()) / 86400000) : 0;
-    el.textContent = (oldest.title||'A post') + ' ' + daysOver + 'd in stage \u00b7 sort now';
-    el.style.color = 'var(--c-red)';
-    return;
-  }
-  var approval = allP.filter(function(p) { return (p.stage||p.stageLC||'') === 'awaiting_approval'; });
-  if (approval.length >= 5) {
-    el.textContent = approval.length + ' posts waiting on approval \u00b7 client needs to sort';
-    el.style.color = 'var(--c-amber)';
-    return;
-  }
-  var scheduled = allP.filter(function(p) { return (p.stage||p.stageLC||'') === 'scheduled'; }).sort(function(a,b) { return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date); });
-  if (scheduled.length) {
-    var next = scheduled[0];
-    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var d = new Date(next.targetDate||next.target_date);
-    var diff = Math.ceil((d - now) / 86400000);
-    var when = diff === 0 ? 'today' : diff === 1 ? 'tomorrow' : 'in ' + diff + 'd';
-    el.textContent = (next.title||'Next post') + ' goes live ' + when + ' \u00b7 pipeline sorted';
-    el.style.color = 'var(--c-green)';
-    return;
-  }
-  el.textContent = 'Pipeline sorted \u00b7 keep going';
-  el.style.color = '#555';
-}
-
-// -- Pipeline stage bar --
-function updatePipelineStageBar(posts) {
-  var bar = document.getElementById('pipeline-stage-bar');
-  if (!bar) return;
-  var allP = posts || allPosts || [];
-  var stageDefs = [
-    { key: 'awaiting_approval', color: 'var(--c-red)' },
-    { key: 'awaiting_brand_input', color: 'var(--c-purple)' },
-    { key: 'in_production', color: 'var(--c-amber)' },
-    { key: 'scheduled', color: 'var(--c-cyan)' },
-    { key: 'ready', color: 'var(--c-green)' }
-  ];
-  var active = allP.filter(function(p) { return !['published','parked','rejected'].includes(p.stage||p.stageLC||''); });
-  var total = active.length || 1;
-  var segments = [];
-  stageDefs.forEach(function(s) {
-    var count = allP.filter(function(p) { return (p.stage||p.stageLC||'') === s.key; }).length;
-    if (count) segments.push({ count: count, color: s.color, key: s.key });
-  });
-  bar.innerHTML = segments.map(function(s) {
-    return '<div style="flex:' + s.count + ';background:' + s.color + ';height:3px;cursor:pointer;" onclick="filterPipelineStage(\'' + s.key + '\')"></div>';
-  }).join('');
-}
-
-window.filterPipelineStage = function(stage) {
-  var chip = document.querySelector('[data-stage="' + stage + '"]');
-  if (chip) chip.click();
-  else { var all = document.querySelector('[data-stage="all"]'); if (all) all.click(); }
-};
-
-// -- Pipeline filter apply --
-function _applyPFFilter(posts) {
-  var pf = window._PF || { stage: 'all', owner: 'all', urgency: 'all' };
-  return posts.filter(function(p) {
-    var stage = p.stage || p.stageLC || '';
-    var owner = (p.owner || '').toLowerCase();
-    if (pf.stage !== 'all' && stage !== pf.stage) return false;
-    if (pf.owner !== 'all') {
-      if (owner !== pf.owner) return false;
-    }
-    if (pf.urgency === 'overdue' && !isPostStale(p)) return false;
-    if (pf.urgency === 'week') {
-      var td = new Date(p.targetDate || p.target_date);
-      var diff = Math.ceil((td - new Date()) / 86400000);
-      if (diff < 0 || diff > 7) return false;
-    }
-    return true;
-  });
-}
-window._applyPFFilter = _applyPFFilter;
 
 // -- Format pipeline date with color --
 function formatPipelineDate(dateStr) {
@@ -209,110 +76,6 @@ function formatPipelineDate(dateStr) {
   return { text: base + ' \u00b7 ' + diff + 'd left', color: '#555' };
 }
 
-function openSearchResult(postId) {
-  console.log('openSearchResult fired with:', postId);
-  closePipelineSearch();
-  setTimeout(function() {
-    openPCS(postId);
-  }, 50);
-}
-
-function handlePipelineSearch(query) {
-  var results = document.getElementById('pipeline-search-results');
-  var empty = document.getElementById('pipeline-search-empty');
-  var container = document.getElementById('pipeline-container');
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-
-  var pipelineStages = ['awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
-  var pipelinePosts = posts.filter(function(p) { return pipelineStages.indexOf(p.stage) > -1; });
-
-  if (!query || query.trim() === '') {
-    if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
-    if (empty) empty.classList.remove('visible');
-    if (container) container.classList.remove('search-dimmed');
-    return;
-  }
-
-  if (container) container.classList.add('search-dimmed');
-  var q = query.toLowerCase().trim();
-
-  var stageDisplayMap = {
-    'awaiting_approval': 'Approval',
-    'awaiting_brand_input': 'Input',
-    'scheduled': 'Scheduled',
-    'ready': 'Ready',
-    'in_production': 'Production'
-  };
-  var stageColorMap = {
-    'awaiting_approval': '#FF4B4B',
-    'awaiting_brand_input': '#9b87f5',
-    'scheduled': '#22D3EE',
-    'ready': '#3ECF8E',
-    'in_production': '#F6A623'
-  };
-
-  var matches = pipelinePosts.filter(function(p) {
-    return (p.title && p.title.toLowerCase().indexOf(q) > -1) ||
-           (p.contentPillar && p.contentPillar.toLowerCase().indexOf(q) > -1) ||
-           (p.owner && p.owner.toLowerCase().indexOf(q) > -1);
-  });
-
-  if (matches.length === 0) {
-    if (results) { results.classList.remove('visible'); results.innerHTML = ''; }
-    if (empty) empty.classList.add('visible');
-    return;
-  }
-
-  if (empty) empty.classList.remove('visible');
-
-  var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  var html = matches.map(function(p) {
-    var highlighted = (p.title || '').replace(
-      new RegExp('(' + escaped + ')', 'gi'),
-      '<mark>$1</mark>'
-    );
-    var color = stageColorMap[p.stage] || '#555';
-    var badgeLabel = stageDisplayMap[p.stage] || p.stage;
-    var badgeClass = 'badge-' + p.stage;
-    var pillar = p.contentPillar || '';
-    return '<div class="pipeline-search-result-item" onclick="openSearchResult(\'' + (p.post_id || p.id) + '\')">' +
-      '<div class="result-stage-dot" style="background:' + color + '"></div>' +
-      '<div class="pipeline-result-body">' +
-        '<div class="pipeline-result-title">' + highlighted + '</div>' +
-        '<div class="pipeline-result-meta">' + pillar + '</div>' +
-      '</div>' +
-      '<span class="result-stage-badge ' + badgeClass + '">' + badgeLabel + '</span>' +
-    '</div>';
-  }).join('');
-
-  if (results) { results.innerHTML = html; results.classList.add('visible'); }
-}
-
-// -- Batch selection state --
-var _batchMode = false;
-var _batchSelected = new Set();
-
-// -- Person filter state --
-var _activePerson = null;
-
-// -- Group collapse state (persists across re-renders) --
-var _collapsedGroups = {};
-
-function togglePipelineGroup(stage) {
-  _collapsedGroups[stage] = !_collapsedGroups[stage];
-  var section = document.getElementById('group-section-' + stage);
-  if (section) {
-    section.classList.toggle('collapsed', !!_collapsedGroups[stage]);
-  }
-}
-
-window._pipelinePubExpanded = false;
-function togglePipelinePub() {
-  window._pipelinePubExpanded = !window._pipelinePubExpanded;
-  var group = document.getElementById('pipeline-pub-group');
-  if (group) group.classList.toggle('pipeline-pub-expanded', window._pipelinePubExpanded);
-}
-window.togglePipelinePub = togglePipelinePub;
 
 // Depends on: 01-config.js (STAGES_DB, STAGE_DISPLAY, PILLARS_DB, PILLAR_DISPLAY)
 
@@ -337,14 +100,12 @@ function getPostLinkLabel(post) {
   return '';
 }
 
-// -- Central merge  -  the ONLY way to update allPosts from server data --
 // Skips posts with _isSaving === true (in-flight PATCH).
-// Never replaces allPosts blindly  -  always mutates existing objects in-place.
 function mergePosts(fresh) {
   // Normalize DB stage values -> UI stage values on ingest
   fresh.forEach(fp => { if (fp.stage) fp.stage = toUiStage(fp.stage); });
 
-  const map = new Map(allPosts.map(p => [getPostId(p), p]));
+  const map = new Map(window.AppState.posts.all.map(p => [getPostId(p), p]));
 
   fresh.forEach(fp => {
     const id = getPostId(fp);
@@ -374,9 +135,14 @@ function mergePosts(fresh) {
   map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
 
   // Mutate in-place  -  preserve the single array reference
-  allPosts.length = 0;
-  map.forEach(p => allPosts.push(p));
-  cachedPosts = allPosts;
+  var next140 = Array.from(map.values());
+  next140.sort(function(a, b) {
+    var tA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    var tB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tB - tA;
+  });
+  window.AppState.posts.setAll(next140);
+  window.AppState.posts.cached = window.AppState.posts.all;
 }
 
 // -- Versioned load guard  -  prevents stale responses from overriding fresh data --
@@ -387,7 +153,7 @@ function _newPostsRequest() {
 
 function _commitPostsResult(reqId, source) {
   if (reqId !== window._postsReqId) return false;
-  window._postsLoaded = true;
+  window.AppState.posts.loaded = true;
   window._postsSource = source;
   return true;
 }
@@ -399,7 +165,7 @@ function showLoadingSkeleton(containerId) {
 }
 
 async function loadPosts() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
     return;
   }
@@ -411,13 +177,29 @@ async function loadPosts() {
     mergePosts(normalise(data));
     hideErrorBanner();
     scheduleRender();
-    showToast(`${allPosts.length} posts loaded`, 'success');
+    // Fetch comment counts for all posts
+    apiFetch('/post_comments?select=post_id')
+      .then(function(rows) {
+        if (!Array.isArray(rows)) return;
+        var counts = {};
+        rows.forEach(function(r) {
+          if (r.post_id) {
+            counts[r.post_id] = (counts[r.post_id] || 0) + 1;
+          }
+        });
+        (window.AppState.posts.all || []).forEach(function(p) {
+          p._commentCount = counts[p.post_id] || 0;
+        });
+        scheduleRender();
+      }).catch(function(){});
+    showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
-    if (cachedPosts.length) {
+    if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      allPosts.length = 0;
-      cachedPosts.forEach(p => allPosts.push(p));
+      window.AppState.posts.setAll(
+        window.AppState.posts.cached.slice()
+      );
       scheduleRender();
       showErrorBanner('Could not reach server. Showing cached data.',
         `Last updated: ${formatIST(new Date().toISOString())}`);
@@ -440,16 +222,48 @@ async function loadPosts() {
 async function loadPostsForClient() {
   const reqId = _newPostsRequest();
   try {
-    const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+    const allowedStages =
+      'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
+    var data  = await apiFetch(
+      '/posts?stage=in.(' + allowedStages +
+      ')&select=*&order=created_at.desc'
+    );
     if (!_commitPostsResult(reqId, 'network')) return;
+
+    var postIds = data.map(function(p) { return p.post_id || p.id; }).filter(Boolean);
+    if (postIds.length) {
+      try {
+        var comments = await apiFetch(
+          '/post_comments?post_id=in.(' + postIds.join(',') +
+          ')&order=created_at.asc'
+        );
+        if (Array.isArray(comments)) {
+          data.forEach(function(p) {
+            var pid = p.post_id || p.id;
+            p.post_comments = comments.filter(function(c) {
+              return c.post_id === pid;
+            });
+          });
+        }
+      } catch (_) { /* comments fetch failed - render without them */ }
+    }
+
+    data = data.filter(function(p) {
+      if (p.stage === 'in_production') {
+        return p.post_comments && p.post_comments.length > 0;
+      }
+      return true;
+    });
+
     mergePosts(normalise(data));
     hideErrorBanner();
     renderClientView();
   } catch (err) {
-    if (cachedPosts.length) {
+    if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
-      allPosts.length = 0;
-      cachedPosts.forEach(p => allPosts.push(p));
+      window.AppState.posts.setAll(
+        window.AppState.posts.cached.slice()
+      );
       renderClientView();
       showErrorBanner('Showing cached data - connection issue.');
     } else {
@@ -462,7 +276,7 @@ async function loadPostsForClient() {
 }
 
 // Background token refresh interval handle (separate from data poll)
-let _tokenRefreshTimer = null;
+window.AppState.timers.tokenRefresh = null;
 
 // Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
 function _postsFingerprint(posts) {
@@ -474,17 +288,17 @@ function _postsFingerprint(posts) {
 }
 
 function startRealtime() {
-  if (_realtimeTimer) return;
+  if (window.AppState.timers.realtimeTimer) return;
 
   // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
-  _realtimeTimer = setInterval(async () => {
+  window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     // Skip poll while user is in a modal  -  they'll get fresh data on close
-    if (window._modalOpen) return;
+    if (window.AppState.ui.modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
-      if (_postsFingerprint(fresh) !== _postsFingerprint(allPosts)) {
+      if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
         mergePosts(fresh);
         scheduleRender();
         updateNotifBadge();
@@ -496,8 +310,8 @@ function startRealtime() {
 
   // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
-  if (!_tokenRefreshTimer) {
-    _tokenRefreshTimer = setInterval(async () => {
+  if (!window.AppState.timers.tokenRefresh) {
+    window.AppState.timers.tokenRefresh = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       const newToken = await refreshSession();
       if (!newToken) {
@@ -508,10 +322,10 @@ function startRealtime() {
 }
 
 function stopRealtime() {
-  clearInterval(_realtimeTimer);
-  _realtimeTimer = null;
-  clearInterval(_tokenRefreshTimer);
-  _tokenRefreshTimer = null;
+  clearInterval(window.AppState.timers.realtimeTimer);
+  window.AppState.timers.realtimeTimer = null;
+  clearInterval(window.AppState.timers.tokenRefresh);
+  window.AppState.timers.tokenRefresh = null;
 }
 
 async function loadTasks() {
@@ -682,7 +496,7 @@ async function deleteTask(id) {
 }
 
 function renderAll() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     var clientTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
     if (clientTab === 'pipeline') {
       if (typeof renderPipeline === 'function') renderPipeline();
@@ -694,7 +508,7 @@ function renderAll() {
     if (typeof renderClientView === 'function') renderClientView();
     return;
   }
-  if (window._modalOpen) return;
+  if (window.AppState.ui.modalOpen) return;
   const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
 
   // Always render: lightweight stats & role visibility
@@ -708,28 +522,23 @@ function renderAll() {
   if (activeTab === 'tasks') {
     run('dashboard',          renderDashboard);
     run('dashHdr',            updateDashboardHeader);
-    run('pipelineStrip',      renderPipelineStrip);
     run('productionMeter',    renderProductionMeter);
     run('adminInsight',       renderAdminInsight);
     run('taskBanner',         renderTaskBanner);
     run('adminTaskPanel',     renderAdminTaskPanel);
-    run('creativeTracker',    renderCreativeTracker);
     run('nextPost',           renderNextPost);
     run('tasks',              renderTasks);
     run('taskStageChips',     renderTaskStageChips);
   } else if (activeTab === 'pipeline') {
     run('pipeline',           renderPipeline);
     run('pipelineHdr',        updatePipelineHeader);
-  } else if (activeTab === 'library') {
-    run('library',            renderLibrary);
-    run('filterDropdowns',    populateFilterDropdowns);
   }
 
   const pl = document.getElementById('pipeline-label');
   const ll = document.getElementById('library-label');
-  if (pl) pl.textContent = `${allPosts.length} posts`;
+  if (pl) pl.textContent = `${window.AppState.posts.all.length} posts`;
   const _libDefault = ['scheduled','published'];
-  const libCount = allPosts.filter(p => _libDefault.includes(p.stage || '')).length;
+  const libCount = window.AppState.posts.all.filter(p => _libDefault.includes(p.stage || '')).length;
   if (ll) ll.textContent = `${libCount} posts`;
 }
 
@@ -737,7 +546,7 @@ function updateStats() {
   const today   = new Date(); today.setHours(0,0,0,0);
   const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() + 7);
   let published=0,awaitingApproval=0,inPipeline=0,dueWeek=0,overdue=0,readyToSend=0;
-  allPosts.forEach(p => {
+  window.AppState.posts.all.forEach(p => {
     const stage = p.stage || '';
     if (stage === 'published') published++;
     if (stage === 'awaiting_approval') awaitingApproval++;
@@ -749,7 +558,7 @@ function updateStats() {
       if (d < today && !['published','parked','rejected'].includes(stage)) overdue++;
     }
   });
-  setText('s-total',     allPosts.length);
+  setText('s-total',     window.AppState.posts.all.length);
   setText('s-published', published);
   setText('s-approval',  awaitingApproval);
   setText('s-pipeline',  inPipeline);
@@ -791,7 +600,7 @@ function _ttOldestFirst(a, b) {
 }
 
 function _ttByStage(stage) {
-  return allPosts
+  return window.AppState.posts.all
     .filter(p => (p.stage || '') === stage)
     .sort(_ttOldestFirst);
 }
@@ -804,7 +613,7 @@ function _ttTruncate(str, n = 42) {
 // B-02 FIX: Detect failed_publish = scheduled posts whose target_date is in the past
 function _ttFailedPublish() {
   var todayStr = new Date().toISOString().split('T')[0];
-  return allPosts
+  return window.AppState.posts.all
     .filter(function(p) { return p.stage === 'scheduled' && p.target_date && p.target_date < todayStr; })
     .sort(function(a, b) { return (a.target_date || '') < (b.target_date || '') ? -1 : 1; });
 }
@@ -813,7 +622,7 @@ function _ttFailedPublish() {
 function _ttAgingAwaiting() {
   var twoDaysAgo = new Date();
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
-  return allPosts.filter(function(p) {
+  return window.AppState.posts.all.filter(function(p) {
     return p.stage === 'awaiting_approval' &&
       p.status_changed_at &&
       new Date((p.status_changed_at || '') + 'Z') < twoDaysAgo;
@@ -822,7 +631,7 @@ function _ttAgingAwaiting() {
 
 function getTopTask() {
   const postMap = Object.fromEntries(
-    allPosts.map(p => [getPostId(p), p])
+    window.AppState.posts.all.map(p => [getPostId(p), p])
   );
   function _ttPostTitle(postId) {
     if (!postId) return '';
@@ -830,7 +639,7 @@ function getTopTask() {
     return p ? getTitle(p) : '';
   }
 
-  const role = _ttNorm(window.effectiveRole || '');
+  const role = _ttNorm(window.AppState.user.effectiveRole || '');
   const email = localStorage.getItem('hinglish_email') || '';
   const emailPrefix = email ? email.split('@')[0].toLowerCase() : '';
 
@@ -930,7 +739,7 @@ function getScoreboardCounts(posts) {
 
 // Final data model
 function getScoreboardData() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
+  var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var c = getScoreboardCounts(posts);
   var MONTHLY_TARGET = SCOREBOARD_CONFIG.MONTHLY_TARGET;
 
@@ -1029,7 +838,7 @@ function getDashGreeting() {
                  hour >= 12 && hour < 17 ? 'Good afternoon' :
                  hour >= 17 && hour < 21 ? 'Good evening' :
                  'Working late';
-  var role = window.effectiveRole || window.currentRole || '';
+  var role = window.AppState.user.effectiveRole || window.AppState.user.role || '';
   var roleNames = {
     'Admin':     'Shubham',
     'Servicing': 'Chitra',
@@ -1043,7 +852,7 @@ function updateDashGreeting() {
   var nameEl = document.getElementById('dash-greeting-name');
   var hdrEl = document.getElementById('dash-greeting-hdr');
   if (!nameEl || !hdrEl) return;
-  var role = (window.effectiveRole || window.currentRole || 'admin').toLowerCase();
+  var role = (window.AppState.user.effectiveRole || window.AppState.user.role || 'admin').toLowerCase();
   var nameMap = {
     admin: 'Shubham', shubham: 'Shubham',
     servicing: 'Chitra', chitra: 'Chitra',
@@ -1128,7 +937,7 @@ function renderScoreboard() {
 
     // --- HEADLINE PRIORITY ---
     var kicker, kickerColor, headline, deck;
-    var role = window.effectiveRole || 'Admin';
+    var role = window.AppState.user.effectiveRole || 'Admin';
 
     if (role === 'Creative') {
       // Pranav-specific headline
@@ -1216,7 +1025,7 @@ function renderScoreboard() {
     if (elPMsg) { elPMsg.textContent = pMsg; elPMsg.style.color = pMsgColor; }
 
     // CHITRA
-    var cTotal = (allPosts||[]).filter(function(p) {
+    var cTotal = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' || s === 'awaiting_brand_input';
     }).length;
@@ -1232,7 +1041,7 @@ function renderScoreboard() {
     if (elCMsg) { elCMsg.textContent = cMsg; elCMsg.style.color = cMsgColor; }
 
     // CLIENT
-    var clientPendingPosts = allPosts.filter(function(p) {
+    var clientPendingPosts = window.AppState.posts.all.filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var stage = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -1318,7 +1127,7 @@ function renderScoreboard() {
     // --- STEP 8: TAPPABLE METRIC ROWS ---
     if (rowRunway) rowRunway.onclick = function() { if (typeof openRunwaySheet === 'function') openRunwaySheet(); };
     if (rowPranav) rowPranav.onclick = function() {
-      var pranavPosts = (allPosts||[]).filter(function(p) {
+      var pranavPosts = (window.AppState.posts.all||[]).filter(function(p) {
         var s = p.stage || p.stageLC || '';
         var owner = (p.owner||'').toLowerCase();
         return (owner === 'pranav' || owner === 'creative') &&
@@ -1402,7 +1211,7 @@ function _renderDashTaskList(role) {
           'Creative':  'All sorted - keep creating',
           'Client':    'All sorted - nothing from us right now'
         };
-        var emptyRole = window.effectiveRole || window.currentRole || 'Admin';
+        var emptyRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
         var emptyMsg = emptyMessages[emptyRole] || 'All sorted';
         container.innerHTML = '<div class="dash-empty-state">' + emptyMsg + '</div>';
         return;
@@ -1513,7 +1322,7 @@ async function toggleDashTask(row, taskId) {
 }
 
 function openRunwaySheet() {
-  var posts = (allPosts || []).filter(function(p) {
+  var posts = (window.AppState.posts.all || []).filter(function(p) {
     return p.stage === 'scheduled' || p.stageLC === 'scheduled';
   });
   var sheet = document.getElementById('runway-sheet');
@@ -1556,7 +1365,11 @@ function openRunwaySheet() {
 window.openRunwaySheet = openRunwaySheet;
 
 function openPostOverSheet(pid) {
-  var match = (allPosts||[]).find(function(p) {
+  var _ss = document.getElementById('stage-sheet-overlay');
+  if (_ss) _ss.style.display = 'none';
+  var _rs = document.getElementById('runway-sheet');
+  if (_rs) _rs.style.display = 'none';
+  var match = (window.AppState.posts.all||[]).find(function(p) {
     return p.id === pid || p.post_id === pid;
   });
   var realId = match ? (match.id || match.post_id) : pid;
@@ -1580,11 +1393,11 @@ function openStageSheet(stage) {
   var posts;
   var title;
   if (stage === 'overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return isPostStale(p);
     });
   } else if (stage === 'client_pending') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return owner === 'client' &&
@@ -1593,7 +1406,7 @@ function openStageSheet(stage) {
     });
     title = 'Client \u00b7 Pending';
   } else if (stage === 'chitra_active') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       return s === 'awaiting_approval' ||
              s === 'awaiting_brand_input';
@@ -1603,7 +1416,7 @@ function openStageSheet(stage) {
     });
     title = 'Chitra \u00b7 Awaiting Action';
   } else if (stage === 'chitra_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'chitra' || owner === 'servicing') &&
@@ -1615,7 +1428,7 @@ function openStageSheet(stage) {
     });
     title = 'Chitra \u00b7 Active Posts';
   } else if (stage === 'pranav_production') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var s = p.stage || p.stageLC || '';
       var owner = (p.owner||'').toLowerCase();
       return (owner === 'pranav' || owner === 'creative') &&
@@ -1626,7 +1439,7 @@ function openStageSheet(stage) {
     });
     title = 'Pranav \u00b7 In Production';
   } else if (stage === 'pranav_overdue') {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       var owner = (p.owner||'').toLowerCase();
       var s = p.stage || p.stageLC || '';
       return (owner === 'pranav' || owner === 'creative') &&
@@ -1638,7 +1451,7 @@ function openStageSheet(stage) {
     });
     title = 'Pranav \u00b7 Active Posts';
   } else {
-    posts = (allPosts||[]).filter(function(p) {
+    posts = (window.AppState.posts.all||[]).filter(function(p) {
       return (p.stage||p.stageLC) === stage;
     });
   }
@@ -1708,7 +1521,7 @@ function _buildDoThisNowItems(role) {
   var todayStr = new Date().toISOString().split('T')[0];
   var threeDaysAgo = new Date();
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-  role = role || window.effectiveRole || window.currentRole || 'Admin';
+  role = role || window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
 
   // B-02 FIX: PRIORITY 0  Failed publish items (scheduled posts past target_date)
   if (role !== 'Client') {
@@ -1742,7 +1555,7 @@ function _buildDoThisNowItems(role) {
 
   // 2. Auto-generated: overdue client posts (Admin and Servicing only)
   if (role === 'Admin' || role === 'Servicing') {
-    var overdueApprovalPosts = allPosts.filter(function(p) {
+    var overdueApprovalPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -1758,7 +1571,7 @@ function _buildDoThisNowItems(role) {
         post: op
       });
     }
-    var overdueBrandPosts = allPosts.filter(function(p) {
+    var overdueBrandPosts = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_brand_input' &&
         p.status_changed_at && new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
     }).sort(function(a, b) {
@@ -1778,10 +1591,10 @@ function _buildDoThisNowItems(role) {
 
   // 3. Auto: Pranav deficit (Admin and Creative only)
   if (role === 'Admin' || role === 'Creative') {
-    var inSystemCount = allPosts.filter(function(p) {
+    var inSystemCount = window.AppState.posts.all.filter(function(p) {
       return ['ready', 'awaiting_approval', 'awaiting_brand_input', 'scheduled'].includes(p.stage);
     }).length;
-    var awaitingTotal = allPosts.filter(function(p) {
+    var awaitingTotal = window.AppState.posts.all.filter(function(p) {
       return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
     }).length;
     var pranavDeficitAuto = inSystemCount - 35;
@@ -1806,7 +1619,7 @@ function _buildDoThisNowItems(role) {
 }
 
 function renderDashboard() {
-  if ((window.effectiveRole || '').toLowerCase() === 'client') return;
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') return;
   try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
 }
 function _renderDashboardInner() {
@@ -2018,7 +1831,7 @@ async function _appendYesterdaysWin() {
 }
 
 function updateBelowFold(posts) {
-  var allP = posts || allPosts || [];
+  var allP = posts || window.AppState.posts.all || [];
   _updateNextScheduled(allP);
   _updateTodaysFocus(allP);
   _updateUnsaidThing(allP);
@@ -2239,7 +2052,7 @@ function renderPipelineStrip() {
   if (wrap) wrap.style.display = 'none';
   return;
   const html = STRIP_STAGES.map((group) => {
-    const count = allPosts.filter(p =>
+    const count = window.AppState.posts.all.filter(p =>
       group.stages.includes(p.stage || '')
     ).length;
     let cClass = '';
@@ -2256,8 +2069,8 @@ function renderPipelineStrip() {
 function renderProductionMeter() {
   const section = document.getElementById('prod-meter-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
-  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  const readyCount = window.AppState.posts.all.filter(p => p.stage === 'ready').length;
   const gap  = Math.max(0, READY_TO_SEND_TARGET - readyCount);
   const pct  = Math.min(100, Math.round((readyCount / READY_TO_SEND_TARGET) * 100));
   const isOk = gap === 0;
@@ -2281,7 +2094,7 @@ function renderProductionMeter() {
 function renderAdminInsight() {
   const section = document.getElementById('admin-insight-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const now = Date.now();
   const DAY = 86400000;
   function daysSince(post) {
@@ -2289,14 +2102,14 @@ function renderAdminInsight() {
     if (!t) return 0;
     return Math.floor((now - new Date(t).getTime()) / DAY);
   }
-  const stuckProduction = allPosts.filter(p => p.stage === 'in_production' && daysSince(p) >= 3);
-  const stuckClient     = allPosts.filter(p => ['awaiting_approval','awaiting_brand_input'].includes(p.stage || '') && daysSince(p) >= 3);
+  const stuckProduction = window.AppState.posts.all.filter(p => p.stage === 'in_production' && daysSince(p) >= 3);
+  const stuckClient     = window.AppState.posts.all.filter(p => ['awaiting_approval','awaiting_brand_input'].includes(p.stage || '') && daysSince(p) >= 3);
   // stuckReview removed  -  stage no longer exists
   const weekAgo  = now - 7 * DAY;
   function withinWeek(post, field) { const t = post[field]; if (!t) return false; return new Date(t).getTime() >= weekAgo; }
-  const published = allPosts.filter(p => p.stage === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
-  const readyCount = allPosts.filter(p => p.stage === 'ready').length;
-  const parkedPosts = allPosts.filter(p => p.stage !== 'published' && daysSince(p) >= 7);
+  const published = window.AppState.posts.all.filter(p => p.stage === 'published' && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const readyCount = window.AppState.posts.all.filter(p => p.stage === 'ready').length;
+  const parkedPosts = window.AppState.posts.all.filter(p => p.stage !== 'published' && daysSince(p) >= 7);
   window._parkedPosts = parkedPosts;
 
   // Build pills for summary bar
@@ -2305,7 +2118,7 @@ function renderAdminInsight() {
   const readyPillClass = readyCount >= READY_TO_SEND_TARGET ? 'green' : readyCount >= READY_TO_SEND_TARGET * 0.5 ? 'amber' : 'red';
 
   section.innerHTML = `
-    <div class="insight-summary-bar" onclick="openInsights()">
+    <div class="insight-summary-bar" onclick="showInsights()">
       <span class="insight-summary-pill ${blockPillClass}">[!] ${blockers === 0 ? 'No blockers' : `${blockers} blocked`}</span>
       <span class="insight-summary-pill ${readyPillClass}">OK ${readyCount}/${READY_TO_SEND_TARGET} ready</span>
       <span class="insight-summary-pill blue">[date] ${published} published this week</span>
@@ -2318,8 +2131,8 @@ function renderAdminInsight() {
     stuckProduction.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckProduction.length >= 3 ? 'red' : 'amber'}"></span>Production slow - ${stuckProduction.length} post${stuckProduction.length>1?'s':''} stuck 3+ days</div>` : '',
     stuckClient.length ? `<div class="insight-flag"><span class="insight-flag-dot ${stuckClient.length >= 3 ? 'red' : 'amber'}"></span>Client waiting - ${stuckClient.length} post${stuckClient.length>1?'s':''} waiting 3+ days</div>` : '',
   ].filter(Boolean).join('');
-  const written  = allPosts.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
-  const approved = allPosts.filter(p => ['awaiting_approval','scheduled','published'].includes(p.stage || '') && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
+  const written  = window.AppState.posts.all.filter(p => withinWeek(p,'created_at') || withinWeek(p,'createdAt')).length;
+  const approved = window.AppState.posts.all.filter(p => ['awaiting_approval','scheduled','published'].includes(p.stage || '') && (withinWeek(p,'updated_at') || withinWeek(p,'updatedAt'))).length;
 
   const body = document.getElementById('insights-body');
   if (body) {
@@ -2366,9 +2179,9 @@ function closeParked() {
 function renderTaskBanner() {
   const section = document.getElementById('task-banner-section');
   if (!section) return;
-  if (effectiveRole === 'Client') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole === 'Client') { section.innerHTML = ''; return; }
   const email    = localStorage.getItem('hinglish_email') || '';
-  const roleName = effectiveRole;
+  const roleName = window.AppState.user.effectiveRole;
   const myTasks  = allTasks.filter(t => !t.done && (t.assigned_to === roleName || (email && t.assigned_to.toLowerCase().includes(email.split('@')[0].toLowerCase()))));
   if (!myTasks.length) { section.innerHTML = ''; return; }
   const rows = myTasks.map(t => {
@@ -2381,7 +2194,7 @@ function renderTaskBanner() {
 function renderAdminTaskPanel() {
   const section = document.getElementById('admin-task-section');
   if (!section) return;
-  if (effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
+  if (window.AppState.user.effectiveRole !== 'Admin') { section.innerHTML = ''; return; }
   const openTasks = allTasks.filter(t => !t.done);
   const doneTasks = allTasks.filter(t => t.done).slice(0, 5);
   const openRows = openTasks.map(t => {
@@ -2416,9 +2229,9 @@ function staleClass(days) {
 }
 
 function getMyTasks() {
-  const allowed = ROLE_STAGES[effectiveRole];
-  if (!allowed) return allPosts;
-  return allPosts.filter(p => allowed.includes(p.stage || ''));
+  const allowed = ROLE_STAGES[window.AppState.user.effectiveRole];
+  if (!allowed) return window.AppState.posts.all;
+  return window.AppState.posts.all.filter(p => allowed.includes(p.stage || ''));
 }
 
 function getNextPost() {
@@ -2447,7 +2260,7 @@ function getRelativeDate(rawDate) {
 function renderNextPost() {
   const section = document.getElementById('next-post-section');
   if (!section) return;
-  if (effectiveRole === 'Client') { section.innerHTML=''; return; }
+  if (window.AppState.user.effectiveRole === 'Client') { section.innerHTML=''; return; }
   const post = getNextPost();
   if (!post) {
     section.innerHTML = `<div class="hero-card"><div class="hero-label">Most Urgent Post</div><div class="empty-state" style="padding:var(--sp-5) 0 0"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div></div>`;
@@ -2466,7 +2279,7 @@ function renderNextPost() {
   const days      = daysInStage(post);
   const stLabel   = staleLabel(days, stage);
   const stCls     = staleClass(days);
-  const canUpdate = effectiveRole !== 'Client';
+  const canUpdate = window.AppState.user.effectiveRole !== 'Client';
   let primaryLabel = '', primaryAction = '', secondaryLabel = '', secondaryAction = '';
   if (stage === 'awaiting_brand_input') { primaryLabel='Start Production'; primaryAction=`quickStage('${esc(id)}','in_production')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
   else if (stage === 'in_production') { primaryLabel='Mark Ready'; primaryAction=`quickStage('${esc(id)}','ready')`; secondaryLabel='Send for Approval'; secondaryAction=`quickStage('${esc(id)}','awaiting_approval')`; }
@@ -2487,7 +2300,7 @@ function toggleHeroComments(id, btn) {
 }
 
 // -- Unified post list registry -----------------
-const _postLists = {};
+window._postLists = {};
 
 function buildPostCard(p, listKey) {
   const id     = getPostId(p);
@@ -2527,323 +2340,21 @@ function showChaseToast(msg) {
   }, 1800);
 }
 
-function _pipelineStageKey(stage) {
-  var s = stage || '';
-  if (s === 'in_production') return 'production';
-  if (s === 'ready') return 'ready';
-  if (s === 'awaiting_brand_input') return 'input';
-  if (s === 'awaiting_approval') return 'approval';
-  if (s === 'scheduled') return 'scheduled';
-  if (s === 'published') return 'published';
-  if (s === 'parked') return 'parked';
-  if (s === 'rejected') return 'rejected';
-  return '';
-}
-
-function buildPipelineCard(p, listKey) {
-  var id = getPostId(p);
-  var title = getTitle(p);
-  var stage = p.stage || '';
-  var stageLC = stage.toLowerCase();
-
-  // Card type detection
-  var _isBrief = (p.stage || '') === 'brief';
-  var _hasFeedback = !_isBrief &&
-    p.client_feedback && p.client_feedback.trim().length > 0;
-
-  // FIX 1 -- Color bar computation
-  var tdRaw = p.targetDate || p.target_date;
-  var cardIsStale = isPostStale(p);
-  var barColor = _isBrief ? '#C8A84B' :
-    _hasFeedback ? '#FF4B4B' :
-    cardIsStale && stageLC === 'awaiting_approval'
-    ? 'var(--c-red)' :
-    cardIsStale ? 'var(--c-amber)' :
-    stageLC === 'scheduled' ? 'var(--c-cyan)' :
-    stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
-    'rgba(255,255,255,0.06)';
-
-  // Row wash background
-  var rowBg = _isBrief ? 'rgba(200,168,75,0.04)' :
-    _hasFeedback ? 'rgba(255,75,75,0.04)' : 'transparent';
-
-  // FIX 2 -- Date
-  var dateInfo = formatPipelineDate(tdRaw);
-
-  // FIX 4 -- Meta line: PILLAR . OWNER . LOCATION
-  var pillarShort = (p.contentPillar || p.content_pillar || '').slice(0,6).toUpperCase();
-  var ownerStr = p.owner || '';
-  var locationStr = p.location || '';
-  var metaParts = [pillarShort, ownerStr, locationStr].filter(Boolean);
-  var metaLine = metaParts.join(' \xB7 ');
-
-  // Brief cards show date/time instead of pillar/owner/location
-  if (_isBrief) {
-    var sentTime = '';
-    if (p.status_changed_at && p.status_changed_at !== 'null') {
-      var _d = new Date((p.status_changed_at || '') + 'Z');
-      if (!isNaN(_d.getTime())) {
-        var _date = _d.toLocaleDateString('en-IN',
-          {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
-        var _time = _d.toLocaleTimeString('en-IN',
-          {hour:'numeric',minute:'2-digit',hour12:true,
-          timeZone:'Asia/Kolkata'});
-        sentTime = _date + ' \xB7 ' + _time;
-      }
-    }
-    metaLine = 'Client request' + (sentTime ? ' \xB7 ' + sentTime : '');
-  }
-
-  // Chip HTML for brief/feedback card types
-  var chipHtml = '';
-  if (_isBrief) {
-    chipHtml =
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'background:#C8A84B;color:#000;font-weight:600;' +
-      'padding:4px 8px;flex-shrink:0;">BRIEF</div>';
-  } else if (_hasFeedback) {
-    chipHtml =
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'background:#FF4B4B;color:#fff;font-weight:600;' +
-      'padding:4px 8px;flex-shrink:0;">FEEDBACK</div>';
-  }
-
-  // Right side: chip for brief/feedback, chase/owner badge for normal
-  var rightHtml = '';
-  if (_isBrief || _hasFeedback) {
-    rightHtml = chipHtml;
-  } else {
-    // FIX 5 -- Chase button (plain text, no border)
-    var _isClientCard = (effectiveRole || '').toLowerCase() === 'client';
-    if (!_isClientCard && stage === 'awaiting_approval') {
-      var changed = p.status_changed_at ? new Date((p.status_changed_at || '') + 'Z') : null;
-      var daysWaiting = changed ? Math.floor((new Date() - changed) / 86400000) : 0;
-      if (daysWaiting >= 3) {
-        var sentDate = changed ? changed.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'}) : 'recently';
-        var chaseMsg = 'Hi! Following up on ' + title + ' sent for approval on ' + sentDate + '. Please review when you get a chance';
-        rightHtml = '<button onclick="event.stopPropagation();copyChase(\'' + encodeURIComponent(chaseMsg) + '\')" ' +
-          'style="font-family:var(--mono);font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
-          'color:var(--c-red);background:transparent;border:none;cursor:pointer;padding:0;">' +
-          'CHASE ' + daysWaiting + 'D</button>';
-      }
-    }
-    // FIX 6 -- Owner badge on non-chase cards (colored initials)
-    if (!rightHtml) {
-      var ownerColors = {
-        'client': 'var(--c-red)',
-        'chitra': 'var(--c-cyan)',
-        'pranav': 'var(--c-purple)'
-      };
-      var ownerKey = (p.owner || '').toLowerCase();
-      var ownerColor = ownerColors[ownerKey] || '#666';
-      var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
-      if (ownerInitial) {
-        rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
-          'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
-          'font-size:7px;color:' + ownerColor + ';display:flex;align-items:center;' +
-          'justify-content:center;flex-shrink:0;">' + esc(ownerInitial) + '</div>';
-      }
-    }
-  }
-
-  // Build card content (all inline -- no CSS classes for card layout)
-  var innerCard =
-    '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:rgba(255,255,255,0.6);">' + esc(dateInfo.text) + '</div>' +
-        '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#ccc;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(title) + '</div>' +
-        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.55);letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
-      '</div>' +
-      (rightHtml ? '<div style="flex-shrink:0;">' + rightHtml + '</div>' : '') +
-    '</div>';
-
-  // FIX 1 -- Outer wrapper with 3px color bar + bottom divider
-  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;background:' + rowBg + ';">' +
-    '<div style="width:3px;flex-shrink:0;background:' + barColor + ';"></div>' +
-    '<div style="flex:1;">' + innerCard + '</div>' +
-  '</div>';
-}
-
-// -- Pipeline chip count updater ----------------
-function updatePipelineChipCounts() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var _chipRole = (effectiveRole || '').toLowerCase();
-  var _isPranavChip = _chipRole === 'creative' ||
-    _chipRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
-  var _isChitraChip = (_chipRole === 'servicing' ||
-    _chipRole === 'chitra') && !_isPranavChip;
-  var chipPosts = posts.filter(function(p) {
-    var s = p.stage || '';
-    if (s === 'published' || s === 'parked' || s === 'rejected') return false;
-    if (_isPranavChip) {
-      var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav';
-      return (s === 'brief' || s === 'in_production' || s === 'ready') && isMine;
-    }
-    return true;
-  });
-  var stageCounts = {
-    all:                  chipPosts.length,
-    brief:                chipPosts.filter(function(p) { return p.stage === 'brief'; }).length,
-    in_production:        chipPosts.filter(function(p) { return p.stage === 'in_production'; }).length,
-    ready:                chipPosts.filter(function(p) { return p.stage === 'ready'; }).length,
-    awaiting_approval:    chipPosts.filter(function(p) { return p.stage === 'awaiting_approval'; }).length,
-    awaiting_brand_input: chipPosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; }).length,
-    scheduled:            chipPosts.filter(function(p) { return p.stage === 'scheduled'; }).length,
-  };
-  var chipMap = {
-    all: 'all', brief: 'brief', in_production: 'in_production', ready: 'ready',
-    awaiting_approval: 'awaiting_approval', awaiting_brand_input: 'awaiting_brand_input',
-    scheduled: 'scheduled'
-  };
-  var keys = Object.keys(stageCounts);
-  for (var k = 0; k < keys.length; k++) {
-    var chipKey = chipMap[keys[k]] || keys[k];
-    var el = document.getElementById('chip-count-' + chipKey);
-    if (el) el.textContent = stageCounts[keys[k]];
-  }
-  // Hide chips with zero count (except ALL); also filter for Client role
-  var _isClientChip = (effectiveRole || '').toLowerCase() === 'client';
-  var _clientVisibleStages = ['all', 'awaiting_approval', 'awaiting_brand_input', 'published'];
-  document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
-    var stage = chip.dataset.stage;
-    if (_isClientChip && _clientVisibleStages.indexOf(stage) === -1) {
-      chip.style.display = 'none';
-      return;
-    }
-    if (stage === 'all') return;
-    var count = stageCounts[stage] || 0;
-    chip.style.display = count > 0 ? 'flex' : 'none';
-  });
-  if (_isPranavChip) {
-    // Hide chips Pranav doesn't need
-    ['awaiting_approval','awaiting_brand_input',
-     'scheduled'].forEach(function(stage) {
-      var chip = document.querySelector(
-        '.stage-chip[data-stage="' + stage + '"]');
-      if (chip) chip.style.display = 'none';
-    });
-    // Show only relevant chips
-    ['brief','in_production','ready'].forEach(function(stage) {
-      var chip = document.querySelector(
-        '.stage-chip[data-stage="' + stage + '"]');
-      if (chip) chip.style.display = '';
-    });
-  } else {
-    // Restore all chips for non-Pranav roles
-    // (existing zero-count hiding logic handles this)
-    ['awaiting_approval','awaiting_brand_input',
-     'scheduled','brief','in_production','ready'].forEach(
-      function(stage) {
-        var chip = document.querySelector(
-          '.stage-chip[data-stage="' + stage + '"]');
-        if (chip) chip.style.display = '';
-      });
-  }
-  // Inject colored dots into stage chips (after counts and visibility)
-  var dotColors = {
-    all: '#666',
-    awaiting_approval: 'var(--c-red)',
-    awaiting_brand_input: 'var(--c-purple)',
-    scheduled: 'var(--c-cyan)',
-    ready: 'var(--c-green)',
-    in_production: 'var(--c-amber)'
-  };
-  document.querySelectorAll('#stage-strip .stage-chip').forEach(function(chip) {
-    var stage = chip.dataset.stage;
-    if (!chip.querySelector('.chip-dot')) {
-      var dot = document.createElement('span');
-      dot.className = 'chip-dot';
-      dot.style.background = dotColors[stage] || '#555';
-      chip.insertBefore(dot, chip.firstChild);
-    }
-    var countEl = chip.querySelector('.chip-count');
-    if (countEl) {
-      countEl.style.color = dotColors[stage] || '#555';
-    }
-  });
-}
-
-// -- Person strip count updater ------------------
-function updatePersonStripCounts() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var clientCount = posts.filter(function(p) {
-    return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
-  }).length;
-  var chitraCount = posts.filter(function(p) {
-    return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input';
-  }).length;
-  var pranavCount = posts.filter(function(p) {
-    return p.stage === 'in_production';
-  }).length;
-  var clientEl = document.getElementById('person-num-client');
-  var chitraEl = document.getElementById('person-num-chitra');
-  var pranavEl = document.getElementById('person-num-pranav');
-  if (clientEl) clientEl.textContent = clientCount;
-  if (chitraEl) chitraEl.textContent = chitraCount;
-  if (pranavEl) pranavEl.textContent = pranavCount;
-}
-
-// -- Person filter handler -----------------------
-function filterPipelineByPerson(person) {
-  if (_activePerson === person) {
-    _activePerson = null;
-    document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
-  } else {
-    _activePerson = person;
-    document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('active'));
-    var btn = document.getElementById('person-btn-' + person);
-    if (btn) btn.classList.add('active');
-  }
-  renderPipeline();
-}
-
-// -- Pipeline stage chip click handler ----------
-function filterPipelineByChip(stage) {
-  var strip = document.getElementById('stage-strip');
-  if (!strip) return;
-  var chips = strip.querySelectorAll('.stage-chip');
-  chips.forEach(function(c) { c.classList.remove('active'); });
-  var clicked = strip.querySelector('.stage-chip[data-stage="' + stage + '"]');
-  if (clicked) clicked.classList.add('active');
-  if (stage === 'all') {
-    window.pcsPipelineFilter = null;
-  } else {
-    window.pcsPipelineFilter = [stage];
-  }
-  renderPipeline();
-}
-
-// Wire pipeline stage chip clicks
-document.addEventListener('DOMContentLoaded', function() {
-  var strip = document.getElementById('stage-strip');
-  if (strip) {
-    strip.addEventListener('click', function(e) {
-      var chip = e.target.closest('.stage-chip');
-      if (!chip) return;
-      var stage = chip.dataset.stage;
-      if (stage) filterPipelineByChip(stage);
-    });
-  }
-});
 
 // -- Task stage chip filter ---------------------
-let _taskFilter = null; // null = show all, string = bucket key
+window._taskFilter = null; // null = show all, string = bucket key
 
 function renderTaskStageChips() {
   const el = document.getElementById('task-stage-chips');
   if (!el) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets || !buckets.length) { el.innerHTML = ''; return; }
 
   const chips = buckets.map(bucket => {
-    const count = allPosts.filter(p =>
+    const count = window.AppState.posts.all.filter(p =>
       bucket.stages.includes(p.stage || '')
     ).length;
-    const active = _taskFilter === bucket.key ? ' chip-active' : '';
+    const active = window._taskFilter === bucket.key ? ' chip-active' : '';
     // Find color from STRIP_STAGES
     const stripStage = (window.STRIP_STAGES||[]).find(s => s.bucket === bucket.key);
     const color = stripStage ? stripStage.color : 'var(--text3)';
@@ -2860,7 +2371,7 @@ function renderTaskStageChips() {
 }
 
 function filterTasksByChip(bucketKey) {
-  _taskFilter = _taskFilter === bucketKey ? null : bucketKey;
+  window._taskFilter = window._taskFilter === bucketKey ? null : bucketKey;
   renderTaskStageChips();
   _renderFilteredTasks();
 }
@@ -2868,23 +2379,23 @@ function filterTasksByChip(bucketKey) {
 function _renderFilteredTasks() {
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets) return;
 
-  if (!_taskFilter) {
+  if (!window._taskFilter) {
     // Show all buckets
     renderTasks();
     return;
   }
 
-  const bucket = buckets.find(b => b.key === _taskFilter);
+  const bucket = buckets.find(b => b.key === window._taskFilter);
   if (!bucket) { renderTasks(); return; }
 
-  const posts = allPosts.filter(p =>
+  const posts = window.AppState.posts.all.filter(p =>
     bucket.stages.includes(p.stage || '')
   );
   const listKey = `tasks-${bucket.key}`;
-  _postLists[listKey] = posts;
+  window._postLists[listKey] = posts;
 
   if (!posts.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">OK</div><p>Nothing in ${esc(bucket.label)} right now.</p></div>`;
@@ -2905,25 +2416,25 @@ function _renderTasksInner() {
   renderTaskStageChips();
 
   // If a chip filter is active, let _renderFilteredTasks handle it
-  if (_taskFilter) { _renderFilteredTasks(); return; }
+  if (window._taskFilter) { _renderFilteredTasks(); return; }
 
   const container = document.getElementById('tasks-container');
   if (!container) return;
-  const buckets = ROLE_BUCKETS[effectiveRole];
+  const buckets = ROLE_BUCKETS[window.AppState.user.effectiveRole];
   if (!buckets) {
     const posts = getMyTasks();
-    _postLists['tasks'] = posts;
+    window._postLists['tasks'] = posts;
     container.innerHTML = posts.length
       ? `<div class="row-list">${posts.map(p => buildPostCard(p,'tasks')).join('')}</div>`
       : `<div class="empty-state"><div class="empty-icon">OK</div><p>All clear - nothing here right now.</p></div>`;
     return;
   }
   const stagesHtml = buckets.map(bucket => {
-    const posts = allPosts
+    const posts = window.AppState.posts.all
       .filter(p => bucket.stages.includes(p.stage || ''))
       .filter(p => !isSnoozed(getPostId(p)));
     const listKey = `tasks-${bucket.key}`;
-    _postLists[listKey] = posts;
+    window._postLists[listKey] = posts;
     const count    = posts.length;
     const badgeCls = bucket.warn && count > 0 ? ' warn' : '';
     const LIMIT    = 8;
@@ -2964,2211 +2475,9 @@ function toggleStageOverflow(btn, totalHidden) {
 }
 
 // ===============================================
-// Batch selection mode for Ready group
-// ===============================================
-function toggleBatchMode() {
-  _batchMode = !_batchMode;
-  _batchSelected.clear();
 
-  var btn = document.getElementById('batch-select-btn');
-  var bar = document.getElementById('batch-bar');
 
-  if (btn) btn.classList.toggle('active', _batchMode);
-  if (bar) bar.style.display = _batchMode ? 'flex' : 'none';
 
-  document.querySelectorAll('[data-post-id][data-stage="ready"]').forEach(function(card) {
-    if (_batchMode) {
-      card.classList.add('batch-mode');
-      var cb = document.createElement('div');
-      cb.className = 'batch-checkbox';
-      cb.setAttribute('data-batch-cb', '1');
-      card.insertBefore(cb, card.firstChild);
-    } else {
-      card.classList.remove('batch-mode', 'batch-selected');
-      var existing = card.querySelector('[data-batch-cb]');
-      if (existing) existing.remove();
-    }
-  });
-
-  updateBatchCount();
-}
-
-function toggleBatchCard(postId, cardEl) {
-  if (!_batchMode) return;
-  if (_batchSelected.has(postId)) {
-    _batchSelected.delete(postId);
-    cardEl.classList.remove('batch-selected');
-  } else {
-    _batchSelected.add(postId);
-    cardEl.classList.add('batch-selected');
-  }
-  updateBatchCount();
-}
-
-function updateBatchCount() {
-  var countEl = document.getElementById('batch-count');
-  if (countEl) countEl.textContent = _batchSelected.size;
-}
-
-async function executeBatchAction(targetStage) {
-  if (_batchSelected.size === 0) return;
-
-  var ids = Array.from(_batchSelected);
-  var now = new Date().toISOString();
-  var dbStage = toDbStage(targetStage);
-  var actor = resolveActor();
-
-  try {
-    // PostgREST IN filter: post_id=in.(id1,id2,...)
-    var inList = ids.map(function(id) { return encodeURIComponent(id); }).join(',');
-    await apiFetch('/posts?post_id=in.(' + inList + ')', {
-      method: 'PATCH',
-      body: JSON.stringify({
-        stage: dbStage,
-        status_changed_at: now,
-        updated_at: now,
-        updated_by: actor
-      }),
-    });
-
-    toggleBatchMode();
-    loadPosts();
-
-  } catch (err) {
-    console.error('Batch action error:', err);
-    showToast('Batch update failed - try again', 'error');
-  }
-}
-
-function renderPipeline() {
-  try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
-  updatePipelineCritical(allPosts);
-  updatePipelineStageBar(allPosts);
-  updatePipelineNarrative(allPosts);
-}
-function updatePipelineHeader() {
-  updatePipelineNarrative(allPosts);
-}
-
-function updatePipelineNarrative(posts) {
-  var wrapEl = document.getElementById('pipeline-narrative');
-  if (!wrapEl) return;
-  var el = document.getElementById('pipeline-narrative-text');
-  if (!el) el = wrapEl;
-
-  var _narrRole = (effectiveRole || '').toLowerCase();
-  var _isPranavNarr = _narrRole === 'creative' ||
-    _narrRole === 'pranav' ||
-    (window.currentUserEmail||'').toLowerCase().includes('pranav');
-
-  if (_isPranavNarr) {
-    var narrEl = document.getElementById('pipeline-narrative-text')
-      || document.getElementById('pipeline-narrative');
-    if (narrEl) {
-      var _myProd = (allPosts || []).filter(function(p) {
-        return (p.stage === 'in_production') &&
-          (p.owner || '').toLowerCase() === 'pranav';
-      }).length;
-      var _myBriefs = (allPosts || []).filter(function(p) {
-        return (p.stage === 'brief') &&
-          (p.owner || '').toLowerCase() === 'pranav';
-      }).length;
-      var _myReady = (allPosts || []).filter(function(p) {
-        return (p.stage === 'ready') &&
-          (p.owner || '').toLowerCase() === 'pranav';
-      }).length;
-
-      if (_myBriefs > 0) {
-        narrEl.textContent = _myBriefs + ' brief' +
-          (_myBriefs > 1 ? 's' : '') + ' waiting to start';
-        narrEl.style.color = 'var(--c-gold)';
-      } else if (_myProd > 0) {
-        narrEl.textContent = _myProd + ' in production';
-        narrEl.style.color = 'var(--c-purple)';
-      } else if (_myReady > 0) {
-        narrEl.textContent = _myReady + ' ready for approval';
-        narrEl.style.color = 'var(--c-green)';
-      } else {
-        narrEl.textContent = 'All clear';
-        narrEl.style.color = 'rgba(255,255,255,0.4)';
-      }
-    }
-    return;
-  }
-
-  var allP = posts || allPosts || [];
-  var now = new Date(); now.setHours(0,0,0,0);
-
-  var stageDisplayNames = {
-    'awaiting_approval':   'Approval',
-    'awaiting_brand_input': 'Input',
-    'in_production':       'Production',
-    'ready':               'Ready',
-    'scheduled':           'Scheduled'
-  };
-
-  function setText(text, color, filterStage) {
-    el.textContent = text;
-    el.style.color = color;
-    wrapEl.dataset.filterStage = filterStage || 'all';
-  }
-
-  // PRIORITY 1: post stuck in stage 2+ days
-  var stuck = allP.filter(function(p) {
-    return isPostStale(p);
-  }).sort(function(a,b) {
-    var aChanged = a.status_changed_at || a.statusChangedAt ||
-                   a.updated_at || a.updatedAt;
-    var bChanged = b.status_changed_at || b.statusChangedAt ||
-                   b.updated_at || b.updatedAt;
-    return new Date(aChanged) - new Date(bChanged);
-  });
-
-  if (stuck.length) {
-    var stuckStage = stuck[0].stage || stuck[0].stageLC;
-    var stageName = stageDisplayNames[stuckStage] || 'Post';
-    var changed = stuck[0].status_changed_at ||
-                  stuck[0].statusChangedAt ||
-                  stuck[0].updated_at || stuck[0].updatedAt;
-    var daysStuck = Math.floor(
-      (Date.now() - new Date(changed)) / 86400000);
-    var color = daysStuck >= 4 ? 'var(--c-red)' : 'var(--c-amber)';
-    setText(
-      stageName + ' \u00b7 ' + daysStuck + 'd waiting',
-      color,
-      stuckStage
-    );
-    return;
-  }
-
-  // PRIORITY 2a: 5+ approvals waiting
-  var approvals = allP.filter(function(p) {
-    return p.stage === 'awaiting_approval' ||
-           p.stageLC === 'awaiting_approval';
-  });
-  if (approvals.length >= 5) {
-    setText(
-      approvals.length + ' waiting on approval',
-      'var(--c-red)',
-      'awaiting_approval'
-    );
-    return;
-  }
-
-  // PRIORITY 2b: 1-4 approvals waiting
-  if (approvals.length >= 1) {
-    setText(
-      'Approval \u00b7 ' + approvals.length + ' post' +
-      (approvals.length === 1 ? '' : 's') + ' waiting',
-      'var(--c-amber)',
-      'awaiting_approval'
-    );
-    return;
-  }
-
-  // PRIORITY 3: input blocked
-  var inputs = allP.filter(function(p) {
-    return p.stage === 'awaiting_brand_input' ||
-           p.stageLC === 'awaiting_brand_input';
-  });
-  if (inputs.length) {
-    setText(
-      'Input \u00b7 ' + inputs.length + ' post' +
-      (inputs.length === 1 ? '' : 's') + ' waiting',
-      'var(--c-purple)',
-      'awaiting_brand_input'
-    );
-    return;
-  }
-
-  // PRIORITY 4: production posts exist
-  var production = allP.filter(function(p) {
-    return p.stage === 'in_production' ||
-           p.stageLC === 'in_production';
-  });
-  if (production.length) {
-    setText(
-      'Production \u00b7 ' + production.length + ' in progress',
-      'var(--c-amber)',
-      'in_production'
-    );
-    return;
-  }
-
-  // PRIORITY 5: Pranav idle 3+ days
-  var pranavPosts = allP.filter(function(p) {
-    return (p.owner||'').toLowerCase() === 'pranav' ||
-           (p.owner||'').toLowerCase() === 'creative';
-  });
-  if (pranavPosts.length) {
-    var last = pranavPosts.sort(function(a,b) {
-      return new Date(b.updated_at||b.updatedAt) -
-             new Date(a.updated_at||a.updatedAt);
-    })[0];
-    var idle = Math.floor(
-      (Date.now() - new Date(last.updated_at||last.updatedAt))
-      / 86400000);
-    if (idle >= 3) {
-      setText(
-        'Pranav idle \u00b7 ' + idle + ' days',
-        'var(--c-amber)',
-        'all'
-      );
-      return;
-    }
-  }
-
-  // PRIORITY 6: scheduled posts exist
-  var sched = allP.filter(function(p) {
-    return p.stage === 'scheduled' || p.stageLC === 'scheduled';
-  });
-  if (sched.length) {
-    setText(
-      'Pipeline sorted \u00b7 ' + sched.length + ' scheduled',
-      'var(--c-green)',
-      'scheduled'
-    );
-    return;
-  }
-
-  // PRIORITY 7: default
-  setText(
-    allP.length ? 'All sorted \u00b7 nothing blocking' :
-                  'Pipeline empty \u00b7 create now',
-    allP.length ? '#555' : '#444',
-    'all'
-  );
-}
-
-function filterFromNarrative() {
-  var el = document.getElementById('pipeline-narrative');
-  if (!el) return;
-  var stage = el.dataset.filterStage || 'all';
-  var chip = document.querySelector(
-    '.stage-chip[data-stage="' + stage + '"]');
-  if (chip) chip.click();
-}
-window.filterFromNarrative = filterFromNarrative;
-
-function updateDashboardHeader() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var runway = 0, active = 0;
-  posts.forEach(function(p) {
-    var s = (p.stage || '').toLowerCase();
-    if (s === 'scheduled') runway++;
-    if (['published','parked','rejected','scheduled'].indexOf(s) === -1) active++;
-  });
-  var el;
-  el = document.getElementById('dh-runway'); if (el) el.textContent = runway;
-  el = document.getElementById('dh-active'); if (el) el.textContent = active;
-}
-
-function _renderPipelineInner() {
-  // Consume pressure-click filter (set by dashboard click handler)
-  const activeFilter = window.pcsPipelineFilter;
-  window.pcsPipelineFilter = null;
-
-  // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
-  var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
-    'scheduled', 'published', 'brief', 'brief_done'];
-  var _isClient = (effectiveRole || '').toLowerCase() === 'client';
-  const base = allPosts.filter(p => {
-    if (_isClient && !_clientStages.includes(p.stage || '')) return false;
-    return PIPELINE_RENDER_ORDER.includes(p.stage || '');
-  });
-  var stageFiltered = activeFilter && Array.isArray(activeFilter)
-    ? base.filter(p => activeFilter.includes(p.stage || ''))
-    : base;
-
-  // -- Pipeline filter sheet --
-  stageFiltered = _applyPFFilter(stageFiltered);
-
-  // -- Person filter --
-  var source = stageFiltered;
-  if (_activePerson === 'client') {
-    source = stageFiltered.filter(function(p) { return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (_activePerson === 'chitra') {
-    source = stageFiltered.filter(function(p) { return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (_activePerson === 'pranav') {
-    source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
-  }
-
-  // -- ROLE-BASED PIPELINE FILTERING --
-  var _rolePL = (effectiveRole || '').toLowerCase();
-  var _isPranavPL = _rolePL === 'creative' ||
-    _rolePL === 'pranav' ||
-    (window.currentUserEmail || '').toLowerCase().includes('pranav');
-  var _isChitraPL = (_rolePL === 'servicing' || _rolePL === 'chitra') && !_isPranavPL;
-  var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
-
-  if (_isPranavPL) {
-    source = source.filter(function(p) {
-      var stage = p.stage || '';
-      var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav';
-      if (stage === 'brief') return isMine;
-      if (stage === 'in_production') return isMine;
-      if (stage === 'ready') return isMine;
-      return false;
-    });
-  }
-
-  if (_isChitraPL) {
-    var _chitraStages = [
-      'brief',
-      'awaiting_approval',
-      'awaiting_brand_input',
-      'ready',
-      'scheduled'
-    ];
-    source = source.filter(function(p) {
-      var stage = p.stage || '';
-      if (!_chitraStages.includes(stage)) return false;
-      if (stage === 'brief') {
-        return (p.owner || '').toLowerCase() === 'chitra';
-      }
-      return true;
-    });
-  }
-
-  // -- PRIORITY SORT: overdue first, then soonest date --
-  function prioritySort(posts) {
-    var now = new Date().setHours(0,0,0,0);
-    return posts.slice().sort(function(a, b) {
-      var da = new Date(a.targetDate || a.target_date).setHours(0,0,0,0);
-      var db = new Date(b.targetDate || b.target_date).setHours(0,0,0,0);
-      var aOver = da < now; var bOver = db < now;
-      if (aOver && !bOver) return -1;
-      if (!aOver && bOver) return 1;
-      return da - db;
-    });
-  }
-
-  // -- ROLE-SPECIFIC EMPTY STATES --
-  const emptyMsg = {};
-  if (activeFilter) {
-    const key = activeFilter.sort().join(',');
-    if (key.includes('in_production')) emptyMsg.default = 'Nothing in production -- create new posts';
-    else if (key.includes('ready')) emptyMsg.default = 'Nothing ready -- wait or push production';
-    else if (key.includes('awaiting_approval')) emptyMsg.default = 'Nothing pending -- you are clear';
-  }
-
-  const grouped = {};
-  source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
-  // Pranav only sees briefs assigned to him
-  if (grouped['brief']) {
-    var _roleBF = (effectiveRole || '').toLowerCase();
-    var _isPranavBF = _roleBF === 'creative' ||
-      (window.currentUserEmail || '').toLowerCase().includes('pranav');
-    if (_isPranavBF) {
-      grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
-        return (p.owner || '').toLowerCase() === 'pranav';
-      });
-      if (!grouped['brief'].length) delete grouped['brief'];
-    }
-  }
-  const stages = Object.keys(grouped).sort((a,b) => {
-    const ia = PIPELINE_RENDER_ORDER.indexOf(a), ib = PIPELINE_RENDER_ORDER.indexOf(b);
-    if (ia===-1 && ib===-1) return a.localeCompare(b);
-    if (ia===-1) return 1; if (ib===-1) return -1;
-    return ia - ib;
-  });
-
-  let isFirstCard = true;
-  const html = stages.map(stage => {
-    var posts;
-    if (stage === 'in_production') {
-      posts = (grouped[stage] || []).slice().sort(function(a, b) {
-        var aIsBrief = (a.stage || '') === 'brief';
-        var bIsBrief = (b.stage || '') === 'brief';
-        var aHasFeedback = !aIsBrief &&
-          a.client_feedback && a.client_feedback.trim().length > 0;
-        var bHasFeedback = !bIsBrief &&
-          b.client_feedback && b.client_feedback.trim().length > 0;
-        var aPriority = aIsBrief ? 0 : aHasFeedback ? 1 : 2;
-        var bPriority = bIsBrief ? 0 : bHasFeedback ? 1 : 2;
-        if (aPriority !== bPriority) return aPriority - bPriority;
-        var aTime = new Date((a.status_changed_at||'')+'Z').getTime();
-        var bTime = new Date((b.status_changed_at||'')+'Z').getTime();
-        return aTime - bTime;
-      });
-    } else {
-      posts = prioritySort(grouped[stage]);
-    }
-    const listKey = `pipeline-${stage.toLowerCase().replace(/\s+/g,'-')}`;
-    _postLists[listKey] = posts;
-    const { label } = stageStyle(stage);
-    const sk = _pipelineStageKey(stage);
-    const cards = posts.map((p, i) => {
-      const card = buildPipelineCard(p, listKey);
-      if (isFirstCard && activeFilter) {
-        isFirstCard = false;
-        return card.replace('data-post-id=', 'data-focus="1" data-post-id=');
-      }
-      return card;
-    }).join('');
-    var selectBtn = (stage === 'ready')
-      ? '<button class="batch-select-btn" id="batch-select-btn" onclick="event.stopPropagation();toggleBatchMode()">Select</button>'
-      : '';
-    // Chase All button for awaiting_approval group
-    var _isClientCA = (effectiveRole || '').toLowerCase() === 'client';
-    var chaseAllBtn = '';
-    if (!_isClientCA && stage === 'awaiting_approval') {
-      var nowCA = new Date();
-      var threeDaysAgoCA = new Date();
-      threeDaysAgoCA.setDate(threeDaysAgoCA.getDate() - 3);
-      var overdueCount = posts.filter(function(p) {
-        if (!p.status_changed_at) return true;
-        return new Date((p.status_changed_at || '') + 'Z') < threeDaysAgoCA;
-      }).length;
-      if (overdueCount >= 1) {
-        chaseAllBtn = '<button class="chase-all-btn" onclick="chaseAll()" id="chase-all-btn">Chase All</button>';
-      }
-    }
-    // Per-stage summary line
-    var _isClientSum = (effectiveRole || '').toLowerCase() === 'client';
-    var summaryText = '';
-    var now5 = new Date();
-    var stageKey = stage;
-    var stagePosts = posts;
-    if (_isClientSum) {
-      // Client sees no summary lines
-    } else if (stageKey === 'awaiting_approval') {
-      var clientCount = stagePosts.filter(function(p) { return (p.owner||'').toLowerCase() === 'client'; }).length;
-      var sortedByUpdate = stagePosts.slice().sort(function(a,b) { return new Date(a.updated_at||a.updatedAt) - new Date(b.updated_at||b.updatedAt); });
-      var oldestPost = sortedByUpdate[0];
-      var oldDays = oldestPost ? Math.floor((now5 - new Date(oldestPost.updated_at||oldestPost.updatedAt)) / 86400000) : 0;
-      summaryText = stagePosts.length + ' posts waiting \u00b7 oldest ' + oldDays + 'd \u00b7 ' + clientCount + ' from client';
-    } else if (stageKey === 'awaiting_brand_input') {
-      summaryText = stagePosts.length + ' blocked on brief \u00b7 needs unblocking';
-    } else if (stageKey === 'scheduled') {
-      var schedSorted = stagePosts.slice().sort(function(a,b) { return new Date(a.targetDate||a.target_date) - new Date(b.targetDate||b.target_date); });
-      var nextSched = schedSorted[0];
-      var daysToNext = nextSched ? Math.ceil((new Date(nextSched.targetDate||nextSched.target_date) - now5) / 86400000) : 0;
-      summaryText = 'Next goes live ' + (daysToNext <= 1 ? 'tomorrow' : 'in ' + daysToNext + 'd') + ' \u00b7 pipeline sorted ' + stagePosts.length + ' days';
-    } else if (stageKey === 'in_production') {
-      summaryText = stagePosts.length + ' posts in progress \u00b7 keep sorting';
-    } else if (stageKey === 'ready') {
-      summaryText = stagePosts.length + ' ready to schedule \u00b7 sort now';
-    }
-    var summaryHtml = summaryText ? '<div style="padding:5px 18px 5px 21px;font-family:var(--mono);font-size:7px;color:#333;letter-spacing:0.04em;border-bottom:1px solid var(--dotline);background:rgba(255,255,255,0.01);">' + summaryText + '</div>' : '';
-
-    return `
-      <div class="group-section" id="group-section-${esc(stage)}" data-stage="${esc(stage)}">
-      <div class="group-hdr" onclick="togglePipelineGroup('${esc(stage)}')">
-        <div class="group-hdr-left">
-          <span class="group-chevron">&#9660;</span>
-          <div class="group-label ${esc(sk)}" data-stage="${esc(sk)}">${esc(label)}</div>
-        </div>
-        <div class="group-hdr-right" style="display:flex;align-items:center;gap:8px">
-          ${selectBtn}
-          <div class="group-count">${posts.length}</div>
-        </div>
-      </div>
-      ${summaryHtml}
-      <div class="group-post-list">
-        <div class="row-list post-list">
-          ${cards || '<div class="pstage-empty">' + (emptyMsg.default || 'Empty') + '</div>'}
-        </div>
-      </div>
-      </div>`;
-  }).join('');
-
-  // -- Closed Briefs collapsed group --
-  var briefDonePosts = allPosts.filter(function(p) {
-    return (p.stage || '') === 'brief_done';
-  });
-  var briefDoneCount = briefDonePosts.length;
-  var briefDoneCardsHtml = '';
-  if (briefDoneCount > 0) {
-    var bdListKey = 'pipeline-brief-done';
-    var bdSorted = briefDonePosts.slice().sort(function(a, b) {
-      var dA = new Date((a.status_changed_at||'')+'Z').getTime();
-      var dB = new Date((b.status_changed_at||'')+'Z').getTime();
-      return dB - dA;
-    });
-    _postLists[bdListKey] = bdSorted;
-    briefDoneCardsHtml = bdSorted.map(function(p) {
-      return buildPipelineCard(p, bdListKey);
-    }).join('');
-  }
-  var briefDoneGroupHtml = briefDoneCount > 0 ?
-    '<div class="group-section pipeline-brief-done-group" ' +
-    'id="pipeline-brief-done-group">' +
-    '<div class="pipeline-pub-toggle" ' +
-    'onclick="this.closest(\'.pipeline-brief-done-group\')' +
-    '.classList.toggle(\'pipeline-pub-expanded\')">' +
-    '<span class="pipeline-pub-arrow">&#9654;</span>' +
-    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:#C8A84B;">' +
-    'CLOSED BRIEFS</span>' +
-    '<span style="margin-left:auto"></span>' +
-    '<span class="group-count">' + briefDoneCount + '</span>' +
-    '</div>' +
-    '<div class="pipeline-pub-cards"><div class="row-list post-list">' +
-    briefDoneCardsHtml +
-    '</div></div>' +
-    '</div>' : '';
-
-  // -- Published collapsed group --
-  var pubPosts = allPosts.filter(function(p) { return (p.stage || '') === 'published'; });
-  var pubCount = pubPosts.length;
-  var pubCardsHtml = '';
-  if (pubCount > 0) {
-    var pubListKey = 'pipeline-published';
-    var pubSorted = pubPosts.slice().sort(function(a, b) {
-      var dA = parseDate(a.targetDate), dB = parseDate(b.targetDate);
-      if (dA && dB) return dB - dA;
-      if (dA) return -1; if (dB) return 1;
-      return 0;
-    });
-    _postLists[pubListKey] = pubSorted;
-    pubCardsHtml = pubSorted.map(function(p) { return buildPipelineCard(p, pubListKey); }).join('');
-  }
-  var pubGroupHtml = '<div class="group-section pipeline-pub-group" id="pipeline-pub-group">' +
-    '<div class="pipeline-pub-toggle" onclick="togglePipelinePub()">' +
-      '<span class="pipeline-pub-arrow">&#9660;</span>' +
-      '<span style="font-family:var(--mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--c-green)">PUBLISHED</span>' +
-      '<span style="margin-left:auto"></span>' +
-      '<span class="group-count">' + pubCount + '</span>' +
-    '</div>' +
-    '<div class="pipeline-pub-cards"><div class="row-list post-list">' +
-      (pubCardsHtml || '<div class="pstage-empty">No published posts</div>') +
-    '</div></div>' +
-  '</div>';
-
-  const container = document.getElementById('pipeline-container');
-  if (!container) return;
-  container.innerHTML = html + briefDoneGroupHtml + pubGroupHtml;
-
-  // -- Restore published expanded state --
-  if (window._pipelinePubExpanded) {
-    var pubGroup = document.getElementById('pipeline-pub-group');
-    if (pubGroup) pubGroup.classList.add('pipeline-pub-expanded');
-  }
-
-  // -- Restore collapsed state across re-renders --
-  Object.keys(_collapsedGroups).forEach(function(stage) {
-    if (_collapsedGroups[stage]) {
-      var section = document.getElementById('group-section-' + stage);
-      if (section) section.classList.add('collapsed');
-    }
-  });
-
-  // -- Update chip counts from rendered group headers --
-  updatePipelineChipCounts();
-  updatePersonStripCounts();
-
-  // -- GLOBAL EMPTY STATE (filtered view with no results) --
-  if (activeFilter && stages.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">\u2713</div><p>' + (emptyMsg.default || 'Nothing here -- you are clear') + '</p></div>';
-    return;
-  }
-
-  // -- AUTO-SCROLL to first focused card --
-  if (activeFilter) {
-    requestAnimationFrame(function() {
-      var focus = container.querySelector('.pc-focus');
-      if (focus) {
-        focus.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  }
-}
-
-
-function _toTitleCase(str) {
-  return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-}
-
-function populateFilterDropdowns() {
-  // Fixed order for library stage dropdown
-  const LIBRARY_STAGE_ORDER = ['scheduled','published','parked','rejected'];
-  const owners  = ['Pranav','Chitra','Client'];
-  const pillars = [...new Set(allPosts.map(p=>p.contentPillar||'').filter(Boolean))].sort();
-
-  const stageEl  = document.getElementById('filter-stage');
-  const ownerEl  = document.getElementById('filter-owner');
-  const pillarEl = document.getElementById('filter-pillar');
-  if (!stageEl || !ownerEl) return;
-
-  const curStage  = stageEl.value;
-  const curOwner  = ownerEl.value;
-  const curPillar = pillarEl?.value || '';
-
-  stageEl.innerHTML  = `<option value="">Stage</option>`  + LIBRARY_STAGE_ORDER.map(s=>`<option value="${esc(s)}">${esc(_toTitleCase(s))}</option>`).join('');
-  ownerEl.innerHTML  = `<option value="">Owner</option>`  + owners.map(o=>`<option value="${esc(o)}">${esc(formatOwner(o))}</option>`).join('');
-  if (pillarEl) pillarEl.innerHTML = `<option value="">Pillar</option>` + pillars.map(p=>`<option value="${esc(p)}">${esc(formatPillarDisplay(p))}</option>`).join('');
-
-  stageEl.value  = curStage;
-  ownerEl.value  = curOwner;
-  if (pillarEl) pillarEl.value = curPillar;
-}
-
-function filterLibrary() {
-  const query  = (document.getElementById('search-input')?.value||'').toLowerCase();
-  const stage  = (document.getElementById('filter-stage')?.value||'');
-  const owner  = (document.getElementById('filter-owner')?.value||'');
-  const pillar = (document.getElementById('filter-pillar')?.value||'').toLowerCase();
-  const date   = (document.getElementById('filter-date')?.value||'');
-
-  // Highlight active chips
-  ['filter-owner','filter-pillar','filter-stage','filter-date'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('chip-active', el.value !== '');
-  });
-
-  const today  = new Date(); today.setHours(0,0,0,0);
-  const week7  = new Date(today); week7.setDate(week7.getDate()+7);
-
-  // Library archive stages (dropdown shows all 4; default view shows only 2)
-  const _LIB_STAGES_ALL     = ['published','scheduled','parked','rejected'];
-  const _LIB_STAGES_DEFAULT = ['scheduled','published'];
-  // When user picks a specific stage, show that; otherwise default to scheduled+published
-  const _allowedStages = stage ? _LIB_STAGES_ALL : _LIB_STAGES_DEFAULT;
-
-  const filtered = allPosts.filter(p => {
-    var _isClient = (effectiveRole || '').toLowerCase() === 'client';
-    if (!_allowedStages.includes(p.stage || '')) return false;
-    if (query  && !getTitle(p).toLowerCase().includes(query)) return false;
-    if (stage  && (p.stage || '') !== stage) return false;
-    if (owner  && (p.owner || '') !== owner) return false;
-    if (pillar && (p.contentPillar||'').toLowerCase() !== pillar) return false;
-    if (date) {
-      const d = parseDate(p.targetDate);
-      if (date === 'none')   return !d;
-      if (!d) return false;
-      if (date === 'past')   return d < today;
-      if (date === 'today')  return d.getTime() === today.getTime();
-      if (date === 'week')   return d >= today && d <= week7;
-      if (date === 'future') return d > week7;
-    }
-    return true;
-  });
-
-  if (_currentLibraryView === 'list')          renderLibraryRows(filtered);
-  else if (_currentLibraryView === 'calendar') renderLibraryCalendar(filtered);
-}
-
-function renderLibrary() {
-  try {
-    populateFilterDropdowns();
-    filterLibrary();
-  } catch(e) { console.error('[PCS] renderLibrary crash:', e); }
-}
-
-function _libStageDotColor(stage) {
-  var s = stage || '';
-  if (s === 'in_production')        return 'var(--amber)';
-  if (s === 'ready')                return 'var(--green)';
-  if (s === 'awaiting_approval')    return 'var(--red)';
-  if (s === 'awaiting_brand_input') return 'var(--purple)';
-  if (s === 'scheduled')            return 'var(--cyan)';
-  if (s === 'published')            return 'var(--muted)';
-  if (s === 'parked')               return 'var(--muted2)';
-  if (s === 'rejected')             return 'var(--red)';
-  return 'var(--muted)';
-}
-
-function _buildLibCard(p) {
-  var id    = getPostId(p);
-  var title = getTitle(p);
-  var pillar = getPillarShort(p.contentPillar);
-  var owner  = formatOwner(p.owner || '');
-  var stage  = p.stage || '';
-
-  var d = parseDate(p.targetDate);
-  var dateStr = formatDateShort(p.targetDate);
-  var today = new Date(); today.setHours(0,0,0,0);
-  var isToday = d && d.toDateString() === today.toDateString();
-  var isOverdue = d && !isToday && d < today && !['published','parked','rejected'].includes(stage);
-
-  var cardCls = 'lib-card';
-  if (isOverdue) cardCls += ' overdue';
-  if (isToday) cardCls += ' today';
-
-  var dateCls = 'lib-date';
-  if (isOverdue) dateCls += ' overdue';
-  else if (isToday) dateCls += ' today';
-
-  var dateDisplay = dateStr || '-- --';
-
-  var metaParts = [];
-  if (pillar) metaParts.push(esc(pillar));
-  if (owner && owner !== ' - ') metaParts.push(esc(owner));
-  var metaHtml = metaParts.join('<span class="lib-meta-dot"></span>');
-
-  var dotColor = _libStageDotColor(stage);
-
-  return '<div class="' + cardCls + '" data-post-id="' + esc(id) + '" data-list="library">' +
-    '<span class="' + dateCls + '">' + esc(dateDisplay) + '</span>' +
-    '<div class="lib-body">' +
-      '<div class="lib-title">' + esc(title) + '</div>' +
-      (metaHtml ? '<div class="lib-meta">' + metaHtml + '</div>' : '') +
-    '</div>' +
-    '<span class="lib-stage-dot" style="background:' + dotColor + '"></span>' +
-  '</div>';
-}
-
-function renderLibraryRows(posts) {
-  var listView = document.getElementById('library-list-view');
-  if (!listView) return;
-  posts = posts.slice().sort(function(a, b) { return (parseDate(a.targetDate) || new Date(9999,0)) - (parseDate(b.targetDate) || new Date(9999,0)); });
-  _postLists['library'] = posts;
-  if (!posts.length) {
-    listView.innerHTML = '<div class="empty-state"><div class="empty-icon">[search]</div><p>No posts match your search.</p></div>';
-    return;
-  }
-
-  var today = new Date(); today.setHours(0,0,0,0);
-  var day7 = new Date(today); day7.setDate(day7.getDate() + 7);
-  var day14 = new Date(today); day14.setDate(day14.getDate() + 14);
-  var thisMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0); thisMonthEnd.setHours(23,59,59,999);
-  var nextMonthEnd = new Date(today.getFullYear(), today.getMonth() + 2, 0); nextMonthEnd.setHours(23,59,59,999);
-
-  var _noOverdueStages = ['published','parked','rejected'];
-  var groups = { overdue: [], thisWeek: [], nextWeek: [], laterMonth: [], nextMonth: [], later: [], noDate: [] };
-  posts.forEach(function(p) {
-    var d = parseDate(p.targetDate);
-    if (!d) { groups.noDate.push(p); return; }
-    if (d < today && !_noOverdueStages.includes(p.stage || '')) { groups.overdue.push(p); return; }
-    if (d < today) { groups.thisWeek.push(p); return; }
-    if (d < day7) { groups.thisWeek.push(p); return; }
-    if (d < day14) { groups.nextWeek.push(p); return; }
-    if (d <= thisMonthEnd) { groups.laterMonth.push(p); return; }
-    if (d <= nextMonthEnd) { groups.nextMonth.push(p); return; }
-    groups.later.push(p);
-  });
-
-  var order = [
-    { key: 'overdue', label: 'Overdue', dot: 'var(--red)', countCls: ' style="color:var(--red)"' },
-    { key: 'thisWeek', label: 'This Week', dot: '', countCls: '' },
-    { key: 'nextWeek', label: 'Next Week', dot: '', countCls: '' },
-    { key: 'laterMonth', label: 'Later This Month', dot: '', countCls: '' },
-    { key: 'nextMonth', label: 'Next Month', dot: '', countCls: '' },
-    { key: 'later', label: 'Later', dot: '', countCls: '' },
-    { key: 'noDate', label: 'No Date', dot: '', countCls: '' }
-  ];
-
-  var html = '';
-  order.forEach(function(g) {
-    var arr = groups[g.key];
-    if (!arr.length) return;
-    var dotHtml = g.dot ? '<span class="time-label-dot" style="background:' + g.dot + '"></span>' : '';
-    html += '<div class="time-label"><span class="time-label-text">' + dotHtml + g.label + '</span><span class="time-label-count"' + g.countCls + '>' + arr.length + '</span></div>';
-    html += arr.map(function(p) { return _buildLibCard(p); }).join('');
-  });
-  listView.innerHTML = html;
-}
-
-function renderClientView() {
-  try { _renderClientViewInner(); } catch(e) { console.error('[PCS] renderClientView crash:', e); }
-}
-function _renderClientViewInner() {
-  var fab = document.getElementById('fab') ||
-    document.querySelector('.fab');
-  if (fab) fab.style.display = 'none';
-
-  var h = new Date().getHours();
-  var timeOfDay = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-  var greetName = window.currentUserName ||
-    (window.currentUser && window.currentUser.name) ||
-    (window.currentUserEmail || '').split('@')[0];
-  var clientName = greetName.charAt(0).toUpperCase() + greetName.slice(1);
-
-  // CHANGE 2 - Header
-  var headerEl = document.getElementById('client-header');
-  if (headerEl) {
-    headerEl.innerHTML =
-      '<div style="display:flex;align-items:center;' +
-      'justify-content:space-between;padding:13px 18px;' +
-      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:var(--mono);font-size:13px;' +
-      'color:var(--c-gold);letter-spacing:0.08em;">srtd.io</div>' +
-      '<div style="display:flex;align-items:center;gap:8px;">' +
-      '<button onclick="openNotifications()" ' +
-      'style="background:transparent;border:none;cursor:pointer;' +
-      'position:relative;padding:4px;display:flex;' +
-      'align-items:center;justify-content:center;">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" ' +
-      'fill="none" stroke="rgba(255,255,255,0.7)" ' +
-      'stroke-width="2" stroke-linecap="round" ' +
-      'stroke-linejoin="round">' +
-      '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>' +
-      '<path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
-      '<span id="notif-client-badge" ' +
-      'style="display:none;position:absolute;top:0;right:0;' +
-      'background:#FF4B4B;color:#fff;border-radius:50%;' +
-      'width:14px;height:14px;font-size:8px;' +
-      'align-items:center;justify-content:center;' +
-      'font-family:\'IBM Plex Mono\',monospace;">0</span>' +
-      '</button>' +
-      '<button style="font-family:var(--mono);font-size:8px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:var(--c-gold);background:transparent;' +
-      'border:1px solid rgba(200,168,75,0.3);padding:6px 10px;' +
-      'cursor:pointer;" onclick="(function(){var o=document.getElementById(\'req-overlay\');if(o){o.style.display=\'flex\';var nav=document.getElementById(\'bottom-nav\');if(nav)nav.style.display=\'none\';var _mn=new Date();_mn.setDate(_mn.getDate()+2);var _ms=_mn.toISOString().split(\'T\')[0];var _di=document.getElementById(\'req-date\');if(_di)_di.min=_ms;}})()">+ New Request</button>' +
-      '<button onclick="logout()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;color:#555;' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-      'padding:6px 10px;cursor:pointer;">Sign Out</button>' +
-      '</div></div>';
-  }
-
-  // CHANGE 3 - Greeting
-  var now = new Date();
-  var timeStr = now.toLocaleDateString('en-IN', {
-    weekday:'short', day:'numeric', month:'short', timeZone:'Asia/Kolkata'
-  }) + ' \xB7 ' + now.toLocaleTimeString('en-IN', {
-    hour:'numeric', minute:'2-digit', hour12:true, timeZone:'Asia/Kolkata'
-  });
-
-  var greetEl = document.getElementById('client-greeting');
-  if (greetEl) {
-    greetEl.innerHTML =
-      '<div style="padding:14px 16px 13px;' +
-      'border-bottom:1px solid rgba(255,255,255,0.06);' +
-      'display:flex;align-items:baseline;' +
-      'justify-content:space-between;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:10px;letter-spacing:0.04em;' +
-      'color:rgba(255,255,255,0.55);">Good ' + esc(timeOfDay) + ', ' +
-      '<span style="color:#C8A84B;font-weight:500;">' +
-      esc(clientName) + '</span></div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:9px;letter-spacing:0.04em;' +
-      'color:rgba(255,255,255,0.35);">' + esc(timeStr) + '</div>' +
-      '</div>';
-  }
-
-  // Input needed section
-  var inputPosts = allPosts.filter(function(p) { return p.stage === 'awaiting_brand_input'; });
-
-  // CHANGE 4 - Input eyebrow
-  var inputEyebrow = document.getElementById('client-input-eyebrow');
-  if (inputEyebrow) {
-    inputEyebrow.innerHTML =
-      '<div style="background:#0a0a10;' +
-      'border-top:1px solid rgba(255,255,255,0.05);' +
-      'border-bottom:1px solid rgba(255,255,255,0.05);' +
-      'padding:10px 16px;display:flex;align-items:center;' +
-      'justify-content:space-between;">' +
-      '<div style="display:flex;align-items:center;gap:10px;">' +
-      '<span style="color:#F6A623;font-size:13px;">&#x25C8;</span>' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
-      'font-weight:500;color:rgba(255,255,255,0.55);">' +
-      'Awaiting Input</span>' +
-      '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.1em;' +
-      'color:rgba(255,255,255,0.4);' +
-      'border:1px dashed rgba(255,255,255,0.12);' +
-      'padding:2px 8px;">' + inputPosts.length + '</div>' +
-      '</div>';
-  }
-
-  // CHANGE 7 - Input request cards
-  var inputItems = document.getElementById('client-input-items');
-  if (inputItems) {
-    if (!inputPosts.length) {
-      inputItems.innerHTML = '<div style="padding:10px 16px;' +
-        'border-bottom:1px solid rgba(255,255,255,0.04);' +
-        'display:flex;align-items:center;gap:8px;">' +
-        '<div style="width:5px;height:5px;border-radius:50%;' +
-        'background:rgba(62,207,142,0.4);flex-shrink:0;"></div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.35);">' +
-        'All clear -- nothing needs your input</div>' +
-        '</div>';
-    } else {
-      inputItems.innerHTML = inputPosts.map(function(p) {
-        var id   = getPostId(p);
-        var days = daysInStage(p);
-        var staleLabel = days >= 1 ? days + 'd' : 'New';
-        var _pillar = (p.content_pillar || p.contentPillar || '--').toUpperCase();
-        var _loc = (p.location || '--').toUpperCase();
-
-        var sentLine = (function() {
-          if (!p.status_changed_at) return 'Submitted recently';
-          var d = new Date((p.status_changed_at || '') + 'Z');
-          var date = d.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' });
-          return 'Changes requested \xB7 ' + date;
-        })();
-
-        return '<div style="background:#0d0d16;' +
-          'border-bottom:1px solid rgba(255,255,255,0.04);' +
-          'position:relative;overflow:hidden;' +
-          'box-shadow:inset 0 1px 0 rgba(255,255,255,0.03);">' +
-
-          // Amber top bar
-          '<div style="height:3px;' +
-          'background:linear-gradient(to right,#F6A623,rgba(246,166,35,0));"></div>' +
-
-          // Header row: title + status
-          '<div style="display:flex;align-items:flex-start;' +
-          'justify-content:space-between;padding:16px 16px;' +
-          'border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-          '<div style="flex:3;min-width:0;">' +
-          '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
-          'font-weight:600;color:#e8e2d9;line-height:1.2;' +
-          'word-wrap:break-word;overflow-wrap:break-word;">' +
-          esc(getTitle(p)) + '</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:10px;letter-spacing:0.04em;' +
-          'color:rgba(255,255,255,0.55);margin-top:6px;">' +
-          esc(sentLine) + '</div>' +
-          '</div>' +
-          '<div style="flex-shrink:0;display:flex;flex-direction:column;' +
-          'align-items:flex-end;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-          'letter-spacing:0.08em;text-transform:uppercase;' +
-          'color:rgba(255,255,255,0.45);margin-bottom:4px;">Status</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;' +
-          'font-weight:500;color:#F6A623;">' + esc(staleLabel) + '</div>' +
-          '</div>' +
-          '</div>' +
-
-          // Info grid: Pillar | Location | Target
-          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
-          'border-bottom:1px dashed rgba(255,255,255,0.08);">' +
-
-          '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-          'letter-spacing:0.08em;text-transform:uppercase;' +
-          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Pillar</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-          'overflow:hidden;text-overflow:ellipsis;">' +
-          esc(_pillar) + '</div>' +
-          '</div>' +
-
-          '<div style="padding:9px 16px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-          'letter-spacing:0.08em;text-transform:uppercase;' +
-          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Location</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-          'overflow:hidden;text-overflow:ellipsis;">' +
-          esc(_loc) + '</div>' +
-          '</div>' +
-
-          '<div style="padding:9px 16px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-          'letter-spacing:0.08em;text-transform:uppercase;' +
-          'color:rgba(255,255,255,0.55);margin-bottom:3px;">Target</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.04em;color:#e8e2d9;white-space:nowrap;' +
-          'overflow:hidden;text-overflow:ellipsis;">' +
-          (p.target_date ? new Date(p.target_date + 'T00:00:00')
-            .toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) : '--') +
-          '</div>' +
-          '</div>' +
-
-          '</div>' +
-
-          // Brief section
-          '<div style="padding:12px 16px;' +
-          'border-bottom:1px dashed rgba(255,255,255,0.07);">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.18em;text-transform:uppercase;color:#F6A623;' +
-          'margin-bottom:6px;">What we need</div>' +
-          '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-          'color:rgba(255,255,255,0.55);line-height:1.55;">' +
-          esc(p.comments || 'No brief added yet.') + '</div>' +
-          '</div>' +
-
-          // Action row
-          '<div style="display:flex;' +
-          'border-bottom:1px solid rgba(255,255,255,0.04);">' +
-          '<label style="flex:1;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:8px;letter-spacing:0.14em;text-transform:uppercase;' +
-          'color:#F6A623;background:rgba(246,166,35,0.04);' +
-          'border:none;border-right:1px dashed rgba(255,255,255,0.08);' +
-          'padding:13px 0;cursor:pointer;' +
-          'text-align:center;" id="upload-label-' + esc(id) + '">Upload Here<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style="display:none" onchange="handleClientUpload(this, \'' + esc(id) + '\')"></label>' +
-          (function() {
-            var inputMsg = 'Hi, we need something from you for the post: ' +
-              (p.title || '') + '.\n\n' +
-              (p.comments || '') + '\n\nPlease upload or send it here.';
-            var inputWaUrl = 'https://wa.me/?text=' + encodeURIComponent(inputMsg);
-            return '<a href="' + inputWaUrl + '" target="_blank" ' +
-              'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-              'letter-spacing:0.14em;text-transform:uppercase;' +
-              'color:rgba(255,255,255,0.55);' +
-              'background:transparent;border:none;' +
-              'padding:13px 0;cursor:pointer;text-align:center;' +
-              'text-decoration:none;display:block;">Send on WhatsApp</a>';
-          })() +
-          '</div>' +
-          '<div id="upload-confirm-' + esc(id) + '"></div>' +
-          '</div>';
-      }).join('');
-    }
-  }
-
-  // Approval section
-  var approvalPosts = allPosts.filter(function(p) {
-    return p.stage === 'awaiting_approval';
-  }).sort(function(a, b) {
-    var aTime = a.status_changed_at ? new Date((a.status_changed_at || '') + 'Z').getTime() : 0;
-    var bTime = b.status_changed_at ? new Date((b.status_changed_at || '') + 'Z').getTime() : 0;
-    return aTime - bTime;
-  });
-
-  // CHANGE 4 - Approval eyebrow
-  var approvalEyebrow = document.getElementById('client-approval-eyebrow');
-  if (approvalEyebrow) {
-
-    if (approvalPosts.length === 0) {
-      approvalEyebrow.innerHTML =
-        '<div style="background:#0a0a10;' +
-        'border-top:2px solid rgba(62,207,142,0.1);' +
-        'border-bottom:1px solid rgba(255,255,255,0.05);' +
-        'padding:10px 16px;display:flex;align-items:center;' +
-        'justify-content:space-between;">' +
-        '<div style="display:flex;align-items:center;gap:10px;">' +
-        '<span style="color:#3ECF8E;font-size:13px;">&#x25C8;</span>' +
-        '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
-        'font-weight:500;color:rgba(255,255,255,0.55);">' +
-        'Awaiting Your Approval</span>' +
-        '</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.1em;' +
-        'color:rgba(62,207,142,0.7);' +
-        'border:1px dashed rgba(62,207,142,0.2);' +
-        'padding:2px 8px;">0</div>' +
-        '</div>' +
-        '<div style="padding:32px 16px;text-align:center;' +
-        'border-bottom:1px solid rgba(255,255,255,0.04);">' +
-        '<div style="font-size:20px;color:#3ECF8E;margin-bottom:12px;">&#x25C8;</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:18px;' +
-        'font-weight:600;color:#e8e2d9;margin-bottom:6px;">All approved.</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'letter-spacing:0.06em;color:rgba(255,255,255,0.45);">' +
-        'Nothing awaiting your approval.</div>' +
-        '</div>';
-    } else {
-
-    // compute stats
-    var now2 = Date.now();
-    var waitTimes = approvalPosts.map(function(p) {
-      return p.status_changed_at
-        ? Math.floor((now2 - new Date((p.status_changed_at || '') + 'Z').getTime()) / 86400000)
-        : 0;
-    });
-    var oldest = waitTimes.length ? Math.max.apply(null, waitTimes) : 0;
-    var overdue = waitTimes.filter(function(d){ return d >= 5; }).length;
-
-    // count color
-    var countColor = '#e8e2d9';
-    if (approvalPosts.length >= 13) countColor = '#FF4B4B';
-    else if (approvalPosts.length >= 8) countColor = '#FF8C00';
-    else if (approvalPosts.length >= 4) countColor = '#F6A623';
-
-    approvalEyebrow.innerHTML =
-
-      // Zone header
-      '<div style="background:#0a0a10;' +
-      'border-top:2px solid rgba(62,207,142,0.1);' +
-      'border-bottom:1px solid rgba(255,255,255,0.05);' +
-      'padding:10px 16px;display:flex;align-items:center;' +
-      'justify-content:space-between;">' +
-      '<div style="display:flex;align-items:center;gap:10px;">' +
-      '<span style="color:#3ECF8E;font-size:13px;">&#x25C8;</span>' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;' +
-      'font-weight:500;color:rgba(255,255,255,0.55);">' +
-      'Awaiting Your Approval</span>' +
-      '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.1em;' +
-      'color:rgba(62,207,142,0.7);' +
-      'border:1px dashed rgba(62,207,142,0.2);' +
-      'padding:2px 8px;">' + approvalPosts.length + '</div>' +
-      '</div>' +
-
-      // Departure board
-      '<div style="background:#08080e;' +
-      'border-bottom:1px solid rgba(255,255,255,0.05);' +
-      'position:relative;overflow:hidden;">' +
-
-      // Scanlines overlay
-      '<div style="position:absolute;inset:0;' +
-      'background:repeating-linear-gradient(0deg,transparent,' +
-      'transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);' +
-      'pointer-events:none;z-index:1;"></div>' +
-
-      '<div style="padding:16px 16px 0;position:relative;z-index:2;">' +
-
-      // Big count
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:64px;' +
-      'font-weight:600;line-height:1;letter-spacing:-0.03em;' +
-      'color:' + countColor + ';margin-bottom:6px;">' +
-      approvalPosts.length + '</div>' +
-
-      // Subtitle
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:11px;letter-spacing:0.04em;' +
-      'color:rgba(255,255,255,0.55);margin-bottom:16px;' +
-      'line-height:1.4;">posts are waiting for your OK</div>' +
-
-      '</div>' +
-
-      // Stats grid
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
-      'border-top:1px solid rgba(255,255,255,0.06);' +
-      'position:relative;z-index:2;">' +
-
-      '<div style="padding:10px 16px;' +
-      'border-right:1px solid rgba(255,255,255,0.06);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Total</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-      'font-weight:500;letter-spacing:0.04em;color:#e8e2d9;">' +
-      approvalPosts.length + '</div>' +
-      '</div>' +
-
-      '<div style="padding:10px 16px;' +
-      'border-right:1px solid rgba(255,255,255,0.06);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Oldest</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-      'font-weight:500;letter-spacing:0.04em;color:#F6A623;">' +
-      oldest + ' days</div>' +
-      '</div>' +
-
-      '<div style="padding:10px 16px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:4px;">Overdue</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-      'font-weight:500;letter-spacing:0.04em;color:#FF4B4B;">' +
-      overdue + '</div>' +
-      '</div>' +
-
-      '</div>' + // end stats grid
-      '</div>'; // end departure board
-    } // end else (has approval posts)
-  }
-
-  // CHANGE 5 - Approval post cards
-  var approvalItems = document.getElementById('client-approval-items');
-  if (approvalItems) {
-    if (!approvalPosts.length) {
-      approvalItems.innerHTML = '<div style="padding:10px 16px;' +
-        'border-bottom:1px solid rgba(255,255,255,0.04);' +
-        'display:flex;align-items:center;gap:8px;">' +
-        '<div style="width:5px;height:5px;border-radius:50%;' +
-        'background:rgba(62,207,142,0.4);flex-shrink:0;"></div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.35);">' +
-        'Nothing to approve</div>' +
-        '</div>';
-    } else {
-      var now = Date.now();
-      approvalItems.innerHTML = approvalPosts.map(function(p) {
-        var daysWaiting = p.status_changed_at
-          ? Math.floor((Date.now() - new Date((p.status_changed_at || '') + 'Z').getTime()) / 86400000)
-          : 0;
-
-        var barColor, waitColor, waitLabel;
-        if (daysWaiting >= 5) {
-          barColor = '#FF4B4B';
-          waitColor = '#FF4B4B';
-          waitLabel = daysWaiting + 'D';
-        } else if (daysWaiting >= 2) {
-          barColor = '#F6A623';
-          waitColor = '#F6A623';
-          waitLabel = daysWaiting + 'D';
-        } else if (daysWaiting === 1) {
-          barColor = '#F6A623';
-          waitColor = '#F6A623';
-          waitLabel = 'Yesterday';
-        } else {
-          barColor = '#3ECF8E';
-          waitColor = '#3ECF8E';
-          waitLabel = 'New';
-        }
-
-        var id = getPostId(p);
-        var imgs = Array.isArray(p.images) ? p.images : [];
-        var hero = imgs[0] || '';
-        var _rawSlug = (p.title || '').toLowerCase()
-          .replace(/[^a-z0-9\s]/g, ' ')
-          .trim()
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .slice(0, 50);
-        var approvalUrl = 'https://srtd.io/ok/?p=' + _rawSlug;
-        var waText = encodeURIComponent(
-          (p.title || '') + '\n\n' +
-          (p.caption || '') + '\n\n' +
-          'Approve: ' + approvalUrl + '\n' +
-          'Request changes: https://srtd.io/no/?p=' + _rawSlug
-        );
-        var waLink = 'https://wa.me/?text=' + waText;
-
-        var seatLabel, seatNum, seatColor, seatBorder;
-        if (daysWaiting === 0) {
-          seatLabel = '';
-          seatNum = 'New';
-          seatColor = '#3ECF8E';
-          seatBorder = 'rgba(62,207,142,0.45)';
-        } else if (daysWaiting >= 5) {
-          seatLabel = 'WAITING';
-          seatNum = daysWaiting + 'D';
-          seatColor = '#FF4B4B';
-          seatBorder = 'rgba(255,75,75,0.45)';
-        } else {
-          seatLabel = 'WAITING';
-          seatNum = daysWaiting + 'D';
-          seatColor = '#F6A623';
-          seatBorder = 'rgba(246,166,35,0.45)';
-        }
-
-        var urgencyGrad = daysWaiting >= 5
-          ? 'linear-gradient(to right,#FF4B4B,rgba(255,75,75,0))'
-          : (daysWaiting >= 2
-              ? 'linear-gradient(to right,#F6A623,rgba(246,166,35,0))'
-              : 'linear-gradient(to right,#3ECF8E,rgba(62,207,142,0))');
-
-        return (
-        '<div id="apv-item-' + esc(id) + '" ' +
-        'style="background:#0d0d14;position:relative;overflow:hidden;' +
-        'border-bottom:1px solid rgba(255,255,255,0.05);">' +
-
-        '<div style="height:3px;background:' + urgencyGrad + ';"></div>' +
-
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;' +
-        'padding:14px 16px 12px;gap:12px;">' +
-
-        '<div style="min-width:0;">' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
-        'font-weight:700;color:#e8e2d9;line-height:1.1;' +
-        'letter-spacing:-0.01em;margin-bottom:5px;' +
-        'word-wrap:break-word;overflow-wrap:break-word;min-width:0;">' +
-        esc(p.title || '') + '</div>' +
-        '<div style="font-size:10px;letter-spacing:0.04em;' +
-        'color:rgba(255,255,255,0.5);line-height:1;">' +
-        (function() {
-          if (!p.status_changed_at) return '';
-          var d = new Date((p.status_changed_at || '') + 'Z');
-          var date = d.toLocaleDateString('en-IN', {
-            day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata'
-          });
-          var time = d.toLocaleTimeString('en-IN', {
-            hour: '2-digit', minute: '2-digit',
-            hour12: true, timeZone: 'Asia/Kolkata'
-          });
-          return date + ' \xB7 ' + time;
-        })() +
-        '</div>' +
-        '</div>' +
-
-        '<div style="flex-shrink:0;text-align:center;' +
-        'padding:7px 12px 8px;min-width:64px;' +
-        'border:1px dashed ' + seatBorder + ';">' +
-        (seatLabel
-          ? '<span style="font-size:7px;letter-spacing:0.18em;' +
-            'text-transform:uppercase;color:rgba(255,255,255,0.45);' +
-            'display:block;margin-bottom:3px;line-height:1;">' +
-            seatLabel + '</span>'
-          : '') +
-        '<span style="font-family:\'DM Sans\',sans-serif;font-size:28px;font-weight:700;' +
-        'line-height:1;display:block;color:' + seatColor + ';">' +
-        seatNum + '</span>' +
-        '</div>' +
-
-        '</div>' +
-
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;' +
-        'border-top:1px dashed rgba(255,255,255,0.08);">' +
-
-        '<div style="padding:9px 16px 10px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Pillar</span>' +
-        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
-        'color:#e8e2d9;display:block;line-height:1.1;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-        esc(p.content_pillar||p.contentPillar||'--') + '</span>' +
-        '</div>' +
-
-        '<div style="padding:9px 16px 10px;border-right:1px dashed rgba(255,255,255,0.08);">' +
-        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Location</span>' +
-        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
-        'color:#e8e2d9;display:block;line-height:1.1;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-        esc(p.location||'--') + '</span>' +
-        '</div>' +
-
-        '<div style="padding:9px 16px 10px;">' +
-        '<span style="font-size:7px;letter-spacing:0.16em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.38);display:block;margin-bottom:4px;line-height:1;">Target</span>' +
-        '<span style="font-size:11px;font-weight:500;letter-spacing:0.02em;' +
-        'color:#e8e2d9;display:block;line-height:1.1;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-        (p.target_date ? new Date(p.target_date + 'T00:00:00')
-          .toLocaleDateString('en-IN',{day:'numeric',month:'short',timeZone:'Asia/Kolkata'}) : '--') +
-        '</span>' +
-        '</div>' +
-
-        '</div>' +
-
-        '<div style="height:14px;background:#080808;margin:0 -1px;display:flex;align-items:center;">' +
-        '<div style="width:14px;height:14px;border-radius:0 50% 50% 0;' +
-        'background:#0d0d14;border:1px solid rgba(255,255,255,0.07);' +
-        'border-left:none;flex-shrink:0;"></div>' +
-        '<div style="flex:1;border-top:1px dashed rgba(255,255,255,0.12);"></div>' +
-        '<div style="width:14px;height:14px;border-radius:50% 0 0 50%;' +
-        'background:#0d0d14;border:1px solid rgba(255,255,255,0.07);' +
-        'border-right:none;flex-shrink:0;"></div>' +
-        '</div>' +
-
-        (hero
-          ? '<div onclick="_openClientEditorial(\'' + esc(p.post_id) + '\')" ' +
-            'style="cursor:pointer;">' +
-            '<img src="' + hero + '" loading="eager" decoding="async" ' +
-            'style="aspect-ratio:1/1;width:100%;object-fit:cover;display:block;"></div>'
-          : (p.caption
-              ? '<div onclick="_openClientEditorial(\'' + esc(p.post_id) + '\')" ' +
-                'style="padding:12px 16px;cursor:pointer;">' +
-                '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-                'color:rgba(255,255,255,0.55);line-height:1.6;max-height:52px;overflow:hidden;' +
-                '-webkit-mask-image:linear-gradient(to bottom,black 20px,transparent 50px);">' +
-                esc(p.caption) + '</div>' +
-                '<div style="text-align:right;font-family:\'IBM Plex Mono\',monospace;' +
-                'font-size:7px;letter-spacing:0.12em;text-transform:uppercase;' +
-                'color:#F6A623;padding-top:6px;">See More &#x2192;</div>' +
-                '</div>'
-              : ''
-            )
-        ) +
-
-        '<div style="display:flex;border-top:1px dashed rgba(255,255,255,0.08);position:relative;">' +
-
-        '<button onclick="clientApprove(\'' + esc(id) + '\',this)" ' +
-        'style="flex:5;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-        'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
-        'background:transparent;border:none;' +
-        'border-right:1px solid rgba(255,255,255,0.22);' +
-        'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x25C8; Approve</button>' +
-
-        '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="flex:3;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-        'letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
-        'background:transparent;border:none;' +
-        'border-right:1px solid rgba(255,255,255,0.22);' +
-        'padding:14px 0;display:flex;align-items:center;justify-content:center;gap:6px;' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);cursor:pointer;">&#x21A9; Changes</button>' +
-
-        '<a href="' + esc(waLink) + '" target="_blank" ' +
-        'style="flex:2;display:flex;align-items:center;justify-content:center;' +
-        'background:rgba(37,211,102,0.04);border:none;' +
-        'color:#25D366;cursor:pointer;text-decoration:none;padding:14px 0;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.14em;' +
-        'text-transform:uppercase;gap:6px;' +
-        'box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="#25D366">' +
-        '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>' +
-        '</svg>' +
-        '</a>' +
-
-        '</div>' +
-
-        '<div class="change-input-wrap" id="change-wrap-' + esc(id) + '">' +
-        '<div style="display:flex;align-items:center;' +
-        'justify-content:space-between;margin-bottom:10px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.16em;text-transform:uppercase;color:#F6A623;">' +
-        'What needs to change?</div>' +
-        '<button onclick="showChangeInput(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
-        'color:#e8e2d9;background:rgba(255,255,255,0.08);' +
-        'border:1px solid rgba(255,255,255,0.2);' +
-        'cursor:pointer;padding:4px 10px;' +
-        'line-height:1;letter-spacing:0;">&#x2715;</button>' +
-        '</div>' +
-        '<textarea class="change-textarea" id="change-text-' + esc(id) + '" ' +
-        'placeholder="Be specific -- tone, image, hashtags..." rows="3"></textarea>' +
-        '<button class="btn-send-changes" ' +
-        'onclick="submitClientChanges(\'' + esc(id) + '\')">&#x2192; Send Feedback</button>' +
-        '</div>' +
-
-        '<div class="approval-confirmed" ' +
-        'id="approved-confirm-' + esc(id) + '">' +
-        'Approved - the team has been notified.</div>' +
-
-        (function(){
-          var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
-          if (!_isDesktop) return '';
-          return '<div style="padding:0 16px 14px;">' +
-          '<button onclick="(function(){' +
-          'var msg=\'' + (p.title||'').replace(/'/g,"\\'") + '\\n\\n' +
-          (p.caption||'').replace(/'/g,"\\'").slice(0,300).replace(/\n/g,'\\n') +
-          '\\n\\nApprove: https://srtd.io/ok/?p=' +
-          (p.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50) +
-          '\\nChanges: https://srtd.io/no/?p=' +
-          (p.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50) + '\';' +
-          'navigator.clipboard.writeText(msg).then(function(){' +
-          'var b=this;b.textContent=\'Copied\';' +
-          'setTimeout(function(){b.textContent=\'Copy to Share\';},2000);' +
-          '}.bind(this));' +
-          '})()" ' +
-          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
-          'background:transparent;border:1px solid rgba(255,255,255,0.1);' +
-          'padding:10px 0;cursor:pointer;">' +
-          'Copy to Share</button>' +
-          '</div>';
-        })() +
-
-        '</div>'
-        );
-      }).join('');
-    }
-  }
-
-  // CHANGE 8 - New Request section
-  var reqEyebrow = document.getElementById('client-request-eyebrow');
-  if (reqEyebrow) reqEyebrow.style.display = 'none';
-
-  var reqForm = document.getElementById('client-request-form');
-  if (reqForm && !reqForm.dataset.init) {
-    var existingOverlay = document.getElementById('req-overlay');
-    if (existingOverlay) existingOverlay.remove();
-    reqForm.dataset.init = '1';
-    var html =
-      '<div id="req-overlay" ' +
-      'style="position:fixed;inset:0;z-index:2000;background:#080808;' +
-      'display:none;flex-direction:column;">' +
-
-      // TOPBAR
-      '<div style="display:flex;align-items:baseline;' +
-      'justify-content:space-between;padding:16px 18px;' +
-      'border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;">' +
-      '<div style="display:flex;align-items:baseline;gap:8px;">' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;">' +
-      'New Request</span>' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);">' +
-      '-- We\'ll handle everything</span>' +
-      '</div>' +
-      '<button onclick="_closeReqForm()" ' +
-      'style="font-size:15px;color:rgba(255,255,255,0.55);background:transparent;' +
-      'border:none;cursor:pointer;padding:4px;">&#x2715;</button>' +
-      '</div>' +
-
-      // SCROLLABLE BODY
-      '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">' +
-
-      // 01 -- Name (mandatory, 30 char max)
-      '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">01</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
-      'Name this request ' +
-      '<span style="color:#FF4B4B;font-size:12px;">*</span></div>' +
-      '<input type="text" id="req-name" maxlength="30" ' +
-      'placeholder="e.g. Somaiya Diaries, Women\'s Day" ' +
-      'oninput="_reqValidate()" ' +
-      'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(200,168,75,0.25);color:#e8e2d9;' +
-      'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'padding:6px 0 8px;outline:none;caret-color:#C8A84B;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-top:5px;">' +
-      'Max 30 characters -- becomes the post title</div>' +
-      '</div>' +
-
-      // 02 -- Brief (mandatory)
-      '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">02</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:12px;line-height:1.3;">' +
-      'What\'s the brief? ' +
-      '<span style="color:#FF4B4B;font-size:12px;">*</span></div>' +
-      '<textarea id="req-topic" rows="2" ' +
-      'placeholder="Write the brief here -- topic, story, key message..." ' +
-      'oninput="this.style.height=\'auto\';' +
-      'this.style.height=this.scrollHeight+\'px\';_reqValidate();" ' +
-      'style="width:100%;background:transparent;border:none;' +
-      'border-bottom:1px solid rgba(200,168,75,0.25);color:#e8e2d9;' +
-      'font-family:\'DM Sans\',sans-serif;font-size:14px;padding:6px 0 8px;' +
-      'outline:none;resize:none;line-height:1.7;min-height:44px;' +
-      'caret-color:#C8A84B;overflow:hidden;"></textarea>' +
-      '</div>' +
-
-      // 03 -- Content type (optional)
-      '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">03</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
-      'Content type</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.12em;' +
-      'text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;">' +
-      ['Photo','Carousel','Video','Text','Creative'].map(function(t) {
-        return '<button onclick="_reqToggleChip(this)" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.55);' +
-        'border:1px solid rgba(255,255,255,0.18);padding:6px 11px;' +
-        'cursor:pointer;background:transparent;">' + t + '</button>';
-      }).join('') +
-      '</div></div>' +
-
-      // 04 -- Target date (optional)
-      '<div style="padding:16px 18px;' +
-      'border-bottom:1px dashed rgba(255,255,255,0.1);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">04</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
-      'Target date</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.12em;' +
-      'text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
-      '<div style="position:relative;display:flex;' +
-      'align-items:center;justify-content:space-between;' +
-      'border:1px solid rgba(255,255,255,0.18);' +
-      'padding:11px 14px;cursor:pointer;margin-top:4px;' +
-      'background:rgba(255,255,255,0.02);">' +
-      '<span id="req-date-label" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:11px;letter-spacing:0.04em;' +
-      'color:rgba(255,255,255,0.45);">Pick a date</span>' +
-      '<span style="font-size:10px;color:rgba(255,255,255,0.4);">&#x25BE;</span>' +
-      '<input type="date" id="req-date" ' +
-      'onchange="(function(v){' +
-      'var d=new Date(v+\'T00:00:00\');' +
-      'var el=document.getElementById(\'req-date-label\');' +
-      'el.textContent=d.toLocaleDateString(\'en-IN\',' +
-      '{day:\'numeric\',month:\'short\',year:\'numeric\',timeZone:\'Asia/Kolkata\'});' +
-      'el.style.color=\'#e8e2d9\';' +
-      '})(this.value)" ' +
-      'style="position:absolute;inset:0;opacity:0;' +
-      'width:100%;height:100%;cursor:pointer;' +
-      'color-scheme:dark;border:none;' +
-      'background:transparent;padding:0;outline:none;">' +
-      '</div>' +
-      '</div>' +
-
-      // 05 -- Reference photos (optional) -- grid + progress bar
-      '<div style="padding:16px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;color:#C8A84B;margin-bottom:4px;">05</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-      'font-weight:600;color:#e8e2d9;margin-bottom:4px;line-height:1.3;">' +
-      'Reference photos</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:8px;letter-spacing:0.12em;' +
-      'text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:12px;">Optional</div>' +
-
-      // Progress bar -- hidden by default
-      '<div id="req-progress-wrap" style="display:none;margin-bottom:10px;">' +
-      '<div style="height:2px;background:rgba(255,255,255,0.06);margin-bottom:4px;">' +
-      '<div id="req-progress-fill" ' +
-      'style="height:2px;background:#C8A84B;width:0%;transition:width 0.3s;"></div>' +
-      '</div>' +
-      '<div id="req-progress-text" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;">' +
-      'Preparing...</div>' +
-      '</div>' +
-
-      // Photo grid
-      '<div id="req-photo-grid" ' +
-      'style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">' +
-      '<div id="req-add-tile" ' +
-      'onclick="document.getElementById(\'req-file\').click()" ' +
-      'style="aspect-ratio:1/1;background:rgba(200,168,75,0.04);' +
-      'border:1px dashed rgba(200,168,75,0.2);display:flex;' +
-      'flex-direction:column;align-items:center;justify-content:center;' +
-      'cursor:pointer;gap:4px;">' +
-      '<div style="font-size:20px;color:rgba(200,168,75,0.4);line-height:1;">+</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);">Add photos</div>' +
-      '</div></div>' +
-      '<div id="req-photo-count" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);margin-top:6px;">' +
-      'No photos added</div>' +
-      '<input type="file" id="req-file" accept="image/*" multiple ' +
-      'style="display:none;" onchange="_reqAddPhotos(this)">' +
-      '</div>' +
-
-      // Keep hidden urgency buttons so submitClientRequest() doesnt break
-      '<div style="display:none;">' +
-      '<button id="req-urgency-normal"></button>' +
-      '<button id="req-urgency-urgent"></button>' +
-      '</div>' +
-
-      '</div>' + // end scrollable body
-
-      // FOOTER
-      '<div style="flex-shrink:0;padding:12px 18px 20px;' +
-      'border-top:1px solid rgba(200,168,75,0.1);background:#080808;' +
-      'display:flex;gap:10px;">' +
-      '<button onclick="_closeReqForm()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.18);' +
-      'padding:13px 16px;cursor:pointer;flex-shrink:0;">Cancel</button>' +
-      '<button id="req-submit-btn" onclick="submitClientRequest()" disabled ' +
-      'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;color:#444;' +
-      'background:transparent;border:1px solid rgba(255,255,255,0.1);' +
-      'padding:13px 0;cursor:not-allowed;transition:all 0.2s;" ' +
-      '>&#x2192; Send Request</button>' +
-      '</div>' +
-
-      '</div>';
-    var existing = document.getElementById('req-overlay');
-    if (existing) existing.remove();
-    var div = document.createElement('div');
-    div.innerHTML = html;
-    var overlay = div.firstElementChild;
-    document.body.appendChild(overlay);
-  }
-
-  renderClientApproved();
-}
-
-function _closeReqForm() {
-  var o = document.getElementById('req-overlay');
-  if (o) o.style.display = 'none';
-  var nav = document.getElementById('bottom-nav');
-  if (nav) nav.style.display = '';
-  // Reset name field
-  var nameEl = document.getElementById('req-name');
-  if (nameEl) nameEl.value = '';
-  // Reset all fields for next open
-  var topic = document.getElementById('req-topic');
-  if (topic) topic.value = '';
-  var date = document.getElementById('req-date');
-  if (date) date.value = '';
-  var dateLabel = document.getElementById('req-date-label');
-  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.45)'; }
-  // Reset chips
-  var chips = document.querySelectorAll('#req-overlay button[onclick*="_reqToggleChip"]');
-  chips.forEach(function(c) {
-    c.style.color = 'rgba(255,255,255,0.55)';
-    c.style.background = 'transparent';
-    c.style.borderColor = 'rgba(255,255,255,0.18)';
-  });
-  // Reset photo grid
-  window._reqStoredFiles = [];
-  var grid = document.getElementById('req-photo-grid');
-  if (grid) {
-    var thumbs = grid.querySelectorAll('[data-file-idx]');
-    thumbs.forEach(function(t) { t.remove(); });
-  }
-  var countEl = document.getElementById('req-photo-count');
-  if (countEl) countEl.textContent = 'No photos added';
-  var fi = document.getElementById('req-file');
-  if (fi) fi.value = '';
-  var pw = document.getElementById('req-progress-wrap');
-  if (pw) pw.style.display = 'none';
-  // Reset submit button to disabled state
-  var btn = document.getElementById('req-submit-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
-    btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
-  }
-}
-window._closeReqForm = _closeReqForm;
-
-function _reqToggleChip(el) {
-  var allChips = el.parentNode.querySelectorAll('button');
-  allChips.forEach(function(chip) {
-    chip.style.color = 'rgba(255,255,255,0.55)';
-    chip.style.background = 'transparent';
-    chip.style.borderColor = 'rgba(255,255,255,0.18)';
-  });
-  el.style.color = '#C8A84B';
-  el.style.background = 'rgba(200,168,75,0.07)';
-  el.style.borderColor = 'rgba(200,168,75,0.4)';
-}
-window._reqToggleChip = _reqToggleChip;
-
-function _reqSetUrgency(el, type) {
-  var n = document.getElementById('req-urgency-normal');
-  var u = document.getElementById('req-urgency-urgent');
-  if (n) { n.style.color='#555'; n.style.background='transparent'; n.style.borderColor='rgba(255,255,255,0.07)'; }
-  if (u) { u.style.color='#555'; u.style.background='transparent'; u.style.borderColor='rgba(255,255,255,0.07)'; }
-  if (type === 'urgent' && u) {
-    u.style.color='#FF4B4B'; u.style.background='rgba(255,75,75,0.06)'; u.style.borderColor='rgba(255,75,75,0.3)';
-  } else if (n) {
-    n.style.color='#3ECF8E'; n.style.background='rgba(62,207,142,0.08)'; n.style.borderColor='rgba(62,207,142,0.3)';
-  }
-}
-window._reqSetUrgency = _reqSetUrgency;
-
-function _reqPreviewFile(input) {
-  var files = Array.from(input.files);
-  if (!files.length) return;
-  var area = document.getElementById('req-upload-area');
-  var preview = document.getElementById('req-upload-preview');
-  var img = document.getElementById('req-preview-img');
-  var name = document.getElementById('req-preview-name');
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    if (img) img.src = e.target.result;
-    if (area) area.style.display = 'none';
-    if (preview) preview.style.display = 'block';
-  };
-  reader.readAsDataURL(files[0]);
-  if (name) name.textContent = files.length === 1
-    ? files[0].name
-    : files.length + ' photos selected';
-}
-window._reqPreviewFile = _reqPreviewFile;
-
-function _reqClearUpload() {
-  var input = document.getElementById('req-file');
-  var area = document.getElementById('req-upload-area');
-  var preview = document.getElementById('req-upload-preview');
-  if (input) input.value = '';
-  if (area) area.style.display = 'block';
-  if (preview) preview.style.display = 'none';
-}
-window._reqClearUpload = _reqClearUpload;
-
-function _reqAddPhotos(input) {
-  var files = Array.from(input.files);
-  if (!files.length) return;
-  var grid = document.getElementById('req-photo-grid');
-  var addTile = document.getElementById('req-add-tile');
-  var progressWrap = document.getElementById('req-progress-wrap');
-  var progressFill = document.getElementById('req-progress-fill');
-  var progressText = document.getElementById('req-progress-text');
-  if (!grid || !addTile) return;
-
-  window._reqStoredFiles = window._reqStoredFiles || [];
-  var total = files.length;
-  var loaded = 0;
-
-  // Show progress bar
-  if (progressWrap) progressWrap.style.display = 'block';
-  if (progressFill) progressFill.style.background = '#C8A84B';
-
-  // Disable send button during upload
-  var sendBtn = document.getElementById('req-submit-btn');
-  if (sendBtn) {
-    sendBtn.disabled = true;
-    sendBtn.style.color = '#444';
-    sendBtn.style.borderColor = 'rgba(255,255,255,0.1)';
-    sendBtn.style.cursor = 'not-allowed';
-    sendBtn.style.boxShadow = 'none';
-    sendBtn.textContent = 'Loading photos...';
-  }
-
-  files.forEach(function(file) {
-    var fileIdx = window._reqStoredFiles.length;
-    window._reqStoredFiles.push(file);
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      loaded++;
-      var pct = Math.round((loaded / total) * 100);
-      if (progressFill) progressFill.style.width = pct + '%';
-      if (progressText) progressText.textContent =
-        'Loading ' + loaded + ' of ' + total + ' photos...';
-
-      var div = document.createElement('div');
-      div.dataset.fileIdx = fileIdx;
-      div.style.cssText = 'aspect-ratio:1/1;position:relative;' +
-        'overflow:hidden;background:#111;';
-      div.innerHTML =
-        '<img src="' + e.target.result + '" ' +
-        'style="width:100%;height:100%;object-fit:cover;display:block;">' +
-        '<button onclick="(function(el){' +
-        'var idx=el.closest(\'div\').dataset.fileIdx;' +
-        'if(window._reqStoredFiles&&idx!==undefined)' +
-        'window._reqStoredFiles[idx]=null;' +
-        'el.closest(\'div\').remove();' +
-        '_reqUpdatePhotoCount();})(this)" ' +
-        'style="position:absolute;top:3px;right:3px;width:22px;height:22px;' +
-        'background:rgba(0,0,0,0.85);border-radius:50%;display:flex;' +
-        'align-items:center;justify-content:center;font-size:11px;' +
-        'color:#e8e2d9;cursor:pointer;border:none;">&#x2715;</button>';
-      grid.insertBefore(div, addTile);
-      _reqUpdatePhotoCount();
-
-      // All loaded
-      if (loaded === total) {
-        if (progressFill) {
-          progressFill.style.background = '#3ECF8E';
-          progressFill.style.width = '100%';
-        }
-        if (progressText) {
-          progressText.style.color = '#3ECF8E';
-          progressText.textContent =
-            window._reqStoredFiles.filter(function(f){return f!==null;}).length +
-            ' photos ready';
-        }
-        // Re-enable send if name + brief filled
-        _reqValidate();
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value = '';
-}
-window._reqAddPhotos = _reqAddPhotos;
-
-function _reqUpdatePhotoCount() {
-  var grid = document.getElementById('req-photo-grid');
-  var count = grid ? grid.querySelectorAll('img').length : 0;
-  var el = document.getElementById('req-photo-count');
-  if (el) el.textContent = count > 0
-    ? count + ' photo' + (count !== 1 ? 's' : '') + ' selected'
-    : 'No photos added';
-}
-window._reqUpdatePhotoCount = _reqUpdatePhotoCount;
-
-function _reqValidate() {
-  var name = (document.getElementById('req-name') || {}).value || '';
-  var brief = (document.getElementById('req-topic') || {}).value || '';
-  var btn = document.getElementById('req-submit-btn');
-  if (!btn) return;
-  var valid = name.trim().length > 0 && brief.trim().length > 0;
-  if (valid) {
-    btn.disabled = false;
-    btn.style.color = '#C8A84B';
-    btn.style.borderColor = '#C8A84B';
-    btn.style.background = 'rgba(200,168,75,0.06)';
-    btn.style.cursor = 'pointer';
-    btn.style.boxShadow = '0 0 12px rgba(200,168,75,0.12)';
-    btn.innerHTML = '&#x2192; Send Request';
-  } else {
-    btn.disabled = true;
-    btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
-    btn.style.background = 'transparent';
-    btn.style.cursor = 'not-allowed';
-    btn.style.boxShadow = 'none';
-  }
-}
-window._reqValidate = _reqValidate;
-
-function renderClientApproved() {
-  // Hide published section on Client home - still visible in Library
-  var pubSection = document.getElementById('client-published-section');
-  if (pubSection && effectiveRole === 'Client') { pubSection.style.display = 'none'; return; }
-  if (pubSection) pubSection.style.display = '';
-  var published = allPosts.filter(function(p) { return p.stage === 'published'; });
-
-  // Eyebrow
-  var pubEyebrow = document.getElementById('client-published-eyebrow');
-  if (pubEyebrow) {
-    pubEyebrow.innerHTML =
-      '<div style="display:flex;align-items:center;' +
-      'justify-content:space-between;padding:8px 18px;' +
-      'font-family:var(--mono);font-size:7px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;' +
-      'color:#555;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<span>Published</span>' +
-      '<span style="font-size:8px;color:var(--c-amber);' +
-      'border:1px solid rgba(246,166,35,0.25);' +
-      'padding:1px 6px;">' + published.length + '</span></div>';
-  }
-
-  var wrap = document.getElementById('client-approved-tbody-wrap');
-  if (!wrap) return;
-  if (!published.length) {
-    wrap.innerHTML = '<div style="padding:18px;font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.1em;text-transform:uppercase;">No published posts yet</div>';
-    return;
-  }
-  wrap.innerHTML = '<table class="cp-pub-table"><thead><tr><th>Post</th><th>Published</th><th>View</th></tr></thead><tbody>' +
-    published.map(function(p) {
-      var link = getPostLink(p);
-      return '<tr><td>' + esc(getTitle(p)) + '</td><td class="mono">' + displayDate(p.targetDate) + '</td><td>' + (link ? '<a href="' + esc(link) + '" target="_blank" rel="noopener">View</a>' : '-') + '</td></tr>';
-    }).join('') + '</tbody></table>';
-}
-
-// -- Production Tracker ----------
-function renderCreativeTracker() {
-  const section = document.getElementById('admin-insight-section');
-  if (!section || effectiveRole === 'Client') return;
-  const now  = Date.now();
-  const DAY  = 86400000;
-  const weekAgo = now - 7 * DAY;
-  const monthAgo = now - 30 * DAY;
-  const myPosts = allPosts.filter(p => {
-    return (p.owner||'').toLowerCase() === 'pranav';
-  });
-  const doneThisWeek = myPosts.filter(p => {
-    const stage = p.stage || '';
-    const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready','awaiting_approval','scheduled','published'].includes(stage) && t >= weekAgo;
-  }).length;
-  const doneThisMonth = myPosts.filter(p => {
-    const stage = p.stage || '';
-    const t = new Date(p.updated_at || p.created_at).getTime();
-    return ['ready','awaiting_approval','scheduled','published'].includes(stage) && t >= monthAgo;
-  }).length;
-  const _activeStages = typeof STAGES_DB !== 'undefined' ? STAGES_DB.filter(s => !['ready','awaiting_approval','scheduled','published','parked'].includes(s)) : ['in_production','awaiting_brand_input'];
-  const inProgress = myPosts.filter(p => _activeStages.includes(p.stage || '')).length;
-  const WEEKLY_TARGET  = 5;
-  const MONTHLY_TARGET = 20;
-  const weekPct  = Math.min(100, Math.round((doneThisWeek / WEEKLY_TARGET) * 100));
-  const weekCls  = doneThisWeek >= WEEKLY_TARGET ? 'ok' : doneThisWeek >= WEEKLY_TARGET * 0.6 ? '' : 'warn';
-
-  section.innerHTML = `
-    <div class="creative-tracker">
-      <div class="creative-tracker-head">
-        <span class="creative-tracker-label">Your Production</span>
-        <span class="creative-tracker-period">This week . target ${WEEKLY_TARGET}</span>
-      </div>
-      <div class="creative-tracker-stats">
-        <div class="ct-stat"><div class="ct-stat-num ${weekCls}">${doneThisWeek}</div><div class="ct-stat-label">This Week</div></div>
-        <div class="ct-stat"><div class="ct-stat-num">${doneThisMonth}</div><div class="ct-stat-label">This Month</div></div>
-        <div class="ct-stat"><div class="ct-stat-num">${inProgress}</div><div class="ct-stat-label">In Progress</div></div>
-      </div>
-      <div class="creative-tracker-bar">
-        <div class="creative-tracker-fill" style="width:${weekPct}%"></div>
-      </div>
-    </div>`;
-}
-
-// -- Fix 17: Library view switch ---------------
-let _currentLibraryView = 'list';
-
-function switchLibraryView(btn) {
-  document.querySelectorAll('.vt-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  _currentLibraryView = btn.dataset.view;
-
-  const llv = document.getElementById('library-list-view');
-  const lcv = document.getElementById('library-calendar-view');
-  if (llv) llv.style.display = _currentLibraryView === 'list'     ? '' : 'none';
-  if (lcv) lcv.style.display = _currentLibraryView === 'calendar' ? '' : 'none';
-
-  filterLibrary();
-}
-
-
-let _calMonth = new Date().getMonth();
-let _calYear  = new Date().getFullYear();
-
-function _calNav(delta) {
-  _calMonth += delta;
-  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
-  if (_calMonth < 0)  { _calMonth = 11; _calYear--; }
-  filterLibrary();
-}
-
-function groupPostsByDay(posts, month, year) {
-  var map = {};
-  posts.forEach(function(p) {
-    var d = parseDate(p.targetDate);
-    if (!d || d.getMonth() !== month || d.getFullYear() !== year) return;
-    var key = p.targetDate;
-    if (!map[key]) map[key] = [];
-    map[key].push(p);
-  });
-  return map;
-}
-
-var _calDayMap = {}; // stored for drawer access
-
-function renderLibraryCalendar(posts) {
-  var container = document.getElementById('library-calendar-view');
-  if (!container) return;
-  posts = posts || allPosts;
-
-  var dayMap = groupPostsByDay(posts, _calMonth, _calYear);
-  _calDayMap = dayMap;
-  var monthLabel = MONTHS[_calMonth] + ' ' + _calYear;
-
-  var firstDay = new Date(_calYear, _calMonth, 1).getDay();
-  var numDays = new Date(_calYear, _calMonth + 1, 0).getDate();
-  var totalCells = firstDay + numDays <= 35 ? 35 : 42;
-
-  var today = new Date(); today.setHours(0,0,0,0);
-
-  // Count stats for month bar
-  var statSched = 0, statReady = 0, statLate = 0;
-  Object.keys(dayMap).forEach(function(k) {
-    dayMap[k].forEach(function(p) {
-      var s = p.stage || '';
-      if (s === 'scheduled') statSched++;
-      else if (s === 'ready') statReady++;
-      var pd = parseDate(p.targetDate);
-      if (pd && pd < today) statLate++;
-    });
-  });
-
-  // Month bar
-  var html = '<div class="month-bar">' +
-    '<div class="month-nav">' +
-      '<button class="month-arrow" id="cal-prev" onclick="_calNav(-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>' +
-      '<div class="month-title" id="cal-month-title">' + esc(monthLabel) + '</div>' +
-      '<button class="month-arrow" id="cal-next" onclick="_calNav(1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"/></svg></button>' +
-    '</div>' +
-    '<div class="month-stats" id="month-stats">' +
-      '<div class="mstat-pill sched" title="Scheduled"><div class="mstat-dot"></div><span id="stat-sched">' + statSched + '</span></div>' +
-      '<div class="mstat-pill ready" title="Ready"><div class="mstat-dot"></div><span id="stat-ready">' + statReady + '</span></div>' +
-      '<div class="mstat-pill late" title="Overdue"><div class="mstat-dot"></div><span id="stat-late">' + statLate + '</span></div>' +
-    '</div>' +
-  '</div>';
-
-  // DOW header
-  html += '<div class="pcs-cal-grid pcs-cal-dow">';
-  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(d) {
-    html += '<div class="pcs-cal-dow-label">' + d + '</div>';
-  });
-  html += '</div>';
-
-  // Cells with dots
-  html += '<div class="pcs-cal-grid" id="cal-grid">';
-  for (var i = 0; i < totalCells; i++) {
-    var dayNum = i - firstDay + 1;
-    if (i < firstDay || dayNum > numDays) {
-      html += '<div class="cal-cell-empty"></div>';
-      continue;
-    }
-
-    var dd = String(dayNum).padStart(2, '0');
-    var mm = String(_calMonth + 1).padStart(2, '0');
-    var key = _calYear + '-' + mm + '-' + dd;
-    var cellDate = new Date(_calYear, _calMonth, dayNum);
-    var isToday = cellDate.getTime() === today.getTime();
-    var dayPosts = dayMap[key] || [];
-
-    var cellCls = 'cal-cell';
-    if (isToday) cellCls += ' today';
-
-    html += '<div class="' + cellCls + '" data-cal-date="' + key + '">';
-    html += '<div class="cc-num">' + dayNum + '</div>';
-
-    if (dayPosts.length) {
-      html += '<div class="cc-dots">';
-      var maxDots = Math.min(dayPosts.length, 6);
-      for (var j = 0; j < maxDots; j++) {
-        var dotColor = _libStageDotColor(dayPosts[j].stage);
-        html += '<span class="cc-dot" style="background:' + dotColor + '"></span>';
-      }
-      html += '</div>';
-      if (dayPosts.length > 6) {
-        html += '<div class="cc-overflow">+' + (dayPosts.length - 6) + '</div>';
-      }
-    }
-
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // Day drawer
-  html += '<div class="day-drawer" id="day-drawer">' +
-    '<div class="drawer-hdr">' +
-      '<div class="drawer-date" id="drawer-date">Select a day</div>' +
-      '<div class="drawer-close" id="drawer-close">x close</div>' +
-    '</div>' +
-    '<div id="drawer-posts"></div>' +
-  '</div>';
-
-  container.innerHTML = html;
-
-  // Wire up cell clicks for drawer
-  var grid = document.getElementById('cal-grid');
-  if (grid) {
-    grid.addEventListener('click', function(e) {
-      var cell = e.target.closest('.cal-cell');
-      if (!cell) return;
-      var dateKey = cell.getAttribute('data-cal-date');
-      if (!dateKey) return;
-      _openDayDrawer(dateKey, cell);
-    });
-  }
-
-  // Wire up drawer close
-  var closeBtn = document.getElementById('drawer-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', function() { _closeDayDrawer(); });
-  }
-}
-
-function _stagePillClass(stage) {
-  var sk = _pipelineStageKey(stage);
-  if (sk === 'production') return 's-prod';
-  if (sk === 'ready')      return 's-ready';
-  if (sk === 'input')      return 's-input';
-  if (sk === 'approval')   return 's-appr';
-  if (sk === 'scheduled')  return 's-sched';
-  return '';
-}
-
-function _openDayDrawer(dateKey, cell) {
-  // Deselect previous
-  var prev = document.querySelector('.cal-cell.selected');
-  if (prev) prev.classList.remove('selected');
-  cell.classList.add('selected');
-
-  var drawer = document.getElementById('day-drawer');
-  var dateEl = document.getElementById('drawer-date');
-  var postsEl = document.getElementById('drawer-posts');
-  if (!drawer || !postsEl) return;
-
-  var d = parseDate(dateKey);
-  if (dateEl) dateEl.textContent = d ? (d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : dateKey;
-
-  var posts = _calDayMap[dateKey] || [];
-  if (!posts.length) {
-    postsEl.innerHTML = '<div class="drawer-empty">No posts on this day</div>';
-  } else {
-    postsEl.innerHTML = posts.map(function(p) {
-      var id = getPostId(p);
-      var dotColor = _libStageDotColor(p.stage);
-      var owner = formatOwner(p.owner || '');
-      var pillar = getPillarShort(p.contentPillar);
-      var stLabel = stageStyle(p.stage).label;
-      var stCls = _stagePillClass(p.stage);
-      var html = '<div class="drawer-post" data-post-id="' + esc(id) + '" data-list="library">' +
-        '<span class="drawer-stage-dot" style="background:' + dotColor + '"></span>' +
-        '<div>' +
-          '<div class="drawer-post-title">' + esc(getTitle(p)) + '</div>' +
-          '<div class="drawer-post-meta">';
-      if (owner && owner !== ' - ') html += '<span class="meta-pill owner">' + esc(owner) + '</span>';
-      if (pillar) html += '<span class="meta-pill pillar">' + esc(pillar) + '</span>';
-      if (stLabel) html += '<span class="meta-pill ' + stCls + '">' + esc(stLabel) + '</span>';
-      html += '</div></div></div>';
-      return html;
-    }).join('');
-  }
-
-  drawer.classList.add('open');
-}
-
-function _closeDayDrawer() {
-  var drawer = document.getElementById('day-drawer');
-  if (drawer) drawer.classList.remove('open');
-  var prev = document.querySelector('.cal-cell.selected');
-  if (prev) prev.classList.remove('selected');
-}
 
 // ===============================================
 // Event delegation for card clicks
@@ -5176,13 +2485,33 @@ function _closeDayDrawer() {
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ===============================================
 document.addEventListener('click', function _cardClickDelegate(e) {
+  if (!window.AppState.user.effectiveRole) return;
+  var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
+  if (_role === 'client') {
+    var card = e.target.closest('[data-post-id]');
+    if (!card) return;
+    var pid = card.getAttribute('data-post-id');
+    if (!pid) return;
+    var post = (window.AppState.posts.all || []).find(function(p) {
+      return p.post_id === pid;
+    });
+    var stage = post ? post.stage : '';
+    if (stage === 'brief' || stage === 'brief_done') {
+      if (typeof window._openBriefSheet === 'function')
+        window._openBriefSheet(pid);
+    } else {
+      if (typeof window._openClientPostOverlay === 'function')
+        window._openClientPostOverlay(pid);
+    }
+    return;
+  }
   var card = e.target.closest('[data-post-id]');
   if (!card) return;
   var postId  = card.dataset.postId;
   var listKey = card.dataset.list || '';
   if (!postId) return;
   // Batch mode intercept: clicking a ready card toggles selection
-  if (_batchMode && card.dataset.stage === 'ready') {
+  if (window._batchMode && card.dataset.stage === 'ready') {
     toggleBatchCard(postId, card);
     return;
   }
@@ -5202,907 +2531,9 @@ document.addEventListener('click', function _cardClickDelegate(e) {
 });
 
 // -- Wire batch action bar buttons --
-document.addEventListener('DOMContentLoaded', function() {
-  var approvalBtn = document.getElementById('batch-approval-btn');
-  if (approvalBtn) approvalBtn.addEventListener('click', function() {
-    executeBatchAction('awaiting_approval');
-  });
-  var inputBtn = document.getElementById('batch-input-btn');
-  if (inputBtn) inputBtn.addEventListener('click', function() {
-    executeBatchAction('awaiting_brand_input');
-  });
-
-  document.addEventListener('click', function(e) {
-    if (!_pipelineSearchOpen) return;
-    var bar = document.getElementById('pipeline-search-bar');
-    var trigger = document.getElementById('pipeline-search-trigger');
-    var resultsEl = document.getElementById('pipeline-search-results');
-    if (bar && !bar.contains(e.target) &&
-        trigger && !trigger.contains(e.target) &&
-        (!resultsEl || !resultsEl.contains(e.target))) {
-      closePipelineSearch();
-    }
-  });
-});
 
 // ===============================================
 // Chase functions
 // ===============================================
-function copyChase(encodedMsg) {
-  var msg = decodeURIComponent(encodedMsg);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(msg).then(function() {
-      showChaseToast('Copied to clipboard');
-    }).catch(function() {
-      fallbackCopy(msg);
-    });
-  } else {
-    fallbackCopy(msg);
-  }
-}
 
-function fallbackCopy(text) {
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try {
-    document.execCommand('copy');
-    showChaseToast('Copied to clipboard');
-  } catch(e) {
-    showChaseToast('Copy failed');
-  }
-  document.body.removeChild(ta);
-}
 
-function chaseAll() {
-  var posts = Array.isArray(window.allPosts) ? window.allPosts : [];
-  var now = new Date();
-  var threeDaysAgo = new Date();
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-  var overduePosts = posts.filter(function(p) {
-    if (p.stage !== 'awaiting_approval') return false;
-    if (!p.status_changed_at) return true;
-    return new Date((p.status_changed_at || '') + 'Z') < threeDaysAgo;
-  });
-
-  if (overduePosts.length === 0) return;
-
-  var lines = overduePosts.map(function(p) {
-    var sentDate = 'recently';
-    if (p.status_changed_at) {
-      var d = new Date((p.status_changed_at || '') + 'Z');
-      sentDate = d.toLocaleDateString('en-GB', {day:'numeric', month:'short', timeZone:'Asia/Kolkata'});
-    }
-    return '- ' + (p.title || 'Untitled') + ' (sent ' + sentDate + ')';
-  });
-
-  var msg = 'Hi! Following up on ' + overduePosts.length + ' posts awaiting approval:\n' + lines.join('\n') + '\nPlease review when you get a chance';
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(msg).then(function() {
-      showChaseToast(overduePosts.length + ' posts copied');
-    }).catch(function() {
-      fallbackCopy(msg);
-    });
-  } else {
-    fallbackCopy(msg);
-  }
-}
-
-// -- Client Editorial Full-Screen View ----------
-function _openClientEditorial(postId) {
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) return;
-
-  var existing = document.getElementById('client-editorial-overlay');
-  if (existing) existing.remove();
-
-  var imgs = Array.isArray(post.images) ? post.images : [];
-  var hero = imgs[0] || '';
-  var img2 = imgs[1] || '';
-  var pillar = (post.content_pillar || post.contentPillar || '').toUpperCase();
-  var location = (post.location || '').toUpperCase();
-  var caption = post.caption || '';
-  var title = post.title || '';
-
-  var overlay = document.createElement('div');
-  overlay.id = 'client-editorial-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
-    'background:#0a0a0a;overflow-y:auto;' +
-    '-webkit-overflow-scrolling:touch;';
-
-  overlay.innerHTML =
-    // Topbar
-    '<div style="position:sticky;top:0;z-index:10;' +
-    'background:rgba(10,10,10,0.92);backdrop-filter:blur(8px);' +
-    'display:flex;align-items:center;justify-content:space-between;' +
-    'padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.06);">' +
-    '<button onclick="_closeClientEditorial()" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:#e8e2d9;' +
-    'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#333;">' +
-    'Awaiting Approval</div>' +
-    '<div style="width:60px;"></div>' +
-    '</div>' +
-
-    // Hero image
-    (hero ?
-      '<img src="' + hero + '" style="width:100%;max-height:280px;' +
-      'object-fit:cover;display:block;cursor:pointer;" loading="eager" ' +
-      'onclick="_edOpenLightbox(\'' + postId + '\',0)">'
-      : '') +
-
-    // Body
-    '<div style="padding:28px 22px 0;max-width:390px;margin:0 auto;">' +
-
-    // Pillar label
-    (pillar ?
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.22em;text-transform:uppercase;color:#C8A84B;' +
-      'margin-bottom:10px;">' + pillar + '</div>'
-      : '') +
-
-    // Title
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:26px;' +
-    'font-weight:700;color:#f0ece4;line-height:1.2;margin-bottom:20px;' +
-    'letter-spacing:-0.01em;">' + title + '</div>' +
-
-    // Gold divider
-    '<div style="width:32px;height:1px;background:#C8A84B;' +
-    'margin-bottom:22px;"></div>' +
-
-    // Caption
-    '<div id="ed-caption-' + postId + '" style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-    'color:#888;line-height:1.8;white-space:pre-wrap;' +
-    'word-wrap:break-word;margin-bottom:28px;">' + caption + '</div>' +
-
-    '</div>' +
-
-    // Image gallery strip with dots
-    (function(){
-      var stripId = 'ed-strip-' + postId;
-      var dotsId = 'ed-dots-' + postId;
-      return (imgs.length > 1 ?
-      '<div style="padding:0 0 20px;">' +
-
-      '<div style="display:flex;align-items:center;' +
-      'justify-content:space-between;padding:0 22px 8px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#555;">All Photos</div>' +
-      '<div onclick="_edOpenLightbox(\'' + postId + '\',0)" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#F6A623;cursor:pointer;">' +
-      imgs.length + ' photos &#x2192;</div>' +
-      '</div>' +
-
-      '<div id="' + stripId + '" ' +
-      'style="display:flex;gap:2px;overflow-x:auto;' +
-      'scrollbar-width:none;-webkit-overflow-scrolling:touch;' +
-      'padding-left:22px;" ' +
-      'onscroll="_edUpdateDots(\'' + stripId + '\',\'' + dotsId + '\',' + imgs.length + ')">' +
-      imgs.map(function(url, i) {
-        return '<img src="' + url + '" loading="eager" decoding="async" ' +
-        'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
-        'style="flex-shrink:0;width:100px;height:100px;object-fit:cover;' +
-        'display:block;cursor:pointer;">';
-      }).join('') +
-      '<div style="flex-shrink:0;width:22px;"></div>' +
-      '</div>' +
-
-      '<div id="' + dotsId + '" ' +
-      'style="display:flex;justify-content:center;gap:5px;padding:10px 0 0;">' +
-      imgs.map(function(u, i) {
-        return '<div style="width:5px;height:5px;border-radius:50%;background:' +
-        (i === 0 ? '#e8e2d9' : '#2a2a2a') + ';transition:background 0.2s;"></div>';
-      }).join('') +
-      '</div></div>'
-      : '');
-    })() +
-
-    // Footer
-    '<div style="padding:0 22px 44px;max-width:390px;margin:0 auto;">' +
-
-    // Meta pills -- pillar + location only, NOT client
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;">' +
-    (pillar ?
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#777;' +
-      'border:1px solid rgba(255,255,255,0.15);padding:4px 8px;">' +
-      pillar + '</div>'
-      : '') +
-    (location ?
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:#777;' +
-      'border:1px solid rgba(255,255,255,0.15);padding:4px 8px;">' +
-      location + '</div>'
-      : '') +
-    '</div>' +
-
-    // WhatsApp share
-    (function(){
-      var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
-      var rawSlug = (post.title||'').toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').slice(0,50);
-      return '<div style="display:' + (_isDesktop ? 'flex' : 'block') + ';gap:8px;margin-bottom:10px;">' +
-      '<button onclick="(function(){' +
-      'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
-      '(document.getElementById(\'ed-caption-\'+\'' + postId + '\') ? ' +
-      'document.getElementById(\'ed-caption-\'+\'' + postId + '\').textContent : ' +
-      '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
-      '\'\\n\\nPlease review and let me know.\'+' +
-      '\'\\n\\nApprove: https://srtd.io/ok/?p=' + rawSlug + '\'+' +
-      '\'\\nChanges: https://srtd.io/no/?p=' + rawSlug + '\';' +
-      'window.open(\'https://wa.me/?text=\'+encodeURIComponent(msg),\'_blank\');' +
-      '})()" ' +
-      'style="flex:1;width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#e8e2d9;' +
-      'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);' +
-      'padding:14px 0;cursor:pointer;display:block;">' +
-      '&#x2197; Share on WhatsApp</button>' +
-      (_isDesktop ?
-        '<button onclick="(function(){' +
-        'var msg=\'' + (post.title||'').replace(/'/g,"\\'") + '\\n\\n\'+' +
-        '(document.getElementById(\'ed-caption-' + postId + '\') ? ' +
-        'document.getElementById(\'ed-caption-' + postId + '\').textContent : ' +
-        '\'' + (post.caption||'').replace(/'/g,"\\'").slice(0,200) + '\') +' +
-        '\'\\n\\nApprove: https://srtd.io/ok/?p=' + rawSlug + '\'+' +
-        '\'\\nChanges: https://srtd.io/no/?p=' + rawSlug + '\';' +
-        'navigator.clipboard.writeText(msg).then(function(){' +
-        'var b=document.getElementById(\'ed-copy-' + postId + '\');' +
-        'if(b){b.textContent=\'Copied\';' +
-        'setTimeout(function(){b.textContent=\'&#x2318; Copy to Share\';},2000);}' +
-        '});' +
-        '})()" id="ed-copy-' + postId + '" ' +
-        'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
-        'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">' +
-        '\u2398 Copy to Share</button>'
-        : '') +
-      '</div>';
-    })() +
-
-    // Approve button
-    '<button onclick="_editorialApprove(\'' + postId + '\')" ' +
-    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.2em;text-transform:uppercase;color:#3ECF8E;' +
-    'background:rgba(62,207,142,0.08);border:1px solid rgba(62,207,142,0.35);' +
-    'padding:16px 0;cursor:pointer;display:block;margin-bottom:10px;">' +
-    '&#x2713; Approve Post</button>' +
-
-    // Request Changes button
-    '<button onclick="_editorialChanges(\'' + postId + '\')" ' +
-    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.2em;text-transform:uppercase;color:#555;' +
-    'background:transparent;border:1px solid rgba(255,255,255,0.07);' +
-    'padding:14px 0;cursor:pointer;display:block;">' +
-    'Request Changes</button>' +
-
-    '</div>';
-
-  document.body.appendChild(overlay);
-  document.body.style.overflow = 'hidden';
-}
-window._openClientEditorial = _openClientEditorial;
-
-function _closeClientEditorial() {
-  var overlay = document.getElementById('client-editorial-overlay');
-  if (overlay) overlay.remove();
-  document.body.style.overflow = '';
-}
-window._closeClientEditorial = _closeClientEditorial;
-
-function _editorialApprove(postId) {
-  var overlay = document.getElementById('client-editorial-overlay');
-  if (overlay) {
-    overlay.innerHTML =
-      '<div style="position:fixed;inset:0;background:#0a0a0f;' +
-      'display:flex;flex-direction:column;align-items:center;' +
-      'justify-content:center;gap:14px;z-index:6000;">' +
-      '<div style="font-size:32px;color:#3ECF8E;line-height:1;">&#x2713;</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
-      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Approved.</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
-      'Team has been notified.</div>' +
-      '</div>';
-  }
-  setTimeout(function() {
-    _closeClientEditorial();
-    if (typeof clientApprove === 'function') clientApprove(postId);
-  }, 1500);
-}
-window._editorialApprove = _editorialApprove;
-
-function _editorialChanges(postId) {
-  var overlay = document.getElementById('client-editorial-overlay');
-  if (overlay) {
-    overlay.innerHTML =
-      '<div style="position:fixed;inset:0;background:#0a0a0f;' +
-      'display:flex;flex-direction:column;align-items:center;' +
-      'justify-content:center;gap:14px;z-index:6000;">' +
-      '<div style="font-size:28px;color:#F6A623;line-height:1;">&#x25C8;</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:20px;' +
-      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Opening feedback...</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' +
-      'Tell us what to change.</div>' +
-      '</div>';
-  }
-  setTimeout(function() {
-    _closeClientEditorial();
-    if (typeof showChangeInput === 'function') showChangeInput(postId);
-  }, 1200);
-}
-window._editorialChanges = _editorialChanges;
-
-function _edUpdateDots(stripId, dotsId, total) {
-  var strip = document.getElementById(stripId);
-  var dotsEl = document.getElementById(dotsId);
-  if (!strip || !dotsEl) return;
-  var idx = Math.round(strip.scrollLeft / 102);
-  idx = Math.max(0, Math.min(idx, total - 1));
-  var dots = dotsEl.querySelectorAll('div');
-  dots.forEach(function(d, i) {
-    d.style.background = i === idx ? '#e8e2d9' : '#2a2a2a';
-  });
-}
-window._edUpdateDots = _edUpdateDots;
-
-function _edOpenLightbox(postId, startIdx) {
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) return;
-  var imgs = Array.isArray(post.images) ? post.images : [];
-  if (!imgs.length) return;
-  var idx = startIdx || 0;
-
-  var existing = document.getElementById('ed-lightbox');
-  if (existing) existing.remove();
-
-  var lb = document.createElement('div');
-  lb.id = 'ed-lightbox';
-  lb.style.cssText = 'position:fixed;inset:0;z-index:9900;background:#000;' +
-    'display:flex;flex-direction:column;';
-
-  lb.innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:space-between;' +
-    'padding:14px 18px;background:rgba(0,0,0,0.8);flex-shrink:0;">' +
-    '<button onclick="document.getElementById(\'ed-lightbox\').remove();' +
-    'document.body.style.overflow=\'\';" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:#e8e2d9;' +
-    'background:transparent;border:none;cursor:pointer;">&#x2190; Close</button>' +
-    '<span id="ed-lb-counter" style="font-family:\'IBM Plex Mono\',monospace;' +
-    'font-size:8px;color:#555;">' + (idx+1) + ' / ' + imgs.length + '</span>' +
-    '<a id="ed-lb-dl" href="' + imgs[idx] + '" download ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
-    'text-decoration:none;border:1px solid rgba(62,207,142,0.3);' +
-    'padding:5px 10px;">&#x2193; Save</a>' +
-    '</div>' +
-    '<div style="flex:1;display:flex;align-items:center;justify-content:center;' +
-    'padding:20px;">' +
-    '<img id="ed-lb-img" src="' + imgs[idx] + '" ' +
-    'style="max-width:100%;max-height:100%;object-fit:contain;display:block;">' +
-    '</div>' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;' +
-    'padding:10px 18px 28px;background:rgba(0,0,0,0.8);flex-shrink:0;">' +
-    '<button onclick="_edLbNav(-1)" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;color:#555;' +
-    'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);' +
-    'width:44px;height:44px;cursor:pointer;">&#x2190;</button>' +
-    '<div id="ed-lb-dots" style="display:flex;gap:5px;">' +
-    imgs.map(function(u,i){
-      return '<div style="width:5px;height:5px;border-radius:50%;background:' +
-      (i===idx?'#e8e2d9':'#2a2a2a') + ';"></div>';
-    }).join('') +
-    '</div>' +
-    '<button onclick="_edLbNav(1)" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;color:#555;' +
-    'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.07);' +
-    'width:44px;height:44px;cursor:pointer;">&#x2192;</button>' +
-    '</div>';
-
-  window._edLbImages = imgs;
-  window._edLbIdx = idx;
-  document.body.appendChild(lb);
-  document.body.style.overflow = 'hidden';
-
-  var tx = 0;
-  lb.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; });
-  lb.addEventListener('touchend', function(e){
-    var diff = tx - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) _edLbNav(diff > 0 ? 1 : -1);
-  });
-
-  var mx = 0;
-  var dragging = false;
-  lb.addEventListener('mousedown', function(e) {
-    mx = e.clientX; dragging = true;
-  });
-  lb.addEventListener('mouseup', function(e) {
-    if (!dragging) return;
-    dragging = false;
-    var diff = mx - e.clientX;
-    if (Math.abs(diff) > 40) _edLbNav(diff > 0 ? 1 : -1);
-  });
-  lb.addEventListener('mouseleave', function() { dragging = false; });
-}
-window._edOpenLightbox = _edOpenLightbox;
-
-function _edLbNav(dir) {
-  var imgs = window._edLbImages || [];
-  var idx = (window._edLbIdx + dir + imgs.length) % imgs.length;
-  window._edLbIdx = idx;
-  var img = document.getElementById('ed-lb-img');
-  var counter = document.getElementById('ed-lb-counter');
-  var dl = document.getElementById('ed-lb-dl');
-  var dots = document.getElementById('ed-lb-dots');
-  if (img) img.src = imgs[idx];
-  if (counter) counter.textContent = (idx+1) + ' / ' + imgs.length;
-  if (dl) dl.href = imgs[idx];
-  if (dots) {
-    dots.querySelectorAll('div').forEach(function(d,i){
-      d.style.background = i === idx ? '#e8e2d9' : '#2a2a2a';
-    });
-  }
-}
-window._edLbNav = _edLbNav;
-
-// ===============================================
-// Brief Sheet - full-screen overlay for brief/REQ posts
-// ===============================================
-function _openBriefSheet(postId) {
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) return;
-
-  var existing = document.getElementById('brief-sheet-overlay');
-  if (existing) existing.remove();
-
-  var _role = (window.effectiveRole || '').toLowerCase();
-  var _isClient = _role === 'client';
-  var _isPranav = _role === 'creative' ||
-    _role === 'pranav' ||
-    (window.currentUserEmail || '').toLowerCase().includes('pranav');
-  var _isChitra = !_isClient && !_isPranav;
-  var _isBriefDone = (post.stage || '') === 'brief_done';
-  var sentTime = '';
-  if (post.status_changed_at && post.status_changed_at !== 'null') {
-    var _d = new Date((post.status_changed_at || '') + 'Z');
-    if (!isNaN(_d.getTime())) {
-      var _date = _d.toLocaleDateString('en-IN',
-        {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
-      var _time = _d.toLocaleTimeString('en-IN',
-        {hour:'numeric',minute:'2-digit',hour12:true,
-        timeZone:'Asia/Kolkata'});
-      sentTime = _date + ' ' + _time;
-    }
-  }
-
-  var rawComments = post.comments || '';
-  var contentType = '';
-  var typeMatch = rawComments.match(/\[Type:\s*([^\]]+)\]/);
-  if (typeMatch) {
-    contentType = typeMatch[1].trim();
-    rawComments = rawComments.replace(/\s*\[Type:[^\]]+\]/, '').trim();
-  }
-  var briefText = rawComments;
-  briefText = briefText.replace(/^\[URGENT\]\s*/, '').trim();
-
-  var chitraNote = '';
-  var chitraMatch = briefText.match(/\[CHITRA NOTE\]([\s\S]*)/i);
-  if (chitraMatch) {
-    chitraNote = chitraMatch[1].trim();
-    briefText = briefText.replace(/\[CHITRA NOTE\][\s\S]*/i, '').trim();
-  }
-
-  var _isAssignedToPranav =
-    (post.owner || '').toLowerCase() === 'pranav' &&
-    !_isBriefDone;
-  var _hasLinkedPost = !!(post.linked_post_id);
-  var linkedPost = null;
-  if (_hasLinkedPost) {
-    linkedPost = (allPosts || []).find(function(p) {
-      return p.post_id === post.linked_post_id;
-    });
-  }
-
-  var overlay = document.createElement('div');
-  overlay.id = 'brief-sheet-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
-    'background:#0a0a0f;overflow-y:auto;-webkit-overflow-scrolling:touch;';
-
-  overlay.innerHTML =
-    // Topbar
-    '<div style="position:sticky;top:0;z-index:10;' +
-    'background:rgba(10,10,15,0.95);backdrop-filter:blur(8px);' +
-    'display:flex;align-items:center;justify-content:space-between;' +
-    'padding:14px 18px;border-bottom:1px solid rgba(200,168,75,0.15);">' +
-    '<button onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
-    'document.body.style.overflow=\'\';" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5);' +
-    'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:#C8A84B;">Brief</div>' +
-    '<div style="width:60px;"></div>' +
-    '</div>' +
-
-    // Title + meta
-    '<div style="padding:28px 18px 0;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);' +
-    'margin-bottom:8px;">Brief Title</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;' +
-    'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:10px;">' +
-    esc(post.title || '') + '</div>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.04em;color:rgba(255,255,255,0.4);">' +
-    esc(sentTime) + '</div>' +
-    '</div>' +
-
-    // Brief Done status banner
-    (_isBriefDone ?
-      '<div style="padding:8px 18px;background:rgba(200,168,75,0.08);' +
-      'border-left:3px solid #C8A84B;margin:0 0 4px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#C8A84B;">' +
-      'Brief Closed</div>' +
-      '</div>'
-      : '') +
-
-    // Linked post info (if linked)
-    (_hasLinkedPost && linkedPost ?
-      '<div style="padding:12px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.4);margin-bottom:8px;">Linked Post</div>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:12px 14px;border:1px dashed rgba(200,168,75,0.25);">' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'font-weight:600;color:#e8e2d9;">' + esc(linkedPost.title) + '</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);">' +
-      esc((linkedPost.stage || '').replace(/_/g,' ')) + '</div>' +
-      '</div></div>'
-      : '') +
-
-    // Divider
-    '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
-
-    // Content type (extracted from comments)
-    (contentType ?
-      '<div style="padding:16px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:#C8A84B;margin-bottom:10px;display:block;">Content Type</div>' +
-      '<div style="display:inline-flex;align-items:center;' +
-      'border:1px dashed rgba(200,168,75,0.3);padding:5px 10px;">' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;' +
-      'color:#e8e2d9;font-weight:500;">' + esc(contentType) + '</span>' +
-      '</div></div>' +
-      '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>'
-      : '') +
-
-    // Brief text
-    '<div style="padding:0 18px 24px;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;' +
-    'color:#C8A84B;margin-bottom:10px;">The Brief</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-    'color:#e8e2d9;line-height:1.7;white-space:pre-wrap;">' +
-    esc(briefText || 'No brief text provided.') + '</div>' +
-    '</div>' +
-
-    // Chitra Note section
-    (chitraNote ?
-      '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
-      '<div style="padding:16px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:8px;">Direction from Chitra</div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'color:rgba(255,255,255,0.75);line-height:1.65;font-style:italic;">' +
-      esc(chitraNote) + '</div>' +
-      '</div>'
-      : '') +
-
-    // Reference photos
-    (Array.isArray(post.images) && post.images.length ?
-      '<div style="padding:0 18px 24px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.4);margin-bottom:10px;">Reference Photos</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">' +
-      post.images.map(function(url, i) {
-        return '<img src="' + url + '" loading="lazy" ' +
-        'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
-        'style="aspect-ratio:1/1;width:100%;object-fit:cover;' +
-        'display:block;cursor:pointer;">';
-      }).join('') +
-      '</div></div>'
-      : '') +
-
-    // Role-based bottom action (state machine)
-    (function() {
-      var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
-        '<div style="padding:0 18px 32px;">' +
-        '<button onclick="(function(){' +
-        'var o=document.getElementById(\'brief-sheet-overlay\');' +
-        'if(o)o.remove();' +
-        'document.body.style.overflow=\'\';' +
-        'setTimeout(function(){openPCS(\'' +
-        esc(linkedPost.post_id) + '\',\'\');},150);' +
-        '})()" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
-        'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
-        '&#x2192; View Post</button>' +
-        '</div>' : '';
-      var _reopenBtn =
-        '<div style="padding:0 18px 32px;">' +
-        '<button onclick="_reopenBrief(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.4);background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">&#x21BA; Reopen Brief</button>' +
-        '</div>';
-      var _closeBtn =
-        '<div style="padding:12px 18px 0;">' +
-        '<button onclick="_closeBriefConfirm(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.4);background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">&#x2715; Close Brief</button>' +
-        '</div>';
-      var _readOnly =
-        '<div style="padding:0 18px 32px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.35);text-align:center;">' +
-        'The team is working on this</div>' +
-        '</div>';
-
-      // STATE: brief_done
-      if (_isBriefDone) {
-        return _viewPostBtn +
-          (_isChitra ? _reopenBtn : '');
-      }
-      // STATE: has linked post (post already created)
-      if (_hasLinkedPost && linkedPost) {
-        return _viewPostBtn +
-          (_isChitra ? _closeBtn : '');
-      }
-      // STATE: assigned to Pranav, no linked post yet
-      if (_isAssignedToPranav) {
-        if (_isChitra) {
-          return '<div style="padding:0 18px 32px;">' +
-            '<div style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-            'color:rgba(255,255,255,0.4);background:transparent;' +
-            'border:1px solid rgba(255,255,255,0.1);' +
-            'padding:14px 0;text-align:center;">' +
-            '&#x2713; Assigned to Pranav</div>' +
-            '</div>' + _closeBtn;
-        }
-        if (_isPranav) {
-          return '<div style="padding:0 18px 32px;">' +
-            '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
-            'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-            'color:#C8A84B;background:rgba(200,168,75,0.06);' +
-            'border:1px solid #C8A84B;padding:16px 0;cursor:pointer;' +
-            'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Create Post</button>' +
-            '</div>' + _closeBtn;
-        }
-        return _readOnly;
-      }
-      // STATE: unassigned (owner=Chitra)
-      if (_isChitra) {
-        return '<div style="padding:0 18px 24px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.18em;text-transform:uppercase;' +
-          'color:#C8A84B;margin-bottom:10px;">Your Direction for Pranav</div>' +
-          '<textarea id="brief-direction-' + postId + '" rows="4" ' +
-          'placeholder="Add your creative direction, angle, key message..." ' +
-          'style="width:100%;background:transparent;border:none;' +
-          'border-bottom:1px solid rgba(200,168,75,0.3);color:#e8e2d9;' +
-          'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-          'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
-          'caret-color:#C8A84B;"></textarea>' +
-          '</div>' +
-          '<div style="padding:0 18px 32px;">' +
-          '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
-          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-          'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
-          'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
-          'padding:16px 0;cursor:pointer;' +
-          'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
-          '</div>' + _closeBtn;
-      }
-      return _readOnly;
-    }());
-
-  document.body.appendChild(overlay);
-  document.body.style.overflow = 'hidden';
-}
-window._openBriefSheet = _openBriefSheet;
-
-function _assignBriefToPranav(postId) {
-  var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  var updatedComments = (post ? (post.comments || '') : '');
-  if (direction.trim()) {
-    updatedComments += '\n\n[CHITRA NOTE] ' + direction.trim();
-  }
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
-    method: 'PATCH',
-    body: JSON.stringify({
-      stage: 'brief',
-      owner: 'Pranav',
-      comments: updatedComments,
-      status_changed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
-  }).then(function() {
-    logActivity({
-      post_id: postId,
-      actor: 'Chitra',
-      actor_role: 'Servicing',
-      action: 'Brief assigned to Pranav' +
-        (direction.trim() ? ' with direction' : '')
-    });
-    document.getElementById('brief-sheet-overlay').remove();
-    document.body.style.overflow = '';
-    showToast('Assigned to Pranav', 'success');
-    loadPosts();
-  }).catch(function() {
-    showToast('Failed - try again', 'error');
-  });
-}
-window._assignBriefToPranav = _assignBriefToPranav;
-
-function _closeBriefConfirm(postId) {
-  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  var title = post ? (post.title || postId) : postId;
-
-  var existing = document.getElementById('brief-confirm-overlay');
-  if (existing) existing.remove();
-
-  var overlay = document.createElement('div');
-  overlay.id = 'brief-confirm-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:9600;' +
-    'background:rgba(0,0,0,0.75);display:flex;' +
-    'align-items:center;justify-content:center;padding:24px;';
-
-  overlay.innerHTML =
-    '<div style="background:#0d0d14;border:1px solid rgba(200,168,75,0.2);' +
-    'padding:28px 24px;max-width:340px;width:100%;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;' +
-    'color:#C8A84B;margin-bottom:12px;">Close This Brief?</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:16px;' +
-    'font-weight:600;color:#e8e2d9;margin-bottom:8px;">' +
-    esc(title) + '</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-    'color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:24px;">' +
-    'This marks the brief as delivered. It will move to Closed Briefs.' +
-    '</div>' +
-    '<div style="display:flex;gap:10px;">' +
-    '<button onclick="document.getElementById(\'brief-confirm-overlay\').remove()" ' +
-    'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;' +
-    'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
-    'color:rgba(255,255,255,0.5);padding:12px 0;cursor:pointer;">Cancel</button>' +
-    '<button onclick="_closeBrief(\'' + postId + '\')" ' +
-    'style="flex:2;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;' +
-    'background:rgba(200,168,75,0.1);border:1px solid #C8A84B;' +
-    'color:#C8A84B;padding:12px 0;cursor:pointer;">' +
-    'Close Brief &#x2192;</button>' +
-    '</div></div>';
-
-  document.body.appendChild(overlay);
-}
-window._closeBriefConfirm = _closeBriefConfirm;
-
-function _closeBrief(postId) {
-  document.getElementById('brief-confirm-overlay') &&
-    document.getElementById('brief-confirm-overlay').remove();
-
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
-    method: 'PATCH',
-    body: JSON.stringify({
-      stage: 'brief_done',
-      updated_at: new Date().toISOString()
-    })
-  }).then(function() {
-    var overlay = document.getElementById('brief-sheet-overlay');
-    if (overlay) overlay.remove();
-    document.body.style.overflow = '';
-    showToast('Brief closed', 'success');
-    loadPosts();
-  }).catch(function() {
-    showToast('Failed - try again', 'error');
-  });
-}
-window._closeBrief = _closeBrief;
-
-function _reopenBrief(postId) {
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
-    method: 'PATCH',
-    body: JSON.stringify({
-      stage: 'brief',
-      owner: 'Chitra',
-      updated_at: new Date().toISOString()
-    })
-  }).then(function() {
-    var overlay = document.getElementById('brief-sheet-overlay');
-    if (overlay) overlay.remove();
-    document.body.style.overflow = '';
-    showToast('Brief reopened', 'success');
-    loadPosts();
-  }).catch(function() {
-    showToast('Failed - try again', 'error');
-  });
-}
-window._reopenBrief = _reopenBrief;
-
-function _createPostFromBrief(briefPostId) {
-  var brief = (typeof getPostById === 'function')
-    ? getPostById(briefPostId) : null;
-  if (!brief) return;
-
-  // Close brief sheet
-  var overlay = document.getElementById('brief-sheet-overlay');
-  if (overlay) overlay.remove();
-  document.body.style.overflow = '';
-
-  // Open new post form
-  if (typeof openNewPostModal === 'function') {
-    openNewPostModal();
-  }
-
-  // Pre-fill after short delay to let form render
-  setTimeout(function() {
-    var titleEl = document.getElementById('new-post-title');
-    var captionEl = document.getElementById('new-post-caption');
-    var ownerEl = document.getElementById('new-post-owner');
-
-    if (titleEl) {
-      titleEl.value = brief.title || '';
-      titleEl.dispatchEvent(new Event('input'));
-    }
-    if (captionEl && brief.comments) {
-      // Strip [CHITRA NOTE] and [URGENT] from comments
-      var cleanBrief = (brief.comments || '')
-        .replace(/\[URGENT\]\s*/g, '')
-        .replace(/\[CHITRA NOTE\][^]*/gi, '')
-        .trim();
-      captionEl.value = cleanBrief;
-      captionEl.style.height = 'auto';
-      captionEl.style.height = captionEl.scrollHeight + 'px';
-    }
-    if (ownerEl) {
-      ownerEl.value = 'Pranav';
-      ownerEl.dispatchEvent(new Event('change'));
-    }
-
-    // Trigger validation so Create Post button enables
-    if (typeof _npsCheckValid === 'function') _npsCheckValid();
-
-    // Store brief post ID so we can park it after creation
-    window._activeBriefPostId = briefPostId;
-  }, 150);
-}
-window._createPostFromBrief = _createPostFromBrief;

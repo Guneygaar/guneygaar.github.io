@@ -6,7 +6,7 @@
 function getTitle(post) { return post.title || post.post_id || 'Untitled'; }
 function getPostId(post) { return post.post_id || post.id || ''; }
 function getPostById(postId) {
-  return allPosts.find(function(p) {
+  return window.AppState.posts.all.find(function(p) {
     return p.id === postId ||
            p.post_id === postId ||
            getPostId(p) === postId;
@@ -94,7 +94,7 @@ function formatIST(ts) {
 
 // Resolve actor display name from effectiveRole
 function resolveActor() {
-  var role = window.effectiveRole || window.currentRole || '';
+  var role = window.AppState.user.effectiveRole || window.AppState.user.role || '';
   if (role === 'Admin') return 'Shubham';
   if (role === 'Servicing') return 'Chitra';
   if (role === 'Creative') return 'Pranav';

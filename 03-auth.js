@@ -156,9 +156,9 @@ async function resolveRoleFromToken(accessToken, email) {
       return;
     }
     var userName = Array.isArray(roleData) && roleData[0]?.name;
-    if (userName) window.currentUserName = userName;
+    if (userName) window.AppState.user.name = userName;
     if (userName) localStorage.setItem('hinglish_name', userName);
-    window.currentUserEmail = email;
+    window.AppState.user.email = email;
     localStorage.setItem('hinglish_role', role);
     localStorage.setItem('hinglish_email', email);
     const overlay = document.getElementById('login-overlay');
@@ -206,45 +206,69 @@ function logout() {
 }
 
 function activateRole(role) {
+  // Clear stale preview role for non-admin users
+  var _dbRole = (role || '').toLowerCase();
+  if (_dbRole !== 'admin') {
+    localStorage.removeItem('pcs_role_preview');
+    window.AppState.user.previewRole = null;
+  }
+
   var rolePreview = localStorage.getItem('pcs_role_preview');
   if (rolePreview && rolePreview !== 'Admin') {
-    window.effectiveRole = _normaliseRole(rolePreview);
-    window.currentRole = _normaliseRole(rolePreview);
+    window.AppState.user.effectiveRole = _normaliseRole(rolePreview);
+    window.AppState.user.role = _normaliseRole(rolePreview);
+    _buildUserMenu();
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
     return;
   }
 
-  currentRole = role;
+  window.AppState.user.role = role;
 
   // Client DB role takes absolute priority - real clients always go to client portal
   if ((role || '').toLowerCase() === 'client') {
-    window.currentRole = _normaliseRole('Client');
-    window.effectiveRole = _normaliseRole('Client');
+    window.AppState.user.role = _normaliseRole('Client');
+    window.AppState.user.effectiveRole = _normaliseRole('Client');
+    var fab = document.getElementById('fab');
+    var fab2 = document.getElementById('main-fab-btn');
+    var nav = document.getElementById('bottom-nav');
+    if (fab) fab.style.display = 'none';
+    if (fab2) fab2.style.display = 'none';
+    if (nav) nav.style.display = 'none';
+    document.body.classList.add('client-mode');
+    _buildUserMenu();
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    if (!window._clientTokenTimer) {
+      window._clientTokenTimer = setInterval(async function() {
+        var newToken = await refreshSession();
+        if (!newToken) {
+          console.warn('Client token refresh failed');
+        }
+      }, 50 * 60 * 1000);
+    }
     return;
   }
 
   // Resolve effectiveRole: Admin can preview other roles via localStorage
   if (role === 'Admin') {
     const preview = localStorage.getItem('pcs_role_preview');
-    effectiveRole = _normaliseRole((preview && preview !== 'Admin') ? preview : 'Admin');
+    window.AppState.user.effectiveRole = _normaliseRole((preview && preview !== 'Admin') ? preview : 'Admin');
   } else {
-    effectiveRole = _normaliseRole(role);
+    window.AppState.user.effectiveRole = _normaliseRole(role);
   }
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
   updateActionButton();
-  if (effectiveRole === 'Client') {
+  if (window.AppState.user.effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
   } else {
     document.getElementById('dashboard-view')?.classList.add('active');
     const lbl = document.getElementById('topbar-role-label');
-    if (lbl) lbl.textContent = effectiveRole;
+    if (lbl) lbl.textContent = window.AppState.user.effectiveRole;
     loadPosts();
     loadTasks();
     startRealtime();
@@ -257,12 +281,10 @@ function activateRole(role) {
   }
   // Build the : menu contents (role-switch shown only for Admin)
   _buildUserMenu();
-  // Show/hide exit-preview bar
-  if (typeof updateExitPreviewBar === 'function') updateExitPreviewBar();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 
-  if ((window.effectiveRole || '').toLowerCase() === 'client') {
+  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     if (typeof switchTab === 'function') switchTab('tasks');
     return;
   }
@@ -278,16 +300,29 @@ window.resetRolePreview = function() {
 function _buildUserMenu() {
   const menu = document.getElementById('user-menu');
   if (!menu) return;
+  var _roleLower = (window.AppState.user.effectiveRole || window.AppState.user.role || '').toLowerCase();
   let html = '';
+
+  // Client gets a dedicated slim menu
+  if (_roleLower === 'client') {
+    html += '<button class="user-menu-item" onclick="openClientRequestForm(); closeUserMenu()" style="color:#C8A84B;">+ New Request</button>';
+    html += '<div class="um-divider"></div>';
+    html += '<button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()"><span id="theme-icon">\u2600</span> Dark / Light</button>';
+    html += '<div class="um-divider"></div>';
+    html += '<button class="user-menu-item danger" onclick="logout()" style="color:#FF4B4B;">\u21A9 Sign Out</button>';
+    menu.innerHTML = html;
+    return;
+  }
+
   // Role-switch section (Admin only) - shown first
-  if (currentRole === 'Admin' ||
+  if (window.AppState.user.role === 'Admin' ||
       localStorage.getItem('hinglish_role') === 'Admin' ||
       localStorage.getItem('hinglish_role') === 'admin') {
     const roles = ['Admin', 'Pranav', 'Chitra', 'Client'];
     html += '<div class="um-section-label">View</div>';
     html += '<div class="um-role-options">';
     roles.forEach(r => {
-      const active = r === effectiveRole ? ' active' : '';
+      const active = r === window.AppState.user.effectiveRole ? ' active' : '';
       html += `<button class="um-role-btn${active}" onclick="gamSwitchRole('${r}')">${r}</button>`;
     });
     html += '</div><div class="um-divider"></div>';
@@ -312,12 +347,12 @@ function applyRoleVisibility() {
 function updateActionButton() {
   const btn = document.getElementById('btn-new-post');
   if (!btn) return;
-  btn.textContent = effectiveRole === 'Client' ? '+ New Request' : '+ New Post';
+  btn.textContent = window.AppState.user.effectiveRole === 'Client' ? '+ New Request' : '+ New Post';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    var role = (window.effectiveRole ||
+    var role = (window.AppState.user.effectiveRole ||
       localStorage.getItem('hinglish_role') || '').toLowerCase();
     if (role === 'client') {
       if (typeof switchTab === 'function') switchTab('tasks');

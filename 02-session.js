@@ -3,16 +3,15 @@
    =============================================== */
 console.log("LOADED:", "02-session.js");
 
-window.allPosts        = [];
-window.cachedPosts     = [];
-window.currentRole     = 'Admin';
+window.AppState.user.role     = 'Admin';
 // Admin-only role preview  -  overrides UI visibility without touching auth
-window.effectiveRole   = localStorage.getItem('pcs_role_preview') || '';
-window._renderTimer    = null;
+window.AppState.user.effectiveRole   = localStorage.getItem('pcs_role_preview') || '';
+window.AppState.timers.renderTimer    = null;
 window._retryCount     = 0;
 window._retryTimer     = null;
 
-window._realtimeTimer  = null;
+window.AppState.ui.unreadCount    = 0;
+window.AppState.timers.realtimeTimer  = null;
 window.allTasks        = [];
-window._modalOpen      = false;   // true while any overlay/PCS is open
+window.AppState.ui.modalOpen      = false;   // true while any overlay/PCS is open
 window._deferredRender = false;   // true if a render was skipped due to open modal

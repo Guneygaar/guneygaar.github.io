@@ -4,7 +4,8 @@
   "description": "",
   "main": "01-config.js",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -14,7 +15,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "jsdom": "^29.0.0",
+    "serve": "^14.2.6",
     "vitest": "^4.1.0"
   }
 }

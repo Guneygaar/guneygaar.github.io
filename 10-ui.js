@@ -23,16 +23,16 @@ function safeRender() {
 }
 
 function scheduleRender() {
-  if (window._modalOpen) { window._deferredRender = true; return; }
-  clearTimeout(_renderTimer);
-  _renderTimer = setTimeout(safeRender, 60);
+  if (window.AppState.ui.modalOpen) { window._deferredRender = true; return; }
+  clearTimeout(window.AppState.timers.renderTimer);
+  window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
 }
 
 function _drainDeferredRender() {
   if (window._deferredRender) {
     window._deferredRender = false;
-    clearTimeout(_renderTimer);
-    _renderTimer = setTimeout(safeRender, 60);
+    clearTimeout(window.AppState.timers.renderTimer);
+    window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
   }
 }
 
@@ -80,21 +80,29 @@ function toggleTheme() {
 
 // -- User menu ---------------------------------
 function toggleUserMenu() {
-  const m = document.getElementById('user-menu');
+  var m = document.getElementById('user-menu');
   if (!m) return;
-  const open = m.classList.toggle('open');
-  if (open) setTimeout(() => document.addEventListener('click', closeUserMenu, { once: true }), 0);
+  if (typeof _buildUserMenu === 'function') _buildUserMenu();
+  var isOpen = m.style.display === 'block';
+  if (isOpen) {
+    m.style.display = 'none';
+    return;
+  }
+  m.style.display = 'block';
+  setTimeout(function() {
+    document.addEventListener('click', function _close(e) {
+      if (!m.contains(e.target)) {
+        m.style.display = 'none';
+        document.removeEventListener('click', _close);
+      }
+    });
+  }, 0);
 }
-function closeUserMenu() { document.getElementById('user-menu')?.classList.remove('open'); }
+function closeUserMenu() {
+  var m = document.getElementById('user-menu');
+  if (m) m.style.display = 'none';
+}
 
-// -- Client menu -------------------------------
-function toggleClientMenu() {
-  const m = document.getElementById('client-menu');
-  if (!m) return;
-  const open = m.classList.toggle('open');
-  if (open) setTimeout(() => document.addEventListener('click', closeClientMenu, { once: true }), 0);
-}
-function closeClientMenu() { document.getElementById('client-menu')?.classList.remove('open'); }
 
 // -- Global Admin Menu -------------------------
 function gamSwitchRole(role) {
@@ -107,31 +115,6 @@ function gamSwitchRole(role) {
 }
 window.gamSwitchRole = gamSwitchRole;
 
-// -- Exit Preview Bar -------------------------
-function updateExitPreviewBar() {
-  var existing = document.getElementById('exit-preview-bar');
-  if (existing) existing.remove();
-
-  if (window.effectiveRole !== 'Admin' &&
-      window.effectiveRole !== 'admin') {
-    var bar = document.createElement('div');
-    bar.id = 'exit-preview-bar';
-    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;' +
-      'z-index:9999;background:#C8A84B;' +
-      'font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:#000;padding:6px 18px;' +
-      'display:flex;align-items:center;justify-content:space-between;' +
-      'cursor:pointer;';
-    bar.innerHTML = '<span>Viewing as ' + window.effectiveRole + '</span>' +
-      '<span>Tap to exit &rarr;</span>';
-    bar.onclick = function() {
-      localStorage.removeItem('pcs_role_preview');
-      location.reload();
-    };
-    document.body.appendChild(bar);
-  }
-}
 
 // -- Tabs --------------------------------------
 function goToTab(tabName) {
@@ -147,31 +130,6 @@ function navigateWithFilter(tab, filter) {
   goToTab(tab);
 }
 
-function goToLibraryFiltered(stage) {
-  goToTab('library');
-  const sel = document.getElementById('filter-stage');
-  if (sel) { sel.value = stage; filterLibrary(); }
-}
-
-function scrollToBucket(bucketKey) {
-  setTimeout(() => {
-    const grid = document.getElementById('tasks-container');
-    if (!grid) return;
-    const buckets = grid.querySelectorAll('.bucket-card');
-    for (const card of buckets) {
-      const name = card.querySelector('.bucket-name')?.textContent?.toLowerCase() || '';
-      const keyMap = { production:'in_production', requests:'request', approval:'approval', ready:'ready', scheduled:'scheduled' };
-      const match = keyMap[bucketKey] || bucketKey;
-      if (name.includes(match)) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        card.style.outline = '2px solid var(--accent)';
-        card.style.outlineOffset = '2px';
-        setTimeout(() => { card.style.outline = ''; card.style.outlineOffset = ''; }, 1200);
-        break;
-      }
-    }
-  }, 80);
-}
 
 const _TAB_TITLES = {
   tasks: null,
@@ -185,7 +143,7 @@ function switchTab(btn) {
     btn = document.querySelector('.tab-btn[data-tab="' + btn + '"]');
     if (!btn) return;
   }
-  var role = (window.effectiveRole || '').toLowerCase();
+  var role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (role === 'client') {
     var targetTab = typeof btn === 'string' ? btn :
       (btn && btn.dataset ? btn.dataset.tab : '');
@@ -262,15 +220,16 @@ var roleDisplayMap = {
 
 async function loadNotifications() {
   try {
-    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
+    _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
-    var _loadActor = window.currentUserName || '';
-    var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(currentRole) + '&order=created_at.desc&limit=50';
+    var _loadActor = window.AppState.user.name || window.currentUserName || '';
+    var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50';
     if (_loadActor) _loadUrl += '&actor=neq.' + encodeURIComponent(_loadActor);
     var data = await apiFetch(_loadUrl);
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
     _notifData = data;
-    renderNotifications(currentName, currentRole);
+    renderNotifications(currentName, _notifRole);
     updateNotifBadge();
   } catch(e) {
     console.error('loadNotifications error:', e);
@@ -279,7 +238,7 @@ async function loadNotifications() {
 
 function renderNotifications(name, role) {
   var notifs = _notifData;
-  var effectiveR = window.effectiveRole || window.currentRole || role || 'Admin';
+  var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
   var display = roleDisplayMap[effectiveR] || roleDisplayMap[role] || { name: name, label: role };
   var displayName = display.name;
   var displayLabel = display.label;
@@ -427,7 +386,7 @@ function renderNotifications(name, role) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var _notifPost = (window.allPosts||[]).find(function(p) {
+      var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
         return p.post_id === n.post_id;
       });
       var _thumb = _notifPost && Array.isArray(_notifPost.images) &&
@@ -443,15 +402,8 @@ function renderNotifications(name, role) {
       if (_postStage === 'brief')      { _chipColor='#C8A84B'; _chipBg='rgba(200,168,75,0.12)'; }
       if (_postStage === 'in_production') { _chipColor='#9b87f5'; _chipBg='rgba(155,135,245,0.12)'; }
       if (n.type === 'awaiting_brand_input') { _chipColor='#F6A623'; _chipBg='rgba(246,166,35,0.12)'; }
-      if (_postStage === 'in_production' && _notifPost &&
-          _notifPost.client_feedback) {
-        _chipColor='#FF4B4B'; _chipBg='rgba(255,75,75,0.12)';
-      }
-
       var _stageLabel = (_postStage||'').replace(/_/g,' ');
       if (_postStage === 'awaiting_approval') _stageLabel = 'Awaiting Approval';
-      if (_postStage === 'in_production' && _notifPost &&
-          _notifPost.client_feedback) _stageLabel = 'Feedback';
 
       var _actorName = parseActor(n.message).name;
       var _initial = _actorName ? _actorName.charAt(0).toUpperCase() : 'S';
@@ -560,9 +512,10 @@ function setNotifFilter(filter, btn) {
   _notifFilter = filter;
   document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
   if (btn) btn.classList.add('active');
-  var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+  var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
+  _notifRole = (_notifRole || '').toLowerCase();
   var currentName = resolveActor() || 'there';
-  renderNotifications(currentName, currentRole);
+  renderNotifications(currentName, _notifRole);
 }
 
 async function markNotifRead(id) {
@@ -579,9 +532,10 @@ async function markNotifRead(id) {
 async function markAllNotificationsRead() {
   try {
     _notifData = _notifData.map(function(n) { return Object.assign({}, n, { read: true }); });
-    var currentRole = window.effectiveRole || window.currentRole || 'Admin';
+    var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
+    _notifRole = (_notifRole || '').toLowerCase();
     var currentName = resolveActor() || 'there';
-    renderNotifications(currentName, currentRole);
+    renderNotifications(currentName, _notifRole);
     updateNotifBadge();
     var unreadEls = document.querySelectorAll(
       '#panel-updates .notif-item.unread');
@@ -594,7 +548,7 @@ async function markAllNotificationsRead() {
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    var _marRole = (window.effectiveRole || 'Admin');
+    var _marRole = (window.AppState.user.effectiveRole || 'Admin');
     await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_marRole), {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
@@ -603,10 +557,10 @@ async function markAllNotificationsRead() {
 }
 
 function updateNotifBadge() {
-  var role = (window.effectiveRole || 'Admin');
+  var role = (window.AppState.user.effectiveRole || 'Admin');
   var _badgeRole = role.charAt(0).toUpperCase() +
     role.slice(1).toLowerCase();
-  var _badgeActor = window.currentUserName || '';
+  var _badgeActor = window.AppState.user.name || window.currentUserName || '';
   var _badgeUrl = '/notifications?read=eq.false&user_role=eq.' +
     encodeURIComponent(_badgeRole) + '&select=id';
   if (_badgeActor) _badgeUrl += '&actor=neq.' + encodeURIComponent(_badgeActor);
@@ -659,11 +613,9 @@ function closeZen() {
 }
 
 // -- Snooze ------------------------------------
-let _snoozePostId = null;
 function closeSnooze() {
   document.getElementById('snooze-overlay')?.classList.remove('open');
   document.body.style.overflow = '';
-  _snoozePostId = null;
 }
 function isSnoozed(postId) {
   const key = `snooze_${postId}`;
@@ -1235,7 +1187,7 @@ function _fabOnScroll() {
 function updateFabVisibility() {
   var assignBtn = document.getElementById('fab-assign-task');
   if (!assignBtn) return;
-  assignBtn.style.display = (effectiveRole === 'Admin') ? 'flex' : 'none';
+  assignBtn.style.display = (window.AppState.user.effectiveRole === 'Admin') ? 'flex' : 'none';
 }
 
 function toggleFabMenu() {
@@ -1277,7 +1229,7 @@ async function _fabAssignTask(postId, assignee, message) {
       }),
     });
     showToast('Task assigned OK', 'success');
-    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
+    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.AppState.user.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
     if (typeof loadTasks === 'function') loadTasks();
   } catch (err) {
     console.error('[AssignTask] FAILED:', err);
@@ -1386,9 +1338,14 @@ function openNotifications() {
       if (notifId) markNotifRead(notifId);
       closeNotifications();
       setTimeout(function() {
+        var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
+        var _isClient = _role === 'client';
         if (isBrief) {
           if (typeof _openBriefSheet === 'function')
             _openBriefSheet(pid);
+        } else if (_isClient) {
+          if (typeof window._openClientPostOverlay === 'function')
+            window._openClientPostOverlay(pid);
         } else {
           openPCS(pid, '');
         }
@@ -1407,7 +1364,7 @@ function openNotifications() {
   overlay.style.display = 'flex';
   panel.style.cssText = 'width:100%;max-width:480px;max-height:62vh;min-height:40vh;overflow-y:auto;background:#0e0e0e;display:block;';
   document.body.style.overflow = 'hidden';
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
   loadNotifications();
 }
 
@@ -1415,7 +1372,7 @@ function closeNotifications() {
   var overlay = document.getElementById('notif-overlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
 }
 
 async function loadNotifBadge() {
@@ -1499,23 +1456,7 @@ function closeTaskModal() {
   if (overlay) overlay.classList.remove('open');
 }
 
-// -- Pipeline icon stubs ---------------------------
-function togglePipelineSearch() {
-  if (typeof openPipelineSearch === 'function') {
-    openPipelineSearch();
-  } else {
-    var bar = document.getElementById('pipeline-search-bar');
-    if (bar) bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
-  }
-}
 
-function showPipelineMenu() {
-  var menu = document.getElementById('pipeline-menu');
-  if (menu) menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-}
-
-window.togglePipelineSearch = togglePipelineSearch;
-window.showPipelineMenu = showPipelineMenu;
 
 // -- Pipeline filter sheet functions ---------------
 var _PF = { stage: 'all', owner: 'all', urgency: 'all' };
@@ -1539,7 +1480,7 @@ function openPipelineFilter() {
   ]);
   overlay.style.display = 'block';
   document.body.style.overflow = 'hidden';
-  window._modalOpen = true;
+  window.AppState.ui.modalOpen = true;
 }
 
 function _buildPFChips(containerId, key, options) {
@@ -1598,7 +1539,7 @@ function closePipelineFilter() {
   var overlay = document.getElementById('pipeline-filter-overlay');
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
-  window._modalOpen = false;
+  window.AppState.ui.modalOpen = false;
 }
 
 window.openPipelineFilter = openPipelineFilter;
@@ -1616,6 +1557,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof updateDashGreeting === 'function') updateDashGreeting();
 });
 
-window._notifBadgeTimer = setInterval(function() {
+window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }, 60000);

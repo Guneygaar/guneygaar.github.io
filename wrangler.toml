@@ -1,0 +1,7 @@
+name = "srtd-r2-upload"
+main = "r2-upload-worker.js"
+compatibility_date = "2024-01-01"
+
+[[r2_buckets]]
+binding = "SORTED_IMAGES"
+bucket_name = "sorted-images"

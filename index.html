@@ -1,6 +1,56 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
+<script>
+  (function() {
+    var errorCount = 0;
+    var MAX_ERRORS = 3;
+
+    function handleGlobalCrash(errorSource, errorDetail) {
+      errorCount++;
+      if (errorCount > MAX_ERRORS) return;
+
+      console.error(
+        '[Sorted Crash Guard] Caught via ' +
+        errorSource + ':', errorDetail
+      );
+
+      try {
+        if (typeof showToast === 'function') {
+          showToast(
+            'Something went wrong. Please refresh the page.',
+            'error'
+          );
+        } else {
+          throw new Error('showToast not defined yet.');
+        }
+      } catch (fallbackError) {
+        if (errorCount === 1) {
+          alert(
+            'Sorted encountered an unexpected error. ' +
+            'Please refresh the page.'
+          );
+        }
+      }
+    }
+
+    window.addEventListener('error', function(event) {
+      handleGlobalCrash(
+        'window.error',
+        event.error || event.message
+      );
+    });
+
+    window.addEventListener('unhandledrejection',
+      function(event) {
+        handleGlobalCrash(
+          'unhandledrejection',
+          event.reason
+        );
+      }
+    );
+  })();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Sorted</title>
@@ -117,7 +167,6 @@
         <button class="app-icon-btn" onclick="toggleUserMenu()" title="Menu">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
         </button>
-        <div class="user-menu" id="user-menu"></div>
       </div>
     </div>
   </header>
@@ -264,7 +313,7 @@
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="notif-pipeline-badge" style="position:absolute;top:10px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--c-red);border:1px solid #080808;display:none;"></span>
         </button>
-        <button onclick="showPipelineMenu()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;">
+        <button onclick="toggleUserMenu()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;">
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
         </button>
       </div>
@@ -390,7 +439,7 @@
   </div>
   <div class="nav-item tab-btn" data-tab="pipeline" onclick="switchTab(this)">
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-    <span class="nav-label">Posts</span>
+    <span class="nav-label">Pipeline</span>
   </div>
   <div class="nav-item tab-btn" data-tab="library" onclick="showLibrary()">
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -852,21 +901,75 @@
       <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
       <!-- COMMENTS -->
       <div id="pcs-comments-section" style="display:none;">
-        <div style="height:1px;background:rgba(255,255,255,0.06);margin:0 16px;"></div>
-        <div style="display:flex;align-items:center;gap:8px;padding:14px 16px 10px;">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.5);">Comments</div>
-          <span id="pcs-comments-count" style="background:rgba(200,168,75,0.15);color:#C8A84B;font-size:7px;padding:1px 6px;letter-spacing:0.1em;display:none;">0</span>
+
+        <!-- SECTION 1: CLIENT COMMENTS -->
+        <div class="client-comments-section">
+          <div class="client-section-header">
+            <div class="client-comments-label">CLIENT COMMENTS <span id="pcs-comments-count" class="pcs-count-badge" style="display:none;">0</span></div>
+            <div class="client-sublabel">CLIENT + AGENCY</div>
+          </div>
+          <div id="pcs-comments-list" class="pcs-thread-list" style="min-height:60px;"></div>
+          <div id="pcs-client-img-previews" class="pcs-img-previews"></div>
+          <div id="pcs-client-reply-indicator" class="pcs-reply-indicator-bar" style="display:none;">
+            <span></span>
+            <span onclick="window._pcsClearReply('client')" class="pcs-reply-cancel">x</span>
+          </div>
+          <div class="client-input-zone">
+            <textarea id="pcs-comment-input" class="pcs-textarea" rows="1" placeholder="Reply to client..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-client');var t=document.getElementById('pcs-task-btn-client');var v=!!this.value.trim();if(b)b.classList.toggle('active',v);if(t)t.classList.toggle('active',v)"></textarea>
+            <input type="file" id="pcs-client-img-input" accept="image/*" style="display:none" onchange="window._pcsHandleCommentImg('client')">
+            <button class="pcs-img-btn" onclick="document.getElementById('pcs-client-img-input').click()">ATTACH</button>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button id="pcs-send-btn-client" class="pcs-send-btn" style="min-width:72px" onclick="window.submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-comment-input').value,'all',false)">SEND &#x2192;</button>
+              <button id="pcs-task-btn-client" class="pcs-send-btn pcs-task-btn" style="min-width:72px" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-comment-input').value,'all',true)">+ TASK</button>
+            </div>
+          </div>
         </div>
-        <div id="pcs-comments-list" style="padding:0 0 8px;"></div>
-        <div style="text-align:center;padding:4px 0 12px;">
-          <span id="pcs-activity-link" onclick="togglePCSActivity()" style="font-family:'IBM Plex Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.18);cursor:pointer;">&#x2193; Show activity log</span>
+
+        <!-- SECTION 2: INTERNAL NOTES (agency only) -->
+        <div id="pcs-notes-section" class="pcs-notes-section" style="display:none;">
+          <div class="pcs-notes-header">
+            <div class="pcs-notes-label">INTERNAL NOTES <span class="pcs-lock-icon">PRIVATE</span> <span id="pcs-notes-count" class="pcs-notes-count-badge" style="display:none;">0</span></div>
+            <div class="pcs-vis-selector" id="pcs-vis-selector">
+              <div class="pcs-vis-chip active" data-vis="all" onclick="setPcsVisibility(this,'all')">ALL</div>
+              <div class="pcs-vis-chip" data-vis="admin" onclick="setPcsVisibility(this,'admin')">ADMIN</div>
+              <div class="pcs-vis-chip" data-vis="servicing" onclick="setPcsVisibility(this,'servicing')">SERV</div>
+              <div class="pcs-vis-chip" data-vis="creative" onclick="setPcsVisibility(this,'creative')">CREATIVE</div>
+            </div>
+          </div>
+          <div id="pcs-notes-list" class="pcs-notes-list"></div>
+          <div id="pcs-mention-dropup" style="display:none;"></div>
+          <div id="pcs-note-img-previews" class="pcs-img-previews"></div>
+          <div id="pcs-note-reply-indicator" class="pcs-reply-indicator-bar" style="display:none;">
+            <span></span>
+            <span onclick="window._pcsClearReply('note')" class="pcs-reply-cancel">x</span>
+          </div>
+          <div class="notes-input-zone">
+            <textarea id="pcs-note-input" class="pcs-textarea pcs-note-textarea" rows="1" placeholder="Add note... @mention" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';var b=document.getElementById('pcs-send-btn-note');var t=document.getElementById('pcs-task-btn-note');var v=!!this.value.trim();if(b)b.classList.toggle('active',v);if(t)t.classList.toggle('active',v)"></textarea>
+            <input type="file" id="pcs-note-img-input" accept="image/*" style="display:none" onchange="window._pcsHandleCommentImg('note')">
+            <button class="pcs-img-btn" onclick="document.getElementById('pcs-note-img-input').click()">ATTACH</button>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button id="pcs-send-btn-note" class="pcs-send-btn pcs-note-btn" style="min-width:72px" onclick="submitPcsComment(document.getElementById('pcs-post-id').value,document.getElementById('pcs-note-input').value,window._pcsNoteVisibility||'all',false,true)">NOTE</button>
+              <button id="pcs-task-btn-note" class="pcs-send-btn pcs-note-btn pcs-task-btn" style="min-width:72px" onclick="window._showTaskAssign('pcs-note-input','pcs-task-btn-note')">+ TASK</button>
+            </div>
+            <div id="pcs-note-recipient" class="pcs-note-recipient">Entire agency will see this</div>
+          </div>
         </div>
+
+        <!-- CONFIRMATION DIALOG -->
+        <div id="pcs-comment-confirm" class="pcs-confirm-overlay" style="display:none;">
+          <div class="pcs-confirm-sheet">
+            <div class="pcs-confirm-title">SEND TO CLIENT?</div>
+            <div id="pcs-comment-confirm-preview" class="pcs-confirm-preview"></div>
+            <div class="pcs-confirm-warn1">Client will see this.</div>
+            <div class="pcs-confirm-warn2">This cannot be unsaid.</div>
+            <div class="pcs-confirm-btns">
+              <button class="pcs-confirm-cancel" onclick="document.getElementById('pcs-comment-confirm').style.display='none';window._pendingComment=null;">CANCEL</button>
+              <button class="pcs-confirm-send" onclick="document.getElementById('pcs-comment-confirm').style.display='none';if(window._pendingComment){window._doSubmitComment(window._pendingComment);window._pendingComment=null;}">SEND &#x2192;</button>
+            </div>
+          </div>
+        </div>
+
       </div>
-    </div>
-    <!-- COMMENT INPUT BAR - outside scroll, inside pcs-screen -->
-    <div id="pcs-comment-input-bar" style="display:none;position:relative;flex-shrink:0;background:#0e0e14;border-top:1px solid rgba(255,255,255,0.08);padding:10px 16px 16px;gap:10px;align-items:flex-end;">
-      <textarea id="pcs-comment-input" rows="1" placeholder="Add a comment..." style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.5;padding:8px 12px;outline:none;resize:none;caret-color:#C8A84B;min-height:36px;max-height:80px;"></textarea>
-      <button onclick="submitPcsComment()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;color:#C8A84B;background:rgba(200,168,75,0.08);border:1px solid rgba(200,168,75,0.3);padding:8px 14px;cursor:pointer;height:36px;white-space:nowrap;align-self:flex-end;">Send &#x2192;</button>
     </div>
 
   </div>
@@ -914,17 +1017,69 @@
 
 <script>
 /* Global state  inline so it runs before any deferred script */
+  window.AppState = window.AppState || {
+    user: {
+      name: null, email: null, role: null,
+      effectiveRole: null, previewRole: null
+    },
+    posts: {
+      all: [], cached: [], loaded: false,
+      source: null, parked: [],
+      activityLogs: [], activityFetched: false,
+      setAll: function(p) {
+        window.AppState.posts.all = p;
+      }
+    },
+    pcs: {
+      open: false, postId: null, post: null,
+      editingTarget: null, closeTimer: null,
+      pendingComment: null,
+      lightbox: { images: [], index: 0 },
+      activeMenu: null
+    },
+    ui: {
+      modalOpen: false, deferredRender: false,
+      activeTab: null, taskFilter: null,
+      pipelineFilter: [], nrsUrgency: 'normal',
+      retryCount: 0, retryTimer: null,
+      realtimeTimer: null, unreadCount: 0
+    },
+    timers: {
+      tokenRefresh: null,
+      dashDatetime: null,
+      renderTimer: null
+    }
+  };
 window._modalOpen      = false;
 window._deferredRender = false;
 window._postsReqId     = 0;
 window._postsLoaded    = false;
 window._postsSource    = 'none';
-window.allPosts        = window.allPosts    || [];
-window.cachedPosts     = window.cachedPosts || [];
-window.currentRole     = window.currentRole || 'Admin';
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.all = window.AppState.posts.all || [];
+}
+if (window.AppState && window.AppState.posts) {
+  window.AppState.posts.cached = window.AppState.posts.cached || [];
+}
+if (window.AppState && window.AppState.user) { window.AppState.user.role = window.AppState.user.role || 'Admin'; }
 window.allTasks        = window.allTasks    || [];
+window._pcsNoteVisibility = 'all';
+window.setPcsVisibility = function(el, vis) {
+  window._pcsNoteVisibility = vis;
+  document.querySelectorAll('.pcs-vis-chip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  var r = document.getElementById('pcs-note-recipient');
+  if (r) {
+    var labels = {all:'Entire agency will see this',admin:'Only you will see this',servicing:'Only Chitra will see this',creative:'Only Pranav will see this'};
+    r.textContent = labels[vis] || labels.all;
+  }
+  var postId = document.getElementById('pcs-post-id');
+  if (postId && postId.value && typeof loadPcsComments === 'function') loadPcsComments(postId.value);
+};
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
+<script src="00-appstate.js?v=20260331N"></script>
+<script src="00-appstate-compat.js?v=20260331N"></script>
 <script src="01-config.js?v=20260331N" defer></script>
 <script src="02-session.js?v=20260331N" defer></script>
 <script src="utils.js?v=20260331N" defer></script>
@@ -933,6 +1088,11 @@ window.allTasks        = window.allTasks    || [];
 <script src="10-ui.js?v=20260331N" defer></script>
 
 <script src="06-post-create.js?v=20260331N" defer></script>
+<script defer src="render/dashboard.js?v=20260331N"></script>
+<script defer src="render/client.js?v=20260331N"></script>
+<script defer src="render/pipeline.js?v=20260331N"></script>
+<script defer src="render/brief.js?v=20260331N"></script>
+<script defer src="actions/pcs.js?v=20260331N"></script>
 <script src="07-post-load.js?v=20260331N" defer></script>
 <script src="08-post-actions.js?v=20260331N" defer></script>
 <script src="09-library.js?v=20260331N" defer></script>
@@ -976,6 +1136,9 @@ window.allTasks        = window.allTasks    || [];
       <button class="lib-icon-btn" onclick="openNotifications()" title="Notifications" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
         <span class="nav-badge" id="notif-lib-badge" style="display:none"></span>
+      </button>
+      <button class="lib-icon-btn" onclick="toggleUserMenu()" style="position:relative;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="rgba(255,255,255,0.6)"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
       </button>
       <button class="lib-icon-btn" onclick="libOpenFilterSheet()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
@@ -1516,6 +1679,8 @@ window.allTasks        = window.allTasks    || [];
       font-size:16px;cursor:pointer;">&#x2192;</button>
   </div>
 </div>
+
+<div class="user-menu" id="user-menu" style="position:fixed;top:56px;right:12px;z-index:3000;display:none;"></div>
 
 </body>
 </html>
