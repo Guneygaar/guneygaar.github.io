@@ -2318,6 +2318,7 @@ window._pcsConfirmDeleteComment = function(commentId, postId) {
     commentId + '\',\'' + postId + '\')">DELETE</button>' +
     '</div></div>';
   document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
 };
 
 window._pcsDoDeleteComment = async function(commentId, postId) {
