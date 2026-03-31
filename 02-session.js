@@ -3,8 +3,6 @@
    =============================================== */
 console.log("LOADED:", "02-session.js");
 
-window.allPosts        = [];
-window.cachedPosts     = [];
 window.AppState.user.role     = 'Admin';
 // Admin-only role preview  -  overrides UI visibility without touching auth
 window.AppState.user.effectiveRole   = localStorage.getItem('pcs_role_preview') || '';
