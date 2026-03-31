@@ -137,9 +137,11 @@ window.AppState.posts.all.splice(idx,1) // ILLEGAL
   window.allPosts (e2e test — low priority)
 
 ## WORKING DIRECTORY RULES
-- The working directory is the repo root: guneygaar.github.io/
-- All file paths in code and config are relative to repo root
-- Never cd into subdirectories for builds — there is no build step
-- Static assets are served directly from repo root via GitHub Pages
-- Keep all JS files flat in root or in their designated folders (render/, actions/)
-- Do not create nested src/ or dist/ directories — this is a zero-build project
+- Sorted (srtd.io) files are ALWAYS in /sorted/ subdirectory
+- All file reads, writes, and edits for Sorted must be inside /sorted/ only
+- Hinglish Ops files are at the repo root /
+- If a prompt does not specify which product, check the version string:
+  - ?v=2026... in /sorted/index.html = Sorted
+  - ?v=2026... in /index.html = Hinglish Ops
+- NEVER assume root = Sorted
+- Every Sorted prompt will include: "Working directory is /sorted/"
