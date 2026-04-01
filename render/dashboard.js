@@ -440,6 +440,7 @@ window.renderScoreboard = function() {
 
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'render-scoreboard');
   }
 }
 
@@ -608,7 +609,7 @@ window.toggleDashTask = async function(row, taskId) {
         method: 'PATCH',
         body: JSON.stringify({ done: cb.classList.contains('done') })
       });
-    } catch(e) { console.warn('Task toggle failed:', e); }
+    } catch(e) { console.error('[dashboard] task toggle failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'toggle-dash-task'); }
   }
 }
 
@@ -904,7 +905,7 @@ window._buildDoThisNowItems = function(role) {
 
 window.renderDashboard = function() {
   if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') return;
-  try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
+  try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); window.logError && window.logError(e && e.message, e && e.stack, 'render-dashboard'); var _d = document.getElementById('dashboard-view'); if (_d) _d.innerHTML = '<div style="color:#FF4B4B;padding:24px;font-family:DM Sans,sans-serif">Something went wrong. Please refresh.</div>'; }
 }
 window._renderDashboardInner = function() {
   var el = document.getElementById('pcs-dashboard');
@@ -1048,7 +1049,8 @@ async function _updateStreakLines() {
       }
     }
   } catch (e) {
-    console.warn('Streak update failed:', e);
+    console.error('[dashboard] streak update failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'update-streak-lines');
   }
 }
 
