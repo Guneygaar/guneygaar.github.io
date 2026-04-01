@@ -19,6 +19,7 @@ window._pcsClientImgs = [];
 window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
+window._pcsActiveTab = 'caption';
 window.AppState.pcs.activeMenu = null;
 window.AppState.ui.modalOpen = window.AppState.ui.modalOpen || false;
 
@@ -145,33 +146,28 @@ window._renderPCS = function(postId) {
   _removePcsConfirm();
 
   // 1. Fetch post
-  const post = getPostById(postId);
+  var post = getPostById(postId);
   if (!post) { closePCS(); return; }
 
   // 2. Compute derived state
-  const id          = getPostId(post);
-  const title       = getTitle(post);
-  const stageLC     = post.stage || '';
+  var id          = getPostId(post);
+  var title       = getTitle(post);
+  var stageLC     = post.stage || '';
   console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
-  const isPublished = stageLC === 'published';
-  const canvaUrl    = post.postLink || '';
-  const linkedinUrl = post.linkedinUrl || '';
+  var isPublished = stageLC === 'published';
+  var canvaUrl    = post.postLink || '';
+  var linkedinUrl = post.linkedinUrl || '';
   var _pcsRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPCS = _pcsRole === 'creative' ||
     _pcsRole === 'pranav' ||
     (window.AppState.user.email || '').toLowerCase().includes('pranav');
-  const canEdit = _pcsRole !== 'client' && !_isPranavPCS;
-  const canEditCreative = _isPranavPCS;
-  const dateValue   = post.targetDate || '';
+  var canEdit = _pcsRole !== 'client' && !_isPranavPCS;
+  var canEditCreative = _isPranavPCS;
+  var dateValue   = post.targetDate || '';
+  var isAdmin = _pcsRole === 'admin';
 
-  // 3. Render into DOM
-  const elTitle    = document.getElementById('pcs-topbar-title');
-  const elProgress = document.getElementById('pcs-progress-wrap');
-  const elDesign   = document.getElementById('pcs-action-btn-wrap');
-  const elFields   = document.getElementById('pcs-fields');
-  const elActivity = document.getElementById('pcs-activity-body');
-
-  // Title  -  inline editable on tap
+  // 3. Title
+  var elTitle = document.getElementById('pcs-topbar-title');
   if (elTitle) {
     elTitle.textContent = title;
     if (canEdit) {
@@ -183,246 +179,53 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // Hide delete button for non-Admin roles
+  // 4. Delete button always hidden from topbar (moved to photo menu)
   var _pcsDelBtn = document.querySelector('.pc-topbar .pc-icon-btn.danger');
-  if (_pcsDelBtn) {
-    var _isAdminDel = (_pcsRole === 'admin');
-    _pcsDelBtn.style.display = _isAdminDel ? '' : 'none';
-  }
+  if (_pcsDelBtn) _pcsDelBtn.style.display = 'none';
 
+  // 5. Stage pill into subtitle area
   _updateSubtitle(post);
-  if (elProgress) elProgress.innerHTML = _buildStageProgress(stageLC);
 
-  // -- Photo strip --
+  // 6. Hide progress wrap (stage shown in pill only)
+  var elProgress = document.getElementById('pcs-progress-wrap');
+  if (elProgress) elProgress.style.display = 'none';
+
+  // 7. Photo grid
+  var elDesign = document.getElementById('pcs-action-btn-wrap');
   var imgs = Array.isArray(post.images) ? post.images : [];
   var showPhotoSection = (canEdit || canEditCreative) || imgs.length > 0;
-  var photoStripHtml = '';
-  if (showPhotoSection) {
-    photoStripHtml =
-      '<div id="pcs-photo-section" style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:7px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#AEAEB2;">' +
-      'Photos <span style="color:' + (imgs.length ? '#E8E8E8' : '#8E8E93') + ';">' +
-      imgs.length + '</span></div>' +
-      ((canEdit || canEditCreative) ?
-        '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\',event)" ' +
-        'style="color:#8E8E93;background:transparent;border:none;' +
-        'padding:8px 12px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-        'height:36px;letter-spacing:0.2em;">...</button>'
-        : '') +
-      '</div>' +
-      (imgs.length > 0 ?
-        '<div style="display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;">' +
-        imgs.map(function(url, idx) {
-          return '<div onclick="_pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')" ' +
-            'style="flex-shrink:0;width:100px;height:100px;position:relative;' +
-            'background:#1a1a1a;cursor:pointer;overflow:hidden;">' +
-            '<img src="' + esc(url) + '" style="width:100%;height:100%;object-fit:cover;display:block;">' +
-            '<div style="position:absolute;bottom:3px;right:4px;font-family:' +
-            '\'IBM Plex Mono\',monospace;font-size:7px;color:rgba(255,255,255,0.4);' +
-            'background:rgba(0,0,0,0.5);padding:1px 4px;">' + (idx + 1) + '</div>' +
-            ((canEdit || canEditCreative) ?
-              '<button onclick="event.stopPropagation();_pcsRemovePhoto(\'' +
-              esc(id) + '\',' + idx + ')" ' +
-              'style="position:absolute;top:4px;right:4px;width:28px;height:28px;' +
-              'border-radius:50%;background:rgba(0,0,0,0.85);border:none;' +
-              'color:#e8e2d9;font-size:14px;cursor:pointer;display:flex;' +
-              'align-items:center;justify-content:center;line-height:1;">x</button>'
-              : '') +
-            '</div>';
-        }).join('') +
-        ((canEdit || canEditCreative) ?
-          '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
-          'style="flex-shrink:0;width:100px;height:100px;' +
-          'border:1px dashed rgba(246,166,35,0.2);display:flex;' +
-          'flex-direction:column;align-items:center;justify-content:center;' +
-          'cursor:pointer;gap:5px;">' +
-          '<div style="font-size:22px;color:rgba(246,166,35,0.35);">+</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:6px;' +
-          'letter-spacing:0.1em;text-transform:uppercase;color:#333;' +
-          'text-align:center;line-height:1.5;">Upload<br>Photos</div>' +
-          '</div>'
-          : '') +
-        '</div>'
-        :
-        ((canEdit || canEditCreative) ?
-          '<div onclick="_pcsAddPhotos(\'' + esc(id) + '\')" ' +
-          'style="margin:10px 18px 12px;border:1px dashed rgba(255,255,255,0.07);' +
-          'padding:20px;display:flex;flex-direction:column;align-items:center;' +
-          'gap:8px;cursor:pointer;">' +
-          '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.12em;text-transform:uppercase;color:#F6A623;">Upload Photos</div>' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'color:#333;letter-spacing:0.06em;">JPG / PNG -- stored in Supabase, original quality</div>' +
-          '</div>'
-          : '')
-      ) +
-      ((canEdit || canEditCreative) ?
-        '<input type="file" id="pcs-photo-input" accept="image/*" ' +
-        'multiple style="display:none;" ' +
-        'onchange="_pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
-        : '') +
-      '</div>';
+  if (elDesign) {
+    elDesign.innerHTML = showPhotoSection
+      ? _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id)
+      : '';
   }
 
-  // -- LinkedIn link (published posts) --
-  var stageForLi = (post.stage || stageLC || '').toLowerCase();
-  var liHtml = '';
+  // 8. Meta chips
+  var chipsEl = document.getElementById('pcs-meta-chips');
+  if (chipsEl) chipsEl.innerHTML = _buildMetaChips(post, canEdit, canEditCreative, id);
 
-  if (stageForLi === 'published') {
-    if (post.linkedinUrl) {
-      liHtml =
-        '<div style="padding:12px 18px;border-bottom:1px solid' +
-        ' rgba(255,255,255,0.07);background:rgba(10,102,194,0.04);' +
-        'border-top:1px solid rgba(10,102,194,0.1);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;' +
-        'margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
-        '<div style="width:6px;height:6px;border-radius:50%;' +
-        'background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
-        '<button onclick="window.open(\'' + esc(post.linkedinUrl) +
-        '\',\'_blank\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:#0a66c2;background:transparent;' +
-        'border:1px solid rgba(10,102,194,0.3);' +
-        'padding:11px 0;cursor:pointer;display:flex;align-items:center;' +
-        'justify-content:center;gap:8px;">' +
-        '<span style="font-size:14px;font-weight:600;">in</span>' +
-        'View Live Post &rarr;</button>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;' +
-        'text-overflow:ellipsis;white-space:nowrap;">' +
-        esc(post.linkedinUrl.replace('https://', '')) + '</div>' +
-        '</div>';
-    } else {
-      liHtml =
-        '<div style="padding:12px 18px;border-bottom:1px solid' +
-        ' rgba(255,255,255,0.07);border-top:1px solid rgba(246,166,35,0.1);' +
-        'background:rgba(246,166,35,0.03);">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.18em;text-transform:uppercase;color:#444;' +
-        'margin-bottom:8px;">Live Post URL</div>' +
-        '<div style="display:flex;gap:8px;align-items:center;">' +
-        '<input id="pcs-li-inline-input" type="url" ' +
-        'placeholder="Paste LinkedIn post URL..." ' +
-        'style="flex:1;background:rgba(255,255,255,0.02);border:none;' +
-        'border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-        'padding:8px 0;outline:none;letter-spacing:0.02em;">' +
-        '<button onclick="_saveLiUrlInline(\'' + esc(id) + '\')" ' +
-        'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
-        'background:transparent;border:1px solid rgba(62,207,142,0.3);' +
-        'padding:7px 12px;cursor:pointer;flex-shrink:0;">Save</button>' +
-        '</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-        'color:#2a2a2a;letter-spacing:0.06em;margin-top:6px;">' +
-        'Add so the team can track impressions</div>' +
-        '</div>';
-    }
-  }
-  if (elDesign) elDesign.innerHTML = photoStripHtml;
-
-  var captionHtml = '';
-  if (post.caption || canEdit || canEditCreative) {
-    captionHtml = '<div id="pcs-caption-section" style="padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;color:#555;' +
-      'margin-bottom:8px;display:flex;align-items:center;' +
-      'justify-content:space-between;">' +
-      '<span>Copy / Caption</span>' +
-      ((canEdit || canEditCreative) ?
-        '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
-        'id="pcs-caption-edit-btn" ' +
-        'style="color:#8E8E93;background:transparent;border:none;' +
-        'padding:8px 12px;cursor:pointer;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:13px;' +
-        'height:36px;letter-spacing:0.2em;">...</button>'
-        : '') +
-      '</div>' +
-      (post.caption ?
-        '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
-        'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
-        'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
-        'max-height:62px;overflow:hidden;' +
-        '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
-        'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
-        esc(post.caption) + '</div>' +
-        '<button id="pcs-caption-see-more" onclick="(function(){' +
-        'var t=document.getElementById(\'pcs-caption-text\');' +
-        'var b=document.getElementById(\'pcs-caption-see-more\');' +
-        'if(t.style.maxHeight===\'62px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
-        'else{t.style.maxHeight=\'62px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';t.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';b.textContent=\'See More\';}' +
-        '})()" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;' +
-        'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
-        'padding:6px 0 0 0;">See More</button>'
-        :
-        '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;color:#333;letter-spacing:0.06em;">No copy yet</div>'
-      ) +
-      '</div>';
+  // 9. Caption + LinkedIn + WA into pcs-fields
+  var elFields = document.getElementById('pcs-fields');
+  var captionHtml = _buildCaptionHtml(post, canEdit, canEditCreative, id);
+  var liHtml = _buildLinkedInHtml(post, id, stageLC);
+  var waHtml = _buildWAHtml(post, id, postId, stageLC);
+  if (elFields) {
+    elFields.innerHTML = captionHtml + liHtml + waHtml +
+      '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
   }
 
-  var whatsappHtml = '';
-  var showWA = post.caption && (
-    (window.AppState.user.effectiveRole || '').toLowerCase() === 'client' ||
-    stageLC === 'awaiting_approval'
-  );
-
-  if (showWA) {
-    whatsappHtml = '<div style="padding:10px 18px 12px;' +
-      'background:rgba(37,211,102,0.04);' +
-      'border-top:1px solid rgba(37,211,102,0.1);' +
-      'border-bottom:1px solid rgba(255,255,255,0.07);">' +
-      '<button onclick="_sharePostOnWhatsApp(\'' + esc(id) + '\')" ' +
-      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.14em;text-transform:uppercase;color:#25D366;' +
-      'background:transparent;border:1px solid rgba(37,211,102,0.25);' +
-      'padding:11px 0;cursor:pointer;">Share on WhatsApp</button>' +
-      (function(){
-        var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
-        var _copyHtml = _isDesktop ?
-          '<button onclick="(function(){' +
-          'var post=(typeof getPostById===\'function\')?getPostById(\'' + postId + '\'):null;' +
-          'if(!post)return;' +
-          'var pid=(post.post_id||post.id||\'\');' +
-          'var sid=pid.replace(/[^0-9]/g,\'\').slice(-4);' +
-          'if(!sid)sid=pid.slice(-4);' +
-          'var msg=(post.title||\'\')+\' -- Awaiting your approval.\\n\\nhttps://srtd.io/p/\'+sid;' +
-          'navigator.clipboard.writeText(msg).then(function(){' +
-          'var b=document.getElementById(\'pcs-copy-btn\');' +
-          'if(b){b.textContent=\'Copied\';' +
-          'setTimeout(function(){b.textContent=\'Copy to Share\';},2000);}' +
-          '});' +
-          '})()" id="pcs-copy-btn" ' +
-          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-          'letter-spacing:0.14em;text-transform:uppercase;color:#888;' +
-          'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
-          'padding:10px 0;cursor:pointer;margin-top:6px;">' +
-          'Copy to Share</button>'
-          : '';
-        return _copyHtml;
-      })() +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'color:#333;letter-spacing:0.06em;margin-top:6px;text-align:center;">' +
-      'Sends copy + approval link to client</div>' +
-      '</div>';
-  }
-
-  if (elFields)   elFields.innerHTML = captionHtml + whatsappHtml + _buildInfoGrid(post, canEdit, canEditCreative, id) + _buildNotes(post, canEdit, id) + liHtml + '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
-
-  // Stage advance button
+  // 10. Stage advance button
   _renderAdvanceButton(stageLC);
 
-  // Activity count
+  // 11. Activity count
   _renderActivityCount(id);
 
-  // 5. Load activity asynchronously
+  // 12. Hide activity trigger
+  var actTrigger = document.getElementById('pc-activity-trigger');
+  if (actTrigger) actTrigger.style.display = 'none';
+
+  // 13. Load activity async
+  var elActivity = document.getElementById('pcs-activity-body');
   if (elActivity) {
     if (elActivity.dataset.loadedFor !== id) {
       elActivity.dataset.loadedFor = id;
@@ -431,41 +234,410 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // Load comments
+  // 14. Show comments section container
+  var commSection = document.getElementById('pcs-comments-section');
+  if (commSection) commSection.style.display = 'block';
+
+  // 15. Load comments
   var _pcsPostIdEl = document.getElementById('pcs-post-id');
   var _pcsPostId = _pcsPostIdEl ? _pcsPostIdEl.value : id;
   if (typeof loadPcsComments === 'function') {
     loadPcsComments(_pcsPostId);
   }
 
-  var notesSection = document.getElementById('pcs-notes-section');
-  if (notesSection) {
-    var _r = (window.AppState.user.effectiveRole||'').toLowerCase();
-    notesSection.style.display = _r === 'client' ? 'none' : 'block';
-  }
+  // 16. Hide Internal tab for clients
+  var internalTab = document.querySelector('[data-tab="internal"]');
+  if (internalTab) internalTab.style.display = _pcsRole === 'client' ? 'none' : '';
 
+  // 17. Notes section role guard
+  var notesSection = document.getElementById('pcs-notes-section');
+  if (notesSection) notesSection.style.display = _pcsRole === 'client' ? 'none' : '';
+
+  // 18. Default to caption tab
+  window._pcsActiveTab = 'caption';
+  _pcsTabSwitch('caption');
+
+  // 19. Mention dropup
   if (typeof window._initMentionDropup === 'function') {
     window._initMentionDropup();
   }
 }
 
-// -- Subtitle sync (single source of truth) --------------
+// -- Tab switching --
+window._pcsTabSwitch = function(tab) {
+  window._pcsActiveTab = tab;
+  // Update tab bar buttons
+  var tabs = document.querySelectorAll('.pcs-tab');
+  tabs.forEach(function(t) {
+    t.classList.remove('active', 'amber');
+    if (t.getAttribute('data-tab') === tab) {
+      t.classList.add('active');
+      if (tab === 'internal') t.classList.add('amber');
+    }
+  });
+  // Toggle panes
+  var pCaption = document.getElementById('pcs-pane-caption');
+  var pClient = document.getElementById('pcs-pane-client');
+  var pInternal = document.getElementById('pcs-pane-internal');
+  if (pCaption) pCaption.style.display = tab === 'caption' ? '' : 'none';
+  if (pClient) pClient.style.display = tab === 'client' ? '' : 'none';
+  if (pInternal) pInternal.style.display = tab === 'internal' ? '' : 'none';
+}
+
+// -- Photo grid builder (LinkedIn style) --
+function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
+  var canManage = canEdit || canEditCreative;
+  var headerHtml =
+    '<div class="pcs-photo-header">' +
+    '<div class="pcs-photo-label">Photos <span style="color:' +
+    (imgs.length ? '#E8E8E8' : '#8E8E93') + ';">' + imgs.length + '</span></div>' +
+    (canManage ?
+      '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\',event)" ' +
+      'style="color:#8E8E93;background:transparent;border:none;' +
+      'padding:8px 12px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:13px;height:36px;letter-spacing:0.2em;">...</button>' : '') +
+    '</div>';
+
+  var gridHtml = '';
+  if (imgs.length > 0) {
+    var showImgs = imgs.slice(0, 3);
+    var extra = imgs.length - 3;
+    gridHtml = '<div class="pcs-photo-grid">';
+
+    // Hero (left, spans both rows)
+    gridHtml += '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
+      '<img src="' + esc(showImgs[0]) + '">' +
+      (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
+      '</div>';
+
+    // Top-right
+    if (showImgs.length > 1) {
+      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',1)">' +
+        '<img src="' + esc(showImgs[1]) + '">' +
+        (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',1)">x</button>' : '') +
+        '</div>';
+    } else if (canManage) {
+      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')" style="display:flex;align-items:center;justify-content:center;">' +
+        '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div></div>';
+    } else {
+      gridHtml += '<div class="pcs-photo-grid-cell"></div>';
+    }
+
+    // Bottom-right
+    if (showImgs.length > 2) {
+      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',2)" style="position:relative;">' +
+        '<img src="' + esc(showImgs[2]) + '">' +
+        (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',2)">x</button>' : '') +
+        (extra > 0 ? '<div class="pcs-photo-grid-more" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',2)">' +
+          '<div class="pcs-photo-grid-more-num">+' + extra + '</div>' +
+          '<div class="pcs-photo-grid-more-lbl">more</div></div>' : '') +
+        '</div>';
+    } else if (canManage) {
+      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')" style="display:flex;align-items:center;justify-content:center;">' +
+        '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div></div>';
+    } else {
+      gridHtml += '<div class="pcs-photo-grid-cell"></div>';
+    }
+
+    gridHtml += '</div>';
+  } else if (canManage) {
+    gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
+      '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#F6A623;">Upload Photos</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#333;letter-spacing:0.06em;">JPG / PNG -- stored in Supabase, original quality</div>' +
+      '</div>';
+  }
+
+  var inputHtml = canManage
+    ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none;" onchange="window._pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
+    : '';
+
+  return '<div id="pcs-photo-section" class="pcs-photo-linkedin">' + headerHtml + gridHtml + inputHtml + '</div>';
+}
+
+// -- Meta chips builder --
+function _buildMetaChips(post, canEdit, canEditCreative, id) {
+  var stageLC = post.stage || '';
+  var canManage = canEdit || canEditCreative;
+
+  // Stage pill
+  var stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
+  var stageColor = '#AEAEB2';
+  if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') stageColor = '#F6A623';
+  else if (stageLC === 'ready') stageColor = '#3ECF8E';
+  else if (stageLC === 'awaiting_approval') stageColor = '#FF4B4B';
+  else if (stageLC === 'scheduled') stageColor = '#22D3EE';
+  else if (stageLC === 'published') stageColor = '#8E8E93';
+  else if (stageLC === 'parked') stageColor = '#F6A623';
+  else if (stageLC === 'rejected') stageColor = '#FF4B4B';
+
+  var stagePill = '<div class="pcs-chip" style="color:' + stageColor + ';border-color:' + stageColor + ';" ' +
+    (canEdit ? 'onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(stageLabel) + '</div>';
+
+  // Format chip
+  var formatVal = post.format || '--';
+  var formatChip = '<div class="pcs-chip" ' +
+    (canManage ? 'onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(formatVal) + '</div>';
+
+  // Pillar chip
+  var pillarVal = post.contentPillar ? (typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar) : '--';
+  var pillarChip = '<div class="pcs-chip" ' +
+    (canManage ? 'onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(pillarVal) + '</div>';
+
+  // Location chip
+  var locVal = post.location || '--';
+  var locChip = '<div class="pcs-chip" ' +
+    (canManage ? 'onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(locVal) + '</div>';
+
+  // Owner chip
+  var ownerVal = post.owner || '--';
+  var ownerColor = '';
+  var ownerLC = (ownerVal || '').toLowerCase();
+  if (ownerLC === 'chitra') ownerColor = ' chip-cyan';
+  else if (ownerLC === 'pranav') ownerColor = ' chip-purple';
+  else if (ownerLC === 'client') ownerColor = ' chip-amber';
+  var ownerChip = '<div class="pcs-chip' + ownerColor + '" ' +
+    (canEdit ? 'onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(typeof formatOwner === 'function' ? formatOwner(ownerVal) : ownerVal) + '</div>';
+
+  // Date chip
+  var dateValue = post.targetDate || '';
+  var dateDisplay = '';
+  if (dateValue) {
+    try {
+      var _dp = new Date(dateValue + 'T00:00:00');
+      if (!isNaN(_dp.getTime())) {
+        dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      }
+    } catch(e) {}
+  }
+  if (!dateDisplay) dateDisplay = '--';
+  var dateColor = '';
+  if (dateValue && stageLC !== 'published' && stageLC !== 'parked' && stageLC !== 'rejected') {
+    var _td = typeof parseDate === 'function' ? parseDate(dateValue) : new Date(dateValue);
+    var _now = new Date(); _now.setHours(0,0,0,0);
+    if (_td && _td < _now) dateColor = ' chip-red';
+  }
+  var dateChip = '<div class="pcs-chip' + dateColor + '" ' +
+    (canEdit ? 'onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(dateDisplay) + '</div>';
+
+  return stagePill + formatChip + pillarChip + locChip + ownerChip + dateChip;
+}
+
+// -- Chip dropdown handler --
+window._pcsChipDrop = function(chipEl, field, postId) {
+  // Close any existing dropdown
+  if (window.AppState.pcs.activeMenu) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
+  }
+
+  var drop = document.createElement('div');
+  drop.className = 'pcs-chip-drop';
+  var items = [];
+  var currentVal = '';
+  var post = typeof getPostById === 'function' ? getPostById(postId) : null;
+
+  if (field === 'format') {
+    items = ['Creative','Photo','Carousel','Video','Text'];
+    currentVal = post ? (post.format || '') : '';
+  } else if (field === 'pillar') {
+    items = typeof PILLARS_DB !== 'undefined' ? PILLARS_DB : [];
+    currentVal = post ? (post.contentPillar || '') : '';
+  } else if (field === 'location') {
+    items = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
+    currentVal = post ? (post.location || '') : '';
+  } else if (field === 'owner') {
+    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Pranav','Chitra','Client'];
+    currentVal = post ? (post.owner || '') : '';
+  } else if (field === 'stage') {
+    items = typeof STAGES_DB !== 'undefined' ? STAGES_DB : [];
+    currentVal = post ? (post.stage || '') : '';
+  } else if (field === 'date') {
+    // For date, inject a native date input
+    var dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = post ? (post.targetDate || '') : '';
+    dateInput.style.cssText = 'width:100%;background:#1e1e26;border:none;color:#E8E8E8;font-family:\'IBM Plex Mono\',monospace;font-size:12px;padding:10px;outline:none;';
+    dateInput.onchange = function() {
+      if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateInput.value);
+      drop.remove();
+      window.AppState.pcs.activeMenu = null;
+      if (typeof openPCS === 'function') openPCS(postId, '');
+    };
+    drop.appendChild(dateInput);
+    chipEl.style.position = 'relative';
+    chipEl.appendChild(drop);
+    window.AppState.pcs.activeMenu = drop;
+    dateInput.focus();
+    return;
+  }
+
+  items.forEach(function(item) {
+    var label = item;
+    if (field === 'stage' && typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[item]) {
+      label = STAGE_DISPLAY[item];
+    } else if (field === 'pillar' && typeof PILLAR_DISPLAY !== 'undefined' && PILLAR_DISPLAY[item]) {
+      label = PILLAR_DISPLAY[item];
+    }
+    var div = document.createElement('div');
+    div.className = 'pcs-chip-drop-item' + (item === currentVal ? ' selected' : '');
+    div.textContent = label;
+    div.onclick = function(e) {
+      e.stopPropagation();
+      if (field === 'stage') {
+        if (typeof changeStage === 'function') changeStage(item);
+      } else if (field === 'owner') {
+        if (typeof handleOwnerChange === 'function') handleOwnerChange(postId, item);
+      } else {
+        var dbField = field === 'pillar' ? 'contentPillar' : field;
+        if (typeof updatePost === 'function') updatePost(postId, dbField, item);
+      }
+      drop.remove();
+      window.AppState.pcs.activeMenu = null;
+      if (field !== 'stage') {
+        if (typeof openPCS === 'function') openPCS(postId, '');
+      }
+    };
+    drop.appendChild(div);
+  });
+
+  chipEl.style.position = 'relative';
+  chipEl.appendChild(drop);
+  window.AppState.pcs.activeMenu = drop;
+}
+
+// -- Caption section builder --
+function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
+  if (!post.caption && !canEdit && !canEditCreative) return '';
+  return '<div id="pcs-caption-section" style="padding:12px 18px;border-bottom:1px solid #1a1a2a;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
+    'letter-spacing:0.18em;text-transform:uppercase;color:#555;' +
+    'margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">' +
+    '<span>Copy / Caption</span>' +
+    ((canEdit || canEditCreative) ?
+      '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
+      'id="pcs-caption-edit-btn" ' +
+      'style="color:#8E8E93;background:transparent;border:none;padding:8px 12px;cursor:pointer;' +
+      'font-family:\'IBM Plex Mono\',monospace;font-size:13px;height:36px;letter-spacing:0.2em;">...</button>'
+      : '') +
+    '</div>' +
+    (post.caption ?
+      '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
+      'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
+      'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
+      'max-height:62px;overflow:hidden;' +
+      '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
+      'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
+      esc(post.caption) + '</div>' +
+      '<button id="pcs-caption-see-more" onclick="(function(){' +
+      'var t=document.getElementById(\'pcs-caption-text\');' +
+      'var b=document.getElementById(\'pcs-caption-see-more\');' +
+      'if(!t||!b)return;' +
+      'if(t.style.maxHeight===\'62px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
+      'else{t.style.maxHeight=\'62px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';t.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';b.textContent=\'See More\';}' +
+      '})()" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;' +
+      'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
+      'padding:6px 0 0 0;">See More</button>'
+      :
+      '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#333;letter-spacing:0.06em;">No copy yet</div>'
+    ) + '</div>';
+}
+
+// -- LinkedIn section builder --
+function _buildLinkedInHtml(post, id, stageLC) {
+  var stageForLi = (post.stage || stageLC || '').toLowerCase();
+  if (stageForLi !== 'published') return '';
+  if (post.linkedinUrl) {
+    return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;background:rgba(10,102,194,0.04);border-top:1px solid rgba(10,102,194,0.1);">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
+      '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
+      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:#0a66c2;background:transparent;border:1px solid rgba(10,102,194,0.3);padding:11px 0;cursor:pointer;' +
+      'display:flex;align-items:center;justify-content:center;gap:8px;">' +
+      '<span style="font-size:14px;font-weight:600;">in</span>View Live Post &rarr;</button>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+      esc(post.linkedinUrl.replace('https://','')) + '</div></div>';
+  }
+  return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;border-top:1px solid rgba(246,166,35,0.1);background:rgba(246,166,35,0.03);">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:8px;">Live Post URL</div>' +
+    '<div style="display:flex;gap:8px;align-items:center;">' +
+    '<input id="pcs-li-inline-input" type="url" placeholder="Paste LinkedIn post URL..." ' +
+    'style="flex:1;background:rgba(255,255,255,0.02);border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;' +
+    'font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:8px 0;outline:none;letter-spacing:0.02em;">' +
+    '<button onclick="window._saveLiUrlInline(\'' + esc(id) + '\')" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
+    'background:transparent;border:1px solid rgba(62,207,142,0.3);padding:7px 12px;cursor:pointer;flex-shrink:0;">Save</button>' +
+    '</div>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.06em;margin-top:6px;">Add so the team can track impressions</div></div>';
+}
+
+// -- WhatsApp section builder --
+function _buildWAHtml(post, id, postId, stageLC) {
+  var showWA = post.caption && (
+    (window.AppState.user.effectiveRole || '').toLowerCase() === 'client' ||
+    stageLC === 'awaiting_approval'
+  );
+  if (!showWA) return '';
+  var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);
+  var copyBtn = _isDesktop ?
+    '<button onclick="(function(){' +
+    'var post=(typeof getPostById===\'function\')?getPostById(\'' + postId + '\'):null;' +
+    'if(!post)return;' +
+    'var pid=(post.post_id||post.id||\'\');' +
+    'var sid=pid.replace(/[^0-9]/g,\'\').slice(-4);' +
+    'if(!sid)sid=pid.slice(-4);' +
+    'var msg=(post.title||\'\')+\' -- Awaiting your approval.\\n\\nhttps://srtd.io/p/\'+sid;' +
+    'navigator.clipboard.writeText(msg).then(function(){' +
+    'var b=document.getElementById(\'pcs-copy-btn\');' +
+    'if(b){b.textContent=\'Copied\';setTimeout(function(){b.textContent=\'Copy to Share\';},2000);}' +
+    '});' +
+    '})()" id="pcs-copy-btn" ' +
+    'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;' +
+    'color:#888;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:10px 0;cursor:pointer;margin-top:6px;">Copy to Share</button>'
+    : '';
+  return '<div style="padding:10px 18px 12px;">' +
+    '<button class="pcs-wa-btn" onclick="window._sharePostOnWhatsApp(\'' + esc(id) + '\')">Share on WhatsApp</button>' +
+    copyBtn +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#333;letter-spacing:0.06em;margin-top:6px;text-align:center;">Sends copy + approval link to client</div>' +
+    '</div>';
+}
+
+// -- Subtitle sync — now shows stage pill + owner + date summary --
 window._updateSubtitle = function(post) {
-  const el = document.getElementById('pcs-subtitle');
+  var el = document.getElementById('pcs-subtitle');
   if (!el || !post) return;
-  const stLC = post.stage || '';
-  const isPub = stLC === 'published';
-  const pLabel = post.contentPillar
-    ? getPillarShort(post.contentPillar)
-    : ' - ';
-  const dVal = post.targetDate || '';
-  const dDisp = formatDate(dVal) || ' - ';
-  var parts = [esc(pLabel), esc(formatOwner(post.owner)), esc(dDisp)];
-  var html = parts.join('<span class="pc-sub-dot"></span>');
-  // Overdue badge (exclude published/parked/rejected)
+  var stLC = post.stage || '';
+  var stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stLC]) || stLC || '';
+  var stageColor = '#AEAEB2';
+  if (stLC === 'in_production' || stLC === 'awaiting_brand_input') stageColor = '#F6A623';
+  else if (stLC === 'ready') stageColor = '#3ECF8E';
+  else if (stLC === 'awaiting_approval') stageColor = '#FF4B4B';
+  else if (stLC === 'scheduled') stageColor = '#22D3EE';
+  else if (stLC === 'published') stageColor = '#8E8E93';
+
+  var pLabel = post.contentPillar ? (typeof getPillarShort === 'function' ? getPillarShort(post.contentPillar) : post.contentPillar) : '';
+  var dVal = post.targetDate || '';
+  var dDisp = (typeof formatDate === 'function' ? formatDate(dVal) : dVal) || '';
+  var ownerDisp = typeof formatOwner === 'function' ? formatOwner(post.owner) : (post.owner || '');
+
+  var parts = [];
+  if (pLabel) parts.push(esc(pLabel));
+  if (ownerDisp && ownerDisp !== '--') parts.push(esc(ownerDisp));
+  if (dDisp) parts.push(esc(dDisp));
+  var html = '<span class="pcs-stage-pill" style="color:' + stageColor + ';border-color:' + stageColor + ';">' + esc(stageLabel) + '</span>';
+  if (parts.length) html += '<span class="pc-sub-dot"></span>' + parts.join('<span class="pc-sub-dot"></span>');
+
+  // Overdue badge
   var _noOverdue = ['published', 'parked', 'rejected'];
   if (_noOverdue.indexOf(stLC) === -1 && dVal) {
-    var td = parseDate(dVal);
+    var td = typeof parseDate === 'function' ? parseDate(dVal) : null;
     var now = new Date(); now.setHours(0,0,0,0);
     if (td && td < now) {
       html += '<span class="pc-sub-dot"></span><span class="pc-overdue-badge">Overdue</span>';
@@ -921,6 +1093,12 @@ window.loadPcsComments = async function(postId) {
       }
     }
 
+    // Update tab count badge
+    var tabClientCount = document.getElementById('pcs-tab-client-count');
+    if (tabClientCount) {
+      tabClientCount.textContent = clientRows.length > 0 ? clientRows.length : '';
+    }
+
     if (notesList && _roleLower !== 'client') {
       var _activeVis = window._pcsNoteVisibility || 'all';
       var filteredNotes = internalRows.filter(function(c) {
@@ -958,6 +1136,12 @@ window.loadPcsComments = async function(postId) {
         } else {
           notesCountEl.style.display = 'none';
         }
+      }
+
+      // Update tab count badge
+      var tabNotesCount = document.getElementById('pcs-tab-notes-count');
+      if (tabNotesCount) {
+        tabNotesCount.textContent = internalRows.length > 0 ? internalRows.length : '';
       }
 
       // Per-chip counts  dynamic builder
@@ -1473,6 +1657,7 @@ window._pcsPhotoMenu = function(postId, e) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
+  var _menuRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   menu.innerHTML =
     '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
       postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
@@ -1481,6 +1666,9 @@ window._pcsPhotoMenu = function(postId, e) {
       ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
           postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
           'Save All</div>'
+      : '') +
+    (_menuRole === 'admin'
+      ? '<div class="pcs-menu-item pcs-menu-item-danger" onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window.pcsConfirmDelete();">Delete Post</div>'
       : '');
   var section = document.getElementById('pcs-photo-section');
   if (section) {

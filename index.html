@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260401s">
+ <link rel="stylesheet" href="styles.css?v=20260401t">
 
 </head>
 <body>
@@ -866,7 +866,7 @@
       <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <button class="pc-icon-btn danger" onclick="pcsConfirmDelete()" aria-label="Delete">
+      <button class="pc-icon-btn danger" onclick="pcsConfirmDelete()" aria-label="Delete" style="display:none">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
       </button>
     </div>
@@ -878,31 +878,41 @@
         <div class="pc-title" id="pcs-topbar-title"></div>
         <div class="pc-subtitle" id="pcs-subtitle"></div>
       </div>
-      <!-- Pipeline progress -->
-      <div class="pcs-body-section" id="pcs-progress-wrap"></div>
-      <!-- Tool card (Design/LinkedIn) -->
+      <!-- Pipeline progress (hidden — stage shown in pill) -->
+      <div class="pcs-body-section" id="pcs-progress-wrap" style="display:none"></div>
+      <!-- Photo grid -->
       <div class="pcs-body-section" id="pcs-action-btn-wrap"></div>
-      <!-- Information grid + Notes -->
-      <div class="pcs-body-section" id="pcs-fields"></div>
-      <!-- Stage advance button -->
-      <div class="pc-advance-block" id="pc-advance-block" style="display:none">
-        <button class="pc-advance-btn" id="pc-advance-btn">
-          <span class="pc-advance-arrow">&rarr;</span>
-          <span class="pc-advance-label" id="pc-advance-label">Move to Next</span>
-        </button>
+      <!-- Meta chips row -->
+      <div id="pcs-meta-chips" class="pcs-meta-chips"></div>
+      <!-- Tab bar -->
+      <div id="pcs-tab-bar" class="pcs-tab-bar">
+        <button class="pcs-tab active" data-tab="caption" onclick="window._pcsTabSwitch('caption')">Caption</button>
+        <button class="pcs-tab" data-tab="client" onclick="window._pcsTabSwitch('client')">Client <span id="pcs-tab-client-count" class="pcs-tab-count"></span></button>
+        <button class="pcs-tab" data-tab="internal" onclick="window._pcsTabSwitch('internal')">Internal <span id="pcs-tab-notes-count" class="pcs-tab-count"></span></button>
       </div>
-      <!-- Activity link -->
-      <div class="pc-activity-row" id="pc-activity-trigger" onclick="togglePCSActivity()">
+      <!-- Tab pane: Caption -->
+      <div id="pcs-pane-caption" class="pcs-tab-pane">
+        <div class="pcs-body-section" id="pcs-fields"></div>
+        <!-- Stage advance button -->
+        <div class="pc-advance-block" id="pc-advance-block" style="display:none">
+          <button class="pc-advance-btn" id="pc-advance-btn">
+            <span class="pc-advance-arrow">&rarr;</span>
+            <span class="pc-advance-label" id="pc-advance-label">Move to Next</span>
+          </button>
+        </div>
+      </div>
+      <!-- Activity (hidden) -->
+      <div class="pc-activity-row" id="pc-activity-trigger" style="display:none" onclick="togglePCSActivity()">
         <div class="pc-act-arrow">&rarr;</div>
         <div class="pc-act-lbl">Activity</div>
         <div class="pc-act-count" id="pc-activity-count"></div>
       </div>
-      <!-- Activity body (collapsed) -->
       <div class="pcs-activity-body" id="pcs-activity-body" style="display:none"></div>
-      <!-- COMMENTS -->
+      <!-- Comments / Notes container -->
       <div id="pcs-comments-section" style="display:none;">
 
-        <!-- SECTION 1: CLIENT COMMENTS -->
+        <!-- Tab pane: CLIENT COMMENTS -->
+        <div id="pcs-pane-client" class="pcs-tab-pane" style="display:none">
         <div class="client-comments-section">
           <div class="client-section-header">
             <div class="client-comments-label">CLIENT COMMENTS <span id="pcs-comments-count" class="pcs-count-badge" style="display:none;">0</span></div>
@@ -924,9 +934,11 @@
             </div>
           </div>
         </div>
+        </div>
 
-        <!-- SECTION 2: INTERNAL NOTES (agency only) -->
-        <div id="pcs-notes-section" class="pcs-notes-section" style="display:none;">
+        <!-- Tab pane: INTERNAL NOTES (agency only) -->
+        <div id="pcs-pane-internal" class="pcs-tab-pane" style="display:none">
+        <div id="pcs-notes-section" class="pcs-notes-section">
           <div class="pcs-notes-header">
             <div class="pcs-notes-label">INTERNAL NOTES <span class="pcs-lock-icon">PRIVATE</span> <span id="pcs-notes-count" class="pcs-notes-count-badge" style="display:none;">0</span></div>
             <div class="pcs-vis-selector" id="pcs-vis-selector">
@@ -953,6 +965,7 @@
             </div>
             <div id="pcs-note-recipient" class="pcs-note-recipient">Entire agency will see this</div>
           </div>
+        </div>
         </div>
 
         <!-- CONFIRMATION DIALOG -->
@@ -1078,26 +1091,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260401s"></script>
-<script src="00-appstate-compat.js?v=20260401s"></script>
-<script src="01-config.js?v=20260401s" defer></script>
-<script src="02-session.js?v=20260401s" defer></script>
-<script src="utils.js?v=20260401s" defer></script>
-<script src="03-auth.js?v=20260401s" defer></script>
-<script src="05-api.js?v=20260401s" defer></script>
-<script src="10-ui.js?v=20260401s" defer></script>
+<script src="00-appstate.js?v=20260401t"></script>
+<script src="00-appstate-compat.js?v=20260401t"></script>
+<script src="01-config.js?v=20260401t" defer></script>
+<script src="02-session.js?v=20260401t" defer></script>
+<script src="utils.js?v=20260401t" defer></script>
+<script src="03-auth.js?v=20260401t" defer></script>
+<script src="05-api.js?v=20260401t" defer></script>
+<script src="10-ui.js?v=20260401t" defer></script>
 
-<script src="06-post-create.js?v=20260401s" defer></script>
-<script defer src="render/dashboard.js?v=20260401s"></script>
-<script defer src="render/client.js?v=20260401s"></script>
-<script defer src="render/pipeline.js?v=20260401s"></script>
-<script defer src="render/brief.js?v=20260401s"></script>
-<script defer src="actions/pcs.js?v=20260401s"></script>
-<script src="07-post-load.js?v=20260401s" defer></script>
-<script src="08-post-actions.js?v=20260401s" defer></script>
-<script src="09-library.js?v=20260401s" defer></script>
-<script src="09-approval.js?v=20260401s" defer></script>
-<script src="04-router.js?v=20260401s" defer></script>
+<script src="06-post-create.js?v=20260401t" defer></script>
+<script defer src="render/dashboard.js?v=20260401t"></script>
+<script defer src="render/client.js?v=20260401t"></script>
+<script defer src="render/pipeline.js?v=20260401t"></script>
+<script defer src="render/brief.js?v=20260401t"></script>
+<script defer src="actions/pcs.js?v=20260401t"></script>
+<script src="07-post-load.js?v=20260401t" defer></script>
+<script src="08-post-actions.js?v=20260401t" defer></script>
+<script src="09-library.js?v=20260401t" defer></script>
+<script src="09-approval.js?v=20260401t" defer></script>
+<script src="04-router.js?v=20260401t" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
