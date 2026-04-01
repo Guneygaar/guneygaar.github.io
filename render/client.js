@@ -1176,11 +1176,12 @@ console.log('LOADED:', 'render/client.js');
           break;
 
         case 'focusComment':
-          var cInput = root.querySelector('#comment-input-' + id);
+          var cInput = document.querySelector('#comment-input-' + id);
           if (cInput) {
             cInput.focus();
-            var fcCard = cInput.closest('[data-card-id]');
-            if (fcCard) fcCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            console.warn('[client] comment input not found for', id);
           }
           break;
 
