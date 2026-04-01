@@ -101,4 +101,73 @@ describe('Phase 3 — Error Handling', function() {
     expect(toasts.length).toBe(1);
   });
 
+  // -- Pass 4: actions/pcs.js error handling --
+  var pcsSrc = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'actions', 'pcs.js'), 'utf8');
+
+  it('11. loadPcsComments() catch calls window.logError', function() {
+    var match = pcsSrc.match(/catch\(e\)\s*\{\s*\n\s*console\.error\('loadPcsComments failed:'/);
+    expect(match).toBeTruthy();
+    var block = pcsSrc.slice(pcsSrc.indexOf(match[0]), pcsSrc.indexOf(match[0]) + 300);
+    expect(block).toContain('logError');
+  });
+
+  it('12. submitPcsComment() catch calls window.logError', function() {
+    var match = pcsSrc.match(/catch\(e\)\s*\{\s*\n\s*console\.error\('submitPcsComment failed:'/);
+    expect(match).toBeTruthy();
+    var block = pcsSrc.slice(pcsSrc.indexOf(match[0]), pcsSrc.indexOf(match[0]) + 300);
+    expect(block).toContain('logError');
+  });
+
+  it('13. _doSubmitComment() catch calls window.logError', function() {
+    var match = pcsSrc.match(/catch\(e\)\s*\{\s*\n\s*console\.error\('_doSubmitComment failed:'/);
+    expect(match).toBeTruthy();
+    var block = pcsSrc.slice(pcsSrc.indexOf(match[0]), pcsSrc.indexOf(match[0]) + 300);
+    expect(block).toContain('logError');
+  });
+
+  it('14. _pcsDoDeleteComment() catch calls window.logError', function() {
+    var match = pcsSrc.match(/window\._pcsDoDeleteComment\s*=\s*async\s*function[\s\S]*?\} catch/);
+    expect(match).toBeTruthy();
+    var catchBlock = pcsSrc.slice(pcsSrc.indexOf(match[0]) + match[0].length, pcsSrc.indexOf(match[0]) + match[0].length + 300);
+    expect(catchBlock).toContain('logError');
+  });
+
+  it('15. pcsDoDelete() catch calls window.logError', function() {
+    var match = pcsSrc.match(/window\.pcsDoDelete\s*=\s*async\s*function[\s\S]*?\} catch/);
+    expect(match).toBeTruthy();
+    var catchBlock = pcsSrc.slice(pcsSrc.indexOf(match[0]) + match[0].length, pcsSrc.indexOf(match[0]) + match[0].length + 300);
+    expect(catchBlock).toContain('logError');
+  });
+
+  it('16. _pcsHandlePhotoInput() catch calls showToast not alert', function() {
+    var match = pcsSrc.match(/window\._pcsHandlePhotoInput\s*=\s*async\s*function[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var outerCatch = match[0].match(/\} catch\(e\) \{\s*\n\s*console\.error\('\[pcs\][\s\S]*?\n  \}/);
+    expect(outerCatch).toBeTruthy();
+    expect(outerCatch[0]).not.toContain('alert(');
+    expect(outerCatch[0]).toContain('showToast');
+    expect(outerCatch[0]).toContain('logError');
+  });
+
+  it('17. _pcsRemovePhoto() catch calls showToast not alert', function() {
+    var match = pcsSrc.match(/window\._pcsRemovePhoto\s*=\s*async\s*function[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var outerCatch = match[0].match(/\} catch\(e\) \{[\s\S]*?\n  \}/);
+    expect(outerCatch).toBeTruthy();
+    expect(outerCatch[0]).not.toContain('alert(');
+    expect(outerCatch[0]).toContain('showToast');
+    expect(outerCatch[0]).toContain('logError');
+  });
+
+  it('18. _saveCaptionEdit() catch calls showToast not alert', function() {
+    var match = pcsSrc.match(/window\._saveCaptionEdit\s*=\s*async\s*function[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var outerCatch = match[0].match(/\} catch \(err\) \{[\s\S]*?\n  \}/);
+    expect(outerCatch).toBeTruthy();
+    expect(outerCatch[0]).not.toContain('alert(');
+    expect(outerCatch[0]).toContain('showToast');
+    expect(outerCatch[0]).toContain('logError');
+  });
+
 });

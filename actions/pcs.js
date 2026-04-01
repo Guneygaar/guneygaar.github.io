@@ -988,6 +988,8 @@ window.loadPcsComments = async function(postId) {
 
   } catch(e) {
     console.error('loadPcsComments failed:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'load-pcs-comments');
+    showToast && showToast('Failed to load comments', 'error');
   }
 }
 
@@ -1111,6 +1113,7 @@ window.pcsSaveAttach = async function(postId) {
   const input = document.getElementById(`pcs-attach-input-${postId}`);
   const url = (input?.value || '').trim();
   if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
+  try {
   // Save to the field that matches the editing target  -  never infer from stage
   const field = window._pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
   await updatePost(postId, field, url);
@@ -1127,6 +1130,11 @@ window.pcsSaveAttach = async function(postId) {
     const canEdit = window.AppState.user.effectiveRole !== 'Client';
     const el = document.getElementById('pcs-action-btn-wrap');
     if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
+  }
+  } catch(err) {
+    console.error('[pcs] save attachment failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-attach');
+    showToast && showToast('Failed to save attachment', 'error');
   }
 }
 
@@ -1340,7 +1348,7 @@ window.pcsDoDelete = async function() {
     showToast('Post deleted');
     closePCS();
     await loadPosts();
-  } catch(e) { showToast('Delete failed', 'error'); }
+  } catch(e) { console.error('[pcs] delete post failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'pcs-delete-post'); showToast('Delete failed', 'error'); }
 }
 
 window._pcsAddPhotos = function(postId) {
@@ -1413,7 +1421,9 @@ window._pcsHandlePhotoInput = async function(postId, input) {
     var pw = document.getElementById('pcs-upload-progress');
     if (pw) pw.remove();
   } catch(e) {
-    alert('Failed to save photos. Please try again.');
+    console.error('[pcs] photo upload failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'pcs-photo-upload');
+    showToast && showToast('Failed to save photos — try again', 'error');
   }
 }
 
@@ -1441,7 +1451,9 @@ window._pcsRemovePhoto = async function(postId, idx) {
     window.AppState.posts.setAll(_next_1407);
     if (typeof openPCS === 'function') openPCS(postId, '');
   } catch(e) {
-    alert('Failed to remove photo. Please try again.');
+    console.error('[pcs] remove photo failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'pcs-remove-photo');
+    showToast && showToast('Failed to remove photo — try again', 'error');
   }
 }
 
@@ -1541,7 +1553,7 @@ window._pcsCopyCaption = function(postId) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(function() {
       showToast('Caption copied.', 'success');
-    });
+    }).catch(function(){ showToast('Failed to copy caption', 'error'); });
   } else {
     var ta = document.createElement('textarea');
     ta.value = text;
@@ -1809,8 +1821,9 @@ window._saveCaptionEdit = async function(postId) {
     if (btnRow)  btnRow.remove();
 
   } catch (err) {
-    alert('Failed to save caption. Please try again.');
-    console.error('[CAPTION] Save error:', err);
+    console.error('[pcs] save caption failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-caption');
+    showToast && showToast('Failed to save caption — try again', 'error');
   }
 }
 
@@ -1924,6 +1937,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   });
   } catch(e) {
     console.error('submitPcsComment failed:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'submit-pcs-comment');
     showToast('Failed to send. Try again.', 'error');
   }
 };
@@ -2038,7 +2052,7 @@ window._doSubmitComment = async function(opts) {
             message: _mentionMsg,
             actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
           })
-        }).catch(function(){});
+        }).catch(function(err){ console.error('[pcs] mention notification failed', err); window.logError && window.logError(err && err.message, err && err.stack, 'mention-notification'); });
       });
     }
 
@@ -2062,6 +2076,7 @@ window._doSubmitComment = async function(opts) {
 
   } catch(e) {
     console.error('_doSubmitComment failed:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'do-submit-comment');
     showToast('Failed to send. Try again.', 'error');
   } finally {
     var _sendBtn2 = document.getElementById('pcs-send-btn-client');
@@ -2329,7 +2344,7 @@ window._pcsCopyComment = function(message) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(message).then(function() {
       showToast('Copied.', 'success');
-    });
+    }).catch(function(){ showToast('Failed to copy comment', 'error'); });
   } else {
     var ta = document.createElement('textarea');
     ta.value = message;
@@ -2375,6 +2390,8 @@ window._pcsDoDeleteComment = async function(commentId, postId, isInternalNote) {
     });
     loadPcsComments(postId);
   } catch(e) {
+    console.error('[pcs] delete comment failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'delete-pcs-comment');
     showToast('Failed to delete comment.', 'error');
   }
 };
