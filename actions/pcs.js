@@ -24,10 +24,11 @@ window.AppState.pcs.activeMenu = null;
 window.AppState.ui.modalOpen = window.AppState.ui.modalOpen || false;
 
 document.addEventListener('click', function(e) {
-  if (!window.AppState.pcs.activeMenu) return;
+  var menu = window.AppState && window.AppState.pcs && window.AppState.pcs.activeMenu;
+  if (!menu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
-  if (!window.AppState.pcs.activeMenu.contains(e.target)) {
-    window.AppState.pcs.activeMenu.remove();
+  if (!menu.contains(e.target)) {
+    menu.remove();
     window.AppState.pcs.activeMenu = null;
   }
 });
@@ -170,7 +171,7 @@ window._renderPCS = function(postId) {
   if (topbarRight) {
     var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
     var _pillHtml = '<span class="pcs-stage-pill" id="pcs-stage-pill"' +
-      (isAdmin ? ' onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
+      (isAdmin ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(_stageLabel) +
       (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '') +
       '</span>';
@@ -337,29 +338,29 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   // Format chip
   if (post.format) {
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
-      (canManage ? ' onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
+      (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(post.format) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format' + arr + '</button>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format' + arr + '</button>');
   }
 
   // Pillar chip — skip if null and no edit
   if (post.contentPillar) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
-      (canManage ? ' onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
+      (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(pillarVal) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar' + arr + '</button>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar' + arr + '</button>');
   }
 
   // Location chip — skip if null and no edit
   if (post.location) {
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
-      (canManage ? ' onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
+      (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(post.location) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location' + arr + '</button>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location' + arr + '</button>');
   }
 
   // Owner chip
@@ -370,7 +371,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
     var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
     chips.push('<button class="pcs-chip' + ownerColor + '"' +
-      (canEdit ? ' onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
+      (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + ownerArr + '</button>');
   }
 
@@ -393,7 +394,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
       }
       var dateArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
       chips.push('<button class="pcs-chip' + dateColor + '"' +
-        (canEdit ? ' onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
+        (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
         '>' + esc(dateDisplay) + dateArr + '</button>');
     }
   }
