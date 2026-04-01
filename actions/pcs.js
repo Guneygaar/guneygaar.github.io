@@ -1330,16 +1330,22 @@ window.pcsSaveAttach = async function(postId) {
   // Clear editing state and hide attach row (auto-disappear)
   window._pcsEditingTarget = null;
   pcsCloseAttach(postId);
-  // Re-render design section with updated links
-  const post = getPostById(postId);
-  if (post) {
-    const stageLC     = post.stage || '';
-    const isPublished = stageLC === 'published';
-    const canvaUrl    = post.postLink || '';
-    const linkedinUrl = post.linkedinUrl || '';
-    const canEdit = window.AppState.user.effectiveRole !== 'Client';
-    const el = document.getElementById('pcs-action-btn-wrap');
-    if (el) el.innerHTML = _buildInlineActions(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC);
+  // Re-render photo grid (not the old inline actions layout)
+  var _attachPost = (window.AppState.posts.all || []).find(function(p) {
+    return p.post_id === postId || (p.id && p.id === postId);
+  });
+  if (_attachPost) {
+    var _attachImgs = Array.isArray(_attachPost.images) ? _attachPost.images : [];
+    var _attachRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+    var _attachIsPranav = _attachRole === 'creative' || _attachRole === 'pranav' ||
+      (window.AppState.user.email || '').toLowerCase().includes('pranav');
+    var _attachCanEdit = _attachRole !== 'client' && !_attachIsPranav;
+    var _attachCanEditCreative = _attachIsPranav;
+    var _attachIsAdmin = _attachRole === 'admin';
+    var _attachWrap = document.getElementById('pcs-action-btn-wrap');
+    if (_attachWrap) {
+      _attachWrap.innerHTML = _buildPhotoGrid(_attachImgs, _attachCanEdit, _attachCanEditCreative, _attachIsAdmin, postId);
+    }
   }
   } catch(err) {
     console.error('[pcs] save attachment failed', err);
