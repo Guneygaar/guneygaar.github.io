@@ -1001,7 +1001,7 @@ console.log('LOADED:', 'render/client.js');
           post_id: realPostId,
           message: authorName + ' commented on ' + postTitle
         })
-      }).catch(function () {});
+      }).catch(function(err){ console.error('[client] comment patch', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-patch'); });
       window.apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
@@ -1010,7 +1010,7 @@ console.log('LOADED:', 'render/client.js');
           post_id: realPostId,
           message: authorName + ' commented on ' + postTitle
         })
-      }).catch(function () {});
+      }).catch(function(err){ console.error('[client] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-notification'); });
       var _ROSTER = [
         { name: 'Shubham', role: 'Admin' },
         { name: 'Pranav', role: 'Creative' },
@@ -1030,7 +1030,7 @@ console.log('LOADED:', 'render/client.js');
             message: authorName + ' mentioned you on "' + postTitle + '"',
             actor: window.AppState.user.email || ''
           })
-        }).catch(function(err) { console.error('[mention notif]', err); });
+        }).catch(function(err) { console.error('[mention notif]', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-mention-notif'); });
       });
     }).catch(function () {
       if (typeof window.showToast === 'function') {
