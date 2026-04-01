@@ -20,13 +20,12 @@ location: document.getElementById('new-post-location')?.value || '',
 owner:    document.getElementById('new-post-owner')?.value    || '',
 stage:    document.getElementById('new-post-stage')?.value    || '',
 date:     document.getElementById('new-post-date')?.value     || '',
-comments: document.getElementById('new-post-comments')?.value || '',
 postLink: document.getElementById('new-post-link')?.value     || '',
 format:   document.getElementById('new-post-format')?.value   || '',
 savedAt:  Date.now(),
 };
 
-if (draft.title || draft.comments) {
+if (draft.title) {
 localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
 showDraftStatus('Draft saved');
 }
@@ -44,7 +43,7 @@ localStorage.removeItem(DRAFT_KEY);
 return false;
 }
 
-if (!d.title && !d.comments) return false;
+if (!d.title) return false;
 
 const _el = id => document.getElementById(id);
 if (_el('new-post-title'))    _el('new-post-title').value    = d.title    || '';
@@ -53,7 +52,7 @@ if (_el('new-post-location')) _el('new-post-location').value = d.location || '';
 if (_el('new-post-owner'))    _el('new-post-owner').value    = d.owner    || '';
 if (_el('new-post-stage'))    _el('new-post-stage').value    = d.stage    || 'in_production';
 if (_el('new-post-date'))     _el('new-post-date').value     = d.date     || '';
-if (_el('new-post-comments')) _el('new-post-comments').value = d.comments || '';
+
 if (_el('new-post-link'))     _el('new-post-link').value     = d.postLink || '';
 if (_el('new-post-format'))   _el('new-post-format').value   = d.format   || '';
 
@@ -130,7 +129,7 @@ if (createBtn) createBtn.onclick = function() { submitNewPost(); };
   var el = document.getElementById(id);
   if (el) el.onchange = saveDraftDebounced;
 });
-['new-post-link','new-post-comments'].forEach(function(id) {
+['new-post-link'].forEach(function(id) {
   var el = document.getElementById(id);
   if (el) el.oninput = saveDraftDebounced;
 });
@@ -148,7 +147,7 @@ const hasDraft = loadDraft();
 
 if (!hasDraft) {
 
-['new-post-title','new-post-comments','new-post-link'].forEach(id => {
+['new-post-title','new-post-link'].forEach(id => {
 const el = document.getElementById(id);
 if (el) el.value = '';
 });

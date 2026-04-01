@@ -82,7 +82,6 @@ function openAdminEdit(postId) {
   const aePillar = _ae('ae-pillar');    if (aePillar) aePillar.value = post.contentPillar || '';
   const aeLoc    = _ae('ae-location');  if (aeLoc) aeLoc.value = post.location || '';
   const aeDate   = _ae('ae-date');      if (aeDate) aeDate.value = post.targetDate || '';
-  const aeComm   = _ae('ae-comments');  if (aeComm) aeComm.value = post.comments || '';
   const aeLink   = _ae('ae-postlink');  if (aeLink) aeLink.value = post.postLink || post.linkedinUrl || '';
   const sel = _ae('ae-stage');
   if (sel) sel.innerHTML = PIPELINE_ORDER.map(s => `<option value="${s}" ${post.stage===s?'selected':''}>${s}</option>`).join('');
@@ -116,7 +115,6 @@ async function saveAdminEdit() {
   const location = _ae('ae-location')?.value || '';
   const stage    = _ae('ae-stage')?.value || '';
   const date     = _ae('ae-date')?.value || '';
-  const comments = (_ae('ae-comments')?.value || '').trim();
   const postLink = (_ae('ae-postlink')?.value || '').trim();
   if (!title) {
     console.warn('[saveAdminEdit] BLOCKED: title empty');
@@ -125,7 +123,7 @@ async function saveAdminEdit() {
   }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
-  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, comments: comments||null, updated_at: new Date().toISOString() };
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, updated_at: new Date().toISOString() };
   // Defensive: remove any invalid field names that must never reach DB
   delete _payload.post_link;
   delete _payload.linkedin_url;
@@ -258,7 +256,7 @@ async function submitClientRequest() {
       title:       reqName.trim() || fallbackTitle,
       stage:       'brief',
       owner:       'Chitra',
-      comments:    brief,
+      client_feedback: brief,
       target_date: reqDate,
       created_at:  new Date().toISOString(),
       updated_at:  new Date().toISOString(),
@@ -268,7 +266,7 @@ async function submitClientRequest() {
       '#req-overlay button[style*="rgb(200, 168, 75)"]'
     );
     if (selectedChip) {
-      payload.comments = (payload.comments || '') +
+      payload.client_feedback = (payload.client_feedback || '') +
         ' [Type: ' + selectedChip.textContent.trim() + ']';
     }
     // Read urgency
@@ -276,7 +274,7 @@ async function submitClientRequest() {
     var isUrgent = urgentBtn &&
       urgentBtn.style.color === 'rgb(255, 75, 75)';
     if (isUrgent) {
-      payload.comments = '[URGENT] ' + (payload.comments || '');
+      payload.client_feedback = '[URGENT] ' + (payload.client_feedback || '');
     }
     var imageUrls = [];
     if (files.length) {
@@ -362,7 +360,7 @@ async function flagIssue(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ comments: `! ${msg}`, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ client_feedback: `! ${msg}`, updated_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
@@ -584,7 +582,6 @@ async function updatePost(postId, field, value) {
     targetDate:    'target_date',
     postLink:      'canva_link',
     linkedinUrl:   'linkedin_link',
-    comments:      'comments',
   }[field] || field;
 
   // Guard: reject any legacy/invalid field names before they reach DB
