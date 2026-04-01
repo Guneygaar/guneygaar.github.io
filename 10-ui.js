@@ -257,6 +257,7 @@ async function loadNotifications() {
     updateNotifBadge();
   } catch(e) {
     console.error('loadNotifications error:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'load-notifications');
   }
 }
 

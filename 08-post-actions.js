@@ -191,7 +191,7 @@ async function clientApprove(postId, btn) {
     }
     setStage(post, 'scheduled', 'clientApprove');
     setTimeout(() => loadPostsForClient(), 1200);
-  } catch { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); }
+  } catch (err) { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'client-approve'); }
 }
 
 async function clientAcknowledge(postId) {
@@ -341,8 +341,13 @@ async function submitClientRequest() {
     setTimeout(() => loadPostsForClient(), 800);
   } catch (err) {
     console.error('[REQUEST] API FAILED:', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'submit-client-request');
     showToast('Failed - try again', 'error');
-    if (btn) btn.disabled = false;
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '-- SEND REQUEST';
+      btn.style.opacity = '1';
+    }
   }
 }
 

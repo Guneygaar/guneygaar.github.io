@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401h
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401i
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -189,7 +189,7 @@ E2E: npx playwright test
 
 Current (verified 2026-04-01):
 Unit test files: 13
-Unit tests:      279 passing, 0 failing
+Unit tests:      289 passing, 0 failing
 E2E specs:       3
 
 Files:
@@ -253,7 +253,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 279/279 before every push
+1. Vitest must pass 289/289 before every push
 
 ## SECTION 11 — GLOBAL FUNCTIONS
 

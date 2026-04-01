@@ -875,6 +875,7 @@ console.log('LOADED:', 'render/client.js');
         _clientRenderImgPreview(postId);
       } catch(e) {
         showToast('Image upload failed.', 'error');
+        window.logError && window.logError(e && e.message, e && e.stack, 'client-img-upload');
       }
     }
     if ((window._clientFeedPendingImgs[postId] || []).length > 0) {
@@ -1032,10 +1033,11 @@ console.log('LOADED:', 'render/client.js');
           })
         }).catch(function(err) { console.error('[mention notif]', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-mention-notif'); });
       });
-    }).catch(function () {
+    }).catch(function (err) {
       if (typeof window.showToast === 'function') {
         window.showToast('Failed to send comment', 'error');
       }
+      window.logError && window.logError(err && err.message, err && err.stack, 'submit-comment');
       input.value = savedValue;
       if (listEl && listEl.lastChild) {
         listEl.removeChild(listEl.lastChild);
@@ -1464,6 +1466,7 @@ console.log('LOADED:', 'render/client.js');
     var cv = document.getElementById('client-view');
     if (!cv) return;
 
+    try {
     _ensurePulseStyle();
     _ensureReqOverlay();
     cv.style.display = 'block';
@@ -1535,6 +1538,11 @@ console.log('LOADED:', 'render/client.js');
     if (lbEl && !lbEl.dataset.clickWired) {
       _wireEvents(lbEl);
       lbEl.dataset.clickWired = '1';
+    }
+    } catch(err) {
+      console.error('[client] renderClientView crashed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'render-client-view');
+      if (cv) cv.innerHTML = '<div style="color:#FF4B4B;padding:24px;font-family:DM Sans,sans-serif">Something went wrong. Please refresh.</div>';
     }
   };
 
@@ -1816,6 +1824,13 @@ window._reqAddPhotos = function(input) {
         // Re-enable send if name + brief filled
         _reqValidate();
       }
+    };
+    reader.onerror = function() {
+      console.error('[client] FileReader failed');
+      window.logError && window.logError('FileReader error', '', 'req-add-photos');
+      if (typeof showToast === 'function') showToast('Failed to load photo — try again', 'error');
+      loaded++;
+      if (loaded === total) _reqValidate();
     };
     reader.readAsDataURL(file);
   });

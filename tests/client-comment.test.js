@@ -4,6 +4,9 @@ import { resolve } from 'path';
 
 // Load source for static analysis
 var clientSrc = readFileSync(resolve(__dirname, '..', 'render', 'client.js'), 'utf8');
+var actionsSrc = readFileSync(resolve(__dirname, '..', '08-post-actions.js'), 'utf8');
+var uiSrc = readFileSync(resolve(__dirname, '..', '10-ui.js'), 'utf8');
+var postLoadSrc = readFileSync(resolve(__dirname, '..', '07-post-load.js'), 'utf8');
 
 // =========================================================
 // SETUP — mirrors tests/appstate-posts.test.js
@@ -455,5 +458,84 @@ describe('comment notifications', function() {
     var thenIdx = fnBody.indexOf('.then(function');
     var notifIdx = fnBody.indexOf("'/notifications'");
     expect(thenIdx).toBeLessThan(notifIdx);
+  });
+});
+
+
+// =========================================================
+// GROUP 7 — Error handling pass 2
+// =========================================================
+describe('error handling pass 2', function() {
+
+  it('48. _handleSubmitComment outer catch calls window.logError', function() {
+    var outerCatch = clientSrc.match(/\}\)\.catch\(function\s*\([^)]*\)\s*\{[\s\S]*?Failed to send comment[\s\S]*?\}\);/);
+    expect(outerCatch).toBeTruthy();
+    expect(outerCatch[0]).toContain('logError');
+  });
+
+  it('49. clientApprove() catch calls window.logError', function() {
+    var match = actionsSrc.match(/function clientApprove[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+  });
+
+  it('50. submitClientRequest() catch calls window.logError', function() {
+    var match = actionsSrc.match(/function submitClientRequest[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+  });
+
+  it('51. loadPostsForClient() catch calls window.logError', function() {
+    var match = postLoadSrc.match(/function loadPostsForClient[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+  });
+
+  it('52. loadNotifications() catch calls window.logError', function() {
+    var match = uiSrc.match(/function loadNotifications[\s\S]*?catch\(e\)[\s\S]*?\}/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+  });
+
+  it('53. _clientFeedHandleImg() catch calls window.logError', function() {
+    var match = clientSrc.match(/window\._clientFeedHandleImg\s*=\s*async\s*function[\s\S]*?\n  \};/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+  });
+
+  it('54. submitClientRequest() resets button text to original on failure', function() {
+    var match = actionsSrc.match(/function submitClientRequest[\s\S]*?\n\}/);
+    expect(match).toBeTruthy();
+    var catchBlock = match[0].match(/catch\s*\(err\)[\s\S]*?\}/);
+    expect(catchBlock).toBeTruthy();
+    expect(catchBlock[0]).toMatch(/SEND REQUEST/);
+  });
+
+  it('55. renderClientView() wrapped in try/catch', function() {
+    var match = clientSrc.match(/window\.renderClientView\s*=\s*function\s*\(\)\s*\{[\s\S]*?\n  \};/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('try {');
+    expect(body).toContain('catch');
+  });
+
+  it('56. renderClientView() catch calls window.logError', function() {
+    var match = clientSrc.match(/window\.renderClientView\s*=\s*function\s*\(\)\s*\{[\s\S]*?\n  \};/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('logError');
+    expect(body).toContain('render-client-view');
+  });
+
+  it('57. _reqAddPhotos FileReader has onerror handler', function() {
+    var match = clientSrc.match(/window\._reqAddPhotos\s*=\s*function[\s\S]*?reader\.readAsDataURL/);
+    expect(match).toBeTruthy();
+    var body = match[0];
+    expect(body).toContain('reader.onerror');
   });
 });
