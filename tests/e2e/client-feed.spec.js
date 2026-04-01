@@ -18,7 +18,7 @@ const mockPosts = [
     images: ['https://picsum.photos/400/300'],
     linkedin_link: null,
     canva_link: null,
-    comments: null,
+
     format: 'static',
     _commentCount: 0
   },
@@ -36,7 +36,7 @@ const mockPosts = [
     images: [],
     linkedin_link: null,
     canva_link: null,
-    comments: null,
+
     format: 'carousel',
     _commentCount: 1
   },
@@ -54,7 +54,7 @@ const mockPosts = [
     images: ['https://picsum.photos/400/301'],
     linkedin_link: 'https://linkedin.com/post/123',
     canva_link: null,
-    comments: null,
+
     format: 'static',
     _commentCount: 0
   },
@@ -72,7 +72,7 @@ const mockPosts = [
     images: [],
     linkedin_link: null,
     canva_link: null,
-    comments: null,
+
     format: 'static',
     _commentCount: 0
   }
@@ -165,16 +165,15 @@ test.describe('Client Feed Smoke Tests', () => {
     const nav = page.locator('#bottom-nav');
     await expect(nav).toBeVisible({ timeout: 5000 });
 
-    // Verify Feed, Requests, Alerts are present
+    // Verify Feed, Pipeline, Library, Insights are present
     await expect(nav.locator('text=Feed')).toBeVisible();
-    await expect(nav.locator('text=Requests')).toBeVisible();
-    await expect(nav.locator('text=Alerts')).toBeVisible();
+    await expect(nav.locator('text=Pipeline')).toBeVisible();
+    await expect(nav.locator('text=Library')).toBeVisible();
+    await expect(nav.locator('text=Insights')).toBeVisible();
 
     // Verify agency-only tabs are NOT visible
     await expect(nav.locator('text=Dashboard')).not.toBeVisible();
     await expect(nav.locator('text=Posts')).not.toBeVisible();
-    await expect(nav.locator('text=Library')).not.toBeVisible();
-    await expect(nav.locator('text=Insights')).not.toBeVisible();
   });
 
   test('TEST 3 — FAB is hidden for client', async ({ page }) => {
