@@ -130,6 +130,8 @@ test.describe('Admin Flow Tests', () => {
     await expect(pipeTab).toBeVisible({ timeout: 5000 });
     await pipeTab.click();
 
+    await expect(page.locator('#pipeline-container')).toBeVisible({ timeout: 5000 });
+
     const card = page.locator('text=[TEST] Smoke Post').first();
     await expect(card).toBeVisible({ timeout: 5000 });
     await card.click();
