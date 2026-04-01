@@ -191,7 +191,7 @@ E2E: npx playwright test
 Current (verified 2026-04-01):
 Unit test files: 13
 Unit tests:      297 passing, 0 failing
-E2E specs:       4
+E2E specs:       7
 
 Files:
 tests/appstate-compat.test.js
@@ -208,7 +208,7 @@ tests/role.test.js
 tests/timestamp.test.js
 tests/utils.test.js
 
-E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, pcs.spec.js, smoke.spec.js
+E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 
 TEST FILE MAPPING (run targeted tests during development):
   render/client.js      → npx vitest run tests/client-comment.test.js
