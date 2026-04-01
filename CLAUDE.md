@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401q
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401r
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -97,7 +97,7 @@ PostgREST eq. is CASE-SENSITIVE — always capitalize roles.
 (‘Creative’ not ‘creative’, ‘Admin’ not ‘admin’)
 
 posts: post_id(PK), title, stage, owner, content_pillar,
-location, target_date, linkedin_link, comments, canva_link,
+location, target_date, linkedin_link, canva_link,
 status_changed_at, format, caption, images(jsonb), client_feedback
 
 post_comments: id, post_id, author, author_role, message,
