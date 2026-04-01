@@ -175,7 +175,7 @@ window._renderPCS = function(postId) {
       '>' + esc(_stageLabel) +
       (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '') +
       '</span>';
-    var _noOverdue = ['published','parked','rejected'];
+    var _noOverdue = ['published','parked','rejected','scheduled'];
     if (_noOverdue.indexOf(stageLC) === -1 && dateValue) {
       var _td = typeof parseDate === 'function' ? parseDate(dateValue) : null;
       var _now = new Date(); _now.setHours(0,0,0,0);
@@ -329,13 +329,45 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
 }
 
 // -- Chips row builder (stage in topbar, not here) --
+// Order: Owner → Date → Format → Pillar → Location
 function _buildChipsRow(post, canEdit, canEditCreative, id) {
   var stageLC = post.stage || '';
   var canManage = canEdit || canEditCreative;
-  var arr = canManage ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
+  var arr = canManage ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
   var chips = [];
 
-  // Format chip
+  // 1. Owner chip (always render if present)
+  if (post.owner) {
+    var ownerColor = ' pcs-chip--dim';
+    var ownerLC = (post.owner || '').toLowerCase();
+    if (ownerLC === 'chitra' || ownerLC === 'pranav') ownerColor = ' pcs-chip--cyan';
+    else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
+    var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
+    chips.push('<button class="pcs-chip' + ownerColor + '"' +
+      (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + ownerArr + '</button>');
+  }
+
+  // 2. Date chip (ALWAYS render — never skip)
+  var rawDate = post.targetDate || post.target_date || null;
+  var dateDisplay = 'Add Date';
+  if (rawDate) {
+    try {
+      var _dp = new Date(rawDate + 'T00:00:00');
+      if (!isNaN(_dp.getTime())) {
+        dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      }
+    } catch(e) {}
+  }
+  var terminalStages = ['published','parked','rejected'];
+  var isOverdue = rawDate && terminalStages.indexOf(stageLC) === -1 && new Date(rawDate) < new Date();
+  var dateCls = isOverdue ? ' pcs-chip--red' : rawDate ? ' pcs-chip--dim' : ' pcs-chip--empty';
+  var dateArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
+  chips.push('<button class="pcs-chip' + dateCls + '"' +
+    (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
+    '>' + esc(dateDisplay) + dateArr + '</button>');
+
+  // 3. Format chip
   if (post.format) {
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
@@ -344,7 +376,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format' + arr + '</button>');
   }
 
-  // Pillar chip — skip if null and no edit
+  // 4. Pillar chip
   if (post.contentPillar) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
@@ -354,49 +386,13 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar' + arr + '</button>');
   }
 
-  // Location chip — skip if null and no edit
+  // 5. Location chip
   if (post.location) {
     chips.push('<button class="pcs-chip pcs-chip--dim"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(post.location) + arr + '</button>');
   } else if (canManage) {
     chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location' + arr + '</button>');
-  }
-
-  // Owner chip
-  if (post.owner) {
-    var ownerColor = ' pcs-chip--dim';
-    var ownerLC = (post.owner || '').toLowerCase();
-    if (ownerLC === 'chitra' || ownerLC === 'pranav') ownerColor = ' pcs-chip--cyan';
-    else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
-    var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
-    chips.push('<button class="pcs-chip' + ownerColor + '"' +
-      (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + ownerArr + '</button>');
-  }
-
-  // Date chip
-  var dateValue = post.targetDate || '';
-  if (dateValue) {
-    var dateDisplay = '';
-    try {
-      var _dp = new Date(dateValue + 'T00:00:00');
-      if (!isNaN(_dp.getTime())) {
-        dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
-      }
-    } catch(e) {}
-    if (dateDisplay) {
-      var dateColor = ' pcs-chip--dim';
-      if (stageLC !== 'published' && stageLC !== 'parked' && stageLC !== 'rejected') {
-        var _td = typeof parseDate === 'function' ? parseDate(dateValue) : new Date(dateValue);
-        var _now = new Date(); _now.setHours(0,0,0,0);
-        if (_td && _td < _now) dateColor = ' pcs-chip--red';
-      }
-      var dateArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
-      chips.push('<button class="pcs-chip' + dateColor + '"' +
-        (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
-        '>' + esc(dateDisplay) + dateArr + '</button>');
-    }
   }
 
   return chips.join('');
@@ -1129,27 +1125,7 @@ window.loadPcsComments = async function(postId) {
         tabNotesCount.textContent = internalRows.length > 0 ? internalRows.length : '';
       }
 
-      // Per-chip counts  dynamic builder
-      var chipsHtml = [
-        {val:'all', label:'ALL'},
-        {val:'admin', label:'ADMIN'},
-        {val:'servicing', label:'SERV'},
-        {val:'creative', label:'CREATIVE'}
-      ].map(function(chip) {
-        var count = internalRows.filter(function(r) {
-          return r.visibility === chip.val ||
-            (!r.visibility && chip.val === 'all');
-        }).length;
-        var isActive = (window._pcsNoteVisibility || 'all') === chip.val;
-        return '<button class="pcs-vis-chip' +
-          (isActive ? ' active' : '') +
-          '" data-vis="' + chip.val + '" ' +
-          'onclick="window._pcsNoteVisibility=\'' + chip.val +
-          '\';loadPcsComments(\'' + postId + '\')">' +
-          chip.label + ' (' + count + ')</button>';
-      }).join('');
-      var chipsContainer = document.getElementById('pcs-vis-selector');
-      if (chipsContainer) chipsContainer.innerHTML = chipsHtml;
+      // Vis chips: keep static HTML, do not rebuild with counts
     }
 
     list.scrollTop = list.scrollHeight;
