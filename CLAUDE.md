@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401k
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401l
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST

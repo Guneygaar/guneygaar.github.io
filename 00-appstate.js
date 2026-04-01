@@ -76,17 +76,14 @@ window.logError = function(message, stack, action) {
     action:        String(action || 'uncaught'),
     app_version:   _version
   };
-  var _url = (window.SUPABASE_URL || '') + '/rest/v1/error_log';
-  var _key = window.SUPABASE_KEY || '';
-  fetch(_url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': _key,
-      'Authorization': 'Bearer ' + _key
-    },
-    body: JSON.stringify(_payload)
-  }).catch(function(){});
+  setTimeout(function() {
+    if (window.apiFetch) {
+      window.apiFetch('/error_log', {
+        method: 'POST',
+        body: JSON.stringify(_payload)
+      }).catch(function(){});
+    }
+  }, 0);
   window._showErrorToast && window._showErrorToast();
 };
 
