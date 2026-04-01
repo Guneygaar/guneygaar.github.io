@@ -15,7 +15,6 @@ const mockPost = {
   images: ['https://picsum.photos/400/300'],
   linkedin_link: null,
   canva_link: null,
-  comments: null,
   format: 'carousel',
   _commentCount: 2
 };
@@ -128,7 +127,9 @@ test('TEST 3 — Comment input works', async ({ page }) => {
   await input.fill('Test comment from Playwright');
   await expect(input).toHaveValue('Test comment from Playwright');
 
-  await expect(page.locator('#pcs-send-btn')).toBeVisible();
+  // Send button is either pcs-send-btn-client or pcs-send-btn-note
+  const sendBtn = page.locator('#pcs-send-btn-client, #pcs-send-btn-note').first();
+  await expect(sendBtn).toBeVisible({ timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-comment.png' });
 });
