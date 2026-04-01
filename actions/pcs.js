@@ -183,8 +183,7 @@ window._renderPCS = function(postId) {
   var _pcsDelBtn = document.querySelector('.pc-topbar .pc-icon-btn.danger');
   if (_pcsDelBtn) _pcsDelBtn.style.display = 'none';
 
-  // 5. Stage pill into subtitle area
-  _updateSubtitle(post);
+  // 5. (subtitle removed — stage/date now in meta chips only)
 
   // 6. Hide progress wrap (stage shown in pill only)
   var elProgress = document.getElementById('pcs-progress-wrap');
@@ -204,18 +203,22 @@ window._renderPCS = function(postId) {
   var chipsEl = document.getElementById('pcs-meta-chips');
   if (chipsEl) chipsEl.innerHTML = _buildMetaChips(post, canEdit, canEditCreative, id);
 
-  // 9. Caption + LinkedIn + WA into pcs-fields
+  // 9. Caption + LinkedIn into pcs-fields, advance rendered inline, then WA
   var elFields = document.getElementById('pcs-fields');
   var captionHtml = _buildCaptionHtml(post, canEdit, canEditCreative, id);
   var liHtml = _buildLinkedInHtml(post, id, stageLC);
   var waHtml = _buildWAHtml(post, id, postId, stageLC);
   if (elFields) {
-    elFields.innerHTML = captionHtml + liHtml + waHtml +
+    elFields.innerHTML = captionHtml + liHtml +
       '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
   }
 
-  // 10. Stage advance button
+  // 10. Stage advance button (renders into static pc-advance-block, which is between fields and WA)
   _renderAdvanceButton(stageLC);
+
+  // 10b. WA button goes into a container after advance block
+  var waContainer = document.getElementById('pcs-wa-container');
+  if (waContainer) waContainer.innerHTML = waHtml;
 
   // 11. Activity count
   _renderActivityCount(id);
@@ -284,13 +287,15 @@ window._pcsTabSwitch = function(tab) {
   if (pInternal) pInternal.style.display = tab === 'internal' ? '' : 'none';
 }
 
-// -- Photo grid builder (LinkedIn style) --
+// -- Photo grid builder (LinkedIn style, responsive to count) --
 function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   var canManage = canEdit || canEditCreative;
+  var count = imgs.length;
+
   var headerHtml =
     '<div class="pcs-photo-header">' +
     '<div class="pcs-photo-label">Photos <span style="color:' +
-    (imgs.length ? '#E8E8E8' : '#8E8E93') + ';">' + imgs.length + '</span></div>' +
+    (count ? '#E8E8E8' : '#8E8E93') + ';">' + count + '</span></div>' +
     (canManage ?
       '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\',event)" ' +
       'style="color:#8E8E93;background:transparent;border:none;' +
@@ -298,53 +303,62 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
       'font-size:13px;height:36px;letter-spacing:0.2em;">...</button>' : '') +
     '</div>';
 
-  var gridHtml = '';
-  if (imgs.length > 0) {
-    var showImgs = imgs.slice(0, 3);
-    var extra = imgs.length - 3;
-    gridHtml = '<div class="pcs-photo-grid">';
-
-    // Hero (left, spans both rows)
-    gridHtml += '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
-      '<img src="' + esc(showImgs[0]) + '">' +
-      (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
+  function _cell(idx, extraStyle, overlayHtml) {
+    return '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')"' +
+      (extraStyle ? ' style="' + extraStyle + '"' : '') + '>' +
+      '<img src="' + esc(imgs[idx]) + '">' +
+      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',' + idx + ')">x</button>' : '') +
+      (overlayHtml || '') +
       '</div>';
+  }
 
-    // Top-right
-    if (showImgs.length > 1) {
-      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',1)">' +
-        '<img src="' + esc(showImgs[1]) + '">' +
-        (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',1)">x</button>' : '') +
-        '</div>';
-    } else if (canManage) {
-      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')" style="display:flex;align-items:center;justify-content:center;">' +
-        '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div></div>';
-    } else {
-      gridHtml += '<div class="pcs-photo-grid-cell"></div>';
-    }
+  var gridHtml = '';
 
-    // Bottom-right
-    if (showImgs.length > 2) {
-      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',2)" style="position:relative;">' +
-        '<img src="' + esc(showImgs[2]) + '">' +
-        (isAdmin ? '<button class="pcs-photo-del" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',2)">x</button>' : '') +
-        (extra > 0 ? '<div class="pcs-photo-grid-more" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',2)">' +
-          '<div class="pcs-photo-grid-more-num">+' + extra + '</div>' +
-          '<div class="pcs-photo-grid-more-lbl">more</div></div>' : '') +
-        '</div>';
-    } else if (canManage) {
-      gridHtml += '<div class="pcs-photo-grid-cell" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')" style="display:flex;align-items:center;justify-content:center;">' +
-        '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div></div>';
-    } else {
-      gridHtml += '<div class="pcs-photo-grid-cell"></div>';
-    }
-
-    gridHtml += '</div>';
-  } else if (canManage) {
+  if (count === 0 && canManage) {
+    // Empty upload box
     gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
       '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#F6A623;">Upload Photos</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#333;letter-spacing:0.06em;">JPG / PNG -- stored in Supabase, original quality</div>' +
+      '</div>';
+
+  } else if (count === 1) {
+    // Single full-width image
+    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--single">' + _cell(0) + '</div>';
+
+  } else if (count === 2) {
+    // Two equal columns
+    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--two">' + _cell(0) + _cell(1) + '</div>';
+
+  } else if (count === 3) {
+    // LinkedIn 62/38 — hero left, 2 stacked right
+    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--three">' +
+      '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
+      '<img src="' + esc(imgs[0]) + '">' +
+      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
+      '</div>' +
+      _cell(1) + _cell(2) +
+      '</div>';
+
+  } else if (count === 4) {
+    // 2x2 grid
+    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--four">' +
+      _cell(0) + _cell(1) + _cell(2) + _cell(3) +
+      '</div>';
+
+  } else if (count >= 5) {
+    // LinkedIn 62/38 with +N overlay on bottom-right
+    var extra = count - 3;
+    var overlayHtml = '<div class="pcs-photo-grid-more">' +
+      '<div class="pcs-photo-grid-more-num">+' + extra + '</div>' +
+      '<div class="pcs-photo-grid-more-lbl">more</div></div>';
+    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--three">' +
+      '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
+      '<img src="' + esc(imgs[0]) + '">' +
+      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
+      '</div>' +
+      _cell(1) +
+      _cell(2, 'position:relative;', overlayHtml) +
       '</div>';
   }
 
@@ -375,58 +389,66 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
     (canEdit ? 'onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
     '>' + esc(stageLabel) + '</div>';
 
-  // Format chip
-  var formatVal = post.format || '--';
-  var formatChip = '<div class="pcs-chip" ' +
-    (canManage ? 'onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(formatVal) + '</div>';
+  var chips = [stagePill];
 
-  // Pillar chip
-  var pillarVal = post.contentPillar ? (typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar) : '--';
-  var pillarChip = '<div class="pcs-chip" ' +
-    (canManage ? 'onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(pillarVal) + '</div>';
+  // Format chip — skip if empty
+  if (post.format) {
+    chips.push('<div class="pcs-chip" ' +
+      (canManage ? 'onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(post.format) + '</div>');
+  }
 
-  // Location chip
-  var locVal = post.location || '--';
-  var locChip = '<div class="pcs-chip" ' +
-    (canManage ? 'onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(locVal) + '</div>';
+  // Pillar chip — skip if empty
+  if (post.contentPillar) {
+    var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
+    chips.push('<div class="pcs-chip" ' +
+      (canManage ? 'onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(pillarVal) + '</div>');
+  }
 
-  // Owner chip
-  var ownerVal = post.owner || '--';
-  var ownerColor = '';
-  var ownerLC = (ownerVal || '').toLowerCase();
-  if (ownerLC === 'chitra') ownerColor = ' chip-cyan';
-  else if (ownerLC === 'pranav') ownerColor = ' chip-purple';
-  else if (ownerLC === 'client') ownerColor = ' chip-amber';
-  var ownerChip = '<div class="pcs-chip' + ownerColor + '" ' +
-    (canEdit ? 'onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(typeof formatOwner === 'function' ? formatOwner(ownerVal) : ownerVal) + '</div>';
+  // Location chip — skip if empty
+  if (post.location) {
+    chips.push('<div class="pcs-chip" ' +
+      (canManage ? 'onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(post.location) + '</div>');
+  }
 
-  // Date chip
+  // Owner chip — skip if empty
+  if (post.owner) {
+    var ownerColor = '';
+    var ownerLC = (post.owner || '').toLowerCase();
+    if (ownerLC === 'chitra') ownerColor = ' chip-cyan';
+    else if (ownerLC === 'pranav') ownerColor = ' chip-purple';
+    else if (ownerLC === 'client') ownerColor = ' chip-amber';
+    chips.push('<div class="pcs-chip' + ownerColor + '" ' +
+      (canEdit ? 'onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + '</div>');
+  }
+
+  // Date chip — skip if empty
   var dateValue = post.targetDate || '';
-  var dateDisplay = '';
   if (dateValue) {
+    var dateDisplay = '';
     try {
       var _dp = new Date(dateValue + 'T00:00:00');
       if (!isNaN(_dp.getTime())) {
         dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
       }
     } catch(e) {}
+    if (dateDisplay) {
+      var dateColor = '';
+      if (stageLC !== 'published' && stageLC !== 'parked' && stageLC !== 'rejected') {
+        var _td = typeof parseDate === 'function' ? parseDate(dateValue) : new Date(dateValue);
+        var _now = new Date(); _now.setHours(0,0,0,0);
+        if (_td && _td < _now) dateColor = ' chip-red';
+      }
+      chips.push('<div class="pcs-chip' + dateColor + '" ' +
+        (canEdit ? 'onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
+        '>' + esc(dateDisplay) + '</div>');
+    }
   }
-  if (!dateDisplay) dateDisplay = '--';
-  var dateColor = '';
-  if (dateValue && stageLC !== 'published' && stageLC !== 'parked' && stageLC !== 'rejected') {
-    var _td = typeof parseDate === 'function' ? parseDate(dateValue) : new Date(dateValue);
-    var _now = new Date(); _now.setHours(0,0,0,0);
-    if (_td && _td < _now) dateColor = ' chip-red';
-  }
-  var dateChip = '<div class="pcs-chip' + dateColor + '" ' +
-    (canEdit ? 'onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(dateDisplay) + '</div>';
 
-  return stagePill + formatChip + pillarChip + locChip + ownerChip + dateChip;
+  return chips.join('');
 }
 
 // -- Chip dropdown handler --
@@ -516,17 +538,14 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
   return '<div id="pcs-caption-section" style="padding:12px 18px;border-bottom:1px solid #1a1a2a;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:#555;' +
-    'margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">' +
-    '<span>Copy / Caption</span>' +
     ((canEdit || canEditCreative) ?
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;">' +
       '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
       'id="pcs-caption-edit-btn" ' +
       'style="color:#8E8E93;background:transparent;border:none;padding:8px 12px;cursor:pointer;' +
-      'font-family:\'IBM Plex Mono\',monospace;font-size:13px;height:36px;letter-spacing:0.2em;">...</button>'
+      'font-family:\'IBM Plex Mono\',monospace;font-size:13px;height:36px;letter-spacing:0.2em;">...</button>' +
+      '</div>'
       : '') +
-    '</div>' +
     (post.caption ?
       '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
       'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
