@@ -98,7 +98,7 @@ test('TEST 1 — PCS opens and renders correctly', async ({ page }) => {
   await expect(page.locator('#pcs-overlay')).toBeVisible();
   await expect(page.locator('#pcs-topbar-title')).toBeVisible();
   await expect(page.locator('#pcs-topbar-title')).not.toBeEmpty();
-  await expect(page.locator('#pcs-progress-wrap')).toBeVisible();
+  await expect(page.locator('.pcs-tab-bar')).toBeVisible();
   await expect(page.locator('#pcs-comments-section')).toBeVisible();
   await expect(page.locator('text=This looks great, approve it.')).toBeVisible({ timeout: 5000 });
 

@@ -6447,18 +6447,14 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-stage-pill.editable { cursor: pointer; }
 
-/* Chip dropdown */
+/* Chip dropdown (body-appended, position set by JS) */
 .pcs-chip-drop {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
   background: #1e1e26;
   border: 1px solid #2a2a36;
-  z-index: 300;
   min-width: 120px;
-  max-height: 200px;
+  max-height: 240px;
   overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
 }
 .pcs-chip-drop-item {
   padding: 9px 14px;
@@ -6482,14 +6478,39 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-photo-linkedin {
   position: relative;
   border-bottom: 1px solid #1a1a2a;
+  flex-shrink: 0;
 }
 .pcs-photo-grid {
   display: grid;
-  grid-template-columns: 62fr 38fr;
-  grid-template-rows: 1fr 1fr;
   gap: 2px;
-  height: 220px;
   overflow: hidden;
+  flex-shrink: 0;
+}
+/* Single image — full width */
+.pcs-photo-grid--single {
+  grid-template-columns: 1fr;
+  height: 280px;
+  min-height: 280px;
+}
+/* Two images — equal columns */
+.pcs-photo-grid--two {
+  grid-template-columns: 1fr 1fr;
+  height: 220px;
+  min-height: 220px;
+}
+/* Three or 5+ images — LinkedIn 62/38 layout */
+.pcs-photo-grid--three {
+  grid-template-columns: 62% 38%;
+  grid-template-rows: 1fr 1fr;
+  height: 220px;
+  min-height: 220px;
+}
+/* Four images — 2x2 grid */
+.pcs-photo-grid--four {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  height: 240px;
+  min-height: 240px;
 }
 .pcs-photo-grid-hero {
   grid-row: span 2;
@@ -6534,23 +6555,43 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   text-transform: uppercase;
   color: #AEAEB2;
 }
-.pcs-photo-del {
-  position: absolute;
-  top: 6px;
-  left: 6px;
+/* FIX 8: Consistent X delete button across all photo cells */
+.pcs-photo-x {
   width: 20px;
   height: 20px;
   border-radius: 50%;
   background: rgba(0,0,0,0.75);
   border: none;
-  color: #E8E8E8;
-  font-size: 11px;
+  color: rgba(255,255,255,0.8);
+  font-size: 9px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 5;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  z-index: 2;
+}
+/* Legacy alias */
+.pcs-photo-del {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.75);
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 9px;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 5;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 .pcs-photo-header {
   display: flex;
@@ -6660,9 +6701,20 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-vis-top::-webkit-scrollbar { display: none; }
 
+/* -- Topbar right (stage pill + overdue) -- */
+.pcs-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* -- Title redesign -- */
+.pc-title-block {
+  padding: 8px 14px 6px;
+}
 .pc-title-block .pc-title {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.025em;
+  margin-bottom: 0;
 }

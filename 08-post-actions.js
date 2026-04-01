@@ -569,8 +569,7 @@ async function updatePost(postId, field, value) {
   post[field] = value;
   post._isSaving = true;
 
-  // Sync subtitle immediately after optimistic update
-  _updateSubtitle(post);
+  // (subtitle removed — stage shown in topbar pill + meta chips)
 
   const dbField = {
     title:         'title',
