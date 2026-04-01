@@ -1,4 +1,5 @@
 /* render/client.js -- Client portal feed (polish pass) */
+console.log('LOADED:', 'render/client.js');
 (function () {
   'use strict';
 
@@ -1180,25 +1181,6 @@
             cInput.focus();
             var fcCard = cInput.closest('[data-card-id]');
             if (fcCard) fcCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
-              root.querySelector('[data-engagement="' + id + '"]') ||
-              root.querySelector('#approved-strip-' + id);
-            if (fcAnchor) {
-              var fcInputHtml = '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;">' +
-                '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);">' + ICON_PERSON + '</div>' +
-                '<div style="flex:1;display:flex;align-items:center;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:0 4px 0 14px;">' +
-                  '<input id="comment-input-' + _esc(id) + '" type="text" placeholder="Add your thoughts..." style="flex:1;background:transparent;border:none;outline:none;font-family:\'DM Sans\',sans-serif;font-size:13px;color:#ccc;padding:7px 0;" data-post-id="' + _esc(id) + '">' +
-                  '<button data-action="submitComment" data-id="' + _esc(id) + '" style="background:none;border:none;color:#555;cursor:pointer;padding:4px;flex-shrink:0;">' + ICON_SEND + '</button>' +
-                '</div></div>';
-              fcAnchor.insertAdjacentHTML('afterend', fcInputHtml);
-              var fcNew = root.querySelector('#comment-input-' + id);
-              if (fcNew) {
-                fcNew.focus();
-                var fcCard2 = fcNew.closest('[data-card-id]');
-                if (fcCard2) fcCard2.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }
           }
           break;
 
