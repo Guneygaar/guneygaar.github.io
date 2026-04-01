@@ -37,7 +37,10 @@ async function refreshSession() {
         if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
         return data.access_token;
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error('[auth] refreshSession failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'refresh-session');
+    }
     return null;
   })();
   try {
@@ -98,6 +101,7 @@ window.sendMagicLink = async function sendMagicLink() {
   } catch (err) {
     const errMsg = document.getElementById('login-error');
     if (errMsg) errMsg.textContent = err.message || 'Could not send code. Try again.';
+    window.logError && window.logError(err && err.message, err && err.stack, 'send-magic-link');
     btn.disabled = false;
     btn.textContent = 'Send Code ->';
   }
@@ -137,6 +141,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
     if (errEl) errEl.textContent = err.message || 'Incorrect code - try again.';
+    window.logError && window.logError(err && err.message, err && err.stack, 'verify-otp');
     btn.disabled = false;
     btn.textContent = 'Verify ->';
   }
@@ -165,6 +170,8 @@ async function resolveRoleFromToken(accessToken, email) {
     if (overlay) overlay.classList.add('hidden');
     activateRole(role);
   } catch (err) {
+    console.error('[auth] resolveRoleFromToken failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'resolve-role-token');
     const el = document.getElementById('login-code-error');
     if (el) el.textContent = 'Login failed - try again.';
   }
@@ -188,6 +195,8 @@ async function handleMagicLinkToken(accessToken, _retried) {
     localStorage.setItem('sb_access_token', accessToken);
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
+    console.error('[auth] handleMagicLinkToken failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'handle-magic-link');
     showLoginOverlay();
   }
 }
@@ -243,9 +252,15 @@ function activateRole(role) {
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
-        var newToken = await refreshSession();
-        if (!newToken) {
-          console.warn('Client token refresh failed');
+        try {
+          var newToken = await refreshSession();
+          if (!newToken) {
+            console.warn('[auth] client token refresh returned null');
+            window.logError && window.logError('Client token refresh returned null', '', 'client-token-refresh');
+          }
+        } catch(err) {
+          console.error('[auth] client token refresh threw', err);
+          window.logError && window.logError(err && err.message, err && err.stack, 'client-token-refresh');
         }
       }, 50 * 60 * 1000);
     }
