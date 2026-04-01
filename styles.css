@@ -6347,3 +6347,322 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   background: rgba(255,255,255,0.06);
   color: #636366;
 }
+
+/* ===============================================
+   PCS Redesign v2 — LinkedIn photos, meta chips, tabs
+   =============================================== */
+
+/* -- Tab bar -- */
+.pcs-tab-bar {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid #1a1a2a;
+  padding: 0 20px;
+  gap: 0;
+  flex-shrink: 0;
+}
+.pcs-tab {
+  flex: 1;
+  padding: 11px 0 9px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6e6e80;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.15s;
+}
+.pcs-tab.active {
+  color: #F0F0F2;
+  border-bottom-color: #F0F0F2;
+}
+.pcs-tab.amber {
+  color: #F6A623;
+  border-bottom-color: #F6A623;
+}
+.pcs-tab-count {
+  font-size: 9px;
+  color: inherit;
+  opacity: 0.7;
+}
+.pcs-tab-pane {
+  /* panes shown/hidden via JS display toggle */
+}
+
+/* -- Meta chips row -- */
+.pcs-meta-chips {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+.pcs-meta-chips::-webkit-scrollbar { display: none; }
+.pcs-meta-chips:empty { display: none; }
+
+.pcs-chip {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 11px;
+  color: #AEAEB2;
+  background: linear-gradient(180deg, #1c1c28 0%, #10101a 100%);
+  border-width: 1px;
+  border-style: solid;
+  border-color: #28283a #16162a #0c0c18 #28283a;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04);
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.pcs-chip:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.02);
+}
+.pcs-chip.chip-cyan { color: #22D3EE; }
+.pcs-chip.chip-purple { color: #9b87f5; }
+.pcs-chip.chip-amber { color: #F6A623; }
+.pcs-chip.chip-red { color: #FF4B4B; }
+.pcs-chip.chip-green { color: #3ECF8E; }
+.pcs-chip.chip-muted { color: #8E8E93; }
+
+/* Stage pill */
+.pcs-stage-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px solid;
+  cursor: default;
+}
+.pcs-stage-pill.editable { cursor: pointer; }
+
+/* Chip dropdown */
+.pcs-chip-drop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #1e1e26;
+  border: 1px solid #2a2a36;
+  z-index: 300;
+  min-width: 120px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.pcs-chip-drop-item {
+  padding: 9px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #AEAEB2;
+  cursor: pointer;
+  border-bottom: 1px solid #1a1a2a;
+}
+.pcs-chip-drop-item:last-child { border-bottom: none; }
+.pcs-chip-drop-item:hover,
+.pcs-chip-drop-item:active {
+  background: rgba(255,255,255,0.06);
+  color: #E8E8E8;
+}
+.pcs-chip-drop-item.selected {
+  color: #F6A623;
+}
+
+/* -- LinkedIn-style photo grid -- */
+.pcs-photo-linkedin {
+  position: relative;
+  border-bottom: 1px solid #1a1a2a;
+}
+.pcs-photo-grid {
+  display: grid;
+  grid-template-columns: 62fr 38fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  height: 220px;
+  overflow: hidden;
+}
+.pcs-photo-grid-hero {
+  grid-row: span 2;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #1a1a1a;
+}
+.pcs-photo-grid-cell {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #1a1a1a;
+}
+.pcs-photo-grid-hero img,
+.pcs-photo-grid-cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pcs-photo-grid-more {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.pcs-photo-grid-more-num {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+.pcs-photo-grid-more-lbl {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #AEAEB2;
+}
+.pcs-photo-del {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.75);
+  border: none;
+  color: #E8E8E8;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  z-index: 2;
+}
+.pcs-photo-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 18px;
+  border-bottom: 1px solid #1a1a2a;
+}
+.pcs-photo-label {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #AEAEB2;
+}
+.pcs-photo-empty {
+  margin: 10px 18px 12px;
+  border: 1px dashed #222232;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+/* -- 3D WhatsApp button -- */
+.pcs-wa-btn {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #25D366;
+  background: linear-gradient(180deg, rgba(62,207,142,0.1) 0%, rgba(62,207,142,0.04) 100%);
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(62,207,142,0.35) rgba(62,207,142,0.2) rgba(62,207,142,0.12) rgba(62,207,142,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(62,207,142,0.08);
+  padding: 11px 0;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.pcs-wa-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 0 rgba(62,207,142,0.04);
+}
+
+/* -- Input pill bar (comment/note inputs) -- */
+.pcs-ibar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #111118;
+  border: 1px solid #222232;
+  border-radius: 22px;
+  margin: 8px 14px 12px;
+}
+.pcs-ibar .pcs-textarea {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #E8E8E8;
+  padding: 4px 0;
+  min-height: auto;
+  resize: none;
+}
+.pcs-ibar .pcs-textarea:focus {
+  border: none;
+  outline: none;
+}
+.pcs-ibar-send {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #C8A84B;
+  border: none;
+  color: #080808;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pcs-ibar-send.amber {
+  background: #F6A623;
+}
+.pcs-ibar-hint {
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: #444;
+  text-align: center;
+  padding: 0 14px 8px;
+}
+
+/* -- Visibility chips at top of internal pane -- */
+.pcs-vis-top {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pcs-vis-top::-webkit-scrollbar { display: none; }
+
+/* -- Title redesign -- */
+.pc-title-block .pc-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
