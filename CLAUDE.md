@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401i
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401j
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -208,6 +208,18 @@ tests/timestamp.test.js
 tests/utils.test.js
 
 E2E: tests/e2e/client-feed.spec.js, pcs.spec.js, smoke.spec.js
+
+TEST FILE MAPPING (run targeted tests during development):
+  render/client.js      → npx vitest run tests/client-comment.test.js
+  actions/pcs.js        → npx vitest run tests/pcs.test.js (future)
+  render/pipeline.js    → npx vitest run tests/pipeline.test.js (future)
+  render/dashboard.js   → npx vitest run tests/dashboard.test.js (future)
+  render/brief.js       → npx vitest run tests/brief.test.js (future)
+  00-appstate.js        → npx vitest run tests/appstate-posts.test.js
+  03-auth.js            → npx vitest run tests/role.test.js
+  10-ui.js              → npx vitest run tests/notifications.test.js
+  utils.js              → npx vitest run tests/utils.test.js
+  Full suite before push: npx vitest run
 
 AppState mock pattern for new test files:
 window.AppState = {
