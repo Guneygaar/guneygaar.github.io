@@ -640,13 +640,14 @@ window.executeBatchAction = async function(targetStage) {
 
   } catch (err) {
     console.error('Batch action error:', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'execute-batch-action');
     showToast('Batch update failed - try again', 'error');
   }
 }
 
 // -- renderPipeline/narrative --
 window.renderPipeline = function() {
-  try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); }
+  try { _renderPipelineInner(); } catch(e) { console.error('[PCS] renderPipeline crash:', e); window.logError && window.logError(e && e.message, e && e.stack, 'render-pipeline'); var _p = document.getElementById('pipeline-view'); if (_p) _p.innerHTML = '<div style="color:#FF4B4B;padding:24px;font-family:DM Sans,sans-serif">Something went wrong. Please refresh.</div>'; }
   updatePipelineCritical(window.AppState.posts.all);
   updatePipelineStageBar(window.AppState.posts.all);
   updatePipelineNarrative(window.AppState.posts.all);
