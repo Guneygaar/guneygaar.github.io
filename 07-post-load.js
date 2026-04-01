@@ -12,7 +12,11 @@ async function _fetchActivityLogs() {
       '&order=created_at.desc&limit=500'
     );
     window._activityLogs = Array.isArray(data) ? data : [];
-  } catch(e) { window._activityLogs = []; }
+  } catch(e) {
+    console.error('[post-load] fetchActivityLogs failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'fetch-activity-logs');
+    window._activityLogs = [];
+  }
 }
 
 function isPostStale(p) {
