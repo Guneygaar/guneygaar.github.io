@@ -1,16 +1,3 @@
-Read CLAUDE.md. Return your entire response in one single code block.
-
-Do ONE thing only — write CLAUDE.md at repo root.
-
-The exact content to write is below. Copy it verbatim — 
-do not summarize, do not skip, do not change anything.
-
-Then commit: "docs: full CLAUDE.md rewrite — verified 2026-04-01"
-Push directly to main-/-root.
-Confirm: "CLAUDE.md written. Pushed."
-
-Here is the exact content:
-
 # CLAUDE.md — Sorted (srtd.io)
 # Last updated: 2026-04-01
 
