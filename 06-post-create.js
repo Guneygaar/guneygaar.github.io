@@ -227,7 +227,6 @@ const pillar   = _s('new-post-pillar')?.value || '';
 const location = _s('new-post-location')?.value || '';
 const stage    = _s('new-post-stage')?.value || '';
 const date     = _s('new-post-date')?.value || '';
-const comments = (_s('new-post-comments')?.value || '').trim();
 const postLink = (_s('new-post-link')?.value || '').trim();
 var captionVal = (_s('new-post-caption')?.value || '').trim();
 
@@ -257,7 +256,6 @@ content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
 stage: 'in_production',
 target_date: date || null,
-comments: comments || null,
 };
 if (captionVal) payload.caption = captionVal;
 // Defensive: remove any invalid field names that must never reach DB
