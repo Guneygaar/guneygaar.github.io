@@ -179,15 +179,32 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // 4. Delete button always hidden from topbar (moved to photo menu)
-  var _pcsDelBtn = document.querySelector('.pc-topbar .pc-icon-btn.danger');
-  if (_pcsDelBtn) _pcsDelBtn.style.display = 'none';
-
-  // 5. (subtitle removed — stage/date now in meta chips only)
-
-  // 6. Hide progress wrap (stage shown in pill only)
-  var elProgress = document.getElementById('pcs-progress-wrap');
-  if (elProgress) elProgress.style.display = 'none';
+  // 4. Stage pill + overdue pill in topbar right
+  var topbarRight = document.getElementById('pcs-topbar-right');
+  if (topbarRight) {
+    var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
+    var _stageColor = '#AEAEB2';
+    if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') _stageColor = '#F6A623';
+    else if (stageLC === 'ready') _stageColor = '#3ECF8E';
+    else if (stageLC === 'awaiting_approval') _stageColor = '#FF4B4B';
+    else if (stageLC === 'scheduled') _stageColor = '#22D3EE';
+    else if (stageLC === 'published') _stageColor = '#8E8E93';
+    else if (stageLC === 'parked') _stageColor = '#F6A623';
+    else if (stageLC === 'rejected') _stageColor = '#FF4B4B';
+    var _pillHtml = '<span class="pcs-stage-pill' + (isAdmin ? ' editable' : '') + '" style="color:' + _stageColor + ';border-color:' + _stageColor + ';"' +
+      (isAdmin ? ' onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(_stageLabel) + '</span>';
+    // Overdue pill
+    var _noOverdue = ['published','parked','rejected'];
+    if (_noOverdue.indexOf(stageLC) === -1 && dateValue) {
+      var _td = typeof parseDate === 'function' ? parseDate(dateValue) : null;
+      var _now = new Date(); _now.setHours(0,0,0,0);
+      if (_td && _td < _now) {
+        _pillHtml += ' <span class="pc-overdue-badge">Overdue</span>';
+      }
+    }
+    topbarRight.innerHTML = _pillHtml;
+  }
 
   // 7. Photo grid
   var elDesign = document.getElementById('pcs-action-btn-wrap');
@@ -369,27 +386,11 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   return '<div id="pcs-photo-section" class="pcs-photo-linkedin">' + headerHtml + gridHtml + inputHtml + '</div>';
 }
 
-// -- Meta chips builder --
+// -- Meta chips builder (stage is in topbar, not here) --
 function _buildMetaChips(post, canEdit, canEditCreative, id) {
   var stageLC = post.stage || '';
   var canManage = canEdit || canEditCreative;
-
-  // Stage pill
-  var stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
-  var stageColor = '#AEAEB2';
-  if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') stageColor = '#F6A623';
-  else if (stageLC === 'ready') stageColor = '#3ECF8E';
-  else if (stageLC === 'awaiting_approval') stageColor = '#FF4B4B';
-  else if (stageLC === 'scheduled') stageColor = '#22D3EE';
-  else if (stageLC === 'published') stageColor = '#8E8E93';
-  else if (stageLC === 'parked') stageColor = '#F6A623';
-  else if (stageLC === 'rejected') stageColor = '#FF4B4B';
-
-  var stagePill = '<div class="pcs-chip" style="color:' + stageColor + ';border-color:' + stageColor + ';" ' +
-    (canEdit ? 'onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(stageLabel) + '</div>';
-
-  var chips = [stagePill];
+  var chips = [];
 
   // Format chip — skip if empty
   if (post.format) {
@@ -451,7 +452,7 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
   return chips.join('');
 }
 
-// -- Chip dropdown handler --
+// -- Chip dropdown handler (body-appended, getBoundingClientRect positioned) --
 window._pcsChipDrop = function(chipEl, field, postId) {
   // Close any existing dropdown
   if (window.AppState.pcs.activeMenu) {
@@ -459,12 +460,28 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     window.AppState.pcs.activeMenu = null;
   }
 
-  var drop = document.createElement('div');
-  drop.className = 'pcs-chip-drop';
-  var items = [];
-  var currentVal = '';
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
 
+  // DATE: use hidden native date picker
+  if (field === 'date') {
+    var dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.value = post ? (post.targetDate || '') : '';
+    dateInput.style.cssText = 'position:fixed;top:-100px;left:-100px;opacity:0;pointer-events:none;';
+    document.body.appendChild(dateInput);
+    dateInput.onchange = function() {
+      if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateInput.value);
+      dateInput.remove();
+      if (typeof openPCS === 'function') openPCS(postId, '');
+    };
+    dateInput.onblur = function() { setTimeout(function() { if (dateInput.parentNode) dateInput.remove(); }, 200); };
+    // showPicker() supported in modern browsers, click() as fallback
+    try { dateInput.showPicker(); } catch(e) { dateInput.click(); }
+    return;
+  }
+
+  var items = [];
+  var currentVal = '';
   if (field === 'format') {
     items = ['Creative','Photo','Carousel','Video','Text'];
     currentVal = post ? (post.format || '') : '';
@@ -480,25 +497,16 @@ window._pcsChipDrop = function(chipEl, field, postId) {
   } else if (field === 'stage') {
     items = typeof STAGES_DB !== 'undefined' ? STAGES_DB : [];
     currentVal = post ? (post.stage || '') : '';
-  } else if (field === 'date') {
-    // For date, inject a native date input
-    var dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = post ? (post.targetDate || '') : '';
-    dateInput.style.cssText = 'width:100%;background:#1e1e26;border:none;color:#E8E8E8;font-family:\'IBM Plex Mono\',monospace;font-size:12px;padding:10px;outline:none;';
-    dateInput.onchange = function() {
-      if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateInput.value);
-      drop.remove();
-      window.AppState.pcs.activeMenu = null;
-      if (typeof openPCS === 'function') openPCS(postId, '');
-    };
-    drop.appendChild(dateInput);
-    chipEl.style.position = 'relative';
-    chipEl.appendChild(drop);
-    window.AppState.pcs.activeMenu = drop;
-    dateInput.focus();
-    return;
   }
+
+  // Position dropdown below the chip using getBoundingClientRect
+  var rect = chipEl.getBoundingClientRect();
+  var drop = document.createElement('div');
+  drop.className = 'pcs-chip-drop';
+  drop.style.position = 'fixed';
+  drop.style.top = rect.bottom + 4 + 'px';
+  drop.style.left = rect.left + 'px';
+  drop.style.zIndex = '9700';
 
   items.forEach(function(item) {
     var label = item;
@@ -509,7 +517,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     }
     var div = document.createElement('div');
     div.className = 'pcs-chip-drop-item' + (item === currentVal ? ' selected' : '');
-    div.textContent = label;
+    div.textContent = (item === currentVal ? '\u2713 ' : '') + label;
     div.onclick = function(e) {
       e.stopPropagation();
       if (field === 'stage') {
@@ -529,8 +537,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     drop.appendChild(div);
   });
 
-  chipEl.style.position = 'relative';
-  chipEl.appendChild(drop);
+  document.body.appendChild(drop);
   window.AppState.pcs.activeMenu = drop;
 }
 
@@ -1667,34 +1674,34 @@ window._pcsPhotoMenu = function(postId, e) {
     window.AppState.pcs.activeMenu = null;
     return;
   }
+  var btnEl = e ? e.currentTarget : null;
+  var rect = btnEl ? btnEl.getBoundingClientRect() : { right: 40, bottom: 60 };
   var menu = document.createElement('div');
   menu.id = 'pcs-photo-menu-drop';
-  menu.style.cssText = 'position:absolute;right:18px;' +
-    'background:#1e1e26;border:1px solid #2a2a36;' +
-    'z-index:200;min-width:140px;overflow:hidden;';
+  menu.className = 'pcs-chip-drop';
+  menu.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;right:' +
+    (window.innerWidth - rect.right) + 'px;z-index:9700;min-width:150px;';
   var post = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
   var _menuRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+  function _closeMenu() { if (window.AppState.pcs.activeMenu) { window.AppState.pcs.activeMenu.remove(); window.AppState.pcs.activeMenu = null; } }
   menu.innerHTML =
-    '<div class="pcs-menu-item" onclick="window._pcsAddPhotos(\'' +
-      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-      '+ Add More</div>' +
+    '<div class="pcs-chip-drop-item" onclick="window._pcsAddPhotos(\'' + postId + '\');' +
+      'if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
+      '＋ Add More</div>' +
     (imgs.length > 0
-      ? '<div class="pcs-menu-item" onclick="window._pcsSaveAllPhotos(\'' +
-          postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-          'Save All</div>'
+      ? '<div class="pcs-chip-drop-item" onclick="window._pcsSaveAllPhotos(\'' + postId + '\');' +
+          'if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
+          '↓ Save All</div>'
       : '') +
     (_menuRole === 'admin'
-      ? '<div class="pcs-menu-item pcs-menu-item-danger" onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window.pcsConfirmDelete();">Delete Post</div>'
+      ? '<div class="pcs-chip-drop-item" style="color:#FF4B4B;" onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window.pcsConfirmDelete();">' +
+        '🗑 Delete Post</div>'
       : '');
-  var section = document.getElementById('pcs-photo-section');
-  if (section) {
-    section.style.position = 'relative';
-    section.appendChild(menu);
-    window.AppState.pcs.activeMenu = menu;
-  }
+  document.body.appendChild(menu);
+  window.AppState.pcs.activeMenu = menu;
 };
 
 window._pcsSaveAllPhotos = async function(postId) {
