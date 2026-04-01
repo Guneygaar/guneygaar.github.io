@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401j
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401k
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -189,7 +189,7 @@ E2E: npx playwright test
 
 Current (verified 2026-04-01):
 Unit test files: 13
-Unit tests:      289 passing, 0 failing
+Unit tests:      297 passing, 0 failing
 E2E specs:       3
 
 Files:
@@ -265,7 +265,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 289/289 before every push
+1. Vitest must pass 297/297 before every push
 
 ## SECTION 11 — GLOBAL FUNCTIONS
 
@@ -364,7 +364,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 Ph0 Safety            — DONE
 Ph1 File Architecture — DONE (render/ + actions/ extracted)
 Ph2 AppState          — DONE (all globals migrated)
-Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed)
+Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed, Pass 3 pipeline, Pass 4 PCS — 12 fixes, 3 alert→toast)
 Ph4 Event Delegation  — PENDING
 Ph5 Optimistic UI     — IN PROGRESS (client comments done)
 Ph6 PWA               — PENDING
