@@ -6432,6 +6432,31 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-chip.chip-amber { color: #F6A623; }
 .pcs-chip.chip-red { color: #FF4B4B; }
 .pcs-chip.chip-green { color: #3ECF8E; }
+
+/* Empty placeholder chip */
+.pcs-chip--empty {
+  color: #3a3a4a;
+  border-style: dashed;
+  font-weight: 400;
+}
+
+/* Interactive chip affordance — ▾ indicator */
+.pcs-chip--interactive {
+  cursor: pointer;
+}
+.pcs-chip--interactive::after {
+  content: '\25BE';
+  font-size: 8px;
+  color: rgba(255,255,255,0.2);
+  margin-left: 4px;
+}
+/* Stage pill also gets the ▾ */
+.pcs-stage-pill.pcs-chip--interactive::after {
+  content: '\25BE';
+  font-size: 8px;
+  color: rgba(255,255,255,0.2);
+  margin-left: 4px;
+}
 .pcs-chip.chip-muted { color: #8E8E93; }
 
 /* Stage pill */

@@ -191,7 +191,7 @@ window._renderPCS = function(postId) {
     else if (stageLC === 'published') _stageColor = '#8E8E93';
     else if (stageLC === 'parked') _stageColor = '#F6A623';
     else if (stageLC === 'rejected') _stageColor = '#FF4B4B';
-    var _pillHtml = '<span class="pcs-stage-pill' + (isAdmin ? ' editable' : '') + '" style="color:' + _stageColor + ';border-color:' + _stageColor + ';"' +
+    var _pillHtml = '<span class="pcs-stage-pill' + (isAdmin ? ' editable pcs-chip--interactive' : '') + '" style="color:' + _stageColor + ';border-color:' + _stageColor + ';"' +
       (isAdmin ? ' onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(_stageLabel) + '</span>';
     // Overdue pill
@@ -392,26 +392,32 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
   var canManage = canEdit || canEditCreative;
   var chips = [];
 
-  // Format chip — skip if empty
+  // Format chip
   if (post.format) {
-    chips.push('<div class="pcs-chip" ' +
+    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
       (canManage ? 'onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(post.format) + '</div>');
+  } else if (canManage) {
+    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format</div>');
   }
 
-  // Pillar chip — skip if empty
+  // Pillar chip
   if (post.contentPillar) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
-    chips.push('<div class="pcs-chip" ' +
+    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
       (canManage ? 'onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(pillarVal) + '</div>');
+  } else if (canManage) {
+    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar</div>');
   }
 
-  // Location chip — skip if empty
+  // Location chip
   if (post.location) {
-    chips.push('<div class="pcs-chip" ' +
+    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
       (canManage ? 'onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(post.location) + '</div>');
+  } else if (canManage) {
+    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location</div>');
   }
 
   // Owner chip — skip if empty
@@ -421,7 +427,7 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
     if (ownerLC === 'chitra') ownerColor = ' chip-cyan';
     else if (ownerLC === 'pranav') ownerColor = ' chip-purple';
     else if (ownerLC === 'client') ownerColor = ' chip-amber';
-    chips.push('<div class="pcs-chip' + ownerColor + '" ' +
+    chips.push('<div class="pcs-chip' + ownerColor + (canEdit ? ' pcs-chip--interactive' : '') + '" ' +
       (canEdit ? 'onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + '</div>');
   }
@@ -443,7 +449,7 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
         var _now = new Date(); _now.setHours(0,0,0,0);
         if (_td && _td < _now) dateColor = ' chip-red';
       }
-      chips.push('<div class="pcs-chip' + dateColor + '" ' +
+      chips.push('<div class="pcs-chip' + dateColor + (canEdit ? ' pcs-chip--interactive' : '') + '" ' +
         (canEdit ? 'onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
         '>' + esc(dateDisplay) + '</div>');
     }
@@ -544,7 +550,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 // -- Caption section builder --
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
-  return '<div id="pcs-caption-section" style="padding:12px 18px;border-bottom:1px solid #1a1a2a;">' +
+  return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #1a1a2a;">' +
     ((canEdit || canEditCreative) ?
       '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;">' +
       '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
@@ -1461,48 +1467,10 @@ window._ADVANCE_CLS = {
 };
 
 window._renderAdvanceButton = function(stageLC) {
-  var _advRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavAdv = _advRole === 'creative' ||
-    _advRole === 'pranav' ||
-    (window.AppState.user.email||'').toLowerCase().includes('pranav');
-  if (_advRole === 'client' || _isPranavAdv) return '';
+  // Advance button removed from redesign — stage changes via topbar pill dropdown only.
+  // Keep function signature intact (called from _renderPCS), just always hide the block.
   var block = document.getElementById('pc-advance-block');
-  var btn = document.getElementById('pc-advance-btn');
-  var label = document.getElementById('pc-advance-label');
-  if (!block || !btn || !label) return;
-
-  // Hide advance for terminal/special stages
-  if (stageLC === 'published' || stageLC === 'parked' || stageLC === 'rejected') {
-    block.style.display = 'none';
-    return;
-  }
-
-  // awaiting_brand_input skips ahead to scheduled
-  if (stageLC === 'awaiting_brand_input') {
-    label.textContent = 'Mark Scheduled';
-    btn.className = 'pc-advance-btn';
-    btn.classList.add('to-scheduled');
-    btn.onclick = function() { changeStage('scheduled'); };
-    block.style.display = '';
-    return;
-  }
-
-  var idx = window._ADVANCE_SEQ.indexOf(stageLC);
-  if (idx < 0 || idx >= window._ADVANCE_SEQ.length - 1) {
-    block.style.display = 'none';
-    return;
-  }
-
-  var nextStage = window._ADVANCE_SEQ[idx + 1];
-  label.textContent = window._ADVANCE_LABELS[nextStage] || ('Move to ' + nextStage);
-
-  // Remove old color classes
-  btn.className = 'pc-advance-btn';
-  var cls = window._ADVANCE_CLS[nextStage];
-  if (cls) btn.classList.add(cls);
-
-  btn.onclick = function() { changeStage(nextStage); };
-  block.style.display = '';
+  if (block) block.style.display = 'none';
 }
 
 // -- Activity count (FIX 9) --
