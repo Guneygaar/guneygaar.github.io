@@ -259,6 +259,7 @@ async function loadPostsForClient() {
     hideErrorBanner();
     renderClientView();
   } catch (err) {
+    window.logError && window.logError(err && err.message, err && err.stack, 'load-posts-client');
     if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
       window.AppState.posts.setAll(
