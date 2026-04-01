@@ -6589,3 +6589,34 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-chip-drop-item:last-child { border-bottom: none; }
 .pcs-chip-drop-item:hover, .pcs-chip-drop-item:active { background: rgba(255,255,255,.06); color: #E8E8E8; }
 .pcs-chip-drop-item.selected { color: #F6A623; }
+
+/* FIX 5: Pane overflow */
+#pcs-pane-caption, #pcs-pane-client, #pcs-pane-internal { overflow: hidden; }
+
+/* FIX 7: No gap between topbar and photos */
+#pcs-scroll { padding-top: 0; }
+.pcs-photo-header { padding: 4px 16px 3px; margin-top: 0; }
+
+/* FIX 8: Tighter caption */
+#pcs-caption-text, .pcs-caption-text {
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* FIX 10: Photo grid min-height (mobile Safari) */
+.pcs-pg-1 { flex-shrink:0; min-height:260px; }
+.pcs-pg-2 { flex-shrink:0; min-height:220px; }
+.pcs-pg-3 { flex-shrink:0; min-height:220px; }
+.pcs-pg-4 { flex-shrink:0; min-height:240px; }
+.pcs-pg-5 { flex-shrink:0; min-height:220px; }
+
+/* FIX 11: Title size */
+#pcs-topbar-title, .pc-title {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.1 !important;
+  color: #FFFFFF !important;
+  padding: 9px 16px 6px !important;
+}
