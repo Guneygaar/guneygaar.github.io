@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260401w
+Version format: ?v=YYYYMMDDx. Current: ?v=20260401y
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -325,7 +325,7 @@ window._closeBriefConfirm, window._closeBrief,
 window._reopenBrief, window._createPostFromBrief
 
 actions/pcs.js:
-window._pcsLbImages, window._pcsLbIdx, window._pcsActiveTab,
+window._pcsLbImages, window._pcsLbIdx, window._pcsActiveTab, window._pcsDateChange,
 window.openPCS, window.closePCS, window.forcePCSReset,
 window._renderPCS, window._pcsTabSwitch, window._pcsChipDrop,
 window._updateSubtitle, window._pcsTitleEdit,

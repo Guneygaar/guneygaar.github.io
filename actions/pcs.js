@@ -155,8 +155,6 @@ window._renderPCS = function(postId) {
   var stageLC     = post.stage || '';
   console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
   var isPublished = stageLC === 'published';
-  var canvaUrl    = post.postLink || '';
-  var linkedinUrl = post.linkedinUrl || '';
   var _pcsRole = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isPranavPCS = _pcsRole === 'creative' ||
     _pcsRole === 'pranav' ||
@@ -165,119 +163,97 @@ window._renderPCS = function(postId) {
   var canEditCreative = _isPranavPCS;
   var dateValue   = post.targetDate || '';
   var isAdmin = _pcsRole === 'admin';
+  var canManage = canEdit || canEditCreative;
 
-  // 3. Title
-  var elTitle = document.getElementById('pcs-topbar-title');
-  if (elTitle) {
-    elTitle.textContent = title;
-    if (canEdit) {
-      elTitle.classList.add('pcs-title--editable');
-      elTitle.onclick = function() { _pcsTitleEdit(elTitle, id); };
-    } else {
-      elTitle.classList.remove('pcs-title--editable');
-      elTitle.onclick = null;
-    }
-  }
-
-  // 4. Stage pill + overdue pill in topbar right
+  // a) Stage pill + overdue pill in topbar right
   var topbarRight = document.getElementById('pcs-topbar-right');
   if (topbarRight) {
     var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
-    var _stageColor = '#AEAEB2';
-    if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') _stageColor = '#F6A623';
-    else if (stageLC === 'ready') _stageColor = '#3ECF8E';
-    else if (stageLC === 'awaiting_approval') _stageColor = '#FF4B4B';
-    else if (stageLC === 'scheduled') _stageColor = '#22D3EE';
-    else if (stageLC === 'published') _stageColor = '#8E8E93';
-    else if (stageLC === 'parked') _stageColor = '#F6A623';
-    else if (stageLC === 'rejected') _stageColor = '#FF4B4B';
-    var _pillHtml = '<span class="pcs-stage-pill' + (isAdmin ? ' editable pcs-chip--interactive' : '') + '" style="color:' + _stageColor + ';border-color:' + _stageColor + ';"' +
+    var _pillHtml = '<span class="pcs-stage-pill" id="pcs-stage-pill"' +
       (isAdmin ? ' onclick="window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(_stageLabel) + '</span>';
-    // Overdue pill
+      '>' + esc(_stageLabel) +
+      (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '') +
+      '</span>';
     var _noOverdue = ['published','parked','rejected'];
     if (_noOverdue.indexOf(stageLC) === -1 && dateValue) {
       var _td = typeof parseDate === 'function' ? parseDate(dateValue) : null;
       var _now = new Date(); _now.setHours(0,0,0,0);
       if (_td && _td < _now) {
-        _pillHtml += ' <span class="pc-overdue-badge">Overdue</span>';
+        _pillHtml += '<span class="pcs-od-pill" id="pcs-od-pill"><span class="pcs-od-dot"></span>Overdue</span>';
       }
     }
     topbarRight.innerHTML = _pillHtml;
   }
 
-  // 7. Photo grid
-  var elDesign = document.getElementById('pcs-action-btn-wrap');
+  // b) Photo section
   var imgs = Array.isArray(post.images) ? post.images : [];
-  var showPhotoSection = (canEdit || canEditCreative) || imgs.length > 0;
-  if (elDesign) {
-    elDesign.innerHTML = showPhotoSection
-      ? _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id)
-      : '';
+  var photoHeader = document.getElementById('pcs-photo-header-row');
+  var photoLabel = document.getElementById('pcs-photo-label');
+  var photoMenuBtn = document.getElementById('pcs-photo-menu-btn');
+  var photoGridWrap = document.getElementById('pcs-photo-grid-wrap');
+  if (photoHeader) photoHeader.style.display = (canManage || imgs.length > 0) ? 'flex' : 'none';
+  if (photoLabel) photoLabel.textContent = 'PHOTOS \u00B7 ' + imgs.length;
+  if (photoMenuBtn) {
+    photoMenuBtn.onclick = function(ev) { window._pcsPhotoMenu(id, ev); };
+    photoMenuBtn.style.display = canManage ? '' : 'none';
+  }
+  if (photoGridWrap) photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
+
+  // c) Title
+  var elTitle = document.getElementById('pcs-topbar-title');
+  if (elTitle) {
+    elTitle.textContent = title;
+    if (canEdit) {
+      elTitle.style.cursor = 'text';
+      elTitle.onclick = function() { _pcsTitleEdit(elTitle, id); };
+    } else {
+      elTitle.style.cursor = '';
+      elTitle.onclick = null;
+    }
   }
 
-  // 8. Meta chips
-  var chipsEl = document.getElementById('pcs-meta-chips');
-  if (chipsEl) chipsEl.innerHTML = _buildMetaChips(post, canEdit, canEditCreative, id);
+  // d) Meta chips
+  var chipsEl = document.getElementById('pcs-chips-row');
+  if (chipsEl) chipsEl.innerHTML = _buildChipsRow(post, canEdit, canEditCreative, id);
 
-  // 9. Caption + LinkedIn into pcs-fields, advance rendered inline, then WA
+  // e) Caption + LinkedIn into pcs-fields
   var elFields = document.getElementById('pcs-fields');
   var captionHtml = _buildCaptionHtml(post, canEdit, canEditCreative, id);
   var liHtml = _buildLinkedInHtml(post, id, stageLC);
-  var waHtml = _buildWAHtml(post, id, postId, stageLC);
   if (elFields) {
     elFields.innerHTML = captionHtml + liHtml +
       '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
   }
 
-  // 10. Stage advance button (renders into static pc-advance-block, which is between fields and WA)
-  _renderAdvanceButton(stageLC);
-
-  // 10b. WA button goes into a container after advance block
+  // f) WA button
+  var waHtml = _buildWAHtml(post, id, postId, stageLC);
   var waContainer = document.getElementById('pcs-wa-container');
   if (waContainer) waContainer.innerHTML = waHtml;
 
-  // 11. Activity count
-  _renderActivityCount(id);
-
-  // 12. Hide activity trigger
-  var actTrigger = document.getElementById('pc-activity-trigger');
-  if (actTrigger) actTrigger.style.display = 'none';
-
-  // 13. Load activity async
-  var elActivity = document.getElementById('pcs-activity-body');
-  if (elActivity) {
-    if (elActivity.dataset.loadedFor !== id) {
-      elActivity.dataset.loadedFor = id;
-      elActivity.innerHTML = '<div class="pcs-activity-loading">Loading...</div>';
-      _loadPCSActivity(id, elActivity);
-    }
-  }
-
-  // 14. Show comments section container
+  // g) Show comments section (compatibility)
   var commSection = document.getElementById('pcs-comments-section');
   if (commSection) commSection.style.display = 'block';
 
-  // 15. Load comments
+  // h) Load comments
   var _pcsPostIdEl = document.getElementById('pcs-post-id');
   var _pcsPostId = _pcsPostIdEl ? _pcsPostIdEl.value : id;
   if (typeof loadPcsComments === 'function') {
     loadPcsComments(_pcsPostId);
   }
 
-  // 16. Hide Internal tab for clients
+  // i) Hide Internal tab for clients
   var internalTab = document.querySelector('[data-tab="internal"]');
   if (internalTab) internalTab.style.display = _pcsRole === 'client' ? 'none' : '';
 
-  // 17. Notes section role guard
+  // j) Notes section role guard
   var notesSection = document.getElementById('pcs-notes-section');
   if (notesSection) notesSection.style.display = _pcsRole === 'client' ? 'none' : '';
 
-  // 18. Default to caption tab
+  // k) Default to caption tab
   window._pcsActiveTab = 'caption';
   _pcsTabSwitch('caption');
 
-  // 19. Mention dropup
+  // l) Mention dropup
   if (typeof window._initMentionDropup === 'function') {
     window._initMentionDropup();
   }
@@ -309,130 +285,96 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   var canManage = canEdit || canEditCreative;
   var count = imgs.length;
 
-  var headerHtml =
-    '<div class="pcs-photo-header">' +
-    '<div class="pcs-photo-label">Photos <span style="color:' +
-    (count ? '#E8E8E8' : '#8E8E93') + ';">' + count + '</span></div>' +
-    (canManage ?
-      '<button onclick="window._pcsPhotoMenu(\'' + esc(id) + '\',event)" ' +
-      'style="color:#8E8E93;background:transparent;border:none;' +
-      'padding:8px 12px;cursor:pointer;font-family:\'IBM Plex Mono\',monospace;' +
-      'font-size:13px;height:36px;letter-spacing:0.2em;">...</button>' : '') +
-    '</div>';
-
-  function _cell(idx, extraStyle, overlayHtml) {
-    return '<div class="pcs-photo-grid-cell" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')"' +
-      (extraStyle ? ' style="' + extraStyle + '"' : '') + '>' +
-      '<img src="' + esc(imgs[idx]) + '">' +
-      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',' + idx + ')">x</button>' : '') +
+  function _cell(idx, heroClass, overlayHtml) {
+    return '<div class="pcs-pcell' + (heroClass ? ' hero' : '') + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')">' +
+      '<img src="' + esc(imgs[idx]) + '" onerror="this.style.display=\'none\'">' +
+      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',' + idx + ')">&#x2715;</button>' : '') +
       (overlayHtml || '') +
       '</div>';
   }
 
   var gridHtml = '';
 
-  if (count === 0 && canManage) {
-    // Empty upload box
-    gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
-      '<div style="font-size:20px;color:rgba(246,166,35,0.3);">+</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:#F6A623;">Upload Photos</div>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#333;letter-spacing:0.06em;">JPG / PNG -- stored in Supabase, original quality</div>' +
-      '</div>';
-
+  if (count === 0) {
+    if (canManage) {
+      gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
+        '<div style="font-size:22px;color:rgba(246,166,35,.3)">+</div>' +
+        '<div style="font-family:\'Courier New\',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#F6A623">Upload Photos</div>' +
+        '<div style="font-family:\'Courier New\',monospace;font-size:7px;color:#333;letter-spacing:.06em">JPG / PNG</div>' +
+        '</div>';
+    }
   } else if (count === 1) {
-    // Single full-width image
-    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--single">' + _cell(0) + '</div>';
-
+    gridHtml = '<div class="pcs-pg-1">' +
+      '<img src="' + esc(imgs[0]) + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)" onerror="this.style.display=\'none\'">' +
+      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">&#x2715;</button>' : '') +
+      '</div>';
   } else if (count === 2) {
-    // Two equal columns
-    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--two">' + _cell(0) + _cell(1) + '</div>';
-
+    gridHtml = '<div class="pcs-pg-2">' + _cell(0) + _cell(1) + '</div>';
   } else if (count === 3) {
-    // LinkedIn 62/38 — hero left, 2 stacked right
-    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--three">' +
-      '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
-      '<img src="' + esc(imgs[0]) + '">' +
-      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
-      '</div>' +
-      _cell(1) + _cell(2) +
-      '</div>';
-
+    gridHtml = '<div class="pcs-pg-3">' + _cell(0, true) + _cell(1) + _cell(2) + '</div>';
   } else if (count === 4) {
-    // 2x2 grid
-    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--four">' +
-      _cell(0) + _cell(1) + _cell(2) + _cell(3) +
-      '</div>';
-
-  } else if (count >= 5) {
-    // LinkedIn 62/38 with +N overlay on bottom-right
+    gridHtml = '<div class="pcs-pg-4">' + _cell(0) + _cell(1) + _cell(2) + _cell(3) + '</div>';
+  } else {
     var extra = count - 3;
-    var overlayHtml = '<div class="pcs-photo-grid-more">' +
-      '<div class="pcs-photo-grid-more-num">+' + extra + '</div>' +
-      '<div class="pcs-photo-grid-more-lbl">more</div></div>';
-    gridHtml = '<div class="pcs-photo-grid pcs-photo-grid--three">' +
-      '<div class="pcs-photo-grid-hero" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)">' +
-      '<img src="' + esc(imgs[0]) + '">' +
-      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">x</button>' : '') +
-      '</div>' +
-      _cell(1) +
-      _cell(2, 'position:relative;', overlayHtml) +
-      '</div>';
+    var ov = '<div class="pcs-more-ov"><div class="pcs-more-n">+' + extra + '</div><div class="pcs-more-l">more</div></div>';
+    gridHtml = '<div class="pcs-pg-5">' + _cell(0, true) + _cell(1) + _cell(2, false, ov) + '</div>';
   }
 
   var inputHtml = canManage
-    ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none;" onchange="window._pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
+    ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
     : '';
 
-  return '<div id="pcs-photo-section" class="pcs-photo-linkedin">' + headerHtml + gridHtml + inputHtml + '</div>';
+  return gridHtml + inputHtml;
 }
 
-// -- Meta chips builder (stage is in topbar, not here) --
-function _buildMetaChips(post, canEdit, canEditCreative, id) {
+// -- Chips row builder (stage in topbar, not here) --
+function _buildChipsRow(post, canEdit, canEditCreative, id) {
   var stageLC = post.stage || '';
   var canManage = canEdit || canEditCreative;
+  var arr = canManage ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
   var chips = [];
 
   // Format chip
   if (post.format) {
-    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
-      (canManage ? 'onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.format) + '</div>');
+    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+      (canManage ? ' onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(post.format) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format</div>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format' + arr + '</button>');
   }
 
-  // Pillar chip
+  // Pillar chip — skip if null and no edit
   if (post.contentPillar) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
-    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
-      (canManage ? 'onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(pillarVal) + '</div>');
+    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+      (canManage ? ' onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(pillarVal) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar</div>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar' + arr + '</button>');
   }
 
-  // Location chip
+  // Location chip — skip if null and no edit
   if (post.location) {
-    chips.push('<div class="pcs-chip' + (canManage ? ' pcs-chip--interactive' : '') + '" ' +
-      (canManage ? 'onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.location) + '</div>');
+    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+      (canManage ? ' onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(post.location) + arr + '</button>');
   } else if (canManage) {
-    chips.push('<div class="pcs-chip pcs-chip--empty pcs-chip--interactive" onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location</div>');
+    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location' + arr + '</button>');
   }
 
-  // Owner chip — skip if empty
+  // Owner chip
   if (post.owner) {
-    var ownerColor = '';
+    var ownerColor = ' pcs-chip--dim';
     var ownerLC = (post.owner || '').toLowerCase();
-    if (ownerLC === 'chitra') ownerColor = ' chip-cyan';
-    else if (ownerLC === 'pranav') ownerColor = ' chip-purple';
-    else if (ownerLC === 'client') ownerColor = ' chip-amber';
-    chips.push('<div class="pcs-chip' + ownerColor + (canEdit ? ' pcs-chip--interactive' : '') + '" ' +
-      (canEdit ? 'onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + '</div>');
+    if (ownerLC === 'chitra' || ownerLC === 'pranav') ownerColor = ' pcs-chip--cyan';
+    else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
+    var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
+    chips.push('<button class="pcs-chip' + ownerColor + '"' +
+      (canEdit ? ' onclick="window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
+      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + ownerArr + '</button>');
   }
 
-  // Date chip — skip if empty
+  // Date chip
   var dateValue = post.targetDate || '';
   if (dateValue) {
     var dateDisplay = '';
@@ -443,15 +385,16 @@ function _buildMetaChips(post, canEdit, canEditCreative, id) {
       }
     } catch(e) {}
     if (dateDisplay) {
-      var dateColor = '';
+      var dateColor = ' pcs-chip--dim';
       if (stageLC !== 'published' && stageLC !== 'parked' && stageLC !== 'rejected') {
         var _td = typeof parseDate === 'function' ? parseDate(dateValue) : new Date(dateValue);
         var _now = new Date(); _now.setHours(0,0,0,0);
-        if (_td && _td < _now) dateColor = ' chip-red';
+        if (_td && _td < _now) dateColor = ' pcs-chip--red';
       }
-      chips.push('<div class="pcs-chip' + dateColor + (canEdit ? ' pcs-chip--interactive' : '') + '" ' +
-        (canEdit ? 'onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
-        '>' + esc(dateDisplay) + '</div>');
+      var dateArr = canEdit ? ' <span class="pcs-chip-arr">&#x25BE;</span>' : '';
+      chips.push('<button class="pcs-chip' + dateColor + '"' +
+        (canEdit ? ' onclick="window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
+        '>' + esc(dateDisplay) + dateArr + '</button>');
     }
   }
 
@@ -468,21 +411,20 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
 
-  // DATE: use hidden native date picker
+  // DATE: inline date input in dropdown
   if (field === 'date') {
-    var dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = post ? (post.targetDate || '') : '';
-    dateInput.style.cssText = 'position:fixed;top:-100px;left:-100px;opacity:0;pointer-events:none;';
-    document.body.appendChild(dateInput);
-    dateInput.onchange = function() {
-      if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateInput.value);
-      dateInput.remove();
-      if (typeof openPCS === 'function') openPCS(postId, '');
-    };
-    dateInput.onblur = function() { setTimeout(function() { if (dateInput.parentNode) dateInput.remove(); }, 200); };
-    // showPicker() supported in modern browsers, click() as fallback
-    try { dateInput.showPicker(); } catch(e) { dateInput.click(); }
+    var rect = chipEl.getBoundingClientRect();
+    var drop = document.createElement('div');
+    drop.className = 'pcs-chip-drop';
+    drop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;z-index:9700;';
+    drop.innerHTML = '<div style="padding:12px 16px;background:#141420">' +
+      '<input type="date" value="' + esc(post ? (post.targetDate || '') : '') + '" ' +
+      'style="width:100%;padding:10px 12px;background:#0f0f1a;border:1px solid #1c1c26;color:#fff;font-size:14px;outline:none;color-scheme:dark;font-family:inherit" ' +
+      'onchange="window._pcsDateChange(\'' + esc(postId) + '\',this.value)"/></div>';
+    document.body.appendChild(drop);
+    window.AppState.pcs.activeMenu = drop;
+    var dateInp = drop.querySelector('input');
+    if (dateInp) dateInp.focus();
     return;
   }
 
@@ -545,6 +487,16 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
   document.body.appendChild(drop);
   window.AppState.pcs.activeMenu = drop;
+}
+
+// -- Date change from inline date picker --
+window._pcsDateChange = function(postId, dateValue) {
+  if (window.AppState.pcs.activeMenu) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
+  }
+  if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateValue);
+  if (typeof openPCS === 'function') openPCS(postId, '');
 }
 
 // -- Caption section builder --
@@ -1348,7 +1300,7 @@ window.pcsSaveAttach = async function(postId) {
     var _attachCanEdit = _attachRole !== 'client' && !_attachIsPranav;
     var _attachCanEditCreative = _attachIsPranav;
     var _attachIsAdmin = _attachRole === 'admin';
-    var _attachWrap = document.getElementById('pcs-action-btn-wrap');
+    var _attachWrap = document.getElementById('pcs-photo-grid-wrap');
     if (_attachWrap) {
       _attachWrap.innerHTML = _buildPhotoGrid(_attachImgs, _attachCanEdit, _attachCanEditCreative, _attachIsAdmin, postId);
     }
