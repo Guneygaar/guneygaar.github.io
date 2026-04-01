@@ -1,12 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('Phase 3 — Error Handling', function() {
 
-  var _apiFetchCalls = [];
-
   beforeEach(function() {
-    vi.useFakeTimers();
-    _apiFetchCalls = [];
     window.AppState = {
       user: { name: 'Test', email: 'test@test.com',
         role: 'Admin', effectiveRole: 'Admin', previewRole: null },
@@ -16,17 +12,12 @@ describe('Phase 3 — Error Handling', function() {
       ui: { modalOpen: false, unreadCount: 0 },
       timers: {}
     };
-    window.apiFetch = vi.fn(function(url, opts) {
-      _apiFetchCalls.push({ url: url, opts: opts });
+    window.fetch = vi.fn(function() {
       return Promise.resolve({ ok: true });
     });
     // Clean up any toast from previous test
     var existing = document.getElementById('sorted-error-toast');
     if (existing) existing.parentNode.removeChild(existing);
-  });
-
-  afterEach(function() {
-    vi.useRealTimers();
   });
 
   // Load the actual source
@@ -41,57 +32,50 @@ describe('Phase 3 — Error Handling', function() {
     expect(typeof window.logError).toBe('function');
   });
 
-  it('2. window.logError calls apiFetch with URL containing error_log', function() {
+  it('2. window.logError calls fetch with URL containing error_log', function() {
     window.logError('test error', 'stack trace', 'test-action');
-    vi.advanceTimersByTime(1);
-    expect(window.apiFetch).toHaveBeenCalledTimes(1);
-    var callArgs = window.apiFetch.mock.calls[0];
+    expect(window.fetch).toHaveBeenCalledTimes(1);
+    var callArgs = window.fetch.mock.calls[0];
     expect(callArgs[0]).toContain('error_log');
   });
 
   it('3. payload includes user_email from AppState.user.email', function() {
     window.logError('test', '', 'test');
-    vi.advanceTimersByTime(1);
-    var body = JSON.parse(window.apiFetch.mock.calls[0][1].body);
+    var body = JSON.parse(window.fetch.mock.calls[0][1].body);
     expect(body.user_email).toBe('test@test.com');
   });
 
   it('4. payload includes user_role from AppState.user.effectiveRole', function() {
     window.logError('test', '', 'test');
-    vi.advanceTimersByTime(1);
-    var body = JSON.parse(window.apiFetch.mock.calls[0][1].body);
+    var body = JSON.parse(window.fetch.mock.calls[0][1].body);
     expect(body.user_role).toBe('Admin');
   });
 
   it('5. payload includes app_version string (not empty)', function() {
     window.logError('test', '', 'test');
-    vi.advanceTimersByTime(1);
-    var body = JSON.parse(window.apiFetch.mock.calls[0][1].body);
+    var body = JSON.parse(window.fetch.mock.calls[0][1].body);
     expect(body.app_version).toBeTruthy();
     expect(typeof body.app_version).toBe('string');
   });
 
   it('6. payload includes page from window.location.pathname', function() {
     window.logError('test', '', 'test');
-    vi.advanceTimersByTime(1);
-    var body = JSON.parse(window.apiFetch.mock.calls[0][1].body);
+    var body = JSON.parse(window.fetch.mock.calls[0][1].body);
     expect(body.page).toBe(window.location.pathname);
   });
 
   it('7. payload includes action parameter passed to logError', function() {
     window.logError('test', '', 'my-custom-action');
-    vi.advanceTimersByTime(1);
-    var body = JSON.parse(window.apiFetch.mock.calls[0][1].body);
+    var body = JSON.parse(window.fetch.mock.calls[0][1].body);
     expect(body.action).toBe('my-custom-action');
   });
 
-  it('8. apiFetch failure inside logError does not throw', function() {
-    window.apiFetch = vi.fn(function() {
+  it('8. fetch failure inside logError does not throw', function() {
+    window.fetch = vi.fn(function() {
       return Promise.reject(new Error('network down'));
     });
     expect(function() {
       window.logError('test', '', 'test');
-      vi.advanceTimersByTime(1);
     }).not.toThrow();
   });
 

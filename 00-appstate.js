@@ -76,14 +76,18 @@ window.logError = function(message, stack, action) {
     action:        String(action || 'uncaught'),
     app_version:   _version
   };
-  setTimeout(function() {
-    if (window.apiFetch) {
-      window.apiFetch('/error_log', {
-        method: 'POST',
-        body: JSON.stringify(_payload)
-      }).catch(function(){});
-    }
-  }, 0);
+  var _url = 'https://vxokfscjzytpgdrmertk.supabase.co/rest/v1/error_log';
+  var _key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
+  fetch(_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': _key,
+      'Authorization': 'Bearer ' + _key,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(_payload)
+  }).catch(function(){});
   window._showErrorToast && window._showErrorToast();
 };
 
