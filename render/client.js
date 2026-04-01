@@ -664,6 +664,8 @@ console.log('LOADED:', 'render/client.js');
       (isPublished ? '' : _engagementBarHtml(post)) +
       /* comments */
       _commentsListHtml(post) +
+      /* comment input */
+      _commentInputHtml(post) +
     '</div>';
   }
 
@@ -1177,11 +1179,26 @@ console.log('LOADED:', 'render/client.js');
 
         case 'focusComment':
           var cInput = document.querySelector('#comment-input-' + id);
+          if (!cInput) {
+            var fcPost = (window.AppState.posts.all || []).find(function(p) {
+              return p.post_id === id || p.id === id;
+            });
+            if (fcPost) {
+              var fcHtml = _commentInputHtml(fcPost);
+              if (fcHtml) {
+                var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
+                  root.querySelector('[data-engagement="' + id + '"]') ||
+                  root.querySelector('[data-card-id="' + id + '"]');
+                if (fcAnchor) {
+                  fcAnchor.insertAdjacentHTML('afterend', fcHtml);
+                  cInput = document.querySelector('#comment-input-' + id);
+                }
+              }
+            }
+          }
           if (cInput) {
             cInput.focus();
             cInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            console.warn('[client] comment input not found for', id);
           }
           break;
 
