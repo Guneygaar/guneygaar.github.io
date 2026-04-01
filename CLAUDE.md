@@ -26,7 +26,8 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401s
+19 script tags + 1 stylesheet = 20 versioned resources total.
+Version format: ?v=YYYYMMDDx. Current: ?v=20260401s
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -162,9 +163,9 @@ Comment images: max 800px, quality 0.80, saves as .jpg
 
 ## SECTION 7 — DEPLOYMENT RULES (never skip any step)
 
-1. Bump ALL 19 ?v= strings in index.html together
+1. Bump ALL 20 ?v= strings in index.html together
    Format: ?v=YYYYMMDDx (e.g. ?v=20260401f)
-   Count: 19 total. Never change just one.
+   Count: 20 total (1 stylesheet + 19 scripts). Never change just one.
 1. After EVERY merge purge Cloudflare immediately:
    dash.cloudflare.com -> srtd.io -> Caching -> Purge Everything
 1. Hard refresh all devices BEFORE testing
@@ -190,7 +191,7 @@ E2E: npx playwright test
 Current (verified 2026-04-01):
 Unit test files: 13
 Unit tests:      297 passing, 0 failing
-E2E specs:       3
+E2E specs:       4
 
 Files:
 tests/appstate-compat.test.js
@@ -207,7 +208,7 @@ tests/role.test.js
 tests/timestamp.test.js
 tests/utils.test.js
 
-E2E: tests/e2e/client-feed.spec.js, pcs.spec.js, smoke.spec.js
+E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, pcs.spec.js, smoke.spec.js
 
 TEST FILE MAPPING (run targeted tests during development):
   render/client.js      → npx vitest run tests/client-comment.test.js
@@ -250,7 +251,7 @@ Pages branch:   main-/-root
 1. Never raw fetch() — always apiFetch()
 1. Never mutate AppState.posts.all — always setAll()
 1. Never reference /sorted/ — does not exist, files are at root
-1. All 19 ?v= strings must bump together — never just one file
+1. All 20 ?v= strings must bump together — never just one file
 1. 00-appstate.js + 00-appstate-compat.js have NO defer attribute
 1. Client comment input only renders for awaiting_approval
    and awaiting_brand_input — not all stages
@@ -316,7 +317,7 @@ window.toggleBatchMode, window.toggleBatchCard, window.updateBatchCount,
 window.executeBatchAction, window.renderPipeline, window.updatePipelineHeader,
 window.updatePipelineNarrative, window.filterFromNarrative,
 window._renderPipelineInner, window.copyChase, window.fallbackCopy,
-window.chaseAll
+window.chaseAll, window.pcsPipelineFilter
 
 render/brief.js:
 window._openBriefSheet, window._assignBriefToPranav,
@@ -324,6 +325,7 @@ window._closeBriefConfirm, window._closeBrief,
 window._reopenBrief, window._createPostFromBrief
 
 actions/pcs.js:
+window._pcsLbImages, window._pcsLbIdx,
 window.openPCS, window.closePCS, window.forcePCSReset,
 window._renderPCS, window._updateSubtitle, window._pcsTitleEdit,
 window.changeStage, window._showPublishSheet, window._removePublishSheet,
