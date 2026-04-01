@@ -146,5 +146,6 @@ async function logActivity({ post_id, actor, actor_role, action }) {
     });
   } catch (err) {
     console.warn('logActivity failed:', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'log-activity');
   }
 }

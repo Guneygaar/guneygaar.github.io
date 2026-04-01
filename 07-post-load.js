@@ -199,6 +199,7 @@ async function loadPosts() {
     showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'load-posts');
     if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
       window.AppState.posts.setAll(
@@ -249,7 +250,7 @@ async function loadPostsForClient() {
             });
           });
         }
-      } catch (_) { /* comments fetch failed - render without them */ }
+      } catch (e) { console.error('[post-load] client comments fetch failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'client-comments-fetch'); }
     }
 
     data = data.filter(function(p) {
@@ -310,6 +311,7 @@ function startRealtime() {
       }
     } catch (e) {
       console.warn('realtime poll failed:', e.message);
+      window.logError && window.logError(e && e.message, e && e.stack, 'realtime-poll');
     }
   }, 15000);
 
@@ -318,9 +320,14 @@ function startRealtime() {
   if (!window.AppState.timers.tokenRefresh) {
     window.AppState.timers.tokenRefresh = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
-      const newToken = await refreshSession();
-      if (!newToken) {
-        console.warn('Background token refresh failed  -  user may need to re-login');
+      try {
+        const newToken = await refreshSession();
+        if (!newToken) {
+          console.warn('Background token refresh failed  -  user may need to re-login');
+        }
+      } catch (e) {
+        console.error('[post-load] token refresh failed', e);
+        window.logError && window.logError(e && e.message, e && e.stack, 'token-refresh');
       }
     }, 50 * 60 * 1000); // 50 minutes
   }
@@ -337,7 +344,7 @@ async function loadTasks() {
   try {
     const data = await apiFetch('/tasks?order=created_at.desc&limit=50');
     allTasks = Array.isArray(data) ? data : [];
-  } catch { allTasks = []; }
+  } catch (e) { console.error('[post-load] loadTasks failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'load-tasks'); allTasks = []; }
   renderTaskBanner();
   renderAdminTaskPanel();
 }
@@ -358,7 +365,7 @@ async function assignTask() {
     document.getElementById('atask-assignee').value = '';
     showToast('Task assigned OK', 'success');
     await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); }
+  } catch (e) { console.error('[post-load] assignTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'assign-task'); showToast('Failed - try again', 'error'); }
 }
 
 async function markTaskDone(id) {
@@ -393,10 +400,12 @@ async function markTaskDone(id) {
         console.log('[Task\u2192Scoreboard] Synced');
       } catch (err) {
         console.error('[Task\u2192Scoreboard] Sync failed:', err);
+        window.logError && window.logError(err && err.message, err && err.stack, 'task-scoreboard-sync');
       }
     }, 600);
   } catch (err) {
     console.error('[Task] Failed:', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'mark-task-done');
     showToast('Failed - try again', 'error');
     // Rollback
     if (el) el.classList.remove('task-done');
@@ -497,7 +506,7 @@ async function deleteTask(id) {
   try {
     await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
     await loadTasks();
-  } catch { showToast('Failed - try again', 'error'); }
+  } catch (e) { console.error('[post-load] deleteTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'delete-task'); showToast('Failed - try again', 'error'); }
 }
 
 function renderAll() {
@@ -514,7 +523,7 @@ function renderAll() {
     return;
   }
   if (window.AppState.ui.modalOpen) return;
-  const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); } };
+  const run = (name, fn) => { try { fn(); } catch(e) { console.error('renderAll:' + name, e); window.logError && window.logError(e && e.message, e && e.stack, 'render-all-' + name); } };
 
   // Always render: lightweight stats & role visibility
   run('updateStats',        updateStats);
@@ -1154,6 +1163,7 @@ function renderScoreboard() {
 
   } catch (err) {
     console.error('[Scoreboard] Render error', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'render-scoreboard');
   }
 }
 
@@ -1322,7 +1332,7 @@ async function toggleDashTask(row, taskId) {
         method: 'PATCH',
         body: JSON.stringify({ done: cb.classList.contains('done') })
       });
-    } catch(e) { console.warn('Task toggle failed:', e); }
+    } catch(e) { console.error('[dashboard] task toggle failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'toggle-dash-task'); }
   }
 }
 
@@ -1625,7 +1635,7 @@ function _buildDoThisNowItems(role) {
 
 function renderDashboard() {
   if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') return;
-  try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); }
+  try { _renderDashboardInner(); } catch(e) { console.error('[PCS] renderDashboard crash:', e); window.logError && window.logError(e && e.message, e && e.stack, 'render-dashboard'); var _d = document.getElementById('dashboard-view'); if (_d) _d.innerHTML = '<div style="color:#FF4B4B;padding:24px;font-family:DM Sans,sans-serif">Something went wrong. Please refresh.</div>'; }
 }
 function _renderDashboardInner() {
   var el = document.getElementById('pcs-dashboard');
@@ -1769,7 +1779,8 @@ async function _updateStreakLines() {
       }
     }
   } catch (e) {
-    console.warn('Streak update failed:', e);
+    console.error('[dashboard] streak update failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'update-streak-lines');
   }
 }
 
@@ -2415,7 +2426,7 @@ function _renderFilteredTasks() {
 }
 
 function renderTasks() {
-  try { _renderTasksInner(); } catch(e) { console.error('[PCS] renderTasks crash:', e); }
+  try { _renderTasksInner(); } catch(e) { console.error('[PCS] renderTasks crash:', e); window.logError && window.logError(e && e.message, e && e.stack, 'render-tasks'); var _t = document.getElementById('tasks-container'); if (_t) _t.innerHTML = '<div style="color:#FF4B4B;padding:24px;font-family:DM Sans,sans-serif">Something went wrong. Please refresh.</div>'; }
 }
 function _renderTasksInner() {
   renderTaskStageChips();
