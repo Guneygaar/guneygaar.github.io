@@ -335,7 +335,9 @@ if (window._activeBriefPostId) {
              new Date((a.status_changed_at||a.updated_at||'')+'Z');
     });
     if (_sorted[0]) _newPostId = _sorted[0].post_id;
-  } catch(e) {}
+  } catch(e) {
+    console.warn('[post-create] sort for linked post failed', e);
+  }
 
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
     method: 'PATCH',
@@ -344,8 +346,9 @@ if (window._activeBriefPostId) {
       linked_post_id: _newPostId || null,
       updated_at: new Date().toISOString()
     })
-  }).catch(function() {
-    console.warn('Brief close failed -- close manually from brief sheet');
+  }).catch(function(err) {
+    console.warn('[post-create] brief close failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'brief-close-post-create');
   });
 }
 

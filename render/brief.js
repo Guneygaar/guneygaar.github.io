@@ -338,7 +338,9 @@ window._assignBriefToPranav = function(postId) {
     document.body.style.overflow = '';
     showToast('Assigned to Pranav', 'success');
     loadPosts();
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[brief] assign to Pranav failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief-pranav');
     showToast('Failed - try again', 'error');
   });
 }
@@ -402,7 +404,9 @@ window._closeBrief = function(postId) {
     document.body.style.overflow = '';
     showToast('Brief closed', 'success');
     loadPosts();
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[brief] close brief failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'close-brief');
     showToast('Failed - try again', 'error');
   });
 }
@@ -421,7 +425,9 @@ window._reopenBrief = function(postId) {
     document.body.style.overflow = '';
     showToast('Brief reopened', 'success');
     loadPosts();
-  }).catch(function() {
+  }).catch(function(err) {
+    console.error('[brief] reopen brief failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'reopen-brief');
     showToast('Failed - try again', 'error');
   });
 }
