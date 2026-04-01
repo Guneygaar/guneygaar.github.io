@@ -191,7 +191,7 @@ async function loadPosts() {
           p._commentCount = counts[p.post_id] || 0;
         });
         scheduleRender();
-      }).catch(function(){});
+      }).catch(function(err){ console.error('[07-post-load] activity-log', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'activity-log-post'); });
     showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);

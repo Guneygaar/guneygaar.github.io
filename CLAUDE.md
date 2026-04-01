@@ -26,7 +26,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401f
+19 script tags total. Version format: ?v=YYYYMMDDx. Current: ?v=20260401h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -188,8 +188,8 @@ Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
 
 Current (verified 2026-04-01):
-Unit test files: 12
-Unit tests:      269 passing, 0 failing
+Unit test files: 13
+Unit tests:      279 passing, 0 failing
 E2E specs:       3
 
 Files:
@@ -199,6 +199,7 @@ tests/client-comment.test.js
 tests/comments-separation.test.js
 tests/config.test.js
 tests/dom-sanity.test.js
+tests/error-handling.test.js
 tests/normalise.test.js
 tests/notifications.test.js
 tests/postlookup.test.js
@@ -251,10 +252,18 @@ Pages branch:   main-/-root
 1. AppState.ui.modalOpen guards render — do not bypass
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
-1. Silent .catch(function(){}) is a bug — always log errors
-1. Vitest must pass 269/269 before every push
+1. Silent .catch(function(){}) is a bug — always use window.logError
+1. Vitest must pass 279/279 before every push
 
 ## SECTION 11 — GLOBAL FUNCTIONS
+
+00-appstate.js:
+window.logError             — log error to Supabase error_log table
+window.onerror              — global error handler → logError
+window.onunhandledrejection — global promise rejection handler → logError
+
+10-ui.js:
+window._showErrorToast      — show transient error toast to user
 
 03-auth.js:
 window.sendMagicLink        — send OTP email to user
@@ -343,7 +352,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 Ph0 Safety            — DONE
 Ph1 File Architecture — DONE (render/ + actions/ extracted)
 Ph2 AppState          — DONE (all globals migrated)
-Ph3 Error Handling    — IN PROGRESS (error_log table created in Supabase)
+Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed)
 Ph4 Event Delegation  — PENDING
 Ph5 Optimistic UI     — IN PROGRESS (client comments done)
 Ph6 PWA               — PENDING

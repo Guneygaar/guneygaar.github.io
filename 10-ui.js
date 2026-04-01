@@ -17,6 +17,30 @@ function hideErrorBanner() {
   document.getElementById('error-banner')?.classList.add('hidden');
 }
 
+window._showErrorToast = function() {
+  if (document.getElementById('sorted-error-toast')) return;
+  var _t = document.createElement('div');
+  _t.id = 'sorted-error-toast';
+  _t.style.cssText = [
+    'position:fixed', 'bottom:80px', 'left:50%',
+    'transform:translateX(-50%)',
+    'background:#1a0a0a', 'border:1px solid #FF4B4B',
+    'color:#E8E8E8', 'font-family:DM Sans,sans-serif',
+    'font-size:13px', 'padding:10px 16px', 'z-index:99999',
+    'max-width:320px', 'width:90%', 'text-align:center',
+    'border-radius:0'
+  ].join(';');
+  _t.textContent = 'Something went wrong — our team has been notified.';
+  document.body.appendChild(_t);
+  setTimeout(function() {
+    _t.style.transition = 'opacity 0.4s';
+    _t.style.opacity = '0';
+    setTimeout(function() {
+      _t.parentNode && _t.parentNode.removeChild(_t);
+    }, 400);
+  }, 4000);
+};
+
 // -- Safe render --------------------------------
 function safeRender() {
   try { renderAll(); } catch (err) { console.error('renderAll error:', err); }
@@ -583,7 +607,7 @@ function updateNotifBadge() {
       el.textContent = countStr;
       el.style.display = show ? 'flex' : 'none';
     });
-  }).catch(function() {});
+  }).catch(function(err){ console.error('[10-ui] updateNotifBadge', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'update-notif-badge'); });
 }
 
 // -- PCS Activity toggle -----------------------

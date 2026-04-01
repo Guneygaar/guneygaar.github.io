@@ -628,6 +628,7 @@ window._saveLiUrlInline = function(postId) {
     loadPosts();
   }).catch(function(err) {
     console.error('LinkedIn save failed:', err);
+    window.logError && window.logError(err&&err.message, err&&err.stack, 'linkedin-save');
     showToast('Save failed - try again', 'error');
     if (btn) {
       btn.textContent = 'Save';
@@ -682,7 +683,7 @@ window.loadPcsComments = async function(postId) {
           method: 'PATCH',
           headers: {'Prefer': 'return=minimal'},
           body: JSON.stringify({ read: true })
-        }).catch(function(){});
+        }).catch(function(err){ console.error('[pcs] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'pcs-notification'); });
       });
     }
 
@@ -2015,7 +2016,7 @@ window._doSubmitComment = async function(opts) {
           message: opts.author + ' commented on ' + opts.title,
           actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
         })
-      }).catch(function(){});
+      }).catch(function(err){ console.error('[pcs] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'pcs-notification-2'); });
     });
 
     if (opts.mentioned && opts.mentioned.length > 0) {
@@ -2082,6 +2083,7 @@ window.toggleTaskResolve = function(commentId, postId) {
     loadPcsComments(postId);
   }).catch(function(e) {
     console.error('toggleTaskResolve failed:', e);
+    window.logError && window.logError(e&&e.message, e&&e.stack, 'toggle-task-resolve');
   });
 };
 

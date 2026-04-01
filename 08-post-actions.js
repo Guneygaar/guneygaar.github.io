@@ -306,7 +306,7 @@ async function submitClientRequest() {
         actor: window.AppState.user.name || window.currentUserName || 'Client',
         read: false
       })
-    }).catch(function(){});
+    }).catch(function(err){ console.error('[post-actions] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'notification-post'); });
     const topicEl = document.getElementById('req-topic');
     if (topicEl) topicEl.value = '';
     var nameResetEl = document.getElementById('req-name');
@@ -440,6 +440,7 @@ function _confirmPublish(postId) {
     loadPosts();
   }).catch(function(err) {
     console.error('Publish failed:', err);
+    window.logError && window.logError(err&&err.message, err&&err.stack, 'publish-post');
     showToast('Publish failed - try again', 'error');
     if (btn) { btn.textContent = 'Publish'; btn.disabled = false; }
   });
