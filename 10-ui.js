@@ -1330,9 +1330,7 @@ async function _nrsSubmit() {
       content_pillar: document.getElementById('nrs-pillar').value || null,
       format:        document.getElementById('nrs-format').value || null,
       target_date:   document.getElementById('nrs-date').value || null,
-      comments:      brief,
-      created_by:    actor,
-      updated_by:    actor,
+      client_feedback: brief,
       updated_at:    new Date().toISOString()
     };
     await apiFetch('/posts', { method: 'POST', body: JSON.stringify(body) });
