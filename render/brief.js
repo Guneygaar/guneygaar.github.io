@@ -313,16 +313,16 @@ window._openBriefSheet = function(postId) {
 window._assignBriefToPranav = function(postId) {
   var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  var updatedComments = (post ? (post.comments || '') : '');
+  var updatedFeedback = (post ? (post.client_feedback || '') : '');
   if (direction.trim()) {
-    updatedComments += '\n\n[CHITRA NOTE] ' + direction.trim();
+    updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
   }
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief',
       owner: 'Pranav',
-      comments: updatedComments,
+      client_feedback: updatedFeedback,
       status_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     })

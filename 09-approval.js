@@ -142,7 +142,7 @@ async function submitApproval(type, postId, btn) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'in_production', comments: text, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'in_production', client_feedback: text, updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
       const c = document.getElementById('approval-confirmation');

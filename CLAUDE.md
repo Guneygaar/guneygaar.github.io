@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -201,7 +201,7 @@ Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
 
-Current (verified 2026-04-01):
+Current (verified 2026-04-02):
 Unit test files: 13
 Unit tests:      297 passing, 0 failing
 E2E specs:       7
@@ -366,6 +366,10 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 
 ## SECTION 12 — CURRENT KNOWN BUGS
 
+1. Brief/request submission writing to non-existent 'comments' column
+   Location: 10-ui.js _nrsSubmit(), render/brief.js _assignBriefToPranav(),
+   09-approval.js changes_submit — all wrote 'comments' to posts table
+   Status: FIXED (PR#TBD) — changed to client_feedback in all 3 locations
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN
