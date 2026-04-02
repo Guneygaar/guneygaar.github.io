@@ -500,14 +500,6 @@ window._pcsDateChange = function(postId, dateValue) {
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
   return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #1a1a2a;">' +
-    ((canEdit || canEditCreative) ?
-      '<div style="display:flex;justify-content:flex-end;margin-bottom:4px;">' +
-      '<button onclick="window._pcsCaptionMenu(\'' + esc(id) + '\',event)" ' +
-      'id="pcs-caption-edit-btn" ' +
-      'style="color:#8E8E93;background:transparent;border:none;padding:8px 12px;cursor:pointer;' +
-      'font-family:\'IBM Plex Mono\',monospace;font-size:13px;height:36px;letter-spacing:0.2em;">...</button>' +
-      '</div>'
-      : '') +
     (post.caption ?
       '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
       'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
@@ -1570,6 +1562,9 @@ window._pcsRemovePhoto = async function(postId, idx) {
   }
 }
 
+// -- Edit mode state --
+window._pcsEditMode = false;
+
 window._pcsPhotoMenu = function(postId, e) {
   if (e) e.stopPropagation();
   if (window.AppState.pcs.activeMenu) {
@@ -1580,31 +1575,182 @@ window._pcsPhotoMenu = function(postId, e) {
   var btnEl = e ? e.currentTarget : null;
   var rect = btnEl ? btnEl.getBoundingClientRect() : { right: 40, bottom: 60 };
   var menu = document.createElement('div');
-  menu.id = 'pcs-photo-menu-drop';
-  menu.className = 'pcs-chip-drop';
+  menu.id = 'pcs-unified-menu';
+  menu.className = 'pcs-unified-drop';
   menu.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;right:' +
-    (window.innerWidth - rect.right) + 'px;z-index:9700;min-width:150px;';
+    (window.innerWidth - rect.right) + 'px;z-index:9700;';
+
   var post = (window.AppState.posts.all||[]).find(function(p) {
     return p.post_id === postId;
   });
   var imgs = (post && post.images) ? post.images : [];
-  var _menuRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  function _closeMenu() { if (window.AppState.pcs.activeMenu) { window.AppState.pcs.activeMenu.remove(); window.AppState.pcs.activeMenu = null; } }
+  var hasCaption = !!(post && post.caption);
+
   menu.innerHTML =
-    '<div class="pcs-chip-drop-item" onclick="window._pcsAddPhotos(\'' + postId + '\');' +
-      'if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-      '＋ Add More</div>' +
+    '<div class="pcs-udrop-label">PHOTOS</div>' +
+    '<div class="pcs-udrop-item" onclick="window._pcsAddPhotos(\'' + esc(postId) + '\');window._pcsCloseUnifiedMenu()">Add Photos</div>' +
     (imgs.length > 0
-      ? '<div class="pcs-chip-drop-item" onclick="window._pcsSaveAllPhotos(\'' + postId + '\');' +
-          'if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-          '↓ Save All</div>'
+      ? '<div class="pcs-udrop-item" onclick="window._pcsCloseUnifiedMenu();window._pcsEnterEditMode(\'' + esc(postId) + '\')">Edit Photos</div>'
       : '') +
-    (_menuRole === 'admin'
-      ? '<div class="pcs-chip-drop-item" style="color:#FF4B4B;" onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window.pcsConfirmDelete();">' +
-        '🗑 Delete Post</div>'
+    (imgs.length > 0
+      ? '<div class="pcs-udrop-item" onclick="window._pcsSaveAllPhotos(\'' + esc(postId) + '\');window._pcsCloseUnifiedMenu()">Save Photos</div>'
+      : '') +
+    '<div class="pcs-udrop-label" style="margin-top:4px">CAPTION</div>' +
+    '<div class="pcs-udrop-item" onclick="window._pcsCopyCaption(\'' + esc(postId) + '\');window._pcsCloseUnifiedMenu()">Copy Caption</div>' +
+    '<div class="pcs-udrop-item" onclick="window._pcsCloseUnifiedMenu();window._startCaptionEdit(\'' + esc(postId) + '\')">Edit Caption</div>' +
+    (hasCaption
+      ? '<div class="pcs-udrop-item" onclick="window._pcsCloseUnifiedMenu();window._pcsConfirmClearCaption(\'' + esc(postId) + '\')">Clear Caption</div>'
       : '');
+
   document.body.appendChild(menu);
   window.AppState.pcs.activeMenu = menu;
+};
+
+window._pcsCloseUnifiedMenu = function() {
+  if (window.AppState.pcs.activeMenu) {
+    window.AppState.pcs.activeMenu.remove();
+    window.AppState.pcs.activeMenu = null;
+  }
+};
+
+// -- Edit mode (Step C) --
+window._pcsEnterEditMode = function(postId) {
+  window._pcsEditMode = true;
+  var menuBtn = document.getElementById('pcs-photo-menu-btn');
+  if (menuBtn) menuBtn.style.display = 'none';
+  var doneBtn = document.getElementById('pcs-edit-done-btn');
+  if (!doneBtn) {
+    doneBtn = document.createElement('button');
+    doneBtn.id = 'pcs-edit-done-btn';
+    doneBtn.className = 'pcs-edit-done';
+    doneBtn.textContent = 'DONE';
+    doneBtn.onclick = function() { window._pcsExitEditMode(postId); };
+    var header = document.getElementById('pcs-photo-header-row');
+    if (header) header.appendChild(doneBtn);
+  } else {
+    doneBtn.style.display = '';
+  }
+  // Add X overlays to photos
+  var wrap = document.getElementById('pcs-photo-grid-wrap');
+  if (!wrap) return;
+  var cells = wrap.querySelectorAll('.pcs-pcell, .pcs-pg-1');
+  cells.forEach(function(cell, idx) {
+    if (cell.querySelector('.pcs-edit-x')) return;
+    var xBtn = document.createElement('button');
+    xBtn.className = 'pcs-edit-x';
+    xBtn.innerHTML = '&#x2715;';
+    xBtn.onclick = function(ev) {
+      ev.stopPropagation();
+      window._pcsConfirmRemovePhoto(postId, idx);
+    };
+    cell.style.position = 'relative';
+    cell.appendChild(xBtn);
+  });
+};
+
+window._pcsExitEditMode = function(postId) {
+  window._pcsEditMode = false;
+  var menuBtn = document.getElementById('pcs-photo-menu-btn');
+  if (menuBtn) menuBtn.style.display = '';
+  var doneBtn = document.getElementById('pcs-edit-done-btn');
+  if (doneBtn) doneBtn.remove();
+  var wrap = document.getElementById('pcs-photo-grid-wrap');
+  if (wrap) {
+    wrap.querySelectorAll('.pcs-edit-x').forEach(function(x) { x.remove(); });
+  }
+};
+
+// -- Confirm remove photo (Step D) --
+window._pcsConfirmRemovePhoto = function(postId, idx) {
+  _removePcsConfirm();
+  var overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+  overlay.innerHTML =
+    '<div class="pcs-bottom-confirm">' +
+    '<div class="pcs-bc-title">Remove this photo?</div>' +
+    '<div class="pcs-bc-sub">This action cannot be undone.</div>' +
+    '<div class="pcs-bc-btns">' +
+    '<button class="pcs-bc-cancel" onclick="this.closest(\'.pcs-confirm-overlay\').remove()">Cancel</button>' +
+    '<button class="pcs-bc-action" onclick="window._pcsDoRemovePhotoEdit(\'' + esc(postId) + '\',' + idx + ')">Remove</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
+};
+
+window._pcsDoRemovePhotoEdit = async function(postId, idx) {
+  _removePcsConfirm();
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) return;
+  var imgs = Array.isArray(post.images) ? post.images.slice() : [];
+  imgs.splice(idx, 1);
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ images: imgs })
+    });
+    var _next = window.AppState.posts.all.map(function(p) {
+      if (getPostId(p) === postId) {
+        return Object.assign({}, p, { images: imgs });
+      }
+      return p;
+    });
+    window.AppState.posts.setAll(_next);
+    // Re-render and re-enter edit mode if photos remain
+    if (typeof openPCS === 'function') openPCS(postId, '');
+    if (imgs.length > 0) {
+      setTimeout(function() { window._pcsEnterEditMode(postId); }, 50);
+    }
+  } catch(e) {
+    console.error('[pcs] edit-mode remove photo failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'pcs-edit-remove-photo');
+    showToast && showToast('Failed to remove photo', 'error');
+  }
+};
+
+// -- Confirm clear caption (Step D) --
+window._pcsConfirmClearCaption = function(postId) {
+  _removePcsConfirm();
+  var overlay = document.createElement('div');
+  overlay.className = 'pcs-confirm-overlay';
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+  overlay.innerHTML =
+    '<div class="pcs-bottom-confirm">' +
+    '<div class="pcs-bc-title">Clear caption?</div>' +
+    '<div class="pcs-bc-sub">This cannot be undone.</div>' +
+    '<div class="pcs-bc-btns">' +
+    '<button class="pcs-bc-cancel" onclick="this.closest(\'.pcs-confirm-overlay\').remove()">Cancel</button>' +
+    '<button class="pcs-bc-action" onclick="window._pcsDoClearing(\'' + esc(postId) + '\')">Clear</button>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  setTimeout(function() { overlay.classList.add('open'); }, 10);
+};
+
+window._pcsDoClearing = async function(postId) {
+  _removePcsConfirm();
+  try {
+    await apiFetch('/posts?post_id=eq.' + postId, {
+      method: 'PATCH',
+      body: JSON.stringify({ caption: '' })
+    });
+    var _next = window.AppState.posts.all.map(function(p) {
+      if (getPostId(p) === postId) {
+        return Object.assign({}, p, { caption: '' });
+      }
+      return p;
+    });
+    window.AppState.posts.setAll(_next);
+    showToast && showToast('Caption cleared', 'success');
+    if (typeof openPCS === 'function') openPCS(postId, '');
+  } catch(e) {
+    console.error('[pcs] clear caption failed', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'pcs-clear-caption');
+    showToast && showToast('Failed to clear caption', 'error');
+  }
 };
 
 window._pcsSaveAllPhotos = async function(postId) {
