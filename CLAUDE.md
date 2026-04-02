@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402f
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402g
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -377,11 +377,21 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. No back button when PCS opens from dashboard bottom sheet
    Location: actions/pcs.js, render/dashboard.js openPostOverSheet()
    Status: FIXED (PR#TBD) — added AppState.pcs.openedFrom, back arrow in PCS topbar
+1. Notifications: loadNotifications case mismatch — panel always empty
+   Location: 10-ui.js loadNotifications(), setNotifFilter(), markAllNotificationsRead()
+   queried with lowercase role but data stored Title Case (PostgREST case-sensitive)
+   Status: FIXED (PR#TBD) — title-case role in all 3 functions
+1. Notifications: missing actor + read:false on client feed comment inserts
+   Location: render/client.js lines 1000-1017 (Servicing + Admin notifs),
+   line 1028 (mention notif used email instead of name)
+   Status: FIXED (PR#TBD) — added actor: name + read:false to all 3
+1. Notifications: missing read:false on PCS + pipeline notification inserts
+   Location: actions/pcs.js _doSubmitComment (comment + mention notifs),
+   render/pipeline.js executeBatchAction (batch stage notif — also missing actor)
+   Status: FIXED (PR#TBD) — added read:false to all, actor to pipeline batch
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN
-1. Notifications firing inconsistently
-   Status: OPEN — partially fixed, needs full audit
 1. Role preview (admin to Chitra/Pranav/Client) not showing
    correct view in all cases
    Status: OPEN
