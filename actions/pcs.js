@@ -289,7 +289,6 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   function _cell(idx, heroClass, overlayHtml) {
     return '<div class="pcs-pcell' + (heroClass ? ' hero' : '') + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')">' +
       '<img src="' + esc(imgs[idx]) + '" onerror="this.style.display=\'none\'">' +
-      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',' + idx + ')">&#x2715;</button>' : '') +
       (overlayHtml || '') +
       '</div>';
   }
@@ -299,7 +298,7 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   if (count === 0) {
     if (canManage) {
       gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
-        '<div style="font-size:22px;color:rgba(246,166,35,.3)">+</div>' +
+        '<div style="font-size:22px;color:#C8A84B">+</div>' +
         '<div style="font-family:\'Courier New\',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#F6A623">Upload Photos</div>' +
         '<div style="font-family:\'Courier New\',monospace;font-size:7px;color:#333;letter-spacing:.06em">JPG / PNG</div>' +
         '</div>';
@@ -307,7 +306,6 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   } else if (count === 1) {
     gridHtml = '<div class="pcs-pg-1">' +
       '<img src="' + esc(imgs[0]) + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)" onerror="this.style.display=\'none\'">' +
-      (isAdmin ? '<button class="pcs-photo-x" onclick="event.stopPropagation();window._pcsRemovePhoto(\'' + esc(id) + '\',0)">&#x2715;</button>' : '') +
       '</div>';
   } else if (count === 2) {
     gridHtml = '<div class="pcs-pg-2">' + _cell(0) + _cell(1) + '</div>';
