@@ -6398,13 +6398,13 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* Photo grids */
 .pcs-pg-1 { width:100%; height:312px; overflow:hidden; cursor:pointer; position:relative; }
-.pcs-pg-1 img { width:100%; height:100%; object-fit:cover; display:block; }
+.pcs-pg-1 img { width:100%; height:100%; object-fit:contain; display:block; background:#080808; }
 .pcs-pg-2 { display:grid; grid-template-columns:1fr 1fr; gap:2px; height:272px; }
 .pcs-pg-3, .pcs-pg-5 { display:grid; grid-template-columns:62% 38%; grid-template-rows:1fr 1fr; gap:2px; height:272px; }
 .pcs-pg-4 { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; height:292px; }
-.pcs-pcell { position:relative; overflow:hidden; cursor:pointer; background:#111; flex-shrink:0; }
+.pcs-pcell { position:relative; overflow:hidden; cursor:pointer; background:#080808; flex-shrink:0; }
 .pcs-pcell.hero { grid-row:span 2; }
-.pcs-pcell img { width:100%; height:100%; object-fit:cover; display:block; }
+.pcs-pcell img { width:100%; height:100%; object-fit:contain; display:block; background:#080808; }
 .pcs-photo-x {
   position:absolute; top:6px; left:6px;
   width:22px; height:22px; border-radius:50%;
