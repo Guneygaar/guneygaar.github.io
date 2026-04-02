@@ -39,7 +39,8 @@ window.AppState = window.AppState || {
       images: [],
       index: 0
     },
-    activeMenu: null
+    activeMenu: null,
+    openedFrom: null
   },
 
   ui: {
