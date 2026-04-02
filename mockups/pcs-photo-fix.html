@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCS Photo Fix Mockup — Sorted</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #E8E8E8; font-family: 'DM Sans', sans-serif; max-width: 420px; margin: 0 auto; }
+
+  .mockup-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #C8A84B; letter-spacing: .2em; text-transform: uppercase;
+    padding: 28px 16px 12px; border-bottom: 1px solid #1a1a1a;
+  }
+
+  .scene { padding: 0; }
+
+  /* Photo header */
+  .photo-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 16px 3px; margin-top: 8px;
+  }
+  .photo-label {
+    font-family: 'Courier New', monospace; font-size: 8px;
+    color: #52525c; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .photo-menu-btn {
+    background: none; border: none; color: #52525c;
+    font-size: 14px; letter-spacing: .15em; cursor: pointer; padding: 2px 6px;
+  }
+
+  /* Photo grid — 1 large + 2 small (pcs-pg-3 layout) */
+  .photo-grid-3 {
+    display: grid; grid-template-columns: 62% 38%;
+    grid-template-rows: 1fr 1fr; gap: 2px;
+    height: 272px; margin-top: 4px;
+  }
+  .pcell { position: relative; overflow: hidden; cursor: pointer; background: #080808; }
+  .pcell.hero { grid-row: span 2; }
+  .pcell img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; background: #080808; }
+
+  /* Edit mode DONE button */
+  .pcs-edit-done {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: #3ECF8E; background: none; border: none;
+    letter-spacing: .1em; cursor: pointer; padding: 2px 6px;
+  }
+
+  /* Edit mode X overlay */
+  .pcs-edit-x {
+    position: absolute; top: 8px; left: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #000000; border: 1.5px solid #FF4B4B;
+    color: #FF4B4B; font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 6; line-height: 1;
+  }
+
+  .sep { height: 1px; background: #1a1a1a; margin-top: 16px; }
+
+  .note {
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    color: #333; letter-spacing: .06em; padding: 12px 16px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SCENE 1: View Mode — No X buttons visible ===== -->
+<div class="mockup-label">Scene 1 — View Mode (no X buttons, object-fit: cover)</div>
+<div class="scene">
+  <div class="photo-header">
+    <span class="photo-label">PHOTOS · 3</span>
+    <button class="photo-menu-btn">···</button>
+  </div>
+  <div class="photo-grid-3">
+    <div class="pcell hero">
+      <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&h=400&fit=crop" alt="Photo 1">
+    </div>
+    <div class="pcell">
+      <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300&h=200&fit=crop" alt="Photo 2">
+    </div>
+    <div class="pcell">
+      <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=300&h=200&fit=crop" alt="Photo 3">
+    </div>
+  </div>
+  <div class="note">No X buttons visible. Photos fill cells edge-to-edge with object-fit: cover. No black bars.</div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ===== SCENE 2: Edit Mode — X overlays on each photo ===== -->
+<div class="mockup-label">Scene 2 — Edit Mode (DONE button, X on each photo)</div>
+<div class="scene">
+  <div class="photo-header">
+    <span class="photo-label">PHOTOS · 3</span>
+    <button class="pcs-edit-done">DONE</button>
+  </div>
+  <div class="photo-grid-3">
+    <div class="pcell hero">
+      <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&h=400&fit=crop" alt="Photo 1">
+      <button class="pcs-edit-x">&#x2715;</button>
+    </div>
+    <div class="pcell">
+      <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300&h=200&fit=crop" alt="Photo 2">
+      <button class="pcs-edit-x">&#x2715;</button>
+    </div>
+    <div class="pcell">
+      <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=300&h=200&fit=crop" alt="Photo 3">
+      <button class="pcs-edit-x">&#x2715;</button>
+    </div>
+  </div>
+  <div class="note">DONE replaces ···. Red X overlays on each photo. Tapping X shows confirm dialog before removing.</div>
+</div>
+
+<div style="padding:40px 16px;text-align:center">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#333;letter-spacing:.12em;text-transform:uppercase">
+    End of mockup — Photo fix PR
+  </div>
+</div>
+
+</body>
+</html>

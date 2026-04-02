@@ -22,12 +22,12 @@ Team:
 Repo: github.com/Guneygaar/guneygaar.github.io
 Branch: main-/-root. Deployed at srtd.io.
 ALL files at REPO ROOT. No /sorted/ subdirectory. Never reference /sorted/.
-Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ preview/
+Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ preview/ mockups/
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -160,6 +160,10 @@ Theme: dark default (data-theme=“dark”)
 Image compression:
 Post images:    max 1200px, quality 0.82, saves as .jpg
 Comment images: max 800px, quality 0.80, saves as .jpg
+
+Photo grid: object-fit:cover + object-position:center center
+(fills cells edge-to-edge, no black bars — LinkedIn collage style)
+Old .pcs-photo-x removed — use edit mode .pcs-edit-x only
 
 ## SECTION 7 — DEPLOYMENT RULES (never skip any step)
 
