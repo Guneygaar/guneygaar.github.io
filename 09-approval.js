@@ -145,6 +145,7 @@ async function submitApproval(type, postId, btn) {
         body: JSON.stringify({ stage: 'in_production', client_feedback: text, updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
+      if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, postId, 'in_production', ['Pranav'], 'Client');
       const c = document.getElementById('approval-confirmation');
       if (c) { c.style.display = ''; c.textContent = 'Changes sent  -  the team will review it.'; }
       document.querySelector('.approval-actions')?.remove();
@@ -161,6 +162,7 @@ async function submitApproval(type, postId, btn) {
         body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
       });
       await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+      if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, esc(title), 'scheduled', ['Admin', 'Chitra', 'Pranav'], 'Client');
       const c = document.getElementById('approval-confirmation');
       if (c) { c.style.display = ''; c.textContent = 'ok Approved! The team has been notified.'; }
       document.querySelector('.approval-actions')?.remove();

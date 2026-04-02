@@ -624,17 +624,25 @@ window.executeBatchAction = async function(targetStage) {
     var count = ids.length;
     var stageLabel = targetStage === 'awaiting_approval'
       ? 'for approval' : 'for brand input';
-
-    await apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Admin',
-        post_id: null,
-        type: targetStage,
-        message: notifActor + ' sent ' + count + ' posts ' + stageLabel,
-        actor: notifActor,
-        read: false
-      })
+    var batchMsg = notifActor + ' sent ' + count + ' posts ' + stageLabel;
+    var batchRecipients = targetStage === 'awaiting_approval'
+      ? ['Client'] : ['Client'];
+    batchRecipients.forEach(function(name) {
+      var roleMap = { 'Admin': 'Admin', 'Chitra': 'Servicing', 'Pranav': 'Creative', 'Client': 'Client' };
+      apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: roleMap[name] || name,
+          post_id: null,
+          type: targetStage,
+          message: batchMsg,
+          actor: notifActor,
+          read: false
+        })
+      }).catch(function(err) {
+        console.error('[batch-notif]', err);
+        window.logError && window.logError(err && err.message, err && err.stack, 'batch-stage-notif');
+      });
     });
 
     toggleBatchMode();
