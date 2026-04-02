@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCS Overlay Mockup — Sorted</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #E8E8E8; font-family: 'DM Sans', sans-serif; }
+
+  .mockup-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #C8A84B; letter-spacing: .2em; text-transform: uppercase;
+    padding: 32px 16px 12px; border-bottom: 1px solid #1a1a1a;
+  }
+  .mockup-label:first-child { padding-top: 20px; }
+
+  /* ===== SCENE 1: Unified ··· Dropdown ===== */
+  .scene { position: relative; padding: 16px; min-height: 200px; }
+
+  .photo-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 0 3px; margin-top: 8px;
+  }
+  .photo-label {
+    font-family: 'Courier New', monospace; font-size: 8px;
+    color: #52525c; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .photo-menu-btn {
+    background: none; border: none; color: #52525c;
+    font-size: 14px; letter-spacing: .15em; cursor: pointer;
+    padding: 2px 6px;
+  }
+
+  /* Photo grid mockup */
+  .photo-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+    height: 160px; margin-top: 4px;
+  }
+  .photo-cell {
+    background: #12121a; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    color: #2a2a2a; font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  }
+
+  /* Unified dropdown */
+  .pcs-unified-drop {
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    position: absolute; right: 16px; top: 50px; z-index: 10;
+  }
+  .pcs-udrop-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #555; text-transform: uppercase; letter-spacing: .1em;
+    padding: 10px 16px 4px;
+  }
+  .pcs-udrop-item {
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: #E8E8E8; padding: 11px 16px; cursor: pointer;
+    border-bottom: 1px solid #222;
+  }
+  .pcs-udrop-item:last-child { border-bottom: none; }
+  .pcs-udrop-item:hover { background: rgba(255,255,255,.04); }
+
+  /* ===== SCENE 2: Edit Mode ===== */
+  .pcs-edit-done {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    color: #3ECF8E; background: none; border: none;
+    letter-spacing: .1em; cursor: pointer; padding: 2px 6px;
+  }
+  .pcs-edit-x {
+    position: absolute; top: 8px; left: 8px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #000000; border: 1.5px solid #FF4B4B;
+    color: #FF4B4B; font-size: 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 6; line-height: 1;
+  }
+
+  /* ===== SCENE 3: Confirm Dialog ===== */
+  .confirm-scene {
+    position: relative; min-height: 240px;
+    background: rgba(0,0,0,0.6);
+  }
+  .pcs-bottom-confirm {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #1a1a1a; border-top: 1px solid #2a2a2a;
+    padding: 24px 16px 40px;
+  }
+  .pcs-bc-title {
+    font-family: 'DM Sans', sans-serif; font-size: 16px;
+    font-weight: 700; color: #E8E8E8; margin-bottom: 6px;
+  }
+  .pcs-bc-sub {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: #8E8E93; margin-bottom: 20px;
+  }
+  .pcs-bc-btns { display: flex; gap: 10px; }
+  .pcs-bc-cancel, .pcs-bc-action {
+    flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 13px; border: none; cursor: pointer; text-align: center;
+    border-radius: 0;
+  }
+  .pcs-bc-cancel { background: #2a2a2a; color: #E8E8E8; }
+  .pcs-bc-action { background: #FF4B4B; color: #E8E8E8; }
+
+  /* Caption section mockup */
+  .caption-section {
+    padding: 12px 14px 8px; border-bottom: 1px solid #1a1a2a;
+  }
+  .caption-text {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: #888; line-height: 1.6; white-space: pre-wrap;
+  }
+  .see-more {
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: #F6A623; background: transparent; border: none;
+    cursor: pointer; padding: 6px 0 0 0;
+  }
+
+  /* Separator */
+  .sep { height: 1px; background: #1a1a1a; }
+</style>
+</head>
+<body>
+
+<!-- ==================== SCENE 1: Unified ··· Dropdown ==================== -->
+<div class="mockup-label">Scene 1 — Unified ··· Dropdown (open state)</div>
+<div class="scene">
+  <div class="photo-header">
+    <span class="photo-label">PHOTOS · 4</span>
+    <button class="photo-menu-btn">···</button>
+  </div>
+
+  <!-- Dropdown shown open -->
+  <div class="pcs-unified-drop">
+    <div class="pcs-udrop-label">PHOTOS</div>
+    <div class="pcs-udrop-item">Add Photos</div>
+    <div class="pcs-udrop-item">Edit Photos</div>
+    <div class="pcs-udrop-item">Save Photos</div>
+    <div class="pcs-udrop-label" style="margin-top:4px">CAPTION</div>
+    <div class="pcs-udrop-item">Copy Caption</div>
+    <div class="pcs-udrop-item">Edit Caption</div>
+    <div class="pcs-udrop-item">Clear Caption</div>
+  </div>
+
+  <div class="photo-grid">
+    <div class="photo-cell">IMG 1</div>
+    <div class="photo-cell">IMG 2</div>
+    <div class="photo-cell">IMG 3</div>
+    <div class="photo-cell">IMG 4</div>
+  </div>
+
+  <div class="caption-section">
+    <div class="caption-text">Diwali vibes at Sakarwadi — when the factory floor becomes a festival ground. This is what heritage looks like in action.</div>
+    <button class="see-more">See More</button>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ==================== SCENE 2: Edit Mode ==================== -->
+<div class="mockup-label">Scene 2 — Edit Mode (··· replaced by DONE, ✕ on each photo)</div>
+<div class="scene">
+  <div class="photo-header">
+    <span class="photo-label">PHOTOS · 4</span>
+    <button class="pcs-edit-done">DONE</button>
+  </div>
+
+  <div class="photo-grid">
+    <div class="photo-cell">
+      <button class="pcs-edit-x">✕</button>
+      IMG 1
+    </div>
+    <div class="photo-cell">
+      <button class="pcs-edit-x">✕</button>
+      IMG 2
+    </div>
+    <div class="photo-cell">
+      <button class="pcs-edit-x">✕</button>
+      IMG 3
+    </div>
+    <div class="photo-cell">
+      <button class="pcs-edit-x">✕</button>
+      IMG 4
+    </div>
+  </div>
+
+  <div class="caption-section">
+    <div class="caption-text">Diwali vibes at Sakarwadi — when the factory floor becomes a festival ground. This is what heritage looks like in action.</div>
+    <button class="see-more">See More</button>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ==================== SCENE 3: Remove Photo Confirm ==================== -->
+<div class="mockup-label">Scene 3 — Confirm Dialog: Remove Photo</div>
+<div class="confirm-scene">
+  <div class="pcs-bottom-confirm">
+    <div class="pcs-bc-title">Remove this photo?</div>
+    <div class="pcs-bc-sub">This action cannot be undone.</div>
+    <div class="pcs-bc-btns">
+      <button class="pcs-bc-cancel">Cancel</button>
+      <button class="pcs-bc-action">Remove</button>
+    </div>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ==================== SCENE 4: Clear Caption Confirm ==================== -->
+<div class="mockup-label">Scene 4 — Confirm Dialog: Clear Caption</div>
+<div class="confirm-scene">
+  <div class="pcs-bottom-confirm">
+    <div class="pcs-bc-title">Clear caption?</div>
+    <div class="pcs-bc-sub">This cannot be undone.</div>
+    <div class="pcs-bc-btns">
+      <button class="pcs-bc-cancel">Cancel</button>
+      <button class="pcs-bc-action">Clear</button>
+    </div>
+  </div>
+</div>
+
+<div style="padding:40px 16px;text-align:center">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#333;letter-spacing:.12em;text-transform:uppercase">
+    End of mockup — PR #630
+  </div>
+</div>
+
+</body>
+</html>

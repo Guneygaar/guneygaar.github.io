@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-01
+# Last updated: 2026-04-02
 
 # All facts verified from actual codebase
 
@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -337,6 +337,9 @@ window._buildInfoGrid, window._buildNotes, window._renderAdvanceButton,
 window._renderActivityCount, window._removePcsConfirm, window.pcsConfirmDelete,
 window.pcsDoDelete, window._pcsAddPhotos, window._pcsHandlePhotoInput,
 window._pcsRemovePhoto, window._pcsPhotoMenu, window._pcsSaveAllPhotos,
+window._pcsCloseUnifiedMenu, window._pcsEnterEditMode, window._pcsExitEditMode,
+window._pcsConfirmRemovePhoto, window._pcsDoRemovePhotoEdit,
+window._pcsConfirmClearCaption, window._pcsDoClearing,
 window._pcsCaptionMenu, window._pcsCopyCaption, window._pcsConfirmReplace,
 window._pcsDoReplace, window._pcsOpenLightbox, window._pcsLbRender,
 window._pcsLbNext, window._pcsLbPrev, window._pcsLbClose,
