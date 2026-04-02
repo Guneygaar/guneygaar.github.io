@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCS Full Page Mockup — Sorted</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #E8E8E8; font-family: 'DM Sans', sans-serif; }
+
+  /* Full page PCS container */
+  .pcs-fullpage {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    background: #080808;
+    overflow-y: auto;
+  }
+
+  /* Topbar */
+  .pc-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px 0; flex-shrink: 0;
+  }
+  .pc-icon-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #2a2a2a; background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: #8E8E93;
+  }
+  .stage-pill {
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: #F6A623; border: 1px solid #F6A623;
+    padding: 4px 10px;
+  }
+
+  /* Photo header — 0px gap to grid */
+  .photo-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 4px 16px 0; margin-top: 8px; margin-bottom: 0;
+  }
+  .photo-label {
+    font-family: 'Courier New', monospace; font-size: 8px;
+    color: #52525c; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .photo-menu-btn {
+    background: none; border: none; color: #52525c;
+    font-size: 14px; letter-spacing: .15em; cursor: pointer; padding: 2px 6px;
+  }
+
+  /* Photo grid — flush with header, 0px gap */
+  .photo-grid-wrap { margin-top: 0; padding-top: 0; }
+  .photo-grid-3 {
+    display: grid; grid-template-columns: 62% 38%;
+    grid-template-rows: 1fr 1fr; gap: 2px; height: 272px;
+  }
+  .pcell { position: relative; overflow: hidden; cursor: pointer; background: #080808; }
+  .pcell.hero { grid-row: span 2; }
+  .pcell img { width: 100%; height: 100%; object-fit: cover; object-position: center center; display: block; }
+
+  /* +N more overlay — semi-transparent (approved rgba exception) */
+  .more-ov {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.62);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 3px;
+  }
+  .more-n { font-size: 26px; font-weight: 300; color: #fff; line-height: 1; }
+  .more-l {
+    font-family: 'Courier New', monospace; font-size: 7px;
+    color: rgba(255,255,255,0.6); letter-spacing: .08em; text-transform: uppercase;
+  }
+
+  /* Title */
+  .pcs-title {
+    font-size: 24px; font-weight: 700; letter-spacing: -0.03em;
+    line-height: 1.1; color: #FFFFFF; padding: 9px 16px 6px;
+  }
+
+  /* Chips row */
+  .chips-row {
+    display: flex; gap: 5px; padding: 6px 16px 8px;
+    overflow-x: auto; flex-wrap: nowrap;
+    border-bottom: 1px solid #0f0f16;
+  }
+  .chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 12px; flex-shrink: 0; white-space: nowrap;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    background: linear-gradient(180deg,#1c1c28 0%,#10101a 100%);
+    border-top: 1px solid #28283a; border-right: 1px solid #16162a;
+    border-bottom: 1px solid #0c0c18; border-left: 1px solid #28283a;
+    color: #AEAEB2;
+  }
+  .chip--cyan { color: #22D3EE; }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex; border-bottom: 1px solid #0f0f16; flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; padding: 11px 8px;
+    font-family: 'Courier New', monospace; font-size: 8px;
+    letter-spacing: .07em; text-transform: uppercase;
+    background: none; border: none; cursor: pointer;
+    color: #6e6e80; text-align: center;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.active { color: #F0F0F2; border-bottom-color: #F0F0F2; }
+
+  /* Caption */
+  .caption-section {
+    padding: 12px 14px 8px; border-bottom: 1px solid #1a1a2a;
+  }
+  .caption-text {
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: #888; line-height: 1.6; white-space: pre-wrap;
+  }
+  .see-more {
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: #F6A623; background: transparent; border: none;
+    cursor: pointer; padding: 6px 0 0 0;
+  }
+
+  /* Annotation labels */
+  .mockup-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #C8A84B; letter-spacing: .2em; text-transform: uppercase;
+    padding: 28px 16px 12px; border-bottom: 1px solid #1a1a1a;
+  }
+  .note {
+    font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+    color: #333; letter-spacing: .06em; padding: 12px 16px;
+  }
+  .sep { height: 1px; background: #1a1a1a; margin-top: 16px; }
+
+  .arrow-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 7px;
+    color: #3ECF8E; letter-spacing: .08em; text-transform: uppercase;
+    padding: 4px 16px; background: rgba(62,207,142,0.05);
+    border-left: 2px solid #3ECF8E;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-label">Full Page PCS — slides in from right, 100% width, 100% height</div>
+
+<div class="pcs-fullpage">
+
+  <!-- Topbar -->
+  <div class="pc-topbar">
+    <div class="pc-icon-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="stage-pill">In Production</span>
+    </div>
+  </div>
+
+  <div class="arrow-label">&#x2193; 0px gap between label and photos</div>
+
+  <!-- Photo header + grid (0px gap) -->
+  <div class="photo-header">
+    <span class="photo-label">PHOTOS · 5</span>
+    <button class="photo-menu-btn">···</button>
+  </div>
+  <div class="photo-grid-wrap">
+    <div class="photo-grid-3">
+      <div class="pcell hero">
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&h=400&fit=crop" alt="Photo 1">
+      </div>
+      <div class="pcell">
+        <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300&h=200&fit=crop" alt="Photo 2">
+      </div>
+      <div class="pcell">
+        <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=300&h=200&fit=crop" alt="Photo 3">
+        <div class="more-ov">
+          <div class="more-n">+2</div>
+          <div class="more-l">more</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="pcs-title">Diwali at Sakarwadi Factory</div>
+
+  <!-- Chips -->
+  <div class="chips-row">
+    <button class="chip chip--cyan">Chitra &#9662;</button>
+    <button class="chip">Mon, 7 Apr 2025 &#9662;</button>
+    <button class="chip">Carousel &#9662;</button>
+    <button class="chip">Culture &#9662;</button>
+    <button class="chip">Sakarwadi &#9662;</button>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab active">Caption</button>
+    <button class="tab">Client</button>
+    <button class="tab">Internal</button>
+  </div>
+
+  <!-- Caption -->
+  <div class="caption-section">
+    <div class="caption-text">Diwali vibes at Sakarwadi — when the factory floor becomes a festival ground. This is what heritage looks like in action.
+
+From rangoli at the entrance to diyas lining the production hall, every corner tells a story of tradition meeting industry.</div>
+    <button class="see-more">See More</button>
+  </div>
+
+  <div class="note">Full page view. No border-radius. No bottom sheet. Content scrolls vertically. Close X slides PCS out to the right.</div>
+
+</div>
+
+<div class="sep"></div>
+
+<div style="padding:40px 16px;text-align:center">
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:#333;letter-spacing:.12em;text-transform:uppercase">
+    End of mockup — PCS full page PR
+  </div>
+</div>
+
+</body>
+</html>
