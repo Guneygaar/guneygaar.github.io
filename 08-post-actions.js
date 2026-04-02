@@ -3,6 +3,50 @@
 =============================================== */
 console.log("LOADED:", "08-post-actions.js");
 
+// -- Stage change notification helper --
+// recipients: array of names e.g. ['Admin', 'Chitra', 'Pranav', 'Client']
+// Maps names to DB user_role values before inserting.
+window._sendStageNotif = function(postId, postTitle, stage, recipients, actorName) {
+  var roleMap = {
+    'Admin': 'Admin',
+    'Chitra': 'Servicing',
+    'Pranav': 'Creative',
+    'Client': 'Client'
+  };
+  var label = (typeof _stageLabel === 'function' && _stageLabel(stage)) || stage;
+  recipients.forEach(function(name) {
+    var userRole = roleMap[name] || name;
+    apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: userRole,
+        post_id: postId,
+        type: stage,
+        message: actorName + ' moved ' + postTitle + ' to ' + label,
+        actor: actorName,
+        read: false
+      })
+    }).catch(function(err) {
+      console.error('[stage-notif] failed for ' + userRole, err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'stage-notif-' + stage);
+    });
+  });
+};
+
+// -- Stage → notification recipients map --
+function _stageRecipients(stage) {
+  var map = {
+    'brief':                 ['Pranav'],
+    'in_production':         ['Pranav'],
+    'ready':                 ['Chitra'],
+    'awaiting_approval':     ['Client'],
+    'awaiting_brand_input':  ['Client'],
+    'scheduled':             ['Admin', 'Chitra', 'Pranav'],
+    'published':             ['Admin', 'Chitra', 'Pranav', 'Client']
+  };
+  return map[stage] || [];
+}
+
 function _stageLabel(stage) {
   var map = {
     'brief': 'Brief',
@@ -52,6 +96,8 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` });
+    var _qsRecipients = _stageRecipients(newStage);
+    if (_qsRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _qsRecipients, actor);
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
     post._isSaving = false;
@@ -169,6 +215,7 @@ async function clientApprove(postId, btn) {
       body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+    window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Chitra', 'Pranav'], window.AppState.user.name || 'Client');
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('show');
     var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -199,6 +246,8 @@ async function clientAcknowledge(postId) {
       body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
+    var _ackPost = getPostById(postId);
+    window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Pranav'], window.AppState.user.name || 'Client');
     showToast('Got it! The team has been notified.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
   } catch { showToast('Failed  -  try again', 'error'); }
@@ -438,6 +487,8 @@ function _confirmPublish(postId) {
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published'
     });
+    var _pubPost = getPostById(postId);
+    window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Chitra', 'Pranav', 'Client'], window.AppState.user.name || 'Shubham');
     showToast('Published', 'success');
     if (typeof closePCS === 'function') closePCS();
     loadPosts();
@@ -523,6 +574,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
   try { logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { var _esRecipients = _stageRecipients(newStage); if (_esRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _esRecipients, actor); } catch(e) { console.warn('[PCS] stage notif failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 

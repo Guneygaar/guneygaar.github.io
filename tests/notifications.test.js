@@ -347,11 +347,11 @@ describe('No duplicate stage-change notifications from JS', function() {
     expect(hasNotifPost).toBe(false);
   });
 
-  it('08-post-actions.js has exactly 1 notification POST (new_request only)', function() {
+  it('08-post-actions.js has exactly 2 notification POSTs (new_request + _sendStageNotif helper)', function() {
     var matches = actionsSrc.match(/apiFetch\('\/notifications',\s*\{[\s\S]*?method:\s*'POST'/g);
-    // Should be exactly 1 -- the client request notification
+    // 1 = submitClientRequest new_request, 2 = _sendStageNotif helper
     expect(matches).not.toBeNull();
-    expect(matches.length).toBe(1);
+    expect(matches.length).toBe(2);
   });
 
   it('07-post-load.js has zero notification POSTs', function() {

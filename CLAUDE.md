@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -297,6 +297,11 @@ window.sendMagicLink        — send OTP email to user
 window.verifyOTPCode        — verify OTP and set session
 window.resetRolePreview     — clear role preview, restore Admin
 
+08-post-actions.js:
+window._sendStageNotif      — send stage-change notifications to recipients
+window._confirmPublish      — publish post with LinkedIn URL
+window._skipPublish         — publish post without URL
+
 render/dashboard.js:
 window._safeStage, window.getScoreboardCounts, window.getScoreboardData,
 window.dashPad, window.updateDashGreeting, window.updateDashKicker,
@@ -389,6 +394,11 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Location: actions/pcs.js _doSubmitComment (comment + mention notifs),
    render/pipeline.js executeBatchAction (batch stage notif — also missing actor)
    Status: FIXED (PR#TBD) — added read:false to all, actor to pipeline batch
+1. Notifications: no stage-change notifications for most transitions
+   Location: 08-post-actions.js, 09-approval.js, render/pipeline.js
+   14 of 16 stage transitions had zero notifications
+   Status: FIXED (PR#TBD) — added _sendStageNotif helper + notifications
+   to all stage change functions per product rules
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN
