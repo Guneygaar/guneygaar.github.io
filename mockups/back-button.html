@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>PCS Back Button Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #E8E8E8; font-family: 'DM Sans', sans-serif; }
+
+  .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #C8A84B;
+    padding: 24px 16px 8px;
+  }
+
+  /* PCS topbar */
+  .pc-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid #1a1a1a;
+    background: #080808;
+  }
+  .pc-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .pcs-back-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: #AEAEB2;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    padding: 8px;
+    cursor: pointer;
+  }
+  .pc-icon-btn {
+    background: none;
+    border: none;
+    color: #AEAEB2;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pcs-stage-pill {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 4px 10px;
+    background: #1a1a2e;
+    color: #22D3EE;
+    border: 1px solid #1e3a4a;
+  }
+
+  /* Approved strip */
+  .approved-strip {
+    padding: 10px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: #3ECF8E;
+    background: #0a1a12;
+    margin: 16px;
+  }
+
+  .section { margin-bottom: 32px; border: 1px solid #1a1a1a; margin: 16px; }
+</style>
+</head>
+<body>
+
+<div class="label">State A: PCS opened from pipeline (no back button)</div>
+<div class="section">
+  <div class="pc-topbar">
+    <div class="pc-topbar-left">
+      <!-- No back button -->
+      <button class="pc-icon-btn" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="pcs-stage-pill">IN PRODUCTION</span>
+    </div>
+  </div>
+</div>
+
+<div class="label">State B: PCS opened from bottom sheet (back arrow visible)</div>
+<div class="section">
+  <div class="pc-topbar">
+    <div class="pc-topbar-left">
+      <button class="pcs-back-btn" aria-label="Back to sheet">&#x2190;</button>
+      <button class="pc-icon-btn" aria-label="Close">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span class="pcs-stage-pill">SCHEDULED</span>
+    </div>
+  </div>
+</div>
+
+<div class="label">Approved strip (persistent on scheduled posts)</div>
+<div class="section">
+  <div class="approved-strip">
+    <span style="display:inline-flex;align-items:center;gap:5px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Approved
+    </span>
+  </div>
+</div>
+
+</body>
+</html>

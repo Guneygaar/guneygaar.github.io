@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260402e">
+ <link rel="stylesheet" href="styles.css?v=20260402f">
 
 </head>
 <body>
@@ -861,11 +861,14 @@
 <div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
   <div id="pcs-screen" class="pc-sheet">
 
-    <!-- Topbar: X left, stage+overdue pills right -->
+    <!-- Topbar: back+X left, stage+overdue pills right -->
     <div class="pc-topbar">
-      <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <div style="display:flex;align-items:center;gap:0;">
+        <button id="pcs-back-btn" style="display:none;background:none;border:none;color:#AEAEB2;font-family:'IBM Plex Mono',monospace;font-size:18px;padding:8px;cursor:pointer;" onclick="closePCS()" aria-label="Back to sheet">&#x2190;</button>
+        <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
       <div id="pcs-topbar-right" style="display:flex;align-items:center;gap:6px"></div>
     </div>
 
@@ -1070,26 +1073,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260402e"></script>
-<script src="00-appstate-compat.js?v=20260402e"></script>
-<script src="01-config.js?v=20260402e" defer></script>
-<script src="02-session.js?v=20260402e" defer></script>
-<script src="utils.js?v=20260402e" defer></script>
-<script src="03-auth.js?v=20260402e" defer></script>
-<script src="05-api.js?v=20260402e" defer></script>
-<script src="10-ui.js?v=20260402e" defer></script>
+<script src="00-appstate.js?v=20260402f"></script>
+<script src="00-appstate-compat.js?v=20260402f"></script>
+<script src="01-config.js?v=20260402f" defer></script>
+<script src="02-session.js?v=20260402f" defer></script>
+<script src="utils.js?v=20260402f" defer></script>
+<script src="03-auth.js?v=20260402f" defer></script>
+<script src="05-api.js?v=20260402f" defer></script>
+<script src="10-ui.js?v=20260402f" defer></script>
 
-<script src="06-post-create.js?v=20260402e" defer></script>
-<script defer src="render/dashboard.js?v=20260402e"></script>
-<script defer src="render/client.js?v=20260402e"></script>
-<script defer src="render/pipeline.js?v=20260402e"></script>
-<script defer src="render/brief.js?v=20260402e"></script>
-<script defer src="actions/pcs.js?v=20260402e"></script>
-<script src="07-post-load.js?v=20260402e" defer></script>
-<script src="08-post-actions.js?v=20260402e" defer></script>
-<script src="09-library.js?v=20260402e" defer></script>
-<script src="09-approval.js?v=20260402e" defer></script>
-<script src="04-router.js?v=20260402e" defer></script>
+<script src="06-post-create.js?v=20260402f" defer></script>
+<script defer src="render/dashboard.js?v=20260402f"></script>
+<script defer src="render/client.js?v=20260402f"></script>
+<script defer src="render/pipeline.js?v=20260402f"></script>
+<script defer src="render/brief.js?v=20260402f"></script>
+<script defer src="actions/pcs.js?v=20260402f"></script>
+<script src="07-post-load.js?v=20260402f" defer></script>
+<script src="08-post-actions.js?v=20260402f" defer></script>
+<script src="09-library.js?v=20260402f" defer></script>
+<script src="09-approval.js?v=20260402f" defer></script>
+<script src="04-router.js?v=20260402f" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

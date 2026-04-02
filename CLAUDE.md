@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402f
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -74,7 +74,8 @@ setAll: function(newPosts) — ONLY way to update posts.all
 },
 pcs: {
 open, postId, post, editingTarget, closeTimer,
-pendingComment, lightbox: {images, index}, activeMenu
+pendingComment, lightbox: {images, index}, activeMenu,
+openedFrom
 },
 ui: {
 modalOpen, deferredRender, activeTab, taskFilter,
@@ -369,7 +370,13 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. Brief/request submission writing to non-existent 'comments' column
    Location: 10-ui.js _nrsSubmit(), render/brief.js _assignBriefToPranav(),
    09-approval.js changes_submit — all wrote 'comments' to posts table
-   Status: FIXED (PR#TBD) — changed to client_feedback in all 3 locations
+   Status: FIXED (PR#633) — changed to client_feedback in all 3 locations
+1. Approved posts not highlighted after refresh in client feed
+   Location: render/client.js approved-strip was display:none, only shown in-session
+   Status: FIXED (PR#TBD) — strip now renders with stage==='scheduled', solid bg #0a1a12
+1. No back button when PCS opens from dashboard bottom sheet
+   Location: actions/pcs.js, render/dashboard.js openPostOverSheet()
+   Status: FIXED (PR#TBD) — added AppState.pcs.openedFrom, back arrow in PCS topbar
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN

@@ -138,6 +138,7 @@ window.forcePCSReset = function() {
 
   // 6. Clear PCS context
   window._pcs.postId = null;
+  window.AppState.pcs.openedFrom = null;
 
   // 7. Flush any deferred background renders
   _drainDeferredRender();
@@ -145,6 +146,12 @@ window.forcePCSReset = function() {
 
 window._renderPCS = function(postId) {
   _removePcsConfirm();
+
+  // Show/hide back arrow based on whether PCS was opened from a sheet
+  var backBtn = document.getElementById('pcs-back-btn');
+  if (backBtn) {
+    backBtn.style.display = (window.AppState.pcs.openedFrom === 'sheet') ? 'block' : 'none';
+  }
 
   // 1. Fetch post
   var post = getPostById(postId);

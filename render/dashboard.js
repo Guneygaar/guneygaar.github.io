@@ -660,6 +660,7 @@ window.openPostOverSheet = function(pid) {
     return p.id === pid || p.post_id === pid;
   });
   var realId = match ? (match.id || match.post_id) : pid;
+  window.AppState.pcs.openedFrom = 'sheet';
   if (typeof openPCS === 'function') {
     openPCS(realId, 'pipeline');
   }

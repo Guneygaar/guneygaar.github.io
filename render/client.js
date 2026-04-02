@@ -406,7 +406,10 @@ console.log('LOADED:', 'render/client.js');
 
     return '<div class="eng-bar" data-engagement="' + pid + '" style="display:flex;">' +
       btn1 + btn2 + btn3 + '</div>' +
-      '<div id="approved-strip-' + pid + '" style="display:none;padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3ECF8E;background:rgba(62,207,142,0.05);margin-top:6px;">' +
+      '<div id="approved-strip-' + pid + '" style="' +
+      (post.stage === 'scheduled' ? 'display:block;' : 'display:none;') +
+      'padding:10px 14px;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#3ECF8E;background:#0a1a12;margin-top:6px;">' +
+      (post.stage === 'scheduled' ? '<span style="display:inline-flex;align-items:center;gap:5px;">' + ICON_CHECK + ' Approved</span>' : '') +
       '</div>';
   }
 
