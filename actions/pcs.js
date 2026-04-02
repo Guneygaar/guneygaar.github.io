@@ -2296,7 +2296,8 @@ window._doSubmitComment = async function(opts) {
           post_id: opts.postId,
           type: 'comment',
           message: opts.author + ' commented on ' + opts.title,
-          actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
+          actor: (window.AppState.user.name || window.currentUserName || 'Unknown'),
+          read: false
         })
       }).catch(function(err){ console.error('[pcs] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'pcs-notification-2'); });
     });
@@ -2318,7 +2319,8 @@ window._doSubmitComment = async function(opts) {
             post_id: opts.postId,
             type: 'mention',
             message: _mentionMsg,
-            actor: (window.AppState.user.name || window.currentUserName || 'Unknown')
+            actor: (window.AppState.user.name || window.currentUserName || 'Unknown'),
+            read: false
           })
         }).catch(function(err){ console.error('[pcs] mention notification failed', err); window.logError && window.logError(err && err.message, err && err.stack, 'mention-notification'); });
       });

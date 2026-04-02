@@ -1003,7 +1003,9 @@ console.log('LOADED:', 'render/client.js');
           user_role: 'Servicing',
           type: 'comment',
           post_id: realPostId,
-          message: authorName + ' commented on ' + postTitle
+          message: authorName + ' commented on ' + postTitle,
+          actor: window.AppState.user.name || 'Client',
+          read: false
         })
       }).catch(function(err){ console.error('[client] comment patch', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-patch'); });
       window.apiFetch('/notifications', {
@@ -1012,7 +1014,9 @@ console.log('LOADED:', 'render/client.js');
           user_role: 'Admin',
           type: 'comment',
           post_id: realPostId,
-          message: authorName + ' commented on ' + postTitle
+          message: authorName + ' commented on ' + postTitle,
+          actor: window.AppState.user.name || 'Client',
+          read: false
         })
       }).catch(function(err){ console.error('[client] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-notification'); });
       var _ROSTER = [
@@ -1032,7 +1036,8 @@ console.log('LOADED:', 'render/client.js');
             post_id: realPostId,
             type: 'mention',
             message: authorName + ' mentioned you on "' + postTitle + '"',
-            actor: window.AppState.user.email || ''
+            actor: window.AppState.user.name || 'Client',
+            read: false
           })
         }).catch(function(err) { console.error('[mention notif]', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-mention-notif'); });
       });

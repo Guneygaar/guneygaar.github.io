@@ -631,7 +631,9 @@ window.executeBatchAction = async function(targetStage) {
         user_role: 'Admin',
         post_id: null,
         type: targetStage,
-        message: notifActor + ' sent ' + count + ' posts ' + stageLabel
+        message: notifActor + ' sent ' + count + ' posts ' + stageLabel,
+        actor: notifActor,
+        read: false
       })
     });
 

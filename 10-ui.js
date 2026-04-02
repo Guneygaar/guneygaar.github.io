@@ -245,7 +245,7 @@ var roleDisplayMap = {
 async function loadNotifications() {
   try {
     var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
-    _notifRole = (_notifRole || '').toLowerCase();
+    _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
     var currentName = resolveActor() || 'there';
     var _loadActor = window.AppState.user.name || window.currentUserName || '';
     var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50';
@@ -538,7 +538,7 @@ function setNotifFilter(filter, btn) {
   document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
-  _notifRole = (_notifRole || '').toLowerCase();
+  _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
   var currentName = resolveActor() || 'there';
   renderNotifications(currentName, _notifRole);
 }
@@ -558,7 +558,7 @@ async function markAllNotificationsRead() {
   try {
     _notifData = _notifData.map(function(n) { return Object.assign({}, n, { read: true }); });
     var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
-    _notifRole = (_notifRole || '').toLowerCase();
+    _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, _notifRole);
     updateNotifBadge();
