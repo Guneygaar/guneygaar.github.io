@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260402d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -131,6 +131,9 @@ Storage: post-assets bucket via R2 worker
 
 Zero border-radius on inputs and buttons.
 No rgba for text or borders — solid hex only.
+Approved rgba exceptions (must be semi-transparent by design):
+  .pcs-more-ov background: rgba(0,0,0,0.62) — "+N more" photo overlay
+  .pcs-more-l color: rgba(255,255,255,0.6) — "+N more" label text
 
 Colors:
 App bg:          #080808
@@ -164,6 +167,12 @@ Comment images: max 800px, quality 0.80, saves as .jpg
 Photo grid: object-fit:cover + object-position:center center
 (fills cells edge-to-edge, no black bars — LinkedIn collage style)
 Old .pcs-photo-x removed — use edit mode .pcs-edit-x only
+
+PCS overlay: full page (not bottom sheet), slides right-to-left
+  position:fixed inset, width/height 100%, background #080808
+  Entry: translateX(100%) → translateX(0), 280ms ease
+  Exit: translateX(0) → translateX(100%), 280ms ease
+  Photos label row sits flush against photo grid (0px gap)
 
 ## SECTION 7 — DEPLOYMENT RULES (never skip any step)
 
