@@ -3429,7 +3429,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px 14px;
+  padding: 8px 16px 0;
   flex-shrink: 0;
 }
 .pc-icon-btn {
@@ -6397,11 +6397,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* Photo grids */
-.pcs-pg-1 { width:100%; height:260px; overflow:hidden; cursor:pointer; position:relative; }
+.pcs-pg-1 { width:100%; height:312px; overflow:hidden; cursor:pointer; position:relative; }
 .pcs-pg-1 img { width:100%; height:100%; object-fit:cover; display:block; }
-.pcs-pg-2 { display:grid; grid-template-columns:1fr 1fr; gap:2px; height:220px; }
-.pcs-pg-3, .pcs-pg-5 { display:grid; grid-template-columns:62% 38%; grid-template-rows:1fr 1fr; gap:2px; height:220px; }
-.pcs-pg-4 { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; height:240px; }
+.pcs-pg-2 { display:grid; grid-template-columns:1fr 1fr; gap:2px; height:272px; }
+.pcs-pg-3, .pcs-pg-5 { display:grid; grid-template-columns:62% 38%; grid-template-rows:1fr 1fr; gap:2px; height:272px; }
+.pcs-pg-4 { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; height:292px; }
 .pcs-pcell { position:relative; overflow:hidden; cursor:pointer; background:#111; flex-shrink:0; }
 .pcs-pcell.hero { grid-row:span 2; }
 .pcs-pcell img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -6605,11 +6605,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* FIX 10: Photo grid min-height (mobile Safari) */
-.pcs-pg-1 { flex-shrink:0; min-height:260px; }
-.pcs-pg-2 { flex-shrink:0; min-height:220px; }
-.pcs-pg-3 { flex-shrink:0; min-height:220px; }
-.pcs-pg-4 { flex-shrink:0; min-height:240px; }
-.pcs-pg-5 { flex-shrink:0; min-height:220px; }
+.pcs-pg-1 { flex-shrink:0; min-height:312px; }
+.pcs-pg-2 { flex-shrink:0; min-height:272px; }
+.pcs-pg-3 { flex-shrink:0; min-height:272px; }
+.pcs-pg-4 { flex-shrink:0; min-height:292px; }
+.pcs-pg-5 { flex-shrink:0; min-height:272px; }
 
 /* FIX 11: Title size */
 #pcs-topbar-title, .pc-title {
