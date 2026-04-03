@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Load 03-auth.js and extract _normaliseRole
+// Load 03-auth.js and extract _normaliseRole + normalizeRole
 const authSrc = readFileSync(resolve(__dirname, '..', '03-auth.js'), 'utf8');
 
 function loadNormaliseRole() {
@@ -12,7 +12,15 @@ function loadNormaliseRole() {
   return fn();
 }
 
+function loadNormalizeRole() {
+  const match = authSrc.match(/function normalizeRole\(r\)\s*\{[\s\S]*?\n\}/);
+  if (!match) throw new Error('Could not find normalizeRole function');
+  const fn = new Function(match[0] + '\n return normalizeRole;');
+  return fn();
+}
+
 const _normaliseRole = loadNormaliseRole();
+const normalizeRole = loadNormalizeRole();
 
 // Role detection helpers — inline pure logic matching codebase patterns
 function isPranav(role) {
@@ -127,5 +135,84 @@ describe('isClient', () => {
 
   it("'admin' -> false", () => {
     expect(isClient('admin')).toBe(false);
+  });
+});
+
+// normalizeRole — maps person names to canonical DB roles
+describe('normalizeRole', () => {
+  it("null -> null", () => {
+    expect(normalizeRole(null)).toBe(null);
+  });
+
+  it("undefined -> null", () => {
+    expect(normalizeRole(undefined)).toBe(null);
+  });
+
+  it("'pranav' -> 'Creative'", () => {
+    expect(normalizeRole('pranav')).toBe('Creative');
+  });
+
+  it("'Pranav' -> 'Creative'", () => {
+    expect(normalizeRole('Pranav')).toBe('Creative');
+  });
+
+  it("'chitra' -> 'Servicing'", () => {
+    expect(normalizeRole('chitra')).toBe('Servicing');
+  });
+
+  it("'Chitra' -> 'Servicing'", () => {
+    expect(normalizeRole('Chitra')).toBe('Servicing');
+  });
+
+  it("'shubham' -> 'Admin'", () => {
+    expect(normalizeRole('shubham')).toBe('Admin');
+  });
+
+  it("'Shubham' -> 'Admin'", () => {
+    expect(normalizeRole('Shubham')).toBe('Admin');
+  });
+
+  it("'manisha' -> 'Client'", () => {
+    expect(normalizeRole('manisha')).toBe('Client');
+  });
+
+  it("'shivangini' -> 'Client'", () => {
+    expect(normalizeRole('shivangini')).toBe('Client');
+  });
+
+  it("'creative' -> 'Creative'", () => {
+    expect(normalizeRole('creative')).toBe('Creative');
+  });
+
+  it("'Creative' -> 'Creative'", () => {
+    expect(normalizeRole('Creative')).toBe('Creative');
+  });
+
+  it("'servicing' -> 'Servicing'", () => {
+    expect(normalizeRole('servicing')).toBe('Servicing');
+  });
+
+  it("'admin' -> 'Admin'", () => {
+    expect(normalizeRole('admin')).toBe('Admin');
+  });
+
+  it("'Admin' -> 'Admin'", () => {
+    expect(normalizeRole('Admin')).toBe('Admin');
+  });
+
+  it("'client' -> 'Client'", () => {
+    expect(normalizeRole('client')).toBe('Client');
+  });
+
+  it("'Client' -> 'Client'", () => {
+    expect(normalizeRole('Client')).toBe('Client');
+  });
+
+  it("unknown role passes through unchanged", () => {
+    expect(normalizeRole('SuperAdmin')).toBe('SuperAdmin');
+  });
+
+  it("normalizeRole is exported on window in source", () => {
+    expect(authSrc).toContain('window.normalizeRole = normalizeRole');
   });
 });
