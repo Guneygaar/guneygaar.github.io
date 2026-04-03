@@ -949,7 +949,7 @@ window.loadPcsComments = async function(postId) {
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
             '<div class="pcs-comment-actions">' +
-            (_roleLower === 'admin' ?
+            (c.author === _name || _roleLower === 'admin' ?
               '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
               'onclick="window._pcsConfirmDeleteComment(\'' +
               esc(c.id) + '\',\'' + esc(postId) + '\')">DELETE</span>'
@@ -1037,7 +1037,7 @@ window.loadPcsComments = async function(postId) {
             _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
             _imgHtml +
             '<div class="pcs-comment-actions">' +
-            (_roleLower === 'admin' ?
+            (c.author === _name || _roleLower === 'admin' ?
               '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
               'onclick="window._pcsConfirmDeleteComment(\'' +
               esc(c.id) + '\',\'' + esc(postId) + '\',true)">DELETE</span>'

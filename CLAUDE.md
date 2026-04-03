@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403j
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403l
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -512,6 +512,11 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    and merges into AppState with _isRequest:true flag. Brief sheet reads
    content_type and drive_link as direct fields. Assign creates a new
    post linked to the request. Close/reopen patches requests table.
+1. Comment delete restricted to Admin only — authors cannot delete own comments
+   Location: actions/pcs.js lines 952 and 1040 — delete button render
+   condition was (_roleLower === 'admin') only
+   Status: FIXED (PR#TBD) — changed to (c.author === _name || _roleLower === 'admin')
+   so comment authors can delete their own comments, Admin can delete any
 
 ## SECTION 13 — STABILITY ROADMAP
 
