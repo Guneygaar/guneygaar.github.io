@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Request Form Mockup — Sorted</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #080808; color: #E8E8E8; font-family: 'DM Sans', sans-serif; max-width: 420px; margin: 0 auto; }
+
+  .mockup-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #C8A84B; letter-spacing: .2em; text-transform: uppercase;
+    padding: 28px 16px 12px; border-bottom: 1px solid #1a1a1a;
+  }
+
+  .overlay {
+    position: relative; display: flex; flex-direction: column;
+    background: #080808; min-height: 100vh;
+  }
+
+  /* HEADER */
+  .req-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid #1c1c1c;
+  }
+  .req-title {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: #C8A84B;
+  }
+  .req-subtitle {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: 0.08em; color: #555;
+  }
+  .req-close {
+    background: none; border: none; color: #AEAEB2;
+    font-size: 16px; cursor: pointer; padding: 4px;
+  }
+
+  /* SCROLLABLE BODY */
+  .req-body { flex: 1; overflow-y: auto; }
+
+  /* FIELD SECTIONS */
+  .req-section {
+    padding: 8px 16px; border-bottom: 1px dotted #222;
+  }
+  .req-section:last-child { border-bottom: none; }
+
+  .field-num {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    color: #C8A84B; letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+  .field-label {
+    font-family: 'DM Sans', sans-serif; font-size: 15px;
+    font-weight: 600; color: #E8E8E8; margin-bottom: 5px;
+  }
+  .field-label .req { color: #FF4B4B; }
+  .field-opt {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; color: #666; text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .field-helper {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 0.08em; color: #8E8E93; text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* INPUTS */
+  .req-input, .req-textarea {
+    width: 100%; background: transparent; border: none;
+    border-bottom: 1px solid #2a2a2a; color: #E8E8E8;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 4px 0; outline: none;
+  }
+  .req-input::placeholder, .req-textarea::placeholder { color: #3a3a3a; }
+  .req-input:focus, .req-textarea:focus { border-bottom-color: #C8A84B; }
+
+  .req-textarea {
+    resize: none; min-height: 28px; overflow: hidden; line-height: 1.5;
+  }
+
+  /* CHIPS */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 0.05em; text-transform: uppercase;
+    color: #666; background: none; border: 1px dotted #2a2a2a;
+    padding: 5px 10px; cursor: pointer;
+  }
+  .chip.active {
+    color: #C8A84B; border: 1px solid #C8A84B;
+  }
+
+  /* DATE BOX */
+  .date-box {
+    border: 1px solid #2a2a2a; padding: 8px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; position: relative;
+  }
+  .date-placeholder {
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: #3a3a3a;
+  }
+  .date-chevron { color: #555; font-size: 12px; }
+
+  /* PHOTO GRID */
+  .photo-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 4px; margin-top: 6px;
+  }
+  .add-tile {
+    width: 68px; height: 68px; display: flex;
+    align-items: center; justify-content: center;
+    border: 1px dashed #222; cursor: pointer;
+    color: #3a3a3a; font-size: 20px;
+  }
+  .photo-count {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 0.1em; color: #8E8E93; margin-top: 5px;
+    text-transform: uppercase;
+  }
+
+  /* DRIVE LINK HELPER */
+  .drive-helper {
+    font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+    letter-spacing: 0.08em; color: #3ECF8E; margin-top: 5px;
+    text-transform: uppercase;
+  }
+
+  /* FOOTER */
+  .req-footer {
+    position: sticky; bottom: 0; padding: 8px 16px 20px;
+    border-top: 1px solid #1c1c1c; background: #080808;
+    display: grid; grid-template-columns: 1fr 2.2fr; gap: 8px;
+  }
+  .btn-cancel {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: #8E8E93; background: none; border: 1px dotted #444;
+    padding: 11px; cursor: pointer;
+  }
+  .btn-send {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: 0.1em; font-weight: 700; text-transform: uppercase;
+    background: none; padding: 11px; cursor: pointer;
+  }
+  .btn-send.disabled {
+    color: #333; border: 1px dotted #2a2a2a; cursor: not-allowed;
+  }
+  .btn-send.enabled {
+    color: #C8A84B; border: 1px dotted #C8A84B;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-label">MOCKUP — CLIENT REQUEST FORM (DISABLED STATE)</div>
+
+<div class="overlay">
+  <!-- HEADER -->
+  <div class="req-header">
+    <div>
+      <span class="req-title">NEW REQUEST</span>
+      <span class="req-subtitle"> -- WE'LL HANDLE EVERYTHING</span>
+    </div>
+    <button class="req-close">&#x2715;</button>
+  </div>
+
+  <!-- BODY -->
+  <div class="req-body">
+    <!-- FIELD 01 -->
+    <div class="req-section">
+      <div class="field-num">01</div>
+      <div class="field-label">Name this request <span class="req">*</span></div>
+      <input class="req-input" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women's Day">
+      <div class="field-helper">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>
+    </div>
+
+    <!-- FIELD 02 -->
+    <div class="req-section">
+      <div class="field-num">02</div>
+      <div class="field-label">What's the brief? <span class="req">*</span></div>
+      <textarea class="req-textarea" rows="1" placeholder="Topic, story, key message..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+    </div>
+
+    <!-- FIELD 03 -->
+    <div class="req-section">
+      <div class="field-num">03</div>
+      <div class="field-label">Content type</div>
+      <div class="field-opt">OPTIONAL</div>
+      <div class="chip-row">
+        <button class="chip" onclick="document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">PHOTO</button>
+        <button class="chip" onclick="document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">CAROUSEL</button>
+        <button class="chip" onclick="document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">VIDEO</button>
+        <button class="chip" onclick="document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">TEXT</button>
+        <button class="chip" onclick="document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));this.classList.add('active')">CREATIVE</button>
+      </div>
+    </div>
+
+    <!-- FIELD 04 -->
+    <div class="req-section">
+      <div class="field-num">04</div>
+      <div class="field-label">Target date</div>
+      <div class="field-opt">OPTIONAL</div>
+      <div class="date-box">
+        <span class="date-placeholder">Pick a date</span>
+        <span class="date-chevron">&#9662;</span>
+      </div>
+    </div>
+
+    <!-- FIELD 05 -->
+    <div class="req-section">
+      <div class="field-num">05</div>
+      <div class="field-label">Reference photos</div>
+      <div class="field-opt">OPTIONAL &middot; MAX 5 PHOTOS &middot; MAX 5MB EACH</div>
+      <div class="photo-grid">
+        <div class="add-tile">+</div>
+      </div>
+      <div class="photo-count">NO PHOTOS ADDED</div>
+    </div>
+
+    <!-- FIELD 06 -->
+    <div class="req-section" style="border-bottom:none;">
+      <div class="field-num">06</div>
+      <div class="field-label">Or share a drive link</div>
+      <div class="field-opt">OPTIONAL &middot; FOR LARGE FILES OR MANY PHOTOS</div>
+      <input class="req-input" type="url" placeholder="Google Drive, Dropbox, WeTransfer...">
+      <div class="drive-helper">PASTE ANY LINK -- WE'LL ACCESS IT</div>
+    </div>
+  </div>
+
+  <!-- FOOTER (disabled state) -->
+  <div class="req-footer">
+    <button class="btn-cancel">CANCEL</button>
+    <button class="btn-send disabled" disabled>-- SEND REQUEST</button>
+  </div>
+</div>
+
+<div class="mockup-label">MOCKUP — CLIENT REQUEST FORM (ENABLED STATE)</div>
+
+<div class="overlay">
+  <!-- HEADER -->
+  <div class="req-header">
+    <div>
+      <span class="req-title">NEW REQUEST</span>
+      <span class="req-subtitle"> -- WE'LL HANDLE EVERYTHING</span>
+    </div>
+    <button class="req-close">&#x2715;</button>
+  </div>
+
+  <!-- BODY -->
+  <div class="req-body">
+    <!-- FIELD 01 (filled) -->
+    <div class="req-section">
+      <div class="field-num">01</div>
+      <div class="field-label">Name this request <span class="req">*</span></div>
+      <input class="req-input" type="text" value="Somaiya Diaries" style="border-bottom-color:#C8A84B;">
+      <div class="field-helper">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>
+    </div>
+
+    <!-- FIELD 02 (filled, multi-line) -->
+    <div class="req-section">
+      <div class="field-num">02</div>
+      <div class="field-label">What's the brief? <span class="req">*</span></div>
+      <textarea class="req-textarea" rows="3" style="border-bottom-color:#C8A84B;">Campus life captures — candid moments from the corridors, canteen, and library. Warm tones, natural light.</textarea>
+    </div>
+
+    <!-- FIELD 03 (one chip selected) -->
+    <div class="req-section">
+      <div class="field-num">03</div>
+      <div class="field-label">Content type</div>
+      <div class="field-opt">OPTIONAL</div>
+      <div class="chip-row">
+        <button class="chip">PHOTO</button>
+        <button class="chip active">CAROUSEL</button>
+        <button class="chip">VIDEO</button>
+        <button class="chip">TEXT</button>
+        <button class="chip">CREATIVE</button>
+      </div>
+    </div>
+
+    <!-- FIELD 04 (date set) -->
+    <div class="req-section">
+      <div class="field-num">04</div>
+      <div class="field-label">Target date</div>
+      <div class="field-opt">OPTIONAL</div>
+      <div class="date-box">
+        <span style="font-family:'DM Sans',sans-serif;font-size:14px;color:#E8E8E8;">2026-04-10</span>
+        <span class="date-chevron">&#9662;</span>
+      </div>
+    </div>
+
+    <!-- FIELD 05 -->
+    <div class="req-section">
+      <div class="field-num">05</div>
+      <div class="field-label">Reference photos</div>
+      <div class="field-opt">OPTIONAL &middot; MAX 5 PHOTOS &middot; MAX 5MB EACH</div>
+      <div class="photo-grid">
+        <div style="width:68px;height:68px;background:#1a1a1a;"></div>
+        <div style="width:68px;height:68px;background:#1a1a1a;"></div>
+        <div class="add-tile">+</div>
+      </div>
+      <div class="photo-count">2 PHOTOS SELECTED</div>
+    </div>
+
+    <!-- FIELD 06 -->
+    <div class="req-section" style="border-bottom:none;">
+      <div class="field-num">06</div>
+      <div class="field-label">Or share a drive link</div>
+      <div class="field-opt">OPTIONAL &middot; FOR LARGE FILES OR MANY PHOTOS</div>
+      <input class="req-input" type="url" placeholder="Google Drive, Dropbox, WeTransfer...">
+      <div class="drive-helper">PASTE ANY LINK -- WE'LL ACCESS IT</div>
+    </div>
+  </div>
+
+  <!-- FOOTER (enabled state) -->
+  <div class="req-footer">
+    <button class="btn-cancel">CANCEL</button>
+    <button class="btn-send enabled">-- SEND REQUEST</button>
+  </div>
+</div>
+
+</body>
+</html>

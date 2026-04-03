@@ -1361,78 +1361,88 @@ console.log('LOADED:', 'render/client.js');
     overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:2000;background:#080808;flex-direction:column;';
     var mono = "'IBM Plex Mono',monospace";
     var sans = "'DM Sans',sans-serif";
-    var numStyle = 'font-family:' + mono + ';font-size:9px;color:#C8A84B;opacity:0.7;margin-bottom:4px;';
-    var labelStyle = 'font-family:' + sans + ';font-size:16px;font-weight:600;color:rgba(255,255,255,0.9);';
-    var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;font-family:' + sans + ';font-size:14px;padding:10px 0;outline:none;caret-color:#C8A84B;margin-top:10px;';
-    var chipBtnStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.05em;text-transform:uppercase;color:#4a4a4a;background:transparent;border:1px dotted #2e2e2e;padding:6px 11px;cursor:pointer;';
-    var optLine = '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.08em;color:#383838;text-transform:uppercase;margin-bottom:10px;">OPTIONAL</div>';
-    var fieldBorder = 'padding:16px 16px 14px;border-bottom:1px dotted rgba(200,168,75,0.2);';
+    var numStyle = 'font-family:' + mono + ';font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;';
+    var labelStyle = 'font-family:' + sans + ';font-size:15px;font-weight:600;color:#E8E8E8;margin-bottom:5px;';
+    var inputStyle = 'width:100%;background:transparent;border:none;border-bottom:1px solid #2a2a2a;color:#E8E8E8;font-family:' + sans + ';font-size:14px;padding:4px 0;outline:none;';
+    var chipBtnStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.05em;text-transform:uppercase;color:#666;background:none;border:1px dotted #2a2a2a;padding:5px 10px;cursor:pointer;';
+    var optStyle = 'font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;';
+    var fieldBorder = 'padding:8px 16px;border-bottom:1px dotted #222;';
     overlay.innerHTML =
       /* HEADER */
-      '<div style="padding:14px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;">' +
-        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
-        '<span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;color:#3a3a3a;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
-        '<button data-action="reqClose" style="background:none;border:none;color:#444;font-size:18px;cursor:pointer;padding:4px;">&#x2715;</button>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #1c1c1c;">' +
+        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
+        '<span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.08em;color:#555;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
+        '<button data-action="reqClose" style="background:none;border:none;color:#AEAEB2;font-size:16px;cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
       /* SCROLLABLE BODY */
-      '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0;">' +
-        /* FIELD 01 -- no number */
+      '<div style="flex:1;overflow-y:auto;">' +
+        /* FIELD 01 */
         '<div style="' + fieldBorder + '">' +
+          '<div style="' + numStyle + '">01</div>' +
           '<div style="' + labelStyle + '">Name this request <span style="color:#FF4B4B;">*</span></div>' +
           '<input id="req-name" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women\'s Day" style="' + inputStyle + '">' +
-          '<div style="font-family:' + mono + ';font-size:8px;letter-spacing:0.05em;color:#2a2a2a;margin-top:6px;text-transform:uppercase;">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
+          '<div style="font-family:' + mono + ';font-size:9px;letter-spacing:0.08em;color:#8E8E93;margin-top:3px;text-transform:uppercase;">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
         '</div>' +
         /* FIELD 02 */
         '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">02</div>' +
           '<div style="' + labelStyle + '">What\'s the brief? <span style="color:#FF4B4B;">*</span></div>' +
-          '<textarea id="req-topic" placeholder="Topic, story, key message..." style="' + inputStyle + 'height:90px;resize:none;line-height:1.7;overflow-y:auto;"></textarea>' +
+          '<textarea id="req-topic" rows="1" placeholder="Topic, story, key message..." style="' + inputStyle + 'resize:none;min-height:28px;overflow:hidden;line-height:1.5;"></textarea>' +
         '</div>' +
         /* FIELD 03 */
         '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">03</div>' +
           '<div style="' + labelStyle + '">Content type</div>' +
-          optLine +
+          '<div style="' + optStyle + '">OPTIONAL</div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:7px;">' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Photo</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Carousel</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Video</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Text</button>' +
-            '<button data-action="reqChip" style="' + chipBtnStyle + '">Creative</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">PHOTO</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">CAROUSEL</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">VIDEO</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">TEXT</button>' +
+            '<button data-action="reqChip" style="' + chipBtnStyle + '">CREATIVE</button>' +
           '</div>' +
         '</div>' +
         /* FIELD 04 */
         '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">04</div>' +
           '<div style="' + labelStyle + '">Target date</div>' +
-          optLine +
-          '<div style="position:relative;border:1px solid rgba(255,255,255,0.1);padding:10px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">' +
-            '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:rgba(255,255,255,0.3);">Pick a date</span>' +
-            '<span style="color:#333;font-size:12px;">&#9662;</span>' +
+          '<div style="' + optStyle + '">OPTIONAL</div>' +
+          '<div style="position:relative;border:1px solid #2a2a2a;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">' +
+            '<span id="req-date-label" style="font-family:' + sans + ';font-size:14px;color:#3a3a3a;">Pick a date</span>' +
+            '<span style="color:#555;font-size:12px;">&#9662;</span>' +
             '<input id="req-date" type="date" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;">' +
           '</div>' +
         '</div>' +
-        /* FIELD 05 -- no border-bottom */
-        '<div style="padding:16px 16px 14px;">' +
+        /* FIELD 05 */
+        '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">05</div>' +
           '<div style="' + labelStyle + '">Reference photos</div>' +
-          '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:10px;">' +
-            '<div id="req-add-tile" data-action="reqAddPhoto" style="width:76px;height:76px;display:flex;align-items:center;justify-content:center;border:1px dashed #222;cursor:pointer;color:rgba(255,255,255,0.3);font-size:20px;">+</div>' +
+          '<div style="' + optStyle + '">OPTIONAL &middot; MAX 5 PHOTOS &middot; MAX 5MB EACH</div>' +
+          '<div id="req-photo-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:6px;">' +
+            '<div id="req-add-tile" data-action="reqAddPhoto" style="width:68px;height:68px;display:flex;align-items:center;justify-content:center;border:1px dashed #222;cursor:pointer;color:#3a3a3a;font-size:20px;">+</div>' +
           '</div>' +
           '<input id="req-file" type="file" accept="image/*" multiple style="display:none;">' +
-          '<div id="req-photo-count" style="font-family:' + mono + ';font-size:8px;color:#222;margin-top:6px;text-transform:uppercase;">NO PHOTOS ADDED</div>' +
+          '<div id="req-photo-count" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;color:#8E8E93;margin-top:5px;text-transform:uppercase;">NO PHOTOS ADDED</div>' +
           '<div id="req-progress-wrap" style="display:none;margin-top:8px;">' +
-            '<div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">' +
+            '<div style="height:3px;background:#1c1c1c;overflow:hidden;">' +
               '<div id="req-progress-fill" style="height:100%;width:0%;background:#C8A84B;transition:width 0.3s;"></div>' +
             '</div>' +
             '<div id="req-progress-text" style="font-family:' + mono + ';font-size:8px;color:#555;margin-top:4px;"></div>' +
           '</div>' +
         '</div>' +
+        /* FIELD 06 -- drive link (unwired to DB) */
+        '<div style="padding:8px 16px;">' +
+          '<div style="' + numStyle + '">06</div>' +
+          '<div style="' + labelStyle + '">Or share a drive link</div>' +
+          '<div style="' + optStyle + '">OPTIONAL &middot; FOR LARGE FILES OR MANY PHOTOS</div>' +
+          '<input id="req-drive-link" type="url" placeholder="Google Drive, Dropbox, WeTransfer..." style="' + inputStyle + '">' +
+          '<div style="font-family:' + mono + ';font-size:9px;letter-spacing:0.08em;color:#3ECF8E;margin-top:5px;text-transform:uppercase;">PASTE ANY LINK -- WE\'LL ACCESS IT</div>' +
+        '</div>' +
       '</div>' +
       /* STICKY FOOTER */
-      '<div style="position:sticky;bottom:0;z-index:10;background:#080808;border-top:1px solid rgba(255,255,255,0.05);padding:10px 16px 14px;display:grid;grid-template-columns:1fr 2.2fr;gap:8px;">' +
-        '<button data-action="reqClose" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#3a3a3a;background:none;border:1px dotted #222;padding:12px 8px;cursor:pointer;">CANCEL</button>' +
-        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:#000;background:#C8A84B;border:none;padding:12px 8px;cursor:not-allowed;opacity:0.35;">-- SEND REQUEST</button>' +
+      '<div style="position:sticky;bottom:0;padding:8px 16px 20px;border-top:1px solid #1c1c1c;background:#080808;display:grid;grid-template-columns:1fr 2.2fr;gap:8px;">' +
+        '<button data-action="reqClose" style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8E93;background:none;border:1px dotted #444;padding:11px;cursor:pointer;">CANCEL</button>' +
+        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;color:#333;background:none;border:1px dotted #2a2a2a;padding:11px;cursor:not-allowed;">-- SEND REQUEST</button>' +
       '</div>';
     document.body.appendChild(overlay);
     // Wire delegated events on request overlay
@@ -1459,13 +1469,27 @@ console.log('LOADED:', 'render/client.js');
     var reqTopic = document.getElementById('req-topic');
     var reqDate = document.getElementById('req-date');
     var reqFile = document.getElementById('req-file');
+    var reqDrive = document.getElementById('req-drive-link');
     if (reqName) reqName.addEventListener('input', function() { if (typeof _reqValidate === 'function') _reqValidate(); });
-    if (reqTopic) reqTopic.addEventListener('input', function() { if (typeof _reqValidate === 'function') _reqValidate(); });
+    if (reqTopic) {
+      reqTopic.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+        if (typeof _reqValidate === 'function') _reqValidate();
+      });
+    }
     if (reqDate) reqDate.addEventListener('change', function() {
       var l = document.getElementById('req-date-label');
-      if (l) { l.textContent = this.value; l.style.color = '#e8e2d9'; }
+      if (l) { l.textContent = this.value; l.style.color = '#E8E8E8'; }
     });
     if (reqFile) reqFile.addEventListener('change', function() { if (typeof _reqAddPhotos === 'function') _reqAddPhotos(this); });
+    if (reqDrive) reqDrive.addEventListener('input', function() { window._reqDriveLink = this.value; });
+    // Wire focus/blur for input border highlight
+    var allInputs = overlay.querySelectorAll('input[type="text"],input[type="url"],textarea');
+    allInputs.forEach(function(inp) {
+      inp.addEventListener('focus', function() { this.style.borderBottomColor = '#C8A84B'; });
+      inp.addEventListener('blur', function() { this.style.borderBottomColor = '#2a2a2a'; });
+    });
   }
 
   /* ---- main render ---- */
@@ -1672,19 +1696,23 @@ window._closeReqForm = function() {
   if (nameEl) nameEl.value = '';
   // Reset all fields for next open
   var topic = document.getElementById('req-topic');
-  if (topic) topic.value = '';
+  if (topic) { topic.value = ''; topic.style.height = 'auto'; }
   var date = document.getElementById('req-date');
   if (date) date.value = '';
   var dateLabel = document.getElementById('req-date-label');
-  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = 'rgba(255,255,255,0.3)'; }
+  if (dateLabel) { dateLabel.textContent = 'Pick a date'; dateLabel.style.color = '#3a3a3a'; }
   // Reset chips
   var chips = document.querySelectorAll('#req-overlay [data-action="reqChip"]');
   chips.forEach(function(c) {
-    c.style.color = '#4a4a4a';
-    c.style.background = 'transparent';
-    c.style.borderColor = '#2e2e2e';
+    c.style.color = '#666';
+    c.style.background = 'none';
+    c.style.borderColor = '#2a2a2a';
     c.style.borderStyle = 'dotted';
   });
+  // Reset drive link
+  var driveEl = document.getElementById('req-drive-link');
+  if (driveEl) driveEl.value = '';
+  window._reqDriveLink = '';
   // Reset photo grid
   window._reqStoredFiles = [];
   var grid = document.getElementById('req-photo-grid');
@@ -1702,37 +1730,42 @@ window._closeReqForm = function() {
   var btn = document.getElementById('req-submit-btn');
   if (btn) {
     btn.disabled = true;
-    btn.style.color = '#000';
-    btn.style.background = '#C8A84B';
-    btn.style.border = 'none';
+    btn.style.color = '#333';
+    btn.style.background = 'none';
+    btn.style.border = '1px dotted #2a2a2a';
     btn.style.cursor = 'not-allowed';
-    btn.style.opacity = '0.35';
     btn.textContent = '-- SEND REQUEST';
   }
 }
 
 window._reqToggleChip = function(el) {
   var isSelected = el.style.color === 'rgb(200, 168, 75)';
-  if (isSelected) {
-    el.style.color = '#4a4a4a';
-    el.style.background = 'transparent';
-    el.style.borderColor = '#2e2e2e';
-  } else {
+  // Single-select: deselect all chips first
+  var chips = document.querySelectorAll('#req-overlay [data-action="reqChip"]');
+  chips.forEach(function(c) {
+    c.style.color = '#666';
+    c.style.background = 'none';
+    c.style.borderColor = '#2a2a2a';
+    c.style.borderStyle = 'dotted';
+  });
+  // If it was already selected, leave all deselected (toggle off)
+  if (!isSelected) {
     el.style.color = '#C8A84B';
-    el.style.background = 'transparent';
-    el.style.borderColor = 'rgba(200,168,75,0.45)';
+    el.style.background = 'none';
+    el.style.borderColor = '#C8A84B';
+    el.style.borderStyle = 'solid';
   }
 }
 
 window._reqSetUrgency = function(el, type) {
   var n = document.getElementById('req-urgency-normal');
   var u = document.getElementById('req-urgency-urgent');
-  if (n) { n.style.color='#555'; n.style.background='transparent'; n.style.borderColor='rgba(255,255,255,0.07)'; }
-  if (u) { u.style.color='#555'; u.style.background='transparent'; u.style.borderColor='rgba(255,255,255,0.07)'; }
+  if (n) { n.style.color='#555'; n.style.background='transparent'; n.style.borderColor='#1a1a1a'; }
+  if (u) { u.style.color='#555'; u.style.background='transparent'; u.style.borderColor='#1a1a1a'; }
   if (type === 'urgent' && u) {
-    u.style.color='#FF4B4B'; u.style.background='rgba(255,75,75,0.06)'; u.style.borderColor='rgba(255,75,75,0.3)';
+    u.style.color='#FF4B4B'; u.style.background='#1a0a0a'; u.style.borderColor='#FF4B4B';
   } else if (n) {
-    n.style.color='#3ECF8E'; n.style.background='rgba(62,207,142,0.08)'; n.style.borderColor='rgba(62,207,142,0.3)';
+    n.style.color='#3ECF8E'; n.style.background='#0a1a12'; n.style.borderColor='#3ECF8E';
   }
 }
 
@@ -1775,6 +1808,33 @@ window._reqAddPhotos = function(input) {
   if (!grid || !addTile) return;
 
   window._reqStoredFiles = window._reqStoredFiles || [];
+
+  // Enforce max 5 photos total
+  var currentCount = window._reqStoredFiles.filter(function(f) { return f !== null; }).length;
+  var maxAllowed = 5 - currentCount;
+  if (maxAllowed <= 0) {
+    if (typeof window._showErrorToast === 'function') window._showErrorToast('Max 5 photos allowed');
+    input.value = '';
+    return;
+  }
+  if (files.length > maxAllowed) {
+    files = files.slice(0, maxAllowed);
+    if (typeof window._showErrorToast === 'function') window._showErrorToast('Max 5 photos allowed');
+  }
+
+  // Filter out files > 5MB
+  var MAX_FILE_SIZE = 5 * 1024 * 1024;
+  var validFiles = [];
+  for (var fi = 0; fi < files.length; fi++) {
+    if (files[fi].size > MAX_FILE_SIZE) {
+      if (typeof window._showErrorToast === 'function') window._showErrorToast('Photo too large — max 5MB each');
+    } else {
+      validFiles.push(files[fi]);
+    }
+  }
+  files = validFiles;
+  if (!files.length) { input.value = ''; return; }
+
   var total = files.length;
   var loaded = 0;
 
@@ -1787,7 +1847,6 @@ window._reqAddPhotos = function(input) {
   if (sendBtn) {
     sendBtn.disabled = true;
     sendBtn.style.cursor = 'not-allowed';
-    sendBtn.style.opacity = '0.4';
     sendBtn.textContent = 'Loading photos...';
   }
 
@@ -1811,7 +1870,7 @@ window._reqAddPhotos = function(input) {
         'style="width:100%;height:100%;object-fit:cover;display:block;">' +
         '<button data-action="reqRemovePhoto" ' +
         'style="position:absolute;top:3px;right:3px;width:22px;height:22px;' +
-        'background:rgba(0,0,0,0.85);border-radius:50%;display:flex;' +
+        'background:#000000;border-radius:50%;display:flex;' +
         'align-items:center;justify-content:center;font-size:11px;' +
         'color:#e8e2d9;cursor:pointer;border:none;">&#x2715;</button>';
       grid.insertBefore(div, addTile);
@@ -1836,7 +1895,7 @@ window._reqAddPhotos = function(input) {
     reader.onerror = function() {
       console.error('[client] FileReader failed');
       window.logError && window.logError('FileReader error', '', 'req-add-photos');
-      if (typeof showToast === 'function') showToast('Failed to load photo — try again', 'error');
+      if (typeof window._showErrorToast === 'function') window._showErrorToast('Failed to load photo — try again');
       loaded++;
       if (loaded === total) _reqValidate();
     };
@@ -1862,18 +1921,16 @@ window._reqValidate = function() {
   var valid = name.trim().length > 0 && brief.trim().length > 0;
   if (valid) {
     btn.disabled = false;
-    btn.style.color = '#000';
-    btn.style.background = '#C8A84B';
-    btn.style.border = 'none';
+    btn.style.color = '#C8A84B';
+    btn.style.background = 'none';
+    btn.style.border = '1px dotted #C8A84B';
     btn.style.cursor = 'pointer';
-    btn.style.opacity = '1';
     btn.textContent = '-- SEND REQUEST';
   } else {
     btn.disabled = true;
-    btn.style.color = '#000';
-    btn.style.background = '#C8A84B';
-    btn.style.border = 'none';
+    btn.style.color = '#333';
+    btn.style.background = 'none';
+    btn.style.border = '1px dotted #2a2a2a';
     btn.style.cursor = 'not-allowed';
-    btn.style.opacity = '0.35';
   }
 }
