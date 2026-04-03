@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-02
+# Last updated: 2026-04-03
 
 # All facts verified from actual codebase
 
@@ -98,35 +98,83 @@ Always use apiFetch() — never raw fetch().
 PostgREST eq. is CASE-SENSITIVE — always capitalize roles.
 (‘Creative’ not ‘creative’, ‘Admin’ not ‘admin’)
 
-posts: post_id(PK), title, stage, owner, content_pillar,
-location, target_date, linkedin_link, canva_link,
-status_changed_at, format, caption, images(jsonb), client_feedback
+Verified from Supabase information_schema on 2026-04-03.
 
-post_comments: id, post_id, author, author_role, message,
-visibility, reply_to, attachments(jsonb), mentioned_users(text[]),
-read, resolved, deleted, created_at, post_title
+posts: id(uuid), post_id(text PK), title(text), stage(text),
+owner(text), content_pillar(text), location(text),
+target_date(date), linkedin_link(text), internal_notes(text),
+created_at(timestamptz), updated_at(timestamptz),
+created_by(text), updated_by(text), canva_link(text),
+status_changed_at(timestamp), format(text), caption(text),
+images(jsonb), client_feedback(text), linked_post_id(text)
+NOTE: posts.comments column does NOT exist — removed. Never reference it.
 
-internal_notes: id, post_id, post_title, author, author_role,
-message, visibility, mentioned_users(text[]), resolved,
-resolved_by, reply_to, attachments(jsonb), read, deleted, created_at
+post_comments: id(uuid PK), post_id(text), author(text),
+author_role(text), message(text), created_at(timestamptz),
+visibility(text), mentioned_users(ARRAY), resolved(boolean),
+attachments(jsonb), read(boolean), resolved_by(text),
+post_title(text), reply_to(uuid), deleted(boolean)
+PURPOSE: Client-facing comments. Everything here is visible to client.
+No visibility filtering needed — all comments here are public to the
+post participants.
 
-notifications: id, type, message, read, created_at,
-post_id, user_role, actor
+internal_notes: id(uuid PK), post_id(text), post_title(text),
+author(text), author_role(text), message(text), visibility(text),
+mentioned_users(ARRAY), resolved(boolean), resolved_by(text),
+reply_to(uuid), attachments(jsonb), read(boolean), deleted(boolean),
+created_at(timestamptz)
+PURPOSE: Agency-only notes. Client can NEVER see these.
+Visibility field controls which agency roles see it.
+
+notifications: id(uuid PK), user_role(text), post_id(text),
+type(text), message(text), read(boolean), created_at(timestamptz),
+actor(text)
 RLS: DISABLED
 
-user_roles: id(uuid PK), email(unique), role, name
+activity_log: id(uuid PK), post_id(text), actor(text), action(text),
+old_stage(text), new_stage(text), created_at(timestamptz),
+read(boolean), updated_by(text)
+PURPOSE: Records every stage change in post lifecycle.
+NOTE: CLAUDE.md previously documented wrong column names
+(changed_by/changed_at). Actual columns are actor/created_at.
+Code is correct.
 
-tasks: id(bigint), assigned_to, message, due_date, done, created_at
+audit_log: id(uuid PK), post_id(text), action(text),
+old_value(text), new_value(text), changed_by(text),
+changed_at(timestamptz)
+PURPOSE: Records caption edit history — before and after values.
+RLS: UNRESTRICTED
 
-activity_log: id, post_id, action, old_stage, new_stage,
-changed_by, changed_at
-
-error_log: id(uuid auto), error_message, error_stack,
-user_email, user_role, page, action,
-created_at(default now()), app_version
+error_log: id(uuid auto), error_message(text), error_stack(text),
+user_email(text), user_role(text), page(text), action(text),
+created_at(default now()), app_version(text)
+PURPOSE: All app errors logged automatically via window.logError.
 RLS: DISABLED — must stay disabled
 
+tasks: id(bigint PK), assigned_to(text), message(text),
+due_date(text), done(boolean), created_at(timestamptz)
+PURPOSE: Tasks assigned between team members inside comment threads.
+RLS: UNRESTRICTED
+
+user_roles: id(uuid PK), email(text unique), role(text), name(text)
+PURPOSE: Controls who has access and what role they have.
+
+requests: id(text PK), title(text), description(text),
+created_by(text), created_at(timestamp), status(text),
+content_type(text), target_date(date), images(jsonb)
+PURPOSE: Client brief requests submitted via the New Request form.
+RLS: UNRESTRICTED
+
+post_comment_reactions: id(uuid PK), comment_id(uuid), post_id(text),
+author(text), author_role(text), emoji(text), created_at(timestamptz)
+PURPOSE: Emoji reactions on comments. Currently unused by Sorted core UI.
+
+linkedin_posts: Hinglish Ops insights only — not used by Sorted core workflow.
+linkedin_daily_followers: Hinglish Ops follower tracking — not used by Sorted core workflow.
+linkedin_daily_visitors: Hinglish Ops visitor tracking — not used by Sorted core workflow.
+
 Storage: post-assets bucket via R2 worker
+R2 public URL: pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev
 
 ## SECTION 6 — DESIGN SYSTEM (locked — never deviate)
 
@@ -439,3 +487,30 @@ After every PR update:
 - Roadmap phase status if anything completed
 
 A stale CLAUDE.md is worse than no CLAUDE.md.
+
+## SECTION 15 — FUTURE FEATURES
+
+These features are designed and approved but not yet built.
+Do not build any of these until explicitly instructed.
+
+### Post Message Board (Consolidated Feedback)
+- A 4th tab in PCS overlay: CAPTION / CLIENT / INTERNAL / BOARD
+- Single text area per post for consolidated client feedback
+- Visible to client + all agency roles
+- Client writes once — replaces scattered comment feedback
+- Triggers notification to Admin + Chitra + Pranav on submit
+- Stored in post_comments with type='board'
+- Requested by Shivangini (client) on 2026-04-03
+
+### Multi-Level Approval Chains
+- Configurable per client — 1, 2, or 3 approval layers
+- Layer 1: Reviewer (e.g. Manisha) — reviews and approves first
+- Layer 2: Approver (e.g. Shivangini) — gives final sign-off
+- TAT tracked automatically between each layer
+- Notification at each layer change
+- Requested by Manisha (client) on 2026-04-02
+
+### RLS Security for Multi-Client
+- Enable RLS on requests and tasks tables before onboarding second client
+- Client A must never see Client B's requests or tasks
+- Implement when second client is onboarded
