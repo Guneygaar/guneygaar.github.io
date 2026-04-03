@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260402h
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -250,7 +250,7 @@ Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
 
-Current (verified 2026-04-02):
+Current (verified 2026-04-03):
 Unit test files: 13
 Unit tests:      297 passing, 0 failing
 E2E specs:       7
@@ -447,6 +447,12 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    14 of 16 stage transitions had zero notifications
    Status: FIXED (PR#TBD) — added _sendStageNotif helper + notifications
    to all stage change functions per product rules
+1. Dead posts.comments references in normalise(), brief.js, approval.js
+   Location: 05-api.js normalise() mapped r.comments (dead column),
+   render/brief.js read post.comments instead of post.client_feedback,
+   09-approval.js read post.image (singular) instead of post.images[0]
+   Status: FIXED (PR#TBD) — removed dead column from normalise(),
+   brief.js reads client_feedback, approval.js reads images[0]
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN

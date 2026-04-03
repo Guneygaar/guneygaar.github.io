@@ -73,7 +73,6 @@ function normalise(rows) {
     targetDate:    r.target_date    || '',
     postLink:      r.canva_link     || '',
     linkedinUrl:   r.linkedin_link  || '',
-    comments:      r.comments       || '',
     caption:       r.caption        || '',
     client_feedback: r.client_feedback || '',
     images:        Array.isArray(r.images) ? r.images : (r.images ? [r.images] : []),

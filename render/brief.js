@@ -34,7 +34,7 @@ window._openBriefSheet = function(postId) {
     }
   }
 
-  var rawComments = post.comments || '';
+  var rawComments = post.client_feedback || post.description || '';
   var contentType = '';
   var typeMatch = rawComments.match(/\[Type:\s*([^\]]+)\]/);
   if (typeMatch) {
@@ -457,9 +457,9 @@ window._createPostFromBrief = function(briefPostId) {
       titleEl.value = brief.title || '';
       titleEl.dispatchEvent(new Event('input'));
     }
-    if (captionEl && brief.comments) {
-      // Strip [CHITRA NOTE] and [URGENT] from comments
-      var cleanBrief = (brief.comments || '')
+    if (captionEl && (brief.client_feedback || brief.description)) {
+      // Strip [CHITRA NOTE] and [URGENT] from brief text
+      var cleanBrief = (brief.client_feedback || brief.description || '')
         .replace(/\[URGENT\]\s*/g, '')
         .replace(/\[CHITRA NOTE\][^]*/gi, '')
         .trim();
