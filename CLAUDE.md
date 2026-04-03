@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -161,8 +161,14 @@ PURPOSE: Controls who has access and what role they have.
 
 requests: id(text PK), title(text), description(text),
 created_by(text), created_at(timestamp), status(text),
-content_type(text), target_date(date), images(jsonb)
+content_type(text), target_date(date), images(jsonb),
+drive_link(text)
 PURPOSE: Client brief requests submitted via the New Request form.
+Now the PRIMARY destination for client submissions (was posts table).
+Status values: pending → assigned → closed.
+On assign, Chitra creates a new post linked to the request.
+Entries with status=pending are fetched by loadPosts() and merged
+into AppState.posts.all with _isRequest:true flag.
 RLS: UNRESTRICTED
 
 post_comment_reactions: id(uuid PK), comment_id(uuid), post_id(text),
@@ -331,6 +337,9 @@ Pages branch:   main-/-root
 1. Vitest must pass 297/297 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
+1. Requests from requests table get _isRequest:true flag after loadPosts().
+   Brief sheet, assign, close, and reopen all check this flag to route
+   API calls to /requests instead of /posts. Do not remove this flag.
 
 ## SECTION 11 — GLOBAL FUNCTIONS
 
@@ -493,6 +502,14 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) — all rgba replaced with hex, single-select
    chips, max 5 photos / 5MB limit, auto-grow textarea, field 01 numbered,
    drive link field added (unwired to DB), button styles updated
+1. Client requests writing to posts table instead of requests table
+   Location: 08-post-actions.js submitClientRequest()
+   Status: FIXED (PR#TBD) — now writes to requests table with proper
+   columns (id, title, description, content_type, target_date, images,
+   drive_link, created_by, status). loadPosts() fetches pending requests
+   and merges into AppState with _isRequest:true flag. Brief sheet reads
+   content_type and drive_link as direct fields. Assign creates a new
+   post linked to the request. Close/reopen patches requests table.
 
 ## SECTION 13 — STABILITY ROADMAP
 

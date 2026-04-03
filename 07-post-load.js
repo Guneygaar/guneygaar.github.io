@@ -178,7 +178,34 @@ async function loadPosts() {
   try {
     const data = await apiFetch('/posts?select=*&order=id.desc');
     if (!_commitPostsResult(reqId, 'network')) return;
-    mergePosts(normalise(data));
+    // Fetch pending requests and merge as brief-stage entries
+    var reqData = [];
+    try {
+      var rawReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc');
+      if (Array.isArray(rawReqs)) {
+        reqData = rawReqs.map(function(r) {
+          return {
+            post_id: r.id,
+            id: r.id,
+            title: r.title || '',
+            stage: 'brief',
+            owner: 'Chitra',
+            client_feedback: r.description || '',
+            content_type: r.content_type || '',
+            target_date: r.target_date || '',
+            images: Array.isArray(r.images) ? r.images : [],
+            drive_link: r.drive_link || null,
+            created_at: r.created_at || '',
+            updated_at: r.created_at || '',
+            _isRequest: true
+          };
+        });
+      }
+    } catch (err) {
+      console.error('[post-load] requests fetch failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'load-requests');
+    }
+    mergePosts(normalise(data.concat(reqData)));
     hideErrorBanner();
     scheduleRender();
     // Fetch comment counts + client comment timestamps for all posts
@@ -239,6 +266,33 @@ async function loadPostsForClient() {
       ')&select=*&order=created_at.desc'
     );
     if (!_commitPostsResult(reqId, 'network')) return;
+
+    // Fetch pending requests for client view (shows as brief cards)
+    try {
+      var clientReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc');
+      if (Array.isArray(clientReqs)) {
+        clientReqs.forEach(function(r) {
+          data.push({
+            post_id: r.id,
+            id: r.id,
+            title: r.title || '',
+            stage: 'brief',
+            owner: 'Chitra',
+            client_feedback: r.description || '',
+            content_type: r.content_type || '',
+            target_date: r.target_date || '',
+            images: Array.isArray(r.images) ? r.images : [],
+            drive_link: r.drive_link || null,
+            created_at: r.created_at || '',
+            updated_at: r.created_at || '',
+            _isRequest: true
+          });
+        });
+      }
+    } catch (err) {
+      console.error('[post-load] client requests fetch failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'load-requests-client');
+    }
 
     var postIds = data.map(function(p) { return p.post_id || p.id; }).filter(Boolean);
     if (postIds.length) {

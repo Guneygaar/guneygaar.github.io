@@ -36,19 +36,28 @@ window._openBriefSheet = function(postId) {
 
   var rawComments = post.client_feedback || post.description || '';
   var contentType = '';
-  var typeMatch = rawComments.match(/\[Type:\s*([^\]]+)\]/);
-  if (typeMatch) {
-    contentType = typeMatch[1].trim();
-    rawComments = rawComments.replace(/\s*\[Type:[^\]]+\]/, '').trim();
-  }
-  var briefText = rawComments;
-  briefText = briefText.replace(/^\[URGENT\]\s*/, '').trim();
-
   var chitraNote = '';
-  var chitraMatch = briefText.match(/\[CHITRA NOTE\]([\s\S]*)/i);
-  if (chitraMatch) {
-    chitraNote = chitraMatch[1].trim();
-    briefText = briefText.replace(/\[CHITRA NOTE\][\s\S]*/i, '').trim();
+  var briefText = '';
+
+  if (post._isRequest) {
+    // Request from requests table — fields are direct, no string parsing
+    contentType = post.content_type || '';
+    briefText = rawComments;
+  } else {
+    // Legacy post — parse [Type:], [URGENT], [CHITRA NOTE] from client_feedback
+    var typeMatch = rawComments.match(/\[Type:\s*([^\]]+)\]/);
+    if (typeMatch) {
+      contentType = typeMatch[1].trim();
+      rawComments = rawComments.replace(/\s*\[Type:[^\]]+\]/, '').trim();
+    }
+    briefText = rawComments;
+    briefText = briefText.replace(/^\[URGENT\]\s*/, '').trim();
+
+    var chitraMatch = briefText.match(/\[CHITRA NOTE\]([\s\S]*)/i);
+    if (chitraMatch) {
+      chitraNote = chitraMatch[1].trim();
+      briefText = briefText.replace(/\[CHITRA NOTE\][\s\S]*/i, '').trim();
+    }
   }
 
   var _isAssignedToPranav =
@@ -177,6 +186,19 @@ window._openBriefSheet = function(postId) {
         'display:block;cursor:pointer;">';
       }).join('') +
       '</div></div>'
+      : '') +
+
+    // Drive link (from requests table)
+    (post.drive_link ?
+      '<div style="padding:0 18px 24px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;' +
+      'color:#8E8E93;margin-bottom:6px;">Drive Link</div>' +
+      '<a href="' + esc(post.drive_link) + '" target="_blank" rel="noopener" ' +
+      'style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+      'color:#3ECF8E;word-break:break-all;text-decoration:none;">' +
+      esc(post.drive_link) + '</a>' +
+      '</div>'
       : '') +
 
     // Role-based bottom action (state machine)
@@ -313,7 +335,77 @@ window._openBriefSheet = function(postId) {
 window._assignBriefToPranav = function(postId) {
   var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  var updatedFeedback = (post ? (post.client_feedback || '') : '');
+  if (!post) return;
+
+  if (post._isRequest) {
+    // Request from requests table: mark assigned, then create a new post
+    var nowISO = new Date().toISOString();
+    var updatedFeedback = (post.client_feedback || '');
+    if (direction.trim()) {
+      updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
+    }
+    var newPostId = 'POST-' + Date.now();
+    // 1. PATCH request status to assigned
+    apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'assigned', updated_at: nowISO })
+    }).then(function() {
+      // 2. Create new post linked to this request
+      return apiFetch('/posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          post_id: newPostId,
+          title: post.title || '',
+          stage: 'brief',
+          owner: 'Pranav',
+          client_feedback: updatedFeedback,
+          target_date: post.target_date || null,
+          images: post.images || [],
+          linked_post_id: post.post_id,
+          created_at: nowISO,
+          updated_at: nowISO
+        })
+      });
+    }).then(function() {
+      logActivity({
+        post_id: newPostId,
+        actor: 'Chitra',
+        actor_role: 'Servicing',
+        action: 'Brief assigned to Pranav' +
+          (direction.trim() ? ' with direction' : '')
+      });
+      // Update AppState: remove request entry, add new post
+      var filtered = (window.AppState.posts.all || []).filter(function(p) {
+        return (p.post_id || p.id) !== postId;
+      });
+      filtered.push({
+        post_id: newPostId,
+        id: newPostId,
+        title: post.title || '',
+        stage: 'brief',
+        owner: 'Pranav',
+        client_feedback: updatedFeedback,
+        target_date: post.target_date || null,
+        images: post.images || [],
+        linked_post_id: post.post_id,
+        created_at: nowISO,
+        updated_at: nowISO
+      });
+      window.AppState.posts.setAll(filtered);
+      document.getElementById('brief-sheet-overlay').remove();
+      document.body.style.overflow = '';
+      showToast('Assigned to Pranav', 'success');
+      if (typeof scheduleRender === 'function') scheduleRender();
+    }).catch(function(err) {
+      console.error('[brief] assign request to Pranav failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'assign-request-pranav');
+      showToast('Failed - try again', 'error');
+    });
+    return;
+  }
+
+  // Existing posts flow — PATCH the post directly
+  var updatedFeedback = (post.client_feedback || '');
   if (direction.trim()) {
     updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
   }
@@ -392,6 +484,35 @@ window._closeBrief = function(postId) {
   document.getElementById('brief-confirm-overlay') &&
     document.getElementById('brief-confirm-overlay').remove();
 
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+
+  if (post && post._isRequest) {
+    // Request from requests table — PATCH status to closed
+    apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'closed' })
+    }).then(function() {
+      // Update AppState — change stage to brief_done
+      var updated = (window.AppState.posts.all || []).map(function(p) {
+        if ((p.post_id || p.id) === postId) {
+          return Object.assign({}, p, { stage: 'brief_done' });
+        }
+        return p;
+      });
+      window.AppState.posts.setAll(updated);
+      var overlay = document.getElementById('brief-sheet-overlay');
+      if (overlay) overlay.remove();
+      document.body.style.overflow = '';
+      showToast('Brief closed', 'success');
+      if (typeof scheduleRender === 'function') scheduleRender();
+    }).catch(function(err) {
+      console.error('[brief] close request failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'close-request');
+      showToast('Failed - try again', 'error');
+    });
+    return;
+  }
+
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
     body: JSON.stringify({
@@ -412,6 +533,35 @@ window._closeBrief = function(postId) {
 }
 
 window._reopenBrief = function(postId) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+
+  if (post && post._isRequest) {
+    // Request from requests table — PATCH status back to pending
+    apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'pending' })
+    }).then(function() {
+      // Update AppState — change stage back to brief
+      var updated = (window.AppState.posts.all || []).map(function(p) {
+        if ((p.post_id || p.id) === postId) {
+          return Object.assign({}, p, { stage: 'brief' });
+        }
+        return p;
+      });
+      window.AppState.posts.setAll(updated);
+      var overlay = document.getElementById('brief-sheet-overlay');
+      if (overlay) overlay.remove();
+      document.body.style.overflow = '';
+      showToast('Brief reopened', 'success');
+      if (typeof scheduleRender === 'function') scheduleRender();
+    }).catch(function(err) {
+      console.error('[brief] reopen request failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'reopen-request');
+      showToast('Failed - try again', 'error');
+    });
+    return;
+  }
+
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
     body: JSON.stringify({
