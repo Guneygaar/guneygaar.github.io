@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -329,6 +329,8 @@ Pages branch:   main-/-root
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
 1. Vitest must pass 297/297 before every push
+1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
+   after loadPosts() — these are runtime-enriched fields, not DB columns
 
 ## SECTION 11 — GLOBAL FUNCTIONS
 
@@ -468,6 +470,13 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. Batch action removed Admin from notification recipients
    Location: render/pipeline.js executeBatchAction() — both branches returned ['Client'] only
    Status: FIXED (PR#639) — added 'Admin' to both branches
+1. _pcsDateChange DOM crash — activeMenu.remove() on detached element
+   Location: actions/pcs.js _pcsDateChange() — blur event detaches element before remove
+   Status: FIXED (PR#640) — added parentNode guard before remove()
+1. Client comments not surfaced for Chitra in pipeline
+   Location: 07-post-load.js comment fetch, render/pipeline.js COMMENTED group
+   Status: FIXED (PR#640) — enriched with _clientCommentAt, sorted by
+   recency, amber dot on cards with client comments
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN

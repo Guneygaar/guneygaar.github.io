@@ -321,6 +321,11 @@ window.buildPipelineCard = function(p, listKey) {
       'background:#C8A84B;color:#000;font-weight:600;' +
       'padding:4px 8px;flex-shrink:0;">BRIEF</div>';
   } else if (_hasComments) {
+    var _hasClientComment = !!(p._clientCommentAt);
+    var _amberDot = _hasClientComment
+      ? '<span style="display:inline-block;width:6px;height:6px;' +
+        'background:#F6A623;vertical-align:super;margin-left:2px;"></span>'
+      : '';
     chipHtml =
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.1em;text-transform:uppercase;' +
@@ -328,7 +333,7 @@ window.buildPipelineCard = function(p, listKey) {
       'color:#C8A84B;font-weight:600;' +
       'padding:3px 8px;flex-shrink:0;' +
       'display:flex;align-items:center;gap:4px;">' +
-      '&#x1F4AC; ' + _commentCount +
+      '&#x1F4AC; ' + _commentCount + _amberDot +
       '</div>';
   }
 
@@ -1149,6 +1154,12 @@ window._renderPipelineInner = function() {
     return (p._commentCount || 0) > 0;
   });
   commentedPosts = commentedPosts.slice().sort(function(a, b) {
+    // Client-commented posts first, sorted by most recent client comment
+    var aClient = a._clientCommentAt || '';
+    var bClient = b._clientCommentAt || '';
+    if (bClient && !aClient) return 1;
+    if (aClient && !bClient) return -1;
+    if (aClient && bClient) return bClient > aClient ? 1 : bClient < aClient ? -1 : 0;
     return (b._commentCount||0) - (a._commentCount||0);
   });
   var commentedHtml = '';

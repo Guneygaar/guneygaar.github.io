@@ -494,7 +494,9 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 // -- Date change from inline date picker --
 window._pcsDateChange = function(postId, dateValue) {
   if (window.AppState.pcs.activeMenu) {
-    window.AppState.pcs.activeMenu.remove();
+    if (window.AppState.pcs.activeMenu.parentNode) {
+      window.AppState.pcs.activeMenu.remove();
+    }
     window.AppState.pcs.activeMenu = null;
   }
   if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateValue);
