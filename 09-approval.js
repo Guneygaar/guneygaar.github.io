@@ -42,9 +42,9 @@ async function showApprovalView(postId) {
       ? `<a href="${esc(postLink)}" target="_blank" rel="noopener" class="approval-design-link">[edit] ${linkLabel} [ext]</a>`
       : `<div class="approval-no-design">No design link attached yet.</div>`;
 
-    const imageBlock = (post.image && _isAssetUrl(post.image))
+    const imageBlock = (post.images && post.images[0] && _isAssetUrl(post.images[0]))
       ? '<div style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
-        '<img src="' + esc(post.image) + '"' +
+        '<img src="' + esc(post.images[0]) + '"' +
         ' alt="Post photo"' +
         ' style="width:100%;max-height:200px;object-fit:cover;display:block;">' +
         '</div>'

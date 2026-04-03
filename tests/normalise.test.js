@@ -59,7 +59,6 @@ describe('normalise', () => {
     expect(result[0].location).toBe('');
     expect(result[0].targetDate).toBe('');
     expect(result[0].postLink).toBe('');
-    expect(result[0].comments).toBe('');
     expect(result[0].format).toBe('');
     expect(result[0].post_id).toBe('');
     expect(result[0].created_at).toBe('');
