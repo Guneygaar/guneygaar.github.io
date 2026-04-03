@@ -181,21 +181,26 @@ async function loadPosts() {
     mergePosts(normalise(data));
     hideErrorBanner();
     scheduleRender();
-    // Fetch comment counts for all posts
-    apiFetch('/post_comments?select=post_id')
+    // Fetch comment counts + client comment timestamps for all posts
+    apiFetch('/post_comments?select=post_id,created_at,author_role&order=created_at.desc')
       .then(function(rows) {
         if (!Array.isArray(rows)) return;
         var counts = {};
+        var clientLatest = {};
         rows.forEach(function(r) {
           if (r.post_id) {
             counts[r.post_id] = (counts[r.post_id] || 0) + 1;
+            if (r.author_role === 'Client' && !clientLatest[r.post_id]) {
+              clientLatest[r.post_id] = r.created_at;
+            }
           }
         });
         (window.AppState.posts.all || []).forEach(function(p) {
           p._commentCount = counts[p.post_id] || 0;
+          p._clientCommentAt = clientLatest[p.post_id] || null;
         });
         scheduleRender();
-      }).catch(function(err){ console.error('[07-post-load] activity-log', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'activity-log-post'); });
+      }).catch(function(err){ console.error('[07-post-load] comment-counts', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-counts'); });
     showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
