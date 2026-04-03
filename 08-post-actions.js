@@ -357,7 +357,7 @@ async function submitClientRequest() {
     if (reqOverlay) reqOverlay.style.display = 'none';
     var navEl = document.getElementById('bottom-nav');
     if (navEl) navEl.style.display = '';
-    showToast('Request sent - The team will be in touch.', 'success');
+    showToast('Request sent — we\'ll handle everything!', 'success');
     var overlay = document.getElementById('req-overlay');
     if (overlay) {
       overlay.innerHTML =
