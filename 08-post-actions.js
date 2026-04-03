@@ -36,13 +36,13 @@ window._sendStageNotif = function(postId, postTitle, stage, recipients, actorNam
 // -- Stage → notification recipients map --
 function _stageRecipients(stage) {
   var map = {
-    'brief':                 ['Pranav'],
-    'in_production':         ['Pranav'],
-    'ready':                 ['Chitra'],
+    'brief':                 ['Creative'],
+    'in_production':         ['Creative'],
+    'ready':                 ['Servicing'],
     'awaiting_approval':     ['Client'],
     'awaiting_brand_input':  ['Client'],
-    'scheduled':             ['Admin', 'Chitra', 'Pranav'],
-    'published':             ['Admin', 'Chitra', 'Pranav', 'Client']
+    'scheduled':             ['Admin', 'Servicing', 'Creative'],
+    'published':             ['Admin', 'Servicing', 'Creative', 'Client']
   };
   return map[stage] || [];
 }
@@ -215,7 +215,7 @@ async function clientApprove(postId, btn) {
       body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-    window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Chitra', 'Pranav'], window.AppState.user.name || 'Client');
+    window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
     const confirmEl = document.getElementById(`approved-confirm-${postId}`);
     if (confirmEl) confirmEl.classList.add('show');
     var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -247,7 +247,7 @@ async function clientAcknowledge(postId) {
     });
     await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
     var _ackPost = getPostById(postId);
-    window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Pranav'], window.AppState.user.name || 'Client');
+    window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Creative'], window.AppState.user.name || 'Client');
     showToast('Got it! The team has been notified.', 'success');
     setTimeout(() => loadPostsForClient(), 800);
   } catch { showToast('Failed  -  try again', 'error'); }
@@ -463,7 +463,7 @@ function _confirmPublish(postId) {
       action: 'published'
     });
     var _pubPost = getPostById(postId);
-    window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Chitra', 'Pranav', 'Client'], window.AppState.user.name || 'Shubham');
+    window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Servicing', 'Creative', 'Client'], window.AppState.user.name || 'Shubham');
     showToast('Published', 'success');
     if (typeof closePCS === 'function') closePCS();
     loadPosts();
