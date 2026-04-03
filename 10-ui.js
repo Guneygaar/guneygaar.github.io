@@ -1327,7 +1327,7 @@ async function _nrsSubmit() {
       post_id:       postId,
       title:         brief.substring(0, 80),
       stage:         'in_production',
-      owner:         document.getElementById('nrs-assign').value || 'Pranav',
+      owner:         document.getElementById('nrs-assign').value || 'Creative',
       content_pillar: document.getElementById('nrs-pillar').value || null,
       format:        document.getElementById('nrs-format').value || null,
       target_date:   document.getElementById('nrs-date').value || null,
