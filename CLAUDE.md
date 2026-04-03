@@ -250,7 +250,7 @@ Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
 
-Current (verified 2026-04-02):
+Current (verified 2026-04-03):
 Unit test files: 13
 Unit tests:      297 passing, 0 failing
 E2E specs:       7
@@ -447,21 +447,27 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    14 of 16 stage transitions had zero notifications
    Status: FIXED (PR#TBD) — added _sendStageNotif helper + notifications
    to all stage change functions per product rules
+1. Dead posts.comments references in normalise(), brief.js, approval.js
+   Location: 05-api.js normalise() mapped r.comments (dead column),
+   render/brief.js read post.comments instead of post.client_feedback,
+   09-approval.js read post.image (singular) instead of post.images[0]
+   Status: FIXED (PR#638) — removed dead column from normalise(),
+   brief.js reads client_feedback, approval.js reads images[0]
 1. Brief sheet reads non-existent post.comments column
    Location: render/brief.js _openBriefSheet() and _createPostFromBrief()
-   Status: FIXED (PR#TBD) — changed to client_feedback || description
+   Status: FIXED (PR#639) — changed to client_feedback || description
 1. Caption save fails when audit_log POST crashes
    Location: actions/pcs.js _saveCaptionEdit() — single try/catch for PATCH + audit
-   Status: FIXED (PR#TBD) — split into two independent try/catch blocks
+   Status: FIXED (PR#639) — split into two independent try/catch blocks
 1. Badge timer keeps firing after session expiry
    Location: 10-ui.js notifBadgeTimer setInterval — no session guard
-   Status: FIXED (PR#TBD) — added localStorage token check before firing
+   Status: FIXED (PR#639) — added localStorage token check before firing
 1. Stale token causes error banner on login
    Location: 03-auth.js verifyOTPCode() — old sb_access_token not cleared
-   Status: FIXED (PR#TBD) — clear stale token before setting fresh one
+   Status: FIXED (PR#639) — clear stale token before setting fresh one
 1. Batch action removed Admin from notification recipients
    Location: render/pipeline.js executeBatchAction() — both branches returned ['Client'] only
-   Status: FIXED (PR#TBD) — added 'Admin' to both branches
+   Status: FIXED (PR#639) — added 'Admin' to both branches
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN
