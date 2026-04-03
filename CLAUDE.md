@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -486,6 +486,13 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. Session persistence — clients getting logged out
    Check: persistSession in 02-session.js Supabase client config
    Status: OPEN
+1. Client request form: 15 rgba() violations, multi-select chips,
+   no photo size/count limits, fixed-height textarea, dead .nrs-* CSS,
+   all inline styles, no field 01 number label
+   Location: render/client.js _ensureReqOverlay() + helper functions
+   Status: FIXED (PR#TBD) — all rgba replaced with hex, single-select
+   chips, max 5 photos / 5MB limit, auto-grow textarea, field 01 numbered,
+   drive link field added (unwired to DB), button styles updated
 
 ## SECTION 13 — STABILITY ROADMAP
 
