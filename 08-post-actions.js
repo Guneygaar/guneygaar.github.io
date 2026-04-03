@@ -284,14 +284,14 @@ async function submitClientRequest() {
   if (btn) {
     btn.disabled = true;
     btn.style.color = '#444';
-    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    btn.style.borderColor = '#2a2a2a';
     btn.style.background = 'transparent';
     btn.style.boxShadow = 'none';
     btn.style.cursor = 'not-allowed';
     btn.innerHTML = 'Sending...';
   }
   try {
-    const postId = 'REQ-' + Date.now();
+    const reqId = 'REQ-' + Date.now();
     const email  = localStorage.getItem('hinglish_email') || 'Client';
     const reqDate = document.getElementById('req-date')?.value || null;
     var reqName = (document.getElementById('req-name') || {}).value || '';
@@ -300,54 +300,46 @@ async function submitClientRequest() {
       now.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' }) +
       ' - ' +
       now.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit', timeZone:'Asia/Kolkata' });
-    const payload = {
-      post_id:     postId,
-      title:       reqName.trim() || fallbackTitle,
-      stage:       'brief',
-      owner:       'Chitra',
-      client_feedback: brief,
-      target_date: reqDate,
-      created_at:  new Date().toISOString(),
-      updated_at:  new Date().toISOString(),
-    };
+
     // Read selected content type chip
     var selectedChip = document.querySelector(
-      '#req-overlay button[style*="rgb(200, 168, 75)"]'
+      '#req-overlay button[data-action="reqChip"][style*="rgb(200, 168, 75)"]'
     );
-    if (selectedChip) {
-      payload.client_feedback = (payload.client_feedback || '') +
-        ' [Type: ' + selectedChip.textContent.trim() + ']';
-    }
-    // Read urgency
-    var urgentBtn = document.getElementById('req-urgency-urgent');
-    var isUrgent = urgentBtn &&
-      urgentBtn.style.color === 'rgb(255, 75, 75)';
-    if (isUrgent) {
-      payload.client_feedback = '[URGENT] ' + (payload.client_feedback || '');
-    }
+    var contentType = selectedChip ? selectedChip.textContent.trim() : null;
+
     var imageUrls = [];
     if (files.length) {
       imageUrls = await Promise.all(
-        files.map(function(f) { return uploadPostAsset(f, postId); })
+        files.map(function(f) { return uploadPostAsset(f, reqId); })
       );
     }
-    if (imageUrls.length) {
-      payload.images = imageUrls;
-    }
+
+    const payload = {
+      id:           reqId,
+      title:        reqName.trim() || fallbackTitle,
+      description:  brief,
+      content_type: contentType,
+      target_date:  reqDate,
+      images:       imageUrls.length ? imageUrls : [],
+      drive_link:   window._reqDriveLink || null,
+      created_by:   window.AppState.user.name || window.AppState.user.email || email,
+      status:       'pending'
+    };
+
     console.log('[REQUEST] PAYLOAD:', payload);
-    await apiFetch('/posts', {
+    await apiFetch('/requests', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     console.log('[REQUEST] API SUCCESS');
-    await logActivity({ post_id: postId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    await logActivity({ post_id: reqId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
     var _reqTitle = (document.getElementById('req-name') || {}).value ||
       'New request';
     await apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
         user_role: 'Servicing',
-        post_id: postId,
+        post_id: reqId,
         type: 'new_request',
         message: (window.AppState.user.name || 'Client') + ' submitted a new request: ' + _reqTitle,
         actor: window.AppState.user.name || window.currentUserName || 'Client',
@@ -393,7 +385,6 @@ async function submitClientRequest() {
     if (btn) {
       btn.disabled = false;
       btn.textContent = '-- SEND REQUEST';
-      btn.style.opacity = '1';
     }
   }
 }
