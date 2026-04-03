@@ -130,6 +130,7 @@ function closeUserMenu() {
 
 // -- Global Admin Menu -------------------------
 function gamSwitchRole(role) {
+  role = typeof normalizeRole === 'function' ? (normalizeRole(role) || role) : role;
   if (role === 'Admin') {
     localStorage.removeItem('pcs_role_preview');
   } else {

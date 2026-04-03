@@ -4,6 +4,23 @@
 =============================================== */
 console.log("LOADED:", "03-auth.js");
 
+function normalizeRole(r) {
+  if (!r) return null;
+  var map = {
+    pranav: 'Creative',
+    chitra: 'Servicing',
+    shubham: 'Admin',
+    manisha: 'Client',
+    shivangini: 'Client',
+    creative: 'Creative',
+    servicing: 'Servicing',
+    admin: 'Admin',
+    client: 'Client'
+  };
+  return map[String(r).toLowerCase()] || r;
+}
+window.normalizeRole = normalizeRole;
+
 function _normaliseRole(r) {
   if (!r) return 'Admin';
   var map = {
@@ -165,11 +182,12 @@ async function resolveRoleFromToken(accessToken, email) {
     if (userName) window.AppState.user.name = userName;
     if (userName) localStorage.setItem('hinglish_name', userName);
     window.AppState.user.email = email;
-    localStorage.setItem('hinglish_role', role);
+    var normalizedRole = normalizeRole(role) || role;
+    localStorage.setItem('hinglish_role', normalizedRole);
     localStorage.setItem('hinglish_email', email);
     const overlay = document.getElementById('login-overlay');
     if (overlay) overlay.classList.add('hidden');
-    activateRole(role);
+    activateRole(normalizedRole);
   } catch (err) {
     console.error('[auth] resolveRoleFromToken failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'resolve-role-token');
@@ -216,6 +234,7 @@ function logout() {
 }
 
 function activateRole(role) {
+  role = normalizeRole(role) || role;
   // Clear stale preview role for non-admin users
   var _dbRole = (role || '').toLowerCase();
   if (_dbRole !== 'admin') {
