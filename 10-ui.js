@@ -1581,5 +1581,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.AppState.timers.notifBadgeTimer = setInterval(function() {
+  if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }, 60000);
