@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403o
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -510,6 +510,12 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    and merges into AppState with _isRequest:true flag. Brief sheet reads
    content_type and drive_link as direct fields. Assign creates a new
    post linked to the request. Close/reopen patches requests table.
+1. Pipeline owner filter only matched 'pranav'/'chitra' person names,
+   missed 'Creative'/'Servicing' role names now used as owner values
+   Location: render/pipeline.js — isMine checks, chip counts, narrative
+   counts, brief grouping, Chitra brief filter
+   Status: FIXED (PR#TBD) — all owner checks now match both person name
+   and role name (pranav||creative, chitra||servicing)
 
 ## SECTION 13 — STABILITY ROADMAP
 
