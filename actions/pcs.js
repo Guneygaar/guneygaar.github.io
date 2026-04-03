@@ -2038,7 +2038,14 @@ window._saveCaptionEdit = async function(postId) {
       method: 'PATCH',
       body: JSON.stringify({ caption: newCaption })
     });
+  } catch (err) {
+    console.error('[pcs] save caption failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-caption');
+    showToast && showToast('Failed to save caption — try again', 'error');
+    return;
+  }
 
+  try {
     await apiFetch('/audit_log', {
       method: 'POST',
       body: JSON.stringify({
@@ -2050,49 +2057,47 @@ window._saveCaptionEdit = async function(postId) {
         changed_at: new Date().toISOString()
       })
     });
-
-    // Update posts in memory so reopening the card shows the new caption
-    var _found_1746 = false;
-    var _next_1746 = window.AppState.posts.all.map(function(p) {
-      if (getPostId(p) === postId) {
-        _found_1746 = true;
-        return Object.assign({}, p, { caption: newCaption });
-      }
-      return p;
-    });
-    if (!_found_1746 && window._appStateDevMode) {
-      console.warn('[AppState] Post not found', postId);
-    }
-    window.AppState.posts.setAll(_next_1746);
-
-    if (textEl) {
-      textEl.textContent  = newCaption || 'No copy yet';
-      textEl.dataset.raw  = newCaption;
-      if (newCaption) {
-        textEl.style.fontFamily    = "'DM Sans',sans-serif";
-        textEl.style.fontSize      = '13px';
-        textEl.style.color         = '#888';
-        textEl.style.lineHeight    = '1.6';
-        textEl.style.whiteSpace    = 'pre-wrap';
-        textEl.style.letterSpacing = '';
-      } else {
-        textEl.style.fontFamily    = "'IBM Plex Mono',monospace";
-        textEl.style.fontSize      = '9px';
-        textEl.style.color         = '#333';
-        textEl.style.letterSpacing = '0.06em';
-        textEl.style.whiteSpace    = '';
-      }
-      textEl.style.display = '';
-    }
-    if (editBtn) editBtn.style.display = '';
-    if (ta)      ta.remove();
-    if (btnRow)  btnRow.remove();
-
   } catch (err) {
-    console.error('[pcs] save caption failed', err);
-    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-caption');
-    showToast && showToast('Failed to save caption — try again', 'error');
+    console.error('[pcs] audit_log write failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-audit-log');
   }
+
+  // Update posts in memory so reopening the card shows the new caption
+  var _found_1746 = false;
+  var _next_1746 = window.AppState.posts.all.map(function(p) {
+    if (getPostId(p) === postId) {
+      _found_1746 = true;
+      return Object.assign({}, p, { caption: newCaption });
+    }
+    return p;
+  });
+  if (!_found_1746 && window._appStateDevMode) {
+    console.warn('[AppState] Post not found', postId);
+  }
+  window.AppState.posts.setAll(_next_1746);
+
+  if (textEl) {
+    textEl.textContent  = newCaption || 'No copy yet';
+    textEl.dataset.raw  = newCaption;
+    if (newCaption) {
+      textEl.style.fontFamily    = "'DM Sans',sans-serif";
+      textEl.style.fontSize      = '13px';
+      textEl.style.color         = '#888';
+      textEl.style.lineHeight    = '1.6';
+      textEl.style.whiteSpace    = 'pre-wrap';
+      textEl.style.letterSpacing = '';
+    } else {
+      textEl.style.fontFamily    = "'IBM Plex Mono',monospace";
+      textEl.style.fontSize      = '9px';
+      textEl.style.color         = '#333';
+      textEl.style.letterSpacing = '0.06em';
+      textEl.style.whiteSpace    = '';
+    }
+    textEl.style.display = '';
+  }
+  if (editBtn) editBtn.style.display = '';
+  if (ta)      ta.remove();
+  if (btnRow)  btnRow.remove();
 }
 
 window._sharePostOnWhatsApp = function(postId) {

@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -451,8 +451,23 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Location: 05-api.js normalise() mapped r.comments (dead column),
    render/brief.js read post.comments instead of post.client_feedback,
    09-approval.js read post.image (singular) instead of post.images[0]
-   Status: FIXED (PR#TBD) — removed dead column from normalise(),
+   Status: FIXED (PR#638) — removed dead column from normalise(),
    brief.js reads client_feedback, approval.js reads images[0]
+1. Brief sheet reads non-existent post.comments column
+   Location: render/brief.js _openBriefSheet() and _createPostFromBrief()
+   Status: FIXED (PR#639) — changed to client_feedback || description
+1. Caption save fails when audit_log POST crashes
+   Location: actions/pcs.js _saveCaptionEdit() — single try/catch for PATCH + audit
+   Status: FIXED (PR#639) — split into two independent try/catch blocks
+1. Badge timer keeps firing after session expiry
+   Location: 10-ui.js notifBadgeTimer setInterval — no session guard
+   Status: FIXED (PR#639) — added localStorage token check before firing
+1. Stale token causes error banner on login
+   Location: 03-auth.js verifyOTPCode() — old sb_access_token not cleared
+   Status: FIXED (PR#639) — clear stale token before setting fresh one
+1. Batch action removed Admin from notification recipients
+   Location: render/pipeline.js executeBatchAction() — both branches returned ['Client'] only
+   Status: FIXED (PR#639) — added 'Admin' to both branches
 1. LinkedIn URL not saving from publish dialog
    Location: actions/pcs.js ~lines 548-580
    Status: OPEN

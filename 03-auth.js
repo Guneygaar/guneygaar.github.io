@@ -135,6 +135,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
     const accessToken  = data.access_token;
     const refreshToken = data.refresh_token;
     if (!accessToken) throw new Error('No token returned');
+    localStorage.removeItem('sb_access_token');
     localStorage.setItem('sb_access_token', accessToken);
     if (refreshToken) localStorage.setItem('sb_refresh_token', refreshToken);
     localStorage.removeItem('hinglish_pending_email');

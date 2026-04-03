@@ -626,7 +626,7 @@ window.executeBatchAction = async function(targetStage) {
       ? 'for approval' : 'for brand input';
     var batchMsg = notifActor + ' sent ' + count + ' posts ' + stageLabel;
     var batchRecipients = targetStage === 'awaiting_approval'
-      ? ['Client'] : ['Client'];
+      ? ['Client', 'Admin'] : ['Client', 'Admin'];
     batchRecipients.forEach(function(name) {
       var roleMap = { 'Admin': 'Admin', 'Chitra': 'Servicing', 'Pranav': 'Creative', 'Client': 'Client' };
       apiFetch('/notifications', {
