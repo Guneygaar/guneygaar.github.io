@@ -353,7 +353,7 @@ function _buildUserMenu() {
   if (window.AppState.user.role === 'Admin' ||
       localStorage.getItem('hinglish_role') === 'Admin' ||
       localStorage.getItem('hinglish_role') === 'admin') {
-    const roles = ['Admin', 'Pranav', 'Chitra', 'Client'];
+    const roles = ['Admin', 'Creative', 'Servicing', 'Client'];
     html += '<div class="um-section-label">View</div>';
     html += '<div class="um-role-options">';
     roles.forEach(r => {

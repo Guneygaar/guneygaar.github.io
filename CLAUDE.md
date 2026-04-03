@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403l
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403m
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -524,7 +524,7 @@ Ph0 Safety            — DONE
 Ph1 File Architecture — DONE (render/ + actions/ extracted)
 Ph2 AppState          — DONE (all globals migrated)
 Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed, Pass 3 pipeline, Pass 4 PCS — 12 fixes, 3 alert→toast, Pass 5 dashboard — 4 fixes + 1 post-load fix, Pass 6 post-load — 12 fixes + 4 duplicate function overwrites fixed, Pass 7 auth — 6 fixes incl. silent refreshSession catch)
-Ph3.5 Role Standardization — IN PROGRESS (Phase A: normalizeRole() added, rollback.sql created)
+Ph3.5 Role Standardization — IN PROGRESS (Phase A: normalizeRole() added, rollback.sql created; Phase B: config wire cut — ALLOWED_OWNERS, ROLE_TABS, notification recipients, HTML option values all use DB roles)
 Ph4 Event Delegation  — PENDING
 Ph5 Optimistic UI     — IN PROGRESS (client comments done)
 Ph6 PWA               — PENDING

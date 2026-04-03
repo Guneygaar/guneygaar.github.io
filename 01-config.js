@@ -161,8 +161,6 @@ const ROLE_TABS = {
   'Admin':     _FULL_TABS,
   'Servicing': _FULL_TABS,
   'Creative':  _FULL_TABS,
-  'Pranav':    _FULL_TABS,
-  'Chitra':    _FULL_TABS,
   'Client':    _FULL_TABS,
 };
 
@@ -199,7 +197,7 @@ const STRIP_STAGES = [
 ];
 
 // Canonical owner list  -  used by dropdowns, validation, and grid
-const ALLOWED_OWNERS = ['Pranav', 'Chitra', 'Client'];
+const ALLOWED_OWNERS = ['Creative', 'Servicing', 'Client', 'Admin'];
 
 // -- Stage change interceptor  -  logs every .stage mutation --
 function setStage(post, newStage, source) {

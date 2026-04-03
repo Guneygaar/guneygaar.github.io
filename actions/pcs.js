@@ -442,7 +442,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     items = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
     currentVal = post ? (post.location || '') : '';
   } else if (field === 'owner') {
-    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Pranav','Chitra','Client'];
+    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Creative','Servicing','Client','Admin'];
     currentVal = post ? (post.owner || '') : '';
   } else if (field === 'stage') {
     items = typeof STAGES_DB !== 'undefined' ? STAGES_DB : [];
