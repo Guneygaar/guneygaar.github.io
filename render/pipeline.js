@@ -400,14 +400,13 @@ window.updatePipelineChipCounts = function() {
   var _isPranavChip = _chipRole === 'creative' ||
     _chipRole === 'pranav' ||
     (window.AppState.user.email||'').toLowerCase().includes('pranav');
-  var _isChitraChip = (_chipRole === 'servicing' ||
-    _chipRole === 'chitra') && !_isPranavChip;
+  var _isChitraChip = _chipRole === 'servicing' && !_isPranavChip;
   var chipPosts = posts.filter(function(p) {
     var s = p.stage || '';
     if (s === 'published' || s === 'parked' || s === 'rejected') return false;
     if (_isPranavChip) {
       var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav';
+      var isMine = owner === 'creative';
       return (s === 'brief' || s === 'in_production' || s === 'ready') && isMine;
     }
     return true;
@@ -688,15 +687,15 @@ window.updatePipelineNarrative = function(posts) {
     if (narrEl) {
       var _myProd = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'in_production') &&
-          (p.owner || '').toLowerCase() === 'pranav';
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
       var _myBriefs = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'brief') &&
-          (p.owner || '').toLowerCase() === 'pranav';
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
       var _myReady = (window.AppState.posts.all || []).filter(function(p) {
         return (p.stage === 'ready') &&
-          (p.owner || '').toLowerCase() === 'pranav';
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
 
       if (_myBriefs > 0) {
@@ -818,8 +817,7 @@ window.updatePipelineNarrative = function(posts) {
 
   // PRIORITY 5: Pranav idle 3+ days
   var pranavPosts = allP.filter(function(p) {
-    return (p.owner||'').toLowerCase() === 'pranav' ||
-           (p.owner||'').toLowerCase() === 'creative';
+    return (p.owner||'').toLowerCase() === 'creative';
   });
   if (pranavPosts.length) {
     var last = pranavPosts.sort(function(a,b) {
@@ -907,14 +905,14 @@ window._renderPipelineInner = function() {
   var _isPranavPL = _rolePL === 'creative' ||
     _rolePL === 'pranav' ||
     (window.AppState.user.email || '').toLowerCase().includes('pranav');
-  var _isChitraPL = (_rolePL === 'servicing' || _rolePL === 'chitra') && !_isPranavPL;
+  var _isChitraPL = _rolePL === 'servicing' && !_isPranavPL;
   var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
 
   if (_isPranavPL) {
     source = source.filter(function(p) {
       var stage = p.stage || '';
       var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav';
+      var isMine = owner === 'creative';
       if (stage === 'brief') return isMine;
       if (stage === 'in_production') return isMine;
       if (stage === 'ready') return isMine;
@@ -936,7 +934,7 @@ window._renderPipelineInner = function() {
       var stage = p.stage || '';
       if (!_chitraStages.includes(stage)) return false;
       if (stage === 'brief') {
-        return (p.owner || '').toLowerCase() === 'chitra';
+        return (p.owner || '').toLowerCase() === 'servicing';
       }
       return true;
     });
@@ -973,7 +971,7 @@ window._renderPipelineInner = function() {
       (window.AppState.user.email || '').toLowerCase().includes('pranav');
     if (_isPranavBF) {
       grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
-        return (p.owner || '').toLowerCase() === 'pranav';
+        return (p.owner || '').toLowerCase() === 'creative';
       });
       if (!grouped['brief'].length) delete grouped['brief'];
     }
