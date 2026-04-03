@@ -345,7 +345,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   if (post.owner) {
     var ownerColor = ' pcs-chip--dim';
     var ownerLC = (post.owner || '').toLowerCase();
-    if (ownerLC === 'chitra' || ownerLC === 'pranav') ownerColor = ' pcs-chip--cyan';
+    if (ownerLC === 'servicing' || ownerLC === 'creative') ownerColor = ' pcs-chip--cyan';
     else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
     var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
     chips.push('<button class="pcs-chip' + ownerColor + '"' +
