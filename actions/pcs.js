@@ -345,7 +345,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   if (post.owner) {
     var ownerColor = ' pcs-chip--dim';
     var ownerLC = (post.owner || '').toLowerCase();
-    if (ownerLC === 'chitra' || ownerLC === 'pranav') ownerColor = ' pcs-chip--cyan';
+    if (ownerLC === 'servicing' || ownerLC === 'creative') ownerColor = ' pcs-chip--cyan';
     else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
     var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
     chips.push('<button class="pcs-chip' + ownerColor + '"' +
@@ -442,7 +442,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     items = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
     currentVal = post ? (post.location || '') : '';
   } else if (field === 'owner') {
-    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Pranav','Chitra','Client'];
+    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Creative','Servicing','Client'];
     currentVal = post ? (post.owner || '') : '';
   } else if (field === 'stage') {
     items = typeof STAGES_DB !== 'undefined' ? STAGES_DB : [];

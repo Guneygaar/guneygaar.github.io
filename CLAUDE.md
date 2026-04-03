@@ -514,8 +514,9 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    missed 'Creative'/'Servicing' role names now used as owner values
    Location: render/pipeline.js — isMine checks, chip counts, narrative
    counts, brief grouping, Chitra brief filter
-   Status: FIXED (PR#TBD) — all owner checks now match both person name
-   and role name (pranav||creative, chitra||servicing)
+   Status: FIXED (PR#TBD) — all owner checks now use role names only
+   (creative, servicing). Person names removed from owner logic.
+   Also updated PCS chip color and dropdown fallback in actions/pcs.js.
 
 ## SECTION 13 — STABILITY ROADMAP
 

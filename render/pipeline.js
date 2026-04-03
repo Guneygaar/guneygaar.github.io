@@ -407,7 +407,7 @@ window.updatePipelineChipCounts = function() {
     if (s === 'published' || s === 'parked' || s === 'rejected') return false;
     if (_isPranavChip) {
       var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav' || owner === 'creative';
+      var isMine = owner === 'creative';
       return (s === 'brief' || s === 'in_production' || s === 'ready') && isMine;
     }
     return true;
@@ -687,19 +687,16 @@ window.updatePipelineNarrative = function(posts) {
       || document.getElementById('pipeline-narrative');
     if (narrEl) {
       var _myProd = (window.AppState.posts.all || []).filter(function(p) {
-        var _o = (p.owner || '').toLowerCase();
         return (p.stage === 'in_production') &&
-          (_o === 'pranav' || _o === 'creative');
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
       var _myBriefs = (window.AppState.posts.all || []).filter(function(p) {
-        var _o = (p.owner || '').toLowerCase();
         return (p.stage === 'brief') &&
-          (_o === 'pranav' || _o === 'creative');
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
       var _myReady = (window.AppState.posts.all || []).filter(function(p) {
-        var _o = (p.owner || '').toLowerCase();
         return (p.stage === 'ready') &&
-          (_o === 'pranav' || _o === 'creative');
+          (p.owner || '').toLowerCase() === 'creative';
       }).length;
 
       if (_myBriefs > 0) {
@@ -821,8 +818,7 @@ window.updatePipelineNarrative = function(posts) {
 
   // PRIORITY 5: Pranav idle 3+ days
   var pranavPosts = allP.filter(function(p) {
-    return (p.owner||'').toLowerCase() === 'pranav' ||
-           (p.owner||'').toLowerCase() === 'creative';
+    return (p.owner||'').toLowerCase() === 'creative';
   });
   if (pranavPosts.length) {
     var last = pranavPosts.sort(function(a,b) {
@@ -917,7 +913,7 @@ window._renderPipelineInner = function() {
     source = source.filter(function(p) {
       var stage = p.stage || '';
       var owner = (p.owner || '').toLowerCase();
-      var isMine = owner === 'pranav' || owner === 'creative';
+      var isMine = owner === 'creative';
       if (stage === 'brief') return isMine;
       if (stage === 'in_production') return isMine;
       if (stage === 'ready') return isMine;
@@ -940,7 +936,7 @@ window._renderPipelineInner = function() {
       if (!_chitraStages.includes(stage)) return false;
       if (stage === 'brief') {
         var _bo = (p.owner || '').toLowerCase();
-        return _bo === 'chitra' || _bo === 'servicing';
+        return _bo === 'servicing';
       }
       return true;
     });
@@ -978,7 +974,7 @@ window._renderPipelineInner = function() {
     if (_isPranavBF) {
       grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
         var _bo = (p.owner || '').toLowerCase();
-        return _bo === 'pranav' || _bo === 'creative';
+        return _bo === 'creative';
       });
       if (!grouped['brief'].length) delete grouped['brief'];
     }
