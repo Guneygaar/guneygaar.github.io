@@ -94,8 +94,8 @@ var val = document.getElementById('new-post-owner').value;
 var strip = document.getElementById('nps-color-strip');
 if (!strip) return;
 strip.className = 'nps-color-strip';
-if (val === 'Pranav') strip.classList.add('owner-pranav');
-if (val === 'Chitra') strip.classList.add('owner-chitra');
+if (val === 'Creative') strip.classList.add('owner-pranav');
+if (val === 'Servicing') strip.classList.add('owner-chitra');
 if (val === 'Client') strip.classList.add('owner-client');
 _npsCheckValid();
 }

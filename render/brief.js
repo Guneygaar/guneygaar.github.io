@@ -61,7 +61,8 @@ window._openBriefSheet = function(postId) {
   }
 
   var _isAssignedToPranav =
-    (post.owner || '').toLowerCase() === 'pranav' &&
+    ((post.owner || '').toLowerCase() === 'pranav' ||
+    (post.owner || '').toLowerCase() === 'creative') &&
     !_isBriefDone;
   var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
@@ -357,7 +358,7 @@ window._assignBriefToPranav = function(postId) {
           post_id: newPostId,
           title: post.title || '',
           stage: 'brief',
-          owner: 'Pranav',
+          owner: 'Creative',
           client_feedback: updatedFeedback,
           target_date: post.target_date || null,
           images: post.images || [],
@@ -383,7 +384,7 @@ window._assignBriefToPranav = function(postId) {
         id: newPostId,
         title: post.title || '',
         stage: 'brief',
-        owner: 'Pranav',
+        owner: 'Creative',
         client_feedback: updatedFeedback,
         target_date: post.target_date || null,
         images: post.images || [],
@@ -413,7 +414,7 @@ window._assignBriefToPranav = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief',
-      owner: 'Pranav',
+      owner: 'Creative',
       client_feedback: updatedFeedback,
       status_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -566,7 +567,7 @@ window._reopenBrief = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief',
-      owner: 'Chitra',
+      owner: 'Servicing',
       updated_at: new Date().toISOString()
     })
   }).then(function() {
@@ -618,7 +619,7 @@ window._createPostFromBrief = function(briefPostId) {
       captionEl.style.height = captionEl.scrollHeight + 'px';
     }
     if (ownerEl) {
-      ownerEl.value = 'Pranav';
+      ownerEl.value = 'Creative';
       ownerEl.dispatchEvent(new Event('change'));
     }
 
