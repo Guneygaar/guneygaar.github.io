@@ -27,7 +27,7 @@ Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403f
+Version format: ?v=YYYYMMDDx. Current: ?v=20260403g
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
