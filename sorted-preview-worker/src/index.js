@@ -7,14 +7,38 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type, X-Preview-Secret',
 };
 
-function getFallbackHtml(slug) {
+function getFallbackHtml(slug, postId) {
+  var redirectParam = postId ? 'id=' + escAttr(postId) : 'p=' + slug;
   return '<!DOCTYPE html><html><head>' +
     '<meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
     '<title>Sorted — Post Review</title>' +
-    '<meta http-equiv="refresh" content="0; url=https://guneygaar.github.io/ok/index.html?p=' + slug + '" />' +
+    '<meta http-equiv="refresh" content="0; url=https://guneygaar.github.io/ok/index.html?' + redirectParam + '" />' +
     '<meta property="og:title" content="Review this post on Sorted">' +
     '<meta property="og:description" content="Tap to open and approve this post.">' +
+    '</head><body>Opening Sorted...</body></html>';
+}
+
+function buildOgHtml(shortCode, title, imageUrl, postId) {
+  var safeTitle = escAttr(title || 'Review Post');
+  var safeImg = escAttr(imageUrl || '');
+  var redirectUrl = postId
+    ? 'https://guneygaar.github.io/ok/index.html?id=' + escAttr(postId)
+    : 'https://guneygaar.github.io/ok/index.html?p=' + escAttr(shortCode);
+  return '<!DOCTYPE html><html><head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
+    '<title>' + safeTitle + ' — Sorted</title>' +
+    '<meta http-equiv="refresh" content="0; url=' + redirectUrl + '" />' +
+    '<meta property="og:title" content="' + safeTitle + '">' +
+    '<meta property="og:description" content="Awaiting your approval - Sorted by Hinglish Agency">' +
+    (safeImg ? '<meta property="og:image" content="' + safeImg + '">' +
+      '<meta property="og:image:width" content="1200">' +
+      '<meta property="og:image:height" content="630">' : '') +
+    '<meta property="og:type" content="website">' +
+    '<meta property="og:url" content="https://srtd.io/p/' + escAttr(shortCode) + '">' +
+    '<meta name="twitter:card" content="summary_large_image">' +
+    (safeImg ? '<meta name="twitter:image" content="' + safeImg + '">' : '') +
     '</head><body>Opening Sorted...</body></html>';
 }
 
@@ -50,26 +74,11 @@ async function handlePreview(url) {
   const post = await findPostByShortId(shortId);
   if (!post) return fetch(url.toString());
 
-  const title = escAttr(post.title || 'Review Post');
+  const title = post.title || 'Review Post';
   const imgUrl = (Array.isArray(post.images) && post.images.length)
-    ? escAttr(post.images[0]) : '';
+    ? post.images[0] : '';
 
-  const ogTags = '\n' +
-    '<meta property="og:title" content="' + title + '">\n' +
-    '<meta property="og:description" content="Awaiting your approval - Sorted by Hinglish Agency">\n' +
-    '<meta property="og:image" content="' + imgUrl + '">\n' +
-    '<meta property="og:image:width" content="1200">\n' +
-    '<meta property="og:image:height" content="630">\n' +
-    '<meta property="og:type" content="website">\n' +
-    '<meta property="og:url" content="https://srtd.io/p/' + escAttr(shortId) + '">\n' +
-    '<meta name="twitter:card" content="summary_large_image">\n' +
-    '<meta name="twitter:image" content="' + imgUrl + '">';
-
-  const originRes = await fetch(
-    'https://guneygaar.github.io/preview/index.html?p=' + shortId
-  );
-  let html = await originRes.text();
-  html = html.replace('<head>', '<head>' + ogTags);
+  const html = buildOgHtml(shortId, title, imgUrl, post.post_id);
 
   return new Response(html, {
     headers: {
@@ -116,6 +125,57 @@ export default {
             headers: {
               'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': '*'
+            }
+          }
+        );
+      } catch (err) {
+        return new Response('Bad Request', {
+          status: 400,
+          headers: CORS_HEADERS
+        });
+      }
+    }
+
+    if (request.method === 'POST' &&
+        url.pathname === '/generate-preview') {
+      const secret = request.headers.get('X-Preview-Secret');
+      if (!secret || secret !== env.PREVIEW_SECRET) {
+        return new Response('Unauthorized', {
+          status: 401,
+          headers: CORS_HEADERS
+        });
+      }
+      try {
+        const body = await request.json();
+        const postId = body.post_id || '';
+        const title = body.title || '';
+        const imageUrl = body.image_url || '';
+        if (!postId) {
+          return new Response('Missing post_id', {
+            status: 400,
+            headers: CORS_HEADERS
+          });
+        }
+        var shortCode = postId.replace(/[^0-9]/g, '').slice(-4);
+        var slug = title.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '').trim()
+          .replace(/\s+/g, '-').slice(0, 50);
+        var html = buildOgHtml(shortCode, title, imageUrl, postId);
+        await env.PREVIEWS_KV.put(
+          shortCode, html, { expirationTtl: 2592000 }
+        );
+        if (slug) {
+          await env.PREVIEWS_KV.put(
+            slug, html, { expirationTtl: 2592000 }
+          );
+        }
+        return new Response(
+          JSON.stringify({ success: true, post_id: postId, short_code: shortCode }),
+          {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              ...CORS_HEADERS
             }
           }
         );

@@ -199,33 +199,44 @@ function showError(msg) {
 }
 
 async function loadPost() {
+  var params = new URLSearchParams(window.location.search);
+  var directId = params.get('id') || '';
   var slug = getSlug();
-  if (!slug) { showError('No post specified in this link.'); return; }
+
+  if (!directId && !slug) { showError('No post specified in this link.'); return; }
 
   try {
-    var res = await fetch(
-      SUPABASE_URL + '/rest/v1/posts?select=post_id,title,caption,images,content_pillar,owner,stage&' +
-      'title=ilike.*' + slug.replace(/-/g, '%20') + '*&limit=5',
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_KEY
-        }
+    var queryUrl;
+    if (directId) {
+      queryUrl = SUPABASE_URL + '/rest/v1/posts?select=post_id,title,caption,images,content_pillar,owner,stage&post_id=eq.' + encodeURIComponent(directId) + '&limit=1';
+    } else {
+      queryUrl = SUPABASE_URL + '/rest/v1/posts?select=post_id,title,caption,images,content_pillar,owner,stage&title=ilike.*' + slug.replace(/-/g, '%20') + '*&limit=5';
+    }
+
+    var res = await fetch(queryUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY
       }
-    );
+    });
     var data = await res.json();
     if (!data || !data.length) {
       showError('Post not found. The link may have expired or the title changed.');
       return;
     }
 
-    // Find best slug match
-    var post = data[0];
-    for (var i = 0; i < data.length; i++) {
-      var testSlug = data[i].title.toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .trim().replace(/\s+/g, '-').slice(0, 50);
-      if (testSlug === slug) { post = data[i]; break; }
+    var post;
+    if (directId) {
+      post = data[0];
+    } else {
+      // Find best slug match
+      post = data[0];
+      for (var i = 0; i < data.length; i++) {
+        var testSlug = data[i].title.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .trim().replace(/\s+/g, '-').slice(0, 50);
+        if (testSlug === slug) { post = data[i]; break; }
+      }
     }
 
     currentPost = post;
@@ -254,7 +265,9 @@ async function loadPost() {
 
     var changesLink = document.getElementById('changes-link');
     if (changesLink) {
-      changesLink.href = '/no/?p=' + slug;
+      var linkSlug = slug || (post.title || '').toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 50);
+      changesLink.href = '/no/?p=' + linkSlug;
     }
 
     showState('state-preview');
