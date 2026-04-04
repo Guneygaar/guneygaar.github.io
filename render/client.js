@@ -581,7 +581,7 @@ console.log('LOADED:', 'render/client.js');
         '<span class="pcs-comment-action" ' +
           'onclick="window._pcsCopyComment(\'' +
           _esc(c.message || '') + '\')">COPY</span>' +
-        (c.author === window.AppState.user.name
+        ((c.author === window.AppState.user.name || (window.AppState.user.effectiveRole || '').toLowerCase() === 'admin')
           ? '<span class="pcs-comment-action" ' +
             'onclick="window._pcsConfirmDeleteComment(\'' +
             _esc(c.id || '') + '\',\'' + _esc(c.post_id || '') + '\')">DELETE</span>'

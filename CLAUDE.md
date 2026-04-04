@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260404b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260404c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -519,8 +519,9 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    so comment authors can delete their own comments, Admin can delete any
 1. Client feed comments had no delete button — only REPLY and COPY
    Location: render/client.js _singleCommentHtml() — no DELETE action
-   Status: FIXED (PR#TBD) — added DELETE button visible only when
-   c.author === window.AppState.user.name. Reuses _pcsConfirmDeleteComment().
+   Status: FIXED (PR#TBD) — added DELETE button visible when
+   c.author === window.AppState.user.name OR effectiveRole is Admin.
+   Reuses _pcsConfirmDeleteComment(). Admin can delete any comment.
 1. Client feed comment timestamp and role label nearly invisible
    Location: render/client.js _singleCommentHtml() — color:#333 on #080808 bg
    Status: FIXED (PR#TBD) — changed to #8E8E93 (design system muted text).
