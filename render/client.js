@@ -550,7 +550,7 @@ console.log('LOADED:', 'render/client.js');
 
   /* ---- comments display ---- */
 
-  var ICON_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.5" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var ICON_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" stroke-width="1.5" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
   function _singleCommentHtml(c) {
     var isClient = (c.author_role || '').toLowerCase() === 'client';
@@ -562,15 +562,15 @@ console.log('LOADED:', 'render/client.js');
       ? ICON_PERSON
       : _esc(initial);
     var avatarStyle = isClient
-      ? 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);'
+      ? 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#111111;'
       : 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);';
     return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
       '<div style="' + avatarStyle + '">' + avatarInner + '</div>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
           '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:12px;color:#ccc;">' + _esc(c.author) + '</span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#333;">' + roleLabel + '</span>' +
-          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#333;">' + ts + '</span>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#8E8E93;">' + roleLabel + '</span>' +
+          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#8E8E93;">' + ts + '</span>' +
         '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#999;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
         '<div class="pcs-comment-actions">' +
