@@ -696,14 +696,36 @@ body {
 
   /* ===== INIT ===== */
   function init() {
-    var shortId = new URL(window.location.href)
-      .searchParams.get('p') || '';
-    if (!shortId) {
+    var params = new URL(window.location.href).searchParams;
+    var directId = params.get('id') || '';
+    var shortId = params.get('p') || '';
+    if (!directId && !shortId) {
       app.innerHTML = '<div class="status-msg">Post not found.</div>';
       return;
     }
 
     app.innerHTML = '<div class="status-msg">Loading...</div>';
+
+    if (directId) {
+      fetch(SUPABASE_URL + '/rest/v1/posts?select=*&post_id=eq.' + encodeURIComponent(directId) + '&limit=1', {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+        }
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(posts) {
+        if (!posts || !posts.length) {
+          app.innerHTML = '<div class="status-msg">Post not found.</div>';
+          return;
+        }
+        renderPost(posts[0]);
+      })
+      .catch(function() {
+        app.innerHTML = '<div class="status-msg">Post not found.</div>';
+      });
+      return;
+    }
 
     fetch(SUPABASE_URL + '/rest/v1/posts?select=*', {
       headers: {
