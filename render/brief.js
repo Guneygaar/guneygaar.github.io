@@ -5,7 +5,6 @@
 console.log("LOADED:", "render/brief.js");
 
 function _generateWhatsAppPreview(postId, title, imageUrl) {
-  var shortCode = postId.replace(/[^0-9]/g, '').slice(-4);
   fetch('https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/generate-preview', {
     method: 'POST',
     headers: {

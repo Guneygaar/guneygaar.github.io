@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260404e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260404f
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -312,6 +312,9 @@ OG source:      sorted-preview-worker/src/index.js
 KV:             sorted-whatsapp-previews
 WhatsApp preview: generated at post creation time (06-post-create.js, render/brief.js)
                   Fire-and-forget POST to OG Worker /generate-preview endpoint
+                  Worker builds OG HTML via buildOgHtml(), stores in KV by shortCode + slug
+                  Redirect uses ?id=POST_ID for direct post_id lookup (not title slug)
+                  ok/index.html supports both ?id=POST_ID (direct) and ?p=SLUG (legacy)
                   Zero Supabase egress for previews — Worker + KV only
 Resend FROM:    hinglish@srtd.io
 Short URLs:     srtd.io/p/XXXX via Cloudflare Page Rule
