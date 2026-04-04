@@ -354,6 +354,10 @@ window.onunhandledrejection — global promise rejection handler → logError
 
 10-ui.js:
 window._showErrorToast      — show transient error toast to user
+window.showToast            — show success/error/info toast (top-level, auto-hoisted)
+window.gamSwitchRole        — switch role preview
+window.openNotifications, window.closeNotifications, window.loadNotifBadge
+window.openPipelineFilter, window.closePipelineFilter, window.applyPipelineFilter
 
 03-auth.js:
 window.normalizeRole        — canonical role normalizer (person names → DB roles)
@@ -361,10 +365,30 @@ window.sendMagicLink        — send OTP email to user
 window.verifyOTPCode        — verify OTP and set session
 window.resetRolePreview     — clear role preview, restore Admin
 
+01-config.js:
+window.setStage             — stage transition helper
+
+06-post-create.js:
+window._initPostAssetInput  — initialize post asset file input
+window._renderNewPostAssetGrid — render asset preview grid
+window.clearPostAsset       — clear selected post asset
+
+07-post-load.js:
+window.isPostStale          — check if post data is stale
+
 08-post-actions.js:
 window._sendStageNotif      — send stage-change notifications to recipients
 window._confirmPublish      — publish post with LinkedIn URL
 window._skipPublish         — publish post without URL
+
+09-approval.js:
+(top-level functions auto-hoisted: clientApprove)
+
+09-library.js:
+window.libOpenPostCard, window.libOpenFilterSheet, window.libCloseFilterSheet,
+window.libApplyFilters, window.libResetFilters, window.showLibrary,
+window.libSetView, window.libOpenCard, window.libToggleSearch,
+window.libSyncChipVisuals, window.libGoToPipeline
 
 render/dashboard.js:
 window._safeStage, window.getScoreboardCounts, window.getScoreboardData,
