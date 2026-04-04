@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260403p
+Version format: ?v=YYYYMMDDx. Current: ?v=20260404b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -517,6 +517,15 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    condition was (_roleLower === 'admin') only
    Status: FIXED (PR#TBD) — changed to (c.author === _name || _roleLower === 'admin')
    so comment authors can delete their own comments, Admin can delete any
+1. Client feed comments had no delete button — only REPLY and COPY
+   Location: render/client.js _singleCommentHtml() — no DELETE action
+   Status: FIXED (PR#TBD) — added DELETE button visible only when
+   c.author === window.AppState.user.name. Reuses _pcsConfirmDeleteComment().
+1. Client feed comment timestamp and role label nearly invisible
+   Location: render/client.js _singleCommentHtml() — color:#333 on #080808 bg
+   Status: FIXED (PR#TBD) — changed to #8E8E93 (design system muted text).
+   Also replaced 2 rgba() violations: stroke rgba(255,255,255,0.25) → #3a3a3a,
+   avatar bg rgba(255,255,255,0.06) → #111111. Dynamic _hexToRgb() avatar kept.
 1. NRS owner fallback writes person name 'Pranav' to DB
    Location: 10-ui.js line 1330 — owner field fallback was || 'Pranav'
    Status: FIXED (PR#TBD) — changed fallback to 'Creative' (DB role)
