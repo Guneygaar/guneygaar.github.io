@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-03
+# Last updated: 2026-04-04
 
 # All facts verified from actual codebase
 
@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260404c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260404e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -310,6 +310,9 @@ R2 Worker:      srtd-r2-upload.ksg-kumarshubhamgune.workers.dev
 OG Worker:      srtd-og-inject (route: srtd.io/preview/*)
 OG source:      sorted-preview-worker/src/index.js
 KV:             sorted-whatsapp-previews
+WhatsApp preview: generated at post creation time (06-post-create.js, render/brief.js)
+                  Fire-and-forget POST to OG Worker /generate-preview endpoint
+                  Zero Supabase egress for previews — Worker + KV only
 Resend FROM:    hinglish@srtd.io
 Short URLs:     srtd.io/p/XXXX via Cloudflare Page Rule
 PREVIEW_SECRET: srtd2026xK9mN3pQ

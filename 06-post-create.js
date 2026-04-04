@@ -3,6 +3,22 @@
 =============================================== */
 console.log("LOADED:", "06-post-create.js");
 
+function _generateWhatsAppPreview(postId, title, imageUrl) {
+  var shortCode = postId.replace(/[^0-9]/g, '').slice(-4);
+  fetch('https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/generate-preview', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Preview-Secret': 'srtd2026xK9mN3pQ'
+    },
+    body: JSON.stringify({
+      post_id: postId,
+      title: title,
+      image_url: imageUrl || ''
+    })
+  }).catch(function() {});
+}
+
 const DRAFT_KEY = 'hinglish_new_post_draft';
 let _draftTimer = null;
 let _draftDebounce = null;
@@ -296,6 +312,11 @@ body: JSON.stringify(payload)
 });
 
 console.log('[submitNewPost] API SUCCESS');
+
+var _newPostTitle = payload.title || '';
+var _newPostImage = (Array.isArray(payload.images) && payload.images.length) ? payload.images[0] : '';
+_generateWhatsAppPreview(payload.post_id, _newPostTitle, _newPostImage);
+
 clearDraft();
 localStorage.removeItem('hinglish_new_post_draft');
 stopDraftAutosave();
