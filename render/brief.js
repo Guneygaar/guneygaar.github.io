@@ -4,6 +4,22 @@
 =============================================== */
 console.log("LOADED:", "render/brief.js");
 
+function _generateWhatsAppPreview(postId, title, imageUrl) {
+  var shortCode = postId.replace(/[^0-9]/g, '').slice(-4);
+  fetch('https://srtd-og-inject.ksg-kumarshubhamgune.workers.dev/generate-preview', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Preview-Secret': 'srtd2026xK9mN3pQ'
+    },
+    body: JSON.stringify({
+      post_id: postId,
+      title: title,
+      image_url: imageUrl || ''
+    })
+  }).catch(function() {});
+}
+
 // ===============================================
 // Brief Sheet - full-screen overlay for brief/REQ posts
 // ===============================================
@@ -368,6 +384,10 @@ window._assignBriefToPranav = function(postId) {
         })
       });
     }).then(function() {
+      var _briefPostTitle = post.title || '';
+      var _briefPostImage = (Array.isArray(post.images) && post.images.length) ? post.images[0] : '';
+      _generateWhatsAppPreview(newPostId, _briefPostTitle, _briefPostImage);
+
       logActivity({
         post_id: newPostId,
         actor: 'Chitra',
