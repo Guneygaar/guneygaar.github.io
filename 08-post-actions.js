@@ -199,6 +199,7 @@ async function saveAdminEdit() {
     console.error('[saveAdminEdit] API FAILED:', err);
     showToast('Save failed  -  try again', 'error');
     if (btn) btn.disabled = false;
+    window.logError && window.logError(err && err.message, err && err.stack, 'save-admin-edit');
   }
 }
 
@@ -394,7 +395,7 @@ async function flagIssue(postId) {
     await logActivity({ post_id: postId, actor: window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
     await loadPosts();
-  } catch { showToast('Failed  -  try again', 'error'); }
+  } catch (err) { showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'flag-issue'); }
 }
 
 // -- Delete post (Admin only) ------------------
@@ -419,9 +420,10 @@ async function deletePost(postId) {
     window.AppState.posts.setAll(next423);
     scheduleRender();
     showToast('Post deleted', 'info');
-  } catch {
+  } catch (err) {
     showToast('Delete failed  -  try again', 'error');
     if (btn) btn.disabled = false;
+    window.logError && window.logError(err && err.message, err && err.stack, 'delete-post');
   }
 }
 

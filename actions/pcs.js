@@ -2388,6 +2388,7 @@ window.toggleTaskResolve = function(commentId, postId) {
   }).catch(function(e) {
     console.error('toggleTaskResolve failed:', e);
     window.logError && window.logError(e&&e.message, e&&e.stack, 'toggle-task-resolve');
+    showToast && showToast('Failed to update task', 'error');
   });
 };
 

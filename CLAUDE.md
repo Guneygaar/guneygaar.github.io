@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405v
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405w
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -700,6 +700,24 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    (g) _saveCaptionEdit wrapped in guardAction('save-caption-' +
        postId) covering both the /posts PATCH and the /audit_log
        POST plus the in-memory AppState update.
+1. Missing logError on user-visible failure catches (async
+   hardening PR 4). Six toasting-but-silent catches were missing
+   error_log writes.
+   Status: FIXED (PR#TBD) —
+   (a) saveAdminEdit: added logError('save-admin-edit') after
+       existing showToast + btn re-enable.
+   (b) deletePost: bare `catch {}` upgraded to catch(err) and
+       logError('delete-post') added.
+   (c) _confirmPublish: already had logError('publish-post') from
+       earlier pass — left intact.
+   (d) flagIssue: bare `catch {}` upgraded to catch(err) and
+       logError('flag-issue') added.
+   (e) loadPcsComments: already had both logError('load-pcs-
+       comments') + showToast('Failed to load comments') from
+       earlier pass — left intact.
+   (f) toggleTaskResolve: had logError('toggle-task-resolve')
+       but no user feedback. Added showToast('Failed to update
+       task', 'error') to the catch block.
 1. Four dead-function onclick handlers in index.html (Phase 4
    audit) — buttons silently did nothing when tapped
    Location: index.html:486 closeClientMenu() (undefined);
