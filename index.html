@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260406b">
+ <link rel="stylesheet" href="styles.css?v=20260406c">
 
 </head>
 <body>
@@ -389,30 +389,35 @@
   <!-- TAB: UPDATES -->
   <div class="tab-panel" id="panel-updates">
 
-    <!-- TOP BAR (fixed) -->
+    <!-- HEADER -->
     <div class="notif-topbar">
-      <div class="notif-topbar-row">
-        <div>
-          <div class="notif-role-label" id="notif-role">Admin</div>
-          <div class="notif-hey">Hey, <span id="notif-name">Shubham</span></div>
-        </div>
-        <button class="mark-all-btn" onclick="markAllNotificationsRead()">Mark all read</button>
-        <button class="notif-close-btn" onclick="closeNotifications()">&#x2715;</button>
+      <div class="notif-topbar-row1">
+        <div class="notif-role-label" id="notif-role">Admin</div>
+        <button class="notif-close-btn" onclick="closeNotifications()">&#x2715; CLOSE</button>
       </div>
-      <div class="notif-summary" id="notif-summary"></div>
+      <div class="notif-topbar-row2">
+        <div class="notif-hey">Hey, <span id="notif-name">Shubham</span></div>
+        <button class="mark-all-btn" onclick="markAllNotificationsRead()">MARK ALL READ</button>
+      </div>
+      <div class="notif-chips" id="notif-chips">
+        <button class="notif-chip active" data-filter="all">ALL <span class="notif-chip-count" id="nchip-all-count"></span></button>
+        <button class="notif-chip nchip-red" data-filter="approval"><span class="notif-chip-dot"></span>APPROVAL <span class="notif-chip-count" id="nchip-approval-count"></span></button>
+        <button class="notif-chip nchip-cyan" data-filter="comment"><span class="notif-chip-dot"></span>COMMENTS <span class="notif-chip-count" id="nchip-comment-count"></span></button>
+        <button class="notif-chip nchip-amber" data-filter="overdue"><span class="notif-chip-dot"></span>OVERDUE <span class="notif-chip-count" id="nchip-overdue-count"></span></button>
+        <button class="notif-chip nchip-green" data-filter="live"><span class="notif-chip-dot"></span>LIVE</button>
+        <button class="notif-chip" data-filter="stage">STAGE MOVES</button>
+      </div>
     </div>
+    <div style="height:1px;background:#1e1e2e;"></div>
 
-    <!-- LIST (scrolls) -->
+    <!-- LIST -->
     <div class="notif-scroll" id="notif-list-scroll"></div>
 
-    <!-- TABS (fixed bottom) -->
-    <div class="notif-tabs" id="notif-tabs">
-      <button class="ntab active" data-filter="needs" data-action="notif-filter">
-        NEEDS YOU <span class="ntab-count" id="ntab-needs-count"></span>
-      </button>
-      <button class="ntab" data-filter="updates" data-action="notif-filter">
-        UPDATES <span class="ntab-count" id="ntab-updates-count"></span>
-      </button>
+    <!-- EMPTY STATE -->
+    <div class="notif-empty-state" id="notif-empty" style="display:none">
+      <div class="notif-empty-icon">&#x2713;</div>
+      <div class="notif-empty-title">All sorted</div>
+      <div class="notif-empty-sub">NOTHING TO SHOW</div>
     </div>
 
   </div>
@@ -1070,26 +1075,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260406b"></script>
-<script src="00-appstate-compat.js?v=20260406b"></script>
-<script src="01-config.js?v=20260406b" defer></script>
-<script src="02-session.js?v=20260406b" defer></script>
-<script src="utils.js?v=20260406b" defer></script>
-<script src="03-auth.js?v=20260406b" defer></script>
-<script src="05-api.js?v=20260406b" defer></script>
-<script src="10-ui.js?v=20260406b" defer></script>
+<script src="00-appstate.js?v=20260406c"></script>
+<script src="00-appstate-compat.js?v=20260406c"></script>
+<script src="01-config.js?v=20260406c" defer></script>
+<script src="02-session.js?v=20260406c" defer></script>
+<script src="utils.js?v=20260406c" defer></script>
+<script src="03-auth.js?v=20260406c" defer></script>
+<script src="05-api.js?v=20260406c" defer></script>
+<script src="10-ui.js?v=20260406c" defer></script>
 
-<script src="06-post-create.js?v=20260406b" defer></script>
-<script defer src="render/dashboard.js?v=20260406b"></script>
-<script defer src="render/client.js?v=20260406b"></script>
-<script defer src="render/pipeline.js?v=20260406b"></script>
-<script defer src="render/brief.js?v=20260406b"></script>
-<script defer src="actions/pcs.js?v=20260406b"></script>
-<script src="07-post-load.js?v=20260406b" defer></script>
-<script src="08-post-actions.js?v=20260406b" defer></script>
-<script src="09-library.js?v=20260406b" defer></script>
-<script src="09-approval.js?v=20260406b" defer></script>
-<script src="04-router.js?v=20260406b" defer></script>
+<script src="06-post-create.js?v=20260406c" defer></script>
+<script defer src="render/dashboard.js?v=20260406c"></script>
+<script defer src="render/client.js?v=20260406c"></script>
+<script defer src="render/pipeline.js?v=20260406c"></script>
+<script defer src="render/brief.js?v=20260406c"></script>
+<script defer src="actions/pcs.js?v=20260406c"></script>
+<script src="07-post-load.js?v=20260406c" defer></script>
+<script src="08-post-actions.js?v=20260406c" defer></script>
+<script src="09-library.js?v=20260406c" defer></script>
+<script src="09-approval.js?v=20260406c" defer></script>
+<script src="04-router.js?v=20260406c" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

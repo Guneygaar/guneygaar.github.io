@@ -249,13 +249,6 @@ describe('Phase 4/5 — Action Router & guardAction', function() {
       expect(window.setPcsVisibility).toHaveBeenCalledWith(el, 'r16-admin');
     });
 
-    it('17. notif-filter → setNotifFilter(filterValue, actionEl)', async function() {
-      var el = makeEl({ 'data-action':'notif-filter', 'data-filter':'r17-all' });
-      dispatchClickOn(el);
-      await flush();
-      expect(window.setNotifFilter).toHaveBeenCalledTimes(1);
-      expect(window.setNotifFilter).toHaveBeenCalledWith('r17-all', el);
-    });
 
     it('18. ins-metric → insSetMetric(metricValue, actionEl)', async function() {
       var el = makeEl({ 'data-action':'ins-metric', 'data-metric':'r18-imp' });

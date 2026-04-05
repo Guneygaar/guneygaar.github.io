@@ -298,14 +298,14 @@ describe('Notification card tap', function() {
   });
 
   it('card tap handler reads data-notif-id and calls markNotifRead', function() {
-    // The delegated click handler targets .notif-item wrappers
-    var match = uiSrc.match(/closest\('\.notif-item'\)[\s\S]{0,800}markNotifRead/);
+    // The delegated click handler targets .notif-item and .notif-live-card
+    var match = uiSrc.match(/closest\('\.notif-item, \.notif-live-card'\)[\s\S]{0,800}markNotifRead/);
     expect(match).not.toBeNull();
   });
 
-  it('tap handler uses closest(.notif-item) to find the row', function() {
-    // Entire row is now tappable, not just inner post card
-    expect(uiSrc).toContain("closest('.notif-item')");
+  it('tap handler uses closest(.notif-item, .notif-live-card) to find the row', function() {
+    // Entire row AND live card are now tappable
+    expect(uiSrc).toContain("closest('.notif-item, .notif-live-card')");
   });
 
 });

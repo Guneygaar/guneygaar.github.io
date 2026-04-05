@@ -298,7 +298,7 @@ function switchTab(btn) {
 }
 
 // -- Notifications (Updates Tab) ---------------
-var _notifFilter = 'needs';
+var _notifChipFilter = 'all';
 var _notifData = [];
 
 // Relative time formatter for notification timestamps
@@ -320,11 +320,6 @@ function _notifRelTime(iso) {
   return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}) + ' \xB7 ' + timeStr;
 }
 
-// Needs-tab types: actionable items
-var _NOTIF_NEEDS_TYPES = ['awaiting_approval','awaiting_brand_input','brief','comment'];
-// Updates-tab types: informational items
-var _NOTIF_UPDATES_TYPES = ['published','scheduled','stage_change','in_production','ready'];
-
 function _notifIsOverdue(post) {
   if (!post || post.stage === 'published') return false;
   if (!post.status_changed_at) return false;
@@ -340,25 +335,28 @@ function _notifTypeClass(n, post) {
   return 'ntype-stage';
 }
 
-function _notifStagePillClass(stage) {
-  if (stage === 'awaiting_approval')    return 'nsp-approval';
-  if (stage === 'awaiting_brand_input') return 'nsp-input';
-  if (stage === 'ready')                return 'nsp-ready';
-  if (stage === 'scheduled')            return 'nsp-scheduled';
-  if (stage === 'published')            return 'nsp-published';
-  if (stage === 'in_production')        return 'nsp-production';
-  return 'nsp-ready';
-}
-
 function _notifActorClass(actor) {
   var a = (actor || '').toLowerCase();
-  if (!a) return 'av-n-system';
-  if (a === 'manisha' || a === 'shivangini' || a === 'client') return 'av-n-client';
-  if (a === 'chitra' || a === 'servicing') return 'av-n-chitra';
-  if (a === 'pranav' || a === 'creative') return 'av-n-pranav';
-  if (a === 'shubham' || a === 'admin') return 'av-n-shubham';
-  return 'av-n-system';
+  if (!a) return 'nav-system';
+  if (a === 'manisha' || a === 'shivangini' || a === 'client') return 'nav-client';
+  if (a === 'chitra' || a === 'servicing') return 'nav-chitra';
+  if (a === 'pranav' || a === 'creative') return 'nav-pranav';
+  if (a === 'shubham' || a === 'admin') return 'nav-shubham';
+  return 'nav-system';
 }
+
+// Chip filter predicate. Returns true if notification n (+ its post)
+// should appear under the currently active chip.
+function _notifChipMatch(filter, n, post) {
+  if (filter === 'all') return true;
+  if (filter === 'approval') return n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input';
+  if (filter === 'comment')  return n.type === 'comment';
+  if (filter === 'live')     return n.type === 'published';
+  if (filter === 'stage')    return n.type === 'stage_change' || n.type === 'ready' || n.type === 'in_production' || n.type === 'scheduled';
+  if (filter === 'overdue')  return _notifIsOverdue(post);
+  return true;
+}
+
 var roleDisplayMap = {
   'Admin':      { name: 'Shubham', label: 'Admin - Sorted' },
   'admin':      { name: 'Shubham', label: 'Admin - Sorted' },
@@ -412,115 +410,45 @@ function renderNotifications(name, role) {
   }
   if (roleEl) roleEl.textContent = displayLabel;
 
-  // ----- Smart summary chips (from AppState.posts.all - no new fetch) -----
   var posts = (window.AppState.posts && window.AppState.posts.all) || [];
-  var approvalPosts = posts.filter(function(p){ return p.stage === 'awaiting_approval'; });
-  var approvalCount = approvalPosts.length;
-  var oldestDays = 0;
-  if (approvalCount > 0) {
-    var oldestTs = Date.now();
-    approvalPosts.forEach(function(p){
-      if (!p.status_changed_at) return;
-      var t = new Date(p.status_changed_at).getTime();
-      if (!isNaN(t) && t < oldestTs) oldestTs = t;
-    });
-    oldestDays = Math.floor((Date.now() - oldestTs) / 86400000);
-  }
-  var commentCount = posts.filter(function(p){ return p._clientCommentAt; }).length;
-  var todayStr = new Date().toDateString();
-  var liveToday = posts.filter(function(p){
-    if (p.stage !== 'published') return false;
-    if (!p.status_changed_at) return false;
-    var d = new Date(p.status_changed_at);
-    return !isNaN(d.getTime()) && d.toDateString() === todayStr;
-  }).length;
-
-  var summaryEl = document.getElementById('notif-summary');
-  if (summaryEl) {
-    var chips = [];
-    if (approvalCount > 0) {
-      chips.push('<div class="summary-chip chip-urgent">' +
-        '<div class="chip-dot"></div>' +
-        approvalCount + ' NEED APPROVAL' +
-        (oldestDays > 0 ? ' \xB7 ' + oldestDays + 'D OLDEST' : '') +
-        '</div>');
-    }
-    if (commentCount > 0) {
-      chips.push('<div class="summary-chip chip-reply">' +
-        '<div class="chip-dot"></div>' +
-        commentCount + ' COMMENTS WAITING' +
-        '</div>');
-    }
-    if (liveToday > 0) {
-      chips.push('<div class="summary-chip chip-live">' +
-        '<div class="chip-dot"></div>' +
-        liveToday + ' LIVE TODAY' +
-        '</div>');
-    }
-    if (chips.length === 0) {
-      chips.push('<div class="summary-chip chip-allclear">' +
-        '<div class="chip-dot"></div>ALL SORTED</div>');
-    }
-    summaryEl.innerHTML = chips.join('');
+  function postFor(pid) {
+    if (!pid) return null;
+    for (var i = 0; i < posts.length; i++) { if (posts[i].post_id === pid) return posts[i]; }
+    return null;
   }
 
-  // ----- Tab counts (unread per bucket) -----
-  var needsUnread = notifs.filter(function(n){
-    return !n.read && _NOTIF_NEEDS_TYPES.indexOf(n.type) !== -1;
-  }).length;
-  var updatesUnread = notifs.filter(function(n){
-    return !n.read && _NOTIF_UPDATES_TYPES.indexOf(n.type) !== -1;
-  }).length;
-  var needsCountEl = document.getElementById('ntab-needs-count');
-  var updatesCountEl = document.getElementById('ntab-updates-count');
-  if (needsCountEl) {
-    if (needsUnread > 0) { needsCountEl.textContent = needsUnread; needsCountEl.style.display = ''; }
-    else { needsCountEl.textContent = ''; needsCountEl.style.display = 'none'; }
+  // Chip unread counts
+  var allCount      = notifs.length;
+  var approvalCount = notifs.filter(function(n){ return !n.read && (n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input'); }).length;
+  var commentCount  = notifs.filter(function(n){ return !n.read && n.type === 'comment'; }).length;
+  var overdueCount  = notifs.filter(function(n){ return _notifIsOverdue(postFor(n.post_id)); }).length;
+  function _setCount(id, value) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (value > 0) { el.textContent = value; el.style.display = ''; }
+    else { el.textContent = ''; el.style.display = 'none'; }
   }
-  if (updatesCountEl) {
-    if (updatesUnread > 0) { updatesCountEl.textContent = updatesUnread; updatesCountEl.style.display = ''; }
-    else { updatesCountEl.textContent = ''; updatesCountEl.style.display = 'none'; }
-  }
+  _setCount('nchip-all-count', allCount);
+  _setCount('nchip-approval-count', approvalCount);
+  _setCount('nchip-comment-count', commentCount);
+  _setCount('nchip-overdue-count', overdueCount);
 
-  // ----- Apply active tab filter -----
-  var activeTypes = _notifFilter === 'needs' ? _NOTIF_NEEDS_TYPES : _NOTIF_UPDATES_TYPES;
-  var filtered = notifs.filter(function(n){ return activeTypes.indexOf(n.type) !== -1; });
+  // Apply active chip filter
+  var filter = _notifChipFilter || 'all';
+  var filtered = notifs.filter(function(n) { return _notifChipMatch(filter, n, postFor(n.post_id)); });
 
   var scroll = document.getElementById('notif-list-scroll');
+  var emptyEl = document.getElementById('notif-empty');
   if (!scroll) return;
 
-  // ----- Empty state (per-tab) -----
   if (filtered.length === 0) {
-    if (_notifFilter === 'needs') {
-      scroll.innerHTML =
-        '<div class="notif-empty-state">' +
-          '<div class="notif-empty-icon">\u2713</div>' +
-          '<div class="notif-empty-title">You&#39;re all caught up</div>' +
-          '<div class="notif-empty-sub">NOTHING NEEDS YOUR ATTENTION</div>' +
-        '</div>';
-    } else {
-      var weekAgo = Date.now() - 7 * 86400000;
-      var approvedThisWeek = _notifData.filter(function(n){
-        if (n.type !== 'awaiting_approval') return false;
-        if (!n.read) return false;
-        if (!n.created_at) return false;
-        var t = new Date(n.created_at).getTime();
-        return !isNaN(t) && t > weekAgo;
-      }).length;
-      scroll.innerHTML =
-        '<div class="notif-empty-state">' +
-          '<div class="notif-empty-icon">\u25CB</div>' +
-          '<div class="notif-empty-title">No updates yet</div>' +
-          '<div class="notif-empty-sub">ACTIVITY WILL APPEAR HERE</div>' +
-          (approvedThisWeek > 0
-            ? '<div class="notif-empty-stat">' + approvedThisWeek + ' APPROVED THIS WEEK</div>'
-            : '') +
-        '</div>';
-    }
+    scroll.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = '';
     return;
   }
+  if (emptyEl) emptyEl.style.display = 'none';
 
-  // ----- Group by day -----
+  // Group by day
   var todayKey = new Date().toDateString();
   var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
   var yesterdayKey = yesterday.toDateString();
@@ -532,84 +460,64 @@ function renderNotifications(name, role) {
     else groups.Earlier.push(n);
   });
 
-  // ----- Build item HTML -----
   var html = '';
   ['Today','Yesterday','Earlier'].forEach(function(day) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var post = posts.find(function(p) { return p.post_id === n.post_id; });
-      var thumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
+      var post = postFor(n.post_id);
+      var postThumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
       var postTitle = post ? (post.title || '') : '';
-      var postStage = post ? (post.stage || '') : (n.type || '');
-      var stageLabel = (postStage||'').replace(/_/g,' ');
-      if (postStage === 'awaiting_approval') stageLabel = 'Awaiting Approval';
-      if (postStage === 'awaiting_brand_input') stageLabel = 'Awaiting Input';
       var tClass = _notifTypeClass(n, post);
       var avClass = _notifActorClass(n.actor);
-      var actorName = n.actor || '';
-      var initial = actorName ? actorName.charAt(0).toUpperCase() : '\u00B7';
+      var actor = n.actor || '';
+      var initial = actor ? actor.charAt(0).toUpperCase() : '?';
       var isUnread = !n.read;
       var ts = _notifRelTime(n.created_at);
+      var isOverdue = tClass === 'ntype-overdue';
+
+      // Action text: strip leading actor word from message if present
       var msg = n.message || '';
       var msgParts = msg.split(' ');
-      var msgHtml = msgParts.length > 1
-        ? '<strong>' + esc(msgParts[0]) + '</strong> ' + esc(msgParts.slice(1).join(' '))
-        : esc(msg);
-      var isLive = n.type === 'published';
-      var isOverdueItem = tClass === 'ntype-overdue';
+      var actionText = msgParts.length > 1 && msgParts[0].toLowerCase() === actor.toLowerCase()
+        ? msgParts.slice(1).join(' ')
+        : msg;
+
+      if (n.type === 'published' && (postThumb || postTitle)) {
+        html += '<div class="notif-live-card"' +
+          ' data-notif-id="' + esc(n.id || '') + '"' +
+          (n.post_id ? ' data-post-id="' + esc(n.post_id) + '"' : '') + '>' +
+          (postThumb
+            ? '<img class="notif-live-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
+            : '<div class="notif-live-thumb"></div>') +
+          '<div style="flex:1;min-width:0;">' +
+            '<div class="notif-live-tag">\u2713 POST IS LIVE</div>' +
+            '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
+            '<div class="notif-live-sub">' + esc(actor) + ' \xB7 ' + esc(ts) + ' \xB7 VIEW ON LINKEDIN \u2192</div>' +
+          '</div>' +
+        '</div>';
+        return;
+      }
 
       html += '<div class="notif-item ' + tClass + (isUnread ? '' : ' read') + '"' +
         ' data-notif-id="' + esc(n.id || '') + '"' +
-        (n.post_id ? ' data-post-id="' + esc(n.post_id) + '"' : '') +
-        ' data-is-brief="' + (postStage === 'brief' ? '1' : '0') + '">' +
-        '<div class="notif-row">' +
-          '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
-          '<div class="notif-body">' +
-            '<div class="notif-msg">' + msgHtml +
-              (isOverdueItem ? ' <span class="notif-overdue-badge">OVERDUE</span>' : '') +
-            '</div>' +
-            '<div class="notif-time">' + esc(ts) + '</div>' +
+        ' data-post-id="' + esc(n.post_id || '') + '"' +
+        ' data-is-brief="' + (post && post.stage === 'brief' ? '1' : '0') + '">' +
+        '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
+        '<div class="notif-body">' +
+          '<div class="notif-text">' +
+            '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+            (isOverdue ? '<span class="notif-overdue-inline"> \xB7 OVERDUE</span>' : '') +
+            '<span class="notif-time-inline"> \xB7 ' + esc(ts) + '</span>' +
           '</div>' +
-          (isUnread ? '<div class="notif-unread-dot"></div>' : '') +
         '</div>' +
-        (isLive && n.post_id && (postTitle || thumb) ?
-          '<div class="notif-live-card">' +
-            (thumb
-              ? '<img class="notif-live-thumb" src="' + esc(thumb) + '" onerror="this.style.display=\'none\'">'
-              : '<div class="notif-live-thumb"></div>') +
-            '<div>' +
-              '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
-              '<div class="notif-live-sub">\u2713 POST IS LIVE \xB7 VIEW ON LINKEDIN \u2192</div>' +
-            '</div>' +
-          '</div>'
-        : (n.post_id && (postTitle || thumb) ?
-          '<div class="notif-post-card" data-post-id="' + esc(n.post_id) + '">' +
-            (thumb
-              ? '<img class="notif-post-thumb" src="' + esc(thumb) + '" onerror="this.style.display=\'none\'">'
-              : '<div class="notif-post-thumb"></div>') +
-            '<div class="notif-post-info">' +
-              '<div class="notif-post-title">' + esc(postTitle) + '</div>' +
-              '<span class="notif-stage-pill ' + _notifStagePillClass(postStage) + '">' + esc(stageLabel) + '</span>' +
-            '</div>' +
-            '<div class="notif-post-arrow">\u203A</div>' +
-          '</div>'
-        : '')) +
+        (postThumb
+          ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
+          : '') +
         '</div>';
     });
   });
   scroll.innerHTML = html;
-}
-
-function setNotifFilter(filter, btn) {
-  if (filter !== 'needs' && filter !== 'updates') filter = 'needs';
-  _notifFilter = filter;
-  document.querySelectorAll('.ntab').forEach(function(t) { t.classList.remove('active'); });
-  if (btn) btn.classList.add('active');
-  var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
-  _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
-  var currentName = resolveActor() || 'there';
-  renderNotifications(currentName, _notifRole);
 }
 
 async function markNotifRead(id) {
@@ -643,7 +551,9 @@ async function markAllNotificationsRead() {
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    ['ntab-needs-count','ntab-updates-count'].forEach(function(id) {
+    // Unread-driven chip counts are rebuilt by renderNotifications above;
+    // belt-and-braces hide of the urgency chips in case render was skipped.
+    ['nchip-approval-count','nchip-comment-count','nchip-overdue-count'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) { el.textContent = ''; el.style.display = 'none'; }
     });
@@ -1427,10 +1337,11 @@ function openNotifications() {
   if (!panel._notifTapWired) {
     panel._notifTapWired = true;
     panel.addEventListener('click', function(e) {
-      // Skip the tabs row and mark-all button
-      if (e.target.closest('.notif-tabs')) return;
+      // Chips, mark-all, close button handle their own clicks.
+      if (e.target.closest('.notif-chips')) return;
       if (e.target.closest('.mark-all-btn')) return;
-      var item = e.target.closest('.notif-item');
+      if (e.target.closest('.notif-close-btn')) return;
+      var item = e.target.closest('.notif-item, .notif-live-card');
       if (!item) return;
       e.stopPropagation();
       var pid = item.getAttribute('data-post-id');
@@ -1453,6 +1364,23 @@ function openNotifications() {
         }
       }, 150);
     });
+  }
+  if (!panel._chipsWired) {
+    panel._chipsWired = true;
+    var chipsEl = document.getElementById('notif-chips');
+    if (chipsEl) {
+      chipsEl.addEventListener('click', function(e) {
+        var chip = e.target.closest('.notif-chip');
+        if (!chip) return;
+        document.querySelectorAll('#notif-chips .notif-chip').forEach(function(c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        _notifChipFilter = chip.dataset.filter || 'all';
+        var role = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
+        role = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+        var currentName = (typeof resolveActor === 'function' && resolveActor()) || 'there';
+        renderNotifications(currentName, role);
+      });
+    }
   }
   var overlay = document.getElementById('notif-overlay');
   if (!overlay) {
@@ -1690,7 +1618,6 @@ if (!window._routerBound) {
         case 'nav-insights': return guardAction('nav-insights', () => showInsights());
         case 'pcs-tab':      return guardAction('pcs-tab-' + tab, () => window._pcsTabSwitch(tab));
         case 'pcs-vis':      return guardAction('pcs-vis-' + actionEl.dataset.vis, () => window.setPcsVisibility && window.setPcsVisibility(actionEl, actionEl.dataset.vis));
-        case 'notif-filter': return guardAction('notif-filter-' + actionEl.dataset.filter, () => setNotifFilter(actionEl.dataset.filter, actionEl));
         case 'ins-metric':   return guardAction('ins-metric-' + actionEl.dataset.metric, () => insSetMetric(actionEl.dataset.metric, actionEl));
         case 'ins-range':    return guardAction('ins-range-' + actionEl.dataset.range, () => insSetRange(actionEl.dataset.range, actionEl));
         case 'ins-period':   return guardAction('ins-period-' + actionEl.dataset.period, () => insSetPostsPeriod(actionEl.dataset.period, actionEl));
