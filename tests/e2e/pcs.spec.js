@@ -71,6 +71,12 @@ test.beforeEach(async ({ page }) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     } else if (url.includes('/auth/v1/')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ access_token: 'fake-token', user: { email: 'test@sorted.io' } }) });
+    } else if (url.includes('picsum.photos')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+      });
     } else if (url.includes('127.0.0.1') || url.includes('localhost')) {
       await route.continue();
     } else {
@@ -99,8 +105,11 @@ test('TEST 1 — PCS opens and renders correctly', async ({ page }) => {
   await expect(page.locator('#pcs-topbar-title')).toBeVisible();
   await expect(page.locator('#pcs-topbar-title')).not.toBeEmpty();
   await expect(page.locator('.pcs-tab-bar')).toBeVisible();
-  await expect(page.locator('#pcs-comments-section')).toBeVisible();
-  await expect(page.locator('text=This looks great, approve it.')).toBeVisible({ timeout: 5000 });
+
+  // Client tab is where comments render; Caption is the default tab.
+  await page.locator('.pcs-tab[data-tab="client"]').click();
+  await expect(page.locator('#pcs-comments-list')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#pcs-comments-list')).toContainText('This looks great, approve it.', { timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-open.png' });
 });
@@ -121,33 +130,36 @@ test('TEST 2 — PCS closes correctly', async ({ page }) => {
 test('TEST 3 — Comment input works', async ({ page }) => {
   await openPCSCard(page);
 
+  // Client tab must be active for the comment input to be visible.
+  await page.locator('.pcs-tab[data-tab="client"]').click();
+
   const input = page.locator('#pcs-comment-input');
   await expect(input).toBeVisible({ timeout: 5000 });
 
   await input.fill('Test comment from Playwright');
   await expect(input).toHaveValue('Test comment from Playwright');
 
-  // Send button is either pcs-send-btn-client or pcs-send-btn-note
-  const sendBtn = page.locator('#pcs-send-btn-client, #pcs-send-btn-note').first();
-  await expect(sendBtn).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#pcs-send-btn-client')).toBeVisible({ timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-comment.png' });
 });
 
-test('TEST 4 — Stage advance button exists', async ({ page }) => {
+test('TEST 4 — Stage pill shows current stage label', async ({ page }) => {
   await openPCSCard(page);
 
-  await expect(page.locator('#pc-advance-block')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('#pc-advance-btn')).toBeVisible();
-  await expect(page.locator('#pc-advance-label')).not.toBeEmpty();
+  // Advance button was removed from the redesign; the stage pill
+  // in the PCS topbar now shows the current stage label.
+  const stagePill = page.locator('#pcs-stage-pill');
+  await expect(stagePill).toBeVisible({ timeout: 5000 });
+  await expect(stagePill).not.toBeEmpty();
 
-  await page.screenshot({ path: 'tests/e2e/screenshots/pcs-advance.png' });
+  await page.screenshot({ path: 'tests/e2e/screenshots/pcs-stage-label.png' });
 });
 
 test('TEST 5 — Image renders in PCS', async ({ page }) => {
   await openPCSCard(page);
 
-  const img = page.locator('#pcs-screen img').first();
+  const img = page.locator('#pcs-photo-grid-wrap img').first();
   await expect(img).toBeVisible({ timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-image.png' });

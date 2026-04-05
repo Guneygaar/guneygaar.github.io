@@ -302,7 +302,7 @@ tests/utils.test.js
 tests/action-router.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
-pcs.spec.js TEST 7 targets #pcs-stage-pill (advance button removed from redesign); TEST 8 invokes window.pcsConfirmDelete() via page.evaluate (delete button no longer in PCS topbar).
+pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
 
 TEST FILE MAPPING (run targeted tests during development):
   render/client.js      → npx vitest run tests/client-comment.test.js
