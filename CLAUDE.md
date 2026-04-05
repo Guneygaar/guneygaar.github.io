@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405j
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405k
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -671,7 +671,7 @@ Ph1 File Architecture — DONE (render/ + actions/ extracted)
 Ph2 AppState          — DONE (all globals migrated)
 Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed, Pass 3 pipeline, Pass 4 PCS — 12 fixes, 3 alert→toast, Pass 5 dashboard — 4 fixes + 1 post-load fix, Pass 6 post-load — 12 fixes + 4 duplicate function overwrites fixed, Pass 7 auth — 6 fixes incl. silent refreshSession catch)
 Ph3.5 Role Standardization — DONE (Phase A: normalizeRole() added, rollback.sql created; Phase B: config wire cut — ALLOWED_OWNERS, ROLE_TABS, notification recipients, HTML option values all use DB roles; Phase C: DB write payloads — owner fields in brief.js, post-load.js, post-create.js all use DB roles; Phase D: owner read checks — pipeline.js isMine/filter checks + pcs.js chip color all use DB role names Creative/Servicing)
-Ph4 Event Delegation  — IN PROGRESS (Group A: bottom nav done — global action router in 10-ui.js, 4 inline onclicks on .nav-item replaced with data-action; Group B: PCS tabs done — 3 inline onclicks on .pcs-tab replaced with data-action="pcs-tab", router guard reworked to skip interactive descendants instead of blocking all PCS; Group C: PCS visibility chips done — 4 inline onclicks on .pcs-vis-chip replaced with data-action="pcs-vis" data-vis=..., router routes to setPcsVisibility(actionEl, dataset.vis))
+Ph4 Event Delegation  — IN PROGRESS (Group A: bottom nav done — global action router in 10-ui.js, 4 inline onclicks on .nav-item replaced with data-action; Group B: PCS tabs done — 3 inline onclicks on .pcs-tab replaced with data-action="pcs-tab", router guard reworked to skip interactive descendants instead of blocking all PCS; Group C: PCS visibility chips done — 4 inline onclicks on .pcs-vis-chip replaced with data-action="pcs-vis" data-vis=..., router routes to setPcsVisibility(actionEl, dataset.vis); Group D: notification filter tabs done — 3 inline onclicks on .nftab replaced with data-action="notif-filter" data-filter=..., router routes to setNotifFilter(dataset.filter, actionEl))
 Ph5 Optimistic UI     — IN PROGRESS (client comments done)
 Ph6 PWA               — PENDING
 Ph7 Light Mode        — PENDING
