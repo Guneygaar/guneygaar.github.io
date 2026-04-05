@@ -298,8 +298,67 @@ function switchTab(btn) {
 }
 
 // -- Notifications (Updates Tab) ---------------
-var _notifFilter = 'all';
+var _notifFilter = 'needs';
 var _notifData = [];
+
+// Relative time formatter for notification timestamps
+function _notifRelTime(iso) {
+  if (!iso) return '';
+  var now = Date.now();
+  var then = new Date((iso||'').replace(' ','T').replace('+00','Z')).getTime();
+  if (isNaN(then)) return '';
+  var diff = Math.floor((now - then) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' hr ago';
+  var d = new Date(then);
+  var todayD = new Date(); todayD.setHours(0,0,0,0);
+  var yesterdayD = new Date(todayD); yesterdayD.setDate(yesterdayD.getDate()-1);
+  var thenD = new Date(d); thenD.setHours(0,0,0,0);
+  var timeStr = d.toLocaleTimeString('en-IN', {hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase();
+  if (thenD.getTime() === yesterdayD.getTime()) return 'Yesterday \xB7 ' + timeStr;
+  return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}) + ' \xB7 ' + timeStr;
+}
+
+// Needs-tab types: actionable items
+var _NOTIF_NEEDS_TYPES = ['awaiting_approval','awaiting_brand_input','brief','comment'];
+// Updates-tab types: informational items
+var _NOTIF_UPDATES_TYPES = ['published','scheduled','stage_change','in_production','ready'];
+
+function _notifIsOverdue(post) {
+  if (!post || post.stage === 'published') return false;
+  if (!post.status_changed_at) return false;
+  var diff = Date.now() - new Date(post.status_changed_at).getTime();
+  return diff > 2 * 24 * 60 * 60 * 1000;
+}
+
+function _notifTypeClass(n, post) {
+  if (_notifIsOverdue(post)) return 'ntype-overdue';
+  if (n.type === 'comment') return 'ntype-comment';
+  if (n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input') return 'ntype-approval';
+  if (n.type === 'published') return 'ntype-live';
+  return 'ntype-stage';
+}
+
+function _notifStagePillClass(stage) {
+  if (stage === 'awaiting_approval')    return 'nsp-approval';
+  if (stage === 'awaiting_brand_input') return 'nsp-input';
+  if (stage === 'ready')                return 'nsp-ready';
+  if (stage === 'scheduled')            return 'nsp-scheduled';
+  if (stage === 'published')            return 'nsp-published';
+  if (stage === 'in_production')        return 'nsp-production';
+  return 'nsp-ready';
+}
+
+function _notifActorClass(actor) {
+  var a = (actor || '').toLowerCase();
+  if (!a) return 'av-n-system';
+  if (a === 'manisha' || a === 'shivangini' || a === 'client') return 'av-n-client';
+  if (a === 'chitra' || a === 'servicing') return 'av-n-chitra';
+  if (a === 'pranav' || a === 'creative') return 'av-n-pranav';
+  if (a === 'shubham' || a === 'admin') return 'av-n-shubham';
+  return 'av-n-system';
+}
 var roleDisplayMap = {
   'Admin':      { name: 'Shubham', label: 'Admin - Sorted' },
   'admin':      { name: 'Shubham', label: 'Admin - Sorted' },
@@ -320,7 +379,7 @@ async function loadNotifications() {
     _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
     var currentName = resolveActor() || 'there';
     var _loadActor = window.AppState.user.name || window.currentUserName || '';
-    var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50';
+    var _loadUrl = '/notifications?select=id,type,message,read,created_at,post_id,user_role,actor&user_role=eq.' + encodeURIComponent(_notifRole) + '&order=created_at.desc&limit=50';
     if (_loadActor) _loadUrl += '&actor=neq.' + encodeURIComponent(_loadActor);
     var data = await apiFetch(_loadUrl);
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
@@ -352,262 +411,200 @@ function renderNotifications(name, role) {
     }
   }
   if (roleEl) roleEl.textContent = displayLabel;
-  var unread = notifs.filter(function(n) { return !n.read; });
-  var urgent = notifs.filter(function(n) { return !n.read && ['awaiting_approval','awaiting_brand_input'].includes(n.type); });
-  var newItems = notifs.filter(function(n) { return !n.read && n.type === 'ready'; });
-  var infoItems = notifs.filter(function(n) { return !n.read && ['scheduled','published','in_production'].includes(n.type); });
-  var total = unread.length;
-  var attEl = document.getElementById('notif-attention');
-  if (attEl) {
-    if (total === 0) {
-      attEl.innerHTML = 'All sorted';
-    } else {
-      attEl.innerHTML = '<strong>' + total + '</strong> ' + (total === 1 ? 'thing needs' : 'things need') + ' your attention';
-    }
+
+  // ----- Smart summary chips (from AppState.posts.all - no new fetch) -----
+  var posts = (window.AppState.posts && window.AppState.posts.all) || [];
+  var approvalPosts = posts.filter(function(p){ return p.stage === 'awaiting_approval'; });
+  var approvalCount = approvalPosts.length;
+  var oldestDays = 0;
+  if (approvalCount > 0) {
+    var oldestTs = Date.now();
+    approvalPosts.forEach(function(p){
+      if (!p.status_changed_at) return;
+      var t = new Date(p.status_changed_at).getTime();
+      if (!isNaN(t) && t < oldestTs) oldestTs = t;
+    });
+    oldestDays = Math.floor((Date.now() - oldestTs) / 86400000);
   }
-  var bdEl = document.getElementById('notif-breakdown');
-  if (bdEl) {
-    if (total === 0) {
-      bdEl.innerHTML = '<span class="bk-allclear">All sorted</span>';
-    } else {
-      var parts = [];
-      if (urgent.length > 0)
-        parts.push('<span class="bk-item bk-urgent" onclick="setNotifFilter(\'action\', document.querySelectorAll(\'.nftab\')[1])">'
-          + urgent.length + ' urgent</span>');
-      if (newItems.length > 0)
-        parts.push('<span class="bk-item bk-new">'
-          + newItems.length + ' new</span>');
-      if (infoItems.length > 0)
-        parts.push('<span class="bk-item bk-info" onclick="setNotifFilter(\'info\', document.querySelectorAll(\'.nftab\')[2])">'
-          + infoItems.length + ' ' + (infoItems.length === 1 ? 'update' : 'updates') + '</span>');
-      if (unread.length > 0)
-        parts.push('<span class="bk-item bk-unread">'
-          + unread.length + ' unread</span>');
-      bdEl.innerHTML = parts.join('<span class="bk-sep">&#183;</span>');
+  var commentCount = posts.filter(function(p){ return p._clientCommentAt; }).length;
+  var todayStr = new Date().toDateString();
+  var liveToday = posts.filter(function(p){
+    if (p.stage !== 'published') return false;
+    if (!p.status_changed_at) return false;
+    var d = new Date(p.status_changed_at);
+    return !isNaN(d.getTime()) && d.toDateString() === todayStr;
+  }).length;
+
+  var summaryEl = document.getElementById('notif-summary');
+  if (summaryEl) {
+    var chips = [];
+    if (approvalCount > 0) {
+      chips.push('<div class="summary-chip chip-urgent">' +
+        '<div class="chip-dot"></div>' +
+        approvalCount + ' NEED APPROVAL' +
+        (oldestDays > 0 ? ' \xB7 ' + oldestDays + 'D OLDEST' : '') +
+        '</div>');
     }
+    if (commentCount > 0) {
+      chips.push('<div class="summary-chip chip-reply">' +
+        '<div class="chip-dot"></div>' +
+        commentCount + ' COMMENTS WAITING' +
+        '</div>');
+    }
+    if (liveToday > 0) {
+      chips.push('<div class="summary-chip chip-live">' +
+        '<div class="chip-dot"></div>' +
+        liveToday + ' LIVE TODAY' +
+        '</div>');
+    }
+    if (chips.length === 0) {
+      chips.push('<div class="summary-chip chip-allclear">' +
+        '<div class="chip-dot"></div>ALL SORTED</div>');
+    }
+    summaryEl.innerHTML = chips.join('');
   }
-  var badgeAll = document.getElementById('nftab-badge-all');
-  if (badgeAll) { badgeAll.textContent = notifs.length; badgeAll.style.display = notifs.length ? '' : 'none'; }
-  var filtered = notifs;
-  if (_notifFilter === 'action') filtered = notifs.filter(function(n) {
-    return n.type === 'awaiting_approval' ||
-      n.type === 'awaiting_brand_input' ||
-      n.type === 'brief' ||
-      n.type === 'comment' ||
-      (n.type === 'stage_change' && (
-        (n.message||'').toLowerCase().includes('brief') ||
-        (n.message||'').toLowerCase().includes('feedback') ||
-        (n.message||'').toLowerCase().includes('changes') ||
-        (n.message||'').toLowerCase().includes('assigned')
-      ));
-  });
-  if (_notifFilter === 'info') filtered = notifs.filter(function(n) {
-    return n.type === 'published' ||
-      n.type === 'scheduled' ||
-      (n.type === 'stage_change' && !(
-        (n.message||'').toLowerCase().includes('brief') ||
-        (n.message||'').toLowerCase().includes('feedback') ||
-        (n.message||'').toLowerCase().includes('changes') ||
-        (n.message||'').toLowerCase().includes('assigned')
-      ));
-  });
+
+  // ----- Tab counts (unread per bucket) -----
+  var needsUnread = notifs.filter(function(n){
+    return !n.read && _NOTIF_NEEDS_TYPES.indexOf(n.type) !== -1;
+  }).length;
+  var updatesUnread = notifs.filter(function(n){
+    return !n.read && _NOTIF_UPDATES_TYPES.indexOf(n.type) !== -1;
+  }).length;
+  var needsCountEl = document.getElementById('ntab-needs-count');
+  var updatesCountEl = document.getElementById('ntab-updates-count');
+  if (needsCountEl) {
+    if (needsUnread > 0) { needsCountEl.textContent = needsUnread; needsCountEl.style.display = ''; }
+    else { needsCountEl.textContent = ''; needsCountEl.style.display = 'none'; }
+  }
+  if (updatesCountEl) {
+    if (updatesUnread > 0) { updatesCountEl.textContent = updatesUnread; updatesCountEl.style.display = ''; }
+    else { updatesCountEl.textContent = ''; updatesCountEl.style.display = 'none'; }
+  }
+
+  // ----- Apply active tab filter -----
+  var activeTypes = _notifFilter === 'needs' ? _NOTIF_NEEDS_TYPES : _NOTIF_UPDATES_TYPES;
+  var filtered = notifs.filter(function(n){ return activeTypes.indexOf(n.type) !== -1; });
+
   var scroll = document.getElementById('notif-list-scroll');
-  var empty = document.getElementById('notif-empty');
   if (!scroll) return;
+
+  // ----- Empty state (per-tab) -----
   if (filtered.length === 0) {
-    scroll.innerHTML = '';
-    if (empty) empty.classList.add('visible');
+    if (_notifFilter === 'needs') {
+      scroll.innerHTML =
+        '<div class="notif-empty-state">' +
+          '<div class="notif-empty-icon">\u2713</div>' +
+          '<div class="notif-empty-title">You&#39;re all caught up</div>' +
+          '<div class="notif-empty-sub">NOTHING NEEDS YOUR ATTENTION</div>' +
+        '</div>';
+    } else {
+      var weekAgo = Date.now() - 7 * 86400000;
+      var approvedThisWeek = _notifData.filter(function(n){
+        if (n.type !== 'awaiting_approval') return false;
+        if (!n.read) return false;
+        if (!n.created_at) return false;
+        var t = new Date(n.created_at).getTime();
+        return !isNaN(t) && t > weekAgo;
+      }).length;
+      scroll.innerHTML =
+        '<div class="notif-empty-state">' +
+          '<div class="notif-empty-icon">\u25CB</div>' +
+          '<div class="notif-empty-title">No updates yet</div>' +
+          '<div class="notif-empty-sub">ACTIVITY WILL APPEAR HERE</div>' +
+          (approvedThisWeek > 0
+            ? '<div class="notif-empty-stat">' + approvedThisWeek + ' APPROVED THIS WEEK</div>'
+            : '') +
+        '</div>';
+    }
     return;
   }
-  if (empty) empty.classList.remove('visible');
-  var today = new Date().toDateString();
+
+  // ----- Group by day -----
+  var todayKey = new Date().toDateString();
   var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-  var yesterdayStr = yesterday.toDateString();
+  var yesterdayKey = yesterday.toDateString();
   var groups = { Today: [], Yesterday: [], Earlier: [] };
   filtered.forEach(function(n) {
     var d = new Date(n.created_at).toDateString();
-    if (d === today) groups.Today.push(n);
-    else if (d === yesterdayStr) groups.Yesterday.push(n);
+    if (d === todayKey) groups.Today.push(n);
+    else if (d === yesterdayKey) groups.Yesterday.push(n);
     else groups.Earlier.push(n);
   });
-  var typeClass = {
-    'awaiting_approval':    'ntype-awaiting_approval',
-    'awaiting_brand_input': 'ntype-awaiting_brand_input',
-    'ready':                'ntype-ready',
-    'scheduled':            'ntype-scheduled',
-    'published':            'ntype-published',
-    'stage_change':         'ntype-info',
-    'in_production':        'ntype-in_production',
-  };
-  var stagePills = {
-    'awaiting_approval':    { label: 'Approval', cls: 'pill-approval' },
-    'awaiting_brand_input': { label: 'Brand Input', cls: 'pill-input' },
-    'ready':                { label: 'Ready', cls: 'pill-ready' },
-    'scheduled':            { label: 'Scheduled', cls: 'pill-scheduled' },
-    'published':            { label: 'Published', cls: 'pill-published' },
-    'in_production':        { label: 'Production', cls: 'pill-production' },
-  };
-  function parseActor(msg) {
-    if (!msg) return { name: 'System', initials: 'S', cls: 'av-system' };
-    var first = msg.split(/\s/)[0].toLowerCase();
-    if (first.includes('pranav'))  return { name: 'Pranav',  initials: 'P',  cls: 'av-pranav' };
-    if (first.includes('chitra'))  return { name: 'Chitra',  initials: 'Ch', cls: 'av-chitra' };
-    if (first.includes('shubham')) return { name: 'Shubham', initials: 'S',  cls: 'av-shubham' };
-    if (first.includes('client'))  return { name: 'Client',  initials: 'Cl', cls: 'av-client' };
-    return { name: first.charAt(0).toUpperCase() + first.slice(1), initials: first.charAt(0).toUpperCase(), cls: 'av-system' };
-  }
-  function getActions(n) {
-    if (n.type === 'awaiting_approval') return [
-      { label: 'Chase Client', cls: 'danger', action: 'chase' },
-      { label: 'View', cls: '', action: 'view' }
-    ];
-    if (n.type === 'ready') return [
-      { label: 'Send for Approval', cls: 'success', action: 'approve' },
-      { label: 'View', cls: '', action: 'view' }
-    ];
-    if (n.type === 'awaiting_brand_input') return [
-      { label: 'Chase Input', cls: 'danger', action: 'chase' },
-      { label: 'View', cls: '', action: 'view' }
-    ];
-    if (n.type === 'scheduled' || n.type === 'published' || n.type === 'stage_change') return [
-      { label: 'View', cls: '', action: 'view' }
-    ];
-    return [];
-  }
-  function formatTime(created_at) {
-    var d = new Date(created_at);
-    return d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-  }
+
+  // ----- Build item HTML -----
   var html = '';
   ['Today','Yesterday','Earlier'].forEach(function(day) {
     if (!groups[day] || groups[day].length === 0) return;
     html += '<div class="notif-day-label">' + day + '</div>';
     groups[day].forEach(function(n) {
-      var _notifPost = (window.AppState.posts.all||[]).find(function(p) {
-        return p.post_id === n.post_id;
-      });
-      var _thumb = _notifPost && Array.isArray(_notifPost.images) &&
-        _notifPost.images[0] ? _notifPost.images[0] : '';
-      var _postTitle = _notifPost ? (_notifPost.title || '') : '';
-      var _postStage = _notifPost ? (_notifPost.stage || '') :
-        (n.type || '');
+      var post = posts.find(function(p) { return p.post_id === n.post_id; });
+      var thumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
+      var postTitle = post ? (post.title || '') : '';
+      var postStage = post ? (post.stage || '') : (n.type || '');
+      var stageLabel = (postStage||'').replace(/_/g,' ');
+      if (postStage === 'awaiting_approval') stageLabel = 'Awaiting Approval';
+      if (postStage === 'awaiting_brand_input') stageLabel = 'Awaiting Input';
+      var tClass = _notifTypeClass(n, post);
+      var avClass = _notifActorClass(n.actor);
+      var actorName = n.actor || '';
+      var initial = actorName ? actorName.charAt(0).toUpperCase() : '\u00B7';
+      var isUnread = !n.read;
+      var ts = _notifRelTime(n.created_at);
+      var msg = n.message || '';
+      var msgParts = msg.split(' ');
+      var msgHtml = msgParts.length > 1
+        ? '<strong>' + esc(msgParts[0]) + '</strong> ' + esc(msgParts.slice(1).join(' '))
+        : esc(msg);
+      var isLive = n.type === 'published';
+      var isOverdueItem = tClass === 'ntype-overdue';
 
-      var _chipColor = '#888';
-      var _chipBg = 'rgba(255,255,255,0.06)';
-      if (_postStage === 'published')  { _chipColor='#22c55e'; _chipBg='rgba(34,197,94,0.12)'; }
-      if (_postStage === 'awaiting_approval') { _chipColor='#3b82f6'; _chipBg='rgba(59,130,246,0.12)'; }
-      if (_postStage === 'brief')      { _chipColor='#C8A84B'; _chipBg='rgba(200,168,75,0.12)'; }
-      if (_postStage === 'in_production') { _chipColor='#9b87f5'; _chipBg='rgba(155,135,245,0.12)'; }
-      if (n.type === 'awaiting_brand_input') { _chipColor='#F6A623'; _chipBg='rgba(246,166,35,0.12)'; }
-      var _stageLabel = (_postStage||'').replace(/_/g,' ');
-      if (_postStage === 'awaiting_approval') _stageLabel = 'Awaiting Approval';
-
-      var _actorName = parseActor(n.message).name;
-      var _initial = _actorName ? _actorName.charAt(0).toUpperCase() : 'S';
-      var _avatarColor = '#C8A84B';
-      if (_actorName === 'Pranav') { _avatarColor = '#9b87f5'; }
-      if (_actorName === 'Chitra') { _avatarColor = '#22D3EE'; }
-      if (_actorName === 'Client' || _actorName === 'Manisha' ||
-          _actorName === 'Shivangini') { _avatarColor = '#FF4B4B'; }
-
-      var _ts = '';
-      if (n.created_at) {
-        var _d = new Date((n.created_at||'').replace(' ','T').replace('+00','Z'));
-        if (!isNaN(_d.getTime())) {
-          _ts = _d.toLocaleDateString('en-IN',{
-            weekday:'short',day:'numeric',month:'short',
-            timeZone:'Asia/Kolkata'}) + ' \xB7 ' +
-            _d.toLocaleTimeString('en-IN',{
-            hour:'numeric',minute:'2-digit',
-            hour12:true,timeZone:'Asia/Kolkata'});
-        }
-      }
-
-      var _isUnread = !n.read;
-
-      var _msgParts = (n.message||'').split(' ');
-      var _msgHtml = _msgParts.length > 1 ?
-        '<strong>' + esc(_msgParts[0]) + '</strong> ' +
-        esc(_msgParts.slice(1).join(' '))
-        : esc(n.message||'');
-
-      var itemHtml =
-        '<div class="notif-item' + (_isUnread ? ' unread' : '') + '" ' +
-        'data-notif-id="' + n.id + '" ' +
-        'style="padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.05);' +
-        'cursor:default;">' +
-
-        '<div style="display:flex;align-items:flex-start;gap:10px;' +
-        'margin-bottom:' + (n.post_id ? '10px' : '0') + ';">' +
-
-        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;' +
-        'background:' + _avatarColor + '22;border:1px solid ' + _avatarColor + '55;' +
-        'display:flex;align-items:center;justify-content:center;' +
-        'font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
-        'color:' + _avatarColor + ';">' + _initial + '</div>' +
-
-        '<div style="flex:1;min-width:0;">' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-        'color:' + (_isUnread ? '#e8e2d9' : 'rgba(255,255,255,0.5)') + ';' +
-        'line-height:1.4;margin-bottom:3px;">' +
-        _msgHtml + '</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.06em;color:rgba(255,255,255,0.45);">' + _ts + '</div>' +
-        '</div>' +
-
-        (_isUnread ? '<div style="width:6px;height:6px;border-radius:50%;' +
-        'background:#C8A84B;flex-shrink:0;margin-top:5px;"></div>' : '') +
-        '</div>' +
-
-        (n.post_id && (_postTitle || _thumb) ?
-          '<div class="notif-post-card-tap" ' +
-          'data-post-id="' + esc(n.post_id) + '" ' +
-          'data-is-brief="' + (_postStage === 'brief' ? '1' : '0') + '" ' +
-          'style="display:flex;align-items:center;gap:10px;' +
-          'background:rgba(255,255,255,0.03);' +
-          'border:1px solid rgba(255,255,255,0.07);' +
-          'padding:8px 10px 8px 8px;cursor:pointer;' +
-          'margin-left:38px;' +
-          'transition:background 0.15s;">' +
-
-          (_thumb ?
-            '<img src="' + _thumb + '" style="width:44px;height:44px;' +
-            'object-fit:cover;flex-shrink:0;display:block;" />'
-            :
-            '<div style="width:44px;height:44px;background:#111118;' +
-            'flex-shrink:0;display:flex;align-items:center;' +
-            'justify-content:center;font-size:16px;opacity:0.4;">' +
-            (_postStage === 'brief' ? '&#x1F4CB;' : '&#x1F5BC;') +
-            '</div>') +
-
-          '<div style="flex:1;min-width:0;">' +
-          '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-          'font-weight:600;color:#e8e2d9;line-height:1.2;' +
-          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
-          'margin-bottom:4px;">' + esc(_postTitle) + '</div>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.1em;text-transform:uppercase;' +
-          'padding:2px 6px;font-weight:600;' +
-          'background:' + _chipBg + ';color:' + _chipColor + ';">' +
-          _stageLabel + '</span>' +
+      html += '<div class="notif-item ' + tClass + (isUnread ? '' : ' read') + '"' +
+        ' data-notif-id="' + esc(n.id || '') + '"' +
+        (n.post_id ? ' data-post-id="' + esc(n.post_id) + '"' : '') +
+        ' data-is-brief="' + (postStage === 'brief' ? '1' : '0') + '">' +
+        '<div class="notif-row">' +
+          '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
+          '<div class="notif-body">' +
+            '<div class="notif-msg">' + msgHtml +
+              (isOverdueItem ? ' <span class="notif-overdue-badge">OVERDUE</span>' : '') +
+            '</div>' +
+            '<div class="notif-time">' + esc(ts) + '</div>' +
           '</div>' +
-
-          '<div style="color:rgba(255,255,255,0.2);font-size:14px;' +
-          'flex-shrink:0;">&#x203A;</div>' +
+          (isUnread ? '<div class="notif-unread-dot"></div>' : '') +
+        '</div>' +
+        (isLive && n.post_id && (postTitle || thumb) ?
+          '<div class="notif-live-card">' +
+            (thumb
+              ? '<img class="notif-live-thumb" src="' + esc(thumb) + '" onerror="this.style.display=\'none\'">'
+              : '<div class="notif-live-thumb"></div>') +
+            '<div>' +
+              '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
+              '<div class="notif-live-sub">\u2713 POST IS LIVE \xB7 VIEW ON LINKEDIN \u2192</div>' +
+            '</div>' +
           '</div>'
-          : '') +
-
+        : (n.post_id && (postTitle || thumb) ?
+          '<div class="notif-post-card" data-post-id="' + esc(n.post_id) + '">' +
+            (thumb
+              ? '<img class="notif-post-thumb" src="' + esc(thumb) + '" onerror="this.style.display=\'none\'">'
+              : '<div class="notif-post-thumb"></div>') +
+            '<div class="notif-post-info">' +
+              '<div class="notif-post-title">' + esc(postTitle) + '</div>' +
+              '<span class="notif-stage-pill ' + _notifStagePillClass(postStage) + '">' + esc(stageLabel) + '</span>' +
+            '</div>' +
+            '<div class="notif-post-arrow">\u203A</div>' +
+          '</div>'
+        : '')) +
         '</div>';
-
-      html += itemHtml;
     });
   });
   scroll.innerHTML = html;
 }
 
 function setNotifFilter(filter, btn) {
+  if (filter !== 'needs' && filter !== 'updates') filter = 'needs';
   _notifFilter = filter;
-  document.querySelectorAll('.nftab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.ntab').forEach(function(t) { t.classList.remove('active'); });
   if (btn) btn.classList.add('active');
   var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
   _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
@@ -634,23 +631,31 @@ async function markAllNotificationsRead() {
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, _notifRole);
     updateNotifBadge();
-    var unreadEls = document.querySelectorAll(
-      '#panel-updates .notif-item.unread');
-    unreadEls.forEach(function(el) {
-      el.classList.remove('unread');
+    var readEls = document.querySelectorAll(
+      '#panel-updates .notif-item:not(.read)');
+    readEls.forEach(function(el) {
+      el.classList.add('read');
+      var dot = el.querySelector('.notif-unread-dot');
+      if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
     });
     ['notif-bell-badge','notif-pipeline-badge',
-     'notif-lib-badge','notif-ins-badge',
-     'notif-client-badge'].forEach(function(id) {
+     'notif-lib-badge','notif-ins-badge'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    var _marRole = (window.AppState.user.effectiveRole || 'Admin');
-    await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_marRole), {
+    ['ntab-needs-count','ntab-updates-count'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    await apiFetch('/notifications?read=eq.false&user_role=eq.' + encodeURIComponent(_notifRole), {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
     });
-  } catch(e) { console.error('markAllRead error:', e); }
+    if (typeof showToast === 'function') showToast('All notifications marked as read', 'success');
+  } catch(e) {
+    console.error('markAllRead error:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'mark-all-notifications-read');
+  }
 }
 
 function updateNotifBadge() {
@@ -672,8 +677,7 @@ function updateNotifBadge() {
       'notif-bell-badge',
       'notif-pipeline-badge',
       'notif-lib-badge',
-      'notif-ins-badge',
-      'notif-client-badge'
+      'notif-ins-badge'
     ].forEach(function(id) {
       var el = document.getElementById(id);
       if (!el) return;
@@ -1416,21 +1420,24 @@ async function _nrsSubmit() {
   }
 }
 
-// -- Notification Bell Sheet -------------------
+// -- Notification Panel (full-page overlay) -------------------
 function openNotifications() {
   var panel = document.getElementById('panel-updates');
   if (!panel) return;
   if (!panel._notifTapWired) {
     panel._notifTapWired = true;
     panel.addEventListener('click', function(e) {
-      var card = e.target.closest('.notif-post-card-tap');
-      if (!card) return;
+      // Skip the tabs row and mark-all button
+      if (e.target.closest('.notif-tabs')) return;
+      if (e.target.closest('.mark-all-btn')) return;
+      var item = e.target.closest('.notif-item');
+      if (!item) return;
       e.stopPropagation();
-      var pid = card.getAttribute('data-post-id');
-      var isBrief = card.getAttribute('data-is-brief') === '1';
-      if (!pid) return;
-      var notifId = card.getAttribute('data-notif-id') || (card.closest('[data-notif-id]') ? card.closest('[data-notif-id]').getAttribute('data-notif-id') : null);
+      var pid = item.getAttribute('data-post-id');
+      var isBrief = item.getAttribute('data-is-brief') === '1';
+      var notifId = item.getAttribute('data-notif-id');
       if (notifId) markNotifRead(notifId);
+      if (!pid) return;
       closeNotifications();
       setTimeout(function() {
         var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
@@ -1451,13 +1458,13 @@ function openNotifications() {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'notif-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:1300;background:#0a0a0f;display:flex;align-items:stretch;justify-content:center;';
     overlay.onclick = function(e) { if (e.target === overlay) closeNotifications(); };
     document.body.appendChild(overlay);
     overlay.appendChild(panel);
   }
   overlay.style.display = 'flex';
-  panel.style.cssText = 'width:100%;max-width:480px;max-height:62vh;min-height:40vh;overflow-y:auto;background:#0e0e0e;display:block;';
+  panel.style.cssText = 'width:100%;max-width:480px;height:100%;overflow:hidden;background:#0e0e16;display:flex;flex-direction:column;';
   document.body.style.overflow = 'hidden';
   window.AppState.ui.modalOpen = true;
   loadNotifications();
@@ -1470,17 +1477,8 @@ function closeNotifications() {
   window.AppState.ui.modalOpen = false;
 }
 
-async function loadNotifBadge() {
-  try {
-    var role = window._userRole || 'admin';
-    var data = await apiFetch('/notifications?user_role=eq.' + role + '&read=eq.false&select=id');
-    updateNotifBadge(data ? data.length : 0);
-  } catch(e) {}
-}
-
 window.openNotifications = openNotifications;
 window.closeNotifications = closeNotifications;
-window.loadNotifBadge = loadNotifBadge;
 
 // -- FAB menu wiring --
 document.addEventListener('DOMContentLoaded', function() {
