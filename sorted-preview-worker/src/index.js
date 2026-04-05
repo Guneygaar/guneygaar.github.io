@@ -13,7 +13,7 @@ function getFallbackHtml(slug, postId) {
     '<meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
     '<title>Sorted — Post Review</title>' +
-    '<meta http-equiv="refresh" content="0; url=https://guneygaar.github.io/ok/index.html?' + redirectParam + '" />' +
+    '<meta http-equiv="refresh" content="0; url=https://guneygaar.github.io/preview/index.html?' + redirectParam + '" />' +
     '<meta property="og:title" content="Review this post on Sorted">' +
     '<meta property="og:description" content="Tap to open and approve this post.">' +
     '</head><body>Opening Sorted...</body></html>';
@@ -23,8 +23,8 @@ function buildOgHtml(shortCode, title, imageUrl, postId) {
   var safeTitle = escAttr(title || 'Review Post');
   var safeImg = escAttr(imageUrl || '');
   var redirectUrl = postId
-    ? 'https://guneygaar.github.io/ok/index.html?id=' + escAttr(postId)
-    : 'https://guneygaar.github.io/ok/index.html?p=' + escAttr(shortCode);
+    ? 'https://guneygaar.github.io/preview/index.html?id=' + escAttr(postId)
+    : 'https://guneygaar.github.io/preview/index.html?p=' + escAttr(shortCode);
   return '<!DOCTYPE html><html><head>' +
     '<meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1.0">' +
