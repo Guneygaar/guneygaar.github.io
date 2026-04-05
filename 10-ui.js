@@ -320,15 +320,35 @@ function _notifRelTime(iso) {
   return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}) + ' \xB7 ' + timeStr;
 }
 
-function _notifIsOverdue(post) {
-  if (!post || post.stage === 'published') return false;
-  if (!post.status_changed_at) return false;
-  var diff = Date.now() - new Date(post.status_changed_at).getTime();
-  return diff > 2 * 24 * 60 * 60 * 1000;
+var _NOTIF_MOVES_TYPES = ['stage_change','ready','in_production','scheduled','brief','brief_done'];
+
+// Human-readable stage labels substituted into action text
+var _NOTIF_STAGE_LABELS = {
+  'brief':                'Brief',
+  'brief_done':           'Brief Done',
+  'in_production':        'In Production',
+  'awaiting_approval':    'Awaiting Approval',
+  'awaiting_brand_input': 'Needs Input',
+  'ready':                'Ready',
+  'scheduled':            'Scheduled',
+  'published':            'Published'
+};
+
+function _notifActionText(n) {
+  var actor = n.actor || '';
+  var msg = n.message || '';
+  var actionText = msg;
+  if (actor && msg.toLowerCase().indexOf(actor.toLowerCase()) === 0) {
+    actionText = msg.slice(actor.length).trim();
+  }
+  Object.keys(_NOTIF_STAGE_LABELS).forEach(function(key) {
+    actionText = actionText.replace(new RegExp('\\b' + key + '\\b', 'gi'), _NOTIF_STAGE_LABELS[key]);
+  });
+  return actionText;
 }
 
-function _notifTypeClass(n, post) {
-  if (_notifIsOverdue(post)) return 'ntype-overdue';
+function _notifTypeClass(n, isMention) {
+  if (isMention) return 'ntype-mention';
   if (n.type === 'comment') return 'ntype-comment';
   if (n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input') return 'ntype-approval';
   if (n.type === 'published') return 'ntype-live';
@@ -345,15 +365,14 @@ function _notifActorClass(actor) {
   return 'nav-system';
 }
 
-// Chip filter predicate. Returns true if notification n (+ its post)
-// should appear under the currently active chip.
-function _notifChipMatch(filter, n, post) {
+function _notifChipMatch(filter, n, mentionSet) {
   if (filter === 'all') return true;
-  if (filter === 'approval') return n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input';
-  if (filter === 'comment')  return n.type === 'comment';
+  if (filter === 'mentions') {
+    return n.type === 'comment' && n.post_id && mentionSet && mentionSet.has(n.post_id);
+  }
+  if (filter === 'comments') return n.type === 'comment';
   if (filter === 'live')     return n.type === 'published';
-  if (filter === 'stage')    return n.type === 'stage_change' || n.type === 'ready' || n.type === 'in_production' || n.type === 'scheduled';
-  if (filter === 'overdue')  return _notifIsOverdue(post);
+  if (filter === 'moves')    return _NOTIF_MOVES_TYPES.indexOf(n.type) !== -1;
   return true;
 }
 
@@ -382,6 +401,28 @@ async function loadNotifications() {
     var data = await apiFetch(_loadUrl);
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
     _notifData = data;
+
+    // Batch-fetch post_comments for every post that has a comment notification
+    var commentPostIds = [];
+    var seen = {};
+    data.forEach(function(n) {
+      if (n.type === 'comment' && n.post_id && !seen[n.post_id]) {
+        seen[n.post_id] = 1;
+        commentPostIds.push(n.post_id);
+      }
+    });
+    window._notifComments = [];
+    if (commentPostIds.length > 0) {
+      try {
+        var idList = commentPostIds.map(function(p){ return '"' + p + '"'; }).join(',');
+        var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,message,created_at,mentioned_users';
+        var comments = await apiFetch(commentUrl);
+        if (Array.isArray(comments)) window._notifComments = comments;
+      } catch (ce) {
+        window.logError && window.logError(ce && ce.message, ce && ce.stack, 'load-notif-comments');
+      }
+    }
+
     renderNotifications(currentName, _notifRole);
     updateNotifBadge();
   } catch(e) {
@@ -395,20 +436,12 @@ function renderNotifications(name, role) {
   var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
   var display = roleDisplayMap[effectiveR] || roleDisplayMap[role] || { name: name, label: role };
   var displayName = display.name;
-  var displayLabel = display.label;
+  var titleRole = (role || 'Admin');
+  titleRole = titleRole.charAt(0).toUpperCase() + titleRole.slice(1).toLowerCase();
+  var roleLabelEl = document.getElementById('notif-role-label');
+  if (roleLabelEl) roleLabelEl.textContent = titleRole.toUpperCase() + ' \xB7 SORTED';
   var nameEl = document.getElementById('notif-name');
-  var roleEl = document.getElementById('notif-role');
-  var heyEl = nameEl ? nameEl.parentElement : null;
-  if (nameEl) {
-    if (displayName) {
-      nameEl.textContent = displayName;
-      if (heyEl) heyEl.style.display = '';
-    } else {
-      nameEl.textContent = '';
-      if (heyEl) heyEl.style.display = 'none';
-    }
-  }
-  if (roleEl) roleEl.textContent = displayLabel;
+  if (nameEl) nameEl.textContent = displayName || name || 'there';
 
   var posts = (window.AppState.posts && window.AppState.posts.all) || [];
   function postFor(pid) {
@@ -417,106 +450,184 @@ function renderNotifications(name, role) {
     return null;
   }
 
-  // Chip unread counts
-  var allCount      = notifs.length;
-  var approvalCount = notifs.filter(function(n){ return !n.read && (n.type === 'awaiting_approval' || n.type === 'awaiting_brand_input'); }).length;
-  var commentCount  = notifs.filter(function(n){ return !n.read && n.type === 'comment'; }).length;
-  var overdueCount  = notifs.filter(function(n){ return _notifIsOverdue(postFor(n.post_id)); }).length;
-  function _setCount(id, value) {
+  // Mentions detection from batch-fetched comments
+  var currentUserName = (window.AppState.user && window.AppState.user.name) || window.currentUserName || '';
+  var mentionPostIds = new Set();
+  var commentsArr = window._notifComments || [];
+  if (currentUserName) {
+    commentsArr.forEach(function(c) {
+      if (Array.isArray(c.mentioned_users)) {
+        c.mentioned_users.forEach(function(u) {
+          if (u && u.toLowerCase() === currentUserName.toLowerCase()) mentionPostIds.add(c.post_id);
+        });
+      }
+    });
+  }
+
+  // Chip counts
+  var allCount     = notifs.length;
+  var mentionCount = 0;
+  notifs.forEach(function(n) {
+    if (n.type === 'comment' && n.post_id && mentionPostIds.has(n.post_id)) mentionCount++;
+  });
+  var commentCount = notifs.filter(function(n){ return n.type === 'comment'; }).length;
+  var movesCount   = notifs.filter(function(n){ return _NOTIF_MOVES_TYPES.indexOf(n.type) !== -1; }).length;
+  function _setChipCount(id, value) {
     var el = document.getElementById(id);
     if (!el) return;
     if (value > 0) { el.textContent = value; el.style.display = ''; }
     else { el.textContent = ''; el.style.display = 'none'; }
   }
-  _setCount('nchip-all-count', allCount);
-  _setCount('nchip-approval-count', approvalCount);
-  _setCount('nchip-comment-count', commentCount);
-  _setCount('nchip-overdue-count', overdueCount);
+  _setChipCount('nchip-count-all', allCount);
+  _setChipCount('nchip-count-mentions', mentionCount);
+  _setChipCount('nchip-count-comments', commentCount);
+  _setChipCount('nchip-count-moves', movesCount);
 
-  // Apply active chip filter
+  // Filter
   var filter = _notifChipFilter || 'all';
-  var filtered = notifs.filter(function(n) { return _notifChipMatch(filter, n, postFor(n.post_id)); });
+  var filtered = notifs.filter(function(n) { return _notifChipMatch(filter, n, mentionPostIds); });
 
   var scroll = document.getElementById('notif-list-scroll');
-  var emptyEl = document.getElementById('notif-empty');
   if (!scroll) return;
 
   if (filtered.length === 0) {
-    scroll.innerHTML = '';
-    if (emptyEl) emptyEl.style.display = '';
+    scroll.innerHTML =
+      '<div class="notif-empty-state">' +
+        '<div class="notif-empty-icon">\u2713</div>' +
+        '<div class="notif-empty-title">All sorted</div>' +
+        '<div class="notif-empty-sub">NOTHING TO SHOW</div>' +
+      '</div>';
     return;
   }
-  if (emptyEl) emptyEl.style.display = 'none';
 
-  // Group by day
-  var todayKey = new Date().toDateString();
-  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-  var yesterdayKey = yesterday.toDateString();
-  var groups = { Today: [], Yesterday: [], Earlier: [] };
+  // Group comments by (post_id + actor + day)
+  var commentGroupMap = {};
+  var nonCommentList = [];
   filtered.forEach(function(n) {
-    var d = new Date(n.created_at).toDateString();
-    if (d === todayKey) groups.Today.push(n);
-    else if (d === yesterdayKey) groups.Yesterday.push(n);
-    else groups.Earlier.push(n);
+    if (n.type !== 'comment') { nonCommentList.push(n); return; }
+    var dayKey = n.created_at ? new Date(n.created_at).toDateString() : '';
+    var key = (n.post_id||'') + '|' + (n.actor||'') + '|' + dayKey;
+    if (!commentGroupMap[key]) commentGroupMap[key] = [];
+    commentGroupMap[key].push(n);
+  });
+  // Flatten grouped comments back into the list, keeping the newest per group.
+  // commentGroups: array of { head: notification, count: N, groupId: key }
+  var groupedList = nonCommentList.slice();
+  Object.keys(commentGroupMap).forEach(function(k) {
+    var arr = commentGroupMap[k];
+    // arr already ordered by fetched desc because notifs came in desc order
+    arr[0]._groupCount = arr.length;
+    groupedList.push(arr[0]);
+  });
+  // Re-sort by created_at desc to maintain original ordering across types
+  groupedList.sort(function(a, b) {
+    var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
   });
 
-  var html = '';
-  ['Today','Yesterday','Earlier'].forEach(function(day) {
-    if (!groups[day] || groups[day].length === 0) return;
-    html += '<div class="notif-day-label">' + day + '</div>';
-    groups[day].forEach(function(n) {
-      var post = postFor(n.post_id);
-      var postThumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
-      var postTitle = post ? (post.title || '') : '';
-      var tClass = _notifTypeClass(n, post);
-      var avClass = _notifActorClass(n.actor);
-      var actor = n.actor || '';
-      var initial = actor ? actor.charAt(0).toUpperCase() : '?';
-      var isUnread = !n.read;
-      var ts = _notifRelTime(n.created_at);
-      var isOverdue = tClass === 'ntype-overdue';
+  // Group by day
+  var todayStr     = new Date().toDateString();
+  var yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+  var groups = { today: [], yesterday: [], earlier: [] };
+  groupedList.forEach(function(n) {
+    var d = n.created_at ? new Date(n.created_at).toDateString() : '';
+    if (d === todayStr) groups.today.push(n);
+    else if (d === yesterdayStr) groups.yesterday.push(n);
+    else groups.earlier.push(n);
+  });
 
-      // Action text: strip leading actor word from message if present
-      var msg = n.message || '';
-      var msgParts = msg.split(' ');
-      var actionText = msgParts.length > 1 && msgParts[0].toLowerCase() === actor.toLowerCase()
-        ? msgParts.slice(1).join(' ')
-        : msg;
+  function _buildItem(n) {
+    var post = postFor(n.post_id);
+    var postThumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
+    var postTitle = post ? (post.title || '') : '';
+    var actor = n.actor || '';
+    var actorLower = (actor || 'system').toLowerCase();
+    var avClass = _notifActorClass(actor);
+    var initial = actor ? actor.charAt(0).toUpperCase() : '?';
+    var ts = _notifRelTime(n.created_at);
 
-      if (n.type === 'published' && (postThumb || postTitle)) {
-        html += '<div class="notif-live-card"' +
+    // Live card (published)
+    if (n.type === 'published') {
+      return '<div class="notif-live-card"' +
           ' data-notif-id="' + esc(n.id || '') + '"' +
-          (n.post_id ? ' data-post-id="' + esc(n.post_id) + '"' : '') + '>' +
-          (postThumb
-            ? '<img class="notif-live-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
-            : '<div class="notif-live-thumb"></div>') +
-          '<div style="flex:1;min-width:0;">' +
+          ' data-post-id="' + esc(n.post_id || '') + '">' +
+          '<div class="notif-live-av">' + esc(initial) + '</div>' +
+          '<div class="notif-live-body">' +
             '<div class="notif-live-tag">\u2713 POST IS LIVE</div>' +
             '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
             '<div class="notif-live-sub">' + esc(actor) + ' \xB7 ' + esc(ts) + ' \xB7 VIEW ON LINKEDIN \u2192</div>' +
           '</div>' +
-        '</div>';
-        return;
-      }
-
-      html += '<div class="notif-item ' + tClass + (isUnread ? '' : ' read') + '"' +
-        ' data-notif-id="' + esc(n.id || '') + '"' +
-        ' data-post-id="' + esc(n.post_id || '') + '"' +
-        ' data-is-brief="' + (post && post.stage === 'brief' ? '1' : '0') + '">' +
-        '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
-        '<div class="notif-body">' +
-          '<div class="notif-text">' +
-            '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
-            (isOverdue ? '<span class="notif-overdue-inline"> \xB7 OVERDUE</span>' : '') +
-            '<span class="notif-time-inline"> \xB7 ' + esc(ts) + '</span>' +
+          '<div class="notif-thumb-wrap">' +
+            (postThumb
+              ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
+              : '<div class="notif-thumb"></div>') +
           '</div>' +
-        '</div>' +
-        (postThumb
-          ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
-          : '') +
         '</div>';
-    });
-  });
+    }
+
+    var isMention = n.type === 'comment' && n.post_id && mentionPostIds.has(n.post_id);
+    var tClass = _notifTypeClass(n, isMention);
+
+    // Grouped comment copy
+    var groupCount = n._groupCount || 1;
+    var actionText;
+    if (groupCount > 1) {
+      actionText = 'left ' + groupCount + ' comments on ' + (postTitle || 'post');
+    } else {
+      actionText = _notifActionText(n);
+    }
+
+    // Latest comment preview (only for comment notifications)
+    var previewHtml = '';
+    if (n.type === 'comment') {
+      var latest = null;
+      var list = window._notifComments || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].post_id === n.post_id) { latest = list[i]; break; }
+      }
+      if (latest && latest.message) {
+        var msgPrev = latest.message.length > 80
+          ? latest.message.slice(0, 80) + '...'
+          : latest.message;
+        previewHtml = '<div class="notif-preview">&ldquo;' + esc(msgPrev) + '&rdquo;' +
+          (groupCount > 1 ? '<span class="notif-more">+' + (groupCount - 1) + ' more</span>' : '') +
+          '</div>';
+      }
+    }
+
+    return '<div class="notif-item ' + tClass + (n.read ? ' read' : '') + '"' +
+      ' data-notif-id="' + esc(n.id || '') + '"' +
+      ' data-post-id="' + esc(n.post_id || '') + '">' +
+      '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
+      '<div class="notif-body">' +
+        '<div class="notif-text">' +
+          '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+          '<span class="notif-time-inline"> \xB7 ' + esc(ts) + '</span>' +
+        '</div>' +
+        previewHtml +
+      '</div>' +
+      '<div class="notif-thumb-wrap">' +
+        (postThumb
+          ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
+          : '<div class="notif-thumb"></div>') +
+      '</div>' +
+    '</div>';
+  }
+
+  var html = '';
+  if (groups.today.length > 0) {
+    html += '<div class="notif-day-label">Today</div>';
+    groups.today.forEach(function(n) { html += _buildItem(n); });
+  }
+  if (groups.yesterday.length > 0) {
+    html += '<div class="notif-day-label">Yesterday</div>';
+    groups.yesterday.forEach(function(n) { html += _buildItem(n); });
+  }
+  if (groups.earlier.length > 0) {
+    html += '<div class="notif-day-label">Earlier</div>';
+    groups.earlier.forEach(function(n) { html += _buildItem(n); });
+  }
   scroll.innerHTML = html;
 }
 
@@ -551,9 +662,9 @@ async function markAllNotificationsRead() {
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
-    // Unread-driven chip counts are rebuilt by renderNotifications above;
-    // belt-and-braces hide of the urgency chips in case render was skipped.
-    ['nchip-approval-count','nchip-comment-count','nchip-overdue-count'].forEach(function(id) {
+    // Chip counts are rebuilt by renderNotifications above;
+    // belt-and-braces hide every count span in case render was skipped.
+    ['nchip-count-all','nchip-count-mentions','nchip-count-comments','nchip-count-moves'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) { el.textContent = ''; el.style.display = 'none'; }
     });
@@ -1625,6 +1736,8 @@ if (!window._routerBound) {
         case 'lib-view':     return guardAction('lib-view-' + actionEl.dataset.view, () => libSetView(actionEl.dataset.view, actionEl));
         case 'nrs-urg':      return guardAction('nrs-urg-' + actionEl.dataset.urgency, () => nrsSetUrg(actionEl, actionEl.dataset.urgency));
         case 'ins-main-tab': return guardAction('ins-main-tab-' + actionEl.dataset.tab, () => insSetMainTab(actionEl.dataset.tab, actionEl));
+        case 'close-notifications': return guardAction('close-notifications', () => closeNotifications());
+        case 'mark-all-read':       return guardAction('mark-all-read', () => markAllNotificationsRead());
         case 'overlay-close':
           if (e.target !== actionEl) return;
           return guardAction('overlay-close-' + actionEl.dataset.close, () => {

@@ -16,12 +16,14 @@ function extract(fnSig) {
 }
 
 var sandbox = '';
+sandbox += 'var _NOTIF_MOVES_TYPES = ["stage_change","ready","in_production","scheduled","brief","brief_done"];\n';
+sandbox += 'var _NOTIF_STAGE_LABELS = { brief:"Brief", brief_done:"Brief Done", in_production:"In Production", awaiting_approval:"Awaiting Approval", awaiting_brand_input:"Needs Input", ready:"Ready", scheduled:"Scheduled", published:"Published" };\n';
 sandbox += extract('_notifRelTime\\(iso\\)');
-sandbox += extract('_notifIsOverdue\\(post\\)');
-sandbox += extract('_notifTypeClass\\(n, post\\)');
+sandbox += extract('_notifActionText\\(n\\)');
+sandbox += extract('_notifTypeClass\\(n, isMention\\)');
 sandbox += extract('_notifActorClass\\(actor\\)');
-sandbox += extract('_notifChipMatch\\(filter, n, post\\)');
-sandbox += '\nreturn { _notifRelTime:_notifRelTime, _notifIsOverdue:_notifIsOverdue, _notifTypeClass:_notifTypeClass, _notifActorClass:_notifActorClass, _notifChipMatch:_notifChipMatch };\n';
+sandbox += extract('_notifChipMatch\\(filter, n, mentionSet\\)');
+sandbox += '\nreturn { _notifRelTime:_notifRelTime, _notifActionText:_notifActionText, _notifTypeClass:_notifTypeClass, _notifActorClass:_notifActorClass, _notifChipMatch:_notifChipMatch };\n';
 var helpers = (new Function(sandbox))();
 
 
@@ -61,69 +63,68 @@ describe('_notifRelTime', function() {
 
 
 // ---------------------------------------------------------------
-// _notifIsOverdue
+// _notifActionText — strips actor prefix + applies stage labels
 // ---------------------------------------------------------------
-describe('_notifIsOverdue', function() {
-  it('returns false for null post', function() {
-    expect(helpers._notifIsOverdue(null)).toBe(false);
+describe('_notifActionText', function() {
+  it('strips leading actor name from message', function() {
+    expect(helpers._notifActionText({ actor:'Manisha', message:'Manisha commented on brief' }))
+      .toBe('commented on Brief');
   });
-  it('returns false for published posts', function() {
-    var tenDaysAgo = new Date(Date.now() - 10*86400000).toISOString();
-    expect(helpers._notifIsOverdue({ stage:'published', status_changed_at: tenDaysAgo })).toBe(false);
+  it('leaves message intact when actor is absent', function() {
+    expect(helpers._notifActionText({ actor:'', message:'moved to ready' }))
+      .toBe('moved to Ready');
   });
-  it('returns false for posts missing status_changed_at', function() {
-    expect(helpers._notifIsOverdue({ stage:'in_production' })).toBe(false);
+  it('is case-insensitive when stripping actor', function() {
+    expect(helpers._notifActionText({ actor:'CHITRA', message:'Chitra approved post' }))
+      .toBe('approved post');
   });
-  it('returns false for posts stuck < 2 days', function() {
-    var oneDayAgo = new Date(Date.now() - 1*86400000).toISOString();
-    expect(helpers._notifIsOverdue({ stage:'in_production', status_changed_at: oneDayAgo })).toBe(false);
+  it('replaces raw stage keys with human labels', function() {
+    var out = helpers._notifActionText({ actor:'Pranav', message:'Pranav moved to awaiting_brand_input' });
+    expect(out).toBe('moved to Needs Input');
   });
-  it('returns true for posts stuck > 2 days and not published', function() {
-    var threeDaysAgo = new Date(Date.now() - 3*86400000).toISOString();
-    expect(helpers._notifIsOverdue({ stage:'in_production', status_changed_at: threeDaysAgo })).toBe(true);
+  it('replaces all known stage keys (brief/published/scheduled/in_production)', function() {
+    expect(helpers._notifActionText({ actor:'', message:'sent to awaiting_approval' }))
+      .toBe('sent to Awaiting Approval');
+    expect(helpers._notifActionText({ actor:'', message:'moved to scheduled' }))
+      .toBe('moved to Scheduled');
+    expect(helpers._notifActionText({ actor:'', message:'pushed to in_production' }))
+      .toBe('pushed to In Production');
   });
 });
 
 
 // ---------------------------------------------------------------
-// _notifTypeClass — left color bar assignment
+// _notifTypeClass — new signature (n, isMention)
 // ---------------------------------------------------------------
 describe('_notifTypeClass', function() {
-  it('returns ntype-comment for comment type', function() {
-    expect(helpers._notifTypeClass({type:'comment'}, null)).toBe('ntype-comment');
+  it('returns ntype-mention when isMention is true', function() {
+    expect(helpers._notifTypeClass({type:'comment'}, true)).toBe('ntype-mention');
   });
-  it('returns ntype-approval for awaiting_approval', function() {
-    expect(helpers._notifTypeClass({type:'awaiting_approval'}, null)).toBe('ntype-approval');
+  it('returns ntype-comment for comment type without mention', function() {
+    expect(helpers._notifTypeClass({type:'comment'}, false)).toBe('ntype-comment');
   });
-  it('returns ntype-approval for awaiting_brand_input', function() {
-    expect(helpers._notifTypeClass({type:'awaiting_brand_input'}, null)).toBe('ntype-approval');
+  it('returns ntype-approval for awaiting_approval / awaiting_brand_input', function() {
+    expect(helpers._notifTypeClass({type:'awaiting_approval'}, false)).toBe('ntype-approval');
+    expect(helpers._notifTypeClass({type:'awaiting_brand_input'}, false)).toBe('ntype-approval');
   });
   it('returns ntype-live for published', function() {
-    expect(helpers._notifTypeClass({type:'published'}, null)).toBe('ntype-live');
+    expect(helpers._notifTypeClass({type:'published'}, false)).toBe('ntype-live');
   });
-  it('returns ntype-stage for stage_change', function() {
-    expect(helpers._notifTypeClass({type:'stage_change'}, null)).toBe('ntype-stage');
+  it('returns ntype-stage for stage_change/ready/in_production/scheduled/brief', function() {
+    expect(helpers._notifTypeClass({type:'stage_change'}, false)).toBe('ntype-stage');
+    expect(helpers._notifTypeClass({type:'ready'}, false)).toBe('ntype-stage');
+    expect(helpers._notifTypeClass({type:'in_production'}, false)).toBe('ntype-stage');
+    expect(helpers._notifTypeClass({type:'scheduled'}, false)).toBe('ntype-stage');
+    expect(helpers._notifTypeClass({type:'brief'}, false)).toBe('ntype-stage');
   });
-  it('returns ntype-stage for ready/scheduled/in_production', function() {
-    expect(helpers._notifTypeClass({type:'ready'}, null)).toBe('ntype-stage');
-    expect(helpers._notifTypeClass({type:'scheduled'}, null)).toBe('ntype-stage');
-    expect(helpers._notifTypeClass({type:'in_production'}, null)).toBe('ntype-stage');
-  });
-  it('returns ntype-overdue when post is overdue (>2d, not published)', function() {
-    var threeDaysAgo = new Date(Date.now() - 3*86400000).toISOString();
-    var post = { stage:'in_production', status_changed_at: threeDaysAgo };
-    expect(helpers._notifTypeClass({type:'stage_change'}, post)).toBe('ntype-overdue');
-  });
-  it('never marks published posts as overdue', function() {
-    var tenDaysAgo = new Date(Date.now() - 10*86400000).toISOString();
-    var post = { stage:'published', status_changed_at: tenDaysAgo };
-    expect(helpers._notifTypeClass({type:'published'}, post)).toBe('ntype-live');
+  it('mention flag overrides type', function() {
+    expect(helpers._notifTypeClass({type:'stage_change'}, true)).toBe('ntype-mention');
   });
 });
 
 
 // ---------------------------------------------------------------
-// _notifActorClass — avatar CSS mapping (new nav-* system)
+// _notifActorClass — avatar CSS mapping (nav-* palette)
 // ---------------------------------------------------------------
 describe('_notifActorClass', function() {
   it('maps names to correct CSS classes', function() {
@@ -158,40 +159,36 @@ describe('_notifChipMatch', function() {
     expect(helpers._notifChipMatch('all', {type:'published'}, null)).toBe(true);
     expect(helpers._notifChipMatch('all', {type:'stage_change'}, null)).toBe(true);
   });
-  it('"approval" matches awaiting_approval + awaiting_brand_input', function() {
-    expect(helpers._notifChipMatch('approval', {type:'awaiting_approval'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('approval', {type:'awaiting_brand_input'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('approval', {type:'comment'}, null)).toBe(false);
-    expect(helpers._notifChipMatch('approval', {type:'published'}, null)).toBe(false);
+  it('"mentions" matches only comment notifications with mention', function() {
+    var s = new Set(['post-a']);
+    expect(helpers._notifChipMatch('mentions', {type:'comment', post_id:'post-a'}, s)).toBe(true);
+    expect(helpers._notifChipMatch('mentions', {type:'comment', post_id:'post-b'}, s)).toBe(false);
+    expect(helpers._notifChipMatch('mentions', {type:'stage_change', post_id:'post-a'}, s)).toBe(false);
   });
-  it('"comment" matches only type:comment', function() {
-    expect(helpers._notifChipMatch('comment', {type:'comment'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('comment', {type:'awaiting_approval'}, null)).toBe(false);
-    expect(helpers._notifChipMatch('comment', {type:'stage_change'}, null)).toBe(false);
+  it('"comments" matches only type:comment', function() {
+    expect(helpers._notifChipMatch('comments', {type:'comment'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('comments', {type:'stage_change'}, null)).toBe(false);
+    expect(helpers._notifChipMatch('comments', {type:'published'}, null)).toBe(false);
   });
   it('"live" matches only type:published', function() {
     expect(helpers._notifChipMatch('live', {type:'published'}, null)).toBe(true);
     expect(helpers._notifChipMatch('live', {type:'scheduled'}, null)).toBe(false);
     expect(helpers._notifChipMatch('live', {type:'comment'}, null)).toBe(false);
   });
-  it('"stage" matches stage_change/ready/in_production/scheduled', function() {
-    expect(helpers._notifChipMatch('stage', {type:'stage_change'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('stage', {type:'ready'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('stage', {type:'in_production'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('stage', {type:'scheduled'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('stage', {type:'published'}, null)).toBe(false);
-    expect(helpers._notifChipMatch('stage', {type:'comment'}, null)).toBe(false);
+  it('"moves" matches stage_change/ready/in_production/scheduled/brief/brief_done', function() {
+    expect(helpers._notifChipMatch('moves', {type:'stage_change'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'ready'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'in_production'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'scheduled'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'brief'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'brief_done'}, null)).toBe(true);
+    expect(helpers._notifChipMatch('moves', {type:'comment'}, null)).toBe(false);
+    expect(helpers._notifChipMatch('moves', {type:'published'}, null)).toBe(false);
   });
-  it('"overdue" matches only when post is stuck > 2 days', function() {
-    var threeDaysAgo = new Date(Date.now() - 3*86400000).toISOString();
-    var fresh = new Date(Date.now() - 1*60*1000).toISOString();
-    var overduePost = { stage:'in_production', status_changed_at: threeDaysAgo };
-    var freshPost   = { stage:'in_production', status_changed_at: fresh };
-    expect(helpers._notifChipMatch('overdue', {type:'stage_change'}, overduePost)).toBe(true);
-    expect(helpers._notifChipMatch('overdue', {type:'stage_change'}, freshPost)).toBe(false);
-    expect(helpers._notifChipMatch('overdue', {type:'stage_change'}, null)).toBe(false);
+  it('mentions chip returns falsy with no mention set', function() {
+    expect(helpers._notifChipMatch('mentions', {type:'comment', post_id:'p1'}, null)).toBeFalsy();
   });
-  it('unknown filter defaults to "all" (permissive)', function() {
+  it('unknown filter defaults to permissive (true)', function() {
     expect(helpers._notifChipMatch('unknown', {type:'comment'}, null)).toBe(true);
   });
 });
@@ -204,6 +201,10 @@ describe('renderNotifications wiring (source)', function() {
   it('fetches actor field from notifications SELECT', function() {
     expect(uiSrc).toContain('select=id,type,message,read,created_at,post_id,user_role,actor');
   });
+  it('batch-fetches post_comments for mention + preview data', function() {
+    expect(uiSrc).toContain('/post_comments?post_id=in.');
+    expect(uiSrc).toContain('mentioned_users');
+  });
   it('initial chip filter defaults to "all"', function() {
     expect(uiSrc).toMatch(/var\s+_notifChipFilter\s*=\s*['"]all['"]/);
   });
@@ -211,10 +212,10 @@ describe('renderNotifications wiring (source)', function() {
     var start = uiSrc.indexOf('function renderNotifications');
     var end = uiSrc.indexOf('\nasync function markNotifRead', start);
     var body = uiSrc.slice(start, end);
-    expect(body).toContain('nchip-all-count');
-    expect(body).toContain('nchip-approval-count');
-    expect(body).toContain('nchip-comment-count');
-    expect(body).toContain('nchip-overdue-count');
+    expect(body).toContain('nchip-count-all');
+    expect(body).toContain('nchip-count-mentions');
+    expect(body).toContain('nchip-count-comments');
+    expect(body).toContain('nchip-count-moves');
   });
   it('item markup emits data-post-id + data-notif-id on .notif-item wrapper', function() {
     var start = uiSrc.indexOf('function renderNotifications');
@@ -223,27 +224,28 @@ describe('renderNotifications wiring (source)', function() {
     expect(body).toMatch(/class="notif-item[\s\S]*?data-notif-id/);
     expect(body).toContain("data-post-id");
   });
-  it('live moment branch uses .notif-live-card for type:published', function() {
+  it('published notifications render as .notif-live-card (not .notif-item)', function() {
     var start = uiSrc.indexOf('function renderNotifications');
     var end = uiSrc.indexOf('\nasync function markNotifRead', start);
     var body = uiSrc.slice(start, end);
     expect(body).toContain('notif-live-card');
     expect(body).toContain("n.type === 'published'");
   });
-  it('renderNotifications uses no style= attributes in item markup', function() {
+  it('grouped comment copy uses "left N comments" template', function() {
     var start = uiSrc.indexOf('function renderNotifications');
     var end = uiSrc.indexOf('\nasync function markNotifRead', start);
     var body = uiSrc.slice(start, end);
-    // Only live-card inner div uses style="flex:1..." which is allowed layout helper
-    var hits = (body.match(/\bstyle="/g) || []);
-    // At most 1 allowed (the live-card flex:1 wrapper)
-    expect(hits.length).toBeLessThanOrEqual(1);
+    expect(body).toContain('left ');
+    expect(body).toContain(' comments on ');
   });
-  it('relative time is rendered inline via notif-time-inline span', function() {
-    expect(uiSrc).toContain('notif-time-inline');
-  });
-  it('overdue inline badge uses .notif-overdue-inline', function() {
-    expect(uiSrc).toContain('notif-overdue-inline');
+  it('day groups are today/yesterday/earlier (Today/Yesterday/Earlier labels)', function() {
+    var start = uiSrc.indexOf('function renderNotifications');
+    var end = uiSrc.indexOf('\nasync function markNotifRead', start);
+    var body = uiSrc.slice(start, end);
+    expect(body).toContain('Today');
+    expect(body).toContain('Yesterday');
+    expect(body).toContain('Earlier');
+    expect(body).toContain('notif-day-label');
   });
 });
 
@@ -261,10 +263,11 @@ describe('markAllNotificationsRead (source)', function() {
     expect(body).toContain('user_role=eq.');
     expect(body).toContain('_notifRole');
   });
-  it('clears unread-driven chip counts (approval/comment/overdue)', function() {
-    expect(body).toContain('nchip-approval-count');
-    expect(body).toContain('nchip-comment-count');
-    expect(body).toContain('nchip-overdue-count');
+  it('clears all four chip count spans', function() {
+    expect(body).toContain('nchip-count-all');
+    expect(body).toContain('nchip-count-mentions');
+    expect(body).toContain('nchip-count-comments');
+    expect(body).toContain('nchip-count-moves');
   });
   it('calls logError on catch', function() {
     expect(body).toContain('logError');
@@ -287,18 +290,15 @@ describe('openNotifications overlay (source)', function() {
     expect(body).toContain('background:#0a0a0f');
     expect(body).not.toContain('rgba(0,0,0,0.75)');
   });
-  it('overlay aligns items stretch (full page)', function() {
+  it('overlay aligns items stretch + panel is flex column 100%', function() {
     expect(body).toContain('align-items:stretch');
-    expect(body).not.toContain('align-items:flex-end');
-  });
-  it('panel is a flex column with height:100%', function() {
     expect(body).toContain('height:100%');
     expect(body).toContain('flex-direction:column');
   });
   it('tap handler targets .notif-item and .notif-live-card', function() {
     expect(body).toContain("closest('.notif-item, .notif-live-card')");
   });
-  it('tap handler reads data-post-id and data-notif-id from item', function() {
+  it('tap handler reads data-post-id and data-notif-id', function() {
     expect(body).toContain("getAttribute('data-post-id')");
     expect(body).toContain("getAttribute('data-notif-id')");
   });
@@ -311,18 +311,17 @@ describe('openNotifications overlay (source)', function() {
 
 
 // ---------------------------------------------------------------
-// Source analysis: dead code removed (PR 1 + PR 2)
+// Source analysis: dead code removed (PR 1 + 2 + 3)
 // ---------------------------------------------------------------
 describe('dead code removed', function() {
-  it('PR 1 dead helpers are gone (loadNotifBadge/getActions/parseActor/formatTime/notif-client-badge)', function() {
+  it('PR 1 dead helpers are gone', function() {
     expect(uiSrc).not.toMatch(/function\s+loadNotifBadge/);
     expect(uiSrc).not.toContain('window.loadNotifBadge');
     expect(uiSrc).not.toContain('getActions');
     expect(uiSrc).not.toContain('parseActor');
-    expect(uiSrc).not.toMatch(/function\s+formatTime\(created_at\)/);
     expect(uiSrc).not.toContain('notif-client-badge');
   });
-  it('PR 2 dead APIs are gone (setNotifFilter/.nftab/.ntab-*-count/_NOTIF_NEEDS_TYPES/_NOTIF_UPDATES_TYPES/_notifStagePillClass/notif-summary/chip-urgent)', function() {
+  it('PR 2 dead APIs are gone (setNotifFilter/nftab/ntab-*-count/needs-updates/stagePill/notif-summary/chip-urgent)', function() {
     expect(uiSrc).not.toContain('setNotifFilter');
     expect(uiSrc).not.toContain(".nftab");
     expect(uiSrc).not.toContain('ntab-needs-count');
@@ -332,5 +331,21 @@ describe('dead code removed', function() {
     expect(uiSrc).not.toContain('_notifStagePillClass');
     expect(uiSrc).not.toContain('notif-summary');
     expect(uiSrc).not.toContain('chip-urgent');
+  });
+  it('PR 3 overdue detection is entirely removed', function() {
+    expect(uiSrc).not.toContain('isOverdue');
+    expect(uiSrc).not.toContain('_notifIsOverdue');
+    expect(uiSrc).not.toContain('ntype-overdue');
+    expect(uiSrc).not.toContain('OVERDUE');
+  });
+  it('PR 3 old chip ids gone (nchip-all-count etc.)', function() {
+    expect(uiSrc).not.toContain('nchip-all-count');
+    expect(uiSrc).not.toContain('nchip-approval-count');
+    expect(uiSrc).not.toContain('nchip-comment-count');
+    expect(uiSrc).not.toContain('nchip-overdue-count');
+  });
+  it('PR 3 old chip palette gone (nchip-red/cyan/amber/green)', function() {
+    expect(uiSrc).not.toContain('nchip-red');
+    expect(uiSrc).not.toContain('nchip-amber');
   });
 });

@@ -4021,10 +4021,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 
 /* ===================================================
-   NOTIFICATION PANEL (rebuilt PR 2 of 4)
+   NOTIFICATION PANEL (rebuilt PR 3 of 4)
    =================================================== */
 
-/* ── PANEL STRUCTURE ── */
+/* ── NOTIFICATION PANEL OVERLAY ── */
 #notif-overlay {
   position: fixed;
   inset: 0;
@@ -4049,7 +4049,19 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-topbar {
   flex-shrink: 0;
   padding: 12px 18px 0;
-  background: #0e0e16;
+  overflow: hidden;
+  position: relative;
+}
+.notif-topbar::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 52px;
+  height: 38px;
+  background: linear-gradient(to right, transparent, #0e0e16 80%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .notif-topbar-row1 {
@@ -4058,7 +4070,6 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   justify-content: space-between;
   margin-bottom: 5px;
 }
-
 .notif-role-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
@@ -4066,7 +4077,6 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   color: #555566;
   text-transform: uppercase;
 }
-
 .notif-close-btn {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
@@ -4092,7 +4102,6 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   gap: 12px;
   margin-bottom: 10px;
 }
-
 .notif-hey {
   font-family: 'DM Sans', sans-serif;
   font-size: 24px;
@@ -4117,12 +4126,13 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .mark-all-btn:hover { color: #9090A0; }
 
-/* ── HORIZONTAL SCROLL FILTER CHIPS ── */
+/* ── CHIPS ── */
 .notif-chips {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 10px;
+  padding-right: 52px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }
@@ -4145,15 +4155,11 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   align-items: center;
   gap: 5px;
 }
-.notif-chip.active {
-  background: #141420;
-  border-color: #2a2a3a;
-  color: #F0F0F2;
-}
-.notif-chip.nchip-red.active   { border-color: #FF4B4B40; color: #FF4B4B; background: #FF4B4B0a; }
-.notif-chip.nchip-cyan.active  { border-color: #22D3EE40; color: #22D3EE; background: #22D3EE0a; }
-.notif-chip.nchip-amber.active { border-color: #F6A62340; color: #F6A623; background: #F6A6230a; }
-.notif-chip.nchip-green.active { border-color: #3ECF8E40; color: #3ECF8E; background: #3ECF8E0a; }
+.notif-chip.active           { background: #141420; border-color: #2a2a3a; color: #F0F0F2; }
+.notif-chip.nch-gold.active  { border-color: #C8A84B40; color: #C8A84B; background: #C8A84B0a; }
+.notif-chip.nch-cyan.active  { border-color: #22D3EE40; color: #22D3EE; background: #22D3EE0a; }
+.notif-chip.nch-purple.active{ border-color: #9b87f540; color: #9b87f5; background: #9b87f50a; }
+.notif-chip.nch-green.active { border-color: #3ECF8E40; color: #3ECF8E; background: #3ECF8E0a; }
 
 .notif-chip-dot {
   width: 5px; height: 5px;
@@ -4167,7 +4173,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   opacity: 0.8;
 }
 
-/* ── SCROLL AREA ── */
+/* ── DIVIDER ── */
+.notif-hdr-line { height: 1px; background: #1e1e2e; flex-shrink: 0; }
+
+/* ── SCROLL ── */
 .notif-scroll {
   flex: 1;
   overflow-y: auto;
@@ -4202,7 +4211,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-item:hover { background: #141420; }
 .notif-item.read  { opacity: 0.45; }
 
-/* left color bar */
+/* LEFT COLOR BAR */
 .notif-item::before {
   content: '';
   position: absolute;
@@ -4213,10 +4222,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-item.ntype-approval::before { background: #FF4B4B; }
 .notif-item.ntype-live::before     { background: #3ECF8E; }
 .notif-item.ntype-stage::before    { background: #9b87f5; }
-.notif-item.ntype-overdue::before  { background: #F6A623; animation: notif-pulse 1.5s infinite; }
-@keyframes notif-pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.notif-item.ntype-mention::before  { background: #C8A84B; }
 
-/* avatar */
+/* AVATAR - 34px circle, aligned to top */
 .notif-av {
   width: 34px; height: 34px;
   border-radius: 50%;
@@ -4227,14 +4235,16 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   font-weight: 600;
+  align-self: flex-start;
+  margin-top: 2px;
 }
-.nav-manisha, .nav-client   { background: #FF4B4B18; border: 1px solid #FF4B4B44; color: #FF4B4B; }
-.nav-chitra, .nav-servicing { background: #22D3EE18; border: 1px solid #22D3EE44; color: #22D3EE; }
-.nav-pranav, .nav-creative  { background: #9b87f518; border: 1px solid #9b87f544; color: #9b87f5; }
-.nav-admin, .nav-shubham    { background: #C8A84B18; border: 1px solid #C8A84B44; color: #C8A84B; }
-.nav-system                 { background: #F6A62318; border: 1px solid #F6A62344; color: #F6A623; }
+.nav-manisha, .nav-client    { background: #FF4B4B18; border: 1px solid #FF4B4B44; color: #FF4B4B; }
+.nav-chitra, .nav-servicing  { background: #22D3EE18; border: 1px solid #22D3EE44; color: #22D3EE; }
+.nav-pranav, .nav-creative   { background: #9b87f518; border: 1px solid #9b87f544; color: #9b87f5; }
+.nav-admin, .nav-shubham     { background: #C8A84B18; border: 1px solid #C8A84B44; color: #C8A84B; }
+.nav-system                  { background: #F6A62318; border: 1px solid #F6A62344; color: #F6A623; }
 
-/* message body */
+/* MESSAGE BODY */
 .notif-body { flex: 1; min-width: 0; }
 
 .notif-text {
@@ -4243,10 +4253,10 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   font-weight: 400;
   color: #9090A0;
   line-height: 1.4;
+  overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 .notif-item:not(.read) .notif-text { color: #F0F0F2; }
 .notif-text strong { font-weight: 600; }
@@ -4254,22 +4264,36 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-time-inline {
   color: #555566;
   font-size: 11px;
-  font-weight: 400;
+  white-space: nowrap;
 }
 
-.notif-overdue-inline {
+/* COMMENT PREVIEW - 9px italic, hierarchy below main text */
+.notif-preview {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-style: italic;
+  color: #555566;
+  line-height: 1.4;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.notif-item:not(.read) .notif-preview { color: #9090A0; }
+
+.notif-more {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  letter-spacing: .05em;
-  color: #F6A623;
+  color: #22D3EE;
   font-weight: 600;
+  margin-left: 3px;
+  font-style: normal;
 }
 
-/* thumbnail */
-.notif-thumb-wrap {
-  flex-shrink: 0;
-  width: 44px; height: 44px;
-}
+/* THUMBNAIL - always right side, 44x44 */
+.notif-thumb-wrap { flex-shrink: 0; }
 .notif-thumb {
   width: 44px; height: 44px;
   object-fit: cover;
@@ -4278,16 +4302,17 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: block;
 }
 
-/* live moment card */
+/* LIVE CARD - special green background, same layout as all other items */
 .notif-live-card {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px 12px 18px;
+  gap: 10px;
+  padding: 10px 14px 10px 18px;
   border-bottom: 1px solid #1e1e2e;
   background: #091410;
   cursor: pointer;
+  min-height: 56px;
 }
 .notif-live-card::before {
   content: '';
@@ -4296,13 +4321,23 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   width: 3px;
   background: #3ECF8E;
 }
-.notif-live-thumb {
-  width: 44px; height: 44px;
-  object-fit: cover;
+.notif-live-av {
+  width: 34px; height: 34px;
+  border-radius: 50%;
   flex-shrink: 0;
-  border-radius: 2px;
-  background: #1c1c2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  background: #3ECF8E18;
+  border: 1px solid #3ECF8E44;
+  color: #3ECF8E;
+  align-self: flex-start;
+  margin-top: 2px;
 }
+.notif-live-body { flex: 1; min-width: 0; }
 .notif-live-tag {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
@@ -4312,7 +4347,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .notif-live-title {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #F0F0F2;
   white-space: nowrap;
@@ -4327,7 +4362,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   margin-top: 2px;
 }
 
-/* empty state */
+/* EMPTY STATE */
 .notif-empty-state {
   display: flex;
   flex-direction: column;
