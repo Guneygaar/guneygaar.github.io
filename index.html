@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260405e">
+ <link rel="stylesheet" href="styles.css?v=20260405f">
 
 </head>
 <body>
@@ -483,7 +483,7 @@
   <!-- Hidden menu -->
   <div class="user-menu-wrap" id="client-menu-wrap" style="display:none;">
     <div class="user-menu" id="client-menu">
-      <button class="user-menu-item" onclick="toggleTheme(); closeClientMenu()">Toggle Theme</button>
+      <button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()">Toggle Theme</button>
       <button class="user-menu-item danger" onclick="logout()">Sign Out</button>
     </div>
   </div>
@@ -1073,26 +1073,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260405e"></script>
-<script src="00-appstate-compat.js?v=20260405e"></script>
-<script src="01-config.js?v=20260405e" defer></script>
-<script src="02-session.js?v=20260405e" defer></script>
-<script src="utils.js?v=20260405e" defer></script>
-<script src="03-auth.js?v=20260405e" defer></script>
-<script src="05-api.js?v=20260405e" defer></script>
-<script src="10-ui.js?v=20260405e" defer></script>
+<script src="00-appstate.js?v=20260405f"></script>
+<script src="00-appstate-compat.js?v=20260405f"></script>
+<script src="01-config.js?v=20260405f" defer></script>
+<script src="02-session.js?v=20260405f" defer></script>
+<script src="utils.js?v=20260405f" defer></script>
+<script src="03-auth.js?v=20260405f" defer></script>
+<script src="05-api.js?v=20260405f" defer></script>
+<script src="10-ui.js?v=20260405f" defer></script>
 
-<script src="06-post-create.js?v=20260405e" defer></script>
-<script defer src="render/dashboard.js?v=20260405e"></script>
-<script defer src="render/client.js?v=20260405e"></script>
-<script defer src="render/pipeline.js?v=20260405e"></script>
-<script defer src="render/brief.js?v=20260405e"></script>
-<script defer src="actions/pcs.js?v=20260405e"></script>
-<script src="07-post-load.js?v=20260405e" defer></script>
-<script src="08-post-actions.js?v=20260405e" defer></script>
-<script src="09-library.js?v=20260405e" defer></script>
-<script src="09-approval.js?v=20260405e" defer></script>
-<script src="04-router.js?v=20260405e" defer></script>
+<script src="06-post-create.js?v=20260405f" defer></script>
+<script defer src="render/dashboard.js?v=20260405f"></script>
+<script defer src="render/client.js?v=20260405f"></script>
+<script defer src="render/pipeline.js?v=20260405f"></script>
+<script defer src="render/brief.js?v=20260405f"></script>
+<script defer src="actions/pcs.js?v=20260405f"></script>
+<script src="07-post-load.js?v=20260405f" defer></script>
+<script src="08-post-actions.js?v=20260405f" defer></script>
+<script src="09-library.js?v=20260405f" defer></script>
+<script src="09-approval.js?v=20260405f" defer></script>
+<script src="04-router.js?v=20260405f" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1251,8 +1251,8 @@ window.setPcsVisibility = function(el, vis) {
       </div>
     </div>
     <div class="hdr-icons">
-      <button class="hdr-icon"
-        onclick="showSearch()">
+      <!-- TODO: wire up insights search - showSearch() is not defined anywhere -->
+      <button class="hdr-icon">
         <svg width="17" height="17" fill="none"
           stroke="currentColor" stroke-width="1.5"
           viewBox="0 0 24 24"><path
@@ -1316,7 +1316,8 @@ window.setPcsVisibility = function(el, vis) {
       <input type="date" class="ins-cd-input" id="ins-cd-from">
       <span class="ins-cd-lbl">To</span>
       <input type="date" class="ins-cd-input" id="ins-cd-to">
-      <button class="ins-cd-apply" onclick="insApplyCustom()">Apply</button>
+      <!-- TODO: wire up custom date range apply - insApplyCustom() is not defined anywhere -->
+      <button class="ins-cd-apply">Apply</button>
     </div>
     <div class="ins-pillar-row">
       <button class="ins-pchip active" onclick="insSetPillar('all',this)">All</button>
@@ -1444,7 +1445,8 @@ window.setPcsVisibility = function(el, vis) {
             <div class="ins-rc-row"><span class="ins-rc-rl">Best Day:</span> <span id="ins-rc-day">--</span></div>
           </div>
         </div>
-        <button class="ins-share-btn" onclick="insShareReport()">Share Report</button>
+        <!-- TODO: wire up share report - insShareReport() is not defined anywhere -->
+        <button class="ins-share-btn">Share Report</button>
       </div>
     </div>
 

@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405f
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -630,6 +630,18 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    05-api.js:12) and assign it to commentObj.id. Optimistic
    append and rendering remain unchanged; only commentObj.id
    is patched silently in memory.
+1. Four dead-function onclick handlers in index.html (Phase 4
+   audit) — buttons silently did nothing when tapped
+   Location: index.html:486 closeClientMenu() (undefined);
+   index.html:1255 showSearch() (undefined);
+   index.html:1319 insApplyCustom() (undefined);
+   index.html:1447 insShareReport() (undefined).
+   Status: FIXED (PR#TBD) — line 486: changed closeClientMenu()
+   to closeUserMenu() (defined in 10-ui.js:125). Lines 1255,
+   1319, 1447: removed dead onclick attributes and added TODO
+   comments above each button so they are not silent dead
+   buttons. No behavior change needed — these buttons were
+   already no-ops in production.
 
 ## SECTION 13 — STABILITY ROADMAP
 
