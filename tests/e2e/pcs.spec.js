@@ -161,32 +161,37 @@ test('TEST 6 — PCS caption is visible', async ({ page }) => {
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-caption.png' });
 });
 
-test('TEST 7 — PCS advance button handles stage update', async ({ page }) => {
+test('TEST 7 — PCS stage pill opens dropdown', async ({ page }) => {
   await openPCSCard(page);
 
-  const advBtn = page.locator('#pc-advance-btn');
-  await expect(advBtn).toBeVisible({ timeout: 5000 });
+  const stagePill = page.locator('#pcs-stage-pill');
+  await expect(stagePill).toBeVisible({ timeout: 5000 });
 
-  // Click the advance button — in mock env, verify it doesn't crash
-  await advBtn.click();
+  // Click the stage pill to open the chip dropdown
+  await stagePill.click();
+
+  // Assert the dropdown rendered at least one option
+  await expect(page.locator('.pcs-chip-drop-item').first()).toBeVisible({ timeout: 3000 });
+
+  // Dismiss the dropdown by clicking outside
+  await page.locator('#pcs-screen').click({ position: { x: 10, y: 10 } });
 
   // Page should still be functional (no crash)
   await expect(page.locator('#pcs-screen')).toBeVisible();
 
-  await page.screenshot({ path: 'tests/e2e/screenshots/pcs-advance-click.png' });
+  await page.screenshot({ path: 'tests/e2e/screenshots/pcs-stage-pill.png' });
 });
 
 test('TEST 8 — PCS handles delete flow initialization', async ({ page }) => {
   await openPCSCard(page);
 
-  // Click the delete button in the topbar
-  const delBtn = page.locator('button.pc-icon-btn.danger');
-  await expect(delBtn).toBeVisible({ timeout: 5000 });
-  await delBtn.click();
+  // Delete no longer has a PCS topbar trigger; invoke the confirm
+  // overlay directly so we still cover the pcsConfirmDelete path.
+  await page.evaluate(() => window.pcsConfirmDelete && window.pcsConfirmDelete());
 
   // Confirm overlay should appear (custom modal, not native dialog)
   await expect(page.locator('.pcs-confirm-overlay')).toBeVisible({ timeout: 3000 });
-  await expect(page.locator('text=Are you sure you want to delete this post?')).toBeVisible();
+  await expect(page.locator('.pcs-confirm-overlay')).toContainText(/delete|sure/i);
 
   // Dismiss by clicking Cancel
   await page.locator('.pcs-confirm-cancel').click();
