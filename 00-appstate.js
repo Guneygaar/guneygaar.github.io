@@ -106,6 +106,9 @@ window.onunhandledrejection = function(event) {
   window.logError(_msg, _stack, 'unhandledrejection');
 };
 
+// Click-analytics session id (click_log telemetry, Apr 5 2026)
+window._sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+
 // Per-action in-flight guard (CTO-approved pattern Apr 5 2026)
 // Prevents duplicate async calls from rapid taps or double-clicks.
 // Usage: guardAction('unique-key', () => myAsyncFunction())
@@ -121,6 +124,14 @@ window.guardAction = function(key, fn) {
       }
       if (typeof window.showToast === 'function') {
         window.showToast('Something went wrong', 'error');
+      }
+      if (window._clickBuffer) {
+        window._clickBuffer.push({
+          action:     key,
+          success:    false,
+          error:      err.message || String(err),
+          created_at: new Date().toISOString()
+        });
       }
     })
     .finally(function() {
