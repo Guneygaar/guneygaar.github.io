@@ -296,8 +296,8 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   than failing the whole suite.
 
 Current (verified 2026-04-05):
-Unit test files: 15
-Unit tests:      362 passing, 0 failing
+Unit test files: 16
+Unit tests:      384 passing, 0 failing
 E2E specs:       7
 
 Files:
@@ -316,6 +316,7 @@ tests/timestamp.test.js
 tests/utils.test.js
 tests/action-router.test.js
 tests/guard-handlers.test.js
+tests/critical-handlers.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
