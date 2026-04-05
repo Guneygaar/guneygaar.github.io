@@ -304,20 +304,29 @@ var _notifData = [];
 // Relative time formatter for notification timestamps
 function _notifRelTime(iso) {
   if (!iso) return '';
+  var then;
+  try { then = new Date(iso).getTime(); } catch(e) { return ''; }
+  if (!then || isNaN(then)) return '';
   var now = Date.now();
-  var then = new Date((iso||'').replace(' ','T').replace('+00','Z')).getTime();
-  if (isNaN(then)) return '';
   var diff = Math.floor((now - then) / 1000);
+  if (diff < 0) diff = 0;
   if (diff < 60) return 'just now';
   if (diff < 3600) return Math.floor(diff / 60) + ' min ago';
   if (diff < 86400) return Math.floor(diff / 3600) + ' hr ago';
-  var d = new Date(then);
+  var d = new Date(iso);
   var todayD = new Date(); todayD.setHours(0,0,0,0);
-  var yesterdayD = new Date(todayD); yesterdayD.setDate(yesterdayD.getDate()-1);
+  var yestD = new Date(todayD); yestD.setDate(yestD.getDate()-1);
   var thenD = new Date(d); thenD.setHours(0,0,0,0);
-  var timeStr = d.toLocaleTimeString('en-IN', {hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase();
-  if (thenD.getTime() === yesterdayD.getTime()) return 'Yesterday \xB7 ' + timeStr;
-  return d.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'}) + ' \xB7 ' + timeStr;
+  var h = d.getHours();
+  var m = d.getMinutes();
+  var ampm = h >= 12 ? 'pm' : 'am';
+  var h12 = h % 12 || 12;
+  var timeStr = h12 + ':' + (m < 10 ? '0'+m : m) + ampm;
+  if (thenD.getTime() === todayD.getTime()) return 'Today ' + timeStr;
+  if (thenD.getTime() === yestD.getTime()) return 'Yesterday ' + timeStr;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun',
+                'Jul','Aug','Sep','Oct','Nov','Dec'];
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + timeStr;
 }
 
 var _NOTIF_MOVES_TYPES = ['stage_change','ready','in_production','scheduled','brief','brief_done'];
@@ -414,7 +423,7 @@ async function loadNotifications() {
     window._notifComments = [];
     if (commentPostIds.length > 0) {
       try {
-        var idList = commentPostIds.map(function(p){ return '"' + p + '"'; }).join(',');
+        var idList = commentPostIds.join(',');
         var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,message,created_at,mentioned_users';
         var comments = await apiFetch(commentUrl);
         if (Array.isArray(comments)) window._notifComments = comments;
@@ -451,7 +460,7 @@ function renderNotifications(name, role) {
   }
 
   // Mentions detection from batch-fetched comments
-  var currentUserName = (window.AppState.user && window.AppState.user.name) || window.currentUserName || '';
+  var currentUserName = (window.AppState.user && (window.AppState.user.name || window.AppState.user.email)) || window.currentUserName || '';
   var mentionPostIds = new Set();
   var commentsArr = window._notifComments || [];
   if (currentUserName) {
@@ -486,6 +495,10 @@ function renderNotifications(name, role) {
   // Filter
   var filter = _notifChipFilter || 'all';
   var filtered = notifs.filter(function(n) { return _notifChipMatch(filter, n, mentionPostIds); });
+  // Filter out System actor (noise)
+  filtered = filtered.filter(function(n) {
+    return !n.actor || n.actor.toLowerCase() !== 'system';
+  });
 
   var scroll = document.getElementById('notif-list-scroll');
   if (!scroll) return;
@@ -540,7 +553,26 @@ function renderNotifications(name, role) {
   function _buildItem(n) {
     var post = postFor(n.post_id);
     var postThumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
-    var postTitle = post ? (post.title || '') : '';
+    var postTitle = '';
+    if (post && post.title) {
+      postTitle = post.title;
+    } else if (n.message) {
+      // Fallback: extract title from message
+      // Message format is typically "Actor published Post Title"
+      // or "Post Title is now live"
+      var msgLower = (n.message || '').toLowerCase();
+      var pubIdx = msgLower.indexOf('published ');
+      if (pubIdx !== -1) {
+        postTitle = n.message.slice(pubIdx + 10).trim();
+      } else {
+        var liveIdx = msgLower.indexOf(' is now live');
+        if (liveIdx !== -1) {
+          postTitle = n.message.slice(0, liveIdx).trim();
+        } else {
+          postTitle = n.message;
+        }
+      }
+    }
     var actor = n.actor || '';
     var actorLower = (actor || 'system').toLowerCase();
     var avClass = _notifActorClass(actor);
@@ -556,7 +588,11 @@ function renderNotifications(name, role) {
           '<div class="notif-live-body">' +
             '<div class="notif-live-tag">\u2713 POST IS LIVE</div>' +
             '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
-            '<div class="notif-live-sub">' + esc(actor) + ' \xB7 ' + esc(ts) + ' \xB7 VIEW ON LINKEDIN \u2192</div>' +
+            '<div class="notif-live-sub">' +
+              [esc(actor), esc(ts), 'VIEW ON LINKEDIN \u2192']
+                .filter(function(s) { return s && s.length > 0; })
+                .join(' \xB7 ') +
+            '</div>' +
           '</div>' +
           '<div class="notif-thumb-wrap">' +
             (postThumb
