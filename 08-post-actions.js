@@ -240,17 +240,22 @@ async function clientApprove(postId, btn) {
 }
 
 async function clientAcknowledge(postId) {
-  try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
-    });
-    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
-    var _ackPost = getPostById(postId);
-    window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Creative'], window.AppState.user.name || 'Client');
-    showToast('Got it! The team has been notified.', 'success');
-    setTimeout(() => loadPostsForClient(), 800);
-  } catch { showToast('Failed  -  try again', 'error'); }
+  return window.guardAction('client-acknowledge-' + postId, async function() {
+    try {
+      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
+      });
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
+      var _ackPost = getPostById(postId);
+      window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Creative'], window.AppState.user.name || 'Client');
+      showToast('Got it! The team has been notified.', 'success');
+      setTimeout(() => loadPostsForClient(), 800);
+    } catch (err) {
+      showToast('Failed  -  try again', 'error');
+      window.logError && window.logError(err && err.message, err && err.stack, 'client-acknowledge');
+    }
+  });
 }
 
 async function submitClientRequest() {

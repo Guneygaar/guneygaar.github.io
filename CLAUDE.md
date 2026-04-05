@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405t
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405u
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -656,6 +656,26 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    child from the DOM, showToast('Failed to sync comment.
    Please try again.', 'error') and return before firing any
    notifications. Prevents headless comments with empty id.
+1. _handleSubmitComment had no in-flight guard — rapid Enter
+   could create N duplicate client comment POSTs and N duplicate
+   notification fanouts before the first POST resolved; optimistic
+   path pushed a new commentObj into post.post_comments on every
+   tap, ghosting the UI.
+   Location: render/client.js _handleSubmitComment lines 931-1082.
+   Status: FIXED (PR#TBD) — reads/sets data-submitting="true" on
+   the comment input AND on the data-action="submitComment" send
+   button, disables the button, and clears both in a .finally()
+   after the POST chain. Early returns (empty message, missing
+   input) do not set the flag and do not need to clear.
+1. clientAcknowledge had no in-flight guard, no btn param, and no
+   button disable — double-tap on "acknowledge" sent two PATCHes
+   and two notification fanouts simultaneously. Catch block only
+   toasted, never called logError.
+   Location: 08-post-actions.js clientAcknowledge() lines 242-254.
+   Status: FIXED (PR#TBD) — wrapped entire function body in
+   window.guardAction('client-acknowledge-' + postId, …) so
+   concurrent invocations are dropped at the guard. Catch block
+   now also calls window.logError with action 'client-acknowledge'.
 1. Four dead-function onclick handlers in index.html (Phase 4
    audit) — buttons silently did nothing when tapped
    Location: index.html:486 closeClientMenu() (undefined);

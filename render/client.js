@@ -931,6 +931,8 @@ console.log('LOADED:', 'render/client.js');
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
+    var _sendBtn = document.querySelector('button[data-action="submitComment"][data-id="' + postId + '"]');
+    if (input.dataset.submitting === 'true' || (_sendBtn && _sendBtn.dataset.submitting === 'true')) return;
     var message = input.value.trim();
     var _urls = window._clientFeedPendingImgs[postId] || [];
     if (!message && _urls.length === 0) return;
@@ -998,6 +1000,9 @@ console.log('LOADED:', 'render/client.js');
         ? JSON.stringify({ type: 'images', urls: _urls })
         : null
     };
+
+    input.dataset.submitting = 'true';
+    if (_sendBtn) { _sendBtn.dataset.submitting = 'true'; _sendBtn.disabled = true; }
 
     window.apiFetch('/post_comments', {
       method: 'POST',
@@ -1075,6 +1080,9 @@ console.log('LOADED:', 'render/client.js');
       if (post && _savedComments !== null) {
         post.post_comments = _savedComments;
       }
+    }).finally(function() {
+      delete input.dataset.submitting;
+      if (_sendBtn) { delete _sendBtn.dataset.submitting; _sendBtn.disabled = false; }
     });
   }
 
