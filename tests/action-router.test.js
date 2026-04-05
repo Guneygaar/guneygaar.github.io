@@ -43,6 +43,10 @@ describe('Phase 4/5 — Action Router & guardAction', function() {
     };
     // Prevent logError's fetch from touching the network.
     window.fetch = vi.fn(function() { return Promise.resolve({ ok:true }); });
+    // 10-ui.js owns window._clickBuffer in production; the router
+    // pushes to it on every dispatch. We're not evaluating 10-ui.js
+    // here (only the router block), so stub the buffer array.
+    window._clickBuffer = [];
     // Evaluate guardAction and the router ONCE.
     // Re-evaluating would either double-bind the listener or re-declare _inFlight,
     // so keep state stable across the suite and clear _inFlight via the

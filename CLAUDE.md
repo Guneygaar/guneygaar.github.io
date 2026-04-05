@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405x
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405y
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -404,7 +404,21 @@ window.guardAction          — per-key in-flight guard for async handlers;
                               usage: guardAction('key', () => asyncFn());
                               skips re-entry while key is in-flight,
                               catches errors → logError + showToast,
+                              also pushes failure entries into
+                              window._clickBuffer with success:false,
                               releases key in .finally()
+window._sessionId           — unique session identifier minted once at
+                              page load (sess_<ts>_<rand6>), used as
+                              session_id on every click_log row
+
+10-ui.js (click telemetry):
+window._clickBuffer         — array of pending click_log entries; the
+                              Action Router pushes one per dispatch,
+                              guardAction pushes failures
+_flushClickBuffer           — drains _clickBuffer to POST /click_log
+                              every 5s via apiFetch, fire-and-forget;
+                              on beforeunload sends the remainder via
+                              navigator.sendBeacon directly to Supabase
 
 10-ui.js:
 window._showErrorToast      — show transient error toast to user

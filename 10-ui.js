@@ -17,6 +17,68 @@ function hideErrorBanner() {
   document.getElementById('error-banner')?.classList.add('hidden');
 }
 
+// -- Click-log telemetry buffer ----------------
+window._clickBuffer = [];
+
+function _flushClickBuffer() {
+  if (!window._clickBuffer.length) return;
+  var batch = window._clickBuffer.splice(0);
+  var user = AppState.user || {};
+  var payload = batch.map(function(entry) {
+    return {
+      session_id:    window._sessionId || 'unknown',
+      action:        entry.action,
+      data:          entry.data || null,
+      user_email:    user.email || null,
+      user_role:     user.effectiveRole || null,
+      post_id:       entry.post_id || null,
+      success:       entry.success !== false,
+      error_message: entry.error || null,
+      duration_ms:   entry.duration_ms || null,
+      page:          window.location.pathname || '/',
+      device_type:   window.innerWidth <= 768 ? 'mobile' : 'desktop',
+      app_version:   (document.querySelector('script[src*="?v="]') || {}).src
+                     ? document.querySelector('script[src*="?v="]').src.split('?v=')[1] : null,
+      created_at:    entry.created_at
+    };
+  });
+  if (typeof apiFetch === 'function') {
+    apiFetch('/click_log', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    }).catch(function() {});
+  }
+}
+
+setInterval(_flushClickBuffer, 5000);
+
+window.addEventListener('beforeunload', function() {
+  if (!window._clickBuffer.length) return;
+  var user = AppState.user || {};
+  var payload = window._clickBuffer.map(function(entry) {
+    return {
+      session_id:    window._sessionId || 'unknown',
+      action:        entry.action,
+      data:          entry.data || null,
+      user_email:    user.email || null,
+      user_role:     user.effectiveRole || null,
+      post_id:       entry.post_id || null,
+      success:       entry.success !== false,
+      error_message: entry.error || null,
+      duration_ms:   entry.duration_ms || null,
+      page:          window.location.pathname || '/',
+      device_type:   window.innerWidth <= 768 ? 'mobile' : 'desktop',
+      app_version:   null,
+      created_at:    entry.created_at
+    };
+  });
+  navigator.sendBeacon(
+    (window._SUPABASE_URL || '') + '/rest/v1/click_log',
+    JSON.stringify(payload)
+  );
+});
+
 window._showErrorToast = function() {
   if (document.getElementById('sorted-error-toast')) return;
   var _t = document.createElement('div');
@@ -1606,6 +1668,14 @@ if (!window._routerBound) {
     if (interactive && interactive !== actionEl && actionEl.contains(interactive)) return;
     const type = actionEl.dataset.action;
     const tab = actionEl.dataset.tab;
+    window._clickBuffer.push({
+      action:     type,
+      data:       Object.assign({}, actionEl.dataset),
+      post_id:    actionEl.dataset.postId || (actionEl.closest('[data-post-id]')
+                  ? actionEl.closest('[data-post-id]').dataset.postId : null),
+      success:    true,
+      created_at: new Date().toISOString()
+    });
     try {
       switch (type) {
         case 'nav-tab':      return guardAction('nav-tab-' + tab, () => switchTab(actionEl));
