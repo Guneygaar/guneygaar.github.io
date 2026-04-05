@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -592,6 +592,31 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    user-select:none/-webkit-user-select:none from #client-post-overlay
    style, and added _commentInputHtml(post) to the overlay cardHtml
    build so the input exists in DOM immediately on open.
+1. Client comment input still unclickable after previous fix —
+   tapping the input in the client post overlay does nothing on
+   both mobile and desktop
+   Location: 07-post-load.js _cardClickDelegate at line 2562 —
+   document-level click listener matched [data-post-id] on the
+   comment &lt;input&gt; itself (render/client.js:643) and called
+   _openClientPostOverlay(pid) on every tap, tearing down the
+   overlay and destroying the input before focus landed
+   Status: FIXED (PR#TBD) — added a guard at the top of
+   _cardClickDelegate that early-exits when e.target.tagName is
+   INPUT, TEXTAREA, or BUTTON. render/client.js untouched; the
+   data-post-id attribute is left intact in case it is relied on
+   elsewhere.
+1. PCS comment-footer bar visually overlapping the post image on
+   desktop (thin dark strip abutting photo bottom edge)
+   Location: styles.css — #pcs-pane-client uses flex:1 but its
+   parent .pc-scroll-body is a block container with overflow-y:
+   auto, so flex:1 on the pane is ignored as a flex item. The
+   pane collapses to content height and the input-row footer
+   stacks directly against the bottom of #pcs-photo-grid-wrap.
+   Status: FIXED (PR#TBD) — added a desktop-only @media
+   (min-width:768px) rule setting min-height:60vh on
+   #pcs-pane-client and #pcs-pane-internal. Mobile layout is
+   untouched. Not converting .pc-scroll-body to a flex container
+   — too many children would be affected.
 
 ## SECTION 13 — STABILITY ROADMAP
 

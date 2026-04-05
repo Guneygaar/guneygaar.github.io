@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>comment-fix mockup — Sorted</title>
+<style>
+  :root {
+    --bg:#080808; --surface:#111118; --surface2:#0f0f1a;
+    --border:#1e1e2e; --text:#E8E8E8; --text2:#AEAEB2;
+    --muted:#8E8E93; --gold:#C8A84B; --red:#FF4B4B;
+    --amber:#F6A623;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:'DM Sans',-apple-system,Segoe UI,sans-serif;}
+  body{padding:40px 24px;max-width:1240px;margin:0 auto;}
+  h1{font-size:22px;margin:0 0 4px;font-weight:650;letter-spacing:-0.01em;}
+  .sub{color:var(--text2);font-size:12px;margin-bottom:32px;
+    font-family:'IBM Plex Mono',monospace;letter-spacing:0.06em;
+    text-transform:uppercase;}
+  .section{margin-bottom:48px;}
+  .section-title{font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);
+    margin-bottom:12px;}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media (max-width:800px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:16px;}
+  .panel h3{margin:0 0 12px;font-size:12px;font-family:'IBM Plex Mono',monospace;
+    letter-spacing:0.08em;text-transform:uppercase;}
+  .label-before{color:var(--red);}
+  .label-after{color:#3ECF8E;}
+  pre{background:#0a0a14;border:1px solid var(--border);padding:12px;
+    border-radius:8px;overflow:auto;font-size:12px;line-height:1.5;
+    color:#c8c8d0;}
+  code{font-family:'IBM Plex Mono','Courier New',monospace;color:var(--gold);}
+  .diagram{background:#0a0a14;border:1px dashed var(--border);
+    border-radius:8px;padding:16px;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;line-height:1.8;}
+  .box{border:1px solid var(--border);padding:10px 12px;margin:6px 0;
+    border-radius:6px;background:var(--surface);}
+  .box.image{background:#252529;color:var(--text2);text-align:center;
+    padding:40px 12px;font-size:10px;}
+  .box.bar-bad{background:#1a0808;border-color:#3a1414;color:#ff8080;
+    margin-top:-1px;padding:6px 12px;font-size:10px;}
+  .box.bar-ok{background:#0f0f1a;border-color:var(--border);
+    padding:8px 12px;margin-top:12px;}
+  .input-chrome{display:flex;align-items:center;gap:8px;
+    background:#111118;border:1px solid var(--border);border-radius:999px;
+    padding:8px 8px 8px 14px;}
+  .input-chrome input{flex:1;background:none;border:none;color:var(--text);
+    font-size:13px;outline:none;font-family:inherit;}
+  .send{width:28px;height:28px;border-radius:50%;background:var(--gold);
+    color:#000;border:none;font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;}
+  .list-line{color:var(--muted);font-size:10px;padding:4px 0;
+    border-bottom:1px dotted #222;}
+  .flow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+    font-size:11px;font-family:'IBM Plex Mono',monospace;
+    color:var(--text2);margin-top:8px;}
+  .flow .step{background:#0a0a14;border:1px solid var(--border);
+    padding:6px 10px;border-radius:4px;}
+  .flow .arrow{color:var(--gold);font-weight:700;}
+  .flow .bad{border-color:#3a1414;color:#ff8080;}
+  .flow .good{border-color:#143a1a;color:#3ECF8E;}
+  .tag{display:inline-block;background:#1a1408;color:var(--amber);
+    border:1px solid #3a2a0a;padding:2px 8px;border-radius:4px;
+    font-family:'IBM Plex Mono',monospace;font-size:9px;
+    letter-spacing:0.08em;text-transform:uppercase;}
+  .diff-add{color:#3ECF8E;}
+  .diff-del{color:#ff8080;text-decoration:line-through;opacity:0.7;}
+  .viewport-desktop{border:1px dashed #2a2a3a;border-radius:12px;
+    padding:8px;margin-top:8px;}
+  .viewport-desktop .vp-label{font-family:'IBM Plex Mono',monospace;
+    font-size:9px;color:var(--muted);letter-spacing:0.1em;
+    text-transform:uppercase;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<h1>comment-fix mockup</h1>
+<div class="sub">PR — client comment input clickable + PCS pane no longer overlaps photo on desktop</div>
+
+<!-- ============ BUG 1 ============ -->
+<div class="section">
+  <div class="section-title">◆ Bug 1 — client comment input not clickable (mobile + desktop)</div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3 class="label-before">BEFORE — tap is hijacked</h3>
+      <div class="diagram">
+        <div class="box image">POST IMAGE (client post overlay)</div>
+        <div class="box">caption · stats · engagement bar</div>
+        <div class="box" style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">C</div>
+          <div class="input-chrome" style="flex:1">
+            <input placeholder="Add a comment…" disabled>
+            <button class="send">↵</button>
+          </div>
+        </div>
+        <div class="flow">
+          <span class="step">tap input</span>
+          <span class="arrow">→</span>
+          <span class="step bad">click bubbles to document</span>
+          <span class="arrow">→</span>
+          <span class="step bad">_cardClickDelegate finds [data-post-id] on input</span>
+          <span class="arrow">→</span>
+          <span class="step bad">_openClientPostOverlay(pid)</span>
+          <span class="arrow">→</span>
+          <span class="step bad">existing overlay.remove() — input destroyed mid-click</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 class="label-after">AFTER — tap reaches the input</h3>
+      <div class="diagram">
+        <div class="box image">POST IMAGE (client post overlay)</div>
+        <div class="box">caption · stats · engagement bar</div>
+        <div class="box" style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;">C</div>
+          <div class="input-chrome" style="flex:1">
+            <input placeholder="Type here — it focuses correctly" autofocus>
+            <button class="send">↵</button>
+          </div>
+        </div>
+        <div class="flow">
+          <span class="step">tap input</span>
+          <span class="arrow">→</span>
+          <span class="step good">guard in _cardClickDelegate exits: tagName is INPUT</span>
+          <span class="arrow">→</span>
+          <span class="step good">input receives focus, keyboard opens</span>
+          <span class="arrow">→</span>
+          <span class="step good">user can type &amp; submit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="tag">fix</div>
+    <pre>// 07-post-load.js, inside _cardClickDelegate (line 2562)
+document.addEventListener('click', function _cardClickDelegate(e) {
+<span class="diff-add">  if (e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'TEXTAREA' ||
+      e.target.tagName === 'BUTTON') return;</span>
+  if (!window.AppState.user.effectiveRole) return;
+  …
+});</pre>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;">
+      The document-level delegate at 07-post-load.js:2562 matches any click whose
+      target has a <code>[data-post-id]</code> ancestor. The comment input at
+      render/client.js:643 carries <code>data-post-id="{pid}"</code> directly on
+      the &lt;input&gt;. Every tap re-opened the overlay, tearing down the input.
+      The guard bails out for form-interactive elements so they receive their
+      own focus/click as normal. Mobile and desktop both fixed.
+    </div>
+  </div>
+</div>
+
+<!-- ============ BUG 2 ============ -->
+<div class="section">
+  <div class="section-title">◆ Bug 2 — PCS comment footer overlapping photo on desktop</div>
+
+  <div class="cols">
+    <div class="panel">
+      <h3 class="label-before">BEFORE — desktop, wide viewport</h3>
+      <div class="viewport-desktop">
+        <div class="vp-label">desktop 1280×800 · PCS overlay, Client tab</div>
+        <div class="box image" style="padding:60px 12px;">POST IMAGE · 312px fixed height</div>
+        <div class="box bar-bad">
+          ⎯⎯ empty comments list (flex:1 collapsed to 0) ⎯⎯<br>
+          Add a comment… &nbsp; <span style="opacity:0.6">[input bar stacked directly against image]</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:12px;line-height:1.5;">
+        <code>#pcs-pane-client</code> uses <code>flex:1</code> but its parent
+        <code>.pc-scroll-body</code> is a <b>block</b> container — <code>flex:1</code>
+        is ignored, pane height = content = 0 + input row. Footer visually abuts
+        the photo grid bottom edge.
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 class="label-after">AFTER — desktop, media query applied</h3>
+      <div class="viewport-desktop">
+        <div class="vp-label">desktop 1280×800 · PCS overlay, Client tab</div>
+        <div class="box image" style="padding:60px 12px;">POST IMAGE · 312px fixed height</div>
+        <div class="box" style="min-height:180px;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div class="list-line">— No comments yet —</div>
+          <div class="list-line" style="flex:1">&nbsp;</div>
+          <div class="bar-ok" style="padding:0;margin:12px 0 0;border:0;">
+            <div class="input-chrome">
+              <div style="width:28px;height:28px;border-radius:50%;background:#2a2a3a;color:#fff;display:flex;align-items:center;justify-content:center;">+</div>
+              <input placeholder="Reply to client…">
+              <button class="send">↑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:12px;line-height:1.5;">
+        Scoped <code>@media (min-width:768px)</code> adds
+        <code>min-height:60vh</code> to <code>#pcs-pane-client</code> and
+        <code>#pcs-pane-internal</code> so the pane claims height, the list
+        fills it, and the input footer sits at the bottom with breathing room
+        below the photo.
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div class="tag">fix</div>
+    <pre>/* styles.css, just after the FIX 5 pane-overflow rule */
+#pcs-pane-caption, #pcs-pane-client, #pcs-pane-internal { overflow: hidden; }
+
+<span class="diff-add">/* Desktop only — pane needs explicit min-height so flex:1 comments
+   list does not collapse to 0 and stack the input footer against
+   the photo grid. .pc-scroll-body is a block container, so flex:1
+   on the pane is ignored as a flex item. */
+@media (min-width: 768px) {
+  #pcs-pane-client, #pcs-pane-internal { min-height: 60vh; }
+}</span></pre>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-top:8px;">
+      Mobile layout (<768px) is untouched. Converting
+      <code>.pc-scroll-body</code> to a flex container was rejected —
+      too many direct children (photo grid, title, chips row, tabs, three
+      panes, hidden sections) to risk changing base layout for every
+      viewport.
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCOPE ============ -->
+<div class="section">
+  <div class="section-title">◆ scope of changes</div>
+  <pre>07-post-load.js  — 1 line guard added inside _cardClickDelegate
+styles.css       — 1 new @media(min-width:768px) block, 2 selectors
+index.html       — ?v=YYYYMMDDx bumped on all 20 script/style tags
+CLAUDE.md        — bug entries + current version updated
+mockups/comment-fix.html — this mockup
+
+render/client.js — UNCHANGED (data-post-id attribute left intact)
+every other file — UNCHANGED</pre>
+</div>
+
+</body>
+</html>

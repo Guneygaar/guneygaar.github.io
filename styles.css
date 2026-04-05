@@ -6554,6 +6554,14 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* FIX 5: Pane overflow */
 #pcs-pane-caption, #pcs-pane-client, #pcs-pane-internal { overflow: hidden; }
 
+/* Desktop: pane needs explicit min-height so flex:1 comments list
+   does not collapse to 0 and stack the input footer against the
+   photo grid. .pc-scroll-body is a block container, so flex:1 on
+   the pane is ignored as a flex item — scope this fix to desktop. */
+@media (min-width: 768px) {
+  #pcs-pane-client, #pcs-pane-internal { min-height: 60vh; }
+}
+
 /* FIX 7: Tight spacing between topbar and photos */
 #pcs-scroll { padding-top: 0; }
 .pcs-photo-header { padding: 4px 16px 0; margin-top: 8px; margin-bottom: 0; }
