@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405y
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405z
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -416,9 +416,14 @@ window._clickBuffer         — array of pending click_log entries; the
                               Action Router pushes one per dispatch,
                               guardAction pushes failures
 _flushClickBuffer           — drains _clickBuffer to POST /click_log
-                              every 5s via apiFetch, fire-and-forget;
-                              on beforeunload sends the remainder via
-                              navigator.sendBeacon directly to Supabase
+                              every 5s via apiFetch; failures now
+                              console.warn so RLS/permission errors
+                              are visible in devtools. On beforeunload
+                              the remainder is POSTed via
+                              fetch(keepalive:true) with full
+                              apikey + Authorization headers
+                              (sendBeacon cannot set headers so
+                              Supabase would always reject it).
 
 10-ui.js:
 window._showErrorToast      — show transient error toast to user

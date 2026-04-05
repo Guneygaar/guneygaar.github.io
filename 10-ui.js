@@ -47,7 +47,9 @@ function _flushClickBuffer() {
       method: 'POST',
       headers: { 'Prefer': 'return=minimal' },
       body: JSON.stringify(payload)
-    }).catch(function() {});
+    }).catch(function(err){
+      console.warn('[click_log] insert failed:', err && err.message);
+    });
   }
 }
 
@@ -73,10 +75,17 @@ window.addEventListener('beforeunload', function() {
       created_at:    entry.created_at
     };
   });
-  navigator.sendBeacon(
-    (window._SUPABASE_URL || '') + '/rest/v1/click_log',
-    JSON.stringify(payload)
-  );
+  fetch(SUPABASE_URL + '/rest/v1/click_log', {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  }).catch(function(){});
 });
 
 window._showErrorToast = function() {
