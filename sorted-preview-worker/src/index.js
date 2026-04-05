@@ -192,35 +192,6 @@ export default {
       return handlePreview(url);
     }
 
-    if (request.method === 'GET' &&
-        (url.pathname.startsWith('/ok') ||
-         url.pathname.startsWith('/no'))) {
-      const slug = url.searchParams.get('p') || '';
-      if (!slug) {
-        return new Response(getFallbackHtml(''), {
-          headers: {
-            'Content-Type': 'text/html;charset=UTF-8',
-            ...CORS_HEADERS
-          }
-        });
-      }
-      const cachedHtml = await env.PREVIEWS_KV.get(slug);
-      if (cachedHtml) {
-        return new Response(cachedHtml, {
-          headers: {
-            'Content-Type': 'text/html;charset=UTF-8',
-            ...CORS_HEADERS
-          }
-        });
-      }
-      return new Response(getFallbackHtml(slug), {
-        headers: {
-          'Content-Type': 'text/html;charset=UTF-8',
-          ...CORS_HEADERS
-        }
-      });
-    }
-
     return new Response('Not Found', {
       status: 404,
       headers: CORS_HEADERS
