@@ -4024,8 +4024,11 @@ label.pcs-date-tap:active { transform: scale(0.98); }
    NOTIFICATION PANEL (rebuilt PR 1 of 4)
    =================================================== */
 
-/* PANEL STRUCTURE */
-#panel-updates {
+/* PANEL STRUCTURE (only when mounted inside the overlay)
+   — the bare #panel-updates is still governed by
+   .tab-panel / .tab-panel.active so it stays hidden on
+   other tabs. */
+#notif-overlay #panel-updates {
   display: flex;
   flex-direction: column;
   height: 100%;
