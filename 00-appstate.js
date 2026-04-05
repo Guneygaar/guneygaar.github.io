@@ -105,3 +105,25 @@ window.onunhandledrejection = function(event) {
   var _stack = event.reason ? (event.reason.stack || '') : '';
   window.logError(_msg, _stack, 'unhandledrejection');
 };
+
+// Per-action in-flight guard (CTO-approved pattern Apr 5 2026)
+// Prevents duplicate async calls from rapid taps or double-clicks.
+// Usage: guardAction('unique-key', () => myAsyncFunction())
+const _inFlight = new Set();
+window.guardAction = function(key, fn) {
+  if (_inFlight.has(key)) return;
+  _inFlight.add(key);
+  Promise.resolve(fn())
+    .catch(function(err) {
+      console.error('[guardAction] Error:', key, err);
+      if (typeof window.logError === 'function') {
+        window.logError('[guardAction] ' + key, err);
+      }
+      if (typeof window.showToast === 'function') {
+        window.showToast('Something went wrong', 'error');
+      }
+    })
+    .finally(function() {
+      _inFlight.delete(key);
+    });
+};
