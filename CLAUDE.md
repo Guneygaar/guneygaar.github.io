@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -966,6 +966,99 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        50 tests in notif-render.
    Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
    passing. Bumped to ?v=20260406c.
+1. Notification panel rebuild (PR 3 of 4) — exact pixel
+   CSS, chips ALL/MENTIONS/COMMENTS/MOVES/LIVE, grouped
+   comments, comment preview fetch, live card fixed,
+   timestamps fixed, stage labels human readable, overdue
+   removed entirely.
+   Scope:
+   (a) styles.css: notification panel CSS block (L4023-)
+       replaced in full with the approved mockup values.
+       New .notif-topbar has a right-edge gradient fade
+       (52x38 ::after) that hints the chips scroll past
+       LIVE. Chip palette swapped to nch-gold/cyan/purple/
+       green (red/amber dropped). Day label padding at
+       8px/18px/6px. .notif-item gained align-self:flex-
+       start margin-top:2px on .notif-av so the avatar
+       keeps its position as the body grows to two lines.
+       New .notif-preview (9px italic) + .notif-more (8px
+       cyan) selectors render the comment preview row and
+       the "+N more" suffix under grouped comments.
+       .notif-live-card rebuilt to match .notif-item
+       layout exactly — 34px avatar on LEFT, 44px thumbnail
+       on RIGHT, min-height:56px, 10/14/10/18 padding,
+       #091410 background with 3px #3ECF8E left bar.
+       ntype-overdue + notif-overdue-inline + notif-
+       overdue-badge rules all deleted. All solid hex.
+   (b) index.html L389-411: #panel-updates rewritten.
+       Two-row topbar (role label + close, hey + mark-all),
+       then .notif-chips with 5 buttons ALL / MENTIONS /
+       COMMENTS / MOVES / LIVE. Count spans now use
+       nchip-count-{all,mentions,comments,moves}. The
+       dividing 1px line is a .notif-hdr-line element.
+       Old .notif-tabs (NEEDS YOU / UPDATES) removed.
+       Empty state div removed from HTML — it is injected
+       into #notif-list-scroll by renderNotifications.
+       The close-x and mark-all buttons use
+       data-action="close-notifications" /
+       data-action="mark-all-read".
+   (c) 10-ui.js: notifications section (L300-) rewritten
+       end to end. New _NOTIF_MOVES_TYPES +
+       _NOTIF_STAGE_LABELS. New _notifActionText(n) strips
+       the leading actor word from n.message and replaces
+       raw stage keys (brief/awaiting_approval/
+       awaiting_brand_input/in_production/scheduled/ready/
+       brief_done/published) with human labels (Brief /
+       Awaiting Approval / Needs Input / In Production /
+       Scheduled / Ready / Brief Done / Published).
+       _notifTypeClass signature changed from (n, post) to
+       (n, isMention) — overdue detection deleted, new
+       ntype-mention class when isMention is true.
+       _notifChipMatch(filter, n, mentionSet) swapped
+       approval/comment/live/stage/overdue buckets for
+       mentions/comments/moves/live. loadNotifications()
+       now batch-fetches /post_comments?post_id=in.(...)
+       for every comment notification and stores rows in
+       window._notifComments so mention detection and
+       preview text don't need a second round-trip.
+       renderNotifications() detects mentions from
+       c.mentioned_users (array column on post_comments),
+       groups comments by (post_id + actor + toDateString)
+       and collapses duplicates ("Manisha left 3 comments
+       on Post" + "+2 more" suffix on the preview row).
+       Day buckets are today / yesterday / earlier by
+       toDateString compare. Live card branch uses the
+       new .notif-live-card markup with a left 34x34
+       .notif-live-av ("✓ POST IS LIVE" tag,
+       actor · time · VIEW ON LINKEDIN → sub) and a right
+       44x44 .notif-thumb on the right. Double-dot bug
+       fixed by building the sub line explicitly from
+       actor + time + VIEW ON LINKEDIN string, not from
+       n.message.
+       markAllNotificationsRead clears the new chip-count
+       spans (nchip-count-*). openNotifications passes
+       filter values all/mentions/comments/moves/live
+       through to _notifChipFilter; tap handler still
+       matches '.notif-item, .notif-live-card' and skips
+       .notif-chips/.mark-all-btn/.notif-close-btn.
+   (d) Action Router: new cases close-notifications and
+       mark-all-read wire the two data-action="..." header
+       buttons through guardAction.
+   (e) Tests: notif-render.test.js fully rewritten for the
+       new API — _notifActionText (5), _notifTypeClass new
+       signature (6), _notifChipMatch new filters (7),
+       renderNotifications wiring (8 incl. day buckets,
+       grouped-comment template, chip-count ids, live-card
+       branch, post_comments batch fetch, mentioned_users
+       reference), markAll audit (5 incl. new chip-count
+       ids), openNotifications overlay (5 incl. chip
+       wiring + tap selector), dead-code audit (5 incl.
+       isOverdue/ntype-overdue/_notifIsOverdue/OVERDUE and
+       the old chip ids/palette). _notifRelTime + the
+       _notifActorClass tests kept unchanged. Total 50
+       tests.
+   Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
+   passing. Bumped to ?v=20260406d.
 
 ## SECTION 13 — STABILITY ROADMAP
 
