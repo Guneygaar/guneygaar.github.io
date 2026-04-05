@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -865,6 +865,30 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        .nftab all absent).
    Status: FIXED (PR#TBD) — 433/433 passing. Bumped to
    ?v=20260406a across all 20 resources.
+1. Notification panel — four follow-up fixes after PR 1.
+   (a) Close button missing from the full-page overlay.
+       Added .notif-close-btn (18px DM Sans X) as a third
+       child of .notif-topbar-row wired to
+       closeNotifications() (index.html), plus matching
+       styles.css rule (no-border text button, #555566,
+       hovers to #F0F0F2).
+   (b) Timestamp wiring verified — loadNotifications already
+       SELECTs created_at, renderNotifications calls
+       _notifRelTime(n.created_at), and the .notif-time
+       div is emitted for every item. .notif-time CSS
+       matches spec (IBM Plex Mono 8px #555566 .05em). No
+       code change, but confirmed end-to-end.
+   (c) Day-label spacing tightened: .notif-day-label
+       padding 14px 20px 8px -> 10px 20px 6px; .notif-summary
+       padding-bottom 14px -> 8px for tighter chip-to-list
+       rhythm.
+   (d) Bottom tab bar breathing room: .ntab padding
+       12px 0 -> 14px 0 18px so label sits above iPhone
+       Safari's browser bar. Added padding-bottom:
+       env(safe-area-inset-bottom, 0px) to .notif-tabs so
+       the row never overlaps the iPhone home indicator.
+   Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
+   passing. Bumped to ?v=20260406b.
 
 ## SECTION 13 — STABILITY ROADMAP
 

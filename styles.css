@@ -4080,11 +4080,24 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .mark-all-btn:hover { color: #9090A0; border-color: #333344; }
 
+.notif-close-btn {
+  font-size: 18px;
+  color: #555566;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-top: 2px;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1;
+}
+.notif-close-btn:hover { color: #F0F0F2; }
+
 /* SUMMARY CHIPS */
 .notif-summary {
   display: flex;
   gap: 8px;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
   flex-wrap: wrap;
 }
 .summary-chip {
@@ -4115,6 +4128,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   flex-shrink: 0;
   border-top: 1px solid #1e1e2e;
   background: #0e0e16;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .ntab {
   flex: 1;
@@ -4122,7 +4136,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   font-size: 9px;
   letter-spacing: .1em;
   text-transform: uppercase;
-  padding: 12px 0;
+  padding: 14px 0 18px;
   text-align: center;
   cursor: pointer;
   color: #555566;
@@ -4162,7 +4176,7 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   letter-spacing: .1em;
   color: #555566;
   text-transform: uppercase;
-  padding: 14px 20px 8px;
+  padding: 10px 20px 6px;
   border-bottom: 1px dotted #1e1e2e;
 }
 
