@@ -1610,5 +1610,6 @@ document.addEventListener('click', function handleGlobalClick(e) {
     case 'nav-insights': return showInsights();
     case 'pcs-tab':      return window._pcsTabSwitch(tab);
     case 'pcs-vis':      return window.setPcsVisibility && window.setPcsVisibility(actionEl, actionEl.dataset.vis);
+    case 'notif-filter': return setNotifFilter(actionEl.dataset.filter, actionEl);
   }
 });
