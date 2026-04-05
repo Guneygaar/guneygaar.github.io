@@ -462,8 +462,9 @@ console.log('LOADED:', 'render/client.js');
         break;
       case 'cardMenuCopyApproval':
         if (post) {
-          var cpSlug = _makeSlug(post.title || '');
-          navigator.clipboard.writeText('https://srtd.io/ok/?p=' + cpSlug).then(function () {
+          var cpPostId = post.post_id || '';
+          var cpShortCode = cpPostId.replace(/[^0-9]/g, '').slice(-4);
+          navigator.clipboard.writeText('https://srtd.io/p/' + cpShortCode).then(function () {
             if (typeof window.showToast === 'function') window.showToast('Approval link copied', 'success');
           }).catch(function () {
             if (typeof window.showToast === 'function') window.showToast('Failed to copy', 'error');

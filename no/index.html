@@ -205,7 +205,7 @@ async function loadPost() {
     var titleEl = document.getElementById('form-title');
     if (titleEl) titleEl.textContent = post.title || '';
     var backLink = document.getElementById('back-link');
-    if (backLink) backLink.href = '/ok/?p=' + slug;
+    if (backLink) backLink.href = '/preview/index.html?p=' + slug;
     showState('state-form');
 
   } catch(e) {
