@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -570,6 +570,17 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. NRS owner fallback writes person name 'Pranav' to DB
    Location: 10-ui.js line 1330 — owner field fallback was || 'Pranav'
    Status: FIXED (PR#TBD) — changed fallback to 'Creative' (DB role)
+1. iOS keyboard ghost input — fixed bottom nav overlays client feed
+   comment input when keyboard opens, and tapping input does not
+   scroll it into view
+   Location: render/client.js renderClientView() — no visualViewport
+   handling, no focus scrollIntoView on comment inputs
+   Status: FIXED (PR#TBD) — added _wireKeyboardPushNav() wiring a
+   visualViewport resize listener that translates #bottom-nav up by
+   the keyboard height when >100px, and _wireCommentInputFocus() that
+   attaches a focus listener to every [id^="comment-input-"] input to
+   scrollIntoView (center, smooth) after a 300ms delay so keyboard
+   finishes opening first. Both called at the end of renderClientView.
 
 ## SECTION 13 — STABILITY ROADMAP
 

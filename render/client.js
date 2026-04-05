@@ -1498,6 +1498,42 @@ console.log('LOADED:', 'render/client.js');
     });
   }
 
+  /* ---- iOS keyboard: push bottom nav up, scroll focused input into view ---- */
+
+  var _kbPushWired = false;
+  function _wireKeyboardPushNav() {
+    if (_kbPushWired) return;
+    if (!window.visualViewport) return;
+    _kbPushWired = true;
+    window.visualViewport.addEventListener('resize', function() {
+      var nav = document.querySelector('#app nav') ||
+                document.getElementById('client-bottom-nav') ||
+                document.getElementById('bottom-nav');
+      if (!nav) return;
+      var keyboardHeight = window.innerHeight - window.visualViewport.height;
+      if (keyboardHeight > 100) {
+        nav.style.transform = 'translateY(-' + keyboardHeight + 'px)';
+        nav.style.transition = 'transform 0.1s ease';
+      } else {
+        nav.style.transform = '';
+      }
+    });
+  }
+
+  function _wireCommentInputFocus(root) {
+    if (!root) return;
+    var inputs = root.querySelectorAll('[id^="comment-input-"]');
+    for (var i = 0; i < inputs.length; i++) {
+      (function(input) {
+        input.addEventListener('focus', function() {
+          setTimeout(function() {
+            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        });
+      })(inputs[i]);
+    }
+  }
+
   /* ---- main render ---- */
 
   window.renderClientView = function () {
@@ -1577,6 +1613,8 @@ console.log('LOADED:', 'render/client.js');
       _wireEvents(lbEl);
       lbEl.dataset.clickWired = '1';
     }
+    _wireKeyboardPushNav();
+    _wireCommentInputFocus(cv);
     } catch(err) {
       console.error('[client] renderClientView crashed', err);
       window.logError && window.logError(err && err.message, err && err.stack, 'render-client-view');
