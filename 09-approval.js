@@ -135,38 +135,48 @@ async function submitApproval(type, postId, btn) {
     return;
   }
 
-  if (type === 'changes_submit') {
-    const text = (document.getElementById('approval-change-text')?.value||'').trim();
-    if (!text) { showToast('Please describe what you\'d like changed', 'error'); return; }
-    if (btn) btn.disabled = true;
-    try {
-      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ stage: 'in_production', client_feedback: text, updated_at: new Date().toISOString() }),
-      });
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
-      if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, postId, 'in_production', ['Creative'], 'Client');
-      const c = document.getElementById('approval-confirmation');
-      if (c) { c.style.display = ''; c.textContent = 'Changes sent  -  the team will review it.'; }
-      document.querySelector('.approval-actions')?.remove();
-      document.getElementById('approval-change-wrap')?.remove();
-    } catch { showToast('Failed  -  try again', 'error'); if (btn) btn.disabled = false; }
-    return;
-  }
+  return window.guardAction('submit-approval-' + postId, async function() {
+    if (type === 'changes_submit') {
+      const text = (document.getElementById('approval-change-text')?.value||'').trim();
+      if (!text) { showToast('Please describe what you\'d like changed', 'error'); return; }
+      if (btn) btn.disabled = true;
+      try {
+        await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ stage: 'in_production', client_feedback: text, updated_at: new Date().toISOString() }),
+        });
+        await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
+        if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, postId, 'in_production', ['Creative'], 'Client');
+        const c = document.getElementById('approval-confirmation');
+        if (c) { c.style.display = ''; c.textContent = 'Changes sent  -  the team will review it.'; }
+        document.querySelector('.approval-actions')?.remove();
+        document.getElementById('approval-change-wrap')?.remove();
+      } catch (err) {
+        showToast('Failed  -  try again', 'error');
+        if (btn) btn.disabled = false;
+        window.logError && window.logError(err && err.message, err && err.stack, 'submit-approval-changes');
+      }
+      return;
+    }
 
-  if (type === 'approved') {
-    if (btn) btn.disabled = true;
-    try {
-      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
-      });
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-      if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, esc(title), 'scheduled', ['Admin', 'Servicing', 'Creative'], 'Client');
-      const c = document.getElementById('approval-confirmation');
-      if (c) { c.style.display = ''; c.textContent = 'ok Approved! The team has been notified.'; }
-      document.querySelector('.approval-actions')?.remove();
-      document.getElementById('approval-change-wrap')?.remove();
-    } catch { showToast('Failed  -  try again', 'error'); if (btn) btn.disabled = false; }
-  }
+    if (type === 'approved') {
+      if (btn) btn.disabled = true;
+      try {
+        await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
+        });
+        await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+        if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, esc(title), 'scheduled', ['Admin', 'Servicing', 'Creative'], 'Client');
+        const c = document.getElementById('approval-confirmation');
+        if (c) { c.style.display = ''; c.textContent = 'ok Approved! The team has been notified.'; }
+        document.querySelector('.approval-actions')?.remove();
+        document.getElementById('approval-change-wrap')?.remove();
+      } catch (err) {
+        showToast('Failed  -  try again', 'error');
+        if (btn) btn.disabled = false;
+        window.logError && window.logError(err && err.message, err && err.stack, 'submit-approval-approved');
+      }
+    }
+  });
 }

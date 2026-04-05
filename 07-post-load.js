@@ -414,17 +414,19 @@ async function assignTask() {
   const due      = document.getElementById('atask-due').value || null;
   if (!assignee) { showToast('Select who to assign to', 'error'); return; }
   if (!msg)      { showToast('Enter a task message', 'error'); return; }
-  try {
-    await apiFetch('/tasks', {
-      method: 'POST',
-      body: JSON.stringify({ assigned_to: assignee, message: msg, due_date: due }),
-    });
-    document.getElementById('atask-msg').value      = '';
-    document.getElementById('atask-due').value      = '';
-    document.getElementById('atask-assignee').value = '';
-    showToast('Task assigned OK', 'success');
-    await loadTasks();
-  } catch (e) { console.error('[post-load] assignTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'assign-task'); showToast('Failed - try again', 'error'); }
+  return window.guardAction('add-task', async function() {
+    try {
+      await apiFetch('/tasks', {
+        method: 'POST',
+        body: JSON.stringify({ assigned_to: assignee, message: msg, due_date: due }),
+      });
+      document.getElementById('atask-msg').value      = '';
+      document.getElementById('atask-due').value      = '';
+      document.getElementById('atask-assignee').value = '';
+      showToast('Task assigned OK', 'success');
+      await loadTasks();
+    } catch (e) { console.error('[post-load] assignTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'assign-task'); showToast('Failed - try again', 'error'); }
+  });
 }
 
 async function markTaskDone(id) {
@@ -562,10 +564,12 @@ document.addEventListener('change', function(e) {
 });
 
 async function deleteTask(id) {
-  try {
-    await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
-    await loadTasks();
-  } catch (e) { console.error('[post-load] deleteTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'delete-task'); showToast('Failed - try again', 'error'); }
+  return window.guardAction('delete-task-' + id, async function() {
+    try {
+      await apiFetch(`/tasks?id=eq.${id}`, { method: 'DELETE' });
+      await loadTasks();
+    } catch (e) { console.error('[post-load] deleteTask failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'delete-task'); showToast('Failed - try again', 'error'); }
+  });
 }
 
 function renderAll() {

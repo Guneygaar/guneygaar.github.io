@@ -796,6 +796,9 @@ window.loadPcsComments = async function(postId) {
   var notesList = document.getElementById('pcs-notes-list');
   if (!section || !list) return;
 
+  if (window._pcsCommentsLoading) return;
+  window._pcsCommentsLoading = true;
+
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
   var _name = window.AppState.user.name || '';
@@ -1134,6 +1137,8 @@ window.loadPcsComments = async function(postId) {
     console.error('loadPcsComments failed:', e);
     window.logError && window.logError(e && e.message, e && e.stack, 'load-pcs-comments');
     showToast && showToast('Failed to load comments', 'error');
+  } finally {
+    window._pcsCommentsLoading = false;
   }
 }
 
@@ -1446,21 +1451,23 @@ window.pcsDoDelete = async function() {
     showToast('Only Admin can delete posts', 'error');
     return;
   }
-  _removePcsConfirm();
   const id = window._pcs.postId;
   if (!id) return;
-  try {
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-    logActivity({
-      post_id: id,
-      actor: window.AppState.user.name || 'Admin',
-      actor_role: 'Admin',
-      action: 'deleted post'
-    });
-    showToast('Post deleted');
-    closePCS();
-    await loadPosts();
-  } catch(e) { console.error('[pcs] delete post failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'pcs-delete-post'); showToast('Delete failed', 'error'); }
+  return window.guardAction('pcs-delete-post-' + id, async function() {
+    _removePcsConfirm();
+    try {
+      await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+      logActivity({
+        post_id: id,
+        actor: window.AppState.user.name || 'Admin',
+        actor_role: 'Admin',
+        action: 'deleted post'
+      });
+      showToast('Post deleted');
+      closePCS();
+      await loadPosts();
+    } catch(e) { console.error('[pcs] delete post failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'pcs-delete-post'); showToast('Delete failed', 'error'); }
+  });
 }
 
 window._pcsAddPhotos = function(postId) {
@@ -2035,6 +2042,8 @@ window._saveCaptionEdit = async function(postId) {
   var newCaption = ta.value.trim();
   var oldCaption = (textEl && (textEl.dataset.raw || textEl.textContent)) || '';
 
+  return window.guardAction('save-caption-' + postId, async function() {
+
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
@@ -2100,6 +2109,7 @@ window._saveCaptionEdit = async function(postId) {
   if (editBtn) editBtn.style.display = '';
   if (ta)      ta.remove();
   if (btnRow)  btnRow.remove();
+  });
 }
 
 window._sharePostOnWhatsApp = function(postId) {
@@ -2127,6 +2137,7 @@ window._sharePostOnWhatsApp = function(postId) {
 };
 
 window.submitPcsComment = async function(postId, message, visibility, isTask, isInternal) {
+  return window.guardAction('submit-pcs-comment-' + postId, async function() {
   try {
   isTask = isTask || false;
   visibility = visibility || 'all';
@@ -2215,6 +2226,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
     window.logError && window.logError(e && e.message, e && e.stack, 'submit-pcs-comment');
     showToast('Failed to send. Try again.', 'error');
   }
+  });
 };
 
 async function _lookupMentionEmails(names) {
@@ -2656,20 +2668,22 @@ window._pcsConfirmDeleteComment = function(commentId, postId, isInternalNote) {
 };
 
 window._pcsDoDeleteComment = async function(commentId, postId, isInternalNote) {
-  _removePcsConfirm();
-  try {
-    var _delEndpoint = isInternalNote
-      ? '/internal_notes'
-      : '/post_comments';
-    await apiFetch(_delEndpoint + '?id=eq.' + commentId, {
-      method: 'PATCH',
-      body: JSON.stringify({ deleted: true })
-    });
-    loadPcsComments(postId);
-  } catch(e) {
-    console.error('[pcs] delete comment failed', e);
-    window.logError && window.logError(e && e.message, e && e.stack, 'delete-pcs-comment');
-    showToast('Failed to delete comment.', 'error');
-  }
+  return window.guardAction('pcs-delete-comment-' + commentId, async function() {
+    _removePcsConfirm();
+    try {
+      var _delEndpoint = isInternalNote
+        ? '/internal_notes'
+        : '/post_comments';
+      await apiFetch(_delEndpoint + '?id=eq.' + commentId, {
+        method: 'PATCH',
+        body: JSON.stringify({ deleted: true })
+      });
+      loadPcsComments(postId);
+    } catch(e) {
+      console.error('[pcs] delete comment failed', e);
+      window.logError && window.logError(e && e.message, e && e.stack, 'delete-pcs-comment');
+      showToast('Failed to delete comment.', 'error');
+    }
+  });
 };
 
