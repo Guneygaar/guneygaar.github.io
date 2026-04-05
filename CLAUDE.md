@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -617,6 +617,19 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    #pcs-pane-client and #pcs-pane-internal. Mobile layout is
    untouched. Not converting .pc-scroll-body to a flex container
    — too many children would be affected.
+1. Comment delete fails with "invalid input syntax for type uuid:
+   empty string" on the just-posted comment in the client feed
+   Location: render/client.js _handleSubmitComment line 948 built
+   an optimistic commentObj without an id field and appended it
+   to post.post_comments without patching back the server UUID,
+   so _singleCommentHtml rendered the DELETE button with an empty
+   id interpolated into its onclick
+   Status: FIXED (PR#TBD) — after the POST to /post_comments
+   resolves, pull the created row's id from the response
+   (apiFetch default Prefer: return=representation, see
+   05-api.js:12) and assign it to commentObj.id. Optimistic
+   append and rendering remain unchanged; only commentObj.id
+   is patched silently in memory.
 
 ## SECTION 13 — STABILITY ROADMAP
 

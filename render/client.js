@@ -1002,7 +1002,11 @@ console.log('LOADED:', 'render/client.js');
     window.apiFetch('/post_comments', {
       method: 'POST',
       body: JSON.stringify(_commentBody)
-    }).then(function () {
+    }).then(function (_resp) {
+      var _createdId = Array.isArray(_resp) && _resp[0] && _resp[0].id
+        ? _resp[0].id
+        : (_resp && _resp.id) || null;
+      if (_createdId) commentObj.id = _createdId;
       window.apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
