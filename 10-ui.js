@@ -1617,5 +1617,6 @@ document.addEventListener('click', function handleGlobalClick(e) {
     case 'ins-lens':     return insSetLens(actionEl.dataset.lens, actionEl);
     case 'lib-view':     return libSetView(actionEl.dataset.view, actionEl);
     case 'nrs-urg':      return nrsSetUrg(actionEl, actionEl.dataset.urgency);
+    case 'ins-main-tab': return insSetMainTab(actionEl.dataset.tab, actionEl);
   }
 });
