@@ -1593,35 +1593,49 @@ window.AppState.timers.notifBadgeTimer = setInterval(function() {
 // receive native taps; PCS overlay is excluded because
 // it owns its own delegate.
 // ===============================================
-document.addEventListener('click', function handleGlobalClick(e) {
-  const actionEl = e.target.closest('[data-action]');
-  if (!actionEl) return;
-  // Skip if the click landed on an interactive element nested INSIDE
-  // the action container (e.g., an <input> inside a card with
-  // data-action). The action element itself may be a <button> — don't
-  // block that case.
-  const interactive = e.target.closest('input, textarea, [contenteditable="true"], a');
-  if (interactive && interactive !== actionEl && actionEl.contains(interactive)) return;
-  const type = actionEl.dataset.action;
-  const tab = actionEl.dataset.tab;
-  switch (type) {
-    case 'nav-tab':      return switchTab(actionEl);
-    case 'nav-library':  return showLibrary();
-    case 'nav-insights': return showInsights();
-    case 'pcs-tab':      return window._pcsTabSwitch(tab);
-    case 'pcs-vis':      return window.setPcsVisibility && window.setPcsVisibility(actionEl, actionEl.dataset.vis);
-    case 'notif-filter': return setNotifFilter(actionEl.dataset.filter, actionEl);
-    case 'ins-metric':   return insSetMetric(actionEl.dataset.metric, actionEl);
-    case 'ins-range':    return insSetRange(actionEl.dataset.range, actionEl);
-    case 'ins-period':   return insSetPostsPeriod(actionEl.dataset.period, actionEl);
-    case 'ins-lens':     return insSetLens(actionEl.dataset.lens, actionEl);
-    case 'lib-view':     return libSetView(actionEl.dataset.view, actionEl);
-    case 'nrs-urg':      return nrsSetUrg(actionEl, actionEl.dataset.urgency);
-    case 'ins-main-tab': return insSetMainTab(actionEl.dataset.tab, actionEl);
-    case 'overlay-close':
-      if (e.target !== actionEl) return;
-      var fn = window[actionEl.dataset.close];
-      if (typeof fn === 'function') fn();
-      return;
-  }
-});
+if (!window._routerBound) {
+  window._routerBound = true;
+  document.addEventListener('click', function handleGlobalClick(e) {
+    const actionEl = e.target.closest('[data-action]');
+    if (!actionEl) return;
+    // Skip if the click landed on an interactive element nested INSIDE
+    // the action container (e.g., an <input> inside a card with
+    // data-action). The action element itself may be a <button> — don't
+    // block that case.
+    const interactive = e.target.closest('input, textarea, [contenteditable="true"], a');
+    if (interactive && interactive !== actionEl && actionEl.contains(interactive)) return;
+    const type = actionEl.dataset.action;
+    const tab = actionEl.dataset.tab;
+    try {
+      switch (type) {
+        case 'nav-tab':      return guardAction('nav-tab-' + tab, () => switchTab(actionEl));
+        case 'nav-library':  return guardAction('nav-library', () => showLibrary());
+        case 'nav-insights': return guardAction('nav-insights', () => showInsights());
+        case 'pcs-tab':      return guardAction('pcs-tab-' + tab, () => window._pcsTabSwitch(tab));
+        case 'pcs-vis':      return guardAction('pcs-vis-' + actionEl.dataset.vis, () => window.setPcsVisibility && window.setPcsVisibility(actionEl, actionEl.dataset.vis));
+        case 'notif-filter': return guardAction('notif-filter-' + actionEl.dataset.filter, () => setNotifFilter(actionEl.dataset.filter, actionEl));
+        case 'ins-metric':   return guardAction('ins-metric-' + actionEl.dataset.metric, () => insSetMetric(actionEl.dataset.metric, actionEl));
+        case 'ins-range':    return guardAction('ins-range-' + actionEl.dataset.range, () => insSetRange(actionEl.dataset.range, actionEl));
+        case 'ins-period':   return guardAction('ins-period-' + actionEl.dataset.period, () => insSetPostsPeriod(actionEl.dataset.period, actionEl));
+        case 'ins-lens':     return guardAction('ins-lens-' + actionEl.dataset.lens, () => insSetLens(actionEl.dataset.lens, actionEl));
+        case 'lib-view':     return guardAction('lib-view-' + actionEl.dataset.view, () => libSetView(actionEl.dataset.view, actionEl));
+        case 'nrs-urg':      return guardAction('nrs-urg-' + actionEl.dataset.urgency, () => nrsSetUrg(actionEl, actionEl.dataset.urgency));
+        case 'ins-main-tab': return guardAction('ins-main-tab-' + actionEl.dataset.tab, () => insSetMainTab(actionEl.dataset.tab, actionEl));
+        case 'overlay-close':
+          if (e.target !== actionEl) return;
+          return guardAction('overlay-close-' + actionEl.dataset.close, () => {
+            var fn = window[actionEl.dataset.close];
+            if (typeof fn === 'function') fn();
+            else console.warn('[ActionRouter] Unknown close fn:', actionEl.dataset.close);
+          });
+        default:
+          if (window._appStateDevMode) console.warn('[ActionRouter] Unknown action:', type);
+          return;
+      }
+    } catch(err) {
+      console.error('[ActionRouter] Routing Error:', type, err);
+      window.logError('[ActionRouter] routing ' + type, err);
+      if (typeof window.showToast === 'function') window.showToast('Something went wrong', 'error');
+    }
+  });
+}

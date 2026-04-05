@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405s
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405t
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -364,6 +364,11 @@ Pages branch:   main-/-root
 window.logError             — log error to Supabase error_log table
 window.onerror              — global error handler → logError
 window.onunhandledrejection — global promise rejection handler → logError
+window.guardAction          — per-key in-flight guard for async handlers;
+                              usage: guardAction('key', () => asyncFn());
+                              skips re-entry while key is in-flight,
+                              catches errors → logError + showToast,
+                              releases key in .finally()
 
 10-ui.js:
 window._showErrorToast      — show transient error toast to user
@@ -672,7 +677,7 @@ Ph2 AppState          — DONE (all globals migrated)
 Ph3 Error Handling    — DONE (logError, _showErrorToast, onerror, onunhandledrejection, 8 silent catches fixed, Pass 3 pipeline, Pass 4 PCS — 12 fixes, 3 alert→toast, Pass 5 dashboard — 4 fixes + 1 post-load fix, Pass 6 post-load — 12 fixes + 4 duplicate function overwrites fixed, Pass 7 auth — 6 fixes incl. silent refreshSession catch)
 Ph3.5 Role Standardization — DONE (Phase A: normalizeRole() added, rollback.sql created; Phase B: config wire cut — ALLOWED_OWNERS, ROLE_TABS, notification recipients, HTML option values all use DB roles; Phase C: DB write payloads — owner fields in brief.js, post-load.js, post-create.js all use DB roles; Phase D: owner read checks — pipeline.js isMine/filter checks + pcs.js chip color all use DB role names Creative/Servicing)
 Ph4 Event Delegation  — IN PROGRESS (Group A: bottom nav done — global action router in 10-ui.js, 4 inline onclicks on .nav-item replaced with data-action; Group B: PCS tabs done — 3 inline onclicks on .pcs-tab replaced with data-action="pcs-tab", router guard reworked to skip interactive descendants instead of blocking all PCS; Group C: PCS visibility chips done — 4 inline onclicks on .pcs-vis-chip replaced with data-action="pcs-vis" data-vis=..., router routes to setPcsVisibility(actionEl, dataset.vis); Group D: notification filter tabs done — 3 inline onclicks on .nftab replaced with data-action="notif-filter" data-filter=..., router routes to setNotifFilter(dataset.filter, actionEl); Group E: insights metric buttons done — 4 inline onclicks on .ins-mt replaced with data-action="ins-metric" data-metric=..., router routes to insSetMetric(dataset.metric, actionEl); Group F: insights range chips done — 3 inline onclicks on .ins-chip replaced with data-action="ins-range" data-range=..., router routes to insSetRange(dataset.range, actionEl); Group G: insights period chips done — 3 inline onclicks on .ins-chip replaced with data-action="ins-period" data-period=..., router routes to insSetPostsPeriod(dataset.period, actionEl); Group H: insights lens buttons done — 3 inline onclicks on .ins-lens-btn replaced with data-action="ins-lens" data-lens=..., router routes to insSetLens(dataset.lens, actionEl); Group I: library view tabs done — 3 inline onclicks on .lib-vt replaced with data-action="lib-view" data-view=..., router routes to libSetView(dataset.view, actionEl); Group J: NRS urgency chips done — 3 inline onclicks on .nrs-urg-opt replaced with data-action="nrs-urg" data-urgency=..., router routes to nrsSetUrg(actionEl, dataset.urgency); Group K: insights main tabs done — 3 inline onclicks on .ins-main-tab replaced with data-action="ins-main-tab" data-tab=..., router routes to insSetMainTab(dataset.tab, actionEl); Group L (final): overlay backdrop close patterns done — 8 inline onclick="if(event.target===this)closeX()" backdrop handlers on admin-edit, parked, zen, snooze, timeline, insights, pcs, and pipeline-filter overlays replaced with data-action="overlay-close" data-close="closeX", router guards e.target===actionEl and dispatches window[dataset.close]())
-Ph5 Optimistic UI     — IN PROGRESS (client comments done)
+Ph5 Optimistic UI     — IN PROGRESS (client comments done; guardAction shared utility added to 00-appstate.js as foundation for async hardening; Action Router in 10-ui.js now wraps all 14 cases with guardAction, wraps switch in try/catch, and guards listener attach with window._routerBound)
 Ph6 PWA               — PENDING
 Ph7 Light Mode        — PENDING
 Ph8 React             — FUTURE
