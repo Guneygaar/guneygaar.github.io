@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405u
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405v
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -676,6 +676,30 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    window.guardAction('client-acknowledge-' + postId, …) so
    concurrent invocations are dropped at the guard. Catch block
    now also calls window.logError with action 'client-acknowledge'.
+1. 7 MEDIUM-risk async handlers lacked in-flight guards and
+   could double-submit on rapid tap (async hardening PR 3).
+   Status: FIXED (PR#TBD) —
+   (a) submitPcsComment wrapped in guardAction('submit-pcs-comment-'
+       + postId) so sync prep work (mention parse, image slice,
+       AppState mutation) can't re-run on second tap.
+   (b) _pcsDoDeleteComment wrapped in guardAction('pcs-delete-
+       comment-' + commentId).
+   (c) pcsDoDelete wrapped in guardAction('pcs-delete-post-' + id)
+       using window._pcs.postId; admin role + postId guards moved
+       ahead of the guard.
+   (d) loadPcsComments protected by dedicated window._pcsCommentsLoading
+       flag (not guardAction — matches loadPosts load-guard pattern);
+       set true before fetch, cleared in finally.
+   (e) submitApproval wrapped in guardAction('submit-approval-' +
+       postId) so protection is independent of whether caller passed
+       btn. Both catch blocks now call window.logError with actions
+       'submit-approval-changes' and 'submit-approval-approved'.
+   (f) assignTask wrapped in guardAction('add-task'); deleteTask
+       wrapped in guardAction('delete-task-' + id) to prevent
+       duplicate inserts/deletes.
+   (g) _saveCaptionEdit wrapped in guardAction('save-caption-' +
+       postId) covering both the /posts PATCH and the /audit_log
+       POST plus the in-memory AppState update.
 1. Four dead-function onclick handlers in index.html (Phase 4
    audit) — buttons silently did nothing when tapped
    Location: index.html:486 closeClientMenu() (undefined);
