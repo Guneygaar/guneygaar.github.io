@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-04
+# Last updated: 2026-04-05
 
 # All facts verified from actual codebase
 
@@ -22,13 +22,13 @@ Team:
 Repo: github.com/Guneygaar/guneygaar.github.io
 Branch: main-/-root. Deployed at srtd.io.
 ALL files at REPO ROOT. No /sorted/ subdirectory. Never reference /sorted/.
-Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ ok/ no/ preview/ mockups/
+Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ preview/ mockups/
 Root files: rollback.sql — DB rollback for role standardization (run if production breaks)
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260404g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -245,6 +245,12 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
 1. Never open /pull/new/[branch] — always open a proper PR
 1. Every prompt ends with PR URL:
    https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
+1. Every push MUST include all four of these in the response:
+   a. Summary of every file changed and what changed in each
+   b. Test count (e.g. 316/316 passing)
+   c. Version bump (e.g. ?v=20260405a)
+   d. PR URL: https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
+   No exceptions. Never push without providing all four.
 1. Return ALL output in one single code block
 1. When updating a prompt — rewrite ENTIRE prompt from scratch.
    Never say “add this line” — Shubham is on iPhone.
@@ -315,9 +321,10 @@ WhatsApp preview: generated at post creation time (06-post-create.js, render/bri
                   Worker builds OG HTML via buildOgHtml(), stores in KV by shortCode + slug
                   Redirect uses ?id=POST_ID for direct post_id lookup (not title slug)
                   preview/index.html supports both ?id=POST_ID (direct) and ?p=SLUG (legacy)
-                  ok/index.html is no longer referenced by any flow — preview/index.html is
-                  the only client-facing page. All Worker redirects, /no/ back link, and
-                  client feed Copy Approval Link point to preview/ or srtd.io/p/SHORTCODE
+                  ok/index.html and no/index.html were deleted (2026-04-05) — preview/index.html
+                  is the only client-facing page. All Worker redirects and client feed Copy
+                  Approval Link point to preview/ or srtd.io/p/SHORTCODE. The Worker /ok* /no*
+                  handler block has also been removed.
                   Zero Supabase egress for previews — Worker + KV only
 Resend FROM:    hinglish@srtd.io
 Short URLs:     srtd.io/p/XXXX via Cloudflare Page Rule
