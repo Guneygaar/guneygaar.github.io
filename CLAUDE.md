@@ -245,6 +245,12 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
 1. Never open /pull/new/[branch] — always open a proper PR
 1. Every prompt ends with PR URL:
    https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
+1. Every push MUST include all four of these in the response:
+   a. Summary of every file changed and what changed in each
+   b. Test count (e.g. 316/316 passing)
+   c. Version bump (e.g. ?v=20260405a)
+   d. PR URL: https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
+   No exceptions. Never push without providing all four.
 1. Return ALL output in one single code block
 1. When updating a prompt — rewrite ENTIRE prompt from scratch.
    Never say “add this line” — Shubham is on iPhone.
