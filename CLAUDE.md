@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-05
+# Last updated: 2026-04-06
 
 # All facts verified from actual codebase
 
@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405z
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -295,9 +295,9 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   required env vars are missing skip with a console.warn rather
   than failing the whole suite.
 
-Current (verified 2026-04-05):
-Unit test files: 16
-Unit tests:      384 passing, 0 failing
+Current (verified 2026-04-06):
+Unit test files: 17
+Unit tests:      433 passing, 0 failing
 E2E specs:       7
 
 Files:
@@ -310,6 +310,7 @@ tests/dom-sanity.test.js
 tests/error-handling.test.js
 tests/normalise.test.js
 tests/notifications.test.js
+tests/notif-render.test.js
 tests/postlookup.test.js
 tests/role.test.js
 tests/timestamp.test.js
@@ -329,7 +330,7 @@ TEST FILE MAPPING (run targeted tests during development):
   render/brief.js       → npx vitest run tests/brief.test.js (future)
   00-appstate.js        → npx vitest run tests/appstate-posts.test.js
   03-auth.js            → npx vitest run tests/role.test.js
-  10-ui.js              → npx vitest run tests/notifications.test.js
+  10-ui.js              → npx vitest run tests/notifications.test.js tests/notif-render.test.js
   utils.js              → npx vitest run tests/utils.test.js
   Full suite before push: npx vitest run
 
@@ -429,7 +430,7 @@ _flushClickBuffer           — drains _clickBuffer to POST /click_log
 window._showErrorToast      — show transient error toast to user
 window.showToast            — show success/error/info toast (top-level, auto-hoisted)
 window.gamSwitchRole        — switch role preview
-window.openNotifications, window.closeNotifications, window.loadNotifBadge
+window.openNotifications, window.closeNotifications
 window.openPipelineFilter, window.closePipelineFilter, window.applyPipelineFilter
 
 03-auth.js:
@@ -785,6 +786,85 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    comments above each button so they are not silent dead
    buttons. No behavior change needed — these buttons were
    already no-ops in production.
+1. Notification panel rebuild (PR 1 of 4) — bottom-sheet shell
+   replaced with full-page overlay; dead code pruned; actor
+   plumbed; tabs collapsed ALL/ACTION/INFO → NEEDS YOU/UPDATES.
+   Scope:
+   (a) 10-ui.js: deleted dead typeClass/stagePills/getActions/
+       formatTime/parseActor helpers inside renderNotifications;
+       deleted loadNotifBadge() (stale global, no callers);
+       removed notif-client-badge target (element never existed
+       in HTML) from updateNotifBadge + markAllNotificationsRead;
+       added actor to /notifications SELECT so avatar no longer
+       relies on message first-word regex.
+   (b) 10-ui.js: renderNotifications fully rewritten — class-
+       driven markup only (no inline style= attributes), uses
+       solid hex per design tokens. Emits .notif-item wrappers
+       with data-notif-id + data-post-id + ntype-* color bar
+       class. Builds summary chips (chip-urgent, chip-reply,
+       chip-live, chip-allclear) from AppState.posts.all with
+       no new fetch. Tab counts on #ntab-needs-count /
+       #ntab-updates-count. Per-tab empty states with
+       "CAUGHT UP" (needs) and "APPROVED THIS WEEK" stat
+       (updates).
+   (c) 10-ui.js: _notifRelTime() added ("just now" / "X min
+       ago" / "X hr ago" / "Yesterday \xB7 H:MM am/pm" / full
+       date for older).
+   (d) 10-ui.js: openNotifications — overlay is now solid
+       #0a0a0f with align-items:stretch, panel is a flex
+       column at 100% height with .notif-topbar (fixed),
+       .notif-scroll (flex:1), .notif-tabs (fixed bottom).
+       Delegated click moved from .notif-post-card-tap →
+       .notif-item so the whole row taps through.
+   (e) 10-ui.js: markAllNotificationsRead — uses Title-cased
+       role (same logic as loadNotifications) for the PATCH,
+       clears both ntab-*-count spans, calls window.logError
+       on failure with action 'mark-all-notifications-read',
+       fires a success toast.
+   (f) index.html L389–420: #panel-updates markup rebuilt —
+       .notif-topbar (role label + hey + mark-all-btn +
+       .notif-summary), .notif-scroll, .notif-tabs with two
+       .ntab buttons (NEEDS YOU / UPDATES).
+   (g) styles.css: deleted legacy .notif-panel/.notif-list
+       block (old L529-567) and dead L4217-4304 .notif-item/
+       .notif-avatar/.notif-msg/.notif-meta/.notif-stage-pill
+       system. New class system inserted at L4023+:
+       #panel-updates flex column, .notif-topbar,
+       .notif-topbar-row, .notif-role-label, .notif-hey,
+       .mark-all-btn, .notif-summary + .summary-chip +
+       .chip-dot + .chip-urgent/.chip-reply/.chip-live/
+       .chip-allclear, .notif-tabs + .ntab + .ntab-count,
+       .notif-scroll, .notif-day-label, .notif-item +
+       ntype-comment/approval/live/stage/overdue left bars
+       (with @keyframes notif-pulse), .notif-row, .notif-av +
+       av-n-client/chitra/pranav/shubham/system,
+       .notif-body/.notif-msg/.notif-time/.notif-unread-dot,
+       .notif-post-card/.notif-post-thumb/.notif-post-info/
+       .notif-post-title/.notif-post-arrow, .notif-stage-pill
+       + nsp-approval/input/ready/scheduled/published/
+       production, .notif-live-card/.notif-live-thumb/
+       .notif-live-title/.notif-live-sub, .notif-overdue-
+       badge, .notif-empty-state + .notif-empty-icon +
+       .notif-empty-title/.notif-empty-sub/.notif-empty-stat.
+       All solid hex, no rgba, no design-system violations.
+   (h) L5800 .av-client rule KEPT (originally flagged as a
+       duplicate, but actions/pcs.js:882 uses it with
+       .pcs-avatar — deleting would break PCS client avatars.
+       After deleting the 4217-4304 block, L5800 is no longer
+       a duplicate, it's the sole definition).
+   (i) Tests: tests/notifications.test.js updated ("all 5" →
+       "all 4" badges twice, tap handler regex switched from
+       .notif-post-card-tap to .notif-item). New file
+       tests/notif-render.test.js adds 49 tests covering
+       _notifRelTime, bucket types, _notifTypeClass,
+       _notifActorClass, _notifStagePillClass, summary chip
+       wiring, markAllNotificationsRead source shape,
+       openNotifications overlay shape, and a dead-code
+       removal audit (loadNotifBadge/getActions/typeClass/
+       stagePills/parseActor/formatTime/notif-client-badge/
+       .nftab all absent).
+   Status: FIXED (PR#TBD) — 433/433 passing. Bumped to
+   ?v=20260406a across all 20 resources.
 
 ## SECTION 13 — STABILITY ROADMAP
 

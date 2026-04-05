@@ -91,15 +91,14 @@ describe('Notification badge', function() {
     expect(body).toContain('AppState.user.effectiveRole');
   });
 
-  it('updateNotifBadge updates all 5 badge element IDs', function() {
+  it('updateNotifBadge updates all 4 badge element IDs', function() {
     var match = uiSrc.match(/function updateNotifBadge\(\)[\s\S]*?\.catch/);
     var body = match[0];
     var expectedIds = [
       'notif-bell-badge',
       'notif-pipeline-badge',
       'notif-lib-badge',
-      'notif-ins-badge',
-      'notif-client-badge'
+      'notif-ins-badge'
     ];
     expectedIds.forEach(function(id) {
       expect(body).toContain(id);
@@ -272,14 +271,13 @@ describe('Mark as read', function() {
     expect(body).toContain("method: 'PATCH'");
   });
 
-  it('markAllNotificationsRead hides all 5 badge elements', function() {
+  it('markAllNotificationsRead hides all 4 badge elements', function() {
     var match = uiSrc.match(/function markAllNotificationsRead\(\)[\s\S]*?catch\(e\)/);
     var body = match[0];
     expect(body).toContain('notif-bell-badge');
     expect(body).toContain('notif-pipeline-badge');
     expect(body).toContain('notif-lib-badge');
     expect(body).toContain('notif-ins-badge');
-    expect(body).toContain('notif-client-badge');
     expect(body).toContain("display = 'none'");
   });
 
@@ -300,14 +298,14 @@ describe('Notification card tap', function() {
   });
 
   it('card tap handler reads data-notif-id and calls markNotifRead', function() {
-    // The delegated click handler for .notif-post-card-tap must read notif-id
-    var match = uiSrc.match(/notif-post-card-tap[\s\S]{0,800}markNotifRead/);
+    // The delegated click handler targets .notif-item wrappers
+    var match = uiSrc.match(/closest\('\.notif-item'\)[\s\S]{0,800}markNotifRead/);
     expect(match).not.toBeNull();
   });
 
-  it('card tap handler reads notif-id from closest parent if not on card itself', function() {
-    // The delegated handler uses closest to walk up to the notif-item with the id
-    expect(uiSrc).toContain("closest('[data-notif-id]')");
+  it('tap handler uses closest(.notif-item) to find the row', function() {
+    // Entire row is now tappable, not just inner post card
+    expect(uiSrc).toContain("closest('.notif-item')");
   });
 
 });
