@@ -257,11 +257,28 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
 1. Run targeted tests during dev, full suite before push:
    npx vitest run tests/specific.test.js
 
+Pre-release manual checks (do before every client-facing deploy):
+- Login via magic link OTP works
+- Session persists after hard refresh
+- Logout clears state and redirects to login
+
 ## SECTION 8 — TESTING
 
 Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
+
+CI (.github/workflows/test.yml):
+  Job 1 `test`          — vitest unit suite on every push/PR to
+                          main + main-/-root.
+  Job 2 `e2e-critical`  — runs after unit job passes; executes 3
+                          critical Playwright specs headless in
+                          Chromium with a 2-minute cap:
+                            tests/e2e/client-flows.spec.js
+                            tests/e2e/pcs.spec.js
+                            tests/e2e/admin-flows.spec.js
+                          live-smoke.spec.js (real creds) and
+                          role-flows/smoke are NOT run in CI.
 
 Current (verified 2026-04-05):
 Unit test files: 14
