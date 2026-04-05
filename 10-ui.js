@@ -1618,5 +1618,10 @@ document.addEventListener('click', function handleGlobalClick(e) {
     case 'lib-view':     return libSetView(actionEl.dataset.view, actionEl);
     case 'nrs-urg':      return nrsSetUrg(actionEl, actionEl.dataset.urgency);
     case 'ins-main-tab': return insSetMainTab(actionEl.dataset.tab, actionEl);
+    case 'overlay-close':
+      if (e.target !== actionEl) return;
+      var fn = window[actionEl.dataset.close];
+      if (typeof fn === 'function') fn();
+      return;
   }
 });
