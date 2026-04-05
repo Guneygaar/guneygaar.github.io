@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -889,6 +889,83 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        the row never overlaps the iPhone home indicator.
    Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
    passing. Bumped to ?v=20260406b.
+1. Notification panel rebuild (PR 2 of 4) — CSS replacement,
+   new item layout at Instagram density, horizontal scroll
+   filter chips replacing NEEDS YOU / UPDATES bottom tabs.
+   Scope:
+   (a) styles.css: entire L4023-4398 notification panel CSS
+       block replaced. All new classes target the approved
+       mockup. Panel structure rule changed from
+       #panel-updates to #notif-overlay #panel-updates so
+       the flex column layout only applies when the panel
+       is mounted inside the overlay (keeps .tab-panel
+       hide-on-other-tabs working). Header now has two rows:
+       row1 (role label + close X), row2 (hey + mark-all).
+       New .notif-chips horizontal scroll container with six
+       .notif-chip buttons (ALL / APPROVAL / COMMENTS /
+       OVERDUE / LIVE / STAGE MOVES), scrollbar-hidden.
+       .notif-chip.active uses neutral #141420 background;
+       colored variants .nchip-red/cyan/amber/green apply
+       per-filter tint only when active. New single-row
+       .notif-item at 56px min-height with 10/14/10/18 px
+       padding, 11px DM Sans text with 2-line webkit-clamp,
+       inline 11px gray timestamp via .notif-time-inline,
+       inline 8px amber OVERDUE badge via
+       .notif-overdue-inline, 44x44 .notif-thumb-wrap/
+       .notif-thumb on the right edge, 34x34 .notif-av on
+       the left with new nav-* palette. Left color bar is
+       still driven by ntype-comment/approval/live/stage/
+       overdue (with pulse on overdue). New .notif-live-card
+       for type:published, tinted #091410 green with
+       VIEW ON LINKEDIN sub. Empty state matches the #notif-
+       empty element. All solid hex with 8-digit alpha
+       suffixes (#FF4B4B14 etc.) — zero rgba().
+   (b) index.html L389-423: #panel-updates body replaced.
+       .notif-topbar now has .notif-topbar-row1 (role +
+       close) and .notif-topbar-row2 (hey + mark-all),
+       then .notif-chips with six data-filter buttons,
+       then a 1px divider, then .notif-scroll list, then
+       #notif-empty state. Bottom .notif-tabs gone.
+   (c) 10-ui.js: _notifFilter renamed to _notifChipFilter
+       (default 'all'). setNotifFilter() removed entirely.
+       _NOTIF_NEEDS_TYPES / _NOTIF_UPDATES_TYPES removed.
+       _notifStagePillClass removed (post cards no longer
+       carry stage pills). _notifActorClass rewired from
+       av-n-* to nav-* prefix. New _notifChipMatch(filter,
+       n, post) predicate drives chip filtering (all /
+       approval / comment / live / stage / overdue).
+       renderNotifications body rewritten to single-row
+       density layout with inline timestamp. For
+       type:published rows the live-card HTML replaces the
+       item. Chip counts (nchip-all/approval/comment/
+       overdue-count) written to after filter application.
+       Click delegation in openNotifications now also
+       matches .notif-live-card (closest('.notif-item,
+       .notif-live-card')) and skips .notif-chips,
+       .mark-all-btn, .notif-close-btn. A new _chipsWired
+       guard attaches a delegated listener to #notif-chips
+       so chip taps flip active class + filter state + call
+       renderNotifications directly (no action-router hop).
+       markAllNotificationsRead clears nchip-*-count (unread
+       ones) instead of ntab-*-count.
+   (d) 10-ui.js router: case 'notif-filter' removed — chips
+       have their own delegated listener on the panel, no
+       data-action attribute is used.
+   (e) Tests: action-router.test.js dropped the notif-filter
+       router case test (36 -> 35). notifications.test.js
+       tap handler regexes updated for the comma selector
+       '.notif-item, .notif-live-card'. notif-render.test.js
+       rewritten for the new API: _notifRelTime (6),
+       _notifIsOverdue (5), _notifTypeClass (8),
+       _notifActorClass (3), _notifChipMatch (7),
+       renderNotifications wiring (8 incl. chip counts,
+       live-card branch, no inline styles), markAll source
+       audit (5), openNotifications overlay shape (6 incl.
+       .notif-item/.notif-live-card tap selector + chip
+       wiring), dead code audit (2 PR1+PR2 combined). Total
+       50 tests in notif-render.
+   Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
+   passing. Bumped to ?v=20260406c.
 
 ## SECTION 13 — STABILITY ROADMAP
 
