@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405f
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405g
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -630,6 +630,27 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    05-api.js:12) and assign it to commentObj.id. Optimistic
    append and rendering remain unchanged; only commentObj.id
    is patched silently in memory.
+1. _cardClickDelegate guard too narrow — only blocked INPUT,
+   TEXTAREA, BUTTON by tagName, so taps on links, contenteditable
+   fields, custom [role=button] elements, and children of native
+   buttons (e.g. a span inside a <button>) fell through and
+   triggered card-open logic on [data-post-id] ancestors.
+   Location: 07-post-load.js:2563 _cardClickDelegate guard.
+   Status: FIXED (PR#TBD) — replaced tagName checks with
+   e.target.closest('input, textarea, button, [contenteditable="true"],
+   a, [role="button"]') so interactive elements and their children
+   are reliably skipped.
+1. Optimistic client comment could end up in the DOM with no
+   UUID if the POST response returned no id, leaving a ghost
+   comment that the DELETE button could never remove.
+   Location: render/client.js _handleSubmitComment after the
+   POST /post_comments resolve — previously only patched id when
+   present, with no fallback branch.
+   Status: FIXED (PR#TBD) — if _createdId is falsy, splice
+   commentObj out of post.post_comments, remove the last list
+   child from the DOM, showToast('Failed to sync comment.
+   Please try again.', 'error') and return before firing any
+   notifications. Prevents headless comments with empty id.
 1. Four dead-function onclick handlers in index.html (Phase 4
    audit) — buttons silently did nothing when tapped
    Location: index.html:486 closeClientMenu() (undefined);

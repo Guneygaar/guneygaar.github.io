@@ -2560,7 +2560,7 @@ function toggleStageOverflow(btn, totalHidden) {
 // Covers: .row-tile, .pcs-cal-cell, .upc-list-row (any element with data-post-id)
 // ===============================================
 document.addEventListener('click', function _cardClickDelegate(e) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return;
+  if (e.target.closest('input, textarea, button, [contenteditable="true"], a, [role="button"]')) return;
   if (!window.AppState.user.effectiveRole) return;
   var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (_role === 'client') {

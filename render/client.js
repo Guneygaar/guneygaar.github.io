@@ -1007,6 +1007,18 @@ console.log('LOADED:', 'render/client.js');
         ? _resp[0].id
         : (_resp && _resp.id) || null;
       if (_createdId) commentObj.id = _createdId;
+      if (!_createdId) {
+        if (post && Array.isArray(post.post_comments)) {
+          post.post_comments = post.post_comments.filter(function(c){ return c !== commentObj; });
+        }
+        if (listEl && listEl.lastChild) {
+          listEl.removeChild(listEl.lastChild);
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast('Failed to sync comment. Please try again.', 'error');
+        }
+        return;
+      }
       window.apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
