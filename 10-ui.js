@@ -1615,5 +1615,6 @@ document.addEventListener('click', function handleGlobalClick(e) {
     case 'ins-range':    return insSetRange(actionEl.dataset.range, actionEl);
     case 'ins-period':   return insSetPostsPeriod(actionEl.dataset.period, actionEl);
     case 'ins-lens':     return insSetLens(actionEl.dataset.lens, actionEl);
+    case 'lib-view':     return libSetView(actionEl.dataset.view, actionEl);
   }
 });
