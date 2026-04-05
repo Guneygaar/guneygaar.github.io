@@ -1594,15 +1594,20 @@ window.AppState.timers.notifBadgeTimer = setInterval(function() {
 // it owns its own delegate.
 // ===============================================
 document.addEventListener('click', function handleGlobalClick(e) {
-  if (e.target.closest('#pcs-overlay')) return;
-  if (e.target.closest('input, textarea, button, [contenteditable="true"], a, [role="button"]')) return;
   const actionEl = e.target.closest('[data-action]');
   if (!actionEl) return;
+  // Skip if the click landed on an interactive element nested INSIDE
+  // the action container (e.g., an <input> inside a card with
+  // data-action). The action element itself may be a <button> — don't
+  // block that case.
+  const interactive = e.target.closest('input, textarea, [contenteditable="true"], a');
+  if (interactive && interactive !== actionEl && actionEl.contains(interactive)) return;
   const type = actionEl.dataset.action;
   const tab = actionEl.dataset.tab;
   switch (type) {
     case 'nav-tab':      return switchTab(actionEl);
     case 'nav-library':  return showLibrary();
     case 'nav-insights': return showInsights();
+    case 'pcs-tab':      return window._pcsTabSwitch(tab);
   }
 });
