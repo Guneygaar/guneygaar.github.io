@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405w
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405x
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -263,9 +263,9 @@ Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
 
-Current (verified 2026-04-03):
-Unit test files: 13
-Unit tests:      316 passing, 0 failing
+Current (verified 2026-04-05):
+Unit test files: 14
+Unit tests:      352 passing, 0 failing
 E2E specs:       7
 
 Files:
@@ -282,6 +282,7 @@ tests/postlookup.test.js
 tests/role.test.js
 tests/timestamp.test.js
 tests/utils.test.js
+tests/action-router.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 
