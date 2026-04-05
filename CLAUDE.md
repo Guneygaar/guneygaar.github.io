@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260405b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260405c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -575,12 +575,23 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    scroll it into view
    Location: render/client.js renderClientView() — no visualViewport
    handling, no focus scrollIntoView on comment inputs
-   Status: FIXED (PR#TBD) — added _wireKeyboardPushNav() wiring a
-   visualViewport resize listener that translates #bottom-nav up by
-   the keyboard height when >100px, and _wireCommentInputFocus() that
+   Status: FIXED (PR#TBD) — added _wireCommentInputFocus() that
    attaches a focus listener to every [id^="comment-input-"] input to
    scrollIntoView (center, smooth) after a 300ms delay so keyboard
-   finishes opening first. Both called at the end of renderClientView.
+   finishes opening first. Called at the end of renderClientView.
+1. Client cannot comment — taps on input blocked on iOS
+   Location: render/client.js _wireKeyboardPushNav() translated
+   #bottom-nav (z:100, fixed) up by keyboardHeight on visualViewport
+   resize, painting nav pixels on top of the static-flow comment
+   input row and intercepting taps; _openClientPostOverlay built
+   cardHtml without _commentInputHtml() so overlay opened with no
+   input in DOM; overlay root had user-select:none which can cause
+   flaky iOS Safari input behaviour
+   Status: FIXED (PR#TBD) — removed _wireKeyboardPushNav() entirely
+   (scrollIntoView alone handles positioning correctly), removed
+   user-select:none/-webkit-user-select:none from #client-post-overlay
+   style, and added _commentInputHtml(post) to the overlay cardHtml
+   build so the input exists in DOM immediately on open.
 
 ## SECTION 13 — STABILITY ROADMAP
 
