@@ -280,6 +280,21 @@ CI (.github/workflows/test.yml):
                           live-smoke.spec.js (real creds) and
                           role-flows/smoke are NOT run in CI.
 
+Post-deploy smoke (.github/workflows/smoke.yml):
+  Schedule: '*/30 * * * *' (every 30 min) + workflow_dispatch.
+  Spec: tests/e2e/live-smoke-schedule.spec.js (6 tests) hits the
+    real srtd.io + Supabase. Checks: site reachable, expected
+    version served, all 20 versioned assets return 200, Supabase
+    REST reachable, client can open a post + comments render,
+    error_log has <3 rows in last 30 min.
+  Required GitHub secrets for smoke workflow:
+    SORTED_CLIENT_EMAIL, SORTED_ADMIN_EMAIL, SUPABASE_URL,
+    SUPABASE_ANON_KEY, EXPECTED_VERSION
+  These must be set in GitHub repo Settings → Secrets → Actions
+  before the smoke workflow will run correctly. Tests whose
+  required env vars are missing skip with a console.warn rather
+  than failing the whole suite.
+
 Current (verified 2026-04-05):
 Unit test files: 14
 Unit tests:      352 passing, 0 failing
