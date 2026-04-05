@@ -6558,6 +6558,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
    does not collapse to 0 and stack the input footer against the
    photo grid. .pc-scroll-body is a block container, so flex:1 on
    the pane is ignored as a flex item — scope this fix to desktop. */
+/* TODO (Phase 6): min-height patch — replace with proper flex layout system overhaul */
 @media (min-width: 768px) {
   #pcs-pane-client, #pcs-pane-internal { min-height: 60vh; }
 }
