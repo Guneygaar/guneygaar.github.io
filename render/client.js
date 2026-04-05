@@ -1498,27 +1498,7 @@ console.log('LOADED:', 'render/client.js');
     });
   }
 
-  /* ---- iOS keyboard: push bottom nav up, scroll focused input into view ---- */
-
-  var _kbPushWired = false;
-  function _wireKeyboardPushNav() {
-    if (_kbPushWired) return;
-    if (!window.visualViewport) return;
-    _kbPushWired = true;
-    window.visualViewport.addEventListener('resize', function() {
-      var nav = document.querySelector('#app nav') ||
-                document.getElementById('client-bottom-nav') ||
-                document.getElementById('bottom-nav');
-      if (!nav) return;
-      var keyboardHeight = window.innerHeight - window.visualViewport.height;
-      if (keyboardHeight > 100) {
-        nav.style.transform = 'translateY(-' + keyboardHeight + 'px)';
-        nav.style.transition = 'transform 0.1s ease';
-      } else {
-        nav.style.transform = '';
-      }
-    });
-  }
+  /* ---- iOS keyboard: scroll focused input into view ---- */
 
   function _wireCommentInputFocus(root) {
     if (!root) return;
@@ -1613,7 +1593,6 @@ console.log('LOADED:', 'render/client.js');
       _wireEvents(lbEl);
       lbEl.dataset.clickWired = '1';
     }
-    _wireKeyboardPushNav();
     _wireCommentInputFocus(cv);
     } catch(err) {
       console.error('[client] renderClientView crashed', err);
@@ -1659,11 +1638,12 @@ console.log('LOADED:', 'render/client.js');
       _imgGridHtml(post.images) +
       _statsBarHtml(post, isPublished) +
       (isPublished ? '' : _engagementBarHtml(post)) +
-      _commentsListHtml(post);
+      _commentsListHtml(post) +
+      _commentInputHtml(post);
 
     var overlay = document.createElement('div');
     overlay.id = 'client-post-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;user-select:none;-webkit-user-select:none;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
     overlay.innerHTML =
       '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.98);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
