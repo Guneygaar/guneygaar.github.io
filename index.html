@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260405r">
+ <link rel="stylesheet" href="styles.css?v=20260405s">
 
 </head>
 <body>
@@ -636,7 +636,7 @@
 <!-- 
      ADMIN QUICK-EDIT BOTTOM SHEET
  -->
-<div id="admin-edit-overlay" onclick="if(event.target===this)closeAdminEdit()">
+<div id="admin-edit-overlay" data-action="overlay-close" data-close="closeAdminEdit">
   <div id="admin-edit-sheet">
     <div class="modal-handle"></div>
     <div class="modal-header">
@@ -702,7 +702,7 @@
 <!-- 
      PARKED POSTS SHEET
  -->
-<div class="parked-overlay" id="parked-overlay" onclick="if(event.target===this)closeParked()">
+<div class="parked-overlay" id="parked-overlay" data-action="overlay-close" data-close="closeParked">
   <div class="parked-sheet">
     <div class="parked-sheet-head">
       <span class="parked-sheet-title">Parked Posts</span>
@@ -712,7 +712,7 @@
   </div>
 </div>
 
-<div id="zen-overlay" onclick="if(event.target===this)closeZen()">
+<div id="zen-overlay" data-action="overlay-close" data-close="closeZen">
   <div id="zen-card">
     <div class="zen-header">
       <div class="zen-title" id="zen-title">Brief</div>
@@ -727,7 +727,7 @@
 <!-- 
      SNOOZE PANEL
  -->
-<div id="snooze-overlay" onclick="if(event.target===this)closeSnooze()">
+<div id="snooze-overlay" data-action="overlay-close" data-close="closeSnooze">
   <div id="snooze-panel">
     <div class="snooze-title">Snooze this post until</div>
     <div class="snooze-options" id="snooze-options"></div>
@@ -738,7 +738,7 @@
 <!-- 
      ACTIVITY TIMELINE PANEL
  -->
-<div id="timeline-overlay" onclick="if(event.target===this)closeTimeline()">
+<div id="timeline-overlay" data-action="overlay-close" data-close="closeTimeline">
   <div id="timeline-panel">
     <div class="timeline-header">
       <div class="timeline-title" id="timeline-title">Activity</div>
@@ -753,7 +753,7 @@
 <!-- 
      ADMIN INSIGHTS POPUP  (fix 19)
  -->
-<div id="insights-overlay" onclick="if(event.target===this)closeInsights()">
+<div id="insights-overlay" data-action="overlay-close" data-close="closeInsights">
   <div id="insights-panel">
     <div class="insights-head">
       <span class="insights-title">Pipeline Intelligence</span>
@@ -858,7 +858,7 @@
 <!-- 
      POST CONTROL SCREEN
  -->
-<div id="pcs-overlay" onclick="if(event.target===this)closePCS()">
+<div id="pcs-overlay" data-action="overlay-close" data-close="closePCS">
   <div id="pcs-screen" class="pc-sheet">
 
     <!-- Topbar: back+X left, stage+overdue pills right -->
@@ -1073,26 +1073,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260405r"></script>
-<script src="00-appstate-compat.js?v=20260405r"></script>
-<script src="01-config.js?v=20260405r" defer></script>
-<script src="02-session.js?v=20260405r" defer></script>
-<script src="utils.js?v=20260405r" defer></script>
-<script src="03-auth.js?v=20260405r" defer></script>
-<script src="05-api.js?v=20260405r" defer></script>
-<script src="10-ui.js?v=20260405r" defer></script>
+<script src="00-appstate.js?v=20260405s"></script>
+<script src="00-appstate-compat.js?v=20260405s"></script>
+<script src="01-config.js?v=20260405s" defer></script>
+<script src="02-session.js?v=20260405s" defer></script>
+<script src="utils.js?v=20260405s" defer></script>
+<script src="03-auth.js?v=20260405s" defer></script>
+<script src="05-api.js?v=20260405s" defer></script>
+<script src="10-ui.js?v=20260405s" defer></script>
 
-<script src="06-post-create.js?v=20260405r" defer></script>
-<script defer src="render/dashboard.js?v=20260405r"></script>
-<script defer src="render/client.js?v=20260405r"></script>
-<script defer src="render/pipeline.js?v=20260405r"></script>
-<script defer src="render/brief.js?v=20260405r"></script>
-<script defer src="actions/pcs.js?v=20260405r"></script>
-<script src="07-post-load.js?v=20260405r" defer></script>
-<script src="08-post-actions.js?v=20260405r" defer></script>
-<script src="09-library.js?v=20260405r" defer></script>
-<script src="09-approval.js?v=20260405r" defer></script>
-<script src="04-router.js?v=20260405r" defer></script>
+<script src="06-post-create.js?v=20260405s" defer></script>
+<script defer src="render/dashboard.js?v=20260405s"></script>
+<script defer src="render/client.js?v=20260405s"></script>
+<script defer src="render/pipeline.js?v=20260405s"></script>
+<script defer src="render/brief.js?v=20260405s"></script>
+<script defer src="actions/pcs.js?v=20260405s"></script>
+<script src="07-post-load.js?v=20260405s" defer></script>
+<script src="08-post-actions.js?v=20260405s" defer></script>
+<script src="09-library.js?v=20260405s" defer></script>
+<script src="09-approval.js?v=20260405s" defer></script>
+<script src="04-router.js?v=20260405s" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1606,7 +1606,7 @@ window.setPcsVisibility = function(el, vis) {
 
 </div>
 
-<div id="pipeline-filter-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.65);" onclick="if(event.target===this)closePipelineFilter()">
+<div id="pipeline-filter-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.65);" data-action="overlay-close" data-close="closePipelineFilter">
   <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">
       <span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Filter Pipeline</span>
