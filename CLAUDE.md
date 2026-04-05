@@ -575,7 +575,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    scroll it into view
    Location: render/client.js renderClientView() — no visualViewport
    handling, no focus scrollIntoView on comment inputs
-   Status: FIXED (PR#TBD) — added _wireCommentInputFocus() that
+   Status: FIXED (PR#660) — added _wireCommentInputFocus() that
    attaches a focus listener to every [id^="comment-input-"] input to
    scrollIntoView (center, smooth) after a 300ms delay so keyboard
    finishes opening first. Called at the end of renderClientView.
@@ -587,7 +587,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    cardHtml without _commentInputHtml() so overlay opened with no
    input in DOM; overlay root had user-select:none which can cause
    flaky iOS Safari input behaviour
-   Status: FIXED (PR#TBD) — removed _wireKeyboardPushNav() entirely
+   Status: FIXED (PR#661) — removed _wireKeyboardPushNav() entirely
    (scrollIntoView alone handles positioning correctly), removed
    user-select:none/-webkit-user-select:none from #client-post-overlay
    style, and added _commentInputHtml(post) to the overlay cardHtml
@@ -600,7 +600,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    comment &lt;input&gt; itself (render/client.js:643) and called
    _openClientPostOverlay(pid) on every tap, tearing down the
    overlay and destroying the input before focus landed
-   Status: FIXED (PR#TBD) — added a guard at the top of
+   Status: FIXED (PR#662) — added a guard at the top of
    _cardClickDelegate that early-exits when e.target.tagName is
    INPUT, TEXTAREA, or BUTTON. render/client.js untouched; the
    data-post-id attribute is left intact in case it is relied on
@@ -612,7 +612,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    auto, so flex:1 on the pane is ignored as a flex item. The
    pane collapses to content height and the input-row footer
    stacks directly against the bottom of #pcs-photo-grid-wrap.
-   Status: FIXED (PR#TBD) — added a desktop-only @media
+   Status: FIXED (PR#662) — added a desktop-only @media
    (min-width:768px) rule setting min-height:60vh on
    #pcs-pane-client and #pcs-pane-internal. Mobile layout is
    untouched. Not converting .pc-scroll-body to a flex container
