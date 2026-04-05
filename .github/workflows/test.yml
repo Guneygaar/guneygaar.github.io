@@ -20,3 +20,21 @@ jobs:
         env:
           TZ: Asia/Kolkata
         run: npm test
+
+  e2e-critical:
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run critical e2e specs (Chromium, headless)
+        env:
+          TZ: Asia/Kolkata
+        run: npx playwright test --reporter=line tests/e2e/client-flows.spec.js tests/e2e/pcs.spec.js tests/e2e/admin-flows.spec.js

@@ -257,11 +257,28 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
 1. Run targeted tests during dev, full suite before push:
    npx vitest run tests/specific.test.js
 
+Pre-release manual checks (do before every client-facing deploy):
+- Login via magic link OTP works
+- Session persists after hard refresh
+- Logout clears state and redirects to login
+
 ## SECTION 8 — TESTING
 
 Run: npx vitest run
 Single file: npx vitest run tests/filename.test.js
 E2E: npx playwright test
+
+CI (.github/workflows/test.yml):
+  Job 1 `test`          — vitest unit suite on every push/PR to
+                          main + main-/-root.
+  Job 2 `e2e-critical`  — runs after unit job passes; executes 3
+                          critical Playwright specs headless in
+                          Chromium with a 2-minute cap:
+                            tests/e2e/client-flows.spec.js
+                            tests/e2e/pcs.spec.js
+                            tests/e2e/admin-flows.spec.js
+                          live-smoke.spec.js (real creds) and
+                          role-flows/smoke are NOT run in CI.
 
 Current (verified 2026-04-05):
 Unit test files: 14
@@ -285,6 +302,7 @@ tests/utils.test.js
 tests/action-router.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
+pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
 
 TEST FILE MAPPING (run targeted tests during development):
   render/client.js      → npx vitest run tests/client-comment.test.js
