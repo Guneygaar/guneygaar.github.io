@@ -1585,3 +1585,24 @@ window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }, 60000);
+
+// ===============================================
+// GLOBAL ACTION ROUTER (Phase 4 — event delegation)
+// Resolves [data-action] targets to their handler.
+// Skips interactive elements so inputs/buttons still
+// receive native taps; PCS overlay is excluded because
+// it owns its own delegate.
+// ===============================================
+document.addEventListener('click', function handleGlobalClick(e) {
+  if (e.target.closest('#pcs-overlay')) return;
+  if (e.target.closest('input, textarea, button, [contenteditable="true"], a, [role="button"]')) return;
+  const actionEl = e.target.closest('[data-action]');
+  if (!actionEl) return;
+  const type = actionEl.dataset.action;
+  const tab = actionEl.dataset.tab;
+  switch (type) {
+    case 'nav-tab':      return switchTab(actionEl);
+    case 'nav-library':  return showLibrary();
+    case 'nav-insights': return showInsights();
+  }
+});
