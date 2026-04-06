@@ -1697,10 +1697,28 @@ console.log('LOADED:', 'render/client.js');
         _wireEvents(lbEl);
         lbEl.dataset.clickWired = '1';
       }
+      // Back-to-notifications button (when opened from notif panel)
+      if (window._notifOpenedPCS) {
+        var nbBtn = document.createElement('button');
+        nbBtn.className = 'pcs-back-notif-btn';
+        nbBtn.textContent = '\u2190 NOTIFICATIONS';
+        nbBtn.onclick = function() {
+          window._notifOpenedPCS = false;
+          _self_overlay.remove();
+          window.AppState.ui.modalOpen = false;
+          document.body.style.overflow = '';
+          setTimeout(function() {
+            if (typeof window.openNotifications === 'function') window.openNotifications();
+          }, 150);
+        };
+        var clientHeader = _self_overlay.querySelector('[id="client-overlay-close"]');
+        if (clientHeader && clientHeader.parentNode) clientHeader.parentNode.prepend(nbBtn);
+      }
       var closeBtn =
         document.getElementById('client-overlay-close');
       if (closeBtn) {
         closeBtn.addEventListener('click', function() {
+          window._notifOpenedPCS = false;
           _self_overlay.remove();
           window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
