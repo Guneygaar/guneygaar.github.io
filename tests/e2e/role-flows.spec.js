@@ -63,7 +63,7 @@ const mockPostsPranav = [
     post_id: 'test-pranav-001',
     title: 'Pranav Prod Post',
     stage: 'in_production',
-    owner: 'Pranav',
+    owner: 'Creative',
     content_pillar: 'innovation',
     location: 'Mumbai',
     target_date: '2026-04-15',
