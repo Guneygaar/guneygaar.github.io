@@ -1046,6 +1046,17 @@ console.log('LOADED:', 'render/client.js');
           read: false
         })
       }).catch(function(err){ console.error('[client] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-notification'); });
+      window.apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: 'Creative',
+          type: 'comment',
+          post_id: realPostId,
+          message: authorName + ' commented on ' + postTitle,
+          actor: window.AppState.user.name || 'Client',
+          read: false
+        })
+      }).catch(function(err){ console.error('[client] creative notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-creative-notification'); });
       var _ROSTER = [
         { name: 'Shubham', role: 'Admin' },
         { name: 'Pranav', role: 'Creative' },
