@@ -14,6 +14,10 @@ window._sendStageNotif = function(postId, postTitle, stage, recipients, actorNam
     'Client': 'Client'
   };
   var label = (typeof _stageLabel === 'function' && _stageLabel(stage)) || stage;
+  // Guard against double-fire
+  var _notifKey = postId + '|' + stage + '|' + Date.now();
+  if (window._lastNotifKey === _notifKey) return;
+  window._lastNotifKey = _notifKey;
   recipients.forEach(function(name) {
     var userRole = roleMap[name] || name;
     apiFetch('/notifications', {

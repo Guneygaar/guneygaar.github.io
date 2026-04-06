@@ -44,7 +44,7 @@ describe('_notifRelTime', function() {
     expect(helpers._notifRelTime(iso)).toBe('3 hr ago');
   });
   it('returns Yesterday label for yesterday', function() {
-    var d = new Date(); d.setDate(d.getDate()-1); d.setHours(10,0,0,0);
+    var d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,1,0,0);
     var out = helpers._notifRelTime(d.toISOString());
     expect(out.indexOf('Yesterday')).toBe(0);
   });

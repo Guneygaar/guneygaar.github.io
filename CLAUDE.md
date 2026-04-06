@@ -321,6 +321,8 @@ tests/critical-handlers.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
+role-flows.spec.js TEST 11 fixture: owner changed 'Pranav' → 'Creative' (DB role) to match pipeline.js isMine check after Phase 3.5 role standardization.
+notif-render.test.js _notifRelTime "Yesterday" test: setHours(10,0,0,0) → setHours(0,1,0,0) so the date is always >24h ago regardless of current time (the diff < 86400 guard in _notifRelTime returns "X hr ago" before reaching the day comparison if the gap is under 24h).
 
 TEST FILE MAPPING (run targeted tests during development):
   render/client.js      → npx vitest run tests/client-comment.test.js
@@ -1059,6 +1061,51 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        tests.
    Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
    passing. Bumped to ?v=20260406d.
+1. Notification panel rebuild (PR 4 of 4) — six targeted
+   bug fixes after the PR 3 audit. No new features, no
+   CSS changes.
+   (a) 10-ui.js _notifRelTime (L305-330) rewritten:
+       wraps new Date() in try/catch, drops the
+       .replace(' ','T').replace('+00','Z') hack, tolerates
+       a negative diff (clock skew), and returns
+       Today/Yesterday/{d M} timeStr using getHours()+
+       getMinutes() manually (toLocaleTimeString was
+       returning an empty string in some locales / Safari
+       builds).
+   (b) 10-ui.js live-card sub line (L559) now filters +
+       joins non-empty segments
+         [actor, ts, 'VIEW ON LINKEDIN →']
+           .filter(s => s && s.length > 0).join(' · ')
+       so an empty ts no longer produces "actor ·  · VIEW".
+   (c) 10-ui.js _buildItem postTitle (L543) adds a fallback
+       that extracts the title from n.message when the
+       post is missing from AppState.posts.all:
+         'Actor published Title' -> slice after 'published '
+         'Title is now live'     -> slice before ' is now live'
+         fallback                -> whole message.
+       Live cards for posts that dropped out of the loaded
+       working set now have a readable title.
+   (d) 10-ui.js idList (L417) no longer double-quotes
+       comment post_ids; PostgREST `in.(...)` wants bare
+       values. MENTIONS chip count was 0 because the old
+       `"id1","id2"` encoding failed the IN match and
+       returned zero comment rows.
+   (e) 10-ui.js currentUserName (L459) falls back to
+       AppState.user.email when .name is not yet set, so
+       mention detection still works right after login.
+   (f) 08-post-actions.js _sendStageNotif (L17) adds a
+       synchronous double-fire guard: a
+       window._lastNotifKey = postId|stage|Date.now() match
+       rejects the second call made in the same tick. Stops
+       accidental double-inserts when two code paths fire
+       for one event within the same synchronous call stack.
+   (g) 10-ui.js renderNotifications (L498) filters out any
+       row whose n.actor lowercases to 'system' — these are
+       noise in the panel, not useful to users. The rows
+       stay in Supabase.
+   index.html untouched, no version bump.
+   Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
+   passing. Same ?v=20260406d.
 
 ## SECTION 13 — STABILITY ROADMAP
 
