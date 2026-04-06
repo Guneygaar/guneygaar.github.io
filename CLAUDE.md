@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406i
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406j
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -648,6 +648,19 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
 1. Role preview (admin to Chitra/Pranav/Client) not showing
    correct view in all cases
    Status: OPEN
+1. Notification tap on new_request opens PCS instead of brief sheet
+   Location: 10-ui.js openNotifications() tap handler — notifType
+   'new_request' fell through to openPCS() because data-is-brief
+   was never emitted by _buildItem() and the tap handler did not
+   check notifType. _buildItem only emitted data-notif-type but
+   the routing logic relied on data-is-brief which was always
+   absent.
+   Status: FIXED (PR#TBD) — tap handler isBrief now also matches
+   data-notif-type === 'new_request'. _buildItem emits
+   data-is-brief="1" on new_request notification items so the
+   attribute is present for any code that checks it. Routes to
+   _openBriefSheet(pid) which correctly handles REQ- post_ids
+   via _isRequest flag.
 1. Session persistence — clients getting logged out
    Check: persistSession in 02-session.js Supabase client config
    Status: OPEN

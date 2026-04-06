@@ -664,10 +664,12 @@ function renderNotifications(name, role) {
       }
     }
 
+    var isBriefAttr = n.type === 'new_request' ? ' data-is-brief="1"' : '';
     return '<div class="notif-item ' + tClass + (n.read ? ' read' : '') + '"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
       ' data-post-id="' + esc(n.post_id || '') + '"' +
-      ' data-notif-type="' + esc(n.type || '') + '">' +
+      ' data-notif-type="' + esc(n.type || '') + '"' +
+      isBriefAttr + '>' +
       '<div class="notif-unread-dot"></div>' +
       '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
       '<div class="notif-body">' +
@@ -1564,7 +1566,8 @@ function openNotifications() {
       if (!item) return;
       e.stopPropagation();
       var pid = item.getAttribute('data-post-id');
-      var isBrief = item.getAttribute('data-is-brief') === '1';
+      var isBrief = item.getAttribute('data-is-brief') === '1' ||
+        item.getAttribute('data-notif-type') === 'new_request';
       var notifId = item.getAttribute('data-notif-id');
       if (notifId) markNotifRead(notifId);
       // Instant visual mark-as-read
