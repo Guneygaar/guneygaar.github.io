@@ -612,7 +612,8 @@ function renderNotifications(name, role) {
     if (n.type === 'published') {
       return '<div class="notif-live-card"' +
           ' data-notif-id="' + esc(n.id || '') + '"' +
-          ' data-post-id="' + esc(n.post_id || '') + '">' +
+          ' data-post-id="' + esc(n.post_id || '') + '"' +
+          ' data-notif-type="published">' +
           '<div class="notif-unread-dot"></div>' +
           '<div class="notif-live-av">' + esc(initial) + '</div>' +
           '<div class="notif-live-body">' +
@@ -665,7 +666,8 @@ function renderNotifications(name, role) {
 
     return '<div class="notif-item ' + tClass + (n.read ? ' read' : '') + '"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
-      ' data-post-id="' + esc(n.post_id || '') + '">' +
+      ' data-post-id="' + esc(n.post_id || '') + '"' +
+      ' data-notif-type="' + esc(n.type || '') + '">' +
       '<div class="notif-unread-dot"></div>' +
       '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
       '<div class="notif-body">' +
@@ -755,6 +757,12 @@ async function markAllNotificationsRead() {
       el.classList.add('read');
       var dot = el.querySelector('.notif-unread-dot');
       if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
+    });
+    var liveEls = document.querySelectorAll(
+      '#panel-updates .notif-live-card');
+    liveEls.forEach(function(el) {
+      var dot = el.querySelector('.notif-unread-dot');
+      if (dot) dot.style.display = 'none';
     });
     ['notif-bell-badge','notif-pipeline-badge',
      'notif-lib-badge','notif-ins-badge'].forEach(function(id) {
@@ -1561,7 +1569,10 @@ function openNotifications() {
       if (notifId) markNotifRead(notifId);
       // Instant visual mark-as-read
       item.classList.add('read');
+      var _tapDot = item.querySelector('.notif-unread-dot');
+      if (_tapDot) _tapDot.style.display = 'none';
       if (!pid) return;
+      var notifType = item.getAttribute('data-notif-type') || '';
       window._notifOpenedPCS = true;
       closeNotifications();
       setTimeout(function() {
@@ -1575,6 +1586,12 @@ function openNotifications() {
             window._openClientPostOverlay(pid);
         } else {
           openPCS(pid, '');
+          if (notifType === 'comment') {
+            setTimeout(function() {
+              if (typeof window._pcsTabSwitch === 'function')
+                window._pcsTabSwitch('client');
+            }, 300);
+          }
         }
       }, 150);
     });

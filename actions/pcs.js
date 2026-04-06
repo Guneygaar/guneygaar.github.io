@@ -2148,9 +2148,7 @@ window._sharePostOnWhatsApp = function(postId) {
   if (!shortId) shortId = postIdRaw.slice(-4);
   var previewUrl = 'https://srtd.io/p/' + shortId;
 
-  var message = title
-    + ' -- Awaiting your approval.\n\n'
-    + previewUrl;
+  var message = title + '\n\n' + previewUrl;
 
   location.href = 'https://wa.me/?text='
     + encodeURIComponent(message);
