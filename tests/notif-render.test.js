@@ -349,3 +349,99 @@ describe('dead code removed', function() {
     expect(uiSrc).not.toContain('nchip-amber');
   });
 });
+
+
+// ---------------------------------------------------------------
+// Source analysis: deleteNotification
+// ---------------------------------------------------------------
+describe('deleteNotification (source)', function() {
+  var body = uiSrc.match(/function deleteNotification\(id\)[\s\S]*?catch\(e\)[\s\S]*?\n\s*\}/)[0];
+
+  it('removes the correct item from _notifData by id', function() {
+    expect(body).toContain('_notifData.filter');
+    expect(body).toContain('n.id !== id');
+  });
+  it('leaves other items untouched (filter, not splice)', function() {
+    expect(body).not.toContain('.splice');
+    expect(body).toContain('.filter');
+  });
+});
+
+
+// ---------------------------------------------------------------
+// Source analysis: _sharePostOnWhatsApp
+// ---------------------------------------------------------------
+describe('_sharePostOnWhatsApp (source)', function() {
+  var pcsSrc = readFileSync(resolve(__dirname, '..', 'actions', 'pcs.js'), 'utf8');
+  var body = pcsSrc.match(/window\._sharePostOnWhatsApp\s*=\s*function[\s\S]*?\n\};/)[0];
+
+  it('builds WhatsApp message as title + newline + url with no other text', function() {
+    expect(body).toContain("title + '\\n\\n' + previewUrl");
+    expect(body).not.toContain('Awaiting your approval');
+  });
+  it('uses srtd.io/p/ format for preview URL', function() {
+    expect(body).toContain("'https://srtd.io/p/'");
+  });
+});
+
+
+// ---------------------------------------------------------------
+// Source analysis: markAllNotificationsRead data flip
+// ---------------------------------------------------------------
+describe('markAllNotificationsRead data (source)', function() {
+  var body = uiSrc.match(/function markAllNotificationsRead\(\)[\s\S]*?catch\(e\)[\s\S]*?\n\s*\}/)[0];
+
+  it('sets read:true on all items in _notifData via map', function() {
+    expect(body).toContain('_notifData.map');
+    expect(body).toContain('read: true');
+  });
+});
+
+
+// ---------------------------------------------------------------
+// Grouped comments logic (source)
+// ---------------------------------------------------------------
+describe('Grouped comments (source)', function() {
+  var start = uiSrc.indexOf('function renderNotifications');
+  var end   = uiSrc.indexOf('\nasync function markNotifRead', start);
+  var body  = uiSrc.slice(start, end);
+
+  it('groups by post_id + actor + day key', function() {
+    expect(body).toContain("n.post_id||''");
+    expect(body).toContain("n.actor||''");
+    expect(body).toContain('toDateString');
+    expect(body).toMatch(/key\s*=.*\|/);
+  });
+  it('only groups type:comment notifications', function() {
+    expect(body).toMatch(/n\.type\s*!==\s*'comment'/);
+  });
+  it('stores group count on head row (_groupCount)', function() {
+    expect(body).toContain('_groupCount');
+    expect(body).toContain('arr.length');
+  });
+});
+
+
+// ---------------------------------------------------------------
+// Response time calculation (source)
+// ---------------------------------------------------------------
+describe('Response time (source)', function() {
+  var start = uiSrc.indexOf('function renderNotifications');
+  var end   = uiSrc.indexOf('\nasync function markNotifRead', start);
+  var body  = uiSrc.slice(start, end);
+
+  it('pairs type:scheduled with type:awaiting_approval on same post_id', function() {
+    expect(body).toContain("n.type === 'scheduled'");
+    expect(body).toContain("x.type === 'awaiting_approval'");
+    expect(body).toContain('x.post_id === n.post_id');
+  });
+  it('computes diff in minutes and renders replied in X min/hr', function() {
+    expect(body).toContain('diffMs');
+    expect(body).toContain('diffMin');
+    expect(body).toContain('replied in');
+    expect(body).toContain('notif-resp-time');
+  });
+  it('produces empty string when no paired row exists', function() {
+    expect(body).toMatch(/respTimeHtml\s*=\s*['"]{2}/);
+  });
+});

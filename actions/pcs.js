@@ -168,8 +168,8 @@ window._renderPCS = function(postId) {
         if (typeof openNotifications === 'function') openNotifications();
       }, 150);
     };
-    var pcsTopbar = document.getElementById('pcs-topbar') ||
-                    document.querySelector('#pcs-overlay .pcs-top');
+    var pcsTopbar = document.querySelector('#pcs-overlay .pc-topbar') ||
+                    document.getElementById('pcs-topbar');
     if (pcsTopbar) pcsTopbar.prepend(nbBtn);
   }
 
