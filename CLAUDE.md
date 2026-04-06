@@ -267,7 +267,7 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
    https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
 1. Every push MUST include all four of these in the response:
    a. Summary of every file changed and what changed in each
-   b. Test count (e.g. 316/316 passing)
+   b. Test count (e.g. 444/444 passing)
    c. Version bump (e.g. ?v=20260405a)
    d. PR URL: https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
    No exceptions. Never push without providing all four.
@@ -318,7 +318,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
 Current (verified 2026-04-06):
 Unit test files: 17
 Unit tests:      444 passing, 0 failing
-E2E specs:       8
+E2E specs:       9
 
 Files:
 tests/appstate-compat.test.js
@@ -339,7 +339,7 @@ tests/action-router.test.js
 tests/guard-handlers.test.js
 tests/critical-handlers.test.js
 
-E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
+E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, live-smoke-schedule.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
 role-flows.spec.js TEST 11 fixture: owner changed 'Pranav' → 'Creative' (DB role) to match pipeline.js isMine check after Phase 3.5 role standardization.
 notif-render.test.js _notifRelTime "Yesterday" test: setHours(10,0,0,0) → setHours(0,1,0,0) so the date is always >24h ago regardless of current time (the diff < 86400 guard in _notifRelTime returns "X hr ago" before reaching the day comparison if the gap is under 24h).
@@ -410,7 +410,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 316/316 before every push
+1. Vitest must pass 444/444 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().
