@@ -557,9 +557,6 @@ function renderNotifications(name, role) {
     if (post && post.title) {
       postTitle = post.title;
     } else if (n.message) {
-      // Fallback: extract title from message
-      // Message format is typically "Actor published Post Title"
-      // or "Post Title is now live"
       var msgLower = (n.message || '').toLowerCase();
       var pubIdx = msgLower.indexOf('published ');
       if (pubIdx !== -1) {
@@ -574,16 +571,49 @@ function renderNotifications(name, role) {
       }
     }
     var actor = n.actor || '';
-    var actorLower = (actor || 'system').toLowerCase();
     var avClass = _notifActorClass(actor);
     var initial = actor ? actor.charAt(0).toUpperCase() : '?';
     var ts = _notifRelTime(n.created_at);
+
+    // Action buttons
+    var actionsHtml = '';
+    if (n.post_id) {
+      actionsHtml = '<div class="notif-actions">' +
+        '<button class="notif-action-btn nab-wa" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '">\u2197 WHATSAPP</button>' +
+        '<span class="notif-action-sep">\xB7</span>' +
+        '<button class="notif-action-btn nab-del" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '">DELETE</button>' +
+        '</div>';
+    } else {
+      actionsHtml = '<div class="notif-actions">' +
+        '<button class="notif-action-btn nab-del" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '">DELETE</button>' +
+        '</div>';
+    }
+
+    // Response time for approval-resolved notifications
+    var respTimeHtml = '';
+    if (n.post_id && n.type === 'scheduled') {
+      var sentRow = _notifData.find(function(x) {
+        return x.post_id === n.post_id && x.type === 'awaiting_approval';
+      });
+      if (sentRow && sentRow.created_at && n.created_at) {
+        var diffMs = new Date(n.created_at) - new Date(sentRow.created_at);
+        if (diffMs > 0) {
+          var diffMin = Math.floor(diffMs / 60000);
+          if (diffMin < 60) {
+            respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + diffMin + ' min</span>';
+          } else {
+            respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + Math.floor(diffMin / 60) + ' hr</span>';
+          }
+        }
+      }
+    }
 
     // Live card (published)
     if (n.type === 'published') {
       return '<div class="notif-live-card"' +
           ' data-notif-id="' + esc(n.id || '') + '"' +
           ' data-post-id="' + esc(n.post_id || '') + '">' +
+          '<div class="notif-unread-dot"></div>' +
           '<div class="notif-live-av">' + esc(initial) + '</div>' +
           '<div class="notif-live-body">' +
             '<div class="notif-live-tag">\u2713 POST IS LIVE</div>' +
@@ -593,6 +623,7 @@ function renderNotifications(name, role) {
                 .filter(function(s) { return s && s.length > 0; })
                 .join(' \xB7 ') +
             '</div>' +
+            actionsHtml +
           '</div>' +
           '<div class="notif-thumb-wrap">' +
             (postThumb
@@ -635,13 +666,16 @@ function renderNotifications(name, role) {
     return '<div class="notif-item ' + tClass + (n.read ? ' read' : '') + '"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
       ' data-post-id="' + esc(n.post_id || '') + '">' +
+      '<div class="notif-unread-dot"></div>' +
       '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
       '<div class="notif-body">' +
         '<div class="notif-text">' +
           '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+          respTimeHtml +
           '<span class="notif-time-inline"> \xB7 ' + esc(ts) + '</span>' +
         '</div>' +
         previewHtml +
+        actionsHtml +
       '</div>' +
       '<div class="notif-thumb-wrap">' +
         (postThumb
@@ -676,6 +710,35 @@ async function markNotifRead(id) {
       body: JSON.stringify({ read: true }),
     });
   } catch(e) { console.error('markNotifRead error:', e); }
+}
+
+async function deleteNotification(id) {
+  try {
+    _notifData = _notifData.filter(function(n) { return n.id !== id; });
+    var el = document.querySelector(
+      '[data-notif-id="' + id + '"].notif-item,' +
+      '[data-notif-id="' + id + '"].notif-live-card'
+    );
+    if (el) {
+      el.style.transition = 'opacity .25s, max-height .3s, padding .3s';
+      el.style.opacity = '0';
+      el.style.maxHeight = '0';
+      el.style.overflow = 'hidden';
+      el.style.padding = '0';
+      el.style.borderBottom = 'none';
+      setTimeout(function() {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 320);
+    }
+    updateNotifBadge();
+    await apiFetch('/notifications?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE'
+    });
+  } catch(e) {
+    console.error('deleteNotification error:', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'delete-notification');
+    if (typeof showToast === 'function') showToast('Could not delete notification', 'error');
+  }
 }
 
 async function markAllNotificationsRead() {
@@ -1484,10 +1547,11 @@ function openNotifications() {
   if (!panel._notifTapWired) {
     panel._notifTapWired = true;
     panel.addEventListener('click', function(e) {
-      // Chips, mark-all, close button handle their own clicks.
+      // Skip elements that handle their own clicks.
       if (e.target.closest('.notif-chips')) return;
       if (e.target.closest('.mark-all-btn')) return;
       if (e.target.closest('.notif-close-btn')) return;
+      if (e.target.closest('.notif-action-btn')) return;
       var item = e.target.closest('.notif-item, .notif-live-card');
       if (!item) return;
       e.stopPropagation();
@@ -1495,7 +1559,10 @@ function openNotifications() {
       var isBrief = item.getAttribute('data-is-brief') === '1';
       var notifId = item.getAttribute('data-notif-id');
       if (notifId) markNotifRead(notifId);
+      // Instant visual mark-as-read
+      item.classList.add('read');
       if (!pid) return;
+      window._notifOpenedPCS = true;
       closeNotifications();
       setTimeout(function() {
         var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
@@ -1774,6 +1841,21 @@ if (!window._routerBound) {
         case 'ins-main-tab': return guardAction('ins-main-tab-' + actionEl.dataset.tab, () => insSetMainTab(actionEl.dataset.tab, actionEl));
         case 'close-notifications': return guardAction('close-notifications', () => closeNotifications());
         case 'mark-all-read':       return guardAction('mark-all-read', () => markAllNotificationsRead());
+        case 'notif-wa':
+          return guardAction('notif-wa-' + (actionEl.dataset.postId || ''), function() {
+            var pid = actionEl.dataset.postId;
+            if (!pid) return;
+            if (typeof window._sharePostOnWhatsApp === 'function') {
+              window._sharePostOnWhatsApp(pid);
+            } else if (typeof showToast === 'function') {
+              showToast('WhatsApp share not available', 'error');
+            }
+          });
+        case 'notif-delete':
+          return guardAction('notif-delete-' + (actionEl.dataset.notifId || ''), function() {
+            var nid = actionEl.dataset.notifId;
+            if (nid) deleteNotification(nid);
+          });
         case 'overlay-close':
           if (e.target !== actionEl) return;
           return guardAction('overlay-close-' + actionEl.dataset.close, () => {

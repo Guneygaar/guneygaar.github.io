@@ -4209,7 +4209,24 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   min-height: 56px;
 }
 .notif-item:hover { background: #141420; }
-.notif-item.read  { opacity: 0.45; }
+
+/* READ state — ONLY difference is dot visibility. Zero opacity changes. */
+.notif-item.read { background: #0e0e16; }
+.notif-item:not(.read) { background: #0e0e16; }
+
+/* Unread dot - absolute positioned, never affects flex layout */
+.notif-unread-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #C8A84B;
+  pointer-events: none;
+  display: block;
+}
+.notif-item.read .notif-unread-dot { display: none; }
 
 /* LEFT COLOR BAR */
 .notif-item::before {
@@ -4386,6 +4403,46 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 .notif-empty-title { font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; color: #F0F0F2; }
 .notif-empty-sub   { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #555566; letter-spacing: .06em; line-height: 1.6; }
 .notif-empty-stat  { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #3ECF8E; letter-spacing: .06em; margin-top: 4px; }
+
+/* Action buttons row */
+.notif-actions {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 6px;
+}
+.notif-action-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .06em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-transform: uppercase;
+}
+.notif-action-btn.nab-wa  { color: #3ECF8E; }
+.notif-action-btn.nab-wa:hover { color: #5EFFA8; }
+.notif-action-btn.nab-del { color: #555566; margin-left: 10px; }
+.notif-action-btn.nab-del:hover { color: #FF4B4B; }
+.notif-action-sep { color: #333344; margin: 0 6px; font-size: 8px; font-family: 'IBM Plex Mono', monospace; }
+
+/* Response time inline */
+.notif-resp-time { color: #3ECF8E; font-size: 11px; }
+
+/* PCS back-to-notifications button */
+.pcs-back-notif-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+  color: #C8A84B;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
+  text-transform: uppercase;
+}
+.pcs-back-notif-btn:hover { color: #F0F0F2; }
 
 /* ===================================================
    DASHBOARD REDESIGN
