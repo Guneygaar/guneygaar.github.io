@@ -14,10 +14,15 @@ window._sendStageNotif = function(postId, postTitle, stage, recipients, actorNam
     'Client': 'Client'
   };
   var label = (typeof _stageLabel === 'function' && _stageLabel(stage)) || stage;
-  // Guard against double-fire
-  var _notifKey = postId + '|' + stage + '|' + Date.now();
+  // Guard against double-fire (same post + stage within 5 seconds = blocked)
+  var _notifKey = postId + '|' + stage;
   if (window._lastNotifKey === _notifKey) return;
   window._lastNotifKey = _notifKey;
+  setTimeout(function() {
+    if (window._lastNotifKey === _notifKey) {
+      window._lastNotifKey = null;
+    }
+  }, 5000);
   recipients.forEach(function(name) {
     var userRole = roleMap[name] || name;
     apiFetch('/notifications', {
@@ -444,11 +449,19 @@ async function deletePost(postId) {
 
 
 function _confirmPublish(postId) {
-  var input = document.getElementById('publish-li-input-' + postId)
+  var input = document.getElementById('pcs-li-url-input')
+    || document.getElementById('publish-li-input-' + postId)
     || document.getElementById('li-url-input-' + postId);
   var url = input ? (input.value || '').trim() : '';
 
   var btn = document.getElementById('confirm-publish-btn-' + postId);
+
+  // Basic validation - must contain linkedin.com or be empty
+  if (url && !url.includes('linkedin.com')) {
+    showToast('Please enter a valid LinkedIn URL', 'error');
+    return;
+  }
+
   if (btn) { btn.textContent = 'Publishing...'; btn.disabled = true; }
 
   var payload = {
@@ -487,6 +500,7 @@ function _confirmPublish(postId) {
     var _pubPost = getPostById(postId);
     window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Servicing', 'Creative', 'Client'], window.AppState.user.name || 'Shubham');
     showToast('Published', 'success');
+    if (typeof _removePublishSheet === 'function') _removePublishSheet();
     if (typeof closePCS === 'function') closePCS();
     loadPosts();
   }).catch(function(err) {
@@ -499,6 +513,12 @@ function _confirmPublish(postId) {
 window._confirmPublish = _confirmPublish;
 
 async function _skipPublish(postId) {
+  var skipBtn = document.getElementById('skip-publish-btn-' + postId);
+  if (skipBtn) {
+    if (skipBtn.disabled) return;
+    skipBtn.disabled = true;
+    skipBtn.textContent = 'Skipping...';
+  }
   _removePublishSheet();
   // Change stage without saving URL
   if (typeof quickStage === 'function') {

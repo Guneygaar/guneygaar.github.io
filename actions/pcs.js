@@ -740,12 +740,12 @@ window._showPublishSheet = function(postId) {
     'letter-spacing:0.02em;">' +
 
     '<div style="display:flex;gap:10px;">' +
-    '<button onclick="_confirmPublish(\'' + postId + '\')" ' +
+    '<button id="confirm-publish-btn-' + postId + '" onclick="_confirmPublish(\'' + postId + '\')" ' +
     'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
     'background:transparent;border:1px solid rgba(62,207,142,0.4);' +
     'padding:13px 0;cursor:pointer;">Publish + Save URL</button>' +
-    '<button onclick="_skipPublish(\'' + postId + '\')" ' +
+    '<button id="skip-publish-btn-' + postId + '" onclick="_skipPublish(\'' + postId + '\')" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#333;' +
     'background:transparent;border:1px solid rgba(255,255,255,0.06);' +
