@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406f
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406g
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST

@@ -4439,8 +4439,12 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 6px 0;
   text-transform: uppercase;
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 6px;
 }
 .pcs-back-notif-btn:hover { color: #F0F0F2; }
 

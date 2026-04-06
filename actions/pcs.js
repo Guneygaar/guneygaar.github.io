@@ -89,6 +89,7 @@ window.openPCS = function(postId, listKey) {
 }
 
 window.closePCS = function() {
+  var returnToNotif = !!window._notifOpenedPCS;
   window._notifOpenedPCS = false;
   forcePCSReset();
   // Safety: re-verify after animations settle (catches mobile compositor lag).
@@ -98,6 +99,12 @@ window.closePCS = function() {
     window._pcsCloseTimer = null;
     forcePCSReset();
   }, 300);
+  // If PCS was opened from the notification panel, return there
+  if (returnToNotif) {
+    setTimeout(function() {
+      if (typeof openNotifications === 'function') openNotifications();
+    }, 150);
+  }
 }
 
 // ===============================================
@@ -160,13 +167,9 @@ window._renderPCS = function(postId) {
   if (window._notifOpenedPCS) {
     var nbBtn = document.createElement('button');
     nbBtn.className = 'pcs-back-notif-btn';
-    nbBtn.textContent = '\u2190 NOTIFICATIONS';
+    nbBtn.textContent = '\u2190 NOTIFS';
     nbBtn.onclick = function() {
-      window._notifOpenedPCS = false;
       if (typeof closePCS === 'function') closePCS();
-      setTimeout(function() {
-        if (typeof openNotifications === 'function') openNotifications();
-      }, 150);
     };
     var pcsTopbar = document.querySelector('#pcs-overlay .pc-topbar') ||
                     document.getElementById('pcs-topbar');
