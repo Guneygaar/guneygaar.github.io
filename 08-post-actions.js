@@ -40,11 +40,11 @@ window._sendStageNotif = function(postId, postTitle, stage, recipients, actorNam
 // -- Stage → notification recipients map --
 function _stageRecipients(stage) {
   var map = {
-    'brief':                 ['Creative'],
-    'in_production':         ['Creative'],
-    'ready':                 ['Servicing'],
-    'awaiting_approval':     ['Client'],
-    'awaiting_brand_input':  ['Client'],
+    'brief':                 ['Admin', 'Creative'],
+    'in_production':         ['Admin', 'Creative'],
+    'ready':                 ['Admin', 'Servicing'],
+    'awaiting_approval':     ['Admin', 'Client'],
+    'awaiting_brand_input':  ['Admin', 'Servicing', 'Client'],
     'scheduled':             ['Admin', 'Servicing', 'Creative'],
     'published':             ['Admin', 'Servicing', 'Creative', 'Client']
   };
@@ -364,6 +364,17 @@ async function submitClientRequest() {
         read: false
       })
     }).catch(function(err){ console.error('[post-actions] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'notification-post'); });
+    apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: 'Admin',
+        post_id: reqId,
+        type: 'new_request',
+        message: (window.AppState.user.name || 'Client') + ' submitted a new request: ' + _reqTitle,
+        actor: window.AppState.user.name || window.currentUserName || 'Client',
+        read: false
+      })
+    }).catch(function(err){ console.error('[post-actions] admin notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'notification-admin-req'); });
 
     // Success: close after 2 seconds
     setTimeout(function() {

@@ -137,6 +137,20 @@ Supabase Dashboard SQL Editor after deploy:
   SELECT cron.schedule('cleanup-old-notifications', '0 3 * * *',
     $$DELETE FROM notifications
       WHERE created_at < NOW() - INTERVAL '30 days'$$);
+ROUTING MATRIX (approved 2026-04-06, wired same day):
+  EVENT                     ADMIN  SERV.  CREAT. CLIENT
+  Client comments            YES    YES    YES    NO
+  Client approves            YES    YES    YES    NO
+  Client submits request     YES    YES    NO     NO
+  → Brief                   YES    NO     YES    NO
+  → In Production           YES    NO     YES    NO
+  → Ready                   YES    YES    NO     NO
+  → Awaiting Approval       YES    NO     NO     YES
+  → Awaiting Brand Input    YES    YES    NO     YES
+  → Scheduled               YES    YES    YES    NO
+  → Published               YES    YES    YES    YES
+  Batch stage move           YES    NO     NO     YES
+  Email notifications will be built on top of this matrix.
 
 activity_log: id(uuid PK), post_id(text), actor(text), action(text),
 old_stage(text), new_stage(text), created_at(timestamptz),
