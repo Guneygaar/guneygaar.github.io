@@ -1408,13 +1408,13 @@ function openRunwaySheet() {
     sheet = document.createElement('div');
     sheet.id = 'runway-sheet';
     sheet.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;';
-    sheet.onclick = function(e) { if (e.target === sheet) sheet.style.display = 'none'; };
+    sheet.onclick = function(e) { if (e.target === sheet) { sheet.style.display = 'none'; document.body.style.overflow = ''; } };
     document.body.appendChild(sheet);
   }
   var html = '<div style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--dotline);">';
   html += '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Runway - ' + posts.length + ' scheduled</span>';
-  html += '<button onclick="document.getElementById(\'runway-sheet\').style.display=\'none\'" style="background:none;border:none;color:var(--c-text3);font-size:18px;cursor:pointer;line-height:1;">x</button>';
+  html += '<button onclick="document.getElementById(\'runway-sheet\').style.display=\'none\';document.body.style.overflow=\'\'" style="background:none;border:none;color:var(--c-text3);font-size:18px;cursor:pointer;line-height:1;">x</button>';
   html += '</div>';
   if (!posts.length) {
     html += '<div style="padding:24px 18px;font-family:var(--mono);font-size:11px;color:var(--c-text3);">Nothing scheduled yet.</div>';
@@ -1542,7 +1542,7 @@ function openStageSheet(stage) {
       'background:rgba(0,0,0,0.75);display:flex;'+
       'align-items:flex-end;justify-content:center;';
     sheet.onclick = function(e) {
-      if (e.target===sheet) sheet.style.display='none';
+      if (e.target===sheet) { sheet.style.display='none'; document.body.style.overflow=''; }
     };
     document.body.appendChild(sheet);
   }
@@ -1557,7 +1557,7 @@ function openStageSheet(stage) {
     'letter-spacing:0.2em;text-transform:uppercase;'+
     'color:#e8e2d9;">'+esc(sheetTitle)+' \u00b7 '+posts.length+'</span>'+
     '<button onclick="document.getElementById('+
-    '\'stage-sheet-overlay\').style.display=\'none\'"'+
+    '\'stage-sheet-overlay\').style.display=\'none\';document.body.style.overflow=\'\'"'+
     ' style="background:none;border:none;color:#555;'+
     'font-size:18px;cursor:pointer;">\u00d7</button></div>';
   if (!posts.length) {
