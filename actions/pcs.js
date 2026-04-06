@@ -89,6 +89,7 @@ window.openPCS = function(postId, listKey) {
 }
 
 window.closePCS = function() {
+  window._notifOpenedPCS = false;
   forcePCSReset();
   // Safety: re-verify after animations settle (catches mobile compositor lag).
   // Store the timer so openPCS can cancel it if the user reopens quickly.
@@ -151,6 +152,25 @@ window._renderPCS = function(postId) {
   var backBtn = document.getElementById('pcs-back-btn');
   if (backBtn) {
     backBtn.style.display = (window.AppState.pcs.openedFrom === 'sheet') ? 'block' : 'none';
+  }
+
+  // Back-to-notifications button (shows when PCS opened from notif panel)
+  var existingNb = document.querySelector('.pcs-back-notif-btn');
+  if (existingNb && existingNb.parentNode) existingNb.parentNode.removeChild(existingNb);
+  if (window._notifOpenedPCS) {
+    var nbBtn = document.createElement('button');
+    nbBtn.className = 'pcs-back-notif-btn';
+    nbBtn.textContent = '\u2190 NOTIFICATIONS';
+    nbBtn.onclick = function() {
+      window._notifOpenedPCS = false;
+      if (typeof closePCS === 'function') closePCS();
+      setTimeout(function() {
+        if (typeof openNotifications === 'function') openNotifications();
+      }, 150);
+    };
+    var pcsTopbar = document.getElementById('pcs-topbar') ||
+                    document.querySelector('#pcs-overlay .pcs-top');
+    if (pcsTopbar) pcsTopbar.prepend(nbBtn);
   }
 
   // 1. Fetch post

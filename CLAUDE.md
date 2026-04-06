@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -131,6 +131,12 @@ notifications: id(uuid PK), user_role(text), post_id(text),
 type(text), message(text), read(boolean), created_at(timestamptz),
 actor(text)
 RLS: DISABLED
+CLEANUP: pg_cron job 'cleanup-old-notifications' should run daily
+at 3 AM UTC to DELETE rows older than 30 days. Run this SQL in
+Supabase Dashboard SQL Editor after deploy:
+  SELECT cron.schedule('cleanup-old-notifications', '0 3 * * *',
+    $$DELETE FROM notifications
+      WHERE created_at < NOW() - INTERVAL '30 days'$$);
 
 activity_log: id(uuid PK), post_id(text), actor(text), action(text),
 old_stage(text), new_stage(text), created_at(timestamptz),
@@ -1106,6 +1112,64 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    index.html untouched, no version bump.
    Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
    passing. Same ?v=20260406d.
+1. Notification panel — final PR. Five wired features,
+   zero dummy buttons.
+   (a) Read/unread state: opacity:0.45 on .notif-item.read
+       deleted entirely. Read/unread difference is now ONLY
+       the gold unread dot (position:absolute top-right,
+       7px circle, display:none when .read). Zero visual
+       dimming. CSS .notif-unread-dot with pointer-events:
+       none so it never intercepts taps.
+   (b) Individual mark as read: tap handler in
+       openNotifications (10-ui.js) now calls
+       item.classList.add('read') immediately after
+       markNotifRead(notifId) for instant dot removal
+       without re-render.
+   (c) WhatsApp share: each notification item with a
+       post_id gets a "↗ WHATSAPP" action button wired
+       via data-action="notif-wa" through the Action Router
+       to window._sharePostOnWhatsApp(pid) (existing
+       function in actions/pcs.js:2115). Builds the
+       srtd.io/p/XXXX preview URL and opens wa.me.
+   (d) Individual delete: new deleteNotification(id) in
+       10-ui.js — optimistic removal from _notifData,
+       fade-out DOM animation (opacity+maxHeight 320ms),
+       updateNotifBadge(), then DELETE /notifications?id=
+       eq.{id}. Wired via data-action="notif-delete"
+       through the Action Router with guardAction.
+   (e) Response time: for type=scheduled notifications
+       (client approved), finds the paired
+       awaiting_approval row in _notifData for the same
+       post_id and diffs created_at timestamps. Renders
+       as <span class="notif-resp-time"> · replied in
+       X min</span> in green inline with the action text.
+   (f) Back to notifications from PCS: tap handler sets
+       window._notifOpenedPCS = true before opening PCS.
+       actions/pcs.js _renderPCS prepends a
+       .pcs-back-notif-btn ("← NOTIFICATIONS") to the
+       PCS topbar when the flag is true. Button closes
+       PCS and reopens notification panel after 150ms.
+       closePCS() resets the flag so the button doesn't
+       persist on next normal PCS open.
+   (g) pg_cron auto cleanup: NOT a code change — requires
+       manual SQL in Supabase Dashboard:
+         SELECT cron.schedule(
+           'cleanup-old-notifications',
+           '0 3 * * *',
+           $$DELETE FROM notifications
+             WHERE created_at < NOW() - INTERVAL '30 days'$$
+         );
+       Documented in CLAUDE.md Section 5 and here for
+       Shubham to run after merge.
+   (h) Action Router: two new cases added —
+       notif-wa (guardAction → _sharePostOnWhatsApp) and
+       notif-delete (guardAction → deleteNotification).
+   (i) CSS: .notif-unread-dot, .notif-actions,
+       .notif-action-btn (.nab-wa, .nab-del),
+       .notif-action-sep, .notif-resp-time,
+       .pcs-back-notif-btn added. Zero rgba, all solid hex.
+   Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
+   passing. Bumped to ?v=20260406e.
 
 ## SECTION 13 — STABILITY ROADMAP
 
