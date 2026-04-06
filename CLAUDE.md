@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406h
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406i
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -611,9 +611,40 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Location: 07-post-load.js comment fetch, render/pipeline.js COMMENTED group
    Status: FIXED (PR#640) — enriched with _clientCommentAt, sorted by
    recency, amber dot on cards with client comments
-1. LinkedIn URL not saving from publish dialog
-   Location: actions/pcs.js ~lines 548-580
-   Status: OPEN
+1. LinkedIn publish flow — 6 bugs fixed in one PR
+   (a) linkedin_link never saved on confirm — _confirmPublish
+       (08-post-actions.js:447) looked for input IDs
+       'publish-li-input-{pid}' and 'li-url-input-{pid}' but
+       _showPublishSheet (actions/pcs.js:734) creates
+       id="pcs-li-url-input". Input always null, URL always ''.
+       FIXED: added 'pcs-li-url-input' as first fallback.
+   (b) No URL validation — any string accepted as LinkedIn URL.
+       FIXED: added linkedin.com domain check before save;
+       rejects non-LinkedIn URLs with toast.
+   (c) Ghost overlay — _confirmPublish never called
+       _removePublishSheet(), so the publish sheet stayed in DOM
+       as a floating backdrop after publish completed.
+       FIXED: added _removePublishSheet() call before closePCS().
+   (d) Confirm/Skip buttons had no id attributes — confirm button
+       could not be disabled during publish (btn always null),
+       Skip button had no guard against double-tap.
+       FIXED: added id="confirm-publish-btn-{pid}" and
+       id="skip-publish-btn-{pid}" to _showPublishSheet buttons.
+   (e) _skipPublish had no in-flight guard — rapid taps fired
+       multiple quickStage calls, each sending 4 notifications
+       (N taps = N x 4 notification rows).
+       FIXED: reads skip button, early-returns if disabled,
+       disables + shows "Skipping..." on first tap.
+   (f) _sendStageNotif dedup guard used Date.now() in key —
+       calls >1ms apart bypassed the guard (effectively useless).
+       FIXED: removed Date.now() from key, added 5-second
+       setTimeout to clear the guard. Same post + same stage
+       within 5 seconds = blocked.
+   (g) libSaveLinkedInUrl (09-library.js) was dead code — not
+       exported to window.*, used wrong PK column (id vs post_id).
+       FIXED: deleted entirely.
+   Location: 08-post-actions.js, actions/pcs.js, 09-library.js
+   Status: FIXED (PR#TBD)
 1. Role preview (admin to Chitra/Pranav/Client) not showing
    correct view in all cases
    Status: OPEN

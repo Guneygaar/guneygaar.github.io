@@ -1350,24 +1350,6 @@ function libGoToPipeline(postId) {
   }, 500);
 }
 
-// --------------- libSaveLinkedInUrl ---------------
-async function libSaveLinkedInUrl(postId) {
-  var input = document.getElementById('lib-li-url-input');
-  if (!input || !input.value.trim()) return;
-  var url = input.value.trim();
-  try {
-    await apiFetch('/posts?id=eq.' + postId, {
-      method: 'PATCH',
-      body: JSON.stringify({ linkedin_link: url, updated_at: new Date().toISOString() })
-    });
-    if (!_libLinkedIn[postId]) _libLinkedIn[postId] = {};
-    _libLinkedIn[postId].linkedinUrl = url;
-    showToast('LinkedIn URL saved', 'success');
-  } catch(e) {
-    showToast('Failed to save URL', 'error');
-  }
-}
-
 // --------------- attach to window ---------------
 window.libOpenFilterSheet = libOpenFilterSheet;
 window.libCloseFilterSheet = libCloseFilterSheet;
