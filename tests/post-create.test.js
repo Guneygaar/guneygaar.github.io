@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 var src = readFileSync(resolve(__dirname, '..', '06-post-create.js'), 'utf8');
 var htmlSrc = readFileSync(resolve(__dirname, '..', 'index.html'), 'utf8');
+var pcsSrc = readFileSync(resolve(__dirname, '..', 'actions', 'pcs.js'), 'utf8');
 
 describe('New Post Form — payload fields', function() {
 
@@ -62,5 +63,52 @@ describe('New Post Form — NPS rgba violations removed', function() {
     var uploadMatch = htmlSrc.match(/new-post-asset[\s\S]{0,300}dashed/);
     expect(uploadMatch).toBeTruthy();
     expect(uploadMatch[0]).not.toContain('rgba');
+  });
+});
+
+describe('PCS — _buildDriveLinkCard', function() {
+
+  var _buildDriveLinkCard;
+
+  beforeAll(function() {
+    window.esc = function(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+    // Extract and eval _buildDriveLinkCard
+    var match = pcsSrc.match(/function _buildDriveLinkCard\(driveUrl, canManage, postId\)[\s\S]*?^}/m);
+    expect(match).toBeTruthy();
+    var fn = new Function('esc', match[0] + '\nreturn _buildDriveLinkCard;');
+    _buildDriveLinkCard = fn(window.esc);
+  });
+
+  it('9. returns link card with View on Drive when driveUrl provided', function() {
+    var html = _buildDriveLinkCard('https://drive.google.com/abc', false, 'POST-1');
+    expect(html).toContain('View on Drive');
+    expect(html).toContain('href="https://drive.google.com/abc"');
+    expect(html).toContain('target="_blank"');
+    expect(html).not.toContain('Edit link');
+  });
+
+  it('10. returns link card with edit/remove buttons when canManage', function() {
+    var html = _buildDriveLinkCard('https://drive.google.com/abc', true, 'POST-1');
+    expect(html).toContain('View on Drive');
+    expect(html).toContain('Edit link');
+    expect(html).toContain('Remove');
+    expect(html).toContain('data-action="pcs-edit-drive-link"');
+    expect(html).toContain('data-action="pcs-clear-drive-link"');
+  });
+
+  it('11. returns add button when no driveUrl and canManage true', function() {
+    var html = _buildDriveLinkCard(null, true, 'POST-1');
+    expect(html).toContain('+ Add drive link');
+    expect(html).toContain('data-action="pcs-edit-drive-link"');
+    expect(html).not.toContain('View on Drive');
+  });
+
+  it('12. returns empty string when no driveUrl and canManage false', function() {
+    var html = _buildDriveLinkCard(null, false, 'POST-1');
+    expect(html).toBe('');
+  });
+
+  it('13. pcs-drive-link-wrap exists in index.html', function() {
+    expect(htmlSrc).toContain('id="pcs-drive-link-wrap"');
   });
 });
