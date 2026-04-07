@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260407c">
+ <link rel="stylesheet" href="styles.css?v=20260407d">
 
 </head>
 <body>
@@ -490,13 +490,14 @@
     <div class="nps-color-strip" id="nps-color-strip"></div>
 
     <div class="nps-hdr">
-      <div class="nps-title">New Post</div>
+      <div class="nps-title"><span style="color:#C8A84B;">NEW POST</span><span style="color:#555;"> -- AGENCY ONLY</span></div>
       <button class="nps-close" id="nps-close-btn">&#x2715;</button>
     </div>
 
     <div class="nps-body">
 
       <div class="nps-title-field">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">01</div>
         <span class="nps-label">Post Title <span class="nps-req">*</span></span>
         <input class="nps-title-input" type="text"
           id="new-post-title"
@@ -506,6 +507,7 @@
       <div class="nps-grid">
 
         <div class="nps-cell">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">02</div>
           <span class="nps-label">Owner <span class="nps-req">*</span></span>
           <select class="nps-select" id="new-post-owner">
             <option value="">Assign to...</option>
@@ -522,6 +524,7 @@
         </div>
 
         <div class="nps-cell">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">03</div>
           <span class="nps-label">Pillar</span>
           <select class="nps-select" id="new-post-pillar">
             <option value="">Select...</option>
@@ -537,6 +540,7 @@
 
         <div class="nps-cell">
           <span class="nps-label">Format</span>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL</div>
           <select class="nps-select" id="new-post-format">
             <option value="">Select...</option>
             <option value="Creative">Creative</option>
@@ -548,7 +552,9 @@
         </div>
 
         <div class="nps-cell">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">04</div>
           <span class="nps-label">Location</span>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL</div>
           <select class="nps-select" id="new-post-location">
             <option value="">Select...</option>
             <option value="Mumbai">Mumbai</option>
@@ -560,12 +566,14 @@
 
         <div class="nps-cell">
           <span class="nps-label">Target Date</span>
-          <input class="nps-select" type="date" id="new-post-date">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL</div>
+          <input class="nps-select" type="date" id="new-post-date" style="text-align:left;direction:ltr;">
         </div>
 
       </div>
 
       <div class="nps-full">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">05</div>
         <span class="nps-label">Copy / Caption <span class="nps-label-hint">(goes to client)</span></span>
         <textarea class="nps-textarea nps-caption-area" id="new-post-caption"
           placeholder="Write the LinkedIn caption here..."
@@ -574,11 +582,9 @@
       </div>
 
 <div class="nps-full">
-  <div class="nps-label">Post Photos
-    <span style="color:#2a2a2a;font-size:6px;
-    letter-spacing:0.06em;text-transform:none;">
-    (up to 20, shown to client)</span>
-  </div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">06</div>
+  <div class="nps-label">Post Photos</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL &middot; UP TO 20 &middot; JPG / PNG</div>
   <div id="new-post-asset-grid"
     style="display:none;flex-wrap:wrap;gap:4px;
     margin-bottom:6px;"></div>
@@ -594,24 +600,12 @@
     cursor:pointer;width:100%;margin-top:4px;">
     + Upload Photos
   </label>
-  <div style="font-family:'IBM Plex Mono',monospace;
-    font-size:6px;color:#2a2a2a;letter-spacing:0.06em;
-    text-align:center;margin-top:4px;">
-    JPG / PNG -- original quality stored in Supabase
-  </div>
 </div>
 
 <div class="nps-full">
-  <div class="nps-label">Drive Link
-    <span style="color:#2a2a2a;font-size:6px;
-    letter-spacing:0.06em;text-transform:none;">
-    (optional)</span>
-  </div>
-  <div style="font-family:'IBM Plex Mono',monospace;
-    font-size:6px;color:#555;letter-spacing:0.06em;
-    text-transform:uppercase;margin-bottom:4px;">
-    OPTIONAL &middot; FOR VIDEO, CAROUSEL DECK, PDF OR RAW ASSETS
-  </div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">07</div>
+  <div class="nps-label">Drive Link</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL &middot; FOR VIDEO, CAROUSEL DECK, PDF OR RAW ASSETS</div>
   <input type="url" id="new-post-drive-link" class="nps-select"
     placeholder="Google Drive, Dropbox, WeTransfer...">
   <div style="font-family:'IBM Plex Mono',monospace;
@@ -622,11 +616,9 @@
 </div>
 
 <div class="nps-full">
-  <div class="nps-label">Brief / Internal Notes
-    <span style="color:#2a2a2a;font-size:6px;
-    letter-spacing:0.06em;text-transform:none;">
-    (team only)</span>
-  </div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#C8A84B;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1px;">08</div>
+  <div class="nps-label">Brief / Internal Notes</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;color:#666;text-transform:uppercase;margin-bottom:5px;">OPTIONAL &middot; NOT VISIBLE TO CLIENT</div>
   <textarea class="nps-textarea nps-notes-area"
     id="new-post-comments"
     placeholder="Brief or direction..."></textarea>
@@ -1084,26 +1076,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260407c"></script>
-<script src="00-appstate-compat.js?v=20260407c"></script>
-<script src="01-config.js?v=20260407c" defer></script>
-<script src="02-session.js?v=20260407c" defer></script>
-<script src="utils.js?v=20260407c" defer></script>
-<script src="03-auth.js?v=20260407c" defer></script>
-<script src="05-api.js?v=20260407c" defer></script>
-<script src="10-ui.js?v=20260407c" defer></script>
+<script src="00-appstate.js?v=20260407d"></script>
+<script src="00-appstate-compat.js?v=20260407d"></script>
+<script src="01-config.js?v=20260407d" defer></script>
+<script src="02-session.js?v=20260407d" defer></script>
+<script src="utils.js?v=20260407d" defer></script>
+<script src="03-auth.js?v=20260407d" defer></script>
+<script src="05-api.js?v=20260407d" defer></script>
+<script src="10-ui.js?v=20260407d" defer></script>
 
-<script src="06-post-create.js?v=20260407c" defer></script>
-<script defer src="render/dashboard.js?v=20260407c"></script>
-<script defer src="render/client.js?v=20260407c"></script>
-<script defer src="render/pipeline.js?v=20260407c"></script>
-<script defer src="render/brief.js?v=20260407c"></script>
-<script defer src="actions/pcs.js?v=20260407c"></script>
-<script src="07-post-load.js?v=20260407c" defer></script>
-<script src="08-post-actions.js?v=20260407c" defer></script>
-<script src="09-library.js?v=20260407c" defer></script>
-<script src="09-approval.js?v=20260407c" defer></script>
-<script src="04-router.js?v=20260407c" defer></script>
+<script src="06-post-create.js?v=20260407d" defer></script>
+<script defer src="render/dashboard.js?v=20260407d"></script>
+<script defer src="render/client.js?v=20260407d"></script>
+<script defer src="render/pipeline.js?v=20260407d"></script>
+<script defer src="render/brief.js?v=20260407d"></script>
+<script defer src="actions/pcs.js?v=20260407d"></script>
+<script src="07-post-load.js?v=20260407d" defer></script>
+<script src="08-post-actions.js?v=20260407d" defer></script>
+<script src="09-library.js?v=20260407d" defer></script>
+<script src="09-approval.js?v=20260407d" defer></script>
+<script src="04-router.js?v=20260407d" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
