@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -316,8 +316,8 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   than failing the whole suite.
 
 Current (verified 2026-04-06):
-Unit test files: 19
-Unit tests:      479 passing, 0 failing
+Unit test files: 20
+Unit tests:      487 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -340,6 +340,7 @@ tests/guard-handlers.test.js
 tests/critical-handlers.test.js
 tests/defensive-guards.test.js
 tests/session-resilience.test.js
+tests/post-create.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, live-smoke-schedule.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
@@ -412,7 +413,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 479/479 before every push
+1. Vitest must pass 487/487 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().
@@ -1308,6 +1309,14 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    hand-rolled. The root cause was: refreshSession returned null
    for all failures, no visibilitychange handler, no cross-tab
    lock. All three gaps now closed.
+1. New post form: format field never sent to DB, drive_link field
+   missing entirely, 17 rgba violations in NPS CSS block
+   Location: 06-post-create.js submitNewPost() payload, index.html
+   new-post-overlay, styles.css NPS block (L4880-5111)
+   Status: FIXED (PR#TBD) — format added to payload, drive_link
+   field added to form HTML + payload + draft clear, all 17 rgba
+   replaced with solid hex in NPS CSS + 1 in HTML. 487/487 unit
+   passing. Bumped to ?v=20260407c.
 
 ## SECTION 13 — STABILITY ROADMAP
 

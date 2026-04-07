@@ -162,7 +162,7 @@ const hasDraft = loadDraft();
 
 if (!hasDraft) {
 
-['new-post-title','new-post-link'].forEach(id => {
+['new-post-title','new-post-link','new-post-drive-link'].forEach(id => {
 const el = document.getElementById(id);
 if (el) el.value = '';
 });
@@ -262,6 +262,9 @@ const createBtn = _s('nps-create-btn');
 
 if (createBtn) createBtn.disabled = true;
 
+var formatVal = (_s('new-post-format')?.value || '').trim() || null;
+var driveLinkVal = (_s('new-post-drive-link')?.value || '').trim() || null;
+
 const payload = {
 post_id: 'POST-' + Date.now(),
 title,
@@ -270,6 +273,8 @@ content_pillar: sanitizePillar(pillar) || null,
 location: location || null,
 stage: 'in_production',
 target_date: date || null,
+format: formatVal,
+drive_link: driveLinkVal,
 };
 if (captionVal) payload.caption = captionVal;
 // Defensive: remove any invalid field names that must never reach DB
