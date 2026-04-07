@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1357,6 +1357,17 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    handlers, same data references, same function calls. All
    other functions untouched. 500/500 unit passing.
    Bumped to ?v=20260407f.
+1. Client feed @mention dropdown missing client users
+   Location: render/client.js lines 899-903 and 1032-1035 —
+   _ROSTER hardcoded to 3 agency members, so @Manisha and
+   @Shivangini were silently ignored in the mention dropdown
+   and mention notifications were never sent for them.
+   Status: FIXED (PR#TBD) — added { name:'Manisha', role:'Client' }
+   and { name:'Shivangini', role:'Client' } to both _ROSTER arrays
+   (dropdown at line 899 and notification lookup at line 1032).
+   Self-filter at line 905 already works by name comparison.
+   Notification user_role is read from _member.role which is
+   'Client' for both — correct for the notifications table.
 
 ## SECTION 13 — STABILITY ROADMAP
 
