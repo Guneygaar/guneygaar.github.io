@@ -1368,6 +1368,16 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Self-filter at line 905 already works by name comparison.
    Notification user_role is read from _member.role which is
    'Client' for both — correct for the notifications table.
+1. PCS @mention dropdown missing client users (agency cannot tag clients)
+   Location: actions/pcs.js _AGENCY_MEMBERS at line 2509 —
+   hardcoded to 3 agency members only. Mention notifications
+   at line 2435 also used _AGENCY_MEMBERS so @Manisha and
+   @Shivangini were silently ignored in PCS comments.
+   Status: FIXED (PR#TBD) — added { name:'Manisha', role:'Client' }
+   and { name:'Shivangini', role:'Client' } to _AGENCY_MEMBERS.
+   _showTaskAssign (line 2584) filtered to exclude role 'Client'
+   so task assignment remains agency-only. Notification user_role
+   at line 2446 reads _member.role ('Client') — correct.
 
 ## SECTION 13 — STABILITY ROADMAP
 

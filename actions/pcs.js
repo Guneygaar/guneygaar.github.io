@@ -2509,7 +2509,9 @@ window.toggleTaskResolve = function(commentId, postId) {
 var _AGENCY_MEMBERS = [
   { name: 'Shubham', role: 'Admin' },
   { name: 'Pranav', role: 'Creative' },
-  { name: 'Chitra', role: 'Servicing' }
+  { name: 'Chitra', role: 'Servicing' },
+  { name: 'Manisha', role: 'Client' },
+  { name: 'Shivangini', role: 'Client' }
 ];
 
 function _hideMentionDropup() {
@@ -2581,7 +2583,9 @@ window._showTaskAssign = function(inputId, taskBtnId) {
 
   var dropup = document.createElement('div');
   dropup.id = 'pcs-task-assign-dropup';
-  dropup.innerHTML = _AGENCY_MEMBERS.map(function(m) {
+  dropup.innerHTML = _AGENCY_MEMBERS.filter(function(m) {
+    return m.role !== 'Client';
+  }).map(function(m) {
     return '<div class="pcs-mention-item" data-name="' + m.name + '">' +
       '<span class="pcs-mention-name">@' + m.name + '</span>' +
       '<span class="pcs-mention-role">' + m.role + '</span>' +
