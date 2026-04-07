@@ -899,7 +899,9 @@ console.log('LOADED:', 'render/client.js');
     var _ROSTER = [
       { name: 'Shubham', role: 'Admin' },
       { name: 'Pranav', role: 'Creative' },
-      { name: 'Chitra', role: 'Servicing' }
+      { name: 'Chitra', role: 'Servicing' },
+      { name: 'Manisha', role: 'Client' },
+      { name: 'Shivangini', role: 'Client' }
     ];
     var currentUser = (window.AppState.user.name || '').toLowerCase();
     var rows = _ROSTER.filter(function(m) { return m.name.toLowerCase() !== currentUser; });
@@ -1060,7 +1062,9 @@ console.log('LOADED:', 'render/client.js');
       var _ROSTER = [
         { name: 'Shubham', role: 'Admin' },
         { name: 'Pranav', role: 'Creative' },
-        { name: 'Chitra', role: 'Servicing' }
+        { name: 'Chitra', role: 'Servicing' },
+        { name: 'Manisha', role: 'Client' },
+        { name: 'Shivangini', role: 'Client' }
       ];
       _mentioned.forEach(function(name) {
         var _member = _ROSTER.find(function(m) {
