@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-06
+# Last updated: 2026-04-07
 
 # All facts verified from actual codebase
 
