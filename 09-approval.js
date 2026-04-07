@@ -164,7 +164,7 @@ async function submitApproval(type, postId, btn) {
       try {
         await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
           method: 'PATCH',
-          body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString() }),
+          body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
         });
         await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
         if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, esc(title), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || window.currentUserName || 'Client');
