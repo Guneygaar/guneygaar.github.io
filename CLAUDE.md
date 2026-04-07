@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -316,8 +316,8 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   than failing the whole suite.
 
 Current (verified 2026-04-06):
-Unit test files: 20
-Unit tests:      492 passing, 0 failing
+Unit test files: 21
+Unit tests:      500 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -341,6 +341,7 @@ tests/critical-handlers.test.js
 tests/defensive-guards.test.js
 tests/session-resilience.test.js
 tests/post-create.test.js
+tests/deeplink.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, live-smoke-schedule.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
@@ -357,6 +358,7 @@ TEST FILE MAPPING (run targeted tests during development):
   03-auth.js            → npx vitest run tests/role.test.js
   10-ui.js              → npx vitest run tests/notifications.test.js tests/notif-render.test.js
   utils.js              → npx vitest run tests/utils.test.js
+  04-router.js + 07-post-load.js (deep-link) → npx vitest run tests/deeplink.test.js
   Full suite before push: npx vitest run
 
 AppState mock pattern for new test files:
@@ -390,6 +392,12 @@ WhatsApp preview: generated at post creation time (06-post-create.js, render/bri
                   Zero Supabase egress for previews — Worker + KV only
 Resend FROM:    hinglish@srtd.io
 Short URLs:     srtd.io/p/XXXX via Cloudflare Page Rule
+Deep-link:      srtd.io/?open=POST_ID — logs in then opens PCS for that post
+                04-router.js stores in window._pendingOpenPost, renderAll()
+                in 07-post-load.js fires openPCS after posts load + clears flag.
+                Edge functions (notify-comment, notify-stage, notify-request) in
+                Supabase should use https://srtd.io/?open=${postId} for "View Post"
+                button URLs. Edge functions live in Supabase only — not in this repo.
 PREVIEW_SECRET: srtd2026xK9mN3pQ
 Pages branch:   main-/-root
 

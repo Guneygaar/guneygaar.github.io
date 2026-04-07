@@ -17,6 +17,9 @@ async function _startRouter() {
     showApprovalView(ref.replace(/-hinglish$/i, '')); return;
   }
 
+  const openPost = params.get('open');
+  if (openPost) window._pendingOpenPost = openPost;
+
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {
     const hashParams = new URLSearchParams(hash.slice(1));
