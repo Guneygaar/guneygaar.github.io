@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407f
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1332,6 +1332,16 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    on the requests table. PostgREST rejected with PGRST204.
    Status: FIXED (PR#TBD) — removed updated_at from the PATCH
    payload. Only { status: 'assigned' } is sent now.
+1. PCS chip dropdown closes immediately on iOS Safari
+   Location: actions/pcs.js lines 532 and 596 — _pcsChipDrop()
+   set window.AppState.pcs.activeMenu synchronously. The
+   document-level click listener (line 26) saw activeMenu as
+   non-null in the same tick and closed it because the chip
+   button is not inside the dropdown.
+   Status: FIXED (PR#TBD) — wrapped both activeMenu assignments
+   in setTimeout(0) so activeMenu is set after the click event
+   finishes bubbling. 508/508 unit passing.
+   Bumped to ?v=20260407f.
 
 ## SECTION 13 — STABILITY ROADMAP
 
