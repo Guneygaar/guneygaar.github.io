@@ -529,7 +529,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
       'style="width:100%;padding:10px 12px;background:#0f0f1a;border:1px solid #1c1c26;color:#fff;font-size:14px;outline:none;color-scheme:dark;font-family:inherit" ' +
       'onchange="window._pcsDateChange(\'' + esc(postId) + '\',this.value)"/></div>';
     document.body.appendChild(drop);
-    window.AppState.pcs.activeMenu = drop;
+    setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
     var dateInp = drop.querySelector('input');
     if (dateInp) dateInp.focus();
     return;
@@ -593,7 +593,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
   });
 
   document.body.appendChild(drop);
-  window.AppState.pcs.activeMenu = drop;
+  setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
 }
 
 // -- Date change from inline date picker --
