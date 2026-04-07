@@ -22,6 +22,7 @@ window._clickBuffer = [];
 
 function _flushClickBuffer() {
   if (!window._clickBuffer.length) return;
+  if (!localStorage.getItem('sb_access_token')) return;
   var batch = window._clickBuffer.splice(0);
   var user = AppState.user || {};
   var payload = batch.map(function(entry) {
@@ -400,6 +401,7 @@ var roleDisplayMap = {
 };
 
 async function loadNotifications() {
+  if (!localStorage.getItem('sb_access_token')) return;
   try {
     var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
     _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
@@ -789,6 +791,7 @@ async function markAllNotificationsRead() {
 }
 
 function updateNotifBadge() {
+  if (!localStorage.getItem('sb_access_token')) return;
   var role = (window.AppState.user.effectiveRole || 'Admin');
   var _badgeRole = role.charAt(0).toUpperCase() +
     role.slice(1).toLowerCase();

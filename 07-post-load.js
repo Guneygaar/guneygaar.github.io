@@ -358,6 +358,7 @@ function startRealtime() {
   // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
+    if (!localStorage.getItem('sb_access_token')) return;
     // Skip poll while user is in a modal  -  they'll get fresh data on close
     if (window.AppState.ui.modalOpen) return;
     try {

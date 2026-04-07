@@ -28,11 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-<<<<<<< claude/audit-email-system-Ixq0c
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406k
-=======
-Version format: ?v=YYYYMMDDx. Current: ?v=20260406j
->>>>>>> main-/-root
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -320,8 +316,8 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   than failing the whole suite.
 
 Current (verified 2026-04-06):
-Unit test files: 17
-Unit tests:      444 passing, 0 failing
+Unit test files: 18
+Unit tests:      454 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -342,6 +338,7 @@ tests/utils.test.js
 tests/action-router.test.js
 tests/guard-handlers.test.js
 tests/critical-handlers.test.js
+tests/defensive-guards.test.js
 
 E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, live-smoke-schedule.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
@@ -1246,6 +1243,30 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) — added document.body.style.overflow=''
    to all 8 close handlers. 444/444 unit passing.
    Bumped to ?v=20260406k.
+1. updateNotifBadge fires apiFetch with no session token check
+   Location: 10-ui.js updateNotifBadge() — called from timers
+   and direct invocations with no guard for valid session token.
+   Same pattern in _flushClickBuffer (5s interval),
+   loadNotifications, and startRealtime 15s poll callback.
+   Status: FIXED (PR#TBD) — added
+   if (!localStorage.getItem('sb_access_token')) return;
+   to updateNotifBadge, _flushClickBuffer, loadNotifications
+   (all in 10-ui.js), and startRealtime poll callback
+   (07-post-load.js). 454/454 unit passing.
+1. _pcsDoDeleteComment passes empty UUID to Supabase
+   Location: actions/pcs.js _pcsDoDeleteComment() — no validation
+   that commentId is non-empty before PATCH call. Same pattern in
+   toggleTaskResolve (pcs.js), _saveLiUrlInline (pcs.js),
+   _closeBrief (brief.js), _reopenBrief (brief.js).
+   Status: FIXED (PR#TBD) — added type+empty validation guards
+   to all 5 functions. 454/454 unit passing.
+1. _pcsDateChange re-renders PCS during closePCS teardown
+   Location: actions/pcs.js _pcsDateChange() line 533-534 —
+   updatePost() and openPCS() fire even when PCS is closing,
+   causing NotFoundError on detached DOM.
+   Status: FIXED (PR#TBD) — wrapped updatePost+openPCS in
+   if (window.AppState.pcs.open) guard. 454/454 unit passing.
+   Bumped to ?v=20260407a.
 
 ## SECTION 13 — STABILITY ROADMAP
 
