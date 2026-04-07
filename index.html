@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260407b">
+ <link rel="stylesheet" href="styles.css?v=20260407c">
 
 </head>
 <body>
@@ -589,7 +589,7 @@
     monospace;font-size:7px;letter-spacing:0.12em;
     text-transform:uppercase;color:#F6A623;
     background:transparent;
-    border:1px dashed rgba(246,166,35,0.25);
+    border:1px dashed #3d2e0a;
     padding:11px 0;text-align:center;
     cursor:pointer;width:100%;margin-top:4px;">
     + Upload Photos
@@ -598,6 +598,26 @@
     font-size:6px;color:#2a2a2a;letter-spacing:0.06em;
     text-align:center;margin-top:4px;">
     JPG / PNG -- original quality stored in Supabase
+  </div>
+</div>
+
+<div class="nps-full">
+  <div class="nps-label">Drive Link
+    <span style="color:#2a2a2a;font-size:6px;
+    letter-spacing:0.06em;text-transform:none;">
+    (optional)</span>
+  </div>
+  <div style="font-family:'IBM Plex Mono',monospace;
+    font-size:6px;color:#555;letter-spacing:0.06em;
+    text-transform:uppercase;margin-bottom:4px;">
+    OPTIONAL &middot; FOR VIDEO, CAROUSEL DECK, PDF OR RAW ASSETS
+  </div>
+  <input type="url" id="new-post-drive-link" class="nps-select"
+    placeholder="Google Drive, Dropbox, WeTransfer...">
+  <div style="font-family:'IBM Plex Mono',monospace;
+    font-size:6px;color:#3ECF8E;letter-spacing:0.06em;
+    text-transform:uppercase;margin-top:4px;">
+    PASTE ANY LINK -- WE'LL ACCESS IT
   </div>
 </div>
 
@@ -1064,26 +1084,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260407b"></script>
-<script src="00-appstate-compat.js?v=20260407b"></script>
-<script src="01-config.js?v=20260407b" defer></script>
-<script src="02-session.js?v=20260407b" defer></script>
-<script src="utils.js?v=20260407b" defer></script>
-<script src="03-auth.js?v=20260407b" defer></script>
-<script src="05-api.js?v=20260407b" defer></script>
-<script src="10-ui.js?v=20260407b" defer></script>
+<script src="00-appstate.js?v=20260407c"></script>
+<script src="00-appstate-compat.js?v=20260407c"></script>
+<script src="01-config.js?v=20260407c" defer></script>
+<script src="02-session.js?v=20260407c" defer></script>
+<script src="utils.js?v=20260407c" defer></script>
+<script src="03-auth.js?v=20260407c" defer></script>
+<script src="05-api.js?v=20260407c" defer></script>
+<script src="10-ui.js?v=20260407c" defer></script>
 
-<script src="06-post-create.js?v=20260407b" defer></script>
-<script defer src="render/dashboard.js?v=20260407b"></script>
-<script defer src="render/client.js?v=20260407b"></script>
-<script defer src="render/pipeline.js?v=20260407b"></script>
-<script defer src="render/brief.js?v=20260407b"></script>
-<script defer src="actions/pcs.js?v=20260407b"></script>
-<script src="07-post-load.js?v=20260407b" defer></script>
-<script src="08-post-actions.js?v=20260407b" defer></script>
-<script src="09-library.js?v=20260407b" defer></script>
-<script src="09-approval.js?v=20260407b" defer></script>
-<script src="04-router.js?v=20260407b" defer></script>
+<script src="06-post-create.js?v=20260407c" defer></script>
+<script defer src="render/dashboard.js?v=20260407c"></script>
+<script defer src="render/client.js?v=20260407c"></script>
+<script defer src="render/pipeline.js?v=20260407c"></script>
+<script defer src="render/brief.js?v=20260407c"></script>
+<script defer src="actions/pcs.js?v=20260407c"></script>
+<script src="07-post-load.js?v=20260407c" defer></script>
+<script src="08-post-actions.js?v=20260407c" defer></script>
+<script src="09-library.js?v=20260407c" defer></script>
+<script src="09-approval.js?v=20260407c" defer></script>
+<script src="04-router.js?v=20260407c" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
