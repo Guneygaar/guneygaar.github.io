@@ -909,10 +909,10 @@ function closeInsights() {
 
 // -- Insights Data -----------------------------
 var INS_METRICS = {
-  imp:{color:'var(--cyan)',hex:'#22D3EE',rgba:'rgba(34,211,238,',label:'Impressions',delta:'Growing',sub:'posts in range'},
-  eng:{color:'var(--gold)',hex:'#C8A84B',rgba:'rgba(200,168,75,',label:'Avg Engagement',delta:'Above 2% avg',sub:'LinkedIn avg is 2%'},
-  fol:{color:'var(--green)',hex:'#3ECF8E',rgba:'rgba(62,207,142,',label:'New Followers',delta:'All organic',sub:'no sponsored'},
-  com:{color:'var(--purple)',hex:'#9b87f5',rgba:'rgba(155,135,245,',label:'Total Comments',delta:'High resonance',sub:'public responses'}
+  imp:{color:'var(--cyan)',hex:'#22D3EE',label:'Impressions',delta:'Growing',sub:'posts in range'},
+  eng:{color:'var(--gold)',hex:'#C8A84B',label:'Avg Engagement',delta:'Above 2% avg',sub:'LinkedIn avg is 2%'},
+  fol:{color:'var(--green)',hex:'#3ECF8E',label:'New Followers',delta:'All organic',sub:'no sponsored'},
+  com:{color:'var(--purple)',hex:'#9b87f5',label:'Total Comments',delta:'High resonance',sub:'public responses'}
 };
 
 var INS_POSTS = [
@@ -974,7 +974,8 @@ function insGetMetricVal(p,m){
 }
 function insGetColor(){return INS_METRICS[INS.metric].color}
 function insGetHex(){return INS_METRICS[INS.metric].hex}
-function insGetRgba(){return INS_METRICS[INS.metric].rgba}
+function _hexAlpha(hex,a){return hex+Math.round(a*255).toString(16).toUpperCase().padStart(2,'0')}
+function insGetHexA(a){return _hexAlpha(insGetHex(),a)}
 
 function insGetFiltered(){
   return INS_POSTS.filter(function(p){
@@ -1117,12 +1118,11 @@ function insRenderLineChart(posts){
   var pts=vals.map(function(v,i){
     return[pad+(i/(vals.length-1))*(W-pad*2),H-pad-((v/(maxV||1))*(H-pad*2))];
   });
-  var rgba=insGetRgba();
   var aD='M '+pts[0][0]+' '+H;
   pts.forEach(function(p){aD+=' L '+p[0]+' '+p[1]});
   aD+=' L '+pts[pts.length-1][0]+' '+H+' Z';
   var area=document.createElementNS('http://www.w3.org/2000/svg','path');
-  area.setAttribute('d',aD);area.setAttribute('fill',rgba+'0.12)');
+  area.setAttribute('d',aD);area.setAttribute('fill',insGetHexA(0.12));
   svg.appendChild(area);
   var lD='M '+pts.map(function(p){return p[0]+' '+p[1]}).join(' L ');
   var line=document.createElementNS('http://www.w3.org/2000/svg','path');
@@ -1177,7 +1177,7 @@ function insRenderDowChart(posts){
     var h=maxA>0?Math.max(4,Math.round((avgs[i]/maxA)*100)):4;
     var bar=document.createElement('div');
     bar.className='ins-dow-bar';bar.style.flex='1';bar.style.height=h+'%';
-    bar.style.background=avgs[i]===0?'var(--muted2)':ib?insGetColor():insGetRgba()+'0.3)';
+    bar.style.background=avgs[i]===0?'var(--muted2)':ib?insGetColor():insGetHexA(0.3);
     cr.appendChild(bar);
     var ll=document.createElement('div');
     ll.className='ins-dow-day-lbl';
@@ -1192,8 +1192,8 @@ function insRenderDowChart(posts){
     var vs=INS.metric==='eng'?avgs[best].toFixed(0)+'%':insFmt(avgs[best]);
     note.textContent=days[best]+' averages '+vs+(mult>1?' - '+mult+'x more than any other day.':' - your best publishing day.');
     note.style.color=insGetColor();
-    note.style.borderColor=insGetRgba()+'0.3)';
-    note.style.background=insGetRgba()+'0.05)';
+    note.style.borderColor=insGetHexA(0.3);
+    note.style.background=insGetHexA(0.05);
   }
 }
 
@@ -1229,7 +1229,7 @@ function insInitFolBars(){
     var bar=document.createElement('div');bar.className='ins-fol-bar-item';
     bar.title=d+': '+v+' followers';
     bar.style.height=Math.max(4,Math.round((v/max)*100))+'%';
-    bar.style.background=d==='03/16'?'var(--green)':'rgba(62,207,142,0.3)';
+    bar.style.background=d==='03/16'?'var(--green)':'#3ECF8E4D';
     col.appendChild(bar);wrap.appendChild(col);
   });
 }
@@ -1330,7 +1330,7 @@ function insSaveUrl(id){
   var row=document.getElementById('ins-mi-row-'+id);
   if(row)row.classList.remove('open');
   var btn=document.getElementById('ins-mi-btn-'+id);
-  if(btn){btn.textContent='Saved';btn.style.color='var(--green)';btn.style.borderColor='rgba(62,207,142,0.35)';btn.disabled=true;}
+  if(btn){btn.textContent='Saved';btn.style.color='var(--green)';btn.style.borderColor='#3ECF8E59';btn.disabled=true;}
 }
 
 function insSimulateUpload(btn,type){
@@ -1750,8 +1750,8 @@ function _buildPFChips(containerId, key, options) {
       ' style="font-family:var(--mono);font-size:8px;'+
       'letter-spacing:0.1em;text-transform:uppercase;'+
       'padding:5px 12px;border:1px solid '+
-      (active ? 'rgba(200,168,75,0.6);color:#C8A84B;' :
-      'rgba(255,255,255,0.1);color:#555;')+
+      (active ? '#C8A84B99;color:#C8A84B;' :
+      '#FFFFFF1A;color:#555;')+
       'background:transparent;cursor:pointer;">'+o.label+'</button>';
   }).join('');
 }

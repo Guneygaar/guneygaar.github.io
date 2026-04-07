@@ -532,7 +532,7 @@ window._renderDashTaskList = function(role) {
   for (var n = 0; n < normalTasks.length; n++) {
     var nItem = normalTasks[n];
     var nTid = nItem.taskId || 'auto';
-    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="toggleDashTask(this, \'' + nTid + '\')">';
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid #FFFFFF12;cursor:pointer;" onclick="toggleDashTask(this, \'' + nTid + '\')">';
     html += '<div style="width:3px;flex-shrink:0;background:#FF4B4B;"></div>';
     html += '<div style="flex:1;padding:8px 12px;">';
     html += '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#e8e2d9;margin-bottom:3px;">' + esc(nItem.title) + '</div>';
@@ -560,7 +560,7 @@ window._renderDashTaskList = function(role) {
     if (cOwner) cMeta.push('<span style="color:' + _ownerColor(cOwner) + '">' + esc(cOwner.toLowerCase()) + '</span>');
     if (cPillar) cMeta.push(esc(cPillar.toLowerCase()));
     if (cLocation) cMeta.push(esc(cLocation.toLowerCase()));
-    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;"' + (cClick ? ' onclick="' + cClick + '"' : '') + '>';
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid #FFFFFF12;cursor:pointer;"' + (cClick ? ' onclick="' + cClick + '"' : '') + '>';
     html += '<div style="width:3px;flex-shrink:0;background:#FF4B4B;"></div>';
     html += '<div style="flex:1;padding:8px 12px;">';
     html += '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#FF4B4B;">' +
@@ -573,13 +573,13 @@ window._renderDashTaskList = function(role) {
     html += '</div></div>';
   }
   if (chaseOverflow > 0) {
-    html += '<div style="padding:7px 18px;font-family:var(--mono);font-size:8px;color:#555;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.07);" onclick="openStageSheet(\'overdue\')">+ ' +
+    html += '<div style="padding:7px 18px;font-family:var(--mono);font-size:8px;color:#555;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;border-bottom:1px solid #FFFFFF12;" onclick="openStageSheet(\'overdue\')">+ ' +
       chaseOverflow + ' more - ' + totalOverdue + ' total overdue</div>';
   }
 
   // Arrow action items
   if (urgentItems.length) {
-    html += '<div style="padding:10px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.07);">';
+    html += '<div style="padding:10px 18px 12px;border-bottom:1px solid #FFFFFF12;">';
     for (var u = 0; u < urgentItems.length; u++) {
       var ui = urgentItems[u];
       html += '<div style="display:flex;gap:8px;margin-bottom:5px;cursor:pointer;" onclick="' + ui.onclick + '">';
@@ -621,11 +621,11 @@ window.openRunwaySheet = function() {
   if (!sheet) {
     sheet = document.createElement('div');
     sheet.id = 'runway-sheet';
-    sheet.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;justify-content:center;';
+    sheet.style.cssText = 'position:fixed;inset:0;z-index:1300;background:#000000BF;display:flex;align-items:flex-end;justify-content:center;';
     sheet.onclick = function(e) { if (e.target === sheet) { sheet.style.display = 'none'; document.body.style.overflow = ''; } };
     document.body.appendChild(sheet);
   }
-  var html = '<div style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">';
+  var html = '<div style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid #FFFFFF1A;padding-bottom:30px;">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--dotline);">';
   html += '<span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Runway - ' + posts.length + ' scheduled</span>';
   html += '<button onclick="document.getElementById(\'runway-sheet\').style.display=\'none\';document.body.style.overflow=\'\'" style="background:none;border:none;color:var(--c-text3);font-size:18px;cursor:pointer;line-height:1;">x</button>';
@@ -640,7 +640,7 @@ window.openRunwaySheet = function() {
       var dateStr = '-- --';
       if (d) { var dt = new Date(d); dateStr = days[dt.getDay()] + ' - ' + dt.getDate() + ' ' + months[dt.getMonth()]; }
       var rpid = p.id || p.post_id || '';
-      html += '<div onclick="openPostOverSheet(\'' + rpid + '\')" style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);cursor:pointer;transition:background 0.1s;" onmousedown="this.style.background=\'rgba(255,255,255,0.03)\'" onmouseup="this.style.background=\'\'">';
+      html += '<div onclick="openPostOverSheet(\'' + rpid + '\')" style="display:flex;align-items:stretch;border-bottom:1px solid var(--dotline);cursor:pointer;transition:background 0.1s;" onmousedown="this.style.background=\'#FFFFFF08\'" onmouseup="this.style.background=\'\'">';
       html += '<div style="width:3px;flex-shrink:0;background:var(--c-cyan);"></div>';
       html += '<div style="flex:1;padding:10px 14px;">';
       html += '<div style="font-family:var(--mono);font-size:8px;color:var(--c-cyan);letter-spacing:0.08em;margin-bottom:3px;">' + dateStr + '</div>';
@@ -748,7 +748,7 @@ window.openStageSheet = function(stage) {
     sheet = document.createElement('div');
     sheet.id = 'stage-sheet-overlay';
     sheet.style.cssText = 'position:fixed;inset:0;z-index:1400;'+
-      'background:rgba(0,0,0,0.75);display:flex;'+
+      'background:#000000BF;display:flex;'+
       'align-items:flex-end;justify-content:center;';
     sheet.onclick = function(e) {
       if (e.target===sheet) { sheet.style.display='none'; document.body.style.overflow=''; }
@@ -757,11 +757,11 @@ window.openStageSheet = function(stage) {
   }
   var html = '<div style="width:100%;max-width:480px;'+
     'max-height:88vh;overflow-y:auto;background:#141414;'+
-    'border-top:1px solid rgba(255,255,255,0.1);'+
+    'border-top:1px solid #FFFFFF1A;'+
     'padding-bottom:30px;">';
   html += '<div style="display:flex;align-items:center;'+
     'justify-content:space-between;padding:14px 18px;'+
-    'border-bottom:1px solid rgba(255,255,255,0.07);">'+
+    'border-bottom:1px solid #FFFFFF12;">'+
     '<span style="font-family:var(--mono);font-size:9px;'+
     'letter-spacing:0.2em;text-transform:uppercase;'+
     'color:#e8e2d9;">'+esc(sheetTitle)+' \u00b7 '+posts.length+'</span>'+
@@ -781,9 +781,9 @@ window.openStageSheet = function(stage) {
       var pStage = esc((p.stage||p.stageLC||'').replace(/_/g,' '));
       html += '<div onclick="openPostOverSheet(\''+pid+'\')"'+
         ' style="display:flex;align-items:stretch;'+
-        'border-bottom:1px solid rgba(255,255,255,0.07);'+
+        'border-bottom:1px solid #FFFFFF12;'+
         'cursor:pointer;transition:background 0.1s;"'+
-        ' onmousedown="this.style.background=\'rgba(255,255,255,0.03)\'"'+
+        ' onmousedown="this.style.background=\'#FFFFFF08\'"'+
         ' onmouseup="this.style.background=\'\'">'+
         '<div style="width:3px;flex-shrink:0;background:'+
         'var(--c-red);"></div>'+
@@ -1090,7 +1090,7 @@ window._updateNextScheduled = function(allP) {
     if (owner) metaParts.push('<span style="color:' + _ownerColor(owner) + '">' + esc(owner.toLowerCase()) + '</span>');
     if (p.content_pillar) metaParts.push(esc(p.content_pillar.toLowerCase()));
     if (p.location) metaParts.push(esc(p.location.toLowerCase()));
-    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">';
+    html += '<div style="display:flex;align-items:stretch;border-bottom:1px solid #FFFFFF12;cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">';
     html += '<div style="width:3px;flex-shrink:0;background:#22D3EE;"></div>';
     html += '<div style="flex:1;padding:8px 12px;">';
     html += '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#22D3EE;">' + esc(fd.text) + '</div>';
@@ -1098,7 +1098,7 @@ window._updateNextScheduled = function(allP) {
     if (metaParts.length) html += '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + metaParts.join(' - ') + '</div>';
     html += '</div>';
     html += '<div style="padding:8px 14px 8px 8px;display:flex;align-items:center;flex-shrink:0;">';
-    html += '<div style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;letter-spacing:0.04em;color:' + _ownerColor(owner) + ';">' + esc(initials) + '</div>';
+    html += '<div style="width:26px;height:26px;border-radius:50%;background:#FFFFFF0D;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;letter-spacing:0.04em;color:' + _ownerColor(owner) + ';">' + esc(initials) + '</div>';
     html += '</div></div>';
   }
   listEl.innerHTML = html;
@@ -1134,7 +1134,7 @@ window._updateTodaysFocus = function(allP) {
     if (f.location) metaParts.push(esc(f.location.toLowerCase()));
     var pid = f.id || f.post_id || '';
     rowEl.innerHTML =
-      '<div style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">' +
+      '<div style="display:flex;align-items:stretch;border-bottom:1px solid #FFFFFF12;cursor:pointer;" onclick="openPostOverSheet(\'' + pid + '\')">' +
       '<div style="width:3px;flex-shrink:0;background:#F6A623;"></div>' +
       '<div style="flex:1;padding:8px 12px;">' +
       '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:3px;color:#F6A623;">' + esc(dateParts.join(' - ')) + '</div>' +

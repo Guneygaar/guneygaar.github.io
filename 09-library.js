@@ -948,7 +948,7 @@ function libRenderCalendar() {
         popup.style.maxWidth = '420px';
         popup.style.zIndex = '1050';
         popup.style.background = '#141414';
-        popup.style.border = '1px solid rgba(255,255,255,0.1)';
+        popup.style.border = '1px solid #FFFFFF1A';
         popup.style.padding = '14px';
         popup.style.top = '';
 
@@ -1188,10 +1188,10 @@ function libOpenCard(postId) {
     document.body.appendChild(overlay);
   }
   // FIX 3: always set cssText so overlay anchors to bottom
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000BF;z-index:1100;display:flex;align-items:flex-end;justify-content:center;';
 
   var h = '';
-  h += '<div class="lib-card-inner" style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">';
+  h += '<div class="lib-card-inner" style="width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:#141414;border-top:1px solid #FFFFFF1A;padding-bottom:30px;">';
   h += '<div class="pc-handle"></div>';
   h += '<div class="pc-hdr">';
   h += '<div class="pc-hdr-date">' + esc(displayDate(post.target_date)) + '</div>';

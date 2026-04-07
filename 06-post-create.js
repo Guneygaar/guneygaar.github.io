@@ -431,7 +431,7 @@ function _renderNewPostAssetGrid() {
     rmBtn.textContent = 'x';
     rmBtn.style.cssText = 'position:absolute;top:2px;right:2px;' +
       'width:18px;height:18px;border-radius:50%;' +
-      'background:rgba(0,0,0,0.7);border:none;color:#888;' +
+      'background:#000000B3;border:none;color:#888;' +
       'font-size:10px;cursor:pointer;display:flex;' +
       'align-items:center;justify-content:center;line-height:1;';
     rmBtn.onclick = function() {

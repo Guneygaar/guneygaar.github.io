@@ -511,11 +511,11 @@ window._closeBriefConfirm = function(postId) {
   var overlay = document.createElement('div');
   overlay.id = 'brief-confirm-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9600;' +
-    'background:rgba(0,0,0,0.75);display:flex;' +
+    'background:#000000BF;display:flex;' +
     'align-items:center;justify-content:center;padding:24px;';
 
   overlay.innerHTML =
-    '<div style="background:#0d0d14;border:1px solid rgba(200,168,75,0.2);' +
+    '<div style="background:#0d0d14;border:1px solid #C8A84B33;' +
     'padding:28px 24px;max-width:340px;width:100%;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'letter-spacing:0.18em;text-transform:uppercase;' +
@@ -524,19 +524,19 @@ window._closeBriefConfirm = function(postId) {
     'font-weight:600;color:#e8e2d9;margin-bottom:8px;">' +
     esc(title) + '</div>' +
     '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-    'color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:24px;">' +
+    'color:#FFFFFF80;line-height:1.6;margin-bottom:24px;">' +
     'This marks the brief as delivered. It will move to Closed Briefs.' +
     '</div>' +
     '<div style="display:flex;gap:10px;">' +
     '<button onclick="document.getElementById(\'brief-confirm-overlay\').remove()" ' +
     'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;' +
-    'background:transparent;border:1px solid rgba(255,255,255,0.12);' +
-    'color:rgba(255,255,255,0.5);padding:12px 0;cursor:pointer;">Cancel</button>' +
+    'background:transparent;border:1px solid #FFFFFF1F;' +
+    'color:#FFFFFF80;padding:12px 0;cursor:pointer;">Cancel</button>' +
     '<button onclick="_closeBrief(\'' + postId + '\')" ' +
     'style="flex:2;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;' +
-    'background:rgba(200,168,75,0.1);border:1px solid #C8A84B;' +
+    'background:#C8A84B1A;border:1px solid #C8A84B;' +
     'color:#C8A84B;padding:12px 0;cursor:pointer;">' +
     'Close Brief &#x2192;</button>' +
     '</div></div>';

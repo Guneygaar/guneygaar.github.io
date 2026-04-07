@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260407h">
+ <link rel="stylesheet" href="styles.css?v=20260408a">
 
 </head>
 <body>
@@ -276,7 +276,7 @@
 
           <div id="dash-unsaid">
             <div class="dash-bf-eyebrow">The unsaid thing</div>
-            <div id="dash-unsaid-text" style="padding:10px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.07);"></div>
+            <div id="dash-unsaid-text" style="padding:10px 18px 12px;border-bottom:1px solid #FFFFFF12;"></div>
           </div>
 
           <div id="dash-last-move">
@@ -300,7 +300,7 @@
 
   <!-- TAB: PIPELINE -->
   <div class="tab-panel" id="panel-pipeline">
-    <div id="pipeline-hdr-row" style="display:flex;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,0.07);min-height:48px;">
+    <div id="pipeline-hdr-row" style="display:flex;align-items:center;padding:0 18px;border-bottom:1px solid #FFFFFF12;min-height:48px;">
       <div id="pipeline-narrative" style="flex:1;max-width:calc(100% - 160px);font-family:var(--sans);font-size:15px;font-weight:600;color:var(--c-red);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:10px 0;pointer-events:none;"><span id="pipeline-narrative-text" style="cursor:pointer;pointer-events:auto;" onclick="filterFromNarrative()"></span></div>
       <div style="display:flex;align-items:center;gap:0;flex-shrink:0;margin-left:8px;position:relative;z-index:10;">
         <button id="pipeline-search-btn" onclick="(function(){var b=document.getElementById('pipeline-search-bar');var i=document.getElementById('pipeline-search-input');if(!b)return;var open=b.style.display==='flex';if(open){b.style.display='none';if(typeof handlePipelineSearch==='function')handlePipelineSearch('');}else{b.style.display='flex';if(i){i.value='';i.focus();}}})()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;position:relative;z-index:10;">
@@ -336,7 +336,7 @@
       <button class="pipeline-search-cancel" onclick="(function(){var b=document.getElementById('pipeline-search-bar');var i=document.getElementById('pipeline-search-input');if(b)b.style.display='none';if(i)i.value='';if(typeof handlePipelineSearch==='function')handlePipelineSearch('');})()">Cancel</button>
       <div class="pipeline-search-underline"></div>
     </div>
-    <div id="pipeline-stage-bar" style="height:3px;display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.07);"></div>
+    <div id="pipeline-stage-bar" style="height:3px;display:flex;gap:0;border-bottom:1px solid #FFFFFF12;"></div>
     <div class="pipeline-search-results" id="pipeline-search-results"></div>
     <div class="pipeline-search-empty" id="pipeline-search-empty">No posts found</div>
     <div class="stage-strip" id="stage-strip">
@@ -771,7 +771,7 @@
  -->
 <div class="overlay" id="request-sheet-overlay"
   style="display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,0.72); z-index:700;
+  background:#000000B8; z-index:700;
   align-items:flex-end; justify-content:center;">
   <div class="nrs-sheet">
     <div class="nrs-handle"></div>
@@ -913,9 +913,9 @@
           <div id="pcs-client-reply-indicator" class="pcs-reply-bar" style="display:none"></div>
           <div id="pcs-client-img-previews"></div>
           <div style="display:flex;align-items:center;gap:8px;background:#0f0f1a;border:1px solid #1c1c28;padding:6px 6px 6px 14px;border-radius:24px;margin-bottom:6px">
-            <button style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#2a2a3a,#1a1a28);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.1)" onclick="var i=document.getElementById('pcs-client-img-input');if(i)i.click()">+</button>
+            <button style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#2a2a3a,#1a1a28);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 2px 4px #00000066,inset 0 1px 0 #FFFFFF1A" onclick="var i=document.getElementById('pcs-client-img-input');if(i)i.click()">+</button>
             <textarea id="pcs-comment-input" placeholder="Reply to client..." rows="1" style="flex:1;background:none;border:none;font-size:14px;color:#F0F0F2;outline:none;resize:none;max-height:100px;overflow-y:auto;font-family:-apple-system,sans-serif;line-height:1.4;padding:4px 0;scrollbar-width:none" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';var s=document.getElementById('pcs-send-btn-client');if(s)s.style.opacity=this.value.trim()?'1':'0.45'"></textarea>
-            <button id="pcs-send-btn-client" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#d4b050,#b8922e);border:none;color:#000;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0.45;box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.2);transition:transform .1s,box-shadow .1s,opacity .15s" onclick="window.submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-comment-input')?document.getElementById('pcs-comment-input').value:'','all',false)">&#x2191;</button>
+            <button id="pcs-send-btn-client" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#d4b050,#b8922e);border:none;color:#000;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0.45;box-shadow:0 2px 6px #00000080,inset 0 1px 0 #FFFFFF33;transition:transform .1s,box-shadow .1s,opacity .15s" onclick="window.submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-comment-input')?document.getElementById('pcs-comment-input').value:'','all',false)">&#x2191;</button>
           </div>
           <div style="font-family:'Courier New',monospace;font-size:7px;color:#1c1c2c;letter-spacing:.06em;text-transform:uppercase;padding-left:4px">Client + Agency · Visible to all</div>
           <input type="file" id="pcs-client-img-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandleCommentImg&&_pcsHandleCommentImg('client')">
@@ -927,7 +927,7 @@
       <div id="pcs-pane-internal" class="pcs-tab-pane" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <span id="pcs-notes-count" style="display:none">0</span>
         <div id="pcs-vis-selector" style="flex-shrink:0;display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid #0f0f16;background:#09080a">
-          <button class="pcs-vis-chip" data-vis="all" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid rgba(246,166,35,.35);color:#F6A623;background:rgba(246,166,35,.04);cursor:pointer">ALL</button>
+          <button class="pcs-vis-chip" data-vis="all" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #F6A62359;color:#F6A623;background:#F6A6230A;cursor:pointer">ALL</button>
           <button class="pcs-vis-chip" data-vis="admin" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">ADMIN</button>
           <button class="pcs-vis-chip" data-vis="servicing" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">SERV</button>
           <button class="pcs-vis-chip" data-vis="creative" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">CREATIVE</button>
@@ -940,9 +940,9 @@
           <div id="pcs-note-img-previews"></div>
           <div id="pcs-mention-dropup" style="display:none"></div>
           <div style="display:flex;align-items:center;gap:8px;background:#100e04;border:1px solid #26200a;padding:6px 6px 6px 14px;border-radius:24px;margin-bottom:6px">
-            <button style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#2a2208,#1a1408);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08)" onclick="var i=document.getElementById('pcs-note-img-input');if(i)i.click()">+</button>
+            <button style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#2a2208,#1a1408);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;box-shadow:0 2px 4px #00000066,inset 0 1px 0 #FFFFFF14" onclick="var i=document.getElementById('pcs-note-img-input');if(i)i.click()">+</button>
             <textarea id="pcs-note-input" placeholder="Add note... @mention" rows="1" style="flex:1;background:none;border:none;font-size:14px;color:#F0F0F2;outline:none;resize:none;max-height:100px;overflow-y:auto;font-family:-apple-system,sans-serif;line-height:1.4;padding:4px 0;scrollbar-width:none" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';var s=document.getElementById('pcs-send-btn-note');if(s)s.style.opacity=this.value.trim()?'1':'0.45'"></textarea>
-            <button id="pcs-send-btn-note" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#fdb030,#e09218);border:none;color:#000;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0.45;box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.2);transition:transform .1s,box-shadow .1s,opacity .15s" onclick="submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-note-input')?document.getElementById('pcs-note-input').value:'',window._pcsNoteVisibility||'all',false,true)">&#x2191;</button>
+            <button id="pcs-send-btn-note" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(180deg,#fdb030,#e09218);border:none;color:#000;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:0.45;box-shadow:0 2px 6px #00000080,inset 0 1px 0 #FFFFFF33;transition:transform .1s,box-shadow .1s,opacity .15s" onclick="submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-note-input')?document.getElementById('pcs-note-input').value:'',window._pcsNoteVisibility||'all',false,true)">&#x2191;</button>
           </div>
           <div style="font-family:'Courier New',monospace;font-size:7px;color:#1c1c2c;letter-spacing:.06em;text-transform:uppercase;padding-left:4px">Agency only · Visibility set above</div>
           <input type="file" id="pcs-note-img-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandleCommentImg&&_pcsHandleCommentImg('note')">
@@ -1077,26 +1077,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260407h"></script>
-<script src="00-appstate-compat.js?v=20260407h"></script>
-<script src="01-config.js?v=20260407h" defer></script>
-<script src="02-session.js?v=20260407h" defer></script>
-<script src="utils.js?v=20260407h" defer></script>
-<script src="03-auth.js?v=20260407h" defer></script>
-<script src="05-api.js?v=20260407h" defer></script>
-<script src="10-ui.js?v=20260407h" defer></script>
+<script src="00-appstate.js?v=20260408a"></script>
+<script src="00-appstate-compat.js?v=20260408a"></script>
+<script src="01-config.js?v=20260408a" defer></script>
+<script src="02-session.js?v=20260408a" defer></script>
+<script src="utils.js?v=20260408a" defer></script>
+<script src="03-auth.js?v=20260408a" defer></script>
+<script src="05-api.js?v=20260408a" defer></script>
+<script src="10-ui.js?v=20260408a" defer></script>
 
-<script src="06-post-create.js?v=20260407h" defer></script>
-<script defer src="render/dashboard.js?v=20260407h"></script>
-<script defer src="render/client.js?v=20260407h"></script>
-<script defer src="render/pipeline.js?v=20260407h"></script>
-<script defer src="render/brief.js?v=20260407h"></script>
-<script defer src="actions/pcs.js?v=20260407h"></script>
-<script src="07-post-load.js?v=20260407h" defer></script>
-<script src="08-post-actions.js?v=20260407h" defer></script>
-<script src="09-library.js?v=20260407h" defer></script>
-<script src="09-approval.js?v=20260407h" defer></script>
-<script src="04-router.js?v=20260407h" defer></script>
+<script src="06-post-create.js?v=20260408a" defer></script>
+<script defer src="render/dashboard.js?v=20260408a"></script>
+<script defer src="render/client.js?v=20260408a"></script>
+<script defer src="render/pipeline.js?v=20260408a"></script>
+<script defer src="render/brief.js?v=20260408a"></script>
+<script defer src="actions/pcs.js?v=20260408a"></script>
+<script src="07-post-load.js?v=20260408a" defer></script>
+<script src="08-post-actions.js?v=20260408a" defer></script>
+<script src="09-library.js?v=20260408a" defer></script>
+<script src="09-approval.js?v=20260408a" defer></script>
+<script src="04-router.js?v=20260408a" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1610,9 +1610,9 @@ window.setPcsVisibility = function(el, vis) {
 
 </div>
 
-<div id="pipeline-filter-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:rgba(0,0,0,0.65);" data-action="overlay-close" data-close="closePipelineFilter">
-  <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#141414;border-top:1px solid rgba(255,255,255,0.1);padding-bottom:30px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.07);">
+<div id="pipeline-filter-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:#000000A6;" data-action="overlay-close" data-close="closePipelineFilter">
+  <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#141414;border-top:1px solid #FFFFFF1A;padding-bottom:30px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #FFFFFF12;">
       <span style="font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--text1);">Filter Pipeline</span>
       <button onclick="closePipelineFilter()" style="background:none;border:none;color:#555;font-size:18px;cursor:pointer;line-height:1;">&times;</button>
     </div>
@@ -1629,7 +1629,7 @@ window.setPcsVisibility = function(el, vis) {
       <div id="pf-urgency-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
     <div style="padding:0 18px;">
-      <button onclick="applyPipelineFilter()" style="width:100%;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-gold);background:transparent;border:1px solid rgba(200,168,75,0.4);padding:13px;cursor:pointer;">Apply</button>
+      <button onclick="applyPipelineFilter()" style="width:100%;font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--c-gold);background:transparent;border:1px solid #C8A84B66;padding:13px;cursor:pointer;">Apply</button>
     </div>
   </div>
 </div>
@@ -1638,7 +1638,7 @@ window.setPcsVisibility = function(el, vis) {
   style="display:none;position:fixed;inset:0;z-index:9600;
   background:#000;flex-direction:column;">
   <div style="display:flex;align-items:center;justify-content:space-between;
-    padding:14px 18px;background:rgba(0,0,0,0.8);
+    padding:14px 18px;background:#000000CC;
     position:absolute;top:0;left:0;right:0;z-index:2;">
     <button onclick="_pcsLbClose()"
       style="font-size:18px;color:#666;background:none;border:none;
@@ -1649,7 +1649,7 @@ window.setPcsVisibility = function(el, vis) {
     <button onclick="_pcsLbDownload()"
       style="font-family:'IBM Plex Mono',monospace;font-size:7px;
       letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;
-      background:transparent;border:1px solid rgba(62,207,142,0.3);
+      background:transparent;border:1px solid #3ECF8E4D;
       padding:6px 12px;cursor:pointer;">&#x2193; Download</button>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;
@@ -1662,12 +1662,12 @@ window.setPcsVisibility = function(el, vis) {
     style="position:absolute;bottom:68px;left:0;right:0;
     display:flex;justify-content:center;gap:5px;"></div>
   <div style="position:absolute;bottom:0;left:0;right:0;
-    background:rgba(0,0,0,0.8);padding:10px 18px 24px;
+    background:#000000CC;padding:10px 18px 24px;
     display:flex;align-items:center;gap:8px;">
     <button onclick="_pcsLbPrev()"
       style="width:40px;height:40px;display:flex;align-items:center;
-      justify-content:center;background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.07);color:#555;
+      justify-content:center;background:#FFFFFF0D;
+      border:1px solid #FFFFFF12;color:#555;
       font-size:16px;cursor:pointer;">&#x2190;</button>
     <div id="pcs-lb-filename"
       style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:7px;
@@ -1675,8 +1675,8 @@ window.setPcsVisibility = function(el, vis) {
       overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
     <button onclick="_pcsLbNext()"
       style="width:40px;height:40px;display:flex;align-items:center;
-      justify-content:center;background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.07);color:#555;
+      justify-content:center;background:#FFFFFF0D;
+      border:1px solid #FFFFFF12;color:#555;
       font-size:16px;cursor:pointer;">&#x2192;</button>
   </div>
 </div>

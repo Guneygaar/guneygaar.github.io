@@ -43,14 +43,14 @@ async function showApprovalView(postId) {
       : `<div class="approval-no-design">No design link attached yet.</div>`;
 
     const imageBlock = (post.images && post.images[0] && _isAssetUrl(post.images[0]))
-      ? '<div style="border-bottom:1px solid rgba(255,255,255,0.07);">' +
+      ? '<div style="border-bottom:1px solid #FFFFFF12;">' +
         '<img src="' + esc(post.images[0]) + '"' +
         ' alt="Post photo"' +
         ' style="width:100%;max-height:200px;object-fit:cover;display:block;">' +
         '</div>'
       : (postLink
-        ? '<div style="background:rgba(255,255,255,0.02);' +
-          'border:1px solid rgba(255,255,255,0.07);' +
+        ? '<div style="background:#FFFFFF05;' +
+          'border:1px solid #FFFFFF12;' +
           'height:80px;display:flex;align-items:center;' +
           'justify-content:center;margin:8px 14px 10px;">' +
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
@@ -61,7 +61,7 @@ async function showApprovalView(postId) {
 
     const captionBlock = post.caption
       ? '<div style="padding:8px 14px 10px;' +
-        'border-bottom:1px solid rgba(255,255,255,0.07);' +
+        'border-bottom:1px solid #FFFFFF12;' +
         'position:relative;max-height:72px;overflow:hidden;">' +
         '<div style="font-family:\'DM Sans\',sans-serif;' +
         'font-size:12px;color:#888;line-height:1.55;">' +
@@ -79,14 +79,14 @@ async function showApprovalView(postId) {
         'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
         'font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
         'color:#444;background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.06);' +
+        'border:1px solid #FFFFFF0F;' +
         'padding:9px 0;cursor:pointer;">' +
         'Share on WhatsApp</button>'
       : '<button ' +
         'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
         'font-size:8px;letter-spacing:0.1em;text-transform:uppercase;' +
         'color:#222;background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.03);' +
+        'border:1px solid #FFFFFF08;' +
         'padding:9px 0;cursor:not-allowed;">' +
         'Share on WhatsApp</button>';
 

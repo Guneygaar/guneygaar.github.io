@@ -641,26 +641,26 @@ function _buildLinkedInHtml(post, id, stageLC) {
   var stageForLi = (post.stage || stageLC || '').toLowerCase();
   if (stageForLi !== 'published') return '';
   if (post.linkedinUrl) {
-    return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;background:rgba(10,102,194,0.04);border-top:1px solid rgba(10,102,194,0.1);">' +
+    return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;background:#0A66C20A;border-top:1px solid #0A66C21A;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
       '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
       'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:#0a66c2;background:transparent;border:1px solid rgba(10,102,194,0.3);padding:11px 0;cursor:pointer;' +
+      'color:#0a66c2;background:transparent;border:1px solid #0A66C24D;padding:11px 0;cursor:pointer;' +
       'display:flex;align-items:center;justify-content:center;gap:8px;">' +
       '<span style="font-size:14px;font-weight:600;">in</span>View Live Post &rarr;</button>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
       esc(post.linkedinUrl.replace('https://','')) + '</div></div>';
   }
-  return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;border-top:1px solid rgba(246,166,35,0.1);background:rgba(246,166,35,0.03);">' +
+  return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;border-top:1px solid #F6A6231A;background:#F6A62308;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:8px;">Live Post URL</div>' +
     '<div style="display:flex;gap:8px;align-items:center;">' +
     '<input id="pcs-li-inline-input" type="url" placeholder="Paste LinkedIn post URL..." ' +
-    'style="flex:1;background:rgba(255,255,255,0.02);border:none;border-bottom:1px solid rgba(255,255,255,0.1);color:#e8e2d9;' +
+    'style="flex:1;background:#FFFFFF05;border:none;border-bottom:1px solid #FFFFFF1A;color:#e8e2d9;' +
     'font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:8px 0;outline:none;letter-spacing:0.02em;">' +
     '<button onclick="window._saveLiUrlInline(\'' + esc(id) + '\')" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;' +
-    'background:transparent;border:1px solid rgba(62,207,142,0.3);padding:7px 12px;cursor:pointer;flex-shrink:0;">Save</button>' +
+    'background:transparent;border:1px solid #3ECF8E4D;padding:7px 12px;cursor:pointer;flex-shrink:0;">Save</button>' +
     '</div>' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.06em;margin-top:6px;">Add so the team can track impressions</div></div>';
 }
@@ -687,7 +687,7 @@ function _buildWAHtml(post, id, postId, stageLC) {
     '});' +
     '})()" id="pcs-copy-btn" ' +
     'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.14em;text-transform:uppercase;' +
-    'color:#888;background:transparent;border:1px solid rgba(255,255,255,0.12);padding:10px 0;cursor:pointer;margin-top:6px;">Copy to Share</button>'
+    'color:#888;background:transparent;border:1px solid #FFFFFF1F;padding:10px 0;cursor:pointer;margin-top:6px;">Copy to Share</button>'
     : '';
   return '<div style="padding:10px 18px 12px;">' +
     '<button class="pcs-wa-btn" onclick="window._sharePostOnWhatsApp(\'' + esc(id) + '\')">Share on WhatsApp</button>' +
@@ -791,11 +791,11 @@ window._showPublishSheet = function(postId) {
   var sheet = document.createElement('div');
   sheet.id = 'pcs-publish-sheet';
   sheet.style.cssText = 'position:fixed;inset:0;z-index:9600;' +
-    'background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;' +
+    'background:#000000BF;display:flex;align-items:flex-end;' +
     'justify-content:center;';
   sheet.innerHTML =
     '<div style="width:100%;max-width:390px;background:#141414;' +
-    'border-top:1px solid rgba(255,255,255,0.1);' +
+    'border-top:1px solid #FFFFFF1A;' +
     'padding:20px 18px 44px;">' +
 
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
@@ -809,8 +809,8 @@ window._showPublishSheet = function(postId) {
 
     '<input id="pcs-li-url-input" type="url" ' +
     'placeholder="https://linkedin.com/posts/..." ' +
-    'style="width:100%;background:rgba(255,255,255,0.02);border:none;' +
-    'border-bottom:1px solid rgba(255,255,255,0.15);color:#e8e2d9;' +
+    'style="width:100%;background:#FFFFFF05;border:none;' +
+    'border-bottom:1px solid #FFFFFF26;color:#e8e2d9;' +
     'font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
     'padding:10px 0;outline:none;margin-bottom:16px;' +
     'letter-spacing:0.02em;">' +
@@ -819,12 +819,12 @@ window._showPublishSheet = function(postId) {
     '<button id="confirm-publish-btn-' + postId + '" onclick="_confirmPublish(\'' + postId + '\')" ' +
     'style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#3ECF8E;' +
-    'background:transparent;border:1px solid rgba(62,207,142,0.4);' +
+    'background:transparent;border:1px solid #3ECF8E66;' +
     'padding:13px 0;cursor:pointer;">Publish + Save URL</button>' +
     '<button id="skip-publish-btn-' + postId + '" onclick="_skipPublish(\'' + postId + '\')" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#333;' +
-    'background:transparent;border:1px solid rgba(255,255,255,0.06);' +
+    'background:transparent;border:1px solid #FFFFFF0F;' +
     'padding:13px 16px;cursor:pointer;">Skip</button>' +
     '</div></div>';
 
@@ -998,7 +998,7 @@ window.loadPcsComments = async function(postId) {
 
     function _highlightMentions(text) {
       return text.replace(/@([a-zA-Z0-9_]+)/g,
-        '<span style="color:#9b87f5;background:rgba(155,135,245,0.1);padding:0 3px;font-weight:500;">@$1</span>');
+        '<span style="color:#9b87f5;background:#9B87F51A;padding:0 3px;font-weight:500;">@$1</span>');
     }
 
     function _parseTask(c) {
@@ -1203,7 +1203,7 @@ window.loadPcsComments = async function(postId) {
 
       var emptyNotes =
         '<div class="pcs-empty-thread">' +
-        '<div class="pcs-empty-icon" style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:rgba(255,255,255,0.15);opacity:1;">PRIVATE</div>' +
+        '<div class="pcs-empty-icon" style="font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:#FFFFFF26;opacity:1;">PRIVATE</div>' +
         '<div class="pcs-empty-text">No internal notes yet.</div></div>';
 
       var notesHtml = _renderNoteThread(activeRows, emptyNotes);
@@ -1596,13 +1596,13 @@ window._pcsHandlePhotoInput = async function(postId, input) {
   var progressWrap = document.createElement('div');
   progressWrap.id = 'pcs-upload-progress';
   progressWrap.style.cssText = 'padding:8px 18px;border-bottom:' +
-    '1px solid rgba(255,255,255,0.07);';
+    '1px solid #FFFFFF12;';
   progressWrap.innerHTML =
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
     'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
     'margin-bottom:6px;" id="pcs-upload-label">Uploading 0 of ' +
     files.length + '...</div>' +
-    '<div style="height:2px;background:rgba(255,255,255,0.06);width:100%;">' +
+    '<div style="height:2px;background:#FFFFFF0F;width:100%;">' +
     '<div id="pcs-upload-bar" style="height:2px;background:#F6A623;' +
     'width:0%;transition:width 0.2s ease;"></div></div>';
   var photoSection = document.getElementById('pcs-photo-section');
@@ -2097,7 +2097,7 @@ window._startCaptionEdit = function(postId) {
     'width:100%',
     'background:transparent',
     'border:none',
-    'border-bottom:1px solid rgba(200,168,75,0.3)',
+    'border-bottom:1px solid #C8A84B4D',
     'color:#e8e2d9',
     'font-family:\'DM Sans\',sans-serif',
     'font-size:14px',
@@ -2121,11 +2121,11 @@ window._startCaptionEdit = function(postId) {
   btnRow.innerHTML =
     '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'color:#3ECF8E;border:1px dotted rgba(62,207,142,0.4);' +
+    'color:#3ECF8E;border:1px dotted #3ECF8E66;' +
     'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
     '<button onclick="_cancelCaptionEdit()" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'color:#8E8E93;border:1px dotted rgba(255,255,255,0.15);' +
+    'color:#8E8E93;border:1px dotted #FFFFFF26;' +
     'background:transparent;padding:6px 12px;cursor:pointer;' +
     'margin-left:6px;">CANCEL</button>';
   ta.parentNode.insertBefore(btnRow, ta.nextSibling);
