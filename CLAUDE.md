@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -317,7 +317,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
 
 Current (verified 2026-04-06):
 Unit test files: 21
-Unit tests:      500 passing, 0 failing
+Unit tests:      508 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -358,6 +358,7 @@ TEST FILE MAPPING (run targeted tests during development):
   03-auth.js            → npx vitest run tests/role.test.js
   10-ui.js              → npx vitest run tests/notifications.test.js tests/notif-render.test.js
   utils.js              → npx vitest run tests/utils.test.js
+  04-router.js + 07-post-load.js (deep-link) → npx vitest run tests/deeplink.test.js
   Full suite before push: npx vitest run
 
 AppState mock pattern for new test files:
@@ -391,6 +392,12 @@ WhatsApp preview: generated at post creation time (06-post-create.js, render/bri
                   Zero Supabase egress for previews — Worker + KV only
 Resend FROM:    hinglish@srtd.io
 Short URLs:     srtd.io/p/XXXX via Cloudflare Page Rule
+Deep-link:      srtd.io/?open=POST_ID — logs in then opens PCS for that post
+                04-router.js stores in window._pendingOpenPost, renderAll()
+                in 07-post-load.js fires openPCS after posts load + clears flag.
+                Edge functions (notify-comment, notify-stage, notify-request) in
+                Supabase should use https://srtd.io/?open=${postId} for "View Post"
+                button URLs. Edge functions live in Supabase only — not in this repo.
 PREVIEW_SECRET: srtd2026xK9mN3pQ
 Pages branch:   main-/-root
 
@@ -414,7 +421,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 500/500 before every push
+1. Vitest must pass 508/508 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().
