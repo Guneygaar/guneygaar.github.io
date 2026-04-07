@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1394,7 +1394,14 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    _hexToRgb() deleted (dead code after conversion). Approved exceptions
    kept: .pcs-more-ov, .pcs-more-l, SVG fill in index.html L1140,
    mockup photo overlay. 508/508 unit passing.
-   Bumped to ?v=20260408a.
+   Bumped to ?v=20260408b.
+1. 100vh causes overflow on iOS Safari — address bar not excluded
+   Location: styles.css — #dashboard-view height:100vh (L711),
+   #dashboard-view min-height:100vh (L716), #client-view
+   min-height:100vh (L1317), #approval-view min-height:100vh (L1524)
+   Status: FIXED (PR#TBD) — changed all four values from 100vh to
+   100dvh (dynamic viewport height). 508/508 unit passing.
+   Bumped to ?v=20260408b.
 
 ## SECTION 13 — STABILITY ROADMAP
 
