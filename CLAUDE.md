@@ -28,7 +28,11 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
+<<<<<<< claude/audit-email-system-Ixq0c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406k
+=======
 Version format: ?v=YYYYMMDDx. Current: ?v=20260406j
+>>>>>>> main-/-root
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1228,6 +1232,20 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        .pcs-back-notif-btn added. Zero rgba, all solid hex.
    Status: FIXED (PR#TBD) — 433/433 unit + 40/40 CI e2e
    passing. Bumped to ?v=20260406e.
+1. Scroll hijacking on mobile — body stays locked after
+   closing runway-sheet or stage-sheet bottom sheets
+   Location: 07-post-load.js openRunwaySheet() and
+   openStageSheet() set document.body.style.overflow =
+   'hidden' on open, but the close handlers (X button
+   onclick and backdrop click) only set display='none'
+   on the sheet without resetting body overflow.
+   Same bug duplicated in render/dashboard.js for the
+   identical openRunwaySheet() and openStageSheet().
+   Total: 8 close paths missing overflow reset across
+   2 files (4 in 07-post-load.js, 4 in dashboard.js).
+   Status: FIXED (PR#TBD) — added document.body.style.overflow=''
+   to all 8 close handlers. 444/444 unit passing.
+   Bumped to ?v=20260406k.
 
 ## SECTION 13 — STABILITY ROADMAP
 
