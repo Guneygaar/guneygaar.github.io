@@ -317,7 +317,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
 
 Current (verified 2026-04-06):
 Unit test files: 21
-Unit tests:      500 passing, 0 failing
+Unit tests:      508 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -421,7 +421,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 492/492 before every push
+1. Vitest must pass 508/508 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().

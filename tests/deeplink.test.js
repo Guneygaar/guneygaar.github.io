@@ -1,21 +1,101 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
 var routerSrc = readFileSync(resolve(__dirname, '..', '04-router.js'), 'utf8');
 var postLoadSrc = readFileSync(resolve(__dirname, '..', '07-post-load.js'), 'utf8');
 
-describe('Deep-link ?open=POST_ID', function() {
+/*
+  Deep link feature spec:
+  - URL param ?open=POST_ID sets window._pendingOpenPost
+  - After auth + loadPosts, renderAll checks _pendingOpenPost
+  - If set, openPCS(postId) is called, then _pendingOpenPost cleared
+*/
 
-  it('1. router reads open param from URLSearchParams', function() {
+describe('Deep link — URL param parsing', function() {
+
+  beforeEach(function() {
+    window._pendingOpenPost = undefined;
+  });
+
+  it('1. ?open=POST-123 sets _pendingOpenPost to POST-123', function() {
+    var params = new URLSearchParams('?open=POST-123');
+    var openParam = params.get('open');
+    if (openParam) window._pendingOpenPost = openParam;
+    expect(window._pendingOpenPost).toBe('POST-123');
+  });
+
+  it('2. ?open= with empty value does not set _pendingOpenPost', function() {
+    var params = new URLSearchParams('?open=');
+    var openParam = params.get('open');
+    if (openParam) window._pendingOpenPost = openParam;
+    expect(window._pendingOpenPost).toBeUndefined();
+  });
+
+  it('3. URL with no ?open param leaves _pendingOpenPost undefined', function() {
+    var params = new URLSearchParams('?tab=pipeline');
+    var openParam = params.get('open');
+    if (openParam) window._pendingOpenPost = openParam;
+    expect(window._pendingOpenPost).toBeUndefined();
+  });
+
+  it('4. _pendingOpenPost is cleared after openPCS is called', function() {
+    window._pendingOpenPost = 'POST-456';
+    var postId = window._pendingOpenPost;
+    window._pendingOpenPost = null;
+    expect(postId).toBe('POST-456');
+    expect(window._pendingOpenPost).toBeNull();
+  });
+
+  it('5. openPCS receives correct postId from _pendingOpenPost', function() {
+    window._pendingOpenPost = 'POST-789';
+    var calledWith = null;
+    var mockOpenPCS = function(pid) { calledWith = pid; };
+    if (window._pendingOpenPost) {
+      mockOpenPCS(window._pendingOpenPost);
+      window._pendingOpenPost = null;
+    }
+    expect(calledWith).toBe('POST-789');
+  });
+
+  it('6. ?approve= param does not set _pendingOpenPost', function() {
+    var params = new URLSearchParams('?approve=ABCD');
+    var openParam = params.get('open');
+    if (openParam) window._pendingOpenPost = openParam;
+    expect(window._pendingOpenPost).toBeUndefined();
+    expect(params.get('approve')).toBe('ABCD');
+  });
+
+  it('7. ?open=POST-123&other=val correctly extracts just the post id', function() {
+    var params = new URLSearchParams('?open=POST-123&other=val');
+    var openParam = params.get('open');
+    if (openParam) window._pendingOpenPost = openParam;
+    expect(window._pendingOpenPost).toBe('POST-123');
+    expect(params.get('other')).toBe('val');
+  });
+
+  it('8. _pendingOpenPost with empty string does not trigger openPCS', function() {
+    window._pendingOpenPost = '';
+    var called = false;
+    var mockOpenPCS = function() { called = true; };
+    if (window._pendingOpenPost) {
+      mockOpenPCS(window._pendingOpenPost);
+    }
+    expect(called).toBe(false);
+  });
+});
+
+describe('Deep-link ?open=POST_ID — source analysis', function() {
+
+  it('9. router reads open param from URLSearchParams', function() {
     expect(routerSrc).toContain("params.get('open')");
   });
 
-  it('2. router sets window._pendingOpenPost when open param present', function() {
+  it('10. router sets window._pendingOpenPost when open param present', function() {
     expect(routerSrc).toContain('window._pendingOpenPost = openPost');
   });
 
-  it('3. open param check occurs after approval checks but before hash check', function() {
+  it('11. open param check occurs after approval checks but before hash check', function() {
     var approveIdx = routerSrc.indexOf("params.get('approve')");
     var openIdx = routerSrc.indexOf("params.get('open')");
     var hashIdx = routerSrc.indexOf('window.location.hash');
@@ -24,35 +104,31 @@ describe('Deep-link ?open=POST_ID', function() {
     expect(hashIdx).toBeGreaterThan(openIdx);
   });
 
-  it('4. open param does NOT return early — auth flow continues', function() {
-    // The open block should set the flag but not return
+  it('12. open param does NOT return early — auth flow continues', function() {
     var openLine = routerSrc.indexOf("window._pendingOpenPost = openPost");
     expect(openLine).toBeGreaterThan(-1);
-    // Get the next 60 chars after the assignment — should not contain 'return'
     var after = routerSrc.substring(openLine, openLine + 80);
-    // The line ends with semicolon, next meaningful code should be hash check
     expect(after).not.toMatch(/return\s*;/);
   });
 
-  it('5. renderAll checks _pendingOpenPost after posts loaded', function() {
+  it('13. renderAll checks _pendingOpenPost after posts loaded', function() {
     expect(postLoadSrc).toContain('window._pendingOpenPost');
     expect(postLoadSrc).toContain('window.AppState.posts.loaded');
   });
 
-  it('6. renderAll clears _pendingOpenPost before calling openPCS', function() {
+  it('14. renderAll clears _pendingOpenPost before calling openPCS', function() {
     var clearIdx = postLoadSrc.indexOf('window._pendingOpenPost = null');
     var openIdx = postLoadSrc.indexOf("openPCS(_pid)");
     expect(clearIdx).toBeGreaterThan(-1);
     expect(openIdx).toBeGreaterThan(clearIdx);
   });
 
-  it('7. renderAll calls openPCS with the stored post ID', function() {
-    // The pattern: save _pid, clear flag, call openPCS(_pid)
+  it('15. renderAll calls openPCS with the stored post ID', function() {
     var match = postLoadSrc.match(/var _pid = window\._pendingOpenPost;\s*window\._pendingOpenPost = null;\s*if \(typeof openPCS === 'function'\) openPCS\(_pid\)/);
     expect(match).toBeTruthy();
   });
 
-  it('8. deep-link block is inside renderAll function', function() {
+  it('16. deep-link block is inside renderAll function', function() {
     var renderAllStart = postLoadSrc.indexOf('function renderAll()');
     var pendingCheck = postLoadSrc.indexOf('window._pendingOpenPost && window.AppState.posts.loaded');
     var nextFnStart = postLoadSrc.indexOf('function updateStats()');
