@@ -364,7 +364,7 @@ window._assignBriefToPranav = function(postId) {
     // 1. PATCH request status to assigned
     apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
       method: 'PATCH',
-      body: JSON.stringify({ status: 'assigned', updated_at: nowISO })
+      body: JSON.stringify({ status: 'assigned' })
     }).then(function() {
       // 2. Create new post linked to this request
       return apiFetch('/posts', {

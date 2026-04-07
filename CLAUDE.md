@@ -1326,6 +1326,12 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    field added to form HTML + payload + draft clear, all 17 rgba
    replaced with solid hex in NPS CSS + 1 in HTML. 487/487 unit
    passing. Bumped to ?v=20260407c.
+1. Assign brief PATCH sends updated_at to requests table
+   Location: render/brief.js line 367 — _assignBriefToPranav()
+   PATCH to /requests included updated_at which does not exist
+   on the requests table. PostgREST rejected with PGRST204.
+   Status: FIXED (PR#TBD) — removed updated_at from the PATCH
+   payload. Only { status: 'assigned' } is sent now.
 
 ## SECTION 13 — STABILITY ROADMAP
 
