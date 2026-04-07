@@ -90,41 +90,156 @@ window._openBriefSheet = function(postId) {
   var overlay = document.createElement('div');
   overlay.id = 'brief-sheet-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
-    'background:#0a0a0f;overflow-y:auto;-webkit-overflow-scrolling:touch;';
+    'background:#0a0a0f;overflow-y:auto;font-family:\'DM Sans\',sans-serif;';
+
+  // --- Build action buttons for the sticky footer ---
+  var _footerActions = (function() {
+    var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
+      (_isClient ?
+      '<button data-action="clientViewPost" data-id="' + esc(linkedPost.post_id) + '" ' +
+      'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+      'background:#0e0e0e;border:1px solid #3ECF8E;border-radius:10px;' +
+      'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:#3ECF8E;cursor:pointer;">' +
+      '&#x2192; View Post</button>'
+      :
+      '<button onclick="(function(){' +
+      'var o=document.getElementById(\'brief-sheet-overlay\');' +
+      'if(o)o.remove();' +
+      'document.body.style.overflow=\'\';' +
+      'setTimeout(function(){openPCS(\'' +
+      esc(linkedPost.post_id) + '\',\'\');},150);' +
+      '})()" ' +
+      'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+      'background:#0e0e0e;border:1px solid #3ECF8E;border-radius:10px;' +
+      'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:#3ECF8E;cursor:pointer;">' +
+      '&#x2192; View Post</button>') : '';
+    var _reopenBtn =
+      '<button onclick="_reopenBrief(\'' + postId + '\')" ' +
+      'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+      'background:#0e0e0e;border:1px solid #252535;border-radius:10px;' +
+      'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:#555566;cursor:pointer;">' +
+      '&#x21BA; Reopen Brief</button>';
+    var _closeBtn =
+      '<button onclick="_closeBriefConfirm(\'' + postId + '\')" ' +
+      'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+      'background:#0e0e0e;border:1px solid #252535;border-radius:10px;' +
+      'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:#555566;cursor:pointer;">' +
+      '&#x2715; Close Brief</button>';
+    var _readOnly =
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:#555566;text-align:center;padding:8px 0;">' +
+      'The team is working on this</div>';
+
+    // STATE: brief_done
+    if (_isBriefDone) {
+      return _viewPostBtn +
+        (_isChitra ? _reopenBtn : '');
+    }
+    // STATE: has linked post (post already created)
+    if (_hasLinkedPost && linkedPost) {
+      return _viewPostBtn +
+        (_isChitra ? _closeBtn : '');
+    }
+    // STATE: assigned to Pranav, no linked post yet
+    if (_isAssignedToPranav) {
+      if (_isChitra) {
+        return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
+          'font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#555566;background:#0e0e0e;border:1px solid #252535;border-radius:10px;' +
+          'padding:13px 20px;text-align:center;width:100%;">' +
+          '&#x2713; Assigned to Pranav</div>' + _closeBtn;
+      }
+      if (_isPranav) {
+        return '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
+          'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+          'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
+          'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#C8A84B;cursor:pointer;">' +
+          '&#x2192; Create Post</button>' + _closeBtn;
+      }
+      return _readOnly;
+    }
+    // STATE: unassigned (owner=Chitra)
+    if (_isChitra) {
+      return '<div style="margin-bottom:8px;">' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+        'letter-spacing:0.12em;text-transform:uppercase;' +
+        'color:#C8A84B;margin-bottom:6px;">Your Direction for Pranav</div>' +
+        '<textarea id="brief-direction-' + postId + '" rows="3" ' +
+        'placeholder="Add your creative direction, angle, key message..." ' +
+        'style="width:100%;background:transparent;border:none;' +
+        'border-bottom:1px solid #3a3a3a;color:#E8E8E8;' +
+        'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+        'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
+        'caret-color:#C8A84B;"></textarea>' +
+        '</div>' +
+        '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
+        'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+        'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
+        'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+        'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+        'color:#C8A84B;cursor:pointer;">' +
+        '&#x2192; Assign to Pranav</button>' + _closeBtn;
+    }
+    return _readOnly;
+  }());
 
   overlay.innerHTML =
-    // Topbar
-    '<div style="position:sticky;top:0;z-index:10;' +
-    'background:rgba(10,10,15,0.95);backdrop-filter:blur(8px);' +
-    'display:flex;align-items:center;justify-content:space-between;' +
-    'padding:14px 18px;border-bottom:1px solid rgba(200,168,75,0.15);">' +
+    // TOP NAV BAR
+    '<div style="position:sticky;top:0;background:#0a0a0f;' +
+    'border-bottom:1px solid #1e1e2e;padding:14px 20px 12px;' +
+    'display:flex;align-items:center;justify-content:space-between;z-index:10;">' +
     '<button onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
     'document.body.style.overflow=\'\';" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5);' +
-    'background:transparent;border:none;cursor:pointer;">&#x2190; Back</button>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:#C8A84B;">Brief</div>' +
-    '<div style="width:60px;"></div>' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:500;' +
+    'letter-spacing:0.1em;text-transform:uppercase;color:#555566;' +
+    'display:flex;align-items:center;gap:5px;' +
+    'background:none;border:none;cursor:pointer;">&#x2190; BACK</button>' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;' +
+    'letter-spacing:0.16em;text-transform:uppercase;color:#C8A84B;">BRIEF</div>' +
+    '<div onclick="window.open(\'https://wa.me/?text=\' + encodeURIComponent(\'Brief: ' +
+    esc((post.title || '').replace(/'/g, '')) +
+    '\\n\\nhttps://srtd.io/?open=' + esc(postId) + '\'), \'_blank\')" ' +
+    'style="display:flex;align-items:center;gap:5px;background:#1a2e1a;' +
+    'border:1px solid #25D366;border-radius:6px;padding:5px 10px;cursor:pointer;">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
+    'letter-spacing:0.1em;text-transform:uppercase;color:#25D366;">SHARE</span>' +
+    '</div>' +
     '</div>' +
 
-    // Title + meta
-    '<div style="padding:28px 18px 0;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.4);' +
-    'margin-bottom:8px;">Brief Title</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;' +
-    'font-weight:700;color:#e8e2d9;line-height:1.2;margin-bottom:10px;">' +
+    // TITLE BLOCK
+    '<div style="padding:24px 20px 20px;border-bottom:1px solid #1e1e2e;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
+    'letter-spacing:0.16em;text-transform:uppercase;color:#555566;margin-bottom:6px;">BRIEF TITLE</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:24px;font-weight:700;' +
+    'color:#F0F0F2;line-height:1.2;letter-spacing:-0.01em;">' +
     esc(post.title || '') + '</div>' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.04em;color:rgba(255,255,255,0.4);">' +
-    esc(sentTime) + '</div>' +
+    '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">' +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
+    'letter-spacing:0.1em;text-transform:uppercase;color:#9b87f5;' +
+    'background:#9b87f514;border:1px solid #9b87f533;border-radius:4px;padding:3px 7px;">BRIEF</span>' +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:500;' +
+    'letter-spacing:0.08em;color:#555566;">' +
+    (_isAssignedToPranav ? 'Assigned to <strong style="color:#9b87f5;font-weight:600;">Pranav</strong>' : 'Unassigned') +
+    '</span>' +
+    '</div>' +
     '</div>' +
 
     // Brief Done status banner
     (_isBriefDone ?
-      '<div style="padding:8px 18px;background:rgba(200,168,75,0.08);' +
-      'border-left:3px solid #C8A84B;margin:0 0 4px;">' +
+      '<div style="padding:10px 20px;background:#141008;' +
+      'border-left:3px solid #C8A84B;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.14em;text-transform:uppercase;color:#C8A84B;">' +
       'Brief Closed</div>' +
@@ -133,200 +248,129 @@ window._openBriefSheet = function(postId) {
 
     // Linked post info (if linked)
     (_hasLinkedPost && linkedPost ?
-      '<div style="padding:12px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.4);margin-bottom:8px;">Linked Post</div>' +
+      '<div style="padding:12px 20px;border-bottom:1px solid #1e1e2e;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
+      'letter-spacing:0.16em;text-transform:uppercase;' +
+      'color:#555566;margin-bottom:8px;">LINKED POST</div>' +
       '<div style="display:flex;align-items:center;justify-content:space-between;' +
-      'padding:12px 14px;border:1px dashed rgba(200,168,75,0.25);">' +
+      'padding:12px 14px;background:#141420;border:1px solid #252535;border-radius:8px;">' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'font-weight:600;color:#e8e2d9;">' + esc(linkedPost.title) + '</div>' +
+      'font-weight:600;color:#F0F0F2;">' + esc(linkedPost.title) + '</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4);">' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#555566;">' +
       esc((linkedPost.stage || '').replace(/_/g,' ')) + '</div>' +
       '</div></div>'
       : '') +
 
-    // Divider
-    '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
+    // SECTION 01 — THE BRIEF
+    '<div style="padding:16px 20px;border-bottom:1px solid #1e1e2e;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
+    'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">01</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+    'color:#E8E8E8;margin-bottom:10px;">The Brief</div>' +
 
-    // Content type (extracted from comments)
+    // Content type (if present, show as tag before brief text)
     (contentType ?
-      '<div style="padding:16px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:#C8A84B;margin-bottom:10px;display:block;">Content Type</div>' +
       '<div style="display:inline-flex;align-items:center;' +
-      'border:1px dashed rgba(200,168,75,0.3);padding:5px 10px;">' +
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'border:1px solid #252535;border-radius:4px;padding:3px 8px;margin-bottom:10px;">' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.1em;text-transform:uppercase;' +
-      'color:#e8e2d9;font-weight:500;">' + esc(contentType) + '</span>' +
-      '</div></div>' +
-      '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>'
+      'color:#AEAEB2;font-weight:500;">' + esc(contentType) + '</span>' +
+      '</div>'
       : '') +
 
-    // Brief text
-    '<div style="padding:0 18px 24px;">' +
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;' +
-    'color:#C8A84B;margin-bottom:10px;">The Brief</div>' +
-    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
-    'color:#e8e2d9;line-height:1.7;white-space:pre-wrap;">' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:400;' +
+    'color:#9090A0;line-height:1.6;white-space:pre-wrap;">' +
     esc(briefText || 'No brief text provided.') + '</div>' +
-    '</div>' +
 
-    // Chitra Note section (hidden from client - internal creative direction)
+    // Drive link pill
+    (post.drive_link ?
+      '<a href="' + esc(post.drive_link) + '" target="_blank" rel="noopener" ' +
+      'style="display:flex;align-items:center;gap:8px;background:#141420;' +
+      'border:1px solid #252535;border-radius:8px;padding:10px 12px;' +
+      'text-decoration:none;margin-top:12px;">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.04em;color:#22D3EE;white-space:nowrap;overflow:hidden;' +
+      'text-overflow:ellipsis;">' + esc(post.drive_link) + '</span>' +
+      '</a>'
+      : '') +
+
+    // Chitra Note (hidden from client)
     (!_isClient && chitraNote ?
-      '<div style="height:1px;background:rgba(200,168,75,0.12);margin:0 18px;"></div>' +
-      '<div style="padding:16px 18px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.2em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.45);margin-bottom:8px;">Direction from Chitra</div>' +
+      '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e1e2e;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
+      'letter-spacing:0.12em;text-transform:uppercase;' +
+      'color:#555566;margin-bottom:8px;">Direction from Chitra</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-      'color:rgba(255,255,255,0.75);line-height:1.65;font-style:italic;">' +
+      'color:#8E8E93;line-height:1.65;font-style:italic;">' +
       esc(chitraNote) + '</div>' +
       '</div>'
       : '') +
 
-    // Reference photos
+    '</div>' +
+
+    // SECTION 02 — REFERENCE PHOTOS
     (Array.isArray(post.images) && post.images.length ?
-      '<div style="padding:0 18px 24px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-      'letter-spacing:0.18em;text-transform:uppercase;' +
-      'color:rgba(255,255,255,0.4);margin-bottom:10px;">Reference Photos</div>' +
-      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;">' +
+      '<div style="padding:16px 20px;border-bottom:1px solid #1e1e2e;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
+      'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">02</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#E8E8E8;margin-bottom:4px;">Reference Photos</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+      'letter-spacing:0.1em;text-transform:uppercase;color:#555566;margin-bottom:10px;">' +
+      post.images.length + ' FILES ATTACHED</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">' +
       post.images.map(function(url, i) {
         return '<img src="' + url + '" loading="lazy" ' +
         'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
-        'style="aspect-ratio:1/1;width:100%;object-fit:cover;' +
-        'display:block;cursor:pointer;">';
+        'style="aspect-ratio:1/1;width:100%;object-fit:cover;border-radius:6px;' +
+        'cursor:pointer;display:block;">';
       }).join('') +
       '</div></div>'
       : '') +
 
-    // Drive link (from requests table)
-    (post.drive_link ?
-      '<div style="padding:0 18px 24px;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-      'letter-spacing:0.1em;text-transform:uppercase;' +
-      'color:#8E8E93;margin-bottom:6px;">Drive Link</div>' +
-      '<a href="' + esc(post.drive_link) + '" target="_blank" rel="noopener" ' +
-      'style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-      'color:#3ECF8E;word-break:break-all;text-decoration:none;">' +
-      esc(post.drive_link) + '</a>' +
-      '</div>'
+    // SECTION 03 — ASSIGNED TO
+    (_isAssignedToPranav ?
+      '<div style="padding:16px 20px;">' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
+      'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">' +
+      (Array.isArray(post.images) && post.images.length ? '03' : '02') + '</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
+      'color:#E8E8E8;margin-bottom:10px;">Assigned To</div>' +
+      '<div style="display:flex;align-items:center;gap:10px;background:#141420;' +
+      'border:1px solid #252535;border-radius:8px;padding:11px 14px;">' +
+      '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;' +
+      'border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;' +
+      'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">P</div>' +
+      '<div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">Pranav</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#555566;' +
+      'letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Creative</div>' +
+      '</div>' +
+      '<div style="margin-left:auto;display:flex;align-items:center;gap:4px;">' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:#9b87f5;"></div>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#555566;' +
+      'letter-spacing:0.06em;">ASSIGNED</span>' +
+      '</div>' +
+      '</div></div>'
       : '') +
 
-    // Role-based bottom action (state machine)
-    (function() {
-      var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
-        '<div style="padding:0 18px 32px;">' +
-        (_isClient ?
-        '<button data-action="clientViewPost" data-id="' + esc(linkedPost.post_id) + '" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
-        'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
-        '&#x2192; View Post</button>'
-        :
-        '<button onclick="(function(){' +
-        'var o=document.getElementById(\'brief-sheet-overlay\');' +
-        'if(o)o.remove();' +
-        'document.body.style.overflow=\'\';' +
-        'setTimeout(function(){openPCS(\'' +
-        esc(linkedPost.post_id) + '\',\'\');},150);' +
-        '})()" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:#3ECF8E;background:rgba(62,207,142,0.06);' +
-        'border:1px solid #3ECF8E;padding:16px 0;cursor:pointer;">' +
-        '&#x2192; View Post</button>') +
-        '</div>' : '';
-      var _reopenBtn =
-        '<div style="padding:0 18px 32px;">' +
-        '<button onclick="_reopenBrief(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.4);background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">&#x21BA; Reopen Brief</button>' +
-        '</div>';
-      var _closeBtn =
-        '<div style="padding:12px 18px 0;">' +
-        '<button onclick="_closeBriefConfirm(\'' + postId + '\')" ' +
-        'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-        'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.4);background:transparent;' +
-        'border:1px solid rgba(255,255,255,0.12);' +
-        'padding:14px 0;cursor:pointer;">&#x2715; Close Brief</button>' +
-        '</div>';
-      var _readOnly =
-        '<div style="padding:0 18px 32px;">' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-        'letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:rgba(255,255,255,0.35);text-align:center;">' +
-        'The team is working on this</div>' +
-        '</div>';
-
-      // STATE: brief_done
-      if (_isBriefDone) {
-        return _viewPostBtn +
-          (_isChitra ? _reopenBtn : '');
-      }
-      // STATE: has linked post (post already created)
-      if (_hasLinkedPost && linkedPost) {
-        return _viewPostBtn +
-          (_isChitra ? _closeBtn : '');
-      }
-      // STATE: assigned to Pranav, no linked post yet
-      if (_isAssignedToPranav) {
-        if (_isChitra) {
-          return '<div style="padding:0 18px 32px;">' +
-            '<div style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-            'color:rgba(255,255,255,0.4);background:transparent;' +
-            'border:1px solid rgba(255,255,255,0.1);' +
-            'padding:14px 0;text-align:center;">' +
-            '&#x2713; Assigned to Pranav</div>' +
-            '</div>' + _closeBtn;
-        }
-        if (_isPranav) {
-          return '<div style="padding:0 18px 32px;">' +
-            '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
-            'style="width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:9px;letter-spacing:0.2em;text-transform:uppercase;' +
-            'color:#C8A84B;background:rgba(200,168,75,0.06);' +
-            'border:1px solid #C8A84B;padding:16px 0;cursor:pointer;' +
-            'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Create Post</button>' +
-            '</div>' + _closeBtn;
-        }
-        return _readOnly;
-      }
-      // STATE: unassigned (owner=Chitra)
-      if (_isChitra) {
-        return '<div style="padding:0 18px 24px;">' +
-          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-          'letter-spacing:0.18em;text-transform:uppercase;' +
-          'color:#C8A84B;margin-bottom:10px;">Your Direction for Pranav</div>' +
-          '<textarea id="brief-direction-' + postId + '" rows="4" ' +
-          'placeholder="Add your creative direction, angle, key message..." ' +
-          'style="width:100%;background:transparent;border:none;' +
-          'border-bottom:1px solid rgba(200,168,75,0.3);color:#e8e2d9;' +
-          'font-family:\'DM Sans\',sans-serif;font-size:14px;' +
-          'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
-          'caret-color:#C8A84B;"></textarea>' +
-          '</div>' +
-          '<div style="padding:0 18px 32px;">' +
-          '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
-          'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-          'letter-spacing:0.2em;text-transform:uppercase;color:#C8A84B;' +
-          'background:rgba(200,168,75,0.06);border:1px solid #C8A84B;' +
-          'padding:16px 0;cursor:pointer;' +
-          'box-shadow:0 0 14px rgba(200,168,75,0.12);">&#x2192; Assign to Pranav</button>' +
-          '</div>' + _closeBtn;
-      }
-      return _readOnly;
-    }());
+    // BOTTOM STICKY FOOTER
+    '<div style="position:sticky;bottom:0;background:#0a0a0f;' +
+    'border-top:1px solid #1e1e2e;padding:12px 20px 28px;">' +
+    '<div style="display:flex;flex-direction:column;gap:8px;">' +
+    _footerActions +
+    '</div>' +
+    '<button onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
+    'document.body.style.overflow=\'\';" ' +
+    'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+    'background:transparent;border:1px solid #252535;border-radius:10px;' +
+    'padding:11px 20px;cursor:pointer;width:100%;margin-top:8px;">' +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:500;' +
+    'letter-spacing:0.1em;text-transform:uppercase;color:#555566;">&#x2715;   CLOSE BRIEF</span>' +
+    '</button>' +
+    '</div>';
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
