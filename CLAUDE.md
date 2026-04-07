@@ -1343,6 +1343,21 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    finishes bubbling. 508/508 unit passing.
    Bumped to ?v=20260407f.
 
+1. Brief panel visual redesign — HTML rewrite to approved mockup
+   Location: render/brief.js _openBriefSheet() HTML string
+   Old layout used rgba() colors, no numbered sections, no WhatsApp
+   share button, no assigned-to card, no sticky footer with close.
+   Status: FIXED (PR#TBD) — full HTML rewrite of _openBriefSheet().
+   New layout: sticky top nav (back / BRIEF / WhatsApp share),
+   title block with stage badge + assignment status, numbered
+   sections (01 The Brief, 02 Reference Photos, 03 Assigned To),
+   drive link pill, chitra note preserved, sticky bottom footer
+   with action buttons + close. All rgba replaced with solid hex
+   or 8-digit hex alpha. Zero logic changes — same onclick
+   handlers, same data references, same function calls. All
+   other functions untouched. 500/500 unit passing.
+   Bumped to ?v=20260407f.
+
 ## SECTION 13 — STABILITY ROADMAP
 
 Ph0 Safety            — DONE
