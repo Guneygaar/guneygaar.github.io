@@ -501,6 +501,10 @@ window._closeBriefConfirm = function(postId) {
 }
 
 window._closeBrief = function(postId) {
+  if (!postId) {
+    console.warn('_closeBrief: missing postId, aborting');
+    return;
+  }
   document.getElementById('brief-confirm-overlay') &&
     document.getElementById('brief-confirm-overlay').remove();
 
@@ -553,6 +557,10 @@ window._closeBrief = function(postId) {
 }
 
 window._reopenBrief = function(postId) {
+  if (!postId) {
+    console.warn('_reopenBrief: missing postId, aborting');
+    return;
+  }
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
 
   if (post && post._isRequest) {

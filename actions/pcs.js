@@ -530,8 +530,10 @@ window._pcsDateChange = function(postId, dateValue) {
     }
     window.AppState.pcs.activeMenu = null;
   }
-  if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateValue);
-  if (typeof openPCS === 'function') openPCS(postId, '');
+  if (window.AppState && window.AppState.pcs && window.AppState.pcs.open) {
+    if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateValue);
+    if (typeof openPCS === 'function') openPCS(postId, '');
+  }
 }
 
 // -- Caption section builder --
@@ -780,6 +782,10 @@ window._saveLiUrlInline = function(postId) {
            (p.id && p.id === postId);
   });
   var _liPostId = _liPost ? _liPost.post_id : postId;
+  if (!_liPostId) {
+    console.warn('_saveLiUrlInline: missing postId, aborting');
+    return;
+  }
 
   var btn = document.getElementById('li-save-btn-' + postId);
   if (btn) {
@@ -2405,6 +2411,10 @@ window._doSubmitComment = async function(opts) {
 };
 
 window.toggleTaskResolve = function(commentId, postId) {
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    console.warn('toggleTaskResolve: missing or invalid commentId, aborting');
+    return;
+  }
   apiFetch('/post_comments?id=eq.' + commentId, {
     method: 'PATCH',
     headers: {'Prefer': 'return=minimal'},
@@ -2698,6 +2708,10 @@ window._pcsConfirmDeleteComment = function(commentId, postId, isInternalNote) {
 };
 
 window._pcsDoDeleteComment = async function(commentId, postId, isInternalNote) {
+  if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
+    console.warn('_pcsDoDeleteComment: missing or invalid commentId, aborting');
+    return;
+  }
   return window.guardAction('pcs-delete-comment-' + commentId, async function() {
     _removePcsConfirm();
     try {
