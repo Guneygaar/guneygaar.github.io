@@ -28,7 +28,11 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
+<<<<<<< claude/audit-email-system-Ixq0c
 Version format: ?v=YYYYMMDDx. Current: ?v=20260406k
+=======
+Version format: ?v=YYYYMMDDx. Current: ?v=20260406j
+>>>>>>> main-/-root
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -267,7 +271,7 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
    https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
 1. Every push MUST include all four of these in the response:
    a. Summary of every file changed and what changed in each
-   b. Test count (e.g. 316/316 passing)
+   b. Test count (e.g. 444/444 passing)
    c. Version bump (e.g. ?v=20260405a)
    d. PR URL: https://github.com/Guneygaar/guneygaar.github.io/pull/[number]
    No exceptions. Never push without providing all four.
@@ -318,7 +322,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
 Current (verified 2026-04-06):
 Unit test files: 17
 Unit tests:      444 passing, 0 failing
-E2E specs:       8
+E2E specs:       9
 
 Files:
 tests/appstate-compat.test.js
@@ -339,7 +343,7 @@ tests/action-router.test.js
 tests/guard-handlers.test.js
 tests/critical-handlers.test.js
 
-E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
+E2E: tests/e2e/admin-flows.spec.js, client-feed.spec.js, client-flows.spec.js, live-smoke.spec.js, live-smoke-schedule.spec.js, notif-panel.spec.js, pcs.spec.js, role-flows.spec.js, smoke.spec.js
 pcs.spec.js updated for post-redesign selectors: TEST 1 activates Client tab before asserting #pcs-comments-list; TEST 3 activates Client tab before asserting #pcs-comment-input + #pcs-send-btn-client; TEST 4 now asserts the #pcs-stage-pill label (advance button removed); TEST 5 targets #pcs-photo-grid-wrap img and the route handler stubs picsum.photos with a 1×1 PNG; TEST 7 targets #pcs-stage-pill dropdown; TEST 8 invokes window.pcsConfirmDelete() via page.evaluate.
 role-flows.spec.js TEST 11 fixture: owner changed 'Pranav' → 'Creative' (DB role) to match pipeline.js isMine check after Phase 3.5 role standardization.
 notif-render.test.js _notifRelTime "Yesterday" test: setHours(10,0,0,0) → setHours(0,1,0,0) so the date is always >24h ago regardless of current time (the diff < 86400 guard in _notifRelTime returns "X hr ago" before reaching the day comparison if the gap is under 24h).
@@ -410,7 +414,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 316/316 before every push
+1. Vitest must pass 444/444 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().
@@ -611,12 +615,56 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Location: 07-post-load.js comment fetch, render/pipeline.js COMMENTED group
    Status: FIXED (PR#640) — enriched with _clientCommentAt, sorted by
    recency, amber dot on cards with client comments
-1. LinkedIn URL not saving from publish dialog
-   Location: actions/pcs.js ~lines 548-580
-   Status: OPEN
+1. LinkedIn publish flow — 6 bugs fixed in one PR
+   (a) linkedin_link never saved on confirm — _confirmPublish
+       (08-post-actions.js:447) looked for input IDs
+       'publish-li-input-{pid}' and 'li-url-input-{pid}' but
+       _showPublishSheet (actions/pcs.js:734) creates
+       id="pcs-li-url-input". Input always null, URL always ''.
+       FIXED: added 'pcs-li-url-input' as first fallback.
+   (b) No URL validation — any string accepted as LinkedIn URL.
+       FIXED: added linkedin.com domain check before save;
+       rejects non-LinkedIn URLs with toast.
+   (c) Ghost overlay — _confirmPublish never called
+       _removePublishSheet(), so the publish sheet stayed in DOM
+       as a floating backdrop after publish completed.
+       FIXED: added _removePublishSheet() call before closePCS().
+   (d) Confirm/Skip buttons had no id attributes — confirm button
+       could not be disabled during publish (btn always null),
+       Skip button had no guard against double-tap.
+       FIXED: added id="confirm-publish-btn-{pid}" and
+       id="skip-publish-btn-{pid}" to _showPublishSheet buttons.
+   (e) _skipPublish had no in-flight guard — rapid taps fired
+       multiple quickStage calls, each sending 4 notifications
+       (N taps = N x 4 notification rows).
+       FIXED: reads skip button, early-returns if disabled,
+       disables + shows "Skipping..." on first tap.
+   (f) _sendStageNotif dedup guard used Date.now() in key —
+       calls >1ms apart bypassed the guard (effectively useless).
+       FIXED: removed Date.now() from key, added 5-second
+       setTimeout to clear the guard. Same post + same stage
+       within 5 seconds = blocked.
+   (g) libSaveLinkedInUrl (09-library.js) was dead code — not
+       exported to window.*, used wrong PK column (id vs post_id).
+       FIXED: deleted entirely.
+   Location: 08-post-actions.js, actions/pcs.js, 09-library.js
+   Status: FIXED (PR#TBD)
 1. Role preview (admin to Chitra/Pranav/Client) not showing
    correct view in all cases
    Status: OPEN
+1. Notification tap on new_request opens PCS instead of brief sheet
+   Location: 10-ui.js openNotifications() tap handler — notifType
+   'new_request' fell through to openPCS() because data-is-brief
+   was never emitted by _buildItem() and the tap handler did not
+   check notifType. _buildItem only emitted data-notif-type but
+   the routing logic relied on data-is-brief which was always
+   absent.
+   Status: FIXED (PR#TBD) — tap handler isBrief now also matches
+   data-notif-type === 'new_request'. _buildItem emits
+   data-is-brief="1" on new_request notification items so the
+   attribute is present for any code that checks it. Routes to
+   _openBriefSheet(pid) which correctly handles REQ- post_ids
+   via _isRequest flag.
 1. Session persistence — clients getting logged out
    Check: persistSession in 02-session.js Supabase client config
    Status: OPEN
