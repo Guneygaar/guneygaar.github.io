@@ -170,21 +170,21 @@ console.log('LOADED:', 'render/client.js');
     var days = _waitDays(post);
     if (stage === 'awaiting_approval') {
       if (days > 2) {
-        return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(255,75,75,0.05);border:1px dotted rgba(255,75,75,0.18);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#FF4B4B;">' +
+        return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:#FF4B4B0D;border:1px dotted #FF4B4B2E;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#FF4B4B;">' +
           '<span style="width:4px;height:4px;border-radius:50%;background:#FF4B4B;animation:clientPulse 2s infinite;"></span>' +
           'WAITING ' + days + ' DAYS &middot; OVERDUE</span>';
       }
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(246,166,35,0.05);border:1px dotted rgba(246,166,35,0.18);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#F6A623;">' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:#F6A6230D;border:1px dotted #F6A6232E;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#F6A623;">' +
         '<span style="width:4px;height:4px;border-radius:50%;background:#F6A623;animation:clientPulse 2s infinite;"></span>' +
         'AWAITING YOUR APPROVAL</span>';
     }
     if (stage === 'awaiting_brand_input') {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(34,211,238,0.04);border:1px dotted rgba(34,211,238,0.16);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#22D3EE;">' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:#22D3EE0A;border:1px dotted #22D3EE29;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#22D3EE;">' +
         '<span style="width:4px;height:4px;border-radius:50%;background:#22D3EE;animation:clientPulse 2s infinite;"></span>' +
         'TEAM NEEDS YOUR INPUT</span>';
     }
     if (stage === 'published') {
-      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:rgba(62,207,142,0.04);border:1px dotted rgba(62,207,142,0.16);font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#3ECF8E;">' +
+      return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;background:#3ECF8E0A;border:1px dotted #3ECF8E29;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;color:#3ECF8E;">' +
         ICON_CHECK_SM + ' LIVE ON LINKEDIN</span>';
     }
     return '';
@@ -197,7 +197,7 @@ console.log('LOADED:', 'render/client.js');
     var style = document.createElement('style');
     style.id = 'client-pulse-style';
     style.textContent = '@keyframes clientPulse{0%,100%{opacity:1;}50%{opacity:0.35;}}' +
-      '.menu-root-absolute{position:absolute!important;z-index:999999!important;transform:none!important;background:#0d0d0d;border:1px dotted rgba(255,255,255,0.12);border-radius:0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.6);}' +
+      '.menu-root-absolute{position:absolute!important;z-index:999999!important;transform:none!important;background:#0d0d0d;border:1px dotted #FFFFFF1F;border-radius:0;min-width:180px;box-shadow:0 8px 24px #00000099;}' +
       '#app,#root,#client-view{transform:none!important;}';
     document.head.appendChild(style);
   }
@@ -268,7 +268,7 @@ console.log('LOADED:', 'render/client.js');
     /* 4+ : 2x2 grid with +N overlay on last cell */
     var extra = n > 4 ? n - 4 : 0;
     var overlayHtml = extra > 0
-      ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
+      ? '<div style="position:absolute;inset:0;background:#0000008C;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
     return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
@@ -386,9 +386,9 @@ console.log('LOADED:', 'render/client.js');
     var pid = _esc(post.post_id || post.id || '');
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;' +
-      'background:none;border:none;border-right:1px solid rgba(255,255,255,0.03);' +
+      'background:none;border:none;border-right:1px solid #FFFFFF08;' +
       'cursor:pointer;';
-    var lastBtnStyle = btnStyle.replace('border-right:1px solid rgba(255,255,255,0.03);', '');
+    var lastBtnStyle = btnStyle.replace('border-right:1px solid #FFFFFF08;', '');
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
@@ -416,14 +416,14 @@ console.log('LOADED:', 'render/client.js');
   /* ---- approve popup (singleton) ---- */
 
   function _approvePopupHtml() {
-    return '<div id="client-approve-popup" style="display:none;position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;">' +
-      '<div style="background:#1a1a1a;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center;">' +
+    return '<div id="client-approve-popup" style="display:none;position:fixed;inset:0;z-index:1500;background:#000000BF;align-items:center;justify-content:center;">' +
+      '<div style="background:#1a1a1a;border:1px solid #FFFFFF14;border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center;">' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:16px;color:#e8e2d9;">Approve this post?</div>' +
         '<div id="client-approve-title" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#C8A84B;margin-top:10px;"></div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#666;margin-top:10px;line-height:1.5;">This will send it for scheduling. Your team will be notified immediately.</div>' +
         '<div style="display:flex;gap:10px;margin-top:20px;justify-content:center;">' +
-          '<button data-action="approveCancel" style="flex:1;padding:10px;background:none;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>' +
-          '<button data-action="approveConfirm" style="flex:1;padding:10px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;color:#22c55e;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Yes, Approve</button>' +
+          '<button data-action="approveCancel" style="flex:1;padding:10px;background:none;border:1px solid #FFFFFF1A;border-radius:8px;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Cancel</button>' +
+          '<button data-action="approveConfirm" style="flex:1;padding:10px;background:#22C55E1A;border:1px solid #22C55E4D;border-radius:8px;color:#22c55e;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">Yes, Approve</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -432,7 +432,7 @@ console.log('LOADED:', 'render/client.js');
   /* ---- card 3-dot menu (singleton, repositioned on open) ---- */
 
   var _menuBtnStyle = 'display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;';
-  var _menuBtnBorder = 'border-top:1px solid rgba(255,255,255,0.06);';
+  var _menuBtnBorder = 'border-top:1px solid #FFFFFF0F;';
 
   function _handleCardMenuAction(action, postId) {
     var post = (window.AppState.posts.all || []).find(function (p) { return p.post_id === postId || p.id === postId; });
@@ -564,7 +564,7 @@ console.log('LOADED:', 'render/client.js');
       : _esc(initial);
     var avatarStyle = isClient
       ? 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#111111;'
-      : 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:rgba(' + _hexToRgb(color) + ',0.12);';
+      : 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:' + color + '1F;';
     return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
       '<div style="' + avatarStyle + '">' + avatarInner + '</div>' +
       '<div style="flex:1;min-width:0;">' +
@@ -590,14 +590,6 @@ console.log('LOADED:', 'render/client.js');
         '</div>' +
       '</div>' +
     '</div>';
-  }
-
-  function _hexToRgb(hex) {
-    var h = hex.replace('#', '');
-    var r = parseInt(h.substring(0, 2), 16);
-    var g = parseInt(h.substring(2, 4), 16);
-    var b = parseInt(h.substring(4, 6), 16);
-    return r + ',' + g + ',' + b;
   }
 
   function _commentsListHtml(post) {
@@ -687,9 +679,9 @@ console.log('LOADED:', 'render/client.js');
   /* ---- top bar ---- */
 
   function _pillColor(n) {
-    if (n >= 14) return { c: '#FF4B4B', bg: 'rgba(255,75,75,0.04)', bc: 'rgba(255,75,75,0.3)' };
-    if (n >= 7)  return { c: '#F6A623', bg: 'rgba(246,166,35,0.04)', bc: 'rgba(246,166,35,0.3)' };
-    return { c: '#C8A84B', bg: 'rgba(200,168,75,0.04)', bc: 'rgba(200,168,75,0.3)' };
+    if (n >= 14) return { c: '#FF4B4B', bg: '#FF4B4B0A', bc: '#FF4B4B4D' };
+    if (n >= 7)  return { c: '#F6A623', bg: '#F6A6230A', bc: '#F6A6234D' };
+    return { c: '#C8A84B', bg: '#C8A84B0A', bc: '#C8A84B4D' };
   }
 
   var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
@@ -701,7 +693,7 @@ console.log('LOADED:', 'render/client.js');
       var pc = _pillColor(awaitCount);
       pill = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;padding:3px 9px;border-radius:10px;background:' + pc.bg + ';color:' + pc.c + ';border:1px dotted ' + pc.bc + ';">' + awaitCount + ' AWAITING</span>';
     }
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px dotted rgba(255,255,255,0.08);">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px dotted #FFFFFF14;">' +
       '<div style="display:flex;align-items:baseline;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#555;">' + _greeting() + '</span>' +
         (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
@@ -714,10 +706,10 @@ console.log('LOADED:', 'render/client.js');
         '</button>' +
         '<div style="position:relative;">' +
           '<button data-action="top-menu-toggle" style="background:none;border:none;color:#444;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
-          '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px dotted rgba(255,255,255,0.12);border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.6);">' +
+          '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px dotted #FFFFFF1F;border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px #00000099;">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
-            '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Light Mode</button>' +
-            '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid rgba(255,255,255,0.06);">Sign Out</button>' +
+            '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #FFFFFF0F;">Light Mode</button>' +
+            '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #FFFFFF0F;">Sign Out</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -742,7 +734,7 @@ console.log('LOADED:', 'render/client.js');
       var color = _clientActiveNav === action ? '#C8A84B' : '#555';
       return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
     };
-    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:rgba(27,31,35,0.97);border-top:1px solid rgba(255,255,255,0.06);z-index:100;max-width:430px;margin:0 auto;';
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#1B1F23;border-top:1px solid #FFFFFF0F;z-index:100;max-width:430px;margin:0 auto;';
     nav.className = '';
     nav.innerHTML =
       '<button class="tab-btn" data-tab="tasks" data-action="nav-feed" style="' + btnStyle('feed') + '">' +
@@ -1582,7 +1574,7 @@ console.log('LOADED:', 'render/client.js');
     html += '<div style="padding-bottom:72px;max-width:560px;margin:0 auto;">';
 
     if (!hasContent) {
-      html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:rgba(255,255,255,0.35);">Nothing awaiting your review.</div>';
+      html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:#FFFFFF59;">Nothing awaiting your review.</div>';
     } else {
       if (buckets.approval.length) {
         html += _sectionLabel('&#9670; Awaiting Your Approval');
@@ -1684,7 +1676,7 @@ console.log('LOADED:', 'render/client.js');
     overlay.id = 'client-post-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
     overlay.innerHTML =
-      '<div style="position:sticky;top:0;z-index:10;background:rgba(27,31,35,0.98);padding:0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+      '<div style="position:sticky;top:0;z-index:10;background:#1B1F23;padding:0;border-bottom:1px solid #FFFFFF0F;">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding-bottom:72px;">' +

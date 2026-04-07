@@ -279,11 +279,11 @@ window.buildPipelineCard = function(p, listKey) {
     cardIsStale ? 'var(--c-amber)' :
     stageLC === 'scheduled' ? 'var(--c-cyan)' :
     stageLC === 'awaiting_brand_input' ? 'var(--c-purple)' :
-    'rgba(255,255,255,0.06)';
+    '#FFFFFF0F';
 
   // Row wash background
-  var rowBg = _isBrief ? 'rgba(200,168,75,0.04)' :
-    _hasComments ? 'rgba(200,168,75,0.04)' : 'transparent';
+  var rowBg = _isBrief ? '#C8A84B0A' :
+    _hasComments ? '#C8A84B0A' : 'transparent';
 
   // FIX 2 -- Date
   var dateInfo = formatPipelineDate(tdRaw);
@@ -329,7 +329,7 @@ window.buildPipelineCard = function(p, listKey) {
     chipHtml =
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
       'letter-spacing:0.1em;text-transform:uppercase;' +
-      'background:rgba(200,168,75,0.12);border:1px solid rgba(200,168,75,0.25);' +
+      'background:#C8A84B1F;border:1px solid #C8A84B40;' +
       'color:#C8A84B;font-weight:600;' +
       'padding:3px 8px;flex-shrink:0;' +
       'display:flex;align-items:center;gap:4px;">' +
@@ -368,7 +368,7 @@ window.buildPipelineCard = function(p, listKey) {
       var ownerInitial = (p.owner || '').slice(0,2).toUpperCase();
       if (ownerInitial) {
         rightHtml = '<div style="width:24px;height:24px;border-radius:50%;' +
-          'background:rgba(255,255,255,0.05);font-family:var(--mono);' +
+          'background:#FFFFFF0D;font-family:var(--mono);' +
           'font-size:7px;color:' + ownerColor + ';display:flex;align-items:center;' +
           'justify-content:center;flex-shrink:0;">' + esc(ownerInitial) + '</div>';
       }
@@ -379,15 +379,15 @@ window.buildPipelineCard = function(p, listKey) {
   var innerCard =
     '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;">' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:rgba(255,255,255,0.6);">' + esc(dateInfo.text) + '</div>' +
+        '<div style="font-family:var(--mono);font-size:8px;letter-spacing:0.04em;margin-bottom:4px;color:#FFFFFF99;">' + esc(dateInfo.text) + '</div>' +
         '<div style="font-family:var(--sans);font-size:15px;font-weight:500;color:#ccc;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(title) + '</div>' +
-        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:rgba(255,255,255,0.55);letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
+        (metaLine ? '<div style="font-family:var(--mono);font-size:8px;color:#FFFFFF8C;letter-spacing:0.04em;text-transform:uppercase;">' + esc(metaLine) + '</div>' : '') +
       '</div>' +
       (rightHtml ? '<div style="flex-shrink:0;">' + rightHtml + '</div>' : '') +
     '</div>';
 
   // FIX 1 -- Outer wrapper with 3px color bar + bottom divider
-  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.07);cursor:pointer;background:' + rowBg + ';">' +
+  return '<div data-post-id="' + esc(id) + '" data-list="' + esc(listKey||'pipeline') + '" data-stage="' + esc(stageLC) + '" id="upc-' + esc(id) + '" style="display:flex;align-items:stretch;border-bottom:1px solid #FFFFFF12;cursor:pointer;background:' + rowBg + ';">' +
     '<div style="width:3px;flex-shrink:0;background:' + barColor + ';"></div>' +
     '<div style="flex:1;">' + innerCard + '</div>' +
   '</div>';
@@ -710,7 +710,7 @@ window.updatePipelineNarrative = function(posts) {
         narrEl.style.color = 'var(--c-green)';
       } else {
         narrEl.textContent = 'All clear';
-        narrEl.style.color = 'rgba(255,255,255,0.4)';
+        narrEl.style.color = '#FFFFFF66';
       }
     }
     return;
@@ -1061,7 +1061,7 @@ window._renderPipelineInner = function() {
     } else if (stageKey === 'ready') {
       summaryText = stagePosts.length + ' ready to schedule \u00b7 sort now';
     }
-    var summaryHtml = summaryText ? '<div style="padding:5px 18px 5px 21px;font-family:var(--mono);font-size:7px;color:#333;letter-spacing:0.04em;border-bottom:1px solid var(--dotline);background:rgba(255,255,255,0.01);">' + summaryText + '</div>' : '';
+    var summaryHtml = summaryText ? '<div style="padding:5px 18px 5px 21px;font-family:var(--mono);font-size:7px;color:#333;letter-spacing:0.04em;border-bottom:1px solid var(--dotline);background:#FFFFFF03;">' + summaryText + '</div>' : '';
 
     return `
       <div class="group-section" id="group-section-${esc(stage)}" data-stage="${esc(stage)}">
@@ -1181,7 +1181,7 @@ window._renderPipelineInner = function() {
       'align-items:center;gap:8px;">' +
       '<div class="group-count">' + commentedPosts.length + '</div>' +
       '</div></div>' +
-      '<div style="font-size:8px;color:rgba(255,255,255,0.3);' +
+      '<div style="font-size:8px;color:#FFFFFF4D;' +
       'padding:0 16px 8px;letter-spacing:0.04em;">' +
       commentedPosts.length + ' post' +
       (commentedPosts.length > 1 ? 's' : '') +

@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-07
+# Last updated: 2026-04-08
 
 # All facts verified from actual codebase
 
@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407h
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -206,10 +206,12 @@ R2 public URL: pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev
 ## SECTION 6 — DESIGN SYSTEM (locked — never deviate)
 
 Zero border-radius on inputs and buttons.
-No rgba for text or borders — solid hex only.
+No rgba() anywhere — use 8-digit hex (#RRGGBBAA) for transparency.
+All 451+ rgba() values converted to hex in PR#TBD (2026-04-08).
 Approved rgba exceptions (must be semi-transparent by design):
   .pcs-more-ov background: rgba(0,0,0,0.62) — "+N more" photo overlay
   .pcs-more-l color: rgba(255,255,255,0.6) — "+N more" label text
+  SVG fill in index.html L1140 — kept as rgba for SVG compat
 
 Colors:
 App bg:          #080808
@@ -1378,6 +1380,21 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    _showTaskAssign (line 2584) filtered to exclude role 'Client'
    so task assignment remains agency-only. Notification user_role
    at line 2446 reads _member.role ('Client') — correct.
+
+1. Codebase-wide rgba() violations — 451 occurrences across 13 files
+   Location: styles.css (297), index.html (25), preview/index.html (10),
+   10-ui.js (8 incl. dynamic insGetRgba pattern), render/client.js (35
+   incl. dynamic _hexToRgb pattern), render/pipeline.js (12),
+   render/dashboard.js (15), render/brief.js (6), actions/pcs.js (22),
+   07-post-load.js (15), 09-approval.js (6), 09-library.js (3),
+   06-post-create.js (1), mockups/pcs-fullpage.html (1).
+   Status: FIXED (PR#TBD) — all rgba() converted to 8-digit hex
+   (#RRGGBBAA) or 6-digit hex (for alpha ≥ 0.9). insGetRgba() replaced
+   with insGetHexA(alpha) using _hexAlpha helper. render/client.js
+   _hexToRgb() deleted (dead code after conversion). Approved exceptions
+   kept: .pcs-more-ov, .pcs-more-l, SVG fill in index.html L1140,
+   mockup photo overlay. 508/508 unit passing.
+   Bumped to ?v=20260408a.
 
 ## SECTION 13 — STABILITY ROADMAP
 
