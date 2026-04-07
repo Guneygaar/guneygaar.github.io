@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260407c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260407d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -317,7 +317,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
 
 Current (verified 2026-04-06):
 Unit test files: 20
-Unit tests:      487 passing, 0 failing
+Unit tests:      492 passing, 0 failing
 E2E specs:       9
 
 Files:
@@ -413,7 +413,7 @@ Pages branch:   main-/-root
 1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
-1. Vitest must pass 487/487 before every push
+1. Vitest must pass 492/492 before every push
 1. Posts get _commentCount (int) and _clientCommentAt (ISO string or null)
    after loadPosts() — these are runtime-enriched fields, not DB columns
 1. Requests from requests table get _isRequest:true flag after loadPosts().
@@ -540,7 +540,8 @@ window._renderPCS, window._pcsTabSwitch, window._pcsChipDrop,
 window._updateSubtitle, window._pcsTitleEdit,
 window.changeStage, window._showPublishSheet, window._removePublishSheet,
 window._saveLiUrlInline, window.loadPcsComments, window._showStageConfirm,
-window._buildStageProgress, window._buildInlineActions, window._pcsEditLink,
+window._buildStageProgress, window._buildInlineActions, window._buildDriveLinkCard,
+window._pcsEditLink,
 window.pcsCloseAttach, window.pcsSaveAttach, window._loadPCSActivity,
 window._buildInfoGrid, window._buildNotes, window._renderAdvanceButton,
 window._renderActivityCount, window._removePcsConfirm, window.pcsConfirmDelete,

@@ -238,6 +238,21 @@ window._renderPCS = function(postId) {
   }
   if (photoGridWrap) photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
 
+  // b2) Drive link card
+  var driveLinkWrap = document.getElementById('pcs-drive-link-wrap');
+  if (driveLinkWrap) {
+    var driveUrl = post.drive_link || post.driveLink || null;
+    if (driveUrl) {
+      driveLinkWrap.style.display = 'block';
+      driveLinkWrap.innerHTML = _buildDriveLinkCard(driveUrl, canManage, post.post_id || post.id);
+    } else if (canManage) {
+      driveLinkWrap.style.display = 'block';
+      driveLinkWrap.innerHTML = _buildDriveLinkCard(null, canManage, post.post_id || post.id);
+    } else {
+      driveLinkWrap.style.display = 'none';
+    }
+  }
+
   // c) Title
   var elTitle = document.getElementById('pcs-topbar-title');
   if (elTitle) {
@@ -363,6 +378,65 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
 
   return gridHtml + inputHtml;
 }
+
+// -- Drive link card builder --
+function _buildDriveLinkCard(driveUrl, canManage, postId) {
+  if (driveUrl) {
+    return '<div style="padding:10px 16px 0 16px;">' +
+      '<div style="background:#0d1117;border:1px solid #1a1f27;border-radius:8px;overflow:hidden;">' +
+        '<a href="' + esc(driveUrl) + '" target="_blank" rel="noopener" ' +
+          'style="display:flex;align-items:center;gap:10px;padding:12px 14px;text-decoration:none;">' +
+          '<div style="width:40px;height:40px;border-radius:6px;background:#1a1a0a;border:1px solid #3d2e0a;' +
+            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F6A623" stroke-width="1.5">' +
+              '<path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:12px;font-weight:600;color:#e8eaed;margin-bottom:2px;">View on Drive</div>' +
+            '<div style="font-size:10px;color:#556070;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              esc(driveUrl) +
+            '</div>' +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#556070" stroke-width="2">' +
+            '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>' +
+            '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' +
+          '</svg>' +
+        '</a>' +
+        (canManage ?
+          '<div style="padding:0 14px 10px;display:flex;gap:8px;">' +
+            '<button data-action="pcs-edit-drive-link" data-id="' + esc(postId) + '" ' +
+              'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.1em;' +
+              'text-transform:uppercase;color:#556070;background:none;border:none;padding:0;cursor:pointer;">' +
+              'Edit link' +
+            '</button>' +
+            '<button data-action="pcs-clear-drive-link" data-id="' + esc(postId) + '" ' +
+              'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.1em;' +
+              'text-transform:uppercase;color:#FF4B4B;background:none;border:none;padding:0;cursor:pointer;">' +
+              'Remove' +
+            '</button>' +
+          '</div>'
+        : '') +
+      '</div>' +
+    '</div>';
+  } else if (canManage) {
+    return '<div style="padding:10px 16px 0 16px;">' +
+      '<button data-action="pcs-edit-drive-link" data-id="' + esc(postId) + '" ' +
+        'style="width:100%;background:none;border:1px dashed #1a1f27;border-radius:8px;' +
+        'padding:12px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+        'letter-spacing:0.1em;text-transform:uppercase;color:#556070;cursor:pointer;' +
+        'display:flex;align-items:center;justify-content:center;gap:6px;">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#556070" stroke-width="2">' +
+          '<path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>' +
+          '<path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>' +
+        '</svg>' +
+        '+ Add drive link' +
+      '</button>' +
+    '</div>';
+  }
+  return '';
+}
+window._buildDriveLinkCard = _buildDriveLinkCard;
 
 // -- Chips row builder (stage in topbar, not here) --
 // Order: Owner → Date → Format → Pillar → Location

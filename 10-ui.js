@@ -1886,6 +1886,38 @@ if (!window._routerBound) {
             if (typeof fn === 'function') fn();
             else console.warn('[ActionRouter] Unknown close fn:', actionEl.dataset.close);
           });
+        case 'pcs-edit-drive-link': {
+          var _dlPostId = actionEl.dataset.id;
+          var _dlCurrent = window.AppState && window.AppState.pcs && window.AppState.pcs.post
+            ? (window.AppState.pcs.post.drive_link || window.AppState.pcs.post.driveLink || '')
+            : '';
+          var _dlNew = prompt('Drive link:', _dlCurrent);
+          if (_dlNew === null) break;
+          _dlNew = _dlNew.trim();
+          apiFetch('/posts?post_id=eq.' + encodeURIComponent(_dlPostId), {
+            method: 'PATCH',
+            body: JSON.stringify({ drive_link: _dlNew || null })
+          }).then(function() {
+            if (window.AppState && window.AppState.pcs && window.AppState.pcs.post) {
+              window.AppState.pcs.post.drive_link = _dlNew || null;
+            }
+            openPCS(_dlPostId, '');
+          }).catch(function(err) { console.error('drive link update failed', err); });
+          break;
+        }
+        case 'pcs-clear-drive-link': {
+          var _clPostId = actionEl.dataset.id;
+          apiFetch('/posts?post_id=eq.' + encodeURIComponent(_clPostId), {
+            method: 'PATCH',
+            body: JSON.stringify({ drive_link: null })
+          }).then(function() {
+            if (window.AppState && window.AppState.pcs && window.AppState.pcs.post) {
+              window.AppState.pcs.post.drive_link = null;
+            }
+            openPCS(_clPostId, '');
+          }).catch(function(err) { console.error('drive link clear failed', err); });
+          break;
+        }
         default:
           if (window._appStateDevMode) console.warn('[ActionRouter] Unknown action:', type);
           return;

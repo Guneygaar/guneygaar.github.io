@@ -4920,12 +4920,13 @@ label.pcs-date-tap:active { transform: scale(0.98); }
 }
 .nps-req { color:var(--red); }
 .nps-label {
-  font-family: var(--mono);
-  font-size: 7px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: #555;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #E8E8E8;
   margin-bottom: 5px;
+  letter-spacing: 0;
+  text-transform: none;
   display: block;
 }
 .nps-label-hint {
@@ -5009,6 +5010,14 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   -webkit-appearance: none;
   appearance: none;
   color-scheme: dark;
+}
+input[type="date"].nps-select {
+  text-align: left;
+  -webkit-text-align: left;
+  direction: ltr;
+}
+input[type="date"].nps-select::-webkit-date-and-time-value {
+  text-align: left;
 }
 .nps-full {
   padding: 10px 18px;
