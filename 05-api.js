@@ -27,8 +27,8 @@ async function apiFetch(path, options = {}) {
   // Supabase blip, an RLS policy, or a multi-tab token race. Killing the
   // session on any 401 is the #1 cause of unexpected logouts.
   if (res.status === 401) {
-    const newToken = await refreshSession();
-    if (newToken) {
+    const result = await refreshSession();
+    if (result && result.token) {
       const retry = await fetch(url, {
         ...options,
         headers: getAuthHeaders(options.headers || {}),
@@ -42,15 +42,19 @@ async function apiFetch(path, options = {}) {
       const body = await retry.text().catch(() => '');
       throw new Error(`Supabase ${retry.status}: ${body}`);
     }
-    // Refresh failed  -  token might be genuinely expired.
-    // Show a soft session-expired notification without destroying tokens.
-    // The user can manually log out or refresh the page.
-    console.warn('apiFetch: 401 and refresh failed  -  session may have expired');
+    // Refresh failed  -  branch on error type
+    if (result && result.error === 'auth_expired') {
+      // Genuine auth expiry — clear tokens and force re-login
+      if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+      throw new Error('Supabase 401: session expired');
+    }
+    // Network or server error — do NOT clear tokens, show soft banner
+    console.warn('apiFetch: 401 and refresh failed (' + (result && result.error) + ')');
     showErrorBanner(
-      'Your session may have expired.',
-      'Please refresh the page to log in again.'
+      'Connection issue  -  retrying.',
+      'Check your internet and try again.'
     );
-    throw new Error('Supabase 401: session expired');
+    throw new Error('Supabase 401: refresh ' + (result && result.error));
   }
 
   if (!res.ok) {

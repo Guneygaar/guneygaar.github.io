@@ -213,40 +213,42 @@ async function saveAdminEdit() {
 }
 
 async function clientApprove(postId, btn) {
-  const post = getPostById(postId);
+  var post = getPostById(postId);
   if (!post) return;
-  const alreadyApproved = (post.stage||'') === 'scheduled';
+  var alreadyApproved = (post.stage||'') === 'scheduled';
   if (alreadyApproved) { showToast('Already approved ok', 'success'); return; }
-  if (btn) btn.disabled = true;
-  try {
-    // scheduled -> owner remains unchanged (per ownership rules)
-    await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
-    });
-    await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-    window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
-    const confirmEl = document.getElementById(`approved-confirm-${postId}`);
-    if (confirmEl) confirmEl.classList.add('show');
-    var cardEl = document.getElementById('approved-confirm-' + postId);
-    if (cardEl) {
-      var parent = cardEl.parentNode;
-      if (parent) {
-        var actions = parent.querySelector('[style*="display:flex;border-top"]') ||
-          parent.querySelector('.bp-actions');
-        if (actions) {
-          actions.innerHTML =
-            '<div style="flex:1;padding:13px 16px;' +
-            'font-family:\'IBM Plex Mono\',monospace;' +
-            'font-size:10px;letter-spacing:0.1em;text-transform:uppercase;' +
-            'color:#3ECF8E;display:flex;align-items:center;gap:8px;">' +
-            '&#x2713; Approved -- team notified</div>';
+  return window.guardAction('client-approve-' + postId, async function() {
+    if (btn) btn.disabled = true;
+    try {
+      // scheduled -> owner remains unchanged (per ownership rules)
+      await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+        method: 'PATCH',
+        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
+      });
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+      window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
+      var confirmEl = document.getElementById('approved-confirm-' + postId);
+      if (confirmEl) confirmEl.classList.add('show');
+      var cardEl = document.getElementById('approved-confirm-' + postId);
+      if (cardEl) {
+        var parent = cardEl.parentNode;
+        if (parent) {
+          var actions = parent.querySelector('[style*="display:flex;border-top"]') ||
+            parent.querySelector('.bp-actions');
+          if (actions) {
+            actions.innerHTML =
+              '<div style="flex:1;padding:13px 16px;' +
+              'font-family:\'IBM Plex Mono\',monospace;' +
+              'font-size:10px;letter-spacing:0.1em;text-transform:uppercase;' +
+              'color:#3ECF8E;display:flex;align-items:center;gap:8px;">' +
+              '&#x2713; Approved -- team notified</div>';
+          }
         }
       }
-    }
-    setStage(post, 'scheduled', 'clientApprove');
-    setTimeout(() => loadPostsForClient(), 1200);
-  } catch (err) { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'client-approve'); }
+      setStage(post, 'scheduled', 'clientApprove');
+      setTimeout(function() { if (typeof loadPostsForClient === 'function') loadPostsForClient(); }, 1200);
+    } catch (err) { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'client-approve'); }
+  });
 }
 
 async function clientAcknowledge(postId) {

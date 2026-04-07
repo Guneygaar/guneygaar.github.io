@@ -36,35 +36,114 @@ function _normaliseRole(r) {
 
 let _refreshInProgress = null;
 
+// -- Cross-tab token sync: pick up tokens saved by other tabs --
+window.addEventListener('storage', function(e) {
+  if (e.key === 'sb_access_token' && !e.newValue) {
+    // Another tab cleared the token (logged out or auth_expired)
+    if (window._authReady) showLoginOverlay();
+  }
+});
+
+// Helper: clear all session tokens and show login
+function _clearSessionAndLogin() {
+  localStorage.removeItem('sb_access_token');
+  localStorage.removeItem('sb_refresh_token');
+  localStorage.removeItem('hinglish_role');
+  localStorage.removeItem('hinglish_email');
+  localStorage.removeItem('hinglish_name');
+  if (typeof stopRealtime === 'function') stopRealtime();
+  showLoginOverlay();
+}
+window._clearSessionAndLogin = _clearSessionAndLogin;
+
 async function refreshSession() {
   if (_refreshInProgress) return _refreshInProgress;
-  const refreshToken = localStorage.getItem('sb_refresh_token');
-  if (!refreshToken) return null;
-  _refreshInProgress = (async () => {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-        body: JSON.stringify({ refresh_token: refreshToken }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      if (data.access_token) {
-        localStorage.setItem('sb_access_token', data.access_token);
-        if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
-        return data.access_token;
-      }
-    } catch (err) {
-      console.error('[auth] refreshSession failed', err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'refresh-session');
-    }
-    return null;
-  })();
+  var refreshToken = localStorage.getItem('sb_refresh_token');
+  if (!refreshToken) return { error: 'auth_expired' };
+
+  // -- Cross-tab lock: prevent two tabs from using the same refresh token --
+  var lockTs = parseInt(localStorage.getItem('_srtd_refresh_lock') || '0', 10);
+  if (lockTs && (Date.now() - lockTs) < 10000) {
+    // Another tab is refreshing — wait for its result
+    return new Promise(function(resolve) {
+      var oldToken = localStorage.getItem('sb_access_token') || '';
+      var attempts = 0;
+      var pollId = setInterval(function() {
+        attempts++;
+        var current = localStorage.getItem('sb_access_token') || '';
+        if (current && current !== oldToken) {
+          clearInterval(pollId);
+          resolve({ token: current });
+        } else if (attempts >= 33) { // ~10 seconds at 300ms
+          clearInterval(pollId);
+          // Other tab may have crashed — fall through to own refresh
+          _doRefresh(refreshToken).then(resolve);
+        }
+      }, 300);
+    });
+  }
+
+  _refreshInProgress = _doRefresh(refreshToken);
   try {
     return await _refreshInProgress;
   } finally {
     _refreshInProgress = null;
   }
+}
+
+async function _doRefresh(refreshToken) {
+  try {
+    localStorage.setItem('_srtd_refresh_lock', String(Date.now()));
+    var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
+      return { error: 'auth_expired' };
+    }
+    if (!res.ok) {
+      return { error: 'server' };
+    }
+    var data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem('sb_access_token', data.access_token);
+      if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
+      return { token: data.access_token };
+    }
+    return { error: 'server' };
+  } catch (err) {
+    // TypeError = network/DNS/offline failure
+    if (err && err.name === 'TypeError') {
+      console.warn('[auth] refreshSession network error', err.message);
+      return { error: 'network' };
+    }
+    console.error('[auth] refreshSession failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'refresh-session');
+    return { error: 'network' };
+  } finally {
+    localStorage.removeItem('_srtd_refresh_lock');
+  }
+}
+
+// -- LAYER 3: visibilitychange — refresh token when app regains focus --
+if (!window._visibilityRefreshBound) {
+  window._visibilityRefreshBound = true;
+  document.addEventListener('visibilitychange', async function() {
+    if (document.visibilityState !== 'visible') return;
+    if (!window._authReady) return;
+    if (window.location.hash.includes('access_token')) return;
+
+    var refreshToken = localStorage.getItem('sb_refresh_token');
+    if (!refreshToken) return;
+
+    var result = await refreshSession();
+    if (result && result.error === 'auth_expired') {
+      _clearSessionAndLogin();
+    }
+    // On network/server error — do nothing, keep existing session
+    // On success — new token already saved by refreshSession()
+  });
 }
 
 function showLoginOverlay() {
@@ -203,7 +282,8 @@ async function handleMagicLinkToken(accessToken, _retried) {
     });
     if (!userRes.ok) {
       if (!_retried) {
-        const newToken = await refreshSession();
+        const result = await refreshSession();
+        var newToken = result && result.token;
         if (newToken) { handleMagicLinkToken(newToken, true); return; }
       }
       showLoginOverlay();
@@ -273,10 +353,11 @@ function activateRole(role) {
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
         try {
-          var newToken = await refreshSession();
-          if (!newToken) {
-            console.warn('[auth] client token refresh returned null');
-            window.logError && window.logError('Client token refresh returned null', '', 'client-token-refresh');
+          var result = await refreshSession();
+          if (result && result.error === 'auth_expired') {
+            _clearSessionAndLogin();
+          } else if (result && result.error) {
+            console.warn('[auth] client token refresh: ' + result.error);
           }
         } catch(err) {
           console.error('[auth] client token refresh threw', err);

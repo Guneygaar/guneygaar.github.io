@@ -381,9 +381,11 @@ function startRealtime() {
     window.AppState.timers.tokenRefresh = setInterval(async () => {
       if (!localStorage.getItem('sb_refresh_token')) return;
       try {
-        const newToken = await refreshSession();
-        if (!newToken) {
-          console.warn('Background token refresh failed  -  user may need to re-login');
+        var result = await refreshSession();
+        if (result && result.error === 'auth_expired') {
+          if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+        } else if (result && result.error) {
+          console.warn('Background token refresh: ' + result.error);
         }
       } catch (e) {
         console.error('[post-load] token refresh failed', e);

@@ -39,19 +39,39 @@ async function _startRouter() {
     if (savedRole) window.AppState.user.effectiveRole = savedRole;
     // Try to refresh the session silently first
     if (refreshToken) {
-      const newToken = await refreshSession();
-      if (newToken) {
+      const result = await refreshSession();
+      if (result && result.token) {
         activateRole(savedRole);
+        window._authReady = true;
         return;
       }
+      if (result && result.error === 'auth_expired') {
+        // Genuine expiry — clear and show login
+        if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+        window._authReady = true;
+        return;
+      }
+      // Network/server error — keep tokens, try with stale token
+      if (savedToken) {
+        activateRole(savedRole);
+        window._authReady = true;
+        return;
+      }
+      // No saved token and refresh failed with network error — show soft banner
+      showErrorBanner('Connection issue', 'Check your internet and try again.');
+      showLoginOverlay();
+      window._authReady = true;
+      return;
     }
     if (savedToken) {
       activateRole(savedRole);
+      window._authReady = true;
       return;
     }
   }
 
   showLoginOverlay();
+  window._authReady = true;
 }
 
 // With defer, DOMContentLoaded may already have fired by the time this script
