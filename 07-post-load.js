@@ -620,6 +620,13 @@ function renderAll() {
   const _libDefault = ['scheduled','published'];
   const libCount = window.AppState.posts.all.filter(p => _libDefault.includes(p.stage || '')).length;
   if (ll) ll.textContent = `${libCount} posts`;
+
+  // Deep-link: open PCS for ?open=POST_ID after posts load
+  if (window._pendingOpenPost && window.AppState.posts.loaded) {
+    var _pid = window._pendingOpenPost;
+    window._pendingOpenPost = null;
+    if (typeof openPCS === 'function') openPCS(_pid);
+  }
 }
 
 function updateStats() {
