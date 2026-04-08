@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -208,6 +208,7 @@ R2 public URL: pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev
 Zero border-radius on inputs and buttons.
 No rgba() anywhere — use 8-digit hex (#RRGGBBAA) for transparency.
 All 451+ rgba() values converted to hex in PR#TBD (2026-04-08).
+130 off-palette hex colors consolidated to design system in PR#TBD (2026-04-08).
 Approved rgba exceptions (must be semi-transparent by design):
   .pcs-more-ov background: rgba(0,0,0,0.62) — "+N more" photo overlay
   .pcs-more-l color: rgba(255,255,255,0.6) — "+N more" label text
@@ -215,6 +216,7 @@ Approved rgba exceptions (must be semi-transparent by design):
 
 Colors:
 App bg:          #080808
+Surface:         #0d0d12
 Comments bg:     #191924
 Client comments: #0d0d12
 Internal notes:  #111008
@@ -1402,6 +1404,26 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) — changed all four values from 100vh to
    100dvh (dynamic viewport height). 508/508 unit passing.
    Bumped to ?v=20260408b.
+1. Design system colour consolidation — 89% of CSS colours off-palette
+   Location: styles.css — 130 one-off hex values across dark backgrounds,
+   gray text, and near-white colours were not using design system colours.
+   CSS custom properties (--bg, --surface, --surface2, --surface3, --muted,
+   --muted2, --text2, --text-tertiary) also pointed to non-standard values.
+   Status: FIXED (PR#TBD) — 130 replacements across styles.css:
+   Dark backgrounds: #0d0d0d/#0f0f0f→#080808, #111111/#111318/#141414/
+   #141420/#0a0a0f/#0c0c18/#0e0e16/#0f0f16/#0f0f1a/#10101a→#0d0d12,
+   #191919/#1a1a1a/#1a1a28/#1a1a2a/#1a1a2e/#1c1c28/#1c1c2a/#1c1c2c/
+   #1e1e2e/#222235/#252525/#222222/#28283a/#2a2a36/#2a2a3a/#2a2a2a/
+   #1e1e26→#191924. Gray text: #555/#555555/#555566/#636366/#888/#777/
+   #444/#333→#8E8E93, #aaa/#BBBBBB→#AEAEB2, #ccc/#e8e2d9→#E8E8E8.
+   Near-white: #F0F0F0→#E8E8E8. LinkedIn: #0A66C2→#0a66c2 (lowercase).
+   CSS tokens updated: --surface=#0d0d12, --surface2=#191924,
+   --surface3=#191924, --muted=#8E8E93, --muted2=#191924,
+   --text2=#AEAEB2, --text-tertiary=#8E8E93, --bg=#0d0d12.
+   Not changed: #1b1f23 (client-mode external brand), #9090A0/#52525c/
+   #6e6e80/#302a4a/#333344 (specialized UI accents), all 8-digit hex
+   alpha values, rgba() approved exceptions, SVG values, mockups, tests.
+   508/508 unit passing. Bumped to ?v=20260408c.
 
 ## SECTION 13 — STABILITY ROADMAP
 
