@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1817,6 +1817,30 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    setSelectionRange. _pcsClearReply now sets inp.value = '' when
    cancelling reply. Works on both client and notes inputs.
    508/508 unit passing. Bumped to ?v=20260409d.
+1. PCS micro fixes — 5 targeted visual fixes
+   Location: actions/pcs.js, styles.css, index.html
+   Scope:
+   (a) Overdue badge bare text — .pcs-od-pill restyled: removed
+       border, background, padding. IBM Plex Mono 7px, #FF4B4B.
+       Pulsing dot retained with new @keyframes pcs-od-pulse.
+   (b) Metadata values nowrap — .pcs-mv gains white-space:nowrap,
+       display:inline-flex, align-items:center so value + arrow
+       never split across lines. Row scrolls via overflow-x:auto.
+   (c) Format/pillar/location capitalized — _ucFirst() helper
+       applied to format, pillar, location values in _buildChipsRow.
+       "photo" → "Photo", "growth" → "Growth".
+   (d) Date picker replaced — native showPicker() removed, custom
+       calendar dropdown built inline. Month nav, day grid, today
+       highlight (gold), selected highlight (gold bg). Fires
+       _pcsDateChange on day click. CSS: .pcs-cal, .pcs-cal-hdr,
+       .pcs-cal-days with all solid hex. Document click listener
+       date input guard removed (calendar uses contains() check).
+   (e) Courier New eliminated from PCS — .pcs-od-pill, .pcs-tab,
+       .pcs-wa-btn all changed from Courier New to IBM Plex Mono.
+       Zero Courier New remaining in styles.css.
+   Zero business logic changes. Zero data flow changes.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409e.
 
 ## SECTION 13 — STABILITY ROADMAP
 
