@@ -27,6 +27,7 @@ document.addEventListener('click', function(e) {
   var menu = window.AppState && window.AppState.pcs && window.AppState.pcs.activeMenu;
   if (!menu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
+  if (menu.querySelector('input[type="date"]')) return;
   if (!menu.contains(e.target)) {
     menu.remove();
     window.AppState.pcs.activeMenu = null;
