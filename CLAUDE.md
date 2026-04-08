@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1513,6 +1513,20 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    _pcsClearReply after clearing state. .pcs-reply-cancel CSS
    already existed at styles.css:6433. 508/508 unit passing.
    Bumped to ?v=20260408g.
+1. PCS date picker closes before user can select a date
+   Location: actions/pcs.js line 26-34 — document-level click
+   listener closed activeMenu when click landed outside the
+   dropdown div. Native date picker UI (calendar on desktop,
+   wheel on mobile) is rendered by the browser outside the DOM,
+   so any interaction with it triggered the close listener.
+   _pcsDateChange (line 606-611) already removes the dropdown
+   itself after a date is selected.
+   Status: FIXED (PR#TBD) — added guard at line 30:
+   if (menu.querySelector('input[type="date"]')) return;
+   Skips auto-close when the active dropdown contains a date
+   input. _pcsDateChange handles cleanup after selection.
+   Tapping the chip again closes and reopens correctly.
+   508/508 unit passing. Bumped to ?v=20260408h.
 
 ## SECTION 13 — STABILITY ROADMAP
 
