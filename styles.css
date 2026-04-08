@@ -2964,7 +2964,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
   min-height: 100%;
   color: var(--text-primary);
   background: #080808;
@@ -6495,15 +6496,23 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   justify-content: space-between;
   padding: 5px 16px 0;
 }
-.pcs-photo-label {
+.pcs-photo-left {
+  display: flex; align-items: center; gap: 4px;
+}
+.pcs-hdr-dot {
+  color: #505060; padding: 0 4px; font-weight: 600;
   font-family: 'IBM Plex Mono', monospace; font-size: 8px;
-  color: #52525c; letter-spacing: .07em; text-transform: uppercase;
 }
-.pcs-photo-menu-btn {
-  background: none; border: none; color: #52525c;
-  font-size: 14px; letter-spacing: .15em; cursor: pointer;
-  padding: 2px 6px;
+.pcs-photo-actions {
+  display: flex; gap: 0;
 }
+.pcs-photo-act {
+  font-family: 'IBM Plex Mono', monospace; font-size: 7px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #505060; background: none; border: none;
+  padding: 10px 8px; cursor: pointer;
+}
+.pcs-photo-act:active { color: #F0F0F2; }
 
 /* PCS PHOTO GRID — hero-driven layout */
 
@@ -6645,7 +6654,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-photo-empty {
   padding: 28px 16px;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
-  cursor: pointer; border-bottom: 1px solid #0d0d12;
+  cursor: pointer; border-bottom: 1px solid #323244;
 }
 
 /* Title */
@@ -6655,49 +6664,36 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   letter-spacing: -0.03em !important;
   line-height: 1.1 !important;
   color: #FFFFFF !important;
-  padding: 11px 16px 7px !important;
+  padding: 11px 16px 4px !important;
 }
 
-/* Chips row */
-.pcs-chips-row {
-  display: flex; gap: 5px;
-  padding: 6px 16px 8px;
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; flex-wrap: nowrap;
-  border-bottom: 1px solid #0d0d12;
-}
-.pcs-chips-row::-webkit-scrollbar { display: none; }
-.pcs-chip {
-  display: flex; align-items: center; gap: 4px;
-  padding: 6px 12px; flex-shrink: 0; white-space: nowrap;
+/* Metadata row (dot-separated text values) */
+.pcs-meta-row {
+  padding: 4px 16px 10px;
+  display: flex; flex-wrap: wrap; align-items: center;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px; font-weight: 600; cursor: pointer;
-  background: linear-gradient(180deg,#191924 0%,#0d0d12 100%);
-  border-top: 1px solid #191924;
-  border-right: 1px solid #16162a;
-  border-bottom: 1px solid #0d0d12;
-  border-left: 1px solid #191924;
-  box-shadow: 0 2px 6px #00000099,
-    inset 0 1px 0 #FFFFFF0A,
-    inset 0 -1px 0 #0000004D;
-  transition: transform .1s, box-shadow .1s;
+  font-size: 8px; letter-spacing: .04em;
+  border-bottom: 1px solid #323244;
 }
-.pcs-chip:active { transform: translateY(1px); box-shadow: 0 1px 3px #00000099; }
-.pcs-chip .pcs-chip-arr { font-size: 8px; opacity: .4; margin-left: 2px; }
-.pcs-chip--cyan  { color: #22D3EE; }
-.pcs-chip--red   { color: #FF4B4B; }
-.pcs-chip--amber { color: #F6A623; }
-.pcs-chip--dim   { color: #AEAEB2; }
-.pcs-chip--empty {
-  color: #52525c; font-weight: 400;
-  border-style: dashed; background: transparent; box-shadow: none;
+.pcs-mv {
+  color: #B8B8C0; cursor: pointer; padding: 3px 0;
+  position: relative; transition: color .12s;
 }
-.pcs-chip--static { cursor: default; }
+.pcs-mv:active { color: #F0F0F2; }
+.pcs-mv--red { color: #FF4B4B; }
+.pcs-mv--cyan { color: #22D3EE; }
+.pcs-mv--purple { color: #9b87f5; }
+.pcs-mv--amber { color: #F6A623; }
+.pcs-mv--bright { color: #F0F0F2; }
+.pcs-dot {
+  color: #505060; padding: 0 7px;
+  font-weight: 600; user-select: none;
+}
 
 /* Tab bar */
 .pcs-tab-bar {
   display: flex;
-  border-bottom: 1px solid #0d0d12;
+  border-bottom: 1px solid #323244;
   flex-shrink: 0;
 }
 .pcs-tab {
@@ -6813,6 +6809,34 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-chip-drop-item:hover, .pcs-chip-drop-item:active { background: #FFFFFF0F; color: #E8E8E8; }
 .pcs-chip-drop-item.selected { color: #F6A623; }
 
+/* Topbar WhatsApp icon */
+.pcs-topbar-wa {
+  background: none; border: none; padding: 4px;
+  cursor: pointer; display: flex; align-items: center;
+}
+
+/* Caption action buttons */
+.pcs-cap-actions {
+  display: flex; gap: 6px; padding: 12px 16px 6px;
+}
+.pcs-cap-btn {
+  flex: 1; font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
+  color: #505060; background: none; border: 1px solid #323244;
+  padding: 9px 0; cursor: pointer; text-align: center;
+}
+.pcs-cap-btn--bright { color: #B8B8C0; }
+.pcs-cap-btn--danger { border-color: #3a2222; color: #bb4444; }
+
+/* Done button */
+.pcs-close-btn {
+  display: block; width: calc(100% - 32px); margin: 0 16px 10px;
+  padding: 11px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+  color: #505060; background: none; border: 1px solid #323244;
+  cursor: pointer; text-align: center;
+}
+
 /* FIX 5: Pane overflow */
 #pcs-pane-caption, #pcs-pane-client, #pcs-pane-internal { overflow: hidden; }
 
@@ -6827,7 +6851,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* FIX 7: Tight spacing between topbar and photos */
 #pcs-scroll { padding-top: 0; }
-.pcs-photo-header { padding: 4px 16px 0; margin-top: 8px; margin-bottom: 0; }
+.pcs-photo-header { padding: 6px 16px 0; margin-top: 6px; margin-bottom: 0; }
 #pcs-photo-grid-wrap { margin-top: 0; padding-top: 0; }
 
 /* FIX 8: Tighter caption */
@@ -6850,7 +6874,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   letter-spacing: -0.03em !important;
   line-height: 1.1 !important;
   color: #FFFFFF !important;
-  padding: 9px 16px 6px !important;
+  padding: 9px 16px 4px !important;
 }
 
 /* Unified ··· dropdown (Photos + Caption groups) */
@@ -6890,7 +6914,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* Bottom confirm sheet (remove photo / clear caption) */
 .pcs-bottom-confirm {
-  position: fixed; bottom: 0; left: 0; right: 0;
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
   background: #191924; border-top: 1px solid #191924;
   padding: 24px 16px 40px;
 }

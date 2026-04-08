@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260408o">
+ <link rel="stylesheet" href="styles.css?v=20260408p">
 
 </head>
 <body>
@@ -879,18 +879,15 @@
     <div class="pc-scroll-body" id="pcs-scroll">
 
       <!-- Photo section -->
-      <div class="pcs-photo-header" id="pcs-photo-header-row" style="display:none">
-        <span class="pcs-photo-label" id="pcs-photo-label">PHOTOS · 0</span>
-        <button class="pcs-photo-menu-btn" id="pcs-photo-menu-btn">···</button>
-      </div>
+      <div class="pcs-photo-header" id="pcs-photo-header-row" style="display:none"></div>
       <div id="pcs-photo-grid-wrap"></div>
       <div id="pcs-drive-link-wrap" style="display:none;"></div>
 
       <!-- Title -->
       <div id="pcs-topbar-title"></div>
 
-      <!-- Meta chips row -->
-      <div id="pcs-chips-row" class="pcs-chips-row"></div>
+      <!-- Meta row -->
+      <div id="pcs-chips-row" class="pcs-meta-row"></div>
 
       <!-- Tab bar -->
       <div id="pcs-tab-bar" class="pcs-tab-bar">
@@ -903,6 +900,8 @@
       <div id="pcs-pane-caption" class="pcs-tab-pane" style="flex:1;display:flex;flex-direction:column;overflow:hidden">
         <div style="flex:1;overflow-y:auto" id="pcs-fields"></div>
         <div id="pcs-wa-container"></div>
+        <div id="pcs-cap-actions-container"></div>
+        <button class="pcs-close-btn" onclick="closePCS()">Done</button>
       </div>
 
       <!-- Tab pane: Client -->
@@ -1074,26 +1073,26 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260408o"></script>
-<script src="00-appstate-compat.js?v=20260408o"></script>
-<script src="01-config.js?v=20260408o" defer></script>
-<script src="02-session.js?v=20260408o" defer></script>
-<script src="utils.js?v=20260408o" defer></script>
-<script src="03-auth.js?v=20260408o" defer></script>
-<script src="05-api.js?v=20260408o" defer></script>
-<script src="10-ui.js?v=20260408o" defer></script>
+<script src="00-appstate.js?v=20260408p"></script>
+<script src="00-appstate-compat.js?v=20260408p"></script>
+<script src="01-config.js?v=20260408p" defer></script>
+<script src="02-session.js?v=20260408p" defer></script>
+<script src="utils.js?v=20260408p" defer></script>
+<script src="03-auth.js?v=20260408p" defer></script>
+<script src="05-api.js?v=20260408p" defer></script>
+<script src="10-ui.js?v=20260408p" defer></script>
 
-<script src="06-post-create.js?v=20260408o" defer></script>
-<script defer src="render/dashboard.js?v=20260408o"></script>
-<script defer src="render/client.js?v=20260408o"></script>
-<script defer src="render/pipeline.js?v=20260408o"></script>
-<script defer src="render/brief.js?v=20260408o"></script>
-<script defer src="actions/pcs.js?v=20260408o"></script>
-<script src="07-post-load.js?v=20260408o" defer></script>
-<script src="08-post-actions.js?v=20260408o" defer></script>
-<script src="09-library.js?v=20260408o" defer></script>
-<script src="09-approval.js?v=20260408o" defer></script>
-<script src="04-router.js?v=20260408o" defer></script>
+<script src="06-post-create.js?v=20260408p" defer></script>
+<script defer src="render/dashboard.js?v=20260408p"></script>
+<script defer src="render/client.js?v=20260408p"></script>
+<script defer src="render/pipeline.js?v=20260408p"></script>
+<script defer src="render/brief.js?v=20260408p"></script>
+<script defer src="actions/pcs.js?v=20260408p"></script>
+<script src="07-post-load.js?v=20260408p" defer></script>
+<script src="08-post-actions.js?v=20260408p" defer></script>
+<script src="09-library.js?v=20260408p" defer></script>
+<script src="09-approval.js?v=20260408p" defer></script>
+<script src="04-router.js?v=20260408p" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
