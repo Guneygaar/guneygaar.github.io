@@ -294,8 +294,11 @@ E2E: npx playwright test
 
 CI (.github/workflows/test.yml):
   Job 1 `test`          — vitest unit suite on every push/PR to
-                          main + main-/-root.
-  Job 2 `e2e-critical`  — runs after unit job passes; executes 3
+                          main + main-/-root. Always runs.
+  Job 2 `check-e2e-paths` — uses dorny/paths-filter@v3 to detect
+                          changes in core logic files.
+  Job 3 `e2e-critical`  — runs after unit job passes AND only when
+                          core logic files changed; executes 3
                           critical Playwright specs headless in
                           Chromium with a 2-minute cap:
                             tests/e2e/client-flows.spec.js
@@ -303,6 +306,16 @@ CI (.github/workflows/test.yml):
                             tests/e2e/admin-flows.spec.js
                           live-smoke.spec.js (real creds) and
                           role-flows/smoke are NOT run in CI.
+
+Test tiers (CI path filtering):
+  CSS-only changes (styles.css)        → unit tests only (vitest)
+  JS template changes (render/*.js,    → unit tests only (vitest)
+    actions/pcs.js, index.html bumps)
+  Core logic changes (03-auth.js,      → full suite: unit + e2e
+    05-api.js, 06-post-create.js,
+    08-post-actions.js, 09-approval.js)
+  E2e-critical is SKIPPED when none of the 5 core files are in
+  the PR diff. This saves ~2 min CI time on CSS/template PRs.
 
 Post-deploy smoke (.github/workflows/smoke.yml):
   Schedule: '*/30 * * * *' (every 30 min) + workflow_dispatch.
