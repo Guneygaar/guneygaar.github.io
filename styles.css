@@ -708,12 +708,12 @@ a:hover { text-decoration: underline; }
  */
 #dashboard-view {
   flex-direction: column;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   max-width: 480px;
   margin: 0 auto;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Tab panels fill remaining height and scroll internally */
@@ -1314,7 +1314,7 @@ tr:hover td { background: var(--surface2); }
 }
 #client-view {
   flex-direction: column;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #0a0a0f;
   max-width: 640px;
   width: 100%;
@@ -1521,7 +1521,7 @@ textarea.cp-form-input {
    PUBLIC APPROVAL VIEW
  */
 #approval-view {
-  min-height: 100vh;
+  min-height: 100dvh;
   flex-direction: column;
   align-items: center;
   padding: var(--sp-6) var(--sp-4);
