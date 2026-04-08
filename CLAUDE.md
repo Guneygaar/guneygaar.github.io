@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408l
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408n
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -560,6 +560,7 @@ window._reopenBrief, window._createPostFromBrief
 
 actions/pcs.js:
 window._pcsLbImages, window._pcsLbIdx, window._pcsActiveTab, window._pcsDateChange,
+window._pcsShowCalendar,
 window.openPCS, window.closePCS, window.forcePCSReset,
 window._renderPCS, window._pcsTabSwitch, window._pcsChipDrop,
 window._updateSubtitle, window._pcsTitleEdit,
@@ -1546,13 +1547,22 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    a date, Chrome fires document click BEFORE firing onchange on the
    input. The document click listener destroyed the dropdown, detaching
    the input, so onchange never reached _pcsDateChange.
-   Status: FIXED (PR#TBD) — deferred dropdown teardown in the
-   document click listener to next tick via setTimeout(0) so the
-   browser completes its event queue and onchange fires on the
-   input before the dropdown is removed. Added parentNode guard
-   inside the deferred callback. Removed _pcsDatePickerOpen flag
-   (no longer needed — setTimeout alone is sufficient).
-   508/508 unit passing. Bumped to ?v=20260408l.
+   Status: FIXED (PR#TBD) — replaced native input[type=date]
+   entirely with custom HTML/CSS/JS calendar picker
+   (window._pcsShowCalendar). No native date inputs in this
+   feature. Calendar is a fixed-position div appended to body,
+   set as activeMenu so document click listener closes it.
+   Date cells emit YYYY-MM-DD string to _pcsDateChange.
+   Clear button sends '' to clear target_date. Today button
+   navigates to current month and highlights today. Month
+   nav via ← → arrows. Monday-start week. Prev/next month
+   days shown in muted color. Design: #111118 bg, #C8A84B
+   gold for selected + today, IBM Plex Mono headers, DM Sans
+   day numbers. New CSS classes: .pcs-cal, .pcs-cal-header,
+   .pcs-cal-title, .pcs-cal-nav, .pcs-cal-daynames, .pcs-cal-dn,
+   .pcs-cal-grid, .pcs-cal-cell (.is-today/.is-selected/.is-other),
+   .pcs-cal-footer, .pcs-cal-clear, .pcs-cal-today-btn.
+   508/508 unit passing. Bumped to ?v=20260408n.
 
 ## SECTION 13 — STABILITY ROADMAP
 
