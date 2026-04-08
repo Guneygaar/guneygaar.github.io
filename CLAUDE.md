@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1792,6 +1792,31 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero business logic changes. Zero data flow changes.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409c.
+1. Metadata dropdown not toggling — clicking same chip doesn't close
+   Location: actions/pcs.js _pcsChipDrop() — always opened a new
+   dropdown without checking if the same field was already open.
+   Status: FIXED (PR#TBD) — added data-pcs-field attribute to
+   dropdowns, _pcsChipDrop checks if same field is open and closes
+   it instead of reopening. Works for owner, date, format, pillar,
+   location, stage. 508/508 unit passing.
+1. @mention autocomplete missing on client comment input
+   Location: actions/pcs.js _initMentionDropup() was hardcoded to
+   #pcs-note-input and #pcs-mention-dropup. Client comment input
+   (#pcs-comment-input) had no @mention support.
+   Status: FIXED (PR#TBD) — refactored _initMentionDropup to
+   accept inputId and dropupId parameters. Called twice from
+   _renderPCS: once for notes, once for client. Added
+   #pcs-client-mention-dropup container to index.html inside
+   .pcs-ibar-wrap.client. Same _AGENCY_MEMBERS list for both.
+   508/508 unit passing.
+1. Reply does not auto-fill @author in input (Instagram-style)
+   Location: actions/pcs.js _pcsSetReply() focused input but did
+   not pre-fill with @author. _pcsClearReply() did not clear input.
+   Status: FIXED (PR#TBD) — _pcsSetReply now sets input.value to
+   '@' + author + ' ' before focus, with cursor at end via
+   setSelectionRange. _pcsClearReply now sets inp.value = '' when
+   cancelling reply. Works on both client and notes inputs.
+   508/508 unit passing. Bumped to ?v=20260409d.
 
 ## SECTION 13 — STABILITY ROADMAP
 
