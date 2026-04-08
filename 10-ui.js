@@ -820,16 +820,6 @@ function updateNotifBadge() {
   }).catch(function(err){ console.error('[10-ui] updateNotifBadge', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'update-notif-badge'); });
 }
 
-// -- PCS Activity toggle -----------------------
-function togglePCSActivity() {
-  var body = document.getElementById('pcs-activity-body');
-  if (!body) return;
-  var isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  var trigger = document.getElementById('pc-activity-trigger');
-  if (trigger) trigger.classList.toggle('expanded', !isOpen);
-}
-
 // -- Zen mode ----------------------------------
 function openZen(title, comments) {
   const overlay = document.getElementById('zen-overlay');
