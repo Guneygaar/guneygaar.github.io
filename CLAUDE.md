@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408g
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1489,7 +1489,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    weight 700 size 22px. .pcs-more-l now IBM Plex Mono.
    Edit mode selector updated to match new cell classes.
    508/508 unit passing. Bumped to ?v=20260408e.
-2. Client feed photo grid — responsive aspect-ratio layout
+1. Client feed photo grid — responsive aspect-ratio layout
    Location: render/client.js _imgGridHtml() + styles.css
    Old system had fixed px heights: img-trio 130px+130px=260px,
    img-quad 150px+150px=300px. Not responsive on narrow screens.
@@ -1502,6 +1502,17 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    n=1 (img-single) and n=2 (img-duo) layouts unchanged.
    wrap() helper, lightbox wiring, border-radius values unchanged.
    508/508 unit passing. Bumped to ?v=20260408f.
+1. PCS reply bar missing cancel/X button
+   Location: actions/pcs.js _pcsSetReply() line 2716 — innerHTML
+   only contained '<span>Replying to {author}</span>' with no way
+   to dismiss the reply bar. _pcsClearReply() existed (line 2739)
+   and worked correctly but had no UI trigger.
+   Status: FIXED (PR#TBD) — added .pcs-reply-cancel X button to
+   _pcsSetReply innerHTML, wired to _pcsClearReply(zone). Added
+   input refocus (pcs-comment-input or pcs-note-input) to
+   _pcsClearReply after clearing state. .pcs-reply-cancel CSS
+   already existed at styles.css:6433. 508/508 unit passing.
+   Bumped to ?v=20260408g.
 
 ## SECTION 13 — STABILITY ROADMAP
 
