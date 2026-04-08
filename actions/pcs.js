@@ -336,9 +336,10 @@ window._renderPCS = function(postId) {
   window._pcsActiveTab = 'caption';
   _pcsTabSwitch('caption');
 
-  // l) Mention dropup
+  // l) Mention dropup (notes + client)
   if (typeof window._initMentionDropup === 'function') {
-    window._initMentionDropup();
+    window._initMentionDropup('pcs-note-input', 'pcs-mention-dropup');
+    window._initMentionDropup('pcs-comment-input', 'pcs-client-mention-dropup');
   }
 }
 
@@ -551,10 +552,13 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
 
 // -- Chip dropdown handler (body-appended, getBoundingClientRect positioned) --
 window._pcsChipDrop = function(chipEl, field, postId) {
-  // Close any existing dropdown
-  if (window.AppState.pcs.activeMenu) {
-    window.AppState.pcs.activeMenu.remove();
+  // Toggle: if same field's dropdown is already open, close it and return
+  var existingMenu = window.AppState.pcs.activeMenu;
+  if (existingMenu) {
+    var wasField = existingMenu.getAttribute('data-pcs-field');
+    existingMenu.remove();
     window.AppState.pcs.activeMenu = null;
+    if (wasField === field) return;
   }
 
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
@@ -564,6 +568,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     var rect = chipEl.getBoundingClientRect();
     var drop = document.createElement('div');
     drop.className = 'pcs-chip-drop';
+    drop.setAttribute('data-pcs-field', 'date');
     drop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;z-index:9700;';
     drop.innerHTML = '<div style="padding:12px 16px;background:#141420">' +
       '<input type="date" value="' + esc(post ? (post.targetDate || '') : '') + '" ' +
@@ -602,6 +607,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
   var rect = chipEl.getBoundingClientRect();
   var drop = document.createElement('div');
   drop.className = 'pcs-chip-drop';
+  drop.setAttribute('data-pcs-field', field);
   drop.style.position = 'fixed';
   drop.style.top = rect.bottom + 4 + 'px';
   drop.style.left = rect.left + 'px';
@@ -2351,15 +2357,18 @@ var _AGENCY_MEMBERS = [
   { name: 'Shivangini', role: 'Client' }
 ];
 
-function _hideMentionDropup() {
-  var dropup = document.getElementById('pcs-mention-dropup');
+function _hideMentionDropup(dropupId) {
+  var id = dropupId || 'pcs-mention-dropup';
+  var dropup = document.getElementById(id);
   if (dropup) dropup.style.display = 'none';
 }
 
-window._initMentionDropup = function() {
-  var textarea = document.getElementById('pcs-note-input');
+window._initMentionDropup = function(inputId, dropupId) {
+  var textareaId = inputId || 'pcs-note-input';
+  var dropId = dropupId || 'pcs-mention-dropup';
+  var textarea = document.getElementById(textareaId);
   if (!textarea) return;
-  var dropup = document.getElementById('pcs-mention-dropup');
+  var dropup = document.getElementById(dropId);
   if (!dropup) return;
 
   var _currentMentionStart = -1;
@@ -2370,17 +2379,17 @@ window._initMentionDropup = function() {
     var textBeforeCursor = val.slice(0, cursor);
     var atIndex = textBeforeCursor.lastIndexOf('@');
 
-    if (atIndex === -1) { _hideMentionDropup(); return; }
+    if (atIndex === -1) { _hideMentionDropup(dropId); return; }
 
     var query = textBeforeCursor.slice(atIndex + 1);
-    if (/\s/.test(query)) { _hideMentionDropup(); return; }
+    if (/\s/.test(query)) { _hideMentionDropup(dropId); return; }
 
     _currentMentionStart = atIndex;
     var filtered = _AGENCY_MEMBERS.filter(function(m) {
       return m.name.toLowerCase().startsWith(query.toLowerCase());
     });
 
-    if (!filtered.length) { _hideMentionDropup(); return; }
+    if (!filtered.length) { _hideMentionDropup(dropId); return; }
 
     dropup.innerHTML = filtered.map(function(m) {
       return '<div class="pcs-mention-item" data-name="' + m.name + '">' +
@@ -2399,14 +2408,14 @@ window._initMentionDropup = function() {
         var after = val.slice(cursor);
         textarea.value = before + '@' + name + ' ' + after;
         textarea.dispatchEvent(new Event('input'));
-        _hideMentionDropup();
+        _hideMentionDropup(dropId);
         textarea.focus();
       });
     });
   });
 
   textarea.addEventListener('blur', function() {
-    setTimeout(_hideMentionDropup, 150);
+    setTimeout(function() { _hideMentionDropup(dropId); }, 150);
   });
 };
 
@@ -2751,7 +2760,9 @@ window._pcsSetReply = function(zone, commentId, author, message) {
     });
   }
   if (input) {
+    input.value = '@' + author + ' ';
     input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
   }
 };
 
@@ -2771,7 +2782,10 @@ window._pcsClearReply = function(zone) {
       el.classList.remove('pcs-comment-replying-to');
     });
   var inp = document.getElementById(zone === 'client' ? 'pcs-comment-input' : 'pcs-note-input');
-  if (inp) inp.focus();
+  if (inp) {
+    inp.value = '';
+    inp.focus();
+  }
 };
 
 window._pcsCopyComment = function(message) {
