@@ -20,6 +20,7 @@ window._pcsNoteImgs = [];
 window._pcsReplyTo = null;
 window._pcsReplyToAuthor = null;
 window._pcsActiveTab = 'caption';
+var _pcsDatePickerOpen = false;
 window.AppState.pcs.activeMenu = null;
 window.AppState.ui.modalOpen = window.AppState.ui.modalOpen || false;
 
@@ -27,7 +28,7 @@ document.addEventListener('click', function(e) {
   var menu = window.AppState && window.AppState.pcs && window.AppState.pcs.activeMenu;
   if (!menu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
-  if (menu.querySelector('input[type="date"]')) return;
+  if (_pcsDatePickerOpen) return;
   if (!menu.contains(e.target)) {
     menu.remove();
     window.AppState.pcs.activeMenu = null;
@@ -539,7 +540,14 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     var dateInp = drop.querySelector('input');
     if (dateInp) {
       dateInp.focus();
-      try { dateInp.showPicker(); } catch(e) {}
+      _pcsDatePickerOpen = false;
+      dateInp.addEventListener('change', function() {
+        _pcsDatePickerOpen = false;
+      }, { once: true });
+      dateInp.addEventListener('click', function() {
+        _pcsDatePickerOpen = true;
+      }, { once: false });
+      try { dateInp.showPicker(); _pcsDatePickerOpen = true; } catch(e) {}
     }
     return;
   }
@@ -607,6 +615,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
 // -- Date change from inline date picker --
 window._pcsDateChange = function(postId, dateValue) {
+  _pcsDatePickerOpen = false;
   if (window.AppState.pcs.activeMenu) {
     if (window.AppState.pcs.activeMenu.parentNode) {
       window.AppState.pcs.activeMenu.remove();

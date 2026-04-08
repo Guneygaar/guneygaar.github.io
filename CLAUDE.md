@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408i
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408k
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1539,6 +1539,20 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    and 300ms setTimeout on openPCS re-render. Test regex window
    widened from 600→800 chars. 508/508 unit passing.
    Bumped to ?v=20260408i.
+1. PCS date picker onchange never fires — dropdown destroyed mid-selection
+   Location: actions/pcs.js document click listener (line 27) and
+   _pcsChipDrop date branch (line 540).
+   Root cause: showPicker() opens Chrome calendar. When user clicks
+   a date, Chrome fires document click BEFORE firing onchange on the
+   input. The document click listener destroyed the dropdown, detaching
+   the input, so onchange never reached _pcsDateChange.
+   Status: FIXED (PR#TBD) — added _pcsDatePickerOpen flag (var at
+   line 23). showPicker() and input click set flag true. Document
+   click listener returns early when flag is true. change event
+   listener (once:true) and _pcsDateChange both clear the flag.
+   Tapping the chip again to dismiss still works because the chip
+   onclick calls _pcsChipDrop which removes activeMenu directly.
+   508/508 unit passing. Bumped to ?v=20260408k.
 
 ## SECTION 13 — STABILITY ROADMAP
 
