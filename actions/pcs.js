@@ -529,23 +529,24 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
 
-  // DATE: inline date input in dropdown
+  // DATE: hidden input — no dropdown (avoids Chrome calendar race condition)
   if (field === 'date') {
-    var rect = chipEl.getBoundingClientRect();
-    var drop = document.createElement('div');
-    drop.className = 'pcs-chip-drop';
-    drop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;z-index:9700;';
-    drop.innerHTML = '<div style="padding:12px 16px;background:#141420">' +
-      '<input type="date" value="' + esc(post ? (post.targetDate || '') : '') + '" ' +
-      'style="width:100%;padding:10px 12px;background:#0f0f1a;border:1px solid #1c1c26;color:#fff;font-size:14px;outline:none;color-scheme:dark;font-family:inherit" ' +
-      'onchange="window._pcsDateChange(\'' + esc(postId) + '\',this.value)"/></div>';
-    document.body.appendChild(drop);
-    setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
-    var dateInp = drop.querySelector('input');
-    if (dateInp) {
-      dateInp.focus();
-      try { dateInp.showPicker(); } catch(e) {}
-    }
+    var existingPicker = document.getElementById('pcs-hidden-date-picker');
+    if (existingPicker) existingPicker.remove();
+    var hiddenInp = document.createElement('input');
+    hiddenInp.type = 'date';
+    hiddenInp.id = 'pcs-hidden-date-picker';
+    hiddenInp.value = post ? (post.targetDate || '') : '';
+    hiddenInp.style.cssText = 'position:fixed;top:-200px;left:-200px;opacity:0;pointer-events:none;';
+    hiddenInp.addEventListener('change', function() {
+      window._pcsDateChange(postId, hiddenInp.value);
+      hiddenInp.remove();
+    });
+    hiddenInp.addEventListener('blur', function() {
+      setTimeout(function() { hiddenInp.remove(); }, 200);
+    });
+    document.body.appendChild(hiddenInp);
+    try { hiddenInp.showPicker(); } catch(e) {}
     return;
   }
 
