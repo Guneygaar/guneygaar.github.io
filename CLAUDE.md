@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408d
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408e
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1457,6 +1457,25 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) — added white-space:nowrap to both
    approval and input <span> elements. 508/508 unit passing.
    Bumped to ?v=20260408d.
+1. PCS photo grid rewrite — hero-driven responsive layout
+   Location: actions/pcs.js _buildPhotoGrid() + styles.css photo grid
+   rules. Old system had 5 fixed-height layouts (pcs-pg-1 through
+   pcs-pg-5) with .pcs-pcell/.pcs-pcell.hero CSS grid cells.
+   Status: FIXED (PR#TBD) — simplified to 4 layouts using
+   padding-bottom aspect ratio technique instead of fixed px heights.
+   Removed: .pcs-pg-4, .pcs-pg-5, .pcs-pcell, .pcs-pcell.hero,
+   _cell() helper, mobile safari min-height hacks for pg-2/3/4/5.
+   New classes: .pcs-pg-3plus (4+ images), .pcs-pg-inner (absolute
+   positioned flex container), .pcs-pg-hero (60% left column),
+   .pcs-pg-col (right column), .pcs-pg-sm (small cells),
+   .pcs-pg-2-inner/.pcs-pg-2-cell (2-image layout).
+   Layout: 1 img = 100% square, 2 imgs = 50% side-by-side,
+   3 imgs = 60% hero left + 2 stacked right, 4+ = same as 3 with
+   "+N more" overlay on last cell. .pcs-more-ov updated to
+   rgba(8,8,8,0.72) + backdrop-filter:blur(2px). .pcs-more-n
+   weight 700 size 22px. .pcs-more-l now IBM Plex Mono.
+   Edit mode selector updated to match new cell classes.
+   508/508 unit passing. Bumped to ?v=20260408e.
 
 ## SECTION 13 — STABILITY ROADMAP
 

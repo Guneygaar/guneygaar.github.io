@@ -6507,24 +6507,142 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 2px 6px;
 }
 
-/* Photo grids */
-.pcs-pg-1 { width:100%; height:312px; overflow:hidden; cursor:pointer; position:relative; }
-.pcs-pg-1 img { width:100%; height:100%; object-fit:cover; object-position:center center; display:block; background:#080808; }
-.pcs-pg-2 { display:grid; grid-template-columns:1fr 1fr; gap:2px; height:272px; }
-.pcs-pg-3, .pcs-pg-5 { display:grid; grid-template-columns:62% 38%; grid-template-rows:1fr 1fr; gap:2px; height:272px; }
-.pcs-pg-4 { display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2px; height:292px; }
-.pcs-pcell { position:relative; overflow:hidden; cursor:pointer; background:#080808; flex-shrink:0; }
-.pcs-pcell.hero { grid-row:span 2; }
-.pcs-pcell img { width:100%; height:100%; object-fit:cover; object-position:center center; display:block; background:#080808; }
-.pcs-more-ov {
-  position:absolute; inset:0; background:rgba(0,0,0,0.62); /* approved rgba exception — must show photo underneath */
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center; gap:3px;
+/* PCS PHOTO GRID — hero-driven layout */
+
+.pcs-pg-1 {
+  width: 100%;
+  padding-bottom: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #080808;
 }
-.pcs-more-n { font-size:26px; font-weight:300; color:#fff; line-height:1; }
+
+.pcs-pg-1 img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.pcs-pg-2 {
+  width: 100%;
+  padding-bottom: 50%;
+  position: relative;
+  overflow: hidden;
+  background: #080808;
+}
+
+.pcs-pg-2-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.pcs-pg-2-cell {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0d0d12;
+  cursor: pointer;
+}
+
+.pcs-pg-2-cell img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.pcs-pg-3 {
+  width: 100%;
+  padding-bottom: 60%;
+  position: relative;
+  overflow: hidden;
+  background: #080808;
+}
+
+.pcs-pg-3plus {
+  width: 100%;
+  padding-bottom: 60%;
+  position: relative;
+  overflow: hidden;
+  background: #080808;
+}
+
+.pcs-pg-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+}
+
+.pcs-pg-hero {
+  flex: 0 0 calc(60% - 1px);
+  position: relative;
+  overflow: hidden;
+  background: #0d0d12;
+  cursor: pointer;
+}
+
+.pcs-pg-hero img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.pcs-pg-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pcs-pg-sm {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #0d0d12;
+  cursor: pointer;
+}
+
+.pcs-pg-sm img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.pcs-more-ov {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,8,8,0.72); /* approved rgba exception — photo must show through */
+  backdrop-filter: blur(2px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.pcs-more-n { font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1; }
 .pcs-more-l {
-  font-family:'Courier New',monospace; font-size:7px;
-  color:rgba(255,255,255,0.6); letter-spacing:.08em; text-transform:uppercase; /* approved rgba exception — overlay text */
+  font-family: 'IBM Plex Mono', monospace; font-size: 7px;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.14em; text-transform: uppercase; /* approved rgba exception — overlay text */
 }
 .pcs-photo-empty {
   padding: 28px 16px;
@@ -6717,12 +6835,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   word-break: break-word;
 }
 
-/* FIX 10: Photo grid min-height (mobile Safari) */
-.pcs-pg-1 { flex-shrink:0; min-height:312px; }
-.pcs-pg-2 { flex-shrink:0; min-height:272px; }
-.pcs-pg-3 { flex-shrink:0; min-height:272px; }
-.pcs-pg-4 { flex-shrink:0; min-height:292px; }
-.pcs-pg-5 { flex-shrink:0; min-height:272px; }
+/* FIX 10: Photo grid flex-shrink (mobile Safari) */
+.pcs-pg-1 { flex-shrink:0; }
+.pcs-pg-2 { flex-shrink:0; }
+.pcs-pg-3 { flex-shrink:0; }
+.pcs-pg-3plus { flex-shrink:0; }
 
 /* FIX 11: Title size */
 #pcs-topbar-title, .pc-title {
