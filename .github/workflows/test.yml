@@ -21,8 +21,26 @@ jobs:
           TZ: Asia/Kolkata
         run: npm test
 
+  check-e2e-paths:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.filter.outputs.core }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            core:
+              - '03-auth.js'
+              - '05-api.js'
+              - '06-post-create.js'
+              - '08-post-actions.js'
+              - '09-approval.js'
+
   e2e-critical:
-    needs: [test]
+    needs: [test, check-e2e-paths]
+    if: needs.check-e2e-paths.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
