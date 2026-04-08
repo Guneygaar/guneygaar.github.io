@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -588,6 +588,7 @@ window._saveCaptionEdit, window._sharePostOnWhatsApp, window.submitPcsComment,
 window._doSubmitComment, window.toggleTaskResolve, window._initMentionDropup,
 window._showTaskAssign, window.submitPcsTask, window._pcsHandleCommentImg,
 window._pcsTogglePlusMenu, window._pcsLongpressRemoveMenu,
+window._pcsShowEmojiPicker, window._pcsAddReaction, window._pcsRemoveReaction,
 window._pcsRenderImgPreviews, window._pcsRemoveCommentImg,
 window._pcsSetReply, window._pcsClearReply, window._pcsCopyComment,
 window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
@@ -1720,6 +1721,39 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    endpoints. All onclick handlers call exact same functions.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409a.
+1. PCS comment wiring Part 2B — reactions DB + toggleTaskResolve fix
+   Location: actions/pcs.js, actions/pcs-longpress.js, styles.css
+   Scope:
+   (a) loadPcsComments now fetches /post_comment_reactions for the
+       post in a third API call. Results stored in window._pcsReactions
+       keyed by comment_id. Fetch is try/catch wrapped — failure does
+       not break comment loading.
+   (b) _renderSingleClient and _renderSingleNote now check
+       window._pcsReactions[commentId]. If user has reacted: show
+       their emoji instead of heart SVG, add .pcs-reacted class.
+       If reactions exist: show count via .pcs-react-count span.
+   (c) New function window._pcsShowEmojiPicker(reactEl): if user
+       already reacted, unreacts (removes). Otherwise shows inline
+       5-emoji picker (❤️ 👍 🎯 👀 ✅) positioned above the react
+       div. Click outside closes picker.
+   (d) New function window._pcsAddReaction(commentId, emoji, reactEl):
+       POST to /post_comment_reactions, optimistic DOM update, no
+       full re-fetch. Wrapped in guardAction.
+   (e) New function window._pcsRemoveReaction(commentId, reactEl):
+       DELETE from /post_comment_reactions by reaction id, optimistic
+       DOM update. Wrapped in guardAction.
+   (f) BUG FIX: toggleTaskResolve now accepts third parameter
+       isInternalNote (boolean). Routes PATCH to /internal_notes
+       when true, /post_comments when false. Previously always
+       patched /post_comments causing silent failure for internal
+       note tasks. All callers updated: _renderSingleClient passes
+       false, _renderSingleNote passes true, pcs-longpress.js
+       passes isInternalNote based on zone detection.
+   (g) CSS: .pcs-react-emoji, .pcs-reacted, .pcs-react-count,
+       .pcs-emoji-picker, .pcs-emoji-btn added. All solid hex.
+   Zero visual layout changes from Part 2A. Zero new HTML structure.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409b.
 
 ## SECTION 13 — STABILITY ROADMAP
 

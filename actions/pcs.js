@@ -941,6 +941,24 @@ window.loadPcsComments = async function(postId) {
     );
     if (!Array.isArray(internalData)) internalData = [];
 
+    // Fetch reactions for this post
+    var _reactData = [];
+    try {
+      var _reactRes = await apiFetch(
+        '/post_comment_reactions?post_id=eq.' +
+        encodeURIComponent(postId) +
+        '&select=*'
+      );
+      if (Array.isArray(_reactRes)) _reactData = _reactRes;
+    } catch(e) {
+      console.warn('[pcs] reactions fetch failed, continuing:', e);
+    }
+    window._pcsReactions = {};
+    _reactData.forEach(function(r) {
+      if (!window._pcsReactions[r.comment_id]) window._pcsReactions[r.comment_id] = [];
+      window._pcsReactions[r.comment_id].push(r);
+    });
+
     var _allRows = rows.concat(internalData);
     var _commentMap = {};
     _allRows.forEach(function(c) {
@@ -1034,7 +1052,7 @@ window.loadPcsComments = async function(postId) {
       var _isTask = !!_taskObj;
       var _taskPrefix = _isTask
         ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
-          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\',false)">' +
           (c.resolved
             ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
             : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>') +
@@ -1062,6 +1080,16 @@ window.loadPcsComments = async function(postId) {
         ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
+      // Build reaction display
+      var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
+      var _myReact = _cReactions.find(function(r) { return r.author === _name; });
+      var _reactCount = _cReactions.length;
+      var _reactInner = _myReact
+        ? '<span class="pcs-react-icon pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
+        : '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+      _reactInner += _reactCount > 0
+        ? '<span class="pcs-react-count">' + _reactCount + '</span>'
+        : '';
       return '<div class="pcs-comment-item' +
         (c.reply_to ? ' pcs-comment-reply' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
@@ -1085,8 +1113,8 @@ window.loadPcsComments = async function(postId) {
             esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
             _escapedMsg + '\')">Reply</div>' +
         '</div>' +
-        '<div class="pcs-comment-react" data-comment-id="' + esc(c.id) + '">' +
-          '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+        '<div class="pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
+          _reactInner +
         '</div>' +
       '</div>';
     }
@@ -1159,7 +1187,7 @@ window.loadPcsComments = async function(postId) {
         : '';
       var _taskPrefix = _isTask
         ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
-          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\',true)">' +
           (c.resolved
             ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
             : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>') +
@@ -1189,6 +1217,16 @@ window.loadPcsComments = async function(postId) {
         ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
+      // Build reaction display
+      var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
+      var _myReact = _cReactions.find(function(r) { return r.author === _name; });
+      var _reactCount = _cReactions.length;
+      var _reactInner = _myReact
+        ? '<span class="pcs-react-icon pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
+        : '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+      _reactInner += _reactCount > 0
+        ? '<span class="pcs-react-count">' + _reactCount + '</span>'
+        : '';
       return '<div class="pcs-note-item' +
         (c.reply_to ? ' pcs-comment-reply' : '') +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
@@ -1215,8 +1253,8 @@ window.loadPcsComments = async function(postId) {
             esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
             _escapedMsg + '\')">Reply</div>' +
         '</div>' +
-        '<div class="pcs-comment-react" data-comment-id="' + esc(c.id) + '">' +
-          '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+        '<div class="pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
+          _reactInner +
         '</div>' +
       '</div>';
     }
@@ -2283,12 +2321,13 @@ window._doSubmitComment = async function(opts) {
   }
 };
 
-window.toggleTaskResolve = function(commentId, postId) {
+window.toggleTaskResolve = function(commentId, postId, isInternalNote) {
   if (!commentId || typeof commentId !== 'string' || commentId.trim() === '') {
     console.warn('toggleTaskResolve: missing or invalid commentId, aborting');
     return;
   }
-  apiFetch('/post_comments?id=eq.' + commentId, {
+  var _endpoint = (isInternalNote ? '/internal_notes' : '/post_comments') + '?id=eq.' + commentId;
+  apiFetch(_endpoint, {
     method: 'PATCH',
     headers: {'Prefer': 'return=minimal'},
     body: JSON.stringify({
@@ -2490,6 +2529,139 @@ window._pcsRemoveCommentImg = function(zone, idx) {
     window._pcsNoteImgs.splice(idx, 1);
   }
   _pcsRenderImgPreviews(zone);
+};
+
+// -- Emoji reactions --
+var _PCS_EMOJIS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83C\uDFAF', '\uD83D\uDC40', '\u2705'];
+
+window._pcsShowEmojiPicker = function(reactEl) {
+  if (!reactEl) return;
+  var commentId = reactEl.getAttribute('data-comment-id');
+  if (!commentId) return;
+  var _name = (window.AppState && window.AppState.user && window.AppState.user.name) || '';
+  var _reactions = (window._pcsReactions && window._pcsReactions[commentId]) || [];
+  var _mine = _reactions.find(function(r) { return r.author === _name; });
+
+  // If already reacted, unreact
+  if (_mine) {
+    window._pcsRemoveReaction(commentId, reactEl);
+    return;
+  }
+
+  // Remove existing picker
+  var old = document.querySelector('.pcs-emoji-picker');
+  if (old) old.remove();
+
+  var picker = document.createElement('div');
+  picker.className = 'pcs-emoji-picker';
+  _PCS_EMOJIS.forEach(function(emoji) {
+    var btn = document.createElement('button');
+    btn.className = 'pcs-emoji-btn';
+    btn.textContent = emoji;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      picker.remove();
+      window._pcsAddReaction(commentId, emoji, reactEl);
+    });
+    picker.appendChild(btn);
+  });
+  reactEl.style.position = 'relative';
+  reactEl.appendChild(picker);
+
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function _dismiss(e) {
+      if (!picker.contains(e.target)) {
+        picker.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 10);
+};
+
+window._pcsAddReaction = function(commentId, emoji, reactEl) {
+  return window.guardAction('pcs-react-' + commentId, async function() {
+    try {
+      var _postIdEl = document.getElementById('pcs-post-id');
+      var _postId = _postIdEl ? _postIdEl.value : '';
+      var _name = (window.AppState.user.name || '');
+      var _role = (window.AppState.user.effectiveRole || 'Admin');
+      var _normalRole = _role.charAt(0).toUpperCase() + _role.slice(1).toLowerCase();
+
+      var result = await apiFetch('/post_comment_reactions', {
+        method: 'POST',
+        body: JSON.stringify({
+          comment_id: commentId,
+          post_id: _postId,
+          author: _name,
+          author_role: _normalRole,
+          emoji: emoji
+        })
+      });
+
+      // Optimistic update
+      var newReaction = {
+        id: (Array.isArray(result) && result[0]) ? result[0].id : null,
+        comment_id: commentId,
+        post_id: _postId,
+        author: _name,
+        author_role: _normalRole,
+        emoji: emoji
+      };
+      if (!window._pcsReactions) window._pcsReactions = {};
+      if (!window._pcsReactions[commentId]) window._pcsReactions[commentId] = [];
+      window._pcsReactions[commentId].push(newReaction);
+
+      // Update DOM
+      if (reactEl) {
+        var count = window._pcsReactions[commentId].length;
+        reactEl.classList.add('pcs-reacted');
+        reactEl.innerHTML =
+          '<span class="pcs-react-icon pcs-react-emoji">' + emoji + '</span>' +
+          (count > 0 ? '<span class="pcs-react-count">' + count + '</span>' : '');
+      }
+    } catch(e) {
+      console.error('[pcs] addReaction failed:', e);
+      window.logError && window.logError(e && e.message, e && e.stack, 'pcs-add-reaction');
+      showToast('Failed to react', 'error');
+    }
+  });
+};
+
+window._pcsRemoveReaction = function(commentId, reactEl) {
+  return window.guardAction('pcs-unreact-' + commentId, async function() {
+    try {
+      var _name = (window.AppState.user.name || '');
+      var _reactions = (window._pcsReactions && window._pcsReactions[commentId]) || [];
+      var _mine = _reactions.find(function(r) { return r.author === _name; });
+      if (!_mine || !_mine.id) return;
+
+      await apiFetch('/post_comment_reactions?id=eq.' + _mine.id, {
+        method: 'DELETE'
+      });
+
+      // Remove from local state
+      window._pcsReactions[commentId] = _reactions.filter(function(r) { return r.id !== _mine.id; });
+
+      // Update DOM
+      if (reactEl) {
+        var count = window._pcsReactions[commentId].length;
+        reactEl.classList.remove('pcs-reacted');
+        if (count > 0) {
+          reactEl.innerHTML =
+            '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+            '<span class="pcs-react-count">' + count + '</span>';
+        } else {
+          reactEl.innerHTML =
+            '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+        }
+      }
+    } catch(e) {
+      console.error('[pcs] removeReaction failed:', e);
+      window.logError && window.logError(e && e.message, e && e.stack, 'pcs-remove-reaction');
+      showToast('Failed to remove reaction', 'error');
+    }
+  });
 };
 
 // -- Plus button menu (Task / Image) --

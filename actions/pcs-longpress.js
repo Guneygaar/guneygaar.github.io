@@ -124,7 +124,7 @@ console.log("LOADED:", "actions/pcs-longpress.js");
     if (resolveBtn) resolveBtn.addEventListener('click', function() {
       _removeMenu();
       if (typeof window.toggleTaskResolve === 'function') {
-        window.toggleTaskResolve(commentId, postId);
+        window.toggleTaskResolve(commentId, postId, isInternalNote);
       }
     });
   }

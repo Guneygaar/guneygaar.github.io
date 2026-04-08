@@ -6378,6 +6378,45 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   fill: none;
   stroke-width: 1.8;
 }
+.pcs-react-emoji {
+  font-size: 14px;
+}
+.pcs-reacted .pcs-react-icon svg {
+  stroke: #FF4B4B;
+  fill: #FF4B4B33;
+}
+.pcs-react-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #8E8E93;
+  line-height: 1;
+}
+.pcs-emoji-picker {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  background: #16161f;
+  border: 1px solid #323244;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  z-index: 300;
+  white-space: nowrap;
+}
+.pcs-emoji-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.pcs-emoji-btn:active {
+  background: #323244;
+}
 
 /* Resolved label for tasks */
 .pcs-resolved-label {
