@@ -33,8 +33,8 @@ Root config files:
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
-19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408p
+20 script tags + 1 stylesheet = 21 versioned resources total.
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409a
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -51,6 +51,7 @@ render/client.js         — client feed render (defer)
 render/pipeline.js       — pipeline render (defer)
 render/brief.js          — brief render (defer)
 actions/pcs.js           — Post Card System overlay (defer)
+actions/pcs-longpress.js — Long-press menu for PCS comments (defer)
 07-post-load.js          — post fetching (defer)
 08-post-actions.js       — stage changes, admin edit (defer)
 09-library.js            — library view (defer)
@@ -62,6 +63,7 @@ CRITICAL:
 - 00-appstate.js + 00-appstate-compat.js have NO defer — load synchronously
 - 09-library.js calls _renderPCS() directly — must stay on window.*
 - 04-router.js must always be the LAST script tag
+- actions/pcs-longpress.js must load AFTER actions/pcs.js (wraps openPCS)
 
 ## SECTION 4 — APPSTATE
 
@@ -264,7 +266,7 @@ PCS overlay: full page (not bottom sheet), slides right-to-left
 
 1. Bump ALL 20 ?v= strings in index.html together
    Format: ?v=YYYYMMDDx (e.g. ?v=20260401f)
-   Count: 20 total (1 stylesheet + 19 scripts). Never change just one.
+   Count: 21 total (1 stylesheet + 20 scripts). Never change just one.
 1. After EVERY merge purge Cloudflare immediately:
    dash.cloudflare.com -> srtd.io -> Caching -> Purge Everything
 1. Hard refresh all devices BEFORE testing
@@ -327,7 +329,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   Schedule: '*/30 * * * *' (every 30 min) + workflow_dispatch.
   Spec: tests/e2e/live-smoke-schedule.spec.js (6 tests) hits the
     real srtd.io + Supabase. Checks: site reachable, expected
-    version served, all 20 versioned assets return 200, Supabase
+    version served, all 21 versioned assets return 200, Supabase
     REST reachable, client can open a post + comments render,
     error_log has <3 rows in last 30 min.
   Required GitHub secrets for smoke workflow:
@@ -338,7 +340,7 @@ Post-deploy smoke (.github/workflows/smoke.yml):
   required env vars are missing skip with a console.warn rather
   than failing the whole suite.
 
-Current (verified 2026-04-06):
+Current (verified 2026-04-09):
 Unit test files: 21
 Unit tests:      508 passing, 0 failing
 E2E specs:       9
@@ -429,7 +431,7 @@ Pages branch:   main-/-root
 1. Never raw fetch() — always apiFetch()
 1. Never mutate AppState.posts.all — always setAll()
 1. Never reference /sorted/ — does not exist, files are at root
-1. All 20 ?v= strings must bump together — never just one file
+1. All 21 ?v= strings must bump together — never just one file
 1. 00-appstate.js + 00-appstate-compat.js have NO defer attribute
 1. Client comment input only renders for awaiting_approval
    and awaiting_brand_input — not all stages
@@ -585,6 +587,7 @@ window._pcsLbDownload, window._startCaptionEdit, window._cancelCaptionEdit,
 window._saveCaptionEdit, window._sharePostOnWhatsApp, window.submitPcsComment,
 window._doSubmitComment, window.toggleTaskResolve, window._initMentionDropup,
 window._showTaskAssign, window.submitPcsTask, window._pcsHandleCommentImg,
+window._pcsTogglePlusMenu, window._pcsLongpressRemoveMenu,
 window._pcsRenderImgPreviews, window._pcsRemoveCommentImg,
 window._pcsSetReply, window._pcsClearReply, window._pcsCopyComment,
 window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
@@ -1665,6 +1668,58 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero business logic changes. Zero data flow changes.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260408p.
+1. PCS comment visual redesign Part 2A — Instagram-style rendering
+   Location: actions/pcs.js, actions/pcs-longpress.js (new),
+   index.html, styles.css
+   Scope:
+   (a) _renderClientThread and _renderNoteThread rewritten:
+       DELETE/COPY action row removed from comment HTML. Only
+       visible "Reply" text remains below each comment (calls
+       exact same _pcsSetReply function). Heart SVG placeholder
+       added on right side (visual only, not wired to DB).
+       data-comment-id and data-author attributes added to
+       comment div for long-press handler to read.
+   (b) Thread grouping: comments grouped by parent_id. Top-level
+       comment + last reply always visible. Middle replies hidden
+       behind "View N more replies" expand link. Orphaned replies
+       render as top-level. Uses .pcs-thread-group wrapper.
+   (c) Same changes applied to internal notes (_renderNoteThread).
+       All note-specific features preserved: .pcs-vis-tag,
+       .pcs-mention-badge, .pcs-task-assignee, resolved accordion.
+   (d) Task checkbox: ☐/☑ emoji replaced with SVG dotted circles.
+       Unchecked = hollow dotted circle. Checked = green dotted
+       circle with checkmark polyline. onclick calls exact same
+       toggleTaskResolve(). "Resolved by" label added below done
+       tasks when resolved_by is truthy.
+   (e) Long-press bottom sheet: new file actions/pcs-longpress.js.
+       500ms touch-hold on .pcs-comment-item/.pcs-note-item shows
+       bottom sheet with Copy/Reply/Delete + Resolve task (for
+       tasks only). All buttons call exact same existing functions.
+       Delete permission: author === name || admin. Desktop
+       fallback via contextmenu event. Haptic vibrate(12).
+   (f) Plus button menu: + button in both input bars now shows
+       Task/Image popover instead of directly opening file picker.
+       Image calls exact same file input click. Task calls exact
+       same submitPcsComment(isTask=true) or _showTaskAssign().
+   (g) Reply tag moved inside input pill: old .pcs-reply-bar
+       removed from HTML. New .pcs-reply-tag inline element added
+       inside .pcs-ibar-pill showing "Author ·" with X dismiss.
+       _pcsSetReply and _pcsClearReply updated for new element IDs.
+   (h) CSS overhaul: comment items no border-bottom (whitespace
+       only). Avatar 30px (up from 28). Author 13px/700 #F0F0F2.
+       Text 13.5px #C0C0C8. Avatar colors solid hex backgrounds
+       (no alpha). .pcs-comment-reply no border-left. New classes:
+       .pcs-thread-group, .pcs-expand-link, .pcs-expand-line,
+       .pcs-expand-text, .pcs-comment-reply-btn, .pcs-comment-react,
+       .pcs-react-icon, .pcs-resolved-label, .pcs-lp-backdrop,
+       .pcs-lp-menu, .pcs-lp-item, .pcs-lp-cancel, .pcs-lp-delete,
+       .pcs-lp-resolve, .pcs-plus-menu, .pcs-plus-item,
+       .pcs-reply-tag, .pcs-reply-tag-x. Zero rgba(). All hex.
+   New file: actions/pcs-longpress.js. Script count: 21 (20+1).
+   Zero business logic changes. Zero new DB calls. Zero new API
+   endpoints. All onclick handlers call exact same functions.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409a.
 
 ## SECTION 13 — STABILITY ROADMAP
 

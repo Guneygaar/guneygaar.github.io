@@ -1021,163 +1021,247 @@ window.loadPcsComments = async function(postId) {
       return null;
     }
 
+    function _renderSingleClient(c) {
+      if (c.deleted) {
+        return '<div class="pcs-comment-item">' +
+          '<div class="pcs-avatar av-muted">?</div>' +
+          '<div class="pcs-comment-body">' +
+          '<div class="pcs-deleted-msg">This message was deleted.</div>' +
+          '</div></div>';
+      }
+      var _initial = (c.author||'?').charAt(0).toUpperCase();
+      var _taskObj = _parseTask(c);
+      var _isTask = !!_taskObj;
+      var _taskPrefix = _isTask
+        ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
+          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+          (c.resolved
+            ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
+            : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>') +
+          '</span> '
+        : '';
+      var _att = (function() {
+        try {
+          return typeof c.attachments === 'string'
+            ? JSON.parse(c.attachments)
+            : c.attachments;
+        } catch(e) { return null; }
+      })();
+      var _imgHtml = '';
+      if (_att && _att.type === 'images' && _att.urls) {
+        _imgHtml = '<div class="pcs-comment-imgs">' +
+          _att.urls.map(function(u) {
+            return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
+              'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
+              _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
+              '],' + _att.urls.indexOf(u) + ')">';
+          }).join('') +
+        '</div>';
+      }
+      var _resolvedLabel = (_isTask && c.resolved && c.resolved_by)
+        ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
+        : '';
+      var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
+      return '<div class="pcs-comment-item' +
+        (c.reply_to ? ' pcs-comment-reply' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
+        (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
+        '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
+        '<div class="pcs-comment-body">' +
+          '<div class="pcs-comment-meta">' +
+            '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+            '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
+          '</div>' +
+          (c.reply_to && c.reply_to_author ?
+            '<div class="pcs-reply-indicator">' +
+            '&#8629; ' + esc(c.reply_to_author) + '</div>'
+            : '') +
+          '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
+          ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+          _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+          _imgHtml +
+          _resolvedLabel +
+          '<div class="pcs-comment-reply-btn" ' +
+            'onclick="window._pcsSetReply(\'client\',\'' +
+            esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+            _escapedMsg + '\')">Reply</div>' +
+        '</div>' +
+        '<div class="pcs-comment-react" data-comment-id="' + esc(c.id) + '">' +
+          '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+        '</div>' +
+      '</div>';
+    }
+
     function _renderClientThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
-      return threadRows.map(function(c) {
-        if (c.deleted) {
-          return '<div class="pcs-comment-item">' +
-            '<div class="pcs-avatar av-muted">?</div>' +
-            '<div class="pcs-comment-body">' +
-            '<div class="pcs-deleted-msg">This message was deleted.</div>' +
-            '</div></div>';
+      // Build thread groups: top-level comments + their replies
+      var _topLevel = [];
+      var _replyMap = {};
+      threadRows.forEach(function(c) {
+        if (!c.reply_to) {
+          _topLevel.push(c);
+        } else {
+          if (!_replyMap[c.reply_to]) _replyMap[c.reply_to] = [];
+          _replyMap[c.reply_to].push(c);
         }
-        var _initial = (c.author||'?').charAt(0).toUpperCase();
-        var _taskObj = _parseTask(c);
-        var _isTask = !!_taskObj;
-        var _taskPrefix = _isTask
-          ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
-            '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
-            (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
-          : '';
-        var _att = (function() {
-          try {
-            return typeof c.attachments === 'string'
-              ? JSON.parse(c.attachments)
-              : c.attachments;
-          } catch(e) { return null; }
-        })();
-        var _imgHtml = '';
-        if (_att && _att.type === 'images' && _att.urls) {
-          _imgHtml = '<div class="pcs-comment-imgs">' +
-            _att.urls.map(function(u) {
-              return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
-                'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
-                _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
-                '],' + _att.urls.indexOf(u) + ')">';
-            }).join('') +
-          '</div>';
+      });
+      // Orphaned replies (parent not in this batch) become top-level
+      Object.keys(_replyMap).forEach(function(pid) {
+        var parentExists = threadRows.some(function(c) { return c.id === pid; });
+        if (!parentExists) {
+          _replyMap[pid].forEach(function(c) { _topLevel.push(c); });
+          delete _replyMap[pid];
         }
-        return '<div class="pcs-comment-item' +
-          (c.reply_to ? ' pcs-comment-reply' : '') + '" data-comment-id="' + esc(c.id) + '">' +
-          (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
-          '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
-          '<div class="pcs-comment-body">' +
-            '<div class="pcs-comment-meta">' +
-              '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
-              '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
-            '</div>' +
-            (c.reply_to && c.reply_to_author ?
-              '<div class="pcs-reply-indicator">' +
-              '&#8629; ' + esc(c.reply_to_author) + '</div>'
-              : '') +
-            '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
-            ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
-            _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
-            _imgHtml +
-            '<div class="pcs-comment-actions">' +
-            (c.author === _name || _roleLower === 'admin' ?
-              '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
-              'onclick="window._pcsConfirmDeleteComment(\'' +
-              esc(c.id) + '\',\'' + esc(postId) + '\')">DELETE</span>'
-              : '') +
-            '<span class="pcs-comment-action" ' +
-              'onclick="window._pcsSetReply(\'client\',\'' +
-              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-              esc(c.message) + '\')">REPLY</span>' +
-            '<span class="pcs-comment-action" ' +
-              'onclick="window._pcsCopyComment(\'' +
-              esc(c.message) + '\')">COPY</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
+      });
+      return _topLevel.map(function(parent) {
+        var replies = _replyMap[parent.id] || [];
+        var groupHtml = '<div class="pcs-thread-group">';
+        groupHtml += _renderSingleClient(parent);
+        if (replies.length === 1) {
+          groupHtml += _renderSingleClient(replies[0]);
+        } else if (replies.length > 1) {
+          var middle = replies.slice(0, replies.length - 1);
+          var last = replies[replies.length - 1];
+          groupHtml += '<div class="pcs-expand-link" onclick="this.nextElementSibling.style.display=\'block\';this.style.display=\'none\'">' +
+            '<span class="pcs-expand-line"></span>' +
+            '<span class="pcs-expand-text">View ' + middle.length + ' more repl' + (middle.length === 1 ? 'y' : 'ies') + '</span>' +
+            '</div>';
+          groupHtml += '<div class="pcs-hidden-replies" style="display:none">';
+          middle.forEach(function(r) { groupHtml += _renderSingleClient(r); });
+          groupHtml += '</div>';
+          groupHtml += _renderSingleClient(last);
+        }
+        groupHtml += '</div>';
+        return groupHtml;
       }).join('');
+    }
+
+    function _renderSingleNote(c) {
+      if (c.deleted) {
+        return '<div class="pcs-note-item">' +
+          '<div class="pcs-avatar av-muted">?</div>' +
+          '<div class="pcs-comment-body">' +
+          '<div class="pcs-deleted-msg">This message was deleted.</div>' +
+          '</div></div>';
+      }
+      var _initial = (c.author||'?').charAt(0).toUpperCase();
+      var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
+      var _mentionBadge = _mu.length
+        ? '<span class="pcs-mention-badge">@' + esc(_mu.join(', @')) + '</span>'
+        : '';
+      var _vis = (c.visibility||'all').toUpperCase();
+      if (_vis === 'SERVICING') _vis = 'SERV';
+      var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
+      var _taskObj = _parseTask(c);
+      var _isTask = !!_taskObj;
+      var _assignedTo = (_taskObj && _taskObj.assigned_to) ? _taskObj.assigned_to : null;
+      var _assignedLabel = _assignedTo
+        ? '<span class="pcs-task-assignee">@' + esc(_assignedTo) + '</span> '
+        : '';
+      var _taskPrefix = _isTask
+        ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
+          '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
+          (c.resolved
+            ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>'
+            : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>') +
+          '</span> '
+          + _assignedLabel
+        : '';
+
+      var _att = (function() {
+        try {
+          return typeof c.attachments === 'string'
+            ? JSON.parse(c.attachments)
+            : c.attachments;
+        } catch(e) { return null; }
+      })();
+      var _imgHtml = '';
+      if (_att && _att.type === 'images' && _att.urls) {
+        _imgHtml = '<div class="pcs-comment-imgs">' +
+          _att.urls.map(function(u) {
+            return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
+              'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
+              _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
+              '],' + _att.urls.indexOf(u) + ')">';
+          }).join('') +
+        '</div>';
+      }
+      var _resolvedLabel = (_isTask && c.resolved && c.resolved_by)
+        ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
+        : '';
+      var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
+      return '<div class="pcs-note-item' +
+        (c.reply_to ? ' pcs-comment-reply' : '') +
+        (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
+        (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
+        '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
+        '<div class="pcs-comment-body">' +
+          '<div class="pcs-comment-meta">' +
+            '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+            '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
+            _mentionBadge +
+            _visTag +
+          '</div>' +
+          (c.reply_to && c.reply_to_author ?
+            '<div class="pcs-reply-indicator">' +
+            '&#8629; ' + esc(c.reply_to_author) + '</div>'
+            : '') +
+          '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
+          ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+          _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+          _imgHtml +
+          _resolvedLabel +
+          '<div class="pcs-comment-reply-btn" ' +
+            'onclick="window._pcsSetReply(\'note\',\'' +
+            esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+            _escapedMsg + '\')">Reply</div>' +
+        '</div>' +
+        '<div class="pcs-comment-react" data-comment-id="' + esc(c.id) + '">' +
+          '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+        '</div>' +
+      '</div>';
     }
 
     function _renderNoteThread(threadRows, isEmpty) {
       if (!threadRows.length) return isEmpty;
-      return threadRows.map(function(c) {
-        if (c.deleted) {
-          return '<div class="pcs-note-item">' +
-            '<div class="pcs-avatar av-muted">?</div>' +
-            '<div class="pcs-comment-body">' +
-            '<div class="pcs-deleted-msg">This message was deleted.</div>' +
-            '</div></div>';
+      // Build thread groups: top-level notes + their replies
+      var _topLevel = [];
+      var _replyMap = {};
+      threadRows.forEach(function(c) {
+        if (!c.reply_to) {
+          _topLevel.push(c);
+        } else {
+          if (!_replyMap[c.reply_to]) _replyMap[c.reply_to] = [];
+          _replyMap[c.reply_to].push(c);
         }
-        var _initial = (c.author||'?').charAt(0).toUpperCase();
-        var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
-        var _mentionBadge = _mu.length
-          ? '<span class="pcs-mention-badge">@' + esc(_mu.join(', @')) + '</span>'
-          : '';
-        var _vis = (c.visibility||'all').toUpperCase();
-        if (_vis === 'SERVICING') _vis = 'SERV';
-        var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
-        var _taskObj = _parseTask(c);
-        var _isTask = !!_taskObj;
-        var _assignedTo = (_taskObj && _taskObj.assigned_to) ? _taskObj.assigned_to : null;
-        var _assignedLabel = _assignedTo
-          ? '<span class="pcs-task-assignee">@' + esc(_assignedTo) + '</span> '
-          : '';
-        var _taskPrefix = _isTask
-          ? '<span class="pcs-task-check' + (c.resolved ? ' pcs-task-done' : '') +
-            '" onclick="toggleTaskResolve(\'' + (c.id||'') + '\',\'' + postId + '\')">' +
-            (c.resolved ? '&#x2611;' : '&#x2610;') + '</span> '
-            + _assignedLabel
-          : '';
-
-        var _att = (function() {
-          try {
-            return typeof c.attachments === 'string'
-              ? JSON.parse(c.attachments)
-              : c.attachments;
-          } catch(e) { return null; }
-        })();
-        var _imgHtml = '';
-        if (_att && _att.type === 'images' && _att.urls) {
-          _imgHtml = '<div class="pcs-comment-imgs">' +
-            _att.urls.map(function(u) {
-              return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
-                'onclick="window._pcsOpenLightbox(\'' + esc(postId) + '\',[' +
-                _att.urls.map(function(x){ return '\'' + esc(x) + '\''; }).join(',') +
-                '],' + _att.urls.indexOf(u) + ')">';
-            }).join('') +
-          '</div>';
+      });
+      // Orphaned replies become top-level
+      Object.keys(_replyMap).forEach(function(pid) {
+        var parentExists = threadRows.some(function(c) { return c.id === pid; });
+        if (!parentExists) {
+          _replyMap[pid].forEach(function(c) { _topLevel.push(c); });
+          delete _replyMap[pid];
         }
-        return '<div class="pcs-note-item' +
-          (c.reply_to ? ' pcs-comment-reply' : '') +
-          (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '">' +
-          (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
-          '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
-          '<div class="pcs-comment-body">' +
-            '<div class="pcs-comment-meta">' +
-              '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
-              '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
-              _mentionBadge +
-              _visTag +
-            '</div>' +
-            (c.reply_to && c.reply_to_author ?
-              '<div class="pcs-reply-indicator">' +
-              '&#8629; ' + esc(c.reply_to_author) + '</div>'
-              : '') +
-            '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
-            ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
-            _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
-            _imgHtml +
-            '<div class="pcs-comment-actions">' +
-            (c.author === _name || _roleLower === 'admin' ?
-              '<span class="pcs-comment-action pcs-comment-delete-btn" ' +
-              'onclick="window._pcsConfirmDeleteComment(\'' +
-              esc(c.id) + '\',\'' + esc(postId) + '\',true)">DELETE</span>'
-              : '') +
-            '<span class="pcs-comment-action" ' +
-              'onclick="window._pcsSetReply(\'note\',\'' +
-              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-              esc(c.message) + '\')">REPLY</span>' +
-            '<span class="pcs-comment-action" ' +
-              'onclick="window._pcsCopyComment(\'' +
-              esc(c.message) + '\')">COPY</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
+      });
+      return _topLevel.map(function(parent) {
+        var replies = _replyMap[parent.id] || [];
+        var groupHtml = '<div class="pcs-thread-group">';
+        groupHtml += _renderSingleNote(parent);
+        if (replies.length === 1) {
+          groupHtml += _renderSingleNote(replies[0]);
+        } else if (replies.length > 1) {
+          var middle = replies.slice(0, replies.length - 1);
+          var last = replies[replies.length - 1];
+          groupHtml += '<div class="pcs-expand-link" onclick="this.nextElementSibling.style.display=\'block\';this.style.display=\'none\'">' +
+            '<span class="pcs-expand-line"></span>' +
+            '<span class="pcs-expand-text">View ' + middle.length + ' more repl' + (middle.length === 1 ? 'y' : 'ies') + '</span>' +
+            '</div>';
+          groupHtml += '<div class="pcs-hidden-replies" style="display:none">';
+          middle.forEach(function(r) { groupHtml += _renderSingleNote(r); });
+          groupHtml += '</div>';
+          groupHtml += _renderSingleNote(last);
+        }
+        groupHtml += '</div>';
+        return groupHtml;
       }).join('');
     }
 
@@ -2408,6 +2492,61 @@ window._pcsRemoveCommentImg = function(zone, idx) {
   _pcsRenderImgPreviews(zone);
 };
 
+// -- Plus button menu (Task / Image) --
+window._pcsTogglePlusMenu = function(btn, zone) {
+  // Remove any existing plus menu
+  var existing = document.querySelector('.pcs-plus-menu');
+  if (existing) { existing.remove(); return; }
+
+  var menu = document.createElement('div');
+  menu.className = 'pcs-plus-menu';
+
+  var taskBtn = document.createElement('button');
+  taskBtn.className = 'pcs-plus-item';
+  taskBtn.textContent = 'Task';
+  taskBtn.addEventListener('click', function() {
+    menu.remove();
+    if (zone === 'client') {
+      // Same flow as #pcs-task-btn-client onclick
+      var pid = document.getElementById('pcs-post-id');
+      var inp = document.getElementById('pcs-comment-input');
+      if (pid && inp && inp.value.trim()) {
+        window.submitPcsComment(pid.value, inp.value, 'all', true, false);
+      }
+    } else {
+      // Same flow as #pcs-task-btn-note onclick
+      if (typeof window._showTaskAssign === 'function') {
+        window._showTaskAssign('pcs-note-input', 'pcs-task-btn-note');
+      }
+    }
+  });
+
+  var imgBtn = document.createElement('button');
+  imgBtn.className = 'pcs-plus-item';
+  imgBtn.textContent = 'Image';
+  imgBtn.addEventListener('click', function() {
+    menu.remove();
+    // Same as original plus button — trigger file input
+    var inputId = zone === 'client' ? 'pcs-client-img-input' : 'pcs-note-img-input';
+    var fileInput = document.getElementById(inputId);
+    if (fileInput) fileInput.click();
+  });
+
+  menu.appendChild(taskBtn);
+  menu.appendChild(imgBtn);
+  btn.parentNode.appendChild(menu);
+
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function _dismiss(e) {
+      if (!menu.contains(e.target) && e.target !== btn) {
+        menu.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 10);
+};
+
 window._pcsSetReply = function(zone, commentId, author, message) {
   window._pcsReplyTo = commentId;
   window._pcsReplyToAuthor = author;
@@ -2415,16 +2554,17 @@ window._pcsSetReply = function(zone, commentId, author, message) {
     ? 'pcs-comment-input'
     : 'pcs-note-input';
   var input = document.getElementById(inputId);
-  var indicator = document.getElementById(
-    zone === 'client'
-      ? 'pcs-client-reply-indicator'
-      : 'pcs-note-reply-indicator'
-  );
-  if (indicator) {
-    indicator.innerHTML =
-      '<span style="flex:1;">Replying to ' + author + '</span><span class="pcs-reply-cancel" onclick="window._pcsClearReply(\'' + zone + '\')">✕</span>';
-    indicator.style.display = 'flex';
+
+  // Show reply tag inside input pill
+  var tagId = zone === 'client' ? 'pcs-client-reply-tag' : 'pcs-note-reply-tag';
+  var nameId = zone === 'client' ? 'pcs-client-reply-name' : 'pcs-note-reply-name';
+  var tag = document.getElementById(tagId);
+  var nameEl = document.getElementById(nameId);
+  if (tag && nameEl) {
+    nameEl.textContent = author + ' \u00B7';
+    tag.style.display = 'inline-flex';
   }
+
   document.querySelectorAll(
     '.pcs-comment-item, .pcs-note-item'
   ).forEach(function(el) {
@@ -2447,15 +2587,14 @@ window._pcsSetReply = function(zone, commentId, author, message) {
 window._pcsClearReply = function(zone) {
   window._pcsReplyTo = null;
   window._pcsReplyToAuthor = null;
-  var indicator = document.getElementById(
-    zone === 'client'
-      ? 'pcs-client-reply-indicator'
-      : 'pcs-note-reply-indicator'
-  );
-  if (indicator) {
-    indicator.style.display = 'none';
-    indicator.textContent = '';
+
+  // Hide reply tag
+  var tagId = zone === 'client' ? 'pcs-client-reply-tag' : 'pcs-note-reply-tag';
+  var tag = document.getElementById(tagId);
+  if (tag) {
+    tag.style.display = 'none';
   }
+
   document.querySelectorAll('.pcs-comment-replying-to')
     .forEach(function(el) {
       el.classList.remove('pcs-comment-replying-to');

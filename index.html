@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260408p">
+ <link rel="stylesheet" href="styles.css?v=20260409a">
 
 </head>
 <body>
@@ -909,10 +909,12 @@
         <span id="pcs-comments-count" style="display:none">0</span>
         <div id="pcs-comments-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;scrollbar-width:none;min-height:0"></div>
         <div class="pcs-ibar-wrap client">
-          <div id="pcs-client-reply-indicator" class="pcs-reply-bar" style="display:none"></div>
           <div id="pcs-client-img-previews"></div>
           <div class="pcs-ibar-pill">
-            <button class="pcs-ibar-plus" onclick="var i=document.getElementById('pcs-client-img-input');if(i)i.click()">+</button>
+            <div style="position:relative">
+              <button class="pcs-ibar-plus" onclick="window._pcsTogglePlusMenu(this,'client')">+</button>
+            </div>
+            <span class="pcs-reply-tag" id="pcs-client-reply-tag" style="display:none"><span id="pcs-client-reply-name"></span><button class="pcs-reply-tag-x" onclick="window._pcsClearReply('client')">&#x2715;</button></span>
             <textarea id="pcs-comment-input" class="pcs-ibar-input" placeholder="Reply to client..." rows="1" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';var s=document.getElementById('pcs-send-btn-client');if(s)s.style.opacity=this.value.trim()?'1':'0.45'"></textarea>
             <button id="pcs-send-btn-client" class="pcs-ibar-send" onclick="window.submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-comment-input')?document.getElementById('pcs-comment-input').value:'','all',false)">&#x2191;</button>
           </div>
@@ -935,11 +937,13 @@
           <div id="pcs-notes-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;background:#080806;scrollbar-width:none;min-height:0"></div>
         </div>
         <div class="pcs-ibar-wrap notes">
-          <div id="pcs-note-reply-indicator" class="pcs-reply-bar" style="display:none"></div>
           <div id="pcs-note-img-previews"></div>
           <div id="pcs-mention-dropup" style="display:none"></div>
           <div class="pcs-ibar-pill">
-            <button class="pcs-ibar-plus" onclick="var i=document.getElementById('pcs-note-img-input');if(i)i.click()">+</button>
+            <div style="position:relative">
+              <button class="pcs-ibar-plus" onclick="window._pcsTogglePlusMenu(this,'note')">+</button>
+            </div>
+            <span class="pcs-reply-tag" id="pcs-note-reply-tag" style="display:none"><span id="pcs-note-reply-name"></span><button class="pcs-reply-tag-x" onclick="window._pcsClearReply('note')">&#x2715;</button></span>
             <textarea id="pcs-note-input" class="pcs-ibar-input" placeholder="Add note... @mention" rows="1" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';var s=document.getElementById('pcs-send-btn-note');if(s)s.style.opacity=this.value.trim()?'1':'0.45'"></textarea>
             <button id="pcs-send-btn-note" class="pcs-ibar-send" onclick="submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-note-input')?document.getElementById('pcs-note-input').value:'',window._pcsNoteVisibility||'all',false,true)">&#x2191;</button>
           </div>
@@ -1073,26 +1077,27 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260408p"></script>
-<script src="00-appstate-compat.js?v=20260408p"></script>
-<script src="01-config.js?v=20260408p" defer></script>
-<script src="02-session.js?v=20260408p" defer></script>
-<script src="utils.js?v=20260408p" defer></script>
-<script src="03-auth.js?v=20260408p" defer></script>
-<script src="05-api.js?v=20260408p" defer></script>
-<script src="10-ui.js?v=20260408p" defer></script>
+<script src="00-appstate.js?v=20260409a"></script>
+<script src="00-appstate-compat.js?v=20260409a"></script>
+<script src="01-config.js?v=20260409a" defer></script>
+<script src="02-session.js?v=20260409a" defer></script>
+<script src="utils.js?v=20260409a" defer></script>
+<script src="03-auth.js?v=20260409a" defer></script>
+<script src="05-api.js?v=20260409a" defer></script>
+<script src="10-ui.js?v=20260409a" defer></script>
 
-<script src="06-post-create.js?v=20260408p" defer></script>
-<script defer src="render/dashboard.js?v=20260408p"></script>
-<script defer src="render/client.js?v=20260408p"></script>
-<script defer src="render/pipeline.js?v=20260408p"></script>
-<script defer src="render/brief.js?v=20260408p"></script>
-<script defer src="actions/pcs.js?v=20260408p"></script>
-<script src="07-post-load.js?v=20260408p" defer></script>
-<script src="08-post-actions.js?v=20260408p" defer></script>
-<script src="09-library.js?v=20260408p" defer></script>
-<script src="09-approval.js?v=20260408p" defer></script>
-<script src="04-router.js?v=20260408p" defer></script>
+<script src="06-post-create.js?v=20260409a" defer></script>
+<script defer src="render/dashboard.js?v=20260409a"></script>
+<script defer src="render/client.js?v=20260409a"></script>
+<script defer src="render/pipeline.js?v=20260409a"></script>
+<script defer src="render/brief.js?v=20260409a"></script>
+<script defer src="actions/pcs.js?v=20260409a"></script>
+<script defer src="actions/pcs-longpress.js?v=20260409a"></script>
+<script src="07-post-load.js?v=20260409a" defer></script>
+<script src="08-post-actions.js?v=20260409a" defer></script>
+<script src="09-library.js?v=20260409a" defer></script>
+<script src="09-approval.js?v=20260409a" defer></script>
+<script src="04-router.js?v=20260409a" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
