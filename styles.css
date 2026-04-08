@@ -5764,9 +5764,7 @@ body.client-mode .img-single {
   display: block;
 }
 
-body.client-mode .img-duo,
-body.client-mode .img-trio,
-body.client-mode .img-quad {
+body.client-mode .img-duo {
   max-height: 400px;
 }
 
