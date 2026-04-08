@@ -26,7 +26,6 @@ document.addEventListener('click', function(e) {
   var menu = window.AppState && window.AppState.pcs && window.AppState.pcs.activeMenu;
   if (!menu) return;
   if (e.target.closest('.pcs-confirm-overlay')) return;
-  if (menu.querySelector('input[type="date"]')) return;
   if (!menu.contains(e.target)) {
     menu.remove();
     window.AppState.pcs.activeMenu = null;
@@ -478,6 +477,7 @@ window._buildDriveLinkCard = _buildDriveLinkCard;
 
 // -- Metadata row builder (dot-separated text values) --
 // Order: Owner → Date → Format → Pillar → Location
+function _ucFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
 function _buildChipsRow(post, canEdit, canEditCreative, id) {
   var stageLC = post.stage || '';
   var canManage = canEdit || canEditCreative;
@@ -520,7 +520,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   if (post.format) {
     items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.format) +
+      '>' + esc(_ucFirst(post.format)) +
       (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
     items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format &#9662;</span>');
@@ -531,7 +531,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
     items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(pillarVal) +
+      '>' + esc(_ucFirst(pillarVal)) +
       (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
     items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar &#9662;</span>');
@@ -541,7 +541,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   if (post.location) {
     items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.location) +
+      '>' + esc(_ucFirst(post.location)) +
       (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
     items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location &#9662;</span>');
@@ -563,24 +563,81 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
 
-  // DATE: inline date input in dropdown
+  // DATE: custom calendar dropdown
   if (field === 'date') {
     var rect = chipEl.getBoundingClientRect();
     var drop = document.createElement('div');
     drop.className = 'pcs-chip-drop';
     drop.setAttribute('data-pcs-field', 'date');
     drop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;z-index:9700;';
-    drop.innerHTML = '<div style="padding:12px 16px;background:#141420">' +
-      '<input type="date" value="' + esc(post ? (post.targetDate || '') : '') + '" ' +
-      'style="width:100%;padding:10px 12px;background:#0f0f1a;border:1px solid #1c1c26;color:#fff;font-size:14px;outline:none;color-scheme:dark;font-family:inherit" ' +
-      'onchange="window._pcsDateChange(\'' + esc(postId) + '\',this.value)"/></div>';
+
+    var _curDate = post ? (post.targetDate || post.target_date || '') : '';
+    var _viewDate = _curDate ? new Date(_curDate + 'T00:00:00') : new Date();
+    if (isNaN(_viewDate.getTime())) _viewDate = new Date();
+
+    function _renderCal() {
+      var yr = _viewDate.getFullYear();
+      var mo = _viewDate.getMonth();
+      var today = new Date(); today.setHours(0,0,0,0);
+      var sel = _curDate ? new Date(_curDate + 'T00:00:00') : null;
+      var first = new Date(yr, mo, 1);
+      var startDay = first.getDay();
+      var daysInMonth = new Date(yr, mo + 1, 0).getDate();
+      var prevDays = new Date(yr, mo, 0).getDate();
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+      var html = '<div class="pcs-cal">';
+      html += '<div class="pcs-cal-hdr">';
+      html += '<button data-cal-nav="prev">&#8249;</button>';
+      html += '<span>' + months[mo] + ' ' + yr + '</span>';
+      html += '<button data-cal-nav="next">&#8250;</button>';
+      html += '</div>';
+      html += '<div class="pcs-cal-days">';
+      var dayLabels = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+      for (var d = 0; d < 7; d++) html += '<span>' + dayLabels[d] + '</span>';
+
+      for (var p = startDay - 1; p >= 0; p--) {
+        html += '<button class="other-month" data-cal-day="">' + (prevDays - p) + '</button>';
+      }
+      for (var i = 1; i <= daysInMonth; i++) {
+        var dd = new Date(yr, mo, i);
+        var cls = '';
+        if (dd.getTime() === today.getTime()) cls += ' today';
+        if (sel && dd.getTime() === sel.getTime()) cls += ' selected';
+        var iso = yr + '-' + String(mo + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+        html += '<button class="' + cls.trim() + '" data-cal-day="' + iso + '">' + i + '</button>';
+      }
+      var totalCells = startDay + daysInMonth;
+      var remaining = (7 - (totalCells % 7)) % 7;
+      for (var r = 1; r <= remaining; r++) {
+        html += '<button class="other-month" data-cal-day="">' + r + '</button>';
+      }
+      html += '</div></div>';
+      drop.innerHTML = html;
+
+      drop.querySelector('[data-cal-nav="prev"]').onclick = function(e) {
+        e.stopPropagation();
+        _viewDate.setMonth(_viewDate.getMonth() - 1);
+        _renderCal();
+      };
+      drop.querySelector('[data-cal-nav="next"]').onclick = function(e) {
+        e.stopPropagation();
+        _viewDate.setMonth(_viewDate.getMonth() + 1);
+        _renderCal();
+      };
+      drop.querySelectorAll('[data-cal-day]').forEach(function(btn) {
+        var val = btn.getAttribute('data-cal-day');
+        if (!val) return;
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          window._pcsDateChange(postId, val);
+        };
+      });
+    }
+
+    _renderCal();
     document.body.appendChild(drop);
     setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
-    var dateInp = drop.querySelector('input');
-    if (dateInp) {
-      dateInp.focus();
-      try { dateInp.showPicker(); } catch(e) {}
-    }
     return;
   }
 

@@ -6704,20 +6704,25 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-stage-pill .pcs-pill-arr { font-size: 6px; opacity: .4; }
 .pcs-od-pill {
-  padding: 4px 9px;
-  font-family: 'Courier New', monospace; font-size: 8px;
-  letter-spacing: .06em; text-transform: uppercase;
-  background: #FF4B4B14;
-  border: 1px solid #FF4B4B59;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
   color: #FF4B4B;
-  display: flex; align-items: center; gap: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  padding: 0;
 }
 .pcs-od-dot {
   width: 4px; height: 4px; border-radius: 50%;
   background: #FF4B4B;
-  animation: pcs-blink 1.5s infinite;
+  display: inline-block;
+  animation: pcs-od-pulse 2s infinite;
 }
-@keyframes pcs-blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+@keyframes pcs-od-pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
 
 /* Photo header */
 .pcs-photo-header {
@@ -6911,6 +6916,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-mv {
   color: #B8B8C0; cursor: pointer; padding: 3px 0;
   position: relative; transition: color .12s;
+  white-space: nowrap; display: inline-flex; align-items: center;
 }
 .pcs-mv:active { color: #F0F0F2; }
 .pcs-mv--red { color: #FF4B4B; }
@@ -6923,6 +6929,45 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-weight: 600; user-select: none;
 }
 
+/* Custom date calendar dropdown */
+.pcs-cal {
+  background: #101016;
+  border: 1px solid #18181f;
+  padding: 14px;
+  min-width: 270px;
+  box-shadow: 0 8px 32px #00000080;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.pcs-cal-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.pcs-cal-hdr span {
+  font-size: 11px; color: #E8E8E8; letter-spacing: .02em;
+}
+.pcs-cal-hdr button {
+  background: none; border: none; color: #AEAEB2; font-size: 14px;
+  cursor: pointer; padding: 4px 8px;
+}
+.pcs-cal-hdr button:active { color: #E8E8E8; }
+.pcs-cal-days {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; text-align: center;
+}
+.pcs-cal-days span {
+  font-size: 8px; color: #8E8E93; padding: 4px 0;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.pcs-cal-days button {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: #AEAEB2; background: none; border: none;
+  padding: 6px 0; cursor: pointer; text-align: center;
+}
+.pcs-cal-days button:hover { color: #E8E8E8; }
+.pcs-cal-days button.today { color: #C8A84B; font-weight: 700; }
+.pcs-cal-days button.selected { color: #080808; background: #C8A84B; }
+.pcs-cal-days button.other-month { color: #505060; }
+
 /* Tab bar */
 .pcs-tab-bar {
   display: flex;
@@ -6931,7 +6976,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-tab {
   flex: 1; padding: 11px 8px;
-  font-family: 'Courier New', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .07em; text-transform: uppercase;
   background: none; border: none; cursor: pointer;
   color: #6e6e80; text-align: center;
@@ -6950,7 +6995,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-bottom: 1px solid #3ECF8E1F;
   border-left: 1px solid #3ECF8E33;
   box-shadow: 0 2px 6px #00000080, inset 0 1px 0 #3ECF8E14;
-  color: #3ECF8E; font-family: 'Courier New', monospace;
+  color: #3ECF8E; font-family: 'IBM Plex Mono', monospace;
   font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
   cursor: pointer; display: flex; align-items: center;
   justify-content: center; gap: 8px;
