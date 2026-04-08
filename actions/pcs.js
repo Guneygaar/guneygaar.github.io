@@ -294,10 +294,9 @@ window._renderPCS = function(postId) {
       '<input type="hidden" id="pcs-post-id" value="' + esc(id) + '">';
   }
 
-  // f) WA button
-  var waHtml = _buildWAHtml(post, id, postId, stageLC);
+  // f) WA button removed from caption pane (topbar icon stays)
   var waContainer = document.getElementById('pcs-wa-container');
-  if (waContainer) waContainer.innerHTML = waHtml;
+  if (waContainer) waContainer.innerHTML = '';
 
   // f2) Caption action buttons (canManage only)
   var capActionsContainer = document.getElementById('pcs-cap-actions-container');
@@ -490,7 +489,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     var ownerLC = (post.owner || '').toLowerCase();
     if (ownerLC === 'servicing') ownerColor = ' pcs-mv--cyan';
     else if (ownerLC === 'creative') ownerColor = ' pcs-mv--purple';
-    else if (ownerLC === 'client') ownerColor = ' pcs-mv--amber';
+    else if (ownerLC === 'client') ownerColor = ' pcs-mv--red';
     items.push('<span class="pcs-mv' + ownerColor + '"' +
       (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) +
@@ -504,7 +503,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     try {
       var _dp = new Date(rawDate + 'T00:00:00');
       if (!isNaN(_dp.getTime())) {
-        dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+        dateDisplay = _dp.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
       }
     } catch(e) {}
   }
@@ -547,7 +546,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location &#9662;</span>');
   }
 
-  return items.join(_dot);
+  return items.filter(function(s){return s;}).join(_dot);
 }
 
 // -- Chip dropdown handler (body-appended, getBoundingClientRect positioned) --
@@ -592,7 +591,7 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     items = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
     currentVal = post ? (post.location || '') : '';
   } else if (field === 'owner') {
-    items = typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Creative','Servicing','Client','Admin'];
+    items = (typeof ALLOWED_OWNERS !== 'undefined' ? ALLOWED_OWNERS : ['Creative','Servicing','Client','Admin']).filter(function(o){return o.toLowerCase() !== 'admin';});
     currentVal = post ? (post.owner || '') : '';
   } else if (field === 'stage') {
     items = typeof STAGES_DB !== 'undefined' ? STAGES_DB : [];

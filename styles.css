@@ -3359,8 +3359,9 @@ label.pcs-date-tap:active { transform: scale(0.98); }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 16px 0;
+  padding: 10px 16px;
   flex-shrink: 0;
+  border-bottom: 1px solid #323244;
 }
 .pc-icon-btn {
   width: 34px;
@@ -6688,15 +6689,20 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* Topbar pills */
 .pcs-stage-pill {
-  padding: 4px 10px;
-  font-family: 'Courier New', monospace; font-size: 8px;
-  letter-spacing: .07em; text-transform: uppercase;
-  background: #F6A6231A;
-  border: 1px solid #F6A62366;
-  color: #F6A623; cursor: pointer;
-  display: flex; align-items: center; gap: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #C8A84B;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
-.pcs-stage-pill .pcs-pill-arr { font-size: 8px; opacity: .5; }
+.pcs-stage-pill .pcs-pill-arr { font-size: 6px; opacity: .4; }
 .pcs-od-pill {
   padding: 4px 9px;
   font-family: 'Courier New', monospace; font-size: 8px;
@@ -6732,10 +6738,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-photo-act {
   font-family: 'IBM Plex Mono', monospace; font-size: 7px;
   letter-spacing: .06em; text-transform: uppercase;
-  color: #505060; background: none; border: none;
-  padding: 10px 8px; cursor: pointer;
+  color: #808090; background: none; border: none;
+  padding: 10px 8px; cursor: pointer; font-weight: 500;
 }
-.pcs-photo-act:active { color: #F0F0F2; }
+.pcs-photo-act:active { color: #B8B8C0; }
 
 /* PCS PHOTO GRID — hero-driven layout */
 
@@ -6893,11 +6899,15 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Metadata row (dot-separated text values) */
 .pcs-meta-row {
   padding: 4px 16px 10px;
-  display: flex; flex-wrap: wrap; align-items: center;
+  display: flex; flex-wrap: nowrap; overflow-x: auto;
+  align-items: center;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .04em;
   border-bottom: 1px solid #323244;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.pcs-meta-row::-webkit-scrollbar { display: none; }
 .pcs-mv {
   color: #B8B8C0; cursor: pointer; padding: 3px 0;
   position: relative; transition: color .12s;
@@ -7074,7 +7084,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* FIX 7: Tight spacing between topbar and photos */
 #pcs-scroll { padding-top: 0; }
-.pcs-photo-header { padding: 6px 16px 0; margin-top: 6px; margin-bottom: 0; }
+.pcs-photo-header { padding: 6px 16px 4px; margin-top: 0; margin-bottom: 0; }
 #pcs-photo-grid-wrap { margin-top: 0; padding-top: 0; }
 
 /* FIX 8: Tighter caption */

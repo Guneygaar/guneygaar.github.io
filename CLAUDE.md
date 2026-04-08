@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409b
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409c
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1754,6 +1754,44 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero visual layout changes from Part 2A. Zero new HTML structure.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409b.
+1. PCS visual fixes Part 1 — 10 targeted fixes
+   Location: actions/pcs.js, styles.css, index.html
+   Scope:
+   (a) Stage pill removed — .pcs-stage-pill restyled to bare text
+       (no border, no background, no padding). Font changed from
+       Courier New to IBM Plex Mono. Color #C8A84B (gold). Arrow
+       span font-size 6px, opacity .4.
+   (b) ADD/EDIT/SAVE buttons bumped from #505060 to #808090 with
+       font-weight:500. Active state changed to #B8B8C0.
+   (c) Date format year removed — toLocaleDateString options
+       changed from {weekday:'short',day:'numeric',month:'short',
+       year:'numeric'} to {weekday:'short',day:'numeric',
+       month:'short'}. Output: "Wed, 1 Apr" not "Wed, 1 Apr 2026".
+   (d) Trailing dot safety — items.filter(Boolean) added before
+       join(_dot) in _buildChipsRow to prevent empty-item dots.
+   (e) Metadata dot separators already correct: #505060,
+       font-weight:600, padding 0 7px, user-select:none.
+   (f) Client owner color changed from pcs-mv--amber (#F6A623)
+       to pcs-mv--red (#FF4B4B). Other owner colors unchanged.
+   (g) Topbar tightened: padding changed from 8px 16px 0 to
+       10px 16px, border-bottom 1px solid #323244 added. Photo
+       header margin-top removed (6px→0), padding-bottom added
+       (0→4px).
+   (h) WhatsApp button + hint text removed from caption pane.
+       pcs-wa-container now always set to ''. Topbar WA icon and
+       _buildWAHtml function preserved.
+   (i) Admin filtered from owner dropdown — .filter(o =>
+       o.toLowerCase() !== 'admin') applied to ALLOWED_OWNERS
+       when building dropdown items. ALLOWED_OWNERS array itself
+       unchanged.
+   (j) Metadata row nowrap — flex-wrap changed from wrap to
+       nowrap, overflow-x:auto added, scrollbar-width:none,
+       -webkit-overflow-scrolling:touch. Webkit scrollbar hidden.
+   (k) All separators verified #323244 (meta-row border-bottom,
+       tab-bar border-bottom, topbar border-bottom).
+   Zero business logic changes. Zero data flow changes.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409c.
 
 ## SECTION 13 — STABILITY ROADMAP
 
