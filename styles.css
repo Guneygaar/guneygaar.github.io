@@ -6396,6 +6396,19 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding-left: 10px;
 }
 
+.pcs-reply-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #191924;
+  border-left: 2px solid #C8A84B;
+  margin: 0 8px 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #AEAEB2;
+}
+
 .pcs-reply-indicator {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;

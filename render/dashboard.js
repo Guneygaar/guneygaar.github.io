@@ -356,11 +356,11 @@ window.renderScoreboard = function() {
     if (elClMsg) {
       if (approvalOnly > 0 || inputOnly > 0) {
         elClMsg.innerHTML =
-          '<span style="cursor:pointer;color:var(--c-red);"' +
+          '<span style="cursor:pointer;color:var(--c-red);white-space:nowrap;"' +
           ' onclick="event.stopPropagation();openStageSheet(\'awaiting_approval\')">' +
           dashPad(approvalOnly) + ' APPROVAL</span>' +
           ' <span style="color:#555;">\u00b7</span> ' +
-          '<span style="cursor:pointer;color:#888;"' +
+          '<span style="cursor:pointer;color:#888;white-space:nowrap;"' +
           ' onclick="event.stopPropagation();openStageSheet(\'awaiting_brand_input\')">' +
           dashPad(inputOnly) + ' INPUT</span>';
       } else {
