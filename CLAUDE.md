@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408c
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408d
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1424,6 +1424,39 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    #6e6e80/#302a4a/#333344 (specialized UI accents), all 8-digit hex
    alpha values, rgba() approved exceptions, SVG values, mockups, tests.
    508/508 unit passing. Bumped to ?v=20260408c.
+1. Internal notes ALL chip shows only visibility=all notes
+   Location: actions/pcs.js line 1198-1199 — filteredNotes filter
+   used strict equality (visibility === 'all') when ALL chip active,
+   hiding notes with visibility admin/servicing/creative.
+   Status: FIXED (PR#TBD) — changed to bypass filter entirely when
+   _activeVis === 'all', so ALL chip shows every note regardless of
+   visibility tag. 508/508 unit passing.
+   Bumped to ?v=20260408d.
+1. Missing .pcs-reply-bar CSS class — reply bar unstyled
+   Location: index.html:913 and :939 use class="pcs-reply-bar" on
+   #pcs-client-reply-indicator and #pcs-note-reply-indicator, but
+   styles.css had no .pcs-reply-bar rule. The class name did not
+   match .pcs-reply-indicator-bar (the only styled variant).
+   Status: FIXED (PR#TBD) — added .pcs-reply-bar rule to styles.css
+   (display:none default, flex when JS sets display:flex, gold left
+   border, dark background, mono font). 508/508 unit passing.
+   Bumped to ?v=20260408d.
+1. Drive link empty state shown when no URL exists
+   Location: actions/pcs.js lines 248-250 — showed "+ Add drive link"
+   empty state to agency users (canManage) even when post had no
+   drive_link. Drive links should only be added at post creation.
+   Status: FIXED (PR#TBD) — removed the else-if canManage branch.
+   #pcs-drive-link-wrap now only shows when driveUrl is truthy;
+   otherwise display:none regardless of role. 508/508 unit passing.
+   Bumped to ?v=20260408d.
+1. Dashboard CLIENT metric row text wraps on narrow screens
+   Location: render/dashboard.js lines 358-365 — the clickable
+   approval/input count spans lacked white-space:nowrap, causing
+   the CLIENT row to be taller than other metric rows on narrow
+   viewports.
+   Status: FIXED (PR#TBD) — added white-space:nowrap to both
+   approval and input <span> elements. 508/508 unit passing.
+   Bumped to ?v=20260408d.
 
 ## SECTION 13 — STABILITY ROADMAP
 

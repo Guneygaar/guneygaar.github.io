@@ -245,9 +245,6 @@ window._renderPCS = function(postId) {
     if (driveUrl) {
       driveLinkWrap.style.display = 'block';
       driveLinkWrap.innerHTML = _buildDriveLinkCard(driveUrl, canManage, post.post_id || post.id);
-    } else if (canManage) {
-      driveLinkWrap.style.display = 'block';
-      driveLinkWrap.innerHTML = _buildDriveLinkCard(null, canManage, post.post_id || post.id);
     } else {
       driveLinkWrap.style.display = 'none';
     }
@@ -1195,9 +1192,11 @@ window.loadPcsComments = async function(postId) {
 
     if (notesList && _roleLower !== 'client') {
       var _activeVis = window._pcsNoteVisibility || 'all';
-      var filteredNotes = internalRows.filter(function(c) {
-        return (c.visibility || 'all') === _activeVis;
-      });
+      var filteredNotes = _activeVis === 'all'
+        ? internalRows
+        : internalRows.filter(function(c) {
+            return (c.visibility || 'all') === _activeVis;
+          });
       var resolvedRows = filteredNotes.filter(function(c) { return c.resolved; });
       var activeRows = filteredNotes.filter(function(c) { return !c.resolved; });
 
