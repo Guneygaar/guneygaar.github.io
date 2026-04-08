@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408m
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408n
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1564,6 +1564,21 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    menu.remove() + activeMenu = null for non-date dropdowns.
    showPicker() (line 542) retained from prior fix for desktop.
    508/508 unit passing. Bumped to ?v=20260408m.
+1. PCS date picker — date never saved (pcs.open flag never set)
+   Location: actions/pcs.js _pcsDateChange() line 618 guards the
+   updatePost + openPCS calls behind window.AppState.pcs.open.
+   But pcs.open was initialized false in 00-appstate.js:32 and
+   NEVER set to true anywhere. openPCS() set ui.modalOpen = true
+   (line 70) but never set pcs.open = true. The entire save block
+   inside _pcsDateChange was dead code — dropdown closed, date
+   value silently dropped every time.
+   Status: FIXED (PR#TBD) — added window.AppState.pcs.open = true
+   in openPCS() (line 71, right after modalOpen = true), and
+   window.AppState.pcs.open = false in forcePCSReset() (line 151,
+   right after modalOpen = false). closePCS() delegates to
+   forcePCSReset so both paths are covered. _pcsDateChange guard
+   unchanged — it was correct, the flag was just never set.
+   508/508 unit passing. Bumped to ?v=20260408n.
 
 ## SECTION 13 — STABILITY ROADMAP
 

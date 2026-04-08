@@ -68,6 +68,7 @@ window.openPCS = function(postId, listKey) {
   overlay.style.pointerEvents = '';
 
   window.AppState.ui.modalOpen = true;
+  window.AppState.pcs.open = true;
   document.body.style.overflow = 'hidden';
 
   try {
@@ -147,6 +148,7 @@ window.forcePCSReset = function() {
 
   // 5. Reset all state flags
   window.AppState.ui.modalOpen = false;
+  window.AppState.pcs.open = false;
 
   // 6. Clear PCS context
   window._pcs.postId = null;
