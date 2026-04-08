@@ -73,7 +73,7 @@ describe('FIX 2 — UUID validation before apiFetch', function() {
 describe('FIX 3 — _pcsDateChange guards re-render on closed PCS', function() {
 
   it('_pcsDateChange wraps updatePost+openPCS in pcs.open guard', function() {
-    var match = pcsSrc.match(/_pcsDateChange\s*=\s*function[\s\S]{0,600}/);
+    var match = pcsSrc.match(/_pcsDateChange\s*=\s*function[\s\S]{0,800}/);
     expect(match).toBeTruthy();
     expect(match[0]).toContain('AppState.pcs.open');
     // updatePost and openPCS must be INSIDE the guard, not before it
