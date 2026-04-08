@@ -12,7 +12,6 @@ window._pcs = {
   idx:     0,
 };
 window._pcsCloseTimer = null;
-window._pcsEditingTarget = null;
 window._pcsLbImages = [];
 window._pcsLbIdx = 0;
 window._pcsClientImgs = [];
@@ -712,49 +711,11 @@ function _buildWAHtml(post, id, postId, stageLC) {
     '</div>';
 }
 
-// -- Subtitle sync — now shows stage pill + owner + date summary --
-window._updateSubtitle = function(post) {
-  var el = document.getElementById('pcs-subtitle');
-  if (!el || !post) return;
-  var stLC = post.stage || '';
-  var stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stLC]) || stLC || '';
-  var stageColor = '#AEAEB2';
-  if (stLC === 'in_production' || stLC === 'awaiting_brand_input') stageColor = '#F6A623';
-  else if (stLC === 'ready') stageColor = '#3ECF8E';
-  else if (stLC === 'awaiting_approval') stageColor = '#FF4B4B';
-  else if (stLC === 'scheduled') stageColor = '#22D3EE';
-  else if (stLC === 'published') stageColor = '#8E8E93';
-
-  var pLabel = post.contentPillar ? (typeof getPillarShort === 'function' ? getPillarShort(post.contentPillar) : post.contentPillar) : '';
-  var dVal = post.targetDate || '';
-  var dDisp = (typeof formatDate === 'function' ? formatDate(dVal) : dVal) || '';
-  var ownerDisp = typeof formatOwner === 'function' ? formatOwner(post.owner) : (post.owner || '');
-
-  var parts = [];
-  if (pLabel) parts.push(esc(pLabel));
-  if (ownerDisp && ownerDisp !== '--') parts.push(esc(ownerDisp));
-  if (dDisp) parts.push(esc(dDisp));
-  var html = '<span class="pcs-stage-pill" style="color:' + stageColor + ';border-color:' + stageColor + ';">' + esc(stageLabel) + '</span>';
-  if (parts.length) html += '<span class="pc-sub-dot"></span>' + parts.join('<span class="pc-sub-dot"></span>');
-
-  // Overdue badge
-  var _noOverdue = ['published', 'parked', 'rejected'];
-  if (_noOverdue.indexOf(stLC) === -1 && dVal) {
-    var td = typeof parseDate === 'function' ? parseDate(dVal) : null;
-    var now = new Date(); now.setHours(0,0,0,0);
-    if (td && td < now) {
-      html += '<span class="pc-sub-dot"></span><span class="pc-overdue-badge">Overdue</span>';
-    }
-  }
-  el.innerHTML = html;
-}
-
 // -- Inline title editing --------------
 window._pcsTitleEdit = function(el, postId) {
   if (el.querySelector('input')) return; // already editing
   // Close other interactive layers  -  only one at a time
   _removePcsConfirm();
-  pcsCloseAttach(postId);
   const current = el.textContent;
   const input = document.createElement('input');
   input.type = 'text';
@@ -1195,12 +1156,7 @@ window.loadPcsComments = async function(postId) {
 
     var countEl = document.getElementById('pcs-comments-count');
     if (countEl) {
-      if (clientRows.length) {
-        countEl.textContent = clientRows.length;
-        countEl.style.display = 'inline';
-      } else {
-        countEl.style.display = 'none';
-      }
+      countEl.textContent = clientRows.length;
     }
 
     // Update tab count badge
@@ -1242,12 +1198,7 @@ window.loadPcsComments = async function(postId) {
 
       var notesCountEl = document.getElementById('pcs-notes-count');
       if (notesCountEl) {
-        if (filteredNotes.length) {
-          notesCountEl.textContent = activeRows.length;
-          notesCountEl.style.display = 'inline';
-        } else {
-          notesCountEl.style.display = 'none';
-        }
+        notesCountEl.textContent = activeRows.length;
       }
 
       // Update tab count badge
@@ -1273,8 +1224,6 @@ window.loadPcsComments = async function(postId) {
 
 window._showStageConfirm = function(postId, newStage) {
   _removePcsConfirm();
-  // Close any open attach editor  -  only one interactive layer at a time
-  if (window._pcs.postId) pcsCloseAttach(window._pcs.postId);
   const displayName = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[newStage]) || newStage;
   const overlay = document.createElement('div');
   overlay.className = 'pcs-confirm-overlay';
@@ -1290,262 +1239,6 @@ window._showStageConfirm = function(postId, newStage) {
     </div>`;
   document.body.appendChild(overlay);
   setTimeout(function() { overlay.classList.add('open'); }, 10);
-}
-
-window._buildStageProgress = function(stageLC) {
-  const steps = [
-    { key: 'in_production',      label: 'Production' },
-    { key: 'ready',              label: 'Ready' },
-    { key: 'awaiting_approval',  label: 'Approval' },
-    { key: 'scheduled',          label: 'Scheduled' },
-    { key: 'published',          label: 'Published' },
-  ];
-  // Normalise variant stages to a progress step
-  const norm =
-    (stageLC === 'awaiting_brand_input') ? 'in_production'     :
-    (stageLC === 'parked')               ? 'scheduled'         :
-    (stageLC === 'rejected')             ? 'in_production'     :
-    stageLC;
-
-  const activeIdx = steps.findIndex(function(s) { return s.key === norm; });
-
-  var html = steps.map(function(s, i) {
-    var isDone    = activeIdx !== -1 && i < activeIdx;
-    var isCurrent = i === activeIdx;
-    var dotCls = isDone ? 'pc-pipe-dot done' : isCurrent ? 'pc-pipe-dot current' : 'pc-pipe-dot future';
-    var lblCls = isDone ? 'pc-pipe-lbl done' : isCurrent ? 'pc-pipe-lbl current' : 'pc-pipe-lbl future';
-    return '<div class="pc-pipe-step">' +
-      '<div class="' + dotCls + '"></div>' +
-      '<div class="' + lblCls + '">' + s.label + '</div>' +
-    '</div>';
-  }).join('');
-
-  return '<div class="pc-pipeline">' + html + '</div>';
-}
-
-window._buildInlineActions = function(canvaUrl, linkedinUrl, isPublished, canEdit, postId, stageLC) {
-  // URL-aware label for the design link
-  var designLabel = canvaUrl
-    ? (canvaUrl.includes('canva.com') ? 'Canva' : canvaUrl.includes('linkedin.com') ? 'LinkedIn' : 'Design')
-    : '';
-
-  var links = '';
-  if (canvaUrl) {
-    links += '<a href="' + esc(canvaUrl) + '" target="_blank" rel="noopener" class="pc-action-link canva" onclick="closePCS()">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
-      esc(designLabel) + '</a>';
-  }
-  if (linkedinUrl) {
-    links += '<a href="' + esc(linkedinUrl) + '" target="_blank" rel="noopener" class="pc-action-link linkedin" onclick="closePCS()">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
-      'LinkedIn</a>';
-  }
-  if (!canvaUrl && canEdit) {
-    links += '<button class="pc-action-link canva" onclick="_pcsEditLink(\'' + esc(postId) + '\',\'canva\')">+ Design</button>';
-  }
-  if (!linkedinUrl && canEdit) {
-    links += '<button class="pc-action-link linkedin" onclick="_pcsEditLink(\'' + esc(postId) + '\',\'linkedin\')">LinkedIn</button>';
-  }
-
-  // Attach URL editor
-  var attachRow = canEdit
-    ? '<div class="pcs-attach-row" id="pcs-attach-row-' + esc(postId) + '" style="display:none">' +
-        '<input type="url" class="pcs-attach-input" id="pcs-attach-input-' + esc(postId) + '" placeholder="Paste link...">' +
-        '<button class="pcs-attach-save" onclick="pcsSaveAttach(\'' + esc(postId) + '\')">Save</button>' +
-      '</div>' +
-      '<button class="pcs-attach-cancel" id="pcs-attach-cancel-' + esc(postId) + '" style="display:none" onclick="pcsCloseAttach(\'' + esc(postId) + '\')">Cancel</button>'
-    : '';
-
-  return '<div class="pc-actions-block">' + links + attachRow + '</div>';
-}
-
-window._pcsEditLink = function(postId, target) {
-  window._pcsEditingTarget = target; // 'canva' or 'linkedin'
-  const row = document.getElementById(`pcs-attach-row-${postId}`);
-  const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
-  if (!row) return;
-  row.style.display = 'flex';
-  if (cancel) cancel.style.display = '';
-  // Close any confirm overlay first  -  only one interactive layer at a time
-  _removePcsConfirm();
-  const input = document.getElementById(`pcs-attach-input-${postId}`);
-  if (input) {
-    input.value = '';
-    input.placeholder = target === 'linkedin' ? 'Paste LinkedIn link...' : 'Paste Canva link...';
-    input.focus();
-    input.onkeydown = function(e) {
-      if (e.key === 'Escape') { pcsCloseAttach(postId); }
-    };
-  }
-}
-
-window.pcsCloseAttach = function(postId) {
-  window._pcsEditingTarget = null;
-  const row = document.getElementById(`pcs-attach-row-${postId}`);
-  const cancel = document.getElementById(`pcs-attach-cancel-${postId}`);
-  if (row) row.style.display = 'none';
-  if (cancel) cancel.style.display = 'none';
-}
-
-window.pcsSaveAttach = async function(postId) {
-  const input = document.getElementById(`pcs-attach-input-${postId}`);
-  const url = (input?.value || '').trim();
-  if (!url || !url.startsWith('http')) { showToast('Enter a valid URL', 'error'); return; }
-  try {
-  // Save to the field that matches the editing target  -  never infer from stage
-  const field = window._pcsEditingTarget === 'linkedin' ? 'linkedinUrl' : 'postLink';
-  await updatePost(postId, field, url);
-  // Clear editing state and hide attach row (auto-disappear)
-  window._pcsEditingTarget = null;
-  pcsCloseAttach(postId);
-  // Re-render photo grid (not the old inline actions layout)
-  var _attachPost = (window.AppState.posts.all || []).find(function(p) {
-    return p.post_id === postId || (p.id && p.id === postId);
-  });
-  if (_attachPost) {
-    var _attachImgs = Array.isArray(_attachPost.images) ? _attachPost.images : [];
-    var _attachRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-    var _attachIsPranav = _attachRole === 'creative' || _attachRole === 'pranav' ||
-      (window.AppState.user.email || '').toLowerCase().includes('pranav');
-    var _attachCanEdit = _attachRole !== 'client' && !_attachIsPranav;
-    var _attachCanEditCreative = _attachIsPranav;
-    var _attachIsAdmin = _attachRole === 'admin';
-    var _attachWrap = document.getElementById('pcs-photo-grid-wrap');
-    if (_attachWrap) {
-      _attachWrap.innerHTML = _buildPhotoGrid(_attachImgs, _attachCanEdit, _attachCanEditCreative, _attachIsAdmin, postId);
-    }
-  }
-  } catch(err) {
-    console.error('[pcs] save attachment failed', err);
-    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-attach');
-    showToast && showToast('Failed to save attachment', 'error');
-  }
-}
-
-window._loadPCSActivity = function(postId, bodyEl) {
-  // READ from activity_log removed - activity_log contains system noise.
-  // Use notifications table for user-facing messages instead.
-  bodyEl.innerHTML = '<div class="pcs-activity-empty">No activity yet.</div>';
-}
-
-window._buildInfoGrid = function(post, canEdit, canEditCreative, id) {
-  var LOCS     = ['Mumbai','Sakarwadi','Sameerwadi','Other'];
-  var OWNERS   = ALLOWED_OWNERS;
-  var FORMATS  = ['Creative','Photo','Carousel','Video','Text'];
-
-  var stageLC     = post.stage || '';
-  var isPublished = stageLC === 'published';
-  var dateLabel   = isPublished ? 'Published Date' : 'Target Date';
-  var dateValue   = isPublished
-    ? (post.targetDate || '')
-    : (post.targetDate || '');
-
-  // Stage color class
-  var stageColorCls = '';
-  if (stageLC === 'in_production' || stageLC === 'awaiting_brand_input') stageColorCls = ' pc-meta-val--production';
-  else if (stageLC === 'ready') stageColorCls = ' pc-meta-val--ready';
-  else if (stageLC === 'awaiting_approval') stageColorCls = ' pc-meta-val--approval';
-  else if (stageLC === 'scheduled') stageColorCls = ' pc-meta-val--scheduled';
-  else if (stageLC === 'published') stageColorCls = ' pc-meta-val--published';
-
-  // Overdue date class
-  var dateColorCls = '';
-  if (!isPublished && dateValue) {
-    var td = parseDate(dateValue);
-    var now = new Date(); now.setHours(0,0,0,0);
-    if (td && td < now) dateColorCls = ' pc-meta-val--overdue';
-  }
-
-  function mkSel(field, opts, val, dbField, displayMap) {
-    var options = opts.map(function(o) {
-      var label = displayMap ? (displayMap[o] || o) : o;
-      return '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(label) + '</option>';
-    }).join('');
-    return '<select' + (canEdit ? ' onchange="updatePost(\'' + esc(id) + '\',\'' + (dbField||field) + '\',this.value)"' : ' disabled') + '>' + options + '</select>';
-  }
-
-  function mkRo(val) { return '<span>' + esc(val || ' - ') + '</span>'; }
-
-  // Stage selector
-  var stageSel = canEdit
-    ? (function() {
-        var opts = STAGES_DB.map(function(o) {
-          var dl = STAGE_DISPLAY ? (STAGE_DISPLAY[o] || o) : o;
-          return '<option value="' + esc(o) + '"' + (o === (post.stage||'') ? ' selected' : '') + '>' + esc(dl) + '</option>';
-        }).join('');
-        return '<select onchange="changeStage(this.value)">' + opts + '</select>';
-      })()
-    : '<span>' + esc(stageStyle(post.stage).label || post.stage || ' - ') + '</span>';
-
-  // Date field
-  var dateInput = canEdit
-    ? '<label class="pcs-date-tap"><span class="pcs-date-text">' + esc(displayDate(dateValue)) + '</span>' +
-      '<input type="date" class="pcs-date-input-native" value="' + esc(dateValue) + '"' +
-      ' onchange="this.closest(\'.pcs-date-tap\').querySelector(\'.pcs-date-text\').textContent=displayDate(this.value);updatePost(\'' + esc(id) + '\',\'targetDate\',this.value)"' +
-      ' style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer"></label>'
-    : '<span>' + esc(formatDate(dateValue) || ' - ') + '</span>';
-
-  function cell(label, content, extraCls) {
-    return '<div class="pc-meta-cell">' +
-      '<div class="pc-meta-lbl">' + label + '</div>' +
-      '<div class="pc-meta-val' + (extraCls || '') + '">' + content + '</div>' +
-    '</div>';
-  }
-
-  return '<div class="pc-meta-block"><div class="pc-meta-grid">' +
-    cell('Stage', stageSel, stageColorCls) +
-    cell('Owner', canEdit
-      ? (function() {
-          var opts = OWNERS.map(function(o) {
-            return '<option value="' + esc(o) + '"' + (o === (post.owner||'') ? ' selected' : '') + '>' + esc(o) + '</option>';
-          }).join('');
-          return '<select onchange="handleOwnerChange(\'' + esc(id) + '\',this.value)">' + opts + '</select>';
-        })()
-      : mkRo(formatOwner(post.owner))) +
-    cell('Pillar', (canEdit || canEditCreative) ? mkSel('contentPillar', PILLARS_DB, post.contentPillar||'', 'contentPillar', PILLAR_DISPLAY) : mkRo(formatPillarDisplay(post.contentPillar) || ' - ')) +
-    cell('Location', (canEdit || canEditCreative) ? mkSel('location', LOCS, post.location||'', 'location') : mkRo(post.location)) +
-    cell('Format', (canEdit || canEditCreative) ? mkSel('format', FORMATS, post.format||'', 'format') : mkRo(post.format)) +
-    cell(dateLabel, dateInput, dateColorCls) +
-  '</div></div>';
-}
-
-window._buildNotes = function() {
-  return '';
-}
-
-// -- Stage advance button (FIX 7) --
-window._ADVANCE_SEQ = ['in_production', 'ready', 'awaiting_approval', 'scheduled', 'published'];
-window._ADVANCE_LABELS = {
-  'ready': 'Move to Ready',
-  'awaiting_approval': 'Send for Approval',
-  'scheduled': 'Mark Scheduled',
-  'published': 'Mark Published'
-};
-window._ADVANCE_CLS = {
-  'ready': 'to-ready',
-  'awaiting_approval': 'to-approval',
-  'scheduled': 'to-scheduled',
-  'published': 'to-published'
-};
-
-window._renderAdvanceButton = function(stageLC) {
-  // Advance button removed from redesign — stage changes via topbar pill dropdown only.
-  // Keep function signature intact (called from _renderPCS), just always hide the block.
-  var block = document.getElementById('pc-advance-block');
-  if (block) block.style.display = 'none';
-}
-
-// -- Activity count (FIX 9) --
-window._renderActivityCount = function(postId) {
-  var countEl = document.getElementById('pc-activity-count');
-  if (!countEl) return;
-  countEl.textContent = '';
-  // Attempt to count from already-loaded activity body
-  var body = document.getElementById('pcs-activity-body');
-  if (body && body.dataset.loadedFor === postId) {
-    var rows = body.querySelectorAll('.pcs-activity-row');
-    if (rows.length) countEl.textContent = rows.length;
-  }
 }
 
 window._removePcsConfirm = function() {
@@ -1919,37 +1612,6 @@ window._pcsSaveAllPhotos = async function(postId) {
     a.click();
     document.body.removeChild(a);
     await new Promise(function(resolve) { setTimeout(resolve, 300); });
-  }
-};
-
-window._pcsCaptionMenu = function(postId, e) {
-  if (e) e.stopPropagation();
-  if (window.AppState.pcs.activeMenu) {
-    window.AppState.pcs.activeMenu.remove();
-    window.AppState.pcs.activeMenu = null;
-    return;
-  }
-  var menu = document.createElement('div');
-  menu.id = 'pcs-caption-menu-drop';
-  menu.style.cssText = 'position:absolute;right:18px;' +
-    'background:#1e1e26;border:1px solid #2a2a36;' +
-    'z-index:200;min-width:140px;overflow:hidden;';
-  menu.innerHTML =
-    '<div class="pcs-menu-item" onclick="window._pcsCopyCaption(\'' +
-      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-      'Copy</div>' +
-    '<div class="pcs-menu-item" onclick="_startCaptionEdit(\'' +
-      postId + '\');if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}">' +
-      'Edit</div>' +
-    '<div class="pcs-menu-item pcs-menu-item-danger" ' +
-      'onclick="if(window.AppState.pcs.activeMenu){window.AppState.pcs.activeMenu.remove();window.AppState.pcs.activeMenu=null;}window._pcsConfirmReplace(\'' +
-      postId + '\');">' +
-      'Replace</div>';
-  var section = document.getElementById('pcs-caption-section');
-  if (section) {
-    section.style.position = 'relative';
-    section.appendChild(menu);
-    window.AppState.pcs.activeMenu = menu;
   }
 };
 

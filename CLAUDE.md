@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-08
+# Last updated: 2026-04-09
 
 # All facts verified from actual codebase
 
@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408n
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408o
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -568,20 +568,17 @@ actions/pcs.js:
 window._pcsLbImages, window._pcsLbIdx, window._pcsActiveTab, window._pcsDateChange,
 window.openPCS, window.closePCS, window.forcePCSReset,
 window._renderPCS, window._pcsTabSwitch, window._pcsChipDrop,
-window._updateSubtitle, window._pcsTitleEdit,
+window._pcsTitleEdit,
 window.changeStage, window._showPublishSheet, window._removePublishSheet,
 window._saveLiUrlInline, window.loadPcsComments, window._showStageConfirm,
-window._buildStageProgress, window._buildInlineActions, window._buildDriveLinkCard,
-window._pcsEditLink,
-window.pcsCloseAttach, window.pcsSaveAttach, window._loadPCSActivity,
-window._buildInfoGrid, window._buildNotes, window._renderAdvanceButton,
-window._renderActivityCount, window._removePcsConfirm, window.pcsConfirmDelete,
+window._buildDriveLinkCard,
+window._removePcsConfirm, window.pcsConfirmDelete,
 window.pcsDoDelete, window._pcsAddPhotos, window._pcsHandlePhotoInput,
 window._pcsRemovePhoto, window._pcsPhotoMenu, window._pcsSaveAllPhotos,
 window._pcsCloseUnifiedMenu, window._pcsEnterEditMode, window._pcsExitEditMode,
 window._pcsConfirmRemovePhoto, window._pcsDoRemovePhotoEdit,
 window._pcsConfirmClearCaption, window._pcsDoClearing,
-window._pcsCaptionMenu, window._pcsCopyCaption, window._pcsConfirmReplace,
+window._pcsCopyCaption, window._pcsConfirmReplace,
 window._pcsDoReplace, window._pcsOpenLightbox, window._pcsLbRender,
 window._pcsLbNext, window._pcsLbPrev, window._pcsLbClose,
 window._pcsLbDownload, window._startCaptionEdit, window._cancelCaptionEdit,
@@ -1579,6 +1576,51 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    forcePCSReset so both paths are covered. _pcsDateChange guard
    unchanged — it was correct, the flag was just never set.
    508/508 unit passing. Bumped to ?v=20260408n.
+1. PCS dead code cleanup — 12 dead functions, 347 net lines removed
+   Location: actions/pcs.js, 10-ui.js, index.html, styles.css
+   Scope:
+   (a) Deleted 12 dead functions from actions/pcs.js that were
+       defined but never called from _renderPCS or any live code
+       path: _buildStageProgress, _buildInfoGrid,
+       _buildInlineActions, _buildNotes, _renderAdvanceButton,
+       _renderActivityCount, _updateSubtitle, _pcsCaptionMenu,
+       _pcsEditLink, pcsCloseAttach, pcsSaveAttach,
+       _loadPCSActivity. Also deleted _ADVANCE_SEQ,
+       _ADVANCE_LABELS, _ADVANCE_CLS constants and
+       _pcsEditingTarget state variable.
+   (b) Deleted togglePCSActivity dead function from 10-ui.js.
+   (c) Deleted #pcs-activity-body div from index.html (was
+       display:none permanently, nothing wrote to it).
+   (d) Removed 2 dead pcsCloseAttach calls from live code:
+       _pcsTitleEdit L757 and _showStageConfirm L1277 — both
+       were no-ops since the attach editor elements (created by
+       _buildInlineActions) were never in the DOM.
+   (e) Fixed stray "11" count badge — #pcs-comments-count and
+       #pcs-notes-count spans were being set to display:inline
+       by loadPcsComments, making them visible as standalone
+       elements in the client/internal panes. Removed the
+       display toggle so they stay display:none always. Tab
+       badges (#pcs-tab-client-count, #pcs-tab-notes-count)
+       already show the count inside the tab label.
+   (f) Normalized chip fonts — added font-family:'IBM Plex
+       Mono',monospace to .pcs-chip (had none, was inheriting).
+       Changed .pcs-chip-drop-item and .pcs-photo-label from
+       'Courier New' to 'IBM Plex Mono'. Changed .pcs-ibar-hint
+       from 'Courier New' to 'IBM Plex Mono'. 5 remaining
+       Courier New refs in styles.css: .pcs-stage-pill,
+       .pcs-od-pill, .pcs-tab, .pcs-wa-btn (not changed, will
+       be addressed in font consolidation PR).
+   (g) Replaced inline styles on PCS input bars with CSS
+       classes. Client and internal note input bars in
+       index.html now use .pcs-ibar-wrap/.client/.notes,
+       .pcs-ibar-pill, .pcs-ibar-plus, .pcs-ibar-input,
+       .pcs-ibar-send, .pcs-ibar-hint CSS classes. Updated
+       CSS class values to exactly match previous inline styles
+       (border colors, backgrounds, box-shadows, scrollbar,
+       opacity, transition). Zero visual change.
+   actions/pcs.js reduced from 2831 to 2493 lines (−338).
+   Status: FIXED (PR#TBD) — 508/508 unit passing, 40/40 e2e.
+   Bumped to ?v=20260408o.
 
 ## SECTION 13 — STABILITY ROADMAP
 
