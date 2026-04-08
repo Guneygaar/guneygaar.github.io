@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408k
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408l
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1546,13 +1546,13 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    a date, Chrome fires document click BEFORE firing onchange on the
    input. The document click listener destroyed the dropdown, detaching
    the input, so onchange never reached _pcsDateChange.
-   Status: FIXED (PR#TBD) — added _pcsDatePickerOpen flag (var at
-   line 23). showPicker() and input click set flag true. Document
-   click listener returns early when flag is true. change event
-   listener (once:true) and _pcsDateChange both clear the flag.
-   Tapping the chip again to dismiss still works because the chip
-   onclick calls _pcsChipDrop which removes activeMenu directly.
-   508/508 unit passing. Bumped to ?v=20260408k.
+   Status: FIXED (PR#TBD) — deferred dropdown teardown in the
+   document click listener to next tick via setTimeout(0) so the
+   browser completes its event queue and onchange fires on the
+   input before the dropdown is removed. Added parentNode guard
+   inside the deferred callback. Removed _pcsDatePickerOpen flag
+   (no longer needed — setTimeout alone is sufficient).
+   508/508 unit passing. Bumped to ?v=20260408l.
 
 ## SECTION 13 — STABILITY ROADMAP
 
