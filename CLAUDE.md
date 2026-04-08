@@ -23,7 +23,13 @@ Repo: github.com/Guneygaar/guneygaar.github.io
 Branch: main-/-root. Deployed at srtd.io.
 ALL files at REPO ROOT. No /sorted/ subdirectory. Never reference /sorted/.
 Subdirs: render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ preview/ mockups/
-Root files: rollback.sql — DB rollback for role standardization (run if production breaks)
+Root config files:
+  rollback.sql          — DB rollback for role standardization (run if production breaks)
+  package.json          — npm dependencies (vitest, playwright, jsdom)
+  vitest.config.js      — unit test config (jsdom environment)
+  playwright.config.js  — e2e test config (Chromium headless)
+  wrangler.toml         — Cloudflare Workers config (R2 upload worker)
+  r2-upload-worker.js   — R2 asset upload worker source
 
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
