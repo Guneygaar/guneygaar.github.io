@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408l
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408m
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1540,19 +1540,24 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    widened from 600→800 chars. 508/508 unit passing.
    Bumped to ?v=20260408i.
 1. PCS date picker onchange never fires — dropdown destroyed mid-selection
-   Location: actions/pcs.js document click listener (line 27) and
-   _pcsChipDrop date branch (line 540).
+   Location: actions/pcs.js document click listener (line 26) and
+   _pcsChipDrop date branch (line 533).
    Root cause: showPicker() opens Chrome calendar. When user clicks
    a date, Chrome fires document click BEFORE firing onchange on the
    input. The document click listener destroyed the dropdown, detaching
    the input, so onchange never reached _pcsDateChange.
-   Status: FIXED (PR#TBD) — deferred dropdown teardown in the
-   document click listener to next tick via setTimeout(0) so the
-   browser completes its event queue and onchange fires on the
-   input before the dropdown is removed. Added parentNode guard
-   inside the deferred callback. Removed _pcsDatePickerOpen flag
-   (no longer needed — setTimeout alone is sufficient).
-   508/508 unit passing. Bumped to ?v=20260408l.
+   Previous fix (setTimeout(0) deferral) masked the problem — the
+   date input guard from the first fix was never actually merged.
+   Status: FIXED (PR#TBD) — replaced the setTimeout(0) deferral
+   with a proper date input guard:
+   if (menu.querySelector('input[type="date"]')) return;
+   When the active dropdown contains a date input, the document
+   click listener exits immediately — no removal, no deferral.
+   _pcsDateChange (line 614) handles dropdown cleanup after
+   selection. Removed setTimeout(0) wrapper entirely — direct
+   menu.remove() + activeMenu = null for non-date dropdowns.
+   showPicker() (line 542) retained from prior fix for desktop.
+   508/508 unit passing. Bumped to ?v=20260408m.
 
 ## SECTION 13 — STABILITY ROADMAP
 
