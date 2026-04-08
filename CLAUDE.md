@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408o
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408p
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1621,6 +1621,50 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    actions/pcs.js reduced from 2831 to 2493 lines (−338).
    Status: FIXED (PR#TBD) — 508/508 unit passing, 40/40 e2e.
    Bumped to ?v=20260408o.
+1. PCS visual redesign Part 1 — top section, caption pane, desktop
+   Location: actions/pcs.js, index.html, styles.css
+   Scope:
+   (a) Topbar simplified: stage pill + overdue badge removed from
+       topbar-right. Replaced with WhatsApp icon button (same
+       SVG and handler as _sharePostOnWhatsApp, same visibility
+       condition as _buildWAHtml). Close X, back, back-to-notifs
+       buttons unchanged.
+   (b) Photo header row: stage pill + overdue badge moved here
+       (left side). Same HTML, same onclick handler, same isAdmin
+       check for dropdown arrow. Right side: ADD/EDIT/SAVE text
+       buttons replace the ··· unified menu trigger. ADD calls
+       _pcsAddPhotos, EDIT calls _pcsEnterEditMode (only when
+       imgs.length > 0), SAVE calls _pcsSaveAllPhotos (only when
+       imgs.length > 0). All canManage-gated, same conditions.
+   (c) 3-dot menu trigger button removed from HTML. The
+       _pcsPhotoMenu function itself is NOT deleted — only its
+       trigger button. Caption actions now exposed inline.
+   (d) Chips row replaced with dot-separated metadata text.
+       _buildChipsRow output changed from bordered pill buttons
+       to plain text spans (.pcs-mv) with dot separators (.pcs-dot).
+       Every if/else condition, every canEdit/canManage check,
+       every onclick handler preserved exactly. Owner color mapping:
+       servicing→cyan, creative→purple, client→amber. Date:
+       overdue→red, has date→bright (#F0F0F2). Old .pcs-chip*
+       CSS classes replaced with .pcs-meta-row, .pcs-mv, .pcs-dot.
+   (e) Caption pane: Edit/Copy/Clear action row added below
+       WhatsApp section. Calls _startCaptionEdit, _pcsCopyCaption,
+       _pcsConfirmClearCaption — exact same functions as 3-dot
+       menu used. Clear button only when post.caption truthy.
+       canManage-gated. Done button always rendered, calls
+       closePCS() — same as Close X.
+   (f) Separator normalization: all PCS structural borders
+       changed to 1px solid #323244 (tab bar, metadata row,
+       caption section, photo empty state).
+   (g) Title-metadata coupling: title padding-bottom 4px,
+       metadata padding-top 4px. Only separator is below metadata
+       before tab bar.
+   (h) Desktop max-width: #pcs-screen max-width:480px with
+       margin:0 auto. #pcs-overlay stays full-screen. Bottom
+       confirm sheet (.pcs-bottom-confirm) centered at 480px.
+   Zero business logic changes. Zero data flow changes.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260408p.
 
 ## SECTION 13 — STABILITY ROADMAP
 

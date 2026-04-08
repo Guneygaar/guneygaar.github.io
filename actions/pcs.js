@@ -206,11 +206,29 @@ window._renderPCS = function(postId) {
   var isAdmin = _pcsRole === 'admin';
   var canManage = canEdit || canEditCreative;
 
-  // a) Stage pill + overdue pill in topbar right
+  // a) WhatsApp icon in topbar right (same condition as _buildWAHtml)
   var topbarRight = document.getElementById('pcs-topbar-right');
   if (topbarRight) {
+    var _showTopWA = post.caption && (
+      _pcsRole === 'client' || stageLC === 'awaiting_approval'
+    );
+    topbarRight.innerHTML = _showTopWA
+      ? '<button class="pcs-topbar-wa" onclick="window._sharePostOnWhatsApp(\'' + esc(id) + '\')">' +
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="#1a8a4a"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.106-1.138l-.294-.176-2.866.852.852-2.866-.176-.294A7.963 7.963 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z"/></svg>' +
+        '</button>'
+      : '';
+  }
+
+  // b) Photo section
+  var imgs = Array.isArray(post.images) ? post.images : [];
+  var photoHeader = document.getElementById('pcs-photo-header-row');
+  var photoGridWrap = document.getElementById('pcs-photo-grid-wrap');
+  if (photoHeader) {
+    photoHeader.style.display = (canManage || imgs.length > 0) ? 'flex' : 'none';
+    // Left side: stage pill + overdue
     var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
-    var _pillHtml = '<span class="pcs-stage-pill" id="pcs-stage-pill"' +
+    var _leftHtml = '<div class="pcs-photo-left">' +
+      '<span class="pcs-stage-pill" id="pcs-stage-pill"' +
       (isAdmin ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(_stageLabel) +
       (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '') +
@@ -220,23 +238,21 @@ window._renderPCS = function(postId) {
       var _td = typeof parseDate === 'function' ? parseDate(dateValue) : null;
       var _now = new Date(); _now.setHours(0,0,0,0);
       if (_td && _td < _now) {
-        _pillHtml += '<span class="pcs-od-pill" id="pcs-od-pill"><span class="pcs-od-dot"></span>Overdue</span>';
+        _leftHtml += '<span class="pcs-hdr-dot">\u00B7</span>' +
+          '<span class="pcs-od-pill" id="pcs-od-pill"><span class="pcs-od-dot"></span>Overdue</span>';
       }
     }
-    topbarRight.innerHTML = _pillHtml;
-  }
-
-  // b) Photo section
-  var imgs = Array.isArray(post.images) ? post.images : [];
-  var photoHeader = document.getElementById('pcs-photo-header-row');
-  var photoLabel = document.getElementById('pcs-photo-label');
-  var photoMenuBtn = document.getElementById('pcs-photo-menu-btn');
-  var photoGridWrap = document.getElementById('pcs-photo-grid-wrap');
-  if (photoHeader) photoHeader.style.display = (canManage || imgs.length > 0) ? 'flex' : 'none';
-  if (photoLabel) photoLabel.textContent = 'PHOTOS \u00B7 ' + imgs.length;
-  if (photoMenuBtn) {
-    photoMenuBtn.onclick = function(ev) { window._pcsPhotoMenu(id, ev); };
-    photoMenuBtn.style.display = canManage ? '' : 'none';
+    _leftHtml += '</div>';
+    // Right side: ADD / EDIT / SAVE (canManage only)
+    var _rightHtml = '';
+    if (canManage) {
+      _rightHtml = '<div class="pcs-photo-actions">' +
+        '<button class="pcs-photo-act" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">ADD</button>' +
+        (imgs.length > 0 ? '<button class="pcs-photo-act" onclick="window._pcsEnterEditMode(\'' + esc(id) + '\')">EDIT</button>' : '') +
+        (imgs.length > 0 ? '<button class="pcs-photo-act" onclick="window._pcsSaveAllPhotos(\'' + esc(id) + '\')">SAVE</button>' : '') +
+        '</div>';
+    }
+    photoHeader.innerHTML = _leftHtml + _rightHtml;
   }
   if (photoGridWrap) photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
 
@@ -282,6 +298,21 @@ window._renderPCS = function(postId) {
   var waHtml = _buildWAHtml(post, id, postId, stageLC);
   var waContainer = document.getElementById('pcs-wa-container');
   if (waContainer) waContainer.innerHTML = waHtml;
+
+  // f2) Caption action buttons (canManage only)
+  var capActionsContainer = document.getElementById('pcs-cap-actions-container');
+  if (capActionsContainer) {
+    if (canManage) {
+      capActionsContainer.innerHTML =
+        '<div class="pcs-cap-actions">' +
+        '<button class="pcs-cap-btn" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
+        '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
+        (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
+        '</div>';
+    } else {
+      capActionsContainer.innerHTML = '';
+    }
+  }
 
   // g) Show comments section (compatibility)
   var commSection = document.getElementById('pcs-comments-section');
@@ -445,27 +476,28 @@ function _buildDriveLinkCard(driveUrl, canManage, postId) {
 }
 window._buildDriveLinkCard = _buildDriveLinkCard;
 
-// -- Chips row builder (stage in topbar, not here) --
+// -- Metadata row builder (dot-separated text values) --
 // Order: Owner → Date → Format → Pillar → Location
 function _buildChipsRow(post, canEdit, canEditCreative, id) {
   var stageLC = post.stage || '';
   var canManage = canEdit || canEditCreative;
-  var arr = canManage ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
-  var chips = [];
+  var _dot = '<span class="pcs-dot">\u00B7</span>';
+  var items = [];
 
-  // 1. Owner chip (always render if present)
+  // 1. Owner (always render if present)
   if (post.owner) {
-    var ownerColor = ' pcs-chip--dim';
+    var ownerColor = '';
     var ownerLC = (post.owner || '').toLowerCase();
-    if (ownerLC === 'servicing' || ownerLC === 'creative') ownerColor = ' pcs-chip--cyan';
-    else if (ownerLC === 'client') ownerColor = ' pcs-chip--amber';
-    var ownerArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
-    chips.push('<button class="pcs-chip' + ownerColor + '"' +
+    if (ownerLC === 'servicing') ownerColor = ' pcs-mv--cyan';
+    else if (ownerLC === 'creative') ownerColor = ' pcs-mv--purple';
+    else if (ownerLC === 'client') ownerColor = ' pcs-mv--amber';
+    items.push('<span class="pcs-mv' + ownerColor + '"' +
       (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) + ownerArr + '</button>');
+      '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) +
+      (canEdit ? ' &#9662;' : '') + '</span>');
   }
 
-  // 2. Date chip (ALWAYS render — never skip)
+  // 2. Date (ALWAYS render — never skip)
   var rawDate = post.targetDate || post.target_date || null;
   var dateDisplay = 'Add Date';
   if (rawDate) {
@@ -478,41 +510,44 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
   }
   var terminalStages = ['published','parked','rejected'];
   var isOverdue = rawDate && terminalStages.indexOf(stageLC) === -1 && new Date(rawDate) < new Date();
-  var dateCls = isOverdue ? ' pcs-chip--red' : rawDate ? ' pcs-chip--dim' : ' pcs-chip--empty';
-  var dateArr = canEdit ? ' <span class="pcs-chip-arr">&#9662;</span>' : '';
-  chips.push('<button class="pcs-chip' + dateCls + '"' +
+  var dateCls = isOverdue ? ' pcs-mv--red' : rawDate ? ' pcs-mv--bright' : '';
+  items.push('<span class="pcs-mv' + dateCls + '"' +
     (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'date\',\'' + esc(id) + '\')"' : '') +
-    '>' + esc(dateDisplay) + dateArr + '</button>');
+    '>' + esc(dateDisplay) +
+    (canEdit ? ' &#9662;' : '') + '</span>');
 
-  // 3. Format chip
+  // 3. Format
   if (post.format) {
-    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+    items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.format) + arr + '</button>');
+      '>' + esc(post.format) +
+      (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format' + arr + '</button>');
+    items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'format\',\'' + esc(id) + '\')">+ Format &#9662;</span>');
   }
 
-  // 4. Pillar chip
+  // 4. Pillar
   if (post.contentPillar) {
     var pillarVal = typeof formatPillarDisplay === 'function' ? formatPillarDisplay(post.contentPillar) : post.contentPillar;
-    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+    items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(pillarVal) + arr + '</button>');
+      '>' + esc(pillarVal) +
+      (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar' + arr + '</button>');
+    items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'pillar\',\'' + esc(id) + '\')">+ Pillar &#9662;</span>');
   }
 
-  // 5. Location chip
+  // 5. Location
   if (post.location) {
-    chips.push('<button class="pcs-chip pcs-chip--dim"' +
+    items.push('<span class="pcs-mv"' +
       (canManage ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(post.location) + arr + '</button>');
+      '>' + esc(post.location) +
+      (canManage ? ' &#9662;' : '') + '</span>');
   } else if (canManage) {
-    chips.push('<button class="pcs-chip pcs-chip--empty" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location' + arr + '</button>');
+    items.push('<span class="pcs-mv" onclick="event.stopPropagation();window._pcsChipDrop(this,\'location\',\'' + esc(id) + '\')">+ Location &#9662;</span>');
   }
 
-  return chips.join('');
+  return items.join(_dot);
 }
 
 // -- Chip dropdown handler (body-appended, getBoundingClientRect positioned) --
@@ -628,7 +663,7 @@ window._pcsDateChange = function(postId, dateValue) {
 // -- Caption section builder --
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
-  return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #1a1a2a;">' +
+  return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #323244;">' +
     (post.caption ?
       '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
       'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
@@ -656,7 +691,7 @@ function _buildLinkedInHtml(post, id, stageLC) {
   var stageForLi = (post.stage || stageLC || '').toLowerCase();
   if (stageForLi !== 'published') return '';
   if (post.linkedinUrl) {
-    return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;background:#0A66C20A;border-top:1px solid #0A66C21A;">' +
+    return '<div style="padding:12px 18px;border-bottom:1px solid #323244;background:#0A66C20A;border-top:1px solid #0A66C21A;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
       '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
       '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
@@ -667,7 +702,7 @@ function _buildLinkedInHtml(post, id, stageLC) {
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
       esc(post.linkedinUrl.replace('https://','')) + '</div></div>';
   }
-  return '<div style="padding:12px 18px;border-bottom:1px solid #1a1a2a;border-top:1px solid #F6A6231A;background:#F6A62308;">' +
+  return '<div style="padding:12px 18px;border-bottom:1px solid #323244;border-top:1px solid #F6A6231A;background:#F6A62308;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:8px;">Live Post URL</div>' +
     '<div style="display:flex;gap:8px;align-items:center;">' +
     '<input id="pcs-li-inline-input" type="url" placeholder="Paste LinkedIn post URL..." ' +
