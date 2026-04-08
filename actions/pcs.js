@@ -2714,7 +2714,7 @@ window._pcsSetReply = function(zone, commentId, author, message) {
   );
   if (indicator) {
     indicator.innerHTML =
-      '<span>Replying to ' + author + '</span>';
+      '<span style="flex:1;">Replying to ' + author + '</span><span class="pcs-reply-cancel" onclick="window._pcsClearReply(\'' + zone + '\')">✕</span>';
     indicator.style.display = 'flex';
   }
   document.querySelectorAll(
@@ -2752,6 +2752,8 @@ window._pcsClearReply = function(zone) {
     .forEach(function(el) {
       el.classList.remove('pcs-comment-replying-to');
     });
+  var inp = document.getElementById(zone === 'client' ? 'pcs-comment-input' : 'pcs-note-input');
+  if (inp) inp.focus();
 };
 
 window._pcsCopyComment = function(message) {
