@@ -28,7 +28,7 @@ Root files: rollback.sql — DB rollback for role standardization (run if produc
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 19 script tags + 1 stylesheet = 20 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260408h
+Version format: ?v=YYYYMMDDx. Current: ?v=20260408i
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1527,6 +1527,18 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    input. _pcsDateChange handles cleanup after selection.
    Tapping the chip again closes and reopens correctly.
    508/508 unit passing. Bumped to ?v=20260408h.
+1. PCS date picker — desktop calendar not opening + mobile save silent
+   Location: actions/pcs.js _pcsChipDrop date branch (line 540) and
+   _pcsDateChange (line 609).
+   Desktop: dateInp.focus() does not open Chrome calendar — need
+   showPicker(). Mobile: updatePost has _isSaving guard that silently
+   drops the call if a previous save is in-flight.
+   Status: FIXED (PR#TBD) — added try{dateInp.showPicker()}catch(e){}
+   after focus() to auto-open calendar on desktop. In _pcsDateChange,
+   added dateValue empty guard, _isSaving clear before updatePost,
+   and 300ms setTimeout on openPCS re-render. Test regex window
+   widened from 600→800 chars. 508/508 unit passing.
+   Bumped to ?v=20260408i.
 
 ## SECTION 13 — STABILITY ROADMAP
 

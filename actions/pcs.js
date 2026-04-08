@@ -537,7 +537,10 @@ window._pcsChipDrop = function(chipEl, field, postId) {
     document.body.appendChild(drop);
     setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
     var dateInp = drop.querySelector('input');
-    if (dateInp) dateInp.focus();
+    if (dateInp) {
+      dateInp.focus();
+      try { dateInp.showPicker(); } catch(e) {}
+    }
     return;
   }
 
@@ -611,8 +614,13 @@ window._pcsDateChange = function(postId, dateValue) {
     window.AppState.pcs.activeMenu = null;
   }
   if (window.AppState && window.AppState.pcs && window.AppState.pcs.open) {
+    if (!dateValue) return;
+    var _postObj = (window.AppState.posts.all || []).find(function(p) {
+      return (p.post_id || p.id) === postId;
+    });
+    if (_postObj) _postObj._isSaving = false;
     if (typeof updatePost === 'function') updatePost(postId, 'targetDate', dateValue);
-    if (typeof openPCS === 'function') openPCS(postId, '');
+    setTimeout(function() { if (typeof openPCS === 'function') openPCS(postId, ''); }, 300);
   }
 }
 
