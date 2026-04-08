@@ -258,7 +258,7 @@ console.log('LOADED:', 'render/client.js');
     }
 
     if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:130px 130px;gap:2px;padding:0 14px;margin-top:10px;height:260px;user-select:none;-webkit-user-select:none;">' +
+      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;aspect-ratio:5/3;user-select:none;-webkit-user-select:none;">' +
         wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
         wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
         wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
@@ -268,9 +268,9 @@ console.log('LOADED:', 'render/client.js');
     /* 4+ : 2x2 grid with +N overlay on last cell */
     var extra = n > 4 ? n - 4 : 0;
     var overlayHtml = extra > 0
-      ? '<div style="position:absolute;inset:0;background:#0000008C;display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
+      ? '<div style="position:absolute;inset:0;background:rgba(8,8,8,0.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
       : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:150px 150px;gap:2px;padding:0 14px;margin-top:10px;height:300px;user-select:none;-webkit-user-select:none;">' +
+    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;aspect-ratio:1/1;user-select:none;-webkit-user-select:none;">' +
       wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
       wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
       wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +

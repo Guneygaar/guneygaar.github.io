@@ -1489,6 +1489,19 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    weight 700 size 22px. .pcs-more-l now IBM Plex Mono.
    Edit mode selector updated to match new cell classes.
    508/508 unit passing. Bumped to ?v=20260408e.
+2. Client feed photo grid — responsive aspect-ratio layout
+   Location: render/client.js _imgGridHtml() + styles.css
+   Old system had fixed px heights: img-trio 130px+130px=260px,
+   img-quad 150px+150px=300px. Not responsive on narrow screens.
+   Status: FIXED — replaced fixed heights with CSS aspect-ratio.
+   img-trio: grid-template-rows:1fr 1fr + aspect-ratio:5/3
+   img-quad: grid-template-rows:1fr 1fr + aspect-ratio:1/1
+   Removed max-height:400px from .img-trio/.img-quad in styles.css
+   (kept on .img-duo). +N overlay updated to rgba(8,8,8,0.72) +
+   backdrop-filter:blur(2px) to match PCS grid overlay style.
+   n=1 (img-single) and n=2 (img-duo) layouts unchanged.
+   wrap() helper, lightbox wiring, border-radius values unchanged.
+   508/508 unit passing. Bumped to ?v=20260408f.
 
 ## SECTION 13 — STABILITY ROADMAP
 
