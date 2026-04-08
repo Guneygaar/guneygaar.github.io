@@ -529,23 +529,13 @@ window._pcsChipDrop = function(chipEl, field, postId) {
 
   var post = typeof getPostById === 'function' ? getPostById(postId) : null;
 
-  // DATE: inline date input in dropdown
+  // DATE: custom calendar picker (avoids native input race condition)
   if (field === 'date') {
-    var rect = chipEl.getBoundingClientRect();
-    var drop = document.createElement('div');
-    drop.className = 'pcs-chip-drop';
-    drop.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;z-index:9700;';
-    drop.innerHTML = '<div style="padding:12px 16px;background:#141420">' +
-      '<input type="date" value="' + esc(post ? (post.targetDate || '') : '') + '" ' +
-      'style="width:100%;padding:10px 12px;background:#0f0f1a;border:1px solid #1c1c26;color:#fff;font-size:14px;outline:none;color-scheme:dark;font-family:inherit" ' +
-      'onchange="window._pcsDateChange(\'' + esc(postId) + '\',this.value)"/></div>';
-    document.body.appendChild(drop);
-    setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
-    var dateInp = drop.querySelector('input');
-    if (dateInp) {
-      dateInp.focus();
-      try { dateInp.showPicker(); } catch(e) {}
-    }
+    var postObj = (window.AppState.posts.all || []).find(function(p) {
+      return (p.post_id || p.id) === postId;
+    });
+    var currentDate = postObj ? (postObj.targetDate || '') : '';
+    window._pcsShowCalendar(chipEl, postId, currentDate);
     return;
   }
 
@@ -610,7 +600,161 @@ window._pcsChipDrop = function(chipEl, field, postId) {
   setTimeout(function() { window.AppState.pcs.activeMenu = drop; }, 0);
 }
 
-// -- Date change from inline date picker --
+// -- Custom calendar date picker --
+window._pcsShowCalendar = function(chipEl, postId, currentDate) {
+  // Remove any existing calendar
+  var existing = document.getElementById('pcs-cal-root');
+  if (existing) existing.remove();
+  if (window.AppState && window.AppState.pcs) window.AppState.pcs.activeMenu = null;
+
+  // Parse current date
+  var today = new Date();
+  var todayY = today.getFullYear();
+  var todayM = today.getMonth();
+  var todayD = today.getDate();
+
+  var selYear = null, selMonth = null, selDay = null;
+  if (currentDate && currentDate.length === 10) {
+    var parts = currentDate.split('-');
+    selYear = parseInt(parts[0]);
+    selMonth = parseInt(parts[1]) - 1;
+    selDay = parseInt(parts[2]);
+  }
+
+  var viewYear = selYear !== null ? selYear : todayY;
+  var viewMonth = selMonth !== null ? selMonth : todayM;
+
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DAY_NAMES = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+
+  // Build calendar element
+  var cal = document.createElement('div');
+  cal.id = 'pcs-cal-root';
+  cal.className = 'pcs-cal';
+  cal.addEventListener('click', function(e) { e.stopPropagation(); });
+
+  function buildGrid() {
+    var firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    var startOffset = (firstDay + 6) % 7;
+    var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    var daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+
+    var titleEl = cal.querySelector('.pcs-cal-title');
+    if (titleEl) titleEl.textContent = MONTH_NAMES[viewMonth] + ' ' + viewYear;
+
+    var grid = cal.querySelector('.pcs-cal-grid');
+    grid.innerHTML = '';
+
+    var totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+    for (var i = 0; i < totalCells; i++) {
+      var cell = document.createElement('div');
+      cell.className = 'pcs-cal-cell';
+      var cellDay, cellMonth, cellYear;
+
+      if (i < startOffset) {
+        cellDay = daysInPrev - startOffset + i + 1;
+        cellMonth = viewMonth - 1;
+        cellYear = viewYear;
+        if (cellMonth < 0) { cellMonth = 11; cellYear--; }
+        cell.classList.add('is-other');
+      } else if (i >= startOffset + daysInMonth) {
+        cellDay = i - startOffset - daysInMonth + 1;
+        cellMonth = viewMonth + 1;
+        cellYear = viewYear;
+        if (cellMonth > 11) { cellMonth = 0; cellYear++; }
+        cell.classList.add('is-other');
+      } else {
+        cellDay = i - startOffset + 1;
+        cellMonth = viewMonth;
+        cellYear = viewYear;
+      }
+
+      cell.textContent = cellDay;
+
+      if (cellYear === todayY && cellMonth === todayM && cellDay === todayD) {
+        cell.classList.add('is-today');
+      }
+
+      if (selYear !== null && cellYear === selYear && cellMonth === selMonth && cellDay === selDay) {
+        cell.classList.add('is-selected');
+      }
+
+      (function(y, m, d) {
+        cell.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var mm = String(m + 1).padStart(2, '0');
+          var dd = String(d).padStart(2, '0');
+          var dateStr = y + '-' + mm + '-' + dd;
+          cal.remove();
+          if (window.AppState && window.AppState.pcs) window.AppState.pcs.activeMenu = null;
+          window._pcsDateChange(postId, dateStr);
+        });
+      })(cellYear, cellMonth, cellDay);
+
+      grid.appendChild(cell);
+    }
+  }
+
+  // Build full HTML structure
+  cal.innerHTML =
+    '<div class="pcs-cal-header">' +
+      '<div class="pcs-cal-title"></div>' +
+      '<div class="pcs-cal-nav">' +
+        '<button class="pcs-cal-prev">&#8592;</button>' +
+        '<button class="pcs-cal-next">&#8594;</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="pcs-cal-daynames">' +
+      DAY_NAMES.map(function(d) { return '<div class="pcs-cal-dn">' + d + '</div>'; }).join('') +
+    '</div>' +
+    '<div class="pcs-cal-grid"></div>' +
+    '<div class="pcs-cal-footer">' +
+      '<button class="pcs-cal-clear">Clear</button>' +
+      '<button class="pcs-cal-today-btn">Today</button>' +
+    '</div>';
+
+  cal.querySelector('.pcs-cal-prev').addEventListener('click', function(e) {
+    e.stopPropagation();
+    viewMonth--;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    buildGrid();
+  });
+  cal.querySelector('.pcs-cal-next').addEventListener('click', function(e) {
+    e.stopPropagation();
+    viewMonth++;
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    buildGrid();
+  });
+
+  cal.querySelector('.pcs-cal-clear').addEventListener('click', function(e) {
+    e.stopPropagation();
+    cal.remove();
+    if (window.AppState && window.AppState.pcs) window.AppState.pcs.activeMenu = null;
+    window._pcsDateChange(postId, '');
+  });
+
+  cal.querySelector('.pcs-cal-today-btn').addEventListener('click', function(e) {
+    e.stopPropagation();
+    viewYear = todayY;
+    viewMonth = todayM;
+    selYear = todayY;
+    selMonth = todayM;
+    selDay = todayD;
+    buildGrid();
+  });
+
+  var rect = chipEl.getBoundingClientRect();
+  cal.style.top = (rect.bottom + 4) + 'px';
+  cal.style.left = rect.left + 'px';
+
+  document.body.appendChild(cal);
+  buildGrid();
+
+  window.AppState.pcs.activeMenu = cal;
+};
+
+// -- Date change from date picker --
 window._pcsDateChange = function(postId, dateValue) {
   if (window.AppState.pcs.activeMenu) {
     if (window.AppState.pcs.activeMenu.parentNode) {
