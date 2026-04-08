@@ -335,42 +335,50 @@ window._pcsTabSwitch = function(tab) {
 function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
   var canManage = canEdit || canEditCreative;
   var count = imgs.length;
-
-  function _cell(idx, heroClass, overlayHtml) {
-    return '<div class="pcs-pcell' + (heroClass ? ' hero' : '') + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',' + idx + ')">' +
-      '<img src="' + esc(imgs[idx]) + '" onerror="this.style.display=\'none\'">' +
-      (overlayHtml || '') +
-      '</div>';
-  }
-
+  var _id = esc(id);
   var gridHtml = '';
 
   if (count === 0) {
     if (canManage) {
-      gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">' +
+      gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + _id + '\')">' +
         '<div style="font-size:22px;color:#C8A84B">+</div>' +
         '<div style="font-family:\'Courier New\',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#F6A623">Upload Photos</div>' +
         '<div style="font-family:\'Courier New\',monospace;font-size:7px;color:#333;letter-spacing:.06em">JPG / PNG</div>' +
         '</div>';
     }
   } else if (count === 1) {
-    gridHtml = '<div class="pcs-pg-1">' +
-      '<img src="' + esc(imgs[0]) + '" onclick="window._pcsOpenLightbox(\'' + esc(id) + '\',0)" onerror="this.style.display=\'none\'">' +
+    gridHtml = '<div class="pcs-pg-1" onclick="window._pcsOpenLightbox(\'' + _id + '\',0)">' +
+      '<img src="' + esc(imgs[0]) + '" alt="">' +
       '</div>';
   } else if (count === 2) {
-    gridHtml = '<div class="pcs-pg-2">' + _cell(0) + _cell(1) + '</div>';
+    gridHtml = '<div class="pcs-pg-2"><div class="pcs-pg-2-inner">' +
+      '<div class="pcs-pg-2-cell" onclick="window._pcsOpenLightbox(\'' + _id + '\',0)"><img src="' + esc(imgs[0]) + '" alt=""></div>' +
+      '<div class="pcs-pg-2-cell" onclick="window._pcsOpenLightbox(\'' + _id + '\',1)"><img src="' + esc(imgs[1]) + '" alt=""></div>' +
+      '</div></div>';
   } else if (count === 3) {
-    gridHtml = '<div class="pcs-pg-3">' + _cell(0, true) + _cell(1) + _cell(2) + '</div>';
-  } else if (count === 4) {
-    gridHtml = '<div class="pcs-pg-4">' + _cell(0) + _cell(1) + _cell(2) + _cell(3) + '</div>';
+    gridHtml = '<div class="pcs-pg-3"><div class="pcs-pg-inner">' +
+      '<div class="pcs-pg-hero" onclick="window._pcsOpenLightbox(\'' + _id + '\',0)"><img src="' + esc(imgs[0]) + '" alt=""></div>' +
+      '<div class="pcs-pg-col">' +
+        '<div class="pcs-pg-sm" onclick="window._pcsOpenLightbox(\'' + _id + '\',1)"><img src="' + esc(imgs[1]) + '" alt=""></div>' +
+        '<div class="pcs-pg-sm" onclick="window._pcsOpenLightbox(\'' + _id + '\',2)"><img src="' + esc(imgs[2]) + '" alt=""></div>' +
+      '</div>' +
+      '</div></div>';
   } else {
     var extra = count - 3;
-    var ov = '<div class="pcs-more-ov"><div class="pcs-more-n">+' + extra + '</div><div class="pcs-more-l">more</div></div>';
-    gridHtml = '<div class="pcs-pg-5">' + _cell(0, true) + _cell(1) + _cell(2, false, ov) + '</div>';
+    gridHtml = '<div class="pcs-pg-3plus"><div class="pcs-pg-inner">' +
+      '<div class="pcs-pg-hero" onclick="window._pcsOpenLightbox(\'' + _id + '\',0)"><img src="' + esc(imgs[0]) + '" alt=""></div>' +
+      '<div class="pcs-pg-col">' +
+        '<div class="pcs-pg-sm" onclick="window._pcsOpenLightbox(\'' + _id + '\',1)"><img src="' + esc(imgs[1]) + '" alt=""></div>' +
+        '<div class="pcs-pg-sm" onclick="window._pcsOpenLightbox(\'' + _id + '\',2)">' +
+          '<img src="' + esc(imgs[2]) + '" alt="">' +
+          '<div class="pcs-more-ov"><div class="pcs-more-n">+' + extra + '</div><div class="pcs-more-l">more</div></div>' +
+        '</div>' +
+      '</div>' +
+      '</div></div>';
   }
 
   var inputHtml = canManage
-    ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandlePhotoInput(\'' + esc(id) + '\',this)">'
+    ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandlePhotoInput(\'' + _id + '\',this)">'
     : '';
 
   return gridHtml + inputHtml;
@@ -1757,7 +1765,7 @@ window._pcsEnterEditMode = function(postId) {
   // Add X overlays to photos
   var wrap = document.getElementById('pcs-photo-grid-wrap');
   if (!wrap) return;
-  var cells = wrap.querySelectorAll('.pcs-pcell, .pcs-pg-1');
+  var cells = wrap.querySelectorAll('.pcs-pg-1, .pcs-pg-2-cell, .pcs-pg-hero, .pcs-pg-sm');
   cells.forEach(function(cell, idx) {
     if (cell.querySelector('.pcs-edit-x')) return;
     var xBtn = document.createElement('button');
