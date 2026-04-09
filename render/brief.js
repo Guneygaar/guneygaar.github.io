@@ -31,10 +31,8 @@ window._openBriefSheet = function(postId) {
 
   var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
-  var _isPranav = _role === 'creative' ||
-    _role === 'pranav' ||
-    (window.AppState.user.email || '').toLowerCase().includes('pranav');
-  var _isChitra = !_isClient && !_isPranav;
+  var _isCreativeRole = _role === 'creative' || _role === 'pranav';
+  var _canAssign = _role === 'admin' || _role === 'servicing' || _role === 'chitra' || _role === 'shubham';
   var _isBriefDone = (post.stage || '') === 'brief_done';
   var sentTime = '';
   if (post.status_changed_at && post.status_changed_at !== 'null') {
@@ -75,10 +73,17 @@ window._openBriefSheet = function(postId) {
     }
   }
 
-  var _isAssignedToPranav =
-    ((post.owner || '').toLowerCase() === 'pranav' ||
-    (post.owner || '').toLowerCase() === 'creative') &&
+  // Check if brief is assigned to any creative (not just Pranav)
+  var _ownerLower = (post.owner || '').toLowerCase();
+  var _isAssigned =
+    (_ownerLower !== '' && _ownerLower !== 'servicing' && _ownerLower !== 'chitra' &&
+     _ownerLower !== 'admin' && _ownerLower !== 'shubham' && _ownerLower !== 'client') &&
     !_isBriefDone;
+  // Check if current user is the creative assigned to THIS brief
+  var _userName = (window.AppState.user.name || '').toLowerCase();
+  var _isAssignedCreative = _isCreativeRole && _isAssigned &&
+    (_ownerLower === _userName || _ownerLower === 'creative');
+  var _assigneeName = _isAssigned ? (post.owner || '') : '';
   var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
   if (_hasLinkedPost) {
@@ -149,16 +154,25 @@ window._openBriefSheet = function(postId) {
       return _viewPostBtn +
         (_isChitra ? _closeBtn : '');
     }
-    // STATE: assigned to Pranav, no linked post yet
-    if (_isAssignedToPranav) {
-      if (_isChitra) {
+    // STATE: assigned to creative, no linked post yet
+    if (_isAssigned) {
+      if (_canAssign) {
         return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
           'font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
           'color:#555566;background:#0e0e0e;border:1px solid #252535;border-radius:10px;' +
           'padding:13px 20px;text-align:center;width:100%;">' +
-          '&#x2713; Assigned to Pranav</div>' + _closeBtn;
+          '&#x2713; Assigned to ' + esc(_assigneeName) + '</div>' +
+          '<button id="brief-reassign-btn-' + postId + '" ' +
+          'onclick="_briefShowAssignDropdown(\'' + postId + '\',true)" ' +
+          'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+          'background:transparent;border:1px solid #252535;border-radius:10px;' +
+          'padding:11px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+          'font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;' +
+          'color:#555566;cursor:pointer;margin-top:8px;">' +
+          '&#x21BA; Reassign</button>' +
+          '<div id="brief-assign-dropdown-' + postId + '"></div>' + _closeBtn;
       }
-      if (_isPranav) {
+      if (_isAssignedCreative) {
         return '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
           'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
           'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
@@ -169,12 +183,12 @@ window._openBriefSheet = function(postId) {
       }
       return _readOnly;
     }
-    // STATE: unassigned (owner=Chitra)
-    if (_isChitra) {
+    // STATE: unassigned — show assign dropdown for Admin/Servicing
+    if (_canAssign) {
       return '<div style="margin-bottom:8px;">' +
         '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
         'letter-spacing:0.12em;text-transform:uppercase;' +
-        'color:#C8A84B;margin-bottom:6px;">Your Direction for Pranav</div>' +
+        'color:#C8A84B;margin-bottom:6px;">Your Direction for Creative</div>' +
         '<textarea id="brief-direction-' + postId + '" rows="3" ' +
         'placeholder="Add your creative direction, angle, key message..." ' +
         'style="width:100%;background:transparent;border:none;' +
@@ -183,13 +197,15 @@ window._openBriefSheet = function(postId) {
         'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
         'caret-color:#C8A84B;"></textarea>' +
         '</div>' +
-        '<button onclick="_assignBriefToPranav(\'' + postId + '\')" ' +
+        '<button id="brief-assign-trigger-' + postId + '" ' +
+        'onclick="_briefShowAssignDropdown(\'' + postId + '\',false)" ' +
         'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
         'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
         'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
         'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
         'color:#C8A84B;cursor:pointer;">' +
-        '&#x2192; Assign to Pranav</button>' + _closeBtn;
+        '&#x2192; Assign to&hellip;</button>' +
+        '<div id="brief-assign-dropdown-' + postId + '"></div>' + _closeBtn;
     }
     return _readOnly;
   }());
@@ -231,7 +247,7 @@ window._openBriefSheet = function(postId) {
     'background:#9b87f514;border:1px solid #9b87f533;border-radius:4px;padding:3px 7px;">BRIEF</span>' +
     '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:500;' +
     'letter-spacing:0.08em;color:#555566;">' +
-    (_isAssignedToPranav ? 'Assigned to <strong style="color:#9b87f5;font-weight:600;">Pranav</strong>' : 'Unassigned') +
+    (_isAssigned ? 'Assigned to <strong style="color:#9b87f5;font-weight:600;">' + esc(_assigneeName) + '</strong>' : 'Unassigned') +
     '</span>' +
     '</div>' +
     '</div>' +
@@ -323,15 +339,15 @@ window._openBriefSheet = function(postId) {
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">' +
       post.images.map(function(url, i) {
         return '<img src="' + url + '" loading="lazy" ' +
-        'onclick="_edOpenLightbox(\'' + postId + '\',' + i + ')" ' +
+        'onclick="window._pcsOpenLightbox(\'' + postId + '\',' + i + ')" ' +
         'style="aspect-ratio:1/1;width:100%;object-fit:cover;border-radius:6px;' +
         'cursor:pointer;display:block;">';
       }).join('') +
       '</div></div>'
       : '') +
 
-    // SECTION 03 — ASSIGNED TO
-    (_isAssignedToPranav ?
+    // SECTION 03 — ASSIGNED TO (dynamic)
+    (_isAssigned ?
       '<div style="padding:16px 20px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
       'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">' +
@@ -342,9 +358,11 @@ window._openBriefSheet = function(postId) {
       'border:1px solid #252535;border-radius:8px;padding:11px 14px;">' +
       '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;' +
       'border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;' +
-      'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">P</div>' +
+      'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' +
+      esc((_assigneeName || '?').charAt(0).toUpperCase()) + '</div>' +
       '<div>' +
-      '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">Pranav</div>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">' +
+      esc(_assigneeName) + '</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#555566;' +
       'letter-spacing:0.06em;text-transform:uppercase;margin-top:1px;">Creative</div>' +
       '</div>' +
@@ -392,10 +410,60 @@ window._openBriefSheet = function(postId) {
   });
 }
 
-window._assignBriefToPranav = function(postId) {
+// Fetch creative members from user_roles and show assignment dropdown
+window._briefShowAssignDropdown = function(postId, isReassign) {
+  var container = document.getElementById('brief-assign-dropdown-' + postId);
+  if (!container) return;
+  // Toggle: if already open, close it
+  if (container.innerHTML.trim()) {
+    container.innerHTML = '';
+    return;
+  }
+  container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'color:#555566;padding:10px 0;">Loading&hellip;</div>';
+  apiFetch('/user_roles?role=eq.creative&select=name,email', { method: 'GET' })
+    .then(function(members) {
+      if (!Array.isArray(members) || !members.length) {
+        container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+          'color:#FF4B4B;padding:10px 0;">No creative members found</div>';
+        return;
+      }
+      var html = '<div style="margin-top:8px;border:1px solid #252535;border-radius:8px;overflow:hidden;">';
+      members.forEach(function(m) {
+        var name = m.name || m.email || '';
+        var initial = (name.charAt(0) || '?').toUpperCase();
+        html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(name) + '\',' + isReassign + ')" ' +
+          'style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;' +
+          'background:#0d0d12;border:none;border-bottom:1px solid #191924;cursor:pointer;">' +
+          '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;' +
+          'border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;' +
+          'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' +
+          esc(initial) + '</div>' +
+          '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">' +
+          esc(name) + '</div>' +
+          '</button>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    })
+    .catch(function(err) {
+      console.error('[brief] fetch creative members failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'brief-fetch-creatives');
+      container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+        'color:#FF4B4B;padding:10px 0;">Failed to load — try again</div>';
+    });
+}
+
+// Assign or reassign brief to a specific creative member
+window._assignBrief = function(postId, ownerName, isReassign) {
   var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
+
+  var actorName = window.AppState.user.name || 'Unknown';
+  var actorRole = window.AppState.user.effectiveRole || 'Admin';
+  var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + ownerName;
+  var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
 
   if (post._isRequest) {
     // Request from requests table: mark assigned, then create a new post
@@ -417,7 +485,7 @@ window._assignBriefToPranav = function(postId) {
           post_id: newPostId,
           title: post.title || '',
           stage: 'brief',
-          owner: 'Creative',
+          owner: ownerName,
           client_feedback: updatedFeedback,
           target_date: post.target_date || null,
           images: post.images || [],
@@ -433,9 +501,9 @@ window._assignBriefToPranav = function(postId) {
 
       logActivity({
         post_id: newPostId,
-        actor: 'Chitra',
-        actor_role: 'Servicing',
-        action: 'Brief assigned to Pranav' +
+        actor: actorName,
+        actor_role: actorRole,
+        action: actionLabel +
           (direction.trim() ? ' with direction' : '')
       });
       // Update AppState: remove request entry, add new post
@@ -447,7 +515,7 @@ window._assignBriefToPranav = function(postId) {
         id: newPostId,
         title: post.title || '',
         stage: 'brief',
-        owner: 'Creative',
+        owner: ownerName,
         client_feedback: updatedFeedback,
         target_date: post.target_date || null,
         images: post.images || [],
@@ -458,11 +526,11 @@ window._assignBriefToPranav = function(postId) {
       window.AppState.posts.setAll(filtered);
       document.getElementById('brief-sheet-overlay').remove();
       document.body.style.overflow = '';
-      showToast('Assigned to Pranav', 'success');
+      showToast(toastMsg, 'success');
       if (typeof scheduleRender === 'function') scheduleRender();
     }).catch(function(err) {
-      console.error('[brief] assign request to Pranav failed', err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'assign-request-pranav');
+      console.error('[brief] assign request failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'assign-request');
       showToast('Failed - try again', 'error');
     });
     return;
@@ -477,7 +545,7 @@ window._assignBriefToPranav = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief',
-      owner: 'Creative',
+      owner: ownerName,
       client_feedback: updatedFeedback,
       status_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -485,20 +553,25 @@ window._assignBriefToPranav = function(postId) {
   }).then(function() {
     logActivity({
       post_id: postId,
-      actor: 'Chitra',
-      actor_role: 'Servicing',
-      action: 'Brief assigned to Pranav' +
+      actor: actorName,
+      actor_role: actorRole,
+      action: actionLabel +
         (direction.trim() ? ' with direction' : '')
     });
     document.getElementById('brief-sheet-overlay').remove();
     document.body.style.overflow = '';
-    showToast('Assigned to Pranav', 'success');
+    showToast(toastMsg, 'success');
     loadPosts();
   }).catch(function(err) {
-    console.error('[brief] assign to Pranav failed', err);
-    window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief-pranav');
+    console.error('[brief] assign brief failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief');
     showToast('Failed - try again', 'error');
   });
+}
+
+// Keep backward compat — old callers still reference _assignBriefToPranav
+window._assignBriefToPranav = function(postId) {
+  window._assignBrief(postId, 'Pranav', false);
 }
 
 window._closeBriefConfirm = function(postId) {

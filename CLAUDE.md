@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -562,7 +562,8 @@ window._renderPipelineInner, window.copyChase, window.fallbackCopy,
 window.chaseAll, window.pcsPipelineFilter
 
 render/brief.js:
-window._openBriefSheet, window._assignBriefToPranav,
+window._openBriefSheet, window._briefShowAssignDropdown,
+window._assignBrief, window._assignBriefToPranav,
 window._closeBriefConfirm, window._closeBrief,
 window._reopenBrief, window._createPostFromBrief
 
@@ -2020,57 +2021,29 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        before setAll, new_stage: 'published').
    508/508 unit passing. Bumped to ?v=20260410b.
 1. Brief assignment dropdown hardcoded to Pranav only
-   Location: render/brief.js _openBriefSheet() lines 172-194 and
-   _assignBriefToPranav() lines 395-501.
-   Root cause: There is no dropdown at all — the assign UI is a
-   single hardcoded button "→ Assign to Pranav" (line 192) that
-   calls _assignBriefToPranav(postId). The function name, button
-   label, toast messages (lines 461, 495), log messages (lines
-   438, 490), error log actions (lines 465, 499), and the
-   "Assigned To" section (lines 334-356 showing avatar "P" and
-   name "Pranav") are all hardcoded strings. The PATCH payloads
-   set owner:'Creative' (lines 420, 450, 478, 480) which is the
-   DB role, but the UI text never consults user_roles or any
-   dynamic list. New creative members like Aishwarya will never
-   appear. Also: the "Your Direction for Pranav" label (line 177)
-   is hardcoded. The _isPranav role check (lines 34-36) uses
-   role==='creative' OR email containing 'pranav', which would
-   not match Aishwarya's email.
-   Status: OPEN
+   Location: render/brief.js _openBriefSheet() and _assignBriefToPranav()
+   Status: FIXED (PR#TBD) — replaced hardcoded "Assign to Pranav" button
+   with _briefShowAssignDropdown() that queries /user_roles?role=eq.creative
+   dynamically. New _assignBrief(postId, ownerName, isReassign) function
+   replaces _assignBriefToPranav (kept as backward-compat shim). Owner
+   set to actual person name, not 'Creative'. Toast/log messages dynamic.
+   _isPranav replaced with _isAssignedCreative that checks current user
+   name against post.owner. "Assigned To" card shows dynamic initial/name.
+   508/508 unit passing. Bumped to ?v=20260410h.
 1. Cannot reassign a brief after first assignment
-   Location: render/brief.js _openBriefSheet() lines 78-81 and
-   152-170.
-   Root cause: _isAssignedToPranav (line 78) is true when
-   post.owner is 'pranav' or 'creative' AND stage is not
-   brief_done. When this flag is true, the footer (lines 152-170)
-   renders a static "✓ Assigned to Pranav" badge for Chitra
-   (line 159) and a "→ Create Post" button for Pranav (line 162).
-   There is no reassign button, no owner dropdown, and no way to
-   change the assignment. The Supabase PATCH in
-   _assignBriefToPranav (lines 476-484) has no conditions that
-   would prevent a re-PATCH, but the UI never renders the assign
-   button once _isAssignedToPranav is true — the entire unassigned
-   state block (lines 172-194) is skipped. The only escape is to
-   close the brief (_closeBrief patches stage to brief_done) and
-   reopen it (_reopenBrief patches stage back to brief), but
-   reopening does not reset the owner field, so the brief returns
-   with the same assignment.
-   Status: OPEN
+   Location: render/brief.js _openBriefSheet() footer actions
+   Status: FIXED (PR#TBD) — when brief is assigned AND viewer is
+   Admin/Servicing, footer now shows "✓ Assigned to [Name]" badge
+   plus a "↺ Reassign" button that opens the same dynamic dropdown.
+   _assignBrief(postId, ownerName, true) handles reassignment with
+   "Reassigned to [Name]" toast and log message.
+   508/508 unit passing. Bumped to ?v=20260410h.
 1. Brief panel images not clickable — _edOpenLightbox undefined
-   Location: render/brief.js line 326.
-   Root cause: The image onclick calls _edOpenLightbox(postId, i)
-   (line 326) but this function does NOT EXIST anywhere in the
-   codebase. It is not defined in any JS file — grep across all
-   files returns only the single call site in render/brief.js.
-   The PCS lightbox uses window._pcsOpenLightbox (defined in
-   actions/pcs.js line 1902) which has the same signature
-   (postId, idx) and would work, but the brief panel calls the
-   wrong function name. Clicking any reference photo in the brief
-   panel throws "Uncaught ReferenceError: _edOpenLightbox is not
-   defined" and does nothing. No CSS pointer-events issue — the
-   images have cursor:pointer and onclick handlers, but the
-   handler target is a non-existent function.
-   Status: OPEN
+   Location: render/brief.js line 326
+   Status: FIXED (PR#TBD) — changed onclick from _edOpenLightbox()
+   to window._pcsOpenLightbox() (defined in actions/pcs.js:1902,
+   same signature). Brief reference photos now open in PCS lightbox.
+   508/508 unit passing. Bumped to ?v=20260410h.
 
 ## SECTION 13 — STABILITY ROADMAP
 
