@@ -218,42 +218,44 @@ window._renderPCS = function(postId) {
       : '';
   }
 
-  // b) Photo section
-  var imgs = Array.isArray(post.images) ? post.images : [];
-  var photoHeader = document.getElementById('pcs-photo-header-row');
-  var photoGridWrap = document.getElementById('pcs-photo-grid-wrap');
-  if (photoHeader) {
-    photoHeader.style.display = (canManage || imgs.length > 0) ? 'flex' : 'none';
-    // Left side: stage pill + overdue
-    var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
-    var _leftHtml = '<div class="pcs-photo-left">' +
-      '<span class="pcs-stage-pill" id="pcs-stage-pill"' +
-      (isAdmin ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'stage\',\'' + esc(id) + '\')"' : '') +
-      '>' + esc(_stageLabel) +
-      (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '') +
-      '</span>';
+  // a2) Stage + overdue in topbar left
+  var _stageLabel = (typeof STAGE_DISPLAY !== 'undefined' && STAGE_DISPLAY[stageLC]) || stageLC || 'Unknown';
+  var topbarStage = document.getElementById('pcs-topbar-stage');
+  if (topbarStage) {
+    topbarStage.className = 'pcs-stage-pill';
+    topbarStage.id = 'pcs-stage-pill';
+    if (isAdmin) {
+      topbarStage.onclick = function(e) { e.stopPropagation(); window._pcsChipDrop(topbarStage, 'stage', id); };
+    } else {
+      topbarStage.onclick = null;
+    }
+    topbarStage.innerHTML = esc(_stageLabel) +
+      (isAdmin ? ' <span class="pcs-pill-arr">&#x25BE;</span>' : '');
+  }
+  var topbarOverdue = document.getElementById('pcs-topbar-overdue');
+  if (topbarOverdue) {
     var _noOverdue = ['published','parked','rejected','scheduled'];
+    var _isOd = false;
     if (_noOverdue.indexOf(stageLC) === -1 && dateValue) {
       var _td = typeof parseDate === 'function' ? parseDate(dateValue) : null;
       var _now = new Date(); _now.setHours(0,0,0,0);
-      if (_td && _td < _now) {
-        _leftHtml += '<span class="pcs-hdr-dot">\u00B7</span>' +
-          '<span class="pcs-od-pill" id="pcs-od-pill"><span class="pcs-od-dot"></span>Overdue</span>';
-      }
+      if (_td && _td < _now) _isOd = true;
     }
-    _leftHtml += '</div>';
-    // Right side: ADD / EDIT / SAVE (canManage only)
-    var _rightHtml = '';
-    if (canManage) {
-      _rightHtml = '<div class="pcs-photo-actions">' +
-        '<button class="pcs-photo-act" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">ADD</button>' +
-        (imgs.length > 0 ? '<button class="pcs-photo-act" onclick="window._pcsEnterEditMode(\'' + esc(id) + '\')">EDIT</button>' : '') +
-        (imgs.length > 0 ? '<button class="pcs-photo-act" onclick="window._pcsSaveAllPhotos(\'' + esc(id) + '\')">SAVE</button>' : '') +
-        '</div>';
-    }
-    photoHeader.innerHTML = _leftHtml + _rightHtml;
+    topbarOverdue.className = 'pcs-topbar-od';
+    topbarOverdue.textContent = _isOd ? 'OVERDUE' : '';
+    topbarOverdue.style.display = _isOd ? '' : 'none';
   }
-  if (photoGridWrap) photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
+
+  // b) Photo section
+  var imgs = Array.isArray(post.images) ? post.images : [];
+  var photoGridWrap = document.getElementById('pcs-photo-grid-wrap');
+  if (photoGridWrap) {
+    if (imgs.length > 0) {
+      photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
+    } else {
+      photoGridWrap.innerHTML = '<div class="pcs-photos-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">ADD PHOTOS</div>';
+    }
+  }
 
   // b2) Drive link card
   var driveLinkWrap = document.getElementById('pcs-drive-link-wrap');
@@ -1914,6 +1916,12 @@ window._pcsOpenLightbox = function(postId, idx) {
   _pcsLbRender();
   var lb = document.getElementById('pcs-lightbox');
   if (lb) { lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  var actionBar = document.getElementById('pcs-lb-action-bar');
+  if (actionBar) {
+    var _r = (window.AppState.user.effectiveRole || '').toLowerCase();
+    var _canManageLb = _r !== 'client';
+    actionBar.style.display = _canManageLb ? 'flex' : 'none';
+  }
 }
 
 window._pcsLbRender = function() {
@@ -1950,6 +1958,8 @@ window._pcsLbPrev = function() {
 window._pcsLbClose = function() {
   var lb = document.getElementById('pcs-lightbox');
   if (lb) { lb.style.display = 'none'; document.body.style.overflow = ''; }
+  var actionBar = document.getElementById('pcs-lb-action-bar');
+  if (actionBar) actionBar.style.display = 'none';
 }
 
 window._pcsLbDownload = function() {

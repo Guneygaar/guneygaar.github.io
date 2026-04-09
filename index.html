@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260409e">
+ <link rel="stylesheet" href="styles.css?v=20260409f">
 
 </head>
 <body>
@@ -864,13 +864,15 @@
 <div id="pcs-overlay" data-action="overlay-close" data-close="closePCS">
   <div id="pcs-screen" class="pc-sheet">
 
-    <!-- Topbar: back+X left, stage+overdue pills right -->
+    <!-- Topbar: single row — X + stage + overdue | spacer | WhatsApp -->
     <div class="pc-topbar">
-      <div style="display:flex;align-items:center;gap:0;">
-        <button id="pcs-back-btn" style="display:none;background:none;border:none;color:#AEAEB2;font-family:'IBM Plex Mono',monospace;font-size:18px;padding:8px;cursor:pointer;" onclick="closePCS()" aria-label="Back to sheet">&#x2190;</button>
+      <div class="pcs-topbar-left">
+        <button id="pcs-back-btn" style="display:none;background:none;border:none;color:#AEAEB2;font-family:'IBM Plex Mono',monospace;font-size:18px;padding:4px 8px;cursor:pointer;" onclick="closePCS()" aria-label="Back to sheet">&#x2190;</button>
         <button class="pc-icon-btn" onclick="closePCS()" aria-label="Close">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
+        <span id="pcs-topbar-stage"></span>
+        <span id="pcs-topbar-overdue"></span>
       </div>
       <div id="pcs-topbar-right" style="display:flex;align-items:center;gap:6px"></div>
     </div>
@@ -879,7 +881,6 @@
     <div class="pc-scroll-body" id="pcs-scroll">
 
       <!-- Photo section -->
-      <div class="pcs-photo-header" id="pcs-photo-header-row" style="display:none"></div>
       <div id="pcs-photo-grid-wrap"></div>
       <div id="pcs-drive-link-wrap" style="display:none;"></div>
 
@@ -1078,27 +1079,27 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260409e"></script>
-<script src="00-appstate-compat.js?v=20260409e"></script>
-<script src="01-config.js?v=20260409e" defer></script>
-<script src="02-session.js?v=20260409e" defer></script>
-<script src="utils.js?v=20260409e" defer></script>
-<script src="03-auth.js?v=20260409e" defer></script>
-<script src="05-api.js?v=20260409e" defer></script>
-<script src="10-ui.js?v=20260409e" defer></script>
+<script src="00-appstate.js?v=20260409f"></script>
+<script src="00-appstate-compat.js?v=20260409f"></script>
+<script src="01-config.js?v=20260409f" defer></script>
+<script src="02-session.js?v=20260409f" defer></script>
+<script src="utils.js?v=20260409f" defer></script>
+<script src="03-auth.js?v=20260409f" defer></script>
+<script src="05-api.js?v=20260409f" defer></script>
+<script src="10-ui.js?v=20260409f" defer></script>
 
-<script src="06-post-create.js?v=20260409e" defer></script>
-<script defer src="render/dashboard.js?v=20260409e"></script>
-<script defer src="render/client.js?v=20260409e"></script>
-<script defer src="render/pipeline.js?v=20260409e"></script>
-<script defer src="render/brief.js?v=20260409e"></script>
-<script defer src="actions/pcs.js?v=20260409e"></script>
-<script defer src="actions/pcs-longpress.js?v=20260409e"></script>
-<script src="07-post-load.js?v=20260409e" defer></script>
-<script src="08-post-actions.js?v=20260409e" defer></script>
-<script src="09-library.js?v=20260409e" defer></script>
-<script src="09-approval.js?v=20260409e" defer></script>
-<script src="04-router.js?v=20260409e" defer></script>
+<script src="06-post-create.js?v=20260409f" defer></script>
+<script defer src="render/dashboard.js?v=20260409f"></script>
+<script defer src="render/client.js?v=20260409f"></script>
+<script defer src="render/pipeline.js?v=20260409f"></script>
+<script defer src="render/brief.js?v=20260409f"></script>
+<script defer src="actions/pcs.js?v=20260409f"></script>
+<script defer src="actions/pcs-longpress.js?v=20260409f"></script>
+<script src="07-post-load.js?v=20260409f" defer></script>
+<script src="08-post-actions.js?v=20260409f" defer></script>
+<script src="09-library.js?v=20260409f" defer></script>
+<script src="09-approval.js?v=20260409f" defer></script>
+<script src="04-router.js?v=20260409f" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1648,11 +1649,7 @@ window.setPcsVisibility = function(el, vis) {
     <span id="pcs-lb-counter"
       style="font-family:'IBM Plex Mono',monospace;font-size:8px;
       letter-spacing:0.14em;color:#444;">1 / 1</span>
-    <button onclick="_pcsLbDownload()"
-      style="font-family:'IBM Plex Mono',monospace;font-size:7px;
-      letter-spacing:0.12em;text-transform:uppercase;color:#3ECF8E;
-      background:transparent;border:1px solid #3ECF8E4D;
-      padding:6px 12px;cursor:pointer;">&#x2193; Download</button>
+    <div style="width:40px"></div>
   </div>
   <div style="flex:1;display:flex;align-items:center;justify-content:center;
     padding:60px 0 80px;">
@@ -1661,11 +1658,11 @@ window.setPcsVisibility = function(el, vis) {
       style="max-width:100%;max-height:100%;object-fit:contain;display:block;">
   </div>
   <div id="pcs-lb-dots"
-    style="position:absolute;bottom:68px;left:0;right:0;
+    style="position:absolute;bottom:120px;left:0;right:0;
     display:flex;justify-content:center;gap:5px;"></div>
-  <div style="position:absolute;bottom:0;left:0;right:0;
-    background:#000000CC;padding:10px 18px 24px;
-    display:flex;align-items:center;gap:8px;">
+  <div style="position:absolute;bottom:60px;left:0;right:0;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:0 18px;">
     <button onclick="_pcsLbPrev()"
       style="width:40px;height:40px;display:flex;align-items:center;
       justify-content:center;background:#FFFFFF0D;
@@ -1680,6 +1677,13 @@ window.setPcsVisibility = function(el, vis) {
       justify-content:center;background:#FFFFFF0D;
       border:1px solid #FFFFFF12;color:#555;
       font-size:16px;cursor:pointer;">&#x2192;</button>
+  </div>
+  <div id="pcs-lb-action-bar" class="pcs-lb-actions" style="display:none">
+    <button class="pcs-lb-act" onclick="window._pcsAddPhotos&&window._pcsAddPhotos(window._pcs&&window._pcs.postId||'')">ADD</button>
+    <button class="pcs-lb-act" onclick="window._pcsEnterEditMode&&window._pcsEnterEditMode(window._pcs&&window._pcs.postId||'')">EDIT</button>
+    <button class="pcs-lb-act" onclick="window._pcsSaveAllPhotos&&window._pcsSaveAllPhotos(window._pcs&&window._pcs.postId||'')">SAVE</button>
+    <button class="pcs-lb-act" onclick="window._pcsLbDownload&&window._pcsLbDownload()">DOWNLOAD</button>
+    <button class="pcs-lb-act pcs-lb-act--remove" onclick="window._pcsConfirmRemovePhoto&&window._pcsConfirmRemovePhoto()">REMOVE</button>
   </div>
 </div>
 
