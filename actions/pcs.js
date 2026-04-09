@@ -2741,7 +2741,6 @@ window._pcsShowEmojiPicker = function(reactEl) {
     });
     picker.appendChild(btn);
   });
-  reactEl.style.position = 'relative';
   reactEl.appendChild(picker);
 
   // Close on outside click
