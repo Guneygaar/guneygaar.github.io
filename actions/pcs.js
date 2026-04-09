@@ -1529,19 +1529,15 @@ window._pcsHandlePhotoInput = async function(postId, input) {
   var uploaded = [];
   var progressWrap = document.createElement('div');
   progressWrap.id = 'pcs-upload-progress';
-  progressWrap.style.cssText = 'padding:8px 18px;border-bottom:' +
-    '1px solid #FFFFFF12;';
   progressWrap.innerHTML =
-    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;' +
-    'letter-spacing:0.14em;text-transform:uppercase;color:#555;' +
-    'margin-bottom:6px;" id="pcs-upload-label">Uploading 0 of ' +
-    files.length + '...</div>' +
-    '<div style="height:2px;background:#FFFFFF0F;width:100%;">' +
-    '<div id="pcs-upload-bar" style="height:2px;background:#F6A623;' +
-    'width:0%;transition:width 0.2s ease;"></div></div>';
-  var photoSection = document.getElementById('pcs-photo-section');
-  if (photoSection) photoSection.parentNode.insertBefore(
-    progressWrap, photoSection);
+    '<div style="width:100%;height:3px;background:#1a1a22;overflow:hidden;position:relative;">' +
+    '<div id="pcs-upload-bar" style="height:100%;background:#C8A84B;width:0%;transition:width 0.3s ease;"></div></div>' +
+    '<div id="pcs-upload-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+    'letter-spacing:.06em;color:#808090;padding:4px 16px;text-transform:uppercase;">' +
+    'UPLOADING 0 OF ' + files.length + '...</div>';
+  var photoGrid = document.getElementById('pcs-photo-grid-wrap');
+  if (photoGrid && photoGrid.parentNode) photoGrid.parentNode.insertBefore(
+    progressWrap, photoGrid);
   for (var fi = 0; fi < files.length; fi++) {
     if (currentImages.length + uploaded.length >= 20) break;
     try {
@@ -1553,10 +1549,13 @@ window._pcsHandlePhotoInput = async function(postId, input) {
     var pct = Math.round(((fi + 1) / files.length) * 100);
     var bar = document.getElementById('pcs-upload-bar');
     var lbl = document.getElementById('pcs-upload-label');
-    if (bar) bar.style.width = pct + '%';
-    if (lbl) lbl.textContent = 'Uploading ' + (fi + 1) +
-      ' of ' + files.length + '...' +
-      (pct === 100 ? ' Done.' : '');
+    if (bar) {
+      bar.style.width = pct + '%';
+      if (pct === 100) bar.style.background = '#3ECF8E';
+    }
+    if (lbl) lbl.textContent = pct === 100
+      ? 'DONE'
+      : 'UPLOADING ' + (fi + 1) + ' OF ' + files.length + '...';
   }
   if (!uploaded.length) return;
   var newImages = currentImages.concat(uploaded);
@@ -1577,11 +1576,9 @@ window._pcsHandlePhotoInput = async function(postId, input) {
       console.warn('[AppState] Post not found', postId);
     }
     window.AppState.posts.setAll(_next_1379);
-    var section = document.getElementById('pcs-photo-section');
-    if (section && post) {
-      post.images = newImages;
-      if (typeof openPCS === 'function') openPCS(postId, '');
-    }
+    post.images = newImages;
+    showToast && showToast(uploaded.length + ' photo' + (uploaded.length > 1 ? 's' : '') + ' uploaded', 'success');
+    if (typeof openPCS === 'function') openPCS(postId, '');
     var pw = document.getElementById('pcs-upload-progress');
     if (pw) pw.remove();
   } catch(e) {
