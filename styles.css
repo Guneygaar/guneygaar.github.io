@@ -3007,7 +3007,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .pcs-title--editable { cursor: text; }
 .pcs-title--editable:hover {
   background: var(--surface2);
-  border-radius: 8px;
 }
 .pcs-title-input {
   width: 100%;
@@ -3019,28 +3018,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: left;
   background: var(--surface2);
   border: 1px solid var(--border2);
-  border-radius: 8px;
   padding: var(--pcs-space-1) var(--pcs-space-2);
   font-family: inherit;
   outline: none;
 }
 .pcs-title-input:focus { border-color: var(--c-blue); }
 
-/* Metadata row  Pillar  Owner  Date */
-.pcs-subtitle {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--pcs-inline-separator-gap);
-  flex-wrap: wrap;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pcs-subtitle span { white-space: nowrap; }
+/* Metadata row */
 /*  Scroll area  */
 .pcs-scroll {
   flex: 1;
@@ -3062,11 +3046,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: linear-gradient(to bottom, transparent, var(--surface));
   pointer-events: none;
   flex-shrink: 0;
-}
-
-/* Body sections  spacing controlled by .pcs-scroll gap */
-.pcs-body-section:empty {
-  display: none;
 }
 
 /*  Pipeline progress row  */
@@ -3118,221 +3097,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* Canva chip */
 /* LinkedIn chip */
 /* Secondary chip (+ Design) */
-/* Low-emphasis text action (Replace design / Replace link) */
-/* Legacy action controls  matched to 36px chip height */
-/* Section 6: Attach URL row */
-.pcs-attach-row {
-  display: flex;
-  gap: var(--pcs-space-3);
-  align-items: center;
-  padding: 0;
-}
-.pcs-attach-input {
-  flex: 1;
-  height: var(--pcs-button-height);
-  background: var(--surface2);
-  border: 1px solid var(--border2);
-  border-radius: var(--pcs-space-2);
-  padding: 0 var(--pcs-space-3);
-  font-size: 13px;
-  color: var(--text-primary);
-  font-family: inherit;
-  min-width: 0;
-}
-.pcs-attach-input:focus { outline: none; border-color: var(--c-blue); }
-.pcs-attach-save {
-  height: var(--pcs-button-height);
-  width: 80px;
-  padding: 0;
-  background: var(--c-blue);
-  color: #ffffff;
-  border-radius: var(--pcs-space-2);
-  font-size: 13px;
-  font-weight: 600;
-  flex-shrink: 0;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.1s ease;
-}
-.pcs-attach-save:hover { filter: brightness(1.1); }
-.pcs-attach-save:active { transform: scale(0.97); }
-/* Cancel text under attach row */
-.pcs-attach-cancel {
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  font-size: 12px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  padding: var(--pcs-space-1) var(--pcs-space-2);
-  transition: color 120ms ease;
-}
-.pcs-attach-cancel:hover { color: var(--text-secondary); }
-
-/*  Fields container  vertical rhythm for grid + notes  */
+/*  Fields container  */
 #pcs-fields {
   display: flex;
   flex-direction: column;
   gap: var(--pcs-space-5);
 }
 
-/*  Information section divider  */
-/*  Notes section  lighter feel  */
-
-/* Legacy design block classes  heights matched to 36px */
-/* 
-   ZONE 3  CONTENT (Info grid, Notes, Activity)
- */
-
-/*  Section containers  */
-/*  Information grid  stacked single-column layout  */
-.pcs-field {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-  width: 100%;
-}
-/*  Typography tokens  */
-.pcs-subtitle {
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text-secondary);
-}
-
-.pcs-field select {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-}
-/* Section 7: Unified value shell  all metadata fields */
-.pcs-value-shell .pcs-date-text {
-  line-height: 1.4;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/*  Target Date  subtle signal via color only  */
-.pcs-field[data-field="targetDate"] .pcs-value {
-  color: var(--text-primary);
-}
-
-/* Date tap  inside .pcs-value-shell */
-div.pcs-date-tap {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 16px;
-  line-height: 1.4;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-label.pcs-date-tap {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  position: relative;
-  width: 100%;
-  min-height: 44px;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1.4;
-  font-weight: 500;
-  color: var(--text-primary);
-  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-label.pcs-date-tap:active { transform: scale(0.98); }
-.pcs-date-tap .pcs-date-input-native {
-  position: absolute;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  color: transparent;
-  background: transparent;
-  border: none;
-}
-
-/*  Notes box  preview card with fade  */
-/*  Activity section (collapsed by default)  */
-.pcs-activity-section.expanded .pcs-activity-chevron {
-  transform: rotate(90deg);
-}
-
-/*  Desktop hover lift (pointer devices only)  */
-@media (hover: hover) {
-  .pcs-action-chip:hover,
-  .pcs-close-btn:hover,
-}
-
-.pcs-activity-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-top: var(--pcs-space-2);
-}
-.pcs-activity-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--pcs-space-2);
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 12px;
-}
-.pcs-activity-row:last-child { border-bottom: none; }
-.pcs-activity-loading,
-.pcs-activity-empty { font-size: 12px; color: var(--text-tertiary); padding: var(--pcs-space-1) 0; }
-
-/*  Delete confirm  theme-aware  */
-.pcs-confirm-sheet {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--pcs-space-4);
-  padding: var(--pcs-space-5);
-  width: 100%;
-  max-width: 360px;
-  box-shadow: 0 16px 48px #00000033;
-}
-.pcs-confirm-msg {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: var(--pcs-space-4);
-  line-height: 1.4;
-}
-.pcs-confirm-btns { display: flex; gap: var(--pcs-space-2); }
-.pcs-confirm-cancel {
-  flex: 1; height: 44px; border-radius: 8px;
-  border: 1px solid var(--border2); color: var(--text2);
-  font-size: 15px; font-weight: 600; background: var(--surface2);
-  cursor: pointer; transition: transform 0.1s ease;
-}
-.pcs-confirm-cancel:hover { background: var(--surface3); }
-.pcs-confirm-cancel:active { transform: scale(0.97); }
-.pcs-confirm-delete {
-  flex: 1; height: 44px; border-radius: 8px;
-  background: var(--c-red); color: #fff;
-  font-size: 15px; font-weight: 700;
-  border: none; cursor: pointer;
-  transition: transform 0.1s ease;
-}
-.pcs-confirm-delete:hover { filter: brightness(1.1); }
-.pcs-confirm-delete:active { transform: scale(0.97); }
-/* Stage confirm button */
-.pcs-confirm-stage {
-  flex: 1; height: 44px; border-radius: 8px;
-  background: var(--c-blue); color: #fff;
-  font-size: 15px; font-weight: 700;
-  border: none; cursor: pointer;
-  transition: transform 0.1s ease;
-}
-.pcs-confirm-stage:hover { filter: brightness(1.1); }
-.pcs-confirm-stage:active { transform: scale(0.97); }
-
-/* 
+/*
    PC  Post Card redesign (dotted border system)
  */
 
@@ -5845,62 +5617,6 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* INTERNAL NOTES SECTION */
-.pcs-notes-section {
-  background: #191924;
-  border: 1px solid #A872FF26;
-  border-top: 2px solid #A872FF33;
-  margin-top: 8px;
-}
-.pcs-notes-header {
-  padding: 12px 16px 10px;
-  border-bottom: 1px solid #FFFFFF0F;
-  background: #A872FF0A;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: none;
-}
-.pcs-notes-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  color: #C8AAFFB3;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.pcs-lock-icon {
-  font-family: var(--mono);
-  font-size: 7px;
-  color: #A872FF80;
-  letter-spacing: 0.08em;
-}
-.pcs-notes-list {
-  padding: 4px 0;
-  background: transparent;
-}
-.pcs-notes-section .pcs-comment-text {
-  color: #E8E8E8;
-}
-.notes-input-zone {
-  position: relative;
-  border-top: 1px solid #FFFFFF0D;
-  padding: 10px 16px 12px;
-  background: #191924;
-  display: flex;
-  gap: 8px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-}
-.pcs-note-recipient {
-  width: 100%;
-  font-family: var(--mono);
-  font-size: 8px;
-  color: #8E8E93;
-  letter-spacing: 0.04em;
-  margin-top: -4px;
-}
-
 /* SHARED COMMENT ITEMS — Instagram-style (Part 2A) */
 .pcs-comment-item {
   display: flex;
@@ -5990,7 +5706,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-vis--creat { color: #9b87f5; border-color: #9b87f533; }
 .pcs-comment-text {
   font-size: 13.5px;
-  color: #C0C0C8;
+  color: #B8B8C0;
   line-height: 1.55;
   white-space: pre-wrap;
   word-break: break-word;
@@ -6036,8 +5752,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-textarea::placeholder { color: #8E8E93; }
 .pcs-note-textarea {
   background: #FFFFFF0A;
-  border: 1px solid #A872FF33;
-  caret-color: #FFFFFF99;
+  border: 1px solid #9b87f533;
+  caret-color: #F0F0F299;
 }
 .pcs-note-textarea:focus {
   border-color: #FFFFFF33;
@@ -6067,12 +5783,12 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-color: #C8A84B66;
 }
 .pcs-note-btn {
-  border-color: #A872FF33;
-  color: #A872FF66;
+  border-color: #9b87f533;
+  color: #9b87f566;
 }
 .pcs-note-btn.active {
-  color: #c7a3ff;
-  border-color: #A872FF73;
+  color: #9b87f5;
+  border-color: #9b87f573;
 }
 
 /* VIS CHIPS */
@@ -6106,22 +5822,6 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #F6A623;
   border-color: #F6A62340;
   background: #F6A6230F;
-}
-
-/* COUNT BADGES */
-.pcs-count-badge {
-  background: #FFFFFF0F;
-  color: #AEAEB2;
-  font-size: 8px;
-  padding: 1px 5px;
-  font-family: var(--mono);
-}
-.pcs-notes-count-badge {
-  background: #A872FF1A;
-  color: #C8AAFF99;
-  font-size: 8px;
-  padding: 1px 5px;
-  font-family: var(--mono);
 }
 
 /* CONFIRM DIALOG */
@@ -6395,7 +6095,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-react-icon svg {
   width: 14px;
   height: 14px;
-  stroke: #606070;
+  stroke: #505060;
   fill: none;
   stroke-width: 1.8;
 }
@@ -6416,7 +6116,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   position: absolute;
   bottom: calc(100% + 6px);
   right: 0;
-  background: #16161f;
+  background: #15151c;
   border: 1px solid #323244;
   display: flex;
   gap: 2px;
@@ -6475,7 +6175,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-task-check svg {
   width: 18px;
   height: 18px;
-  stroke: #606070;
+  stroke: #505060;
   fill: none;
   stroke-width: 1.5;
   stroke-dasharray: 3 2;
@@ -6501,10 +6201,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   right: 0;
   max-width: 480px;
   margin: 0 auto;
-  background: #16161f;
+  background: #15151c;
   border-top: 1px solid #323244;
   z-index: 9601;
   padding: 8px 0;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 }
 .pcs-lp-item {
   display: flex;
@@ -6513,7 +6214,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 14px 20px;
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
-  color: #C0C0C8;
+  color: #B8B8C0;
   cursor: pointer;
   background: none;
   border: none;
@@ -6521,7 +6222,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   text-align: left;
 }
 .pcs-lp-item:active {
-  background: #1c1c28;
+  background: #15151c;
 }
 .pcs-lp-delete {
   color: #FF4B4B;
@@ -6547,7 +6248,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  background: #16161f;
+  background: #15151c;
   border: 1px solid #323244;
   z-index: 200;
   min-width: 120px;
@@ -6559,13 +6260,13 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 10px 14px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
-  color: #C0C0C8;
+  color: #B8B8C0;
   cursor: pointer;
   background: none;
   border: none;
 }
 .pcs-plus-item:active {
-  background: #1c1c28;
+  background: #15151c;
 }
 .pcs-plus-item + .pcs-plus-item {
   border-top: 1px solid #323244;
@@ -6591,29 +6292,6 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   cursor: pointer;
   padding: 0 2px;
   line-height: 1;
-}
-
-.pcs-menu-item {
-  padding: 10px 14px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: #E8E8E8;
-  cursor: pointer;
-  border-bottom: 1px solid #191924;
-  letter-spacing: 0.04em;
-}
-
-.pcs-menu-item:last-child {
-  border-bottom: none;
-}
-
-.pcs-menu-item:hover,
-.pcs-menu-item:active {
-  background: #191924;
-}
-
-.pcs-menu-item-danger {
-  color: #FF4B4B;
 }
 
 .pcs-comment-actions {
@@ -6928,6 +6606,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   inset: 0;
   background: rgba(8,8,8,0.72); /* approved rgba exception — photo must show through */
   backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -6952,7 +6631,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-weight: 700 !important;
   letter-spacing: -0.03em !important;
   line-height: 1.1 !important;
-  color: #FFFFFF !important;
+  color: #F0F0F2 !important;
   padding: 11px 16px 4px !important;
 }
 
@@ -6987,7 +6666,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Custom date calendar dropdown */
 .pcs-cal {
   background: #101016;
-  border: 1px solid #18181f;
+  border: 1px solid #191924;
   padding: 14px;
   min-width: 270px;
   box-shadow: 0 8px 32px #00000080;
@@ -7034,7 +6713,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .07em; text-transform: uppercase;
   background: none; border: none; cursor: pointer;
-  color: #6e6e80; text-align: center;
+  color: #505060; text-align: center;
   border-bottom: 2px solid transparent;
   transition: color .15s, border-color .15s;
 }
@@ -7061,14 +6740,15 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Pill input bar */
 .pcs-ibar-wrap {
   flex-shrink: 0;
-  padding: 8px 14px 14px;
+  padding: 8px 14px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid;
 }
 .pcs-ibar-wrap.client {
   background: #08080c; border-top-color: #141420;
 }
 .pcs-ibar-wrap.notes {
-  background: #090808; border-top-color: #151208;
+  background: #080808; border-top-color: #151208;
 }
 .pcs-ibar-pill {
   display: flex; align-items: center; gap: 8px;
@@ -7099,7 +6779,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-ibar-input {
   flex: 1; background: none; border: none;
   font-size: 14px; color: #F0F0F2; outline: none;
-  font-family: -apple-system, sans-serif;
+  font-family: 'DM Sans', sans-serif;
   line-height: 1.4; padding: 4px 0;
   resize: none; max-height: 100px; overflow-y: auto;
   scrollbar-width: none;
@@ -7123,7 +6803,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-ibar-hint {
   font-family: 'IBM Plex Mono', monospace; font-size: 7px;
-  color: #1c1c2c; letter-spacing: .06em;
+  color: #2e2e3a; letter-spacing: .06em;
   text-transform: uppercase; padding-left: 4px;
 }
 
@@ -7159,7 +6839,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 9px 0; cursor: pointer; text-align: center;
 }
 .pcs-cap-btn--bright { color: #B8B8C0; }
-.pcs-cap-btn--danger { border-color: #3a2222; color: #bb4444; }
+.pcs-cap-btn--danger { border-color: #323244; color: #FF4B4B; }
 
 /* Done button */
 .pcs-close-btn {
@@ -7205,7 +6885,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-weight: 700 !important;
   letter-spacing: -0.03em !important;
   line-height: 1.1 !important;
-  color: #FFFFFF !important;
+  color: #F0F0F2 !important;
   padding: 9px 16px 4px !important;
 }
 
