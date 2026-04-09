@@ -104,7 +104,7 @@ async function quickStage(postId, newStage) {
     }
     post._isSaving = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` });
+    await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: oldStage, new_stage: newStage });
     var _qsRecipients = _stageRecipients(newStage);
     if (_qsRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _qsRecipients, actor);
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
@@ -225,7 +225,7 @@ async function clientApprove(postId, btn) {
         method: 'PATCH',
         body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
       });
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: post.stage, new_stage: 'scheduled' });
       window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
       var confirmEl = document.getElementById('approved-confirm-' + postId);
       if (confirmEl) confirmEl.classList.add('show');
@@ -476,7 +476,8 @@ function _confirmPublish(postId) {
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
     body: JSON.stringify(payload)
-  }).then(function() {
+  }).then(async function() {
+    var _pubOldStage = (getPostById(postId) || {}).stage || '';
     var _found_408 = false;
     var _next_408 = window.AppState.posts.all.map(function(p) {
       if (getPostId(p) === postId) {
@@ -493,11 +494,13 @@ function _confirmPublish(postId) {
       console.warn('[AppState] Post not found', postId);
     }
     window.AppState.posts.setAll(_next_408);
-    logActivity({
+    await logActivity({
       post_id: postId,
       actor: window.AppState.user.name || 'Shubham',
       actor_role: window.AppState.user.effectiveRole || 'Admin',
-      action: 'published'
+      action: 'published',
+      old_stage: _pubOldStage,
+      new_stage: 'published'
     });
     var _pubPost = getPostById(postId);
     window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Servicing', 'Creative', 'Client'], window.AppState.user.name || 'Shubham');
@@ -592,7 +595,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
-  try { logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}` }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: previousStage, new_stage: newStage }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { var _esRecipients = _stageRecipients(newStage); if (_esRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _esRecipients, actor); } catch(e) { console.warn('[PCS] stage notif failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }

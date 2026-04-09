@@ -136,7 +136,9 @@ async function uploadPostAsset(file, postId) {
   return data.url;
 }
 
-async function logActivity({ post_id, actor, actor_role, action }) {
+async function logActivity({ post_id, actor, actor_role, action, old_stage, new_stage }) {
+  var token = localStorage.getItem('sb_access_token');
+  if (!token) return;
   try {
     await apiFetch('/activity_log', {
       method: 'POST',
@@ -145,6 +147,8 @@ async function logActivity({ post_id, actor, actor_role, action }) {
         actor:      actor   || 'Unknown',
         action:     action  || '',
         created_at: new Date().toISOString(),
+        old_stage:  old_stage || null,
+        new_stage:  new_stage || null,
       }),
     });
   } catch (err) {

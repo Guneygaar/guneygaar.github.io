@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410a
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1987,6 +1987,38 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero changes to post_comments/internal_notes routing.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409h.
+1. logActivity() missing old_stage/new_stage + auth guard + fire-and-forget
+   Location: 05-api.js logActivity(), 08-post-actions.js quickStage(),
+   _executeStageChangeAsync(), clientApprove(), _confirmPublish()
+   Root cause (4 issues):
+   (a) logActivity() POST payload only sent post_id, actor, action,
+       created_at. The activity_log table has old_stage and new_stage
+       columns (previously populated by DB triggers, now dropped), but
+       the app-side logActivity() never sent them. Dashboard streak
+       queries and timeline views read old_stage/new_stage and got NULL.
+   (b) logActivity() had no session token guard. When called after
+       logout or token expiry, it fired a guaranteed-to-fail 401
+       request that was silently swallowed by its internal catch.
+   (c) _executeStageChangeAsync line 595 called logActivity() without
+       await. If PCS closed before the Promise resolved, the browser
+       could abort the request, silently dropping the activity_log row.
+   (d) _confirmPublish line 496 same fire-and-forget pattern — called
+       logActivity() without await inside a .then() callback.
+   Status: FIXED (PR#TBD) —
+   (a) Added old_stage and new_stage to logActivity() signature and
+       POST body (05-api.js:139). Both default to null when omitted.
+   (b) Added localStorage sb_access_token guard at top of logActivity()
+       — returns early with no API call when no token (05-api.js:140-141).
+   (c) Added await before logActivity() in _executeStageChangeAsync
+       (08-post-actions.js:598).
+   (d) Made _confirmPublish .then() callback async, added await before
+       logActivity() (08-post-actions.js:479,497).
+   (e) All 4 stage-change callers now pass old_stage and new_stage:
+       quickStage (old_stage: oldStage), _executeStageChangeAsync
+       (old_stage: previousStage), clientApprove (old_stage: post.stage,
+       new_stage: 'scheduled'), _confirmPublish (old_stage captured
+       before setAll, new_stage: 'published').
+   508/508 unit passing. Bumped to ?v=20260410b.
 
 ## SECTION 13 — STABILITY ROADMAP
 
