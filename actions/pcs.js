@@ -2701,7 +2701,7 @@ window._pcsRemoveCommentImg = function(zone, idx) {
 };
 
 // -- Emoji reactions --
-var _PCS_EMOJIS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83C\uDFAF', '\uD83D\uDC40', '\u2705'];
+var _PCS_EMOJIS = ['\u2764\uFE0F', '\uD83D\uDC4D', '\uD83C\uDFAF', '\uD83D\uDC40', '\u2705', '\uD83C\uDD97'];
 
 window._pcsShowEmojiPicker = function(reactEl) {
   if (!reactEl) return;
