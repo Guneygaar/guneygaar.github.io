@@ -1516,15 +1516,24 @@ window._pcsHandlePhotoInput = async function(postId, input) {
   var uploaded = [];
   var progressWrap = document.createElement('div');
   progressWrap.id = 'pcs-upload-progress';
+  progressWrap.style.position = 'relative';
+  progressWrap.style.zIndex = '9700';
   progressWrap.innerHTML =
     '<div style="width:100%;height:3px;background:#1a1a22;overflow:hidden;position:relative;">' +
     '<div id="pcs-upload-bar" style="height:100%;background:#C8A84B;width:0%;transition:width 0.3s ease;"></div></div>' +
     '<div id="pcs-upload-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
     'letter-spacing:.06em;color:#808090;padding:4px 16px;text-transform:uppercase;">' +
     'UPLOADING 0 OF ' + files.length + '...</div>';
-  var photoGrid = document.getElementById('pcs-photo-grid-wrap');
-  if (photoGrid && photoGrid.parentNode) photoGrid.parentNode.insertBefore(
-    progressWrap, photoGrid);
+  var _lb = document.getElementById('pcs-lightbox');
+  var _isLbOpen = _lb && (_lb.style.display === 'flex' || _lb.style.display === 'block');
+  var _wasLbOpen = _isLbOpen;
+  var _wasEditMode = window._pcsLbEditMode;
+  if (_isLbOpen) {
+    _lb.insertBefore(progressWrap, _lb.firstChild);
+  } else {
+    var photoGrid = document.getElementById('pcs-photo-grid-wrap');
+    if (photoGrid && photoGrid.parentNode) photoGrid.parentNode.insertBefore(progressWrap, photoGrid);
+  }
   for (var fi = 0; fi < files.length; fi++) {
     if (currentImages.length + uploaded.length >= 20) break;
     try {
@@ -1568,6 +1577,20 @@ window._pcsHandlePhotoInput = async function(postId, input) {
     if (typeof openPCS === 'function') openPCS(postId, '');
     var pw = document.getElementById('pcs-upload-progress');
     if (pw) pw.remove();
+    if (_wasLbOpen) {
+      setTimeout(function() {
+        var p = (typeof getPostById === 'function') ? getPostById(postId) : null;
+        if (p && p.images && p.images.length > 0) {
+          if (_wasEditMode) {
+            _pcsOpenLightbox(postId, 0);
+            window._pcsLbEditMode = true;
+            _pcsLbRender();
+          } else {
+            _pcsOpenLightbox(postId, p.images.length - 1);
+          }
+        }
+      }, 200);
+    }
   } catch(e) {
     console.error('[pcs] photo upload failed', e);
     window.logError && window.logError(e && e.message, e && e.stack, 'pcs-photo-upload');
@@ -1607,6 +1630,7 @@ window._pcsRemovePhoto = async function(postId, idx) {
 
 // -- Edit mode state --
 window._pcsEditMode = false;
+window._pcsLbEditMode = false;
 
 window._pcsPhotoMenu = function(postId, e) {
   if (e) e.stopPropagation();
@@ -1657,50 +1681,15 @@ window._pcsCloseUnifiedMenu = function() {
 };
 
 // -- Edit mode (Step C) --
-window._pcsEnterEditMode = function(postId) {
-  window._pcsEditMode = true;
-  var menuBtn = document.getElementById('pcs-photo-menu-btn');
-  if (menuBtn) menuBtn.style.display = 'none';
-  var doneBtn = document.getElementById('pcs-edit-done-btn');
-  if (!doneBtn) {
-    doneBtn = document.createElement('button');
-    doneBtn.id = 'pcs-edit-done-btn';
-    doneBtn.className = 'pcs-edit-done';
-    doneBtn.textContent = 'DONE';
-    doneBtn.onclick = function() { window._pcsExitEditMode(postId); };
-    var header = document.getElementById('pcs-photo-header-row');
-    if (header) header.appendChild(doneBtn);
-  } else {
-    doneBtn.style.display = '';
-  }
-  // Add X overlays to photos
-  var wrap = document.getElementById('pcs-photo-grid-wrap');
-  if (!wrap) return;
-  var cells = wrap.querySelectorAll('.pcs-pg-1, .pcs-pg-2-cell, .pcs-pg-hero, .pcs-pg-sm');
-  cells.forEach(function(cell, idx) {
-    if (cell.querySelector('.pcs-edit-x')) return;
-    var xBtn = document.createElement('button');
-    xBtn.className = 'pcs-edit-x';
-    xBtn.innerHTML = '&#x2715;';
-    xBtn.onclick = function(ev) {
-      ev.stopPropagation();
-      window._pcsConfirmRemovePhoto(postId, idx);
-    };
-    cell.style.position = 'relative';
-    cell.appendChild(xBtn);
-  });
+window._pcsEnterEditMode = function() {
+  window._pcsLbEditMode = true;
+  _pcsLbRender();
 };
 
-window._pcsExitEditMode = function(postId) {
-  window._pcsEditMode = false;
-  var menuBtn = document.getElementById('pcs-photo-menu-btn');
-  if (menuBtn) menuBtn.style.display = '';
-  var doneBtn = document.getElementById('pcs-edit-done-btn');
-  if (doneBtn) doneBtn.remove();
-  var wrap = document.getElementById('pcs-photo-grid-wrap');
-  if (wrap) {
-    wrap.querySelectorAll('.pcs-edit-x').forEach(function(x) { x.remove(); });
-  }
+window._pcsExitEditMode = function() {
+  window._pcsLbEditMode = false;
+  window._pcsLbIdx = 0;
+  _pcsLbRender();
 };
 
 // -- Confirm remove photo (Step D) --
@@ -1741,11 +1730,36 @@ window._pcsDoRemovePhotoEdit = async function(postId, idx) {
       return p;
     });
     window.AppState.posts.setAll(_next);
-    // Re-render and re-enter edit mode if photos remain
-    if (typeof openPCS === 'function') openPCS(postId, '');
-    if (imgs.length > 0) {
-      setTimeout(function() { window._pcsEnterEditMode(postId); }, 50);
+
+    // Case 1: zero photos left
+    if (imgs.length === 0) {
+      _pcsLbClose();
+      window._pcsLbEditMode = false;
+      if (typeof openPCS === 'function') openPCS(postId, '');
+      return;
     }
+
+    // Case 2: in edit mode — refresh grid
+    if (window._pcsLbEditMode) {
+      window._pcsLbImages = imgs;
+      if (typeof openPCS === 'function') openPCS(postId, '');
+      setTimeout(function() {
+        _pcsOpenLightbox(postId, 0);
+        window._pcsLbEditMode = true;
+        _pcsLbRender();
+      }, 150);
+      return;
+    }
+
+    // Case 3: normal mode — stay on adjacent photo
+    var newIdx = Math.min(idx, imgs.length - 1);
+    if (newIdx < 0) newIdx = 0;
+    window._pcsLbImages = imgs;
+    window._pcsLbIdx = newIdx;
+    if (typeof openPCS === 'function') openPCS(postId, '');
+    setTimeout(function() {
+      _pcsOpenLightbox(postId, newIdx);
+    }, 150);
   } catch(e) {
     console.error('[pcs] edit-mode remove photo failed', e);
     window.logError && window.logError(e && e.message, e && e.stack, 'pcs-edit-remove-photo');
@@ -1911,12 +1925,27 @@ window._pcsOpenLightbox = function(postId, idx) {
 }
 
 window._pcsLbRender = function() {
+  if (window._pcsLbEditMode) {
+    _pcsLbRenderGrid();
+    return;
+  }
+  // Normal single-photo mode
+  var photoArea = document.getElementById('pcs-lb-photo-area');
   var img = document.getElementById('pcs-lb-img');
+  // Restore single img if grid was shown previously
+  if (photoArea && !img) {
+    photoArea.innerHTML = '<img id="pcs-lb-img" src="" alt="" style="max-width:100%;max-height:100%;object-fit:contain;display:block;">';
+    img = document.getElementById('pcs-lb-img');
+  }
+  if (photoArea) photoArea.style.padding = '60px 0 80px';
   var counter = document.getElementById('pcs-lb-counter');
   var filename = document.getElementById('pcs-lb-filename');
   var dots = document.getElementById('pcs-lb-dots');
+  var nav = document.getElementById('pcs-lb-nav');
+  var actionBar = document.getElementById('pcs-lb-action-bar');
   if (!img) return;
   var url = window._pcsLbImages[window._pcsLbIdx] || '';
+  if (typeof url === 'object') url = url.url || url.src || '';
   img.src = url;
   if (counter) counter.textContent = (window._pcsLbIdx + 1) + ' / ' + window._pcsLbImages.length;
   if (filename) {
@@ -1924,10 +1953,70 @@ window._pcsLbRender = function() {
     filename.textContent = parts[parts.length - 1] || '';
   }
   if (dots) {
+    dots.style.display = 'flex';
     dots.innerHTML = window._pcsLbImages.map(function(u, i) {
       return '<div style="width:5px;height:5px;border-radius:50%;background:' +
         (i === window._pcsLbIdx ? '#e8e2d9' : '#2a2a2a') + ';"></div>';
     }).join('');
+  }
+  if (nav) nav.style.display = 'flex';
+  // Restore normal action bar
+  if (actionBar) {
+    var _r = (window.AppState.user.effectiveRole || '').toLowerCase();
+    if (_r !== 'client') {
+      actionBar.innerHTML =
+        '<button class="pcs-lb-act" onclick="window._pcsAddPhotos&&window._pcsAddPhotos(window._pcs&&window._pcs.postId||\'\')">ADD</button>' +
+        '<button class="pcs-lb-act" onclick="window._pcsEnterEditMode&&window._pcsEnterEditMode()">EDIT</button>' +
+        '<button class="pcs-lb-act" onclick="window._pcsSaveAllPhotos&&window._pcsSaveAllPhotos(window._pcs&&window._pcs.postId||\'\')">SAVE</button>' +
+        '<button class="pcs-lb-act" onclick="window._pcsLbDownload&&window._pcsLbDownload()">DOWNLOAD</button>' +
+        '<button class="pcs-lb-act pcs-lb-act--remove" onclick="window._pcsConfirmRemovePhoto&&window._pcsConfirmRemovePhoto(window._pcs&&window._pcs.postId||\'\',window._pcsLbIdx)">REMOVE</button>';
+      actionBar.style.display = 'flex';
+    }
+  }
+}
+
+function _pcsLbRenderGrid() {
+  var photoArea = document.getElementById('pcs-lb-photo-area');
+  var counter = document.getElementById('pcs-lb-counter');
+  var dots = document.getElementById('pcs-lb-dots');
+  var nav = document.getElementById('pcs-lb-nav');
+  var actionBar = document.getElementById('pcs-lb-action-bar');
+  var postId = (window._pcs && window._pcs.postId) || '';
+
+  // Header: edit mode label
+  if (counter) counter.textContent = 'EDIT \u00B7 ' + window._pcsLbImages.length + ' PHOTOS';
+  // Hide dots and nav
+  if (dots) dots.style.display = 'none';
+  if (nav) nav.style.display = 'none';
+
+  // Build grid
+  if (photoArea) {
+    photoArea.style.padding = '52px 0 60px';
+    var html = '<div id="pcs-lb-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;padding:8px;overflow-y:auto;flex:1;align-content:start;width:100%">';
+    for (var i = 0; i < window._pcsLbImages.length; i++) {
+      var url = window._pcsLbImages[i];
+      if (typeof url === 'object') url = url.url || url.src || '';
+      html += '<div style="position:relative;aspect-ratio:1;overflow:hidden;background:#0c0c11">';
+      html += '<img src="' + esc(url) + '" style="width:100%;height:100%;object-fit:cover;display:block">';
+      html += '<button onclick="window._pcsConfirmRemovePhoto(\'' + esc(postId) + '\',' + i + ')" style="position:absolute;top:6px;right:6px;width:26px;height:26px;background:#000000BF;border:1px solid #FF4B4B4D;border-radius:50%;color:#FF4B4B;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:300">\u00D7</button>';
+      html += '<span style="position:absolute;bottom:6px;left:6px;font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#FFFFFF99;background:#00000099;padding:2px 6px;letter-spacing:.04em">' + (i + 1) + '</span>';
+      html += '</div>';
+    }
+    // Add photo slot (if under 20)
+    if (window._pcsLbImages.length < 20) {
+      html += '<div onclick="window._pcsAddPhotos&&window._pcsAddPhotos(\'' + esc(postId) + '\')" style="aspect-ratio:1;background:#0c0c11;border:1px dashed #2e2e3a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer">';
+      html += '<span style="font-size:24px;color:#505060;line-height:1">+</span>';
+      html += '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:#505060">Add</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    photoArea.innerHTML = html;
+  }
+
+  // Action bar: DONE only
+  if (actionBar) {
+    actionBar.innerHTML = '<button onclick="window._pcsExitEditMode&&window._pcsExitEditMode()" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#C8A84B;background:none;border:none;padding:12px 20px;cursor:pointer;font-weight:600">DONE</button>';
+    actionBar.style.display = 'flex';
   }
 }
 
@@ -1942,20 +2031,39 @@ window._pcsLbPrev = function() {
 }
 
 window._pcsLbClose = function() {
+  window._pcsLbEditMode = false;
   var lb = document.getElementById('pcs-lightbox');
   if (lb) { lb.style.display = 'none'; document.body.style.overflow = ''; }
   var actionBar = document.getElementById('pcs-lb-action-bar');
   if (actionBar) actionBar.style.display = 'none';
 }
 
-window._pcsLbDownload = function() {
+window._pcsLbDownload = async function() {
   var url = window._pcsLbImages[window._pcsLbIdx];
   if (!url) return;
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = url.split('/').pop() || 'photo.jpg';
-  a.target = '_blank';
-  a.click();
+  if (typeof url === 'object') url = url.url || url.src || '';
+  if (!url) return;
+  try {
+    showToast && showToast('Downloading...', 'info');
+    var response = await fetch(url);
+    if (!response.ok) throw new Error('Fetch failed: ' + response.status);
+    var blob = await response.blob();
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'sorted-photo-' + (window._pcsLbIdx + 1) + '.jpg';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    }, 100);
+    showToast && showToast('Photo saved', 'success');
+  } catch(err) {
+    console.error('[pcs] download failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-lb-download');
+    showToast && showToast('Download failed — try long-press to save', 'error');
+  }
 };
 
 (function() {
