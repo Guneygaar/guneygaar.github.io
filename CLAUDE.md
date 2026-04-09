@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409e
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409f
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1841,6 +1841,39 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero business logic changes. Zero data flow changes.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409e.
+1. PCS visual redesign Part 1 — top section, caption pane, desktop
+   Location: actions/pcs.js, index.html, styles.css
+   Scope:
+   (a) Topbar simplified: stage pill + overdue badge removed from
+       topbar-right. Replaced with WhatsApp icon button (same
+       SVG and handler as _sharePostOnWhatsApp, same visibility
+       condition as _buildWAHtml). Close X, back, back-to-notifs
+       buttons unchanged.
+   (b) Photo header row: stage pill + overdue badge moved here
+       (left side). Same HTML, same onclick handler, same isAdmin
+       check for dropdown arrow. Right side: ADD/EDIT/SAVE text
+       buttons replace the ··· unified menu trigger. ADD calls
+       _pcsAddPhotos, EDIT calls _pcsEnterEditMode (only when
+       imgs.length > 0), SAVE calls _pcsSaveAllPhotos (only when
+       imgs.length > 0). All canManage-gated, same conditions.
+   STATUS UPDATE: Topbar merged into single row (X + stage +
+   overdue as plain red text + WhatsApp). Photo header row removed
+   entirely. ADD/EDIT/SAVE moved into lightbox action bar. Zero-
+   photos empty state with "ADD PHOTOS" added. DONE button margin
+   tightened to 8px.
+   (c) Topbar is now sticky with backdrop-filter blur. Stage and
+       overdue sit in .pcs-topbar-left alongside X button. Overdue
+       is plain text (#FF4B4B, 7px, IBM Plex Mono) — no pulsing
+       dot, no border, no background, no separator from stage.
+   (d) Lightbox action bar: ADD · EDIT · SAVE · DOWNLOAD · REMOVE
+       at bottom of lightbox overlay. canManage-gated. Old standalone
+       download button removed from lightbox header.
+   (e) Zero-photos empty state: .pcs-photos-empty with "ADD PHOTOS"
+       centered, dashed border, taps trigger _pcsAddPhotos().
+   (f) DONE button margin-bottom changed from 10px to 8px.
+   Zero business logic changes. Zero data flow changes.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409f.
 
 ## SECTION 13 — STABILITY ROADMAP
 
