@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260410b">
+ <link rel="stylesheet" href="styles.css?v=20260410c">
 
 </head>
 <body>
@@ -1079,27 +1079,27 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260410b"></script>
-<script src="00-appstate-compat.js?v=20260410b"></script>
-<script src="01-config.js?v=20260410b" defer></script>
-<script src="02-session.js?v=20260410b" defer></script>
-<script src="utils.js?v=20260410b" defer></script>
-<script src="03-auth.js?v=20260410b" defer></script>
-<script src="05-api.js?v=20260410b" defer></script>
-<script src="10-ui.js?v=20260410b" defer></script>
+<script src="00-appstate.js?v=20260410c"></script>
+<script src="00-appstate-compat.js?v=20260410c"></script>
+<script src="01-config.js?v=20260410c" defer></script>
+<script src="02-session.js?v=20260410c" defer></script>
+<script src="utils.js?v=20260410c" defer></script>
+<script src="03-auth.js?v=20260410c" defer></script>
+<script src="05-api.js?v=20260410c" defer></script>
+<script src="10-ui.js?v=20260410c" defer></script>
 
-<script src="06-post-create.js?v=20260410b" defer></script>
-<script defer src="render/dashboard.js?v=20260410b"></script>
-<script defer src="render/client.js?v=20260410b"></script>
-<script defer src="render/pipeline.js?v=20260410b"></script>
-<script defer src="render/brief.js?v=20260410b"></script>
-<script defer src="actions/pcs.js?v=20260410b"></script>
-<script defer src="actions/pcs-longpress.js?v=20260410b"></script>
-<script src="07-post-load.js?v=20260410b" defer></script>
-<script src="08-post-actions.js?v=20260410b" defer></script>
-<script src="09-library.js?v=20260410b" defer></script>
-<script src="09-approval.js?v=20260410b" defer></script>
-<script src="04-router.js?v=20260410b" defer></script>
+<script src="06-post-create.js?v=20260410c" defer></script>
+<script defer src="render/dashboard.js?v=20260410c"></script>
+<script defer src="render/client.js?v=20260410c"></script>
+<script defer src="render/pipeline.js?v=20260410c"></script>
+<script defer src="render/brief.js?v=20260410c"></script>
+<script defer src="actions/pcs.js?v=20260410c"></script>
+<script defer src="actions/pcs-longpress.js?v=20260410c"></script>
+<script src="07-post-load.js?v=20260410c" defer></script>
+<script src="08-post-actions.js?v=20260410c" defer></script>
+<script src="09-library.js?v=20260410c" defer></script>
+<script src="09-approval.js?v=20260410c" defer></script>
+<script src="04-router.js?v=20260410c" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1651,7 +1651,7 @@ window.setPcsVisibility = function(el, vis) {
       letter-spacing:0.14em;color:#444;">1 / 1</span>
     <div style="width:40px"></div>
   </div>
-  <div style="flex:1;display:flex;align-items:center;justify-content:center;
+  <div id="pcs-lb-photo-area" style="flex:1;display:flex;align-items:center;justify-content:center;
     padding:60px 0 80px;">
     <img id="pcs-lb-img"
       src="" alt=""
@@ -1660,7 +1660,7 @@ window.setPcsVisibility = function(el, vis) {
   <div id="pcs-lb-dots"
     style="position:absolute;bottom:120px;left:0;right:0;
     display:flex;justify-content:center;gap:5px;"></div>
-  <div style="position:absolute;bottom:60px;left:0;right:0;
+  <div id="pcs-lb-nav" style="position:absolute;bottom:60px;left:0;right:0;
     display:flex;align-items:center;justify-content:center;gap:8px;
     padding:0 18px;">
     <button onclick="_pcsLbPrev()"
@@ -1680,10 +1680,10 @@ window.setPcsVisibility = function(el, vis) {
   </div>
   <div id="pcs-lb-action-bar" class="pcs-lb-actions" style="display:none">
     <button class="pcs-lb-act" onclick="window._pcsAddPhotos&&window._pcsAddPhotos(window._pcs&&window._pcs.postId||'')">ADD</button>
-    <button class="pcs-lb-act" onclick="window._pcsEnterEditMode&&window._pcsEnterEditMode(window._pcs&&window._pcs.postId||'')">EDIT</button>
+    <button class="pcs-lb-act" onclick="window._pcsEnterEditMode&&window._pcsEnterEditMode()">EDIT</button>
     <button class="pcs-lb-act" onclick="window._pcsSaveAllPhotos&&window._pcsSaveAllPhotos(window._pcs&&window._pcs.postId||'')">SAVE</button>
     <button class="pcs-lb-act" onclick="window._pcsLbDownload&&window._pcsLbDownload()">DOWNLOAD</button>
-    <button class="pcs-lb-act pcs-lb-act--remove" onclick="window._pcsConfirmRemovePhoto&&window._pcsConfirmRemovePhoto()">REMOVE</button>
+    <button class="pcs-lb-act pcs-lb-act--remove" onclick="window._pcsConfirmRemovePhoto&&window._pcsConfirmRemovePhoto(window._pcs&&window._pcs.postId||'',window._pcsLbIdx)">REMOVE</button>
   </div>
 </div>
 
