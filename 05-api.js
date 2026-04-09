@@ -11,6 +11,8 @@ function getAuthHeaders(extra = {}) {
     'Content-Type':  'application/json',
     'Prefer':        'return=representation',
     'Accept':        'application/json',
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma':        'no-cache',
     ...extra,
   };
 }
@@ -137,8 +139,9 @@ async function uploadPostAsset(file, postId) {
 }
 
 async function logActivity({ post_id, actor, actor_role, action, old_stage, new_stage }) {
+  console.log('[logActivity] called:', { post_id, actor, action, old_stage, new_stage });
   var token = localStorage.getItem('sb_access_token');
-  if (!token) return;
+  if (!token) { console.log('[logActivity] SKIPPED - no auth token'); return; }
   try {
     await apiFetch('/activity_log', {
       method: 'POST',
@@ -151,8 +154,9 @@ async function logActivity({ post_id, actor, actor_role, action, old_stage, new_
         new_stage:  new_stage || null,
       }),
     });
+    console.log('[logActivity] SUCCESS:', post_id, action);
   } catch (err) {
-    console.warn('logActivity failed:', err);
+    console.warn('[logActivity] FAILED:', post_id, action, err.message || err);
     window.logError && window.logError(err && err.message, err && err.stack, 'log-activity');
   }
 }

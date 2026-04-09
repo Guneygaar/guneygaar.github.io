@@ -2020,9 +2020,31 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        new_stage: 'scheduled'), _confirmPublish (old_stage captured
        before setAll, new_stage: 'published').
    508/508 unit passing. Bumped to ?v=20260410b.
+1. Stale data after refresh — browser HTTP cache serving old GET responses
+   Location: 05-api.js getAuthHeaders() — no Cache-Control or Pragma
+   headers, so identical GET URLs (e.g. /posts?select=*) could be
+   served from browser HTTP cache instead of hitting Supabase.
+   Status: FIXED (PR#TBD) — added Cache-Control: no-cache, no-store,
+   must-revalidate and Pragma: no-cache to getAuthHeaders() before
+   the ...extra spread. Every apiFetch call now bypasses browser cache.
+   508/508 unit passing. Bumped to ?v=20260410h.
+1. clientApprove() missing _isSaving guard, server response, and render
+   Location: 08-post-actions.js clientApprove() — did not set
+   _isSaving (poll could overwrite in-memory state), did not apply
+   server PATCH response (discarded rows), did not call
+   scheduleRender() or _renderBackgroundViews() (pipeline never
+   updated), used setTimeout(loadPostsForClient, 1200) instead of
+   direct render, had no rollback on failure.
+   Status: FIXED (PR#TBD) — rewritten to match quickStage pattern:
+   oldStage captured before setStage, _isSaving set before PATCH,
+   server response applied via Object.assign, _isSaving cleared after
+   apply, scheduleRender() + _renderBackgroundViews() called,
+   setTimeout(loadPostsForClient) removed, catch block rolls back
+   stage + clears _isSaving + calls scheduleRender().
+   508/508 unit passing. Bumped to ?v=20260410h.
 1. Brief assignment dropdown hardcoded to Pranav only
    Location: render/brief.js _openBriefSheet() and _assignBriefToPranav()
-   Status: FIXED (PR#TBD) — replaced hardcoded "Assign to Pranav" button
+   Status: FIXED (PR#757) — replaced hardcoded "Assign to Pranav" button
    with _briefShowAssignDropdown() that queries /user_roles?role=eq.creative
    dynamically. New _assignBrief(postId, ownerName, isReassign) function
    replaces _assignBriefToPranav (kept as backward-compat shim). Owner
@@ -2032,7 +2054,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    508/508 unit passing. Bumped to ?v=20260410h.
 1. Cannot reassign a brief after first assignment
    Location: render/brief.js _openBriefSheet() footer actions
-   Status: FIXED (PR#TBD) — when brief is assigned AND viewer is
+   Status: FIXED (PR#757) — when brief is assigned AND viewer is
    Admin/Servicing, footer now shows "✓ Assigned to [Name]" badge
    plus a "↺ Reassign" button that opens the same dynamic dropdown.
    _assignBrief(postId, ownerName, true) handles reassignment with
@@ -2040,7 +2062,7 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    508/508 unit passing. Bumped to ?v=20260410h.
 1. Brief panel images not clickable — _edOpenLightbox undefined
    Location: render/brief.js line 326
-   Status: FIXED (PR#TBD) — changed onclick from _edOpenLightbox()
+   Status: FIXED (PR#757) — changed onclick from _edOpenLightbox()
    to window._pcsOpenLightbox() (defined in actions/pcs.js:1902,
    same signature). Brief reference photos now open in PCS lightbox.
    508/508 unit passing. Bumped to ?v=20260410h.
