@@ -732,16 +732,16 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
       '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
       'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
       'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
-      'max-height:62px;overflow:hidden;' +
-      '-webkit-mask-image:linear-gradient(to bottom,black 30px,transparent 60px);' +
-      'mask-image:linear-gradient(to bottom,black 30px,transparent 60px);">' +
+      'max-height:200px;overflow:hidden;' +
+      '-webkit-mask-image:linear-gradient(to bottom,black 160px,transparent 198px);' +
+      'mask-image:linear-gradient(to bottom,black 160px,transparent 198px);">' +
       esc(post.caption) + '</div>' +
       '<button id="pcs-caption-see-more" onclick="(function(){' +
       'var t=document.getElementById(\'pcs-caption-text\');' +
       'var b=document.getElementById(\'pcs-caption-see-more\');' +
       'if(!t||!b)return;' +
-      'if(t.style.maxHeight===\'62px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
-      'else{t.style.maxHeight=\'62px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';t.style.maskImage=\'linear-gradient(to bottom,black 30px,transparent 60px)\';b.textContent=\'See More\';}' +
+      'if(t.style.maxHeight===\'200px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
+      'else{t.style.maxHeight=\'200px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 160px,transparent 198px)\';t.style.maskImage=\'linear-gradient(to bottom,black 160px,transparent 198px)\';b.textContent=\'See More\';}' +
       '})()" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;' +
       'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
       'padding:6px 0 0 0;">See More</button>'
