@@ -562,7 +562,8 @@ window._renderPipelineInner, window.copyChase, window.fallbackCopy,
 window.chaseAll, window.pcsPipelineFilter
 
 render/brief.js:
-window._openBriefSheet, window._assignBriefToPranav,
+window._openBriefSheet, window._briefShowAssignDropdown,
+window._assignBrief, window._assignBriefToPranav,
 window._closeBriefConfirm, window._closeBrief,
 window._reopenBrief, window._createPostFromBrief
 
@@ -2040,6 +2041,30 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    apply, scheduleRender() + _renderBackgroundViews() called,
    setTimeout(loadPostsForClient) removed, catch block rolls back
    stage + clears _isSaving + calls scheduleRender().
+   508/508 unit passing. Bumped to ?v=20260410h.
+1. Brief assignment dropdown hardcoded to Pranav only
+   Location: render/brief.js _openBriefSheet() and _assignBriefToPranav()
+   Status: FIXED (PR#757) — replaced hardcoded "Assign to Pranav" button
+   with _briefShowAssignDropdown() that queries /user_roles?role=eq.creative
+   dynamically. New _assignBrief(postId, ownerName, isReassign) function
+   replaces _assignBriefToPranav (kept as backward-compat shim). Owner
+   set to actual person name, not 'Creative'. Toast/log messages dynamic.
+   _isPranav replaced with _isAssignedCreative that checks current user
+   name against post.owner. "Assigned To" card shows dynamic initial/name.
+   508/508 unit passing. Bumped to ?v=20260410h.
+1. Cannot reassign a brief after first assignment
+   Location: render/brief.js _openBriefSheet() footer actions
+   Status: FIXED (PR#757) — when brief is assigned AND viewer is
+   Admin/Servicing, footer now shows "✓ Assigned to [Name]" badge
+   plus a "↺ Reassign" button that opens the same dynamic dropdown.
+   _assignBrief(postId, ownerName, true) handles reassignment with
+   "Reassigned to [Name]" toast and log message.
+   508/508 unit passing. Bumped to ?v=20260410h.
+1. Brief panel images not clickable — _edOpenLightbox undefined
+   Location: render/brief.js line 326
+   Status: FIXED (PR#757) — changed onclick from _edOpenLightbox()
+   to window._pcsOpenLightbox() (defined in actions/pcs.js:1902,
+   same signature). Brief reference photos now open in PCS lightbox.
    508/508 unit passing. Bumped to ?v=20260410h.
 
 ## SECTION 13 — STABILITY ROADMAP
