@@ -5701,7 +5701,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-time {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #505060;
+  color: #78788C;
   margin-left: 8px;
 }
 .pcs-vis-tag {
@@ -5709,7 +5709,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 7px;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: #505060;
+  color: #78788C;
   padding: 1px 6px;
   border: 1px solid #2e2e3a;
   margin-left: 6px;
@@ -5825,7 +5825,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 7px;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: #505060;
+  color: #78788C;
   background: none;
   border: 1px solid #2e2e3a;
   padding: 8px 12px;
@@ -6084,7 +6084,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-reply-btn {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #505060;
+  color: #8E8E93;
   margin-top: 5px;
   letter-spacing: .04em;
   background: none;
@@ -6099,7 +6099,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Heart placeholder (visual only) */
 .pcs-comment-react {
   cursor: pointer;
-  opacity: .35;
+  opacity: .55;
   transition: opacity .15s;
   padding: 2px;
 }
@@ -6107,7 +6107,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-react svg {
   width: 18px;
   height: 18px;
-  stroke: #505060;
+  stroke: #78788C;
   fill: none;
   stroke-width: 1.5;
 }
@@ -6130,7 +6130,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-react-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #808090;
+  color: #9898A8;
   line-height: 1;
   letter-spacing: .02em;
 }
@@ -6358,7 +6358,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-cmt-reply-tag {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #505060;
+  color: #78788C;
   margin-bottom: 3px;
   display: flex;
   align-items: center;
@@ -6430,7 +6430,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   align-items: center;
   gap: 4px;
 }
-.pcs-stage-pill .pcs-pill-arr { font-size: 6px; opacity: .4; }
+.pcs-stage-pill .pcs-pill-arr { font-size: 6px; opacity: .6; }
 .pcs-od-pill {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
@@ -6475,12 +6475,12 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 9px;
   letter-spacing: .1em;
   text-transform: uppercase;
-  color: #505060;
+  color: #8E8E93;
   transition: all .15s;
 }
 .pcs-photos-empty:active {
   color: #808090;
-  border-color: #505060;
+  border-color: #78788C;
 }
 
 /* Lightbox action bar */
@@ -6689,7 +6689,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-mv--amber { color: #F6A623; }
 .pcs-mv--bright { color: #F0F0F2; }
 .pcs-dot {
-  color: #505060; padding: 0 7px;
+  color: #78788C; padding: 0 7px;
   font-weight: 600; user-select: none;
 }
 
@@ -6730,7 +6730,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-cal-days button:hover { color: #E8E8E8; }
 .pcs-cal-days button.today { color: #C8A84B; font-weight: 700; }
 .pcs-cal-days button.selected { color: #080808; background: #C8A84B; }
-.pcs-cal-days button.other-month { color: #505060; }
+.pcs-cal-days button.other-month { color: #606078; }
 
 /* Tab bar */
 .pcs-tab-bar {
@@ -6743,7 +6743,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .07em; text-transform: uppercase;
   background: none; border: none; cursor: pointer;
-  color: #505060; text-align: center;
+  color: #8E8E93; text-align: center;
   border-bottom: 2px solid transparent;
   transition: color .15s, border-color .15s;
 }
@@ -6862,7 +6862,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-cap-btn {
   flex: 1; font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
-  color: #505060; background: none; border: 1px solid #323244;
+  color: #8E8E93; background: none; border: 1px solid #3a3a4a;
   padding: 13px 0; cursor: pointer; text-align: center;
 }
 .pcs-cap-btn--bright { color: #B8B8C0; }
@@ -6873,7 +6873,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   display: block; width: calc(100% - 32px); margin: 0 16px 8px;
   padding: 14px; font-family: 'IBM Plex Mono', monospace;
   font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
-  color: #505060; background: none; border: 1px solid #323244;
+  color: #8E8E93; background: none; border: 1px solid #3a3a4a;
   cursor: pointer; text-align: center;
 }
 
