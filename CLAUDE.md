@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2019,6 +2019,28 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        new_stage: 'scheduled'), _confirmPublish (old_stage captured
        before setAll, new_stage: 'published').
    508/508 unit passing. Bumped to ?v=20260410b.
+1. Stale data after refresh — browser HTTP cache serving old GET responses
+   Location: 05-api.js getAuthHeaders() — no Cache-Control or Pragma
+   headers, so identical GET URLs (e.g. /posts?select=*) could be
+   served from browser HTTP cache instead of hitting Supabase.
+   Status: FIXED (PR#TBD) — added Cache-Control: no-cache, no-store,
+   must-revalidate and Pragma: no-cache to getAuthHeaders() before
+   the ...extra spread. Every apiFetch call now bypasses browser cache.
+   508/508 unit passing. Bumped to ?v=20260410h.
+1. clientApprove() missing _isSaving guard, server response, and render
+   Location: 08-post-actions.js clientApprove() — did not set
+   _isSaving (poll could overwrite in-memory state), did not apply
+   server PATCH response (discarded rows), did not call
+   scheduleRender() or _renderBackgroundViews() (pipeline never
+   updated), used setTimeout(loadPostsForClient, 1200) instead of
+   direct render, had no rollback on failure.
+   Status: FIXED (PR#TBD) — rewritten to match quickStage pattern:
+   oldStage captured before setStage, _isSaving set before PATCH,
+   server response applied via Object.assign, _isSaving cleared after
+   apply, scheduleRender() + _renderBackgroundViews() called,
+   setTimeout(loadPostsForClient) removed, catch block rolls back
+   stage + clears _isSaving + calls scheduleRender().
+   508/508 unit passing. Bumped to ?v=20260410h.
 
 ## SECTION 13 — STABILITY ROADMAP
 

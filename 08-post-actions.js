@@ -219,14 +219,23 @@ async function clientApprove(postId, btn) {
   if (alreadyApproved) { showToast('Already approved ok', 'success'); return; }
   return window.guardAction('client-approve-' + postId, async function() {
     if (btn) btn.disabled = true;
+    var oldStage = post.stage;
+    setStage(post, 'scheduled', 'clientApprove');
+    post._isSaving = true;
     try {
       // scheduled -> owner remains unchanged (per ownership rules)
-      await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+      var rows = await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
         method: 'PATCH',
         body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
       });
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: post.stage, new_stage: 'scheduled' });
-      window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
+      // Apply server response - same pattern as quickStage
+      if (Array.isArray(rows) && rows[0]) {
+        var server = normalise(rows)[0];
+        if (server.stage) server.stage = toUiStage(server.stage);
+        Object.assign(post, server);
+      }
+      post._isSaving = false;
+      // Show confirmation UI
       var confirmEl = document.getElementById('approved-confirm-' + postId);
       if (confirmEl) confirmEl.classList.add('show');
       var cardEl = document.getElementById('approved-confirm-' + postId);
@@ -245,9 +254,20 @@ async function clientApprove(postId, btn) {
           }
         }
       }
-      setStage(post, 'scheduled', 'clientApprove');
-      setTimeout(function() { if (typeof loadPostsForClient === 'function') loadPostsForClient(); }, 1200);
-    } catch (err) { if (btn) btn.disabled = false; showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'client-approve'); }
+      // Trigger renders - same as _executeStageChange pattern
+      scheduleRender();
+      _renderBackgroundViews();
+      // Non-critical side effects
+      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: oldStage, new_stage: 'scheduled' });
+      window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
+    } catch (err) {
+      post._isSaving = false;
+      setStage(post, oldStage, 'clientApprove_rollback');
+      scheduleRender();
+      if (btn) btn.disabled = false;
+      showToast('Failed  -  try again', 'error');
+      window.logError && window.logError(err && err.message, err && err.stack, 'client-approve');
+    }
   });
 }
 
@@ -591,6 +611,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
     _renderPCS(postId);
     _renderBackgroundViews();
     showToast('Update failed  -  rolled back', 'error');
+    console.error('[STAGE CHANGE] PATCH FAILED - logActivity will not run:', postId, err.message || err);
     return; // STOP  -  do not run side effects
   }
 
