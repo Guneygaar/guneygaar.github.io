@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410i
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410j
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2066,6 +2066,21 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    to window._pcsOpenLightbox() (defined in actions/pcs.js:1902,
    same signature). Brief reference photos now open in PCS lightbox.
    508/508 unit passing. Bumped to ?v=20260410h.
+1. PCS low-contrast secondary text nearly invisible in bright ambient light
+   Location: styles.css — 18 PCS elements used #505060 which has a
+   contrast ratio of ~1.8:1 against #080808 background. Interactive
+   elements (tabs, buttons, reply) and secondary info (timestamps,
+   vis tags, dots, reply tags) were unreadable outdoors.
+   Status: FIXED (PR#TBD) — CSS-only changes in styles.css:
+   Interactive elements bumped to #8E8E93 (~3.4:1): .pcs-tab,
+   .pcs-cap-btn, .pcs-close-btn, .pcs-comment-reply-btn,
+   .pcs-photos-empty. Secondary info bumped to #78788C (~2.8:1):
+   .pcs-comment-time, .pcs-vis-tag, .pcs-vis-chip, .pcs-dot,
+   .pcs-cmt-reply-tag. Reaction heart opacity .35→.55, stroke
+   #505060→#78788C, count #808090→#9898A8. Calendar other-month
+   #505060→#606078. Stage pill arrow opacity .4→.6. Button borders
+   #323244→#3a3a4a. Primary text (#F0F0F2), body text (#B8B8C0),
+   role colors unchanged. 508/508 unit passing. Bumped to ?v=20260410j.
 
 ## SECTION 13 — STABILITY ROADMAP
 
