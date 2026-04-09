@@ -5951,7 +5951,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* MENTION / TASK ASSIGN DROPUPS */
-#pcs-mention-dropup {
+#pcs-mention-dropup,
+#pcs-client-mention-dropup {
   background: #191924;
   border: 1px solid #9B87F540;
   position: relative;
@@ -6082,7 +6083,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-react {
   position: absolute;
   right: 16px;
-  top: 16px;
+  top: 14px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -6090,7 +6091,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   cursor: pointer;
 }
 .pcs-react-icon {
-  font-size: 12px;
+  font-size: 16px;
   line-height: 1;
 }
 .pcs-react-icon svg {
