@@ -2251,6 +2251,13 @@ window._sharePostOnWhatsApp = function(postId) {
 window.submitPcsComment = async function(postId, message, visibility, isTask, isInternal) {
   return window.guardAction('submit-pcs-comment-' + postId, async function() {
   try {
+  // Check task flag from + menu pre-fill
+  var _clientInp = document.getElementById('pcs-comment-input');
+  if (!isTask && _clientInp && _clientInp.dataset.isTask === 'true') {
+    isTask = true;
+    delete _clientInp.dataset.isTask;
+    _clientInp.placeholder = 'Reply to client...';
+  }
   isTask = isTask || false;
   visibility = visibility || 'all';
 
@@ -2848,12 +2855,16 @@ window._pcsTogglePlusMenu = function(btn, zone) {
   taskBtn.addEventListener('click', function() {
     menu.remove();
     if (zone === 'client') {
-      // Same flow as #pcs-task-btn-client onclick
-      var pid = document.getElementById('pcs-post-id');
       var inp = document.getElementById('pcs-comment-input');
-      if (pid && inp && inp.value.trim()) {
-        window.submitPcsComment(pid.value, inp.value, 'all', true, false);
+      if (inp) {
+        inp.value = 'Task: ';
+        inp.placeholder = 'Describe the task...';
+        inp.dataset.isTask = 'true';
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+        inp.dispatchEvent(new Event('input'));
       }
+      return;
     } else {
       // Same flow as #pcs-task-btn-note onclick
       if (typeof window._showTaskAssign === 'function') {
