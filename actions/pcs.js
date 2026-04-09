@@ -165,25 +165,12 @@ window._renderPCS = function(postId) {
     backBtn.style.display = (window.AppState.pcs.openedFrom === 'sheet') ? 'block' : 'none';
   }
 
-  // Back-to-notifications button (shows when PCS opened from notif panel)
+  // Clean up any stale back-to-notifications button from previous open
   var existingNb = document.querySelector('.pcs-back-notif-btn');
   if (existingNb && existingNb.parentNode) existingNb.parentNode.removeChild(existingNb);
-  // Restore close button visibility (may have been hidden on previous notif open)
+  // Always show X close button
   var pcsCloseX = document.querySelector('#pcs-overlay .pc-topbar [aria-label="Close"]');
   if (pcsCloseX) pcsCloseX.style.display = '';
-  if (window._notifOpenedPCS) {
-    // Hide the ✕ close button — ← NOTIFS replaces it
-    if (pcsCloseX) pcsCloseX.style.display = 'none';
-    var nbBtn = document.createElement('button');
-    nbBtn.className = 'pcs-back-notif-btn';
-    nbBtn.textContent = '\u2190 NOTIFS';
-    nbBtn.onclick = function() {
-      if (typeof closePCS === 'function') closePCS();
-    };
-    var pcsTopbar = document.querySelector('#pcs-overlay .pc-topbar') ||
-                    document.getElementById('pcs-topbar');
-    if (pcsTopbar) pcsTopbar.prepend(nbBtn);
-  }
 
   // 1. Fetch post
   var post = getPostById(postId);
