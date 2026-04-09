@@ -240,7 +240,8 @@ window._renderPCS = function(postId) {
     if (imgs.length > 0) {
       photoGridWrap.innerHTML = _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id);
     } else {
-      photoGridWrap.innerHTML = '<div class="pcs-photos-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">ADD PHOTOS</div>';
+      photoGridWrap.innerHTML = '<div class="pcs-photos-empty" onclick="window._pcsAddPhotos(\'' + esc(id) + '\')">ADD PHOTOS</div>' +
+        (canManage ? '<input type="file" id="pcs-photo-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandlePhotoInput(\'' + esc(id) + '\',this)">' : '');
     }
   }
 
