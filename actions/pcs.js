@@ -363,8 +363,8 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
     if (canManage) {
       gridHtml = '<div class="pcs-photo-empty" onclick="window._pcsAddPhotos(\'' + _id + '\')">' +
         '<div style="font-size:22px;color:#C8A84B">+</div>' +
-        '<div style="font-family:\'Courier New\',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#F6A623">Upload Photos</div>' +
-        '<div style="font-family:\'Courier New\',monospace;font-size:7px;color:#333;letter-spacing:.06em">JPG / PNG</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#F6A623">Upload Photos</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#333;letter-spacing:.06em">JPG / PNG</div>' +
         '</div>';
     }
   } else if (count === 1) {
