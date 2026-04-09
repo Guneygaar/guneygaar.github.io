@@ -5911,8 +5911,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-note-item {
   display: flex;
   gap: 10px;
-  padding: 14px 16px 0;
+  padding: 10px 16px;
   position: relative;
+  margin-bottom: 0;
 }
 .pcs-unread-dot {
   position: absolute;
@@ -5974,23 +5975,19 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #8E8E93;
 }
 .pcs-vis-tag {
-  font-family: var(--mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
-  color: #A872FF73;
-  border: 1px dotted #A872FF33;
-  padding: 1px 4px;
-  margin-left: auto;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #505060;
+  padding: 1px 6px;
+  border: 1px solid #2e2e3a;
+  margin-left: 6px;
   flex-shrink: 0;
-  align-self: flex-start;
 }
-.pcs-mention-badge {
-  font-family: var(--mono);
-  font-size: 7px;
-  color: #c7a3ff;
-  background: #A872FF1A;
-  border: 1px solid #A872FF40;
-  padding: 1px 4px;
-}
+.pcs-vis--admin { color: #C8A84B; border-color: #C8A84B33; }
+.pcs-vis--serv { color: #22D3EE; border-color: #22D3EE33; }
+.pcs-vis--creat { color: #9b87f5; border-color: #9b87f533; }
 .pcs-comment-text {
   font-size: 13.5px;
   color: #C0C0C8;
@@ -6083,22 +6080,32 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   display: flex;
   gap: 4px;
 }
+.pcs-vis-row {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #191924;
+  background: #0d0d12;
+}
 .pcs-vis-chip {
-  font-family: var(--mono);
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
-  letter-spacing: 0.06em;
-  padding: 3px 7px;
-  border: 1px dotted #4a3a6b;
-  color: #8E8E93;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #505060;
+  background: none;
+  border: 1px solid #2e2e3a;
+  padding: 4px 9px;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   transition: all 0.15s;
 }
 .pcs-vis-chip.active {
-  background: #A872FF1F;
-  color: #c7a3ff;
-  border-color: #9b87f5;
+  color: #F6A623;
+  border-color: #F6A62340;
+  background: #F6A6230F;
 }
 
 /* COUNT BADGES */
@@ -6443,8 +6450,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* Thread grouping */
-.pcs-thread-group { padding: 0; }
-.pcs-thread-group + .pcs-thread-group { padding-top: 20px; }
+.pcs-thread-group { padding: 6px 0; border-bottom: 1px solid #323244; }
+.pcs-thread-group:last-child { border-bottom: none; }
 .pcs-expand-link {
   display: flex;
   align-items: center;
