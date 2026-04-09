@@ -1236,13 +1236,16 @@ window.loadPcsComments = async function(postId) {
           '</div></div>';
       }
       var _initial = (c.author||'?').charAt(0).toUpperCase();
-      var _mu = Array.isArray(c.mentioned_users) ? c.mentioned_users : [];
-      var _mentionBadge = _mu.length
-        ? '<span class="pcs-mention-badge">@' + esc(_mu.join(', @')) + '</span>'
-        : '';
+      // Mentions render inside message body via _highlightMentions only
       var _vis = (c.visibility||'all').toUpperCase();
       if (_vis === 'SERVICING') _vis = 'SERV';
-      var _visTag = '<span class="pcs-vis-tag">' + _vis + '</span>';
+      if (_vis === 'CREATIVE') _vis = 'CREAT';
+      var _visCls = 'pcs-vis-tag';
+      var _visLC = (c.visibility||'all').toLowerCase();
+      if (_visLC === 'admin') _visCls += ' pcs-vis--admin';
+      else if (_visLC === 'servicing') _visCls += ' pcs-vis--serv';
+      else if (_visLC === 'creative') _visCls += ' pcs-vis--creat';
+      var _visTag = '<span class="' + _visCls + '">' + _vis + '</span>';
       var _taskObj = _parseTask(c);
       var _isTask = !!_taskObj;
       var _assignedTo = (_taskObj && _taskObj.assigned_to) ? _taskObj.assigned_to : null;
@@ -1300,7 +1303,6 @@ window.loadPcsComments = async function(postId) {
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
-            _mentionBadge +
             _visTag +
           '</div>' +
           (c.reply_to && c.reply_to_author ?

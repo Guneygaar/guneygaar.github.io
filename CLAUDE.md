@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260409g
+Version format: ?v=YYYYMMDDx. Current: ?v=20260409h
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -1874,6 +1874,119 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Zero business logic changes. Zero data flow changes.
    508/508 unit passing, 40/40 e2e passing.
    Status: FIXED (PR#TBD). Bumped to ?v=20260409f.
+1. PCS comment visual redesign Part 2A — Instagram-style rendering
+   Location: actions/pcs.js, actions/pcs-longpress.js (new),
+   index.html, styles.css
+   Scope:
+   (a) _renderClientThread and _renderNoteThread rewritten:
+       DELETE/COPY action row removed from comment HTML. Only
+       visible "Reply" text remains below each comment (calls
+       exact same _pcsSetReply function). Heart SVG placeholder
+       added on right side (visual only, not wired to DB).
+       data-comment-id and data-author attributes added to
+       comment div for long-press handler to read.
+   (b) Thread grouping: comments grouped by parent_id. Top-level
+       comment + last reply always visible. Middle replies hidden
+       behind "View N more replies" expand link. Orphaned replies
+       render as top-level. Uses .pcs-thread-group wrapper.
+   (c) Same changes applied to internal notes (_renderNoteThread).
+       All note-specific features preserved: .pcs-vis-tag,
+       .pcs-mention-badge, .pcs-task-assignee, resolved accordion.
+   (d) Task checkbox: ☐/☑ emoji replaced with SVG dotted circles.
+       Unchecked = hollow dotted circle. Checked = green dotted
+       circle with checkmark polyline. onclick calls exact same
+       toggleTaskResolve(). "Resolved by" label added below done
+       tasks when resolved_by is truthy.
+   (e) Long-press bottom sheet: new file actions/pcs-longpress.js.
+       500ms touch-hold on .pcs-comment-item/.pcs-note-item shows
+       bottom sheet with Copy/Reply/Delete + Resolve task (for
+       tasks only). All buttons call exact same existing functions.
+       Delete permission: author === name || admin. Desktop
+       fallback via contextmenu event. Haptic vibrate(12).
+   (f) Plus button menu: + button in both input bars now shows
+       Task/Image popover instead of directly opening file picker.
+       Image calls exact same file input click. Task calls exact
+       same submitPcsComment(isTask=true) or _showTaskAssign().
+   (g) Reply tag moved inside input pill: old .pcs-reply-bar
+       removed from HTML. New .pcs-reply-tag inline element added
+       inside .pcs-ibar-pill showing "Author ·" with X dismiss.
+       _pcsSetReply and _pcsClearReply updated for new element IDs.
+   (h) CSS overhaul: comment items no border-bottom (whitespace
+       only). Avatar 30px (up from 28). Author 13px/700 #F0F0F2.
+       Text 13.5px #C0C0C8. Avatar colors solid hex backgrounds
+       (no alpha). .pcs-comment-reply no border-left. New classes:
+       .pcs-thread-group, .pcs-expand-link, .pcs-expand-line,
+       .pcs-expand-text, .pcs-comment-reply-btn, .pcs-comment-react,
+       .pcs-react-icon, .pcs-resolved-label, .pcs-lp-backdrop,
+       .pcs-lp-menu, .pcs-lp-item, .pcs-lp-cancel, .pcs-lp-delete,
+       .pcs-lp-resolve, .pcs-plus-menu, .pcs-plus-item,
+       .pcs-reply-tag, .pcs-reply-tag-x. Zero rgba(). All hex.
+   New file: actions/pcs-longpress.js. Script count: 21 (20+1).
+   Zero business logic changes. Zero new DB calls. Zero new API
+   endpoints. All onclick handlers call exact same functions.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409a.
+1. PCS comment wiring Part 2B — reactions DB + toggleTaskResolve fix
+   Location: actions/pcs.js, actions/pcs-longpress.js, styles.css
+   Scope:
+   (a) loadPcsComments now fetches /post_comment_reactions for the
+       post in a third API call. Results stored in window._pcsReactions
+       keyed by comment_id. Fetch is try/catch wrapped — failure does
+       not break comment loading.
+   (b) _renderSingleClient and _renderSingleNote now check
+       window._pcsReactions[commentId]. If user has reacted: show
+       their emoji instead of heart SVG, add .pcs-reacted class.
+       If reactions exist: show count via .pcs-react-count span.
+   (c) New function window._pcsShowEmojiPicker(reactEl): if user
+       already reacted, unreacts (removes). Otherwise shows inline
+       5-emoji picker (❤️ 👍 🎯 👀 ✅) positioned above the react
+       div. Click outside closes picker.
+   (d) New function window._pcsAddReaction(commentId, emoji, reactEl):
+       POST to /post_comment_reactions, optimistic DOM update, no
+       full re-fetch. Wrapped in guardAction.
+   (e) New function window._pcsRemoveReaction(commentId, reactEl):
+       DELETE from /post_comment_reactions by reaction id, optimistic
+       DOM update. Wrapped in guardAction.
+   (f) BUG FIX: toggleTaskResolve now accepts third parameter
+       isInternalNote (boolean). Routes PATCH to /internal_notes
+       when true, /post_comments when false. Previously always
+       patched /post_comments causing silent failure for internal
+       note tasks. All callers updated: _renderSingleClient passes
+       false, _renderSingleNote passes true, pcs-longpress.js
+       passes isInternalNote based on zone detection.
+   (g) CSS: .pcs-react-emoji, .pcs-reacted, .pcs-react-count,
+       .pcs-emoji-picker, .pcs-emoji-btn added. All solid hex.
+   Zero visual layout changes from Part 2A. Zero new HTML structure.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409b.
+1. Internal notes visual polish — 6 targeted rendering fixes
+   Location: actions/pcs.js, styles.css, index.html
+   Scope:
+   (a) Visibility tag moved inline with author — sits after
+       timestamp in .pcs-comment-meta row. Color-coded by
+       visibility: admin=#C8A84B, servicing=#22D3EE,
+       creative=#9b87f5, all=#505060 (default dim). Old
+       margin-left:auto removed (no longer right-floating).
+   (b) Duplicate @mention badge removed from note header —
+       _mentionBadge variable replaced with comment. Mentions
+       render only inside message body via _highlightMentions.
+       .pcs-mention-badge CSS class removed from styles.css.
+   (c) Note spacing tightened — .pcs-note-item padding changed
+       from 14px 16px 0 to 10px 16px, margin-bottom:0. Matches
+       client tab density.
+   (d) Visibility chips restyled — inline styles removed from
+       index.html, replaced with .pcs-vis-row/.pcs-vis-chip CSS
+       classes. Inactive: #505060 text, #2e2e3a border. Active:
+       #F6A623 amber text + border + subtle bg. IBM Plex Mono.
+   (e) Thread grouping CSS — .pcs-thread-group now has padding
+       6px 0 + border-bottom 1px solid #323244, last-child no
+       border. Matches client tab thread separators.
+   (f) Heart icon verified identical to client tab — same SVG
+       path, same .pcs-comment-react positioning. No change needed.
+   Zero business logic changes. Zero data flow changes.
+   Zero changes to post_comments/internal_notes routing.
+   508/508 unit passing, 40/40 e2e passing.
+   Status: FIXED (PR#TBD). Bumped to ?v=20260409h.
 
 ## SECTION 13 — STABILITY ROADMAP
 

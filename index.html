@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260409g">
+ <link rel="stylesheet" href="styles.css?v=20260409h">
 
 </head>
 <body>
@@ -929,11 +929,11 @@
       <!-- Tab pane: Internal -->
       <div id="pcs-pane-internal" class="pcs-tab-pane" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <span id="pcs-notes-count" style="display:none">0</span>
-        <div id="pcs-vis-selector" style="flex-shrink:0;display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid #0f0f16;background:#09080a">
-          <button class="pcs-vis-chip" data-vis="all" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #F6A62359;color:#F6A623;background:#F6A6230A;cursor:pointer">ALL</button>
-          <button class="pcs-vis-chip" data-vis="admin" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">ADMIN</button>
-          <button class="pcs-vis-chip" data-vis="servicing" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">SERV</button>
-          <button class="pcs-vis-chip" data-vis="creative" data-action="pcs-vis" style="padding:4px 10px;font-family:'Courier New',monospace;font-size:7px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #1a1808;color:#302418;background:none;cursor:pointer">CREATIVE</button>
+        <div id="pcs-vis-selector" class="pcs-vis-row">
+          <button class="pcs-vis-chip active" data-vis="all" data-action="pcs-vis">ALL</button>
+          <button class="pcs-vis-chip" data-vis="admin" data-action="pcs-vis">ADMIN</button>
+          <button class="pcs-vis-chip" data-vis="servicing" data-action="pcs-vis">SERV</button>
+          <button class="pcs-vis-chip" data-vis="creative" data-action="pcs-vis">CREATIVE</button>
         </div>
         <div id="pcs-notes-section" style="flex:1;display:flex;flex-direction:column;min-height:0">
           <div id="pcs-notes-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;background:#080806;scrollbar-width:none;min-height:0"></div>
@@ -1079,27 +1079,27 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260409g"></script>
-<script src="00-appstate-compat.js?v=20260409g"></script>
-<script src="01-config.js?v=20260409g" defer></script>
-<script src="02-session.js?v=20260409g" defer></script>
-<script src="utils.js?v=20260409g" defer></script>
-<script src="03-auth.js?v=20260409g" defer></script>
-<script src="05-api.js?v=20260409g" defer></script>
-<script src="10-ui.js?v=20260409g" defer></script>
+<script src="00-appstate.js?v=20260409h"></script>
+<script src="00-appstate-compat.js?v=20260409h"></script>
+<script src="01-config.js?v=20260409h" defer></script>
+<script src="02-session.js?v=20260409h" defer></script>
+<script src="utils.js?v=20260409h" defer></script>
+<script src="03-auth.js?v=20260409h" defer></script>
+<script src="05-api.js?v=20260409h" defer></script>
+<script src="10-ui.js?v=20260409h" defer></script>
 
-<script src="06-post-create.js?v=20260409g" defer></script>
-<script defer src="render/dashboard.js?v=20260409g"></script>
-<script defer src="render/client.js?v=20260409g"></script>
-<script defer src="render/pipeline.js?v=20260409g"></script>
-<script defer src="render/brief.js?v=20260409g"></script>
-<script defer src="actions/pcs.js?v=20260409g"></script>
-<script defer src="actions/pcs-longpress.js?v=20260409g"></script>
-<script src="07-post-load.js?v=20260409g" defer></script>
-<script src="08-post-actions.js?v=20260409g" defer></script>
-<script src="09-library.js?v=20260409g" defer></script>
-<script src="09-approval.js?v=20260409g" defer></script>
-<script src="04-router.js?v=20260409g" defer></script>
+<script src="06-post-create.js?v=20260409h" defer></script>
+<script defer src="render/dashboard.js?v=20260409h"></script>
+<script defer src="render/client.js?v=20260409h"></script>
+<script defer src="render/pipeline.js?v=20260409h"></script>
+<script defer src="render/brief.js?v=20260409h"></script>
+<script defer src="actions/pcs.js?v=20260409h"></script>
+<script defer src="actions/pcs-longpress.js?v=20260409h"></script>
+<script src="07-post-load.js?v=20260409h" defer></script>
+<script src="08-post-actions.js?v=20260409h" defer></script>
+<script src="09-library.js?v=20260409h" defer></script>
+<script src="09-approval.js?v=20260409h" defer></script>
+<script src="04-router.js?v=20260409h" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
