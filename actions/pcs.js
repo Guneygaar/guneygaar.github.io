@@ -1093,10 +1093,10 @@ window.loadPcsComments = async function(postId) {
     function _renderSingleClient(c) {
       if (c.deleted) {
         return '<div class="pcs-comment-item">' +
-          '<div class="pcs-avatar av-muted">?</div>' +
-          '<div class="pcs-comment-body">' +
+          '<div class="pcs-cmt-av"><div class="pcs-avatar av-muted">?</div></div>' +
+          '<div class="pcs-cmt-mid">' +
           '<div class="pcs-deleted-msg">This message was deleted.</div>' +
-          '</div></div>';
+          '</div><div class="pcs-cmt-rt"></div></div>';
       }
       var _initial = (c.author||'?').charAt(0).toUpperCase();
       var _taskObj = _parseTask(c);
@@ -1131,29 +1131,25 @@ window.loadPcsComments = async function(postId) {
         ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
-      // Build reaction display
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
       var _myReact = _cReactions.find(function(r) { return r.author === _name; });
       var _reactCount = _cReactions.length;
       var _reactInner = _myReact
-        ? '<span class="pcs-react-icon pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
-        : '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+        ? '<span class="pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
+        : '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>';
       _reactInner += _reactCount > 0
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
-      return '<div class="pcs-comment-item' +
-        (c.reply_to ? ' pcs-comment-reply' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
-        (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
-        '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
-        '<div class="pcs-comment-body">' +
+      return '<div class="pcs-comment-item" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
+        '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
+        '<div class="pcs-cmt-mid">' +
+          (c.reply_to && c.reply_to_author ?
+            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
+            : '') +
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
           '</div>' +
-          (c.reply_to && c.reply_to_author ?
-            '<div class="pcs-reply-indicator">' +
-            '&#8629; ' + esc(c.reply_to_author) + '</div>'
-            : '') +
           '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
           ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
@@ -1164,7 +1160,7 @@ window.loadPcsComments = async function(postId) {
             esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
             _escapedMsg + '\')">Reply</div>' +
         '</div>' +
-        '<div class="pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
+        '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
           _reactInner +
         '</div>' +
       '</div>';
@@ -1217,13 +1213,12 @@ window.loadPcsComments = async function(postId) {
     function _renderSingleNote(c) {
       if (c.deleted) {
         return '<div class="pcs-note-item">' +
-          '<div class="pcs-avatar av-muted">?</div>' +
-          '<div class="pcs-comment-body">' +
+          '<div class="pcs-cmt-av"><div class="pcs-avatar av-muted">?</div></div>' +
+          '<div class="pcs-cmt-mid">' +
           '<div class="pcs-deleted-msg">This message was deleted.</div>' +
-          '</div></div>';
+          '</div><div class="pcs-cmt-rt"></div></div>';
       }
       var _initial = (c.author||'?').charAt(0).toUpperCase();
-      // Mentions render inside message body via _highlightMentions only
       var _vis = (c.visibility||'all').toUpperCase();
       if (_vis === 'SERVICING') _vis = 'SERV';
       if (_vis === 'CREATIVE') _vis = 'CREAT';
@@ -1248,7 +1243,6 @@ window.loadPcsComments = async function(postId) {
           '</span> '
           + _assignedLabel
         : '';
-
       var _att = (function() {
         try {
           return typeof c.attachments === 'string'
@@ -1271,31 +1265,27 @@ window.loadPcsComments = async function(postId) {
         ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
-      // Build reaction display
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
       var _myReact = _cReactions.find(function(r) { return r.author === _name; });
       var _reactCount = _cReactions.length;
       var _reactInner = _myReact
-        ? '<span class="pcs-react-icon pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
-        : '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+        ? '<span class="pcs-react-emoji">' + esc(_myReact.emoji) + '</span>'
+        : '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>';
       _reactInner += _reactCount > 0
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
       return '<div class="pcs-note-item' +
-        (c.reply_to ? ' pcs-comment-reply' : '') +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
-        (!c.read ? '<div class="pcs-unread-dot"></div>' : '') +
-        '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>' +
-        '<div class="pcs-comment-body">' +
+        '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
+        '<div class="pcs-cmt-mid">' +
+          (c.reply_to && c.reply_to_author ?
+            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
+            : '') +
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
             _visTag +
           '</div>' +
-          (c.reply_to && c.reply_to_author ?
-            '<div class="pcs-reply-indicator">' +
-            '&#8629; ' + esc(c.reply_to_author) + '</div>'
-            : '') +
           '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
           ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
@@ -1306,7 +1296,7 @@ window.loadPcsComments = async function(postId) {
             esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
             _escapedMsg + '\')">Reply</div>' +
         '</div>' +
-        '<div class="pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
+        '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
           _reactInner +
         '</div>' +
       '</div>';
@@ -2741,7 +2731,13 @@ window._pcsShowEmojiPicker = function(reactEl) {
     });
     picker.appendChild(btn);
   });
-  reactEl.appendChild(picker);
+  var _rect = reactEl.getBoundingClientRect();
+  picker.style.position = 'fixed';
+  picker.style.top = (_rect.top - 40) + 'px';
+  picker.style.right = (window.innerWidth - _rect.right) + 'px';
+  picker.style.bottom = 'auto';
+  picker.style.left = 'auto';
+  document.body.appendChild(picker);
 
   // Close on outside click
   setTimeout(function() {
@@ -2792,7 +2788,7 @@ window._pcsAddReaction = function(commentId, emoji, reactEl) {
         var count = window._pcsReactions[commentId].length;
         reactEl.classList.add('pcs-reacted');
         reactEl.innerHTML =
-          '<span class="pcs-react-icon pcs-react-emoji">' + emoji + '</span>' +
+          '<span class="pcs-react-emoji">' + emoji + '</span>' +
           (count > 0 ? '<span class="pcs-react-count">' + count + '</span>' : '');
       }
     } catch(e) {
@@ -2824,11 +2820,11 @@ window._pcsRemoveReaction = function(commentId, reactEl) {
         reactEl.classList.remove('pcs-reacted');
         if (count > 0) {
           reactEl.innerHTML =
-            '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>' +
+            '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>' +
             '<span class="pcs-react-count">' + count + '</span>';
         } else {
           reactEl.innerHTML =
-            '<span class="pcs-react-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></span>';
+            '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>';
         }
       }
     } catch(e) {
