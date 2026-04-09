@@ -5701,7 +5701,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-time {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #505060;
+  color: #8888A0;
   margin-left: 8px;
 }
 .pcs-vis-tag {
@@ -5709,7 +5709,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 7px;
   letter-spacing: .06em;
   text-transform: uppercase;
-  color: #505060;
+  color: #7878A0;
   padding: 1px 6px;
   border: 1px solid #2e2e3a;
   margin-left: 6px;
@@ -6084,7 +6084,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-reply-btn {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #505060;
+  color: #8888A0;
   margin-top: 5px;
   letter-spacing: .04em;
   background: none;
@@ -6099,7 +6099,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Heart placeholder (visual only) */
 .pcs-comment-react {
   cursor: pointer;
-  opacity: .35;
+  opacity: .55;
   transition: opacity .15s;
   padding: 2px;
 }
@@ -6107,7 +6107,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-comment-react svg {
   width: 18px;
   height: 18px;
-  stroke: #505060;
+  stroke: #8888A0;
   fill: none;
   stroke-width: 1.5;
 }
@@ -6130,7 +6130,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-react-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #808090;
+  color: #9898A8;
   line-height: 1;
   letter-spacing: .02em;
 }

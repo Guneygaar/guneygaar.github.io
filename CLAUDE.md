@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410i
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410j
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
