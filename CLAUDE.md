@@ -326,7 +326,10 @@ Test tiers (CI path filtering):
   the PR diff. This saves ~2 min CI time on CSS/template PRs.
 
 Post-deploy smoke (.github/workflows/smoke.yml):
-  Schedule: '*/30 * * * *' (every 30 min) + workflow_dispatch.
+  Triggers: push to main/main-/-root + '*/30 * * * *' (every 30 min)
+            + workflow_dispatch. Push trigger ensures the cron schedule
+            stays active (GitHub auto-disables cron-only workflows after
+            60 days of inactivity) and doubles as a post-deploy check.
   Spec: tests/e2e/live-smoke-schedule.spec.js (6 tests) hits the
     real srtd.io + Supabase. Checks: site reachable, expected
     version served, all 21 versioned assets return 200, Supabase
