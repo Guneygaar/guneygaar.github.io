@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-09
+# Last updated: 2026-04-10
 
 # All facts verified from actual codebase
 
@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410o
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410p
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2153,6 +2153,24 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    successfully. Zero production code changes — test-only fix.
    Test renamed to "client view renders successfully after login"
    to reflect the simpler assertion. 508/508 unit passing.
+1. Lightbox single-image download fails with "Failed to fetch"
+   Location: actions/pcs.js _pcsLbDownload() — commit 10ffd23
+   (Apr 9) rewrote the function from a direct <a href download>
+   anchor click into an async fetch()+blob+createObjectURL flow.
+   The public R2 bucket pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev
+   does not return Access-Control-Allow-Origin, so fetch() from
+   srtd.io was blocked by CORS and every single-photo download
+   threw "Failed to fetch". The commit framed this as an iOS
+   Safari fix; it broke every browser instead.
+   Status: FIXED (PR#TBD) — replaced _pcsLbDownload with the same
+   pattern _pcsSaveAllPhotos (line 1803) already uses: strip the
+   R2_BASE prefix, build a WORKER /download?key= URL against the
+   srtd-r2-upload Cloudflare Worker, then do <a href download> +
+   click(). Top-level navigation is CORS-immune, and the Worker
+   serves the file with Content-Disposition: attachment. No
+   fetch(), no blob, no async. Retained the "Downloading..." toast
+   for user feedback. No other functions touched.
+   508/508 unit passing. Bumped to ?v=20260410p.
 
 ## SECTION 13 — STABILITY ROADMAP
 
