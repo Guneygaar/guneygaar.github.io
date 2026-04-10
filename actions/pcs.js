@@ -210,7 +210,6 @@ window._renderPCS = function(postId) {
   var topbarStage = document.getElementById('pcs-topbar-stage');
   if (topbarStage) {
     topbarStage.className = 'pcs-stage-pill';
-    topbarStage.id = 'pcs-stage-pill';
     if (isAdmin) {
       topbarStage.onclick = function(e) { e.stopPropagation(); window._pcsChipDrop(topbarStage, 'stage', id); };
     } else {
