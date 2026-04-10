@@ -2109,8 +2109,8 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) —
    (a) switchTab: pipeline tab now calls loadPosts() (or
        loadPostsForClient for client role) same as tasks tab.
-   (b) renderAll: pipeline always rendered regardless of active tab.
-       Dashboard widgets still only render when tasks tab active.
+   (b) renderAll: BOTH pipeline AND dashboard widgets always
+       rendered regardless of active tab. Neither DOM goes stale.
    (c) switchTab: safeRender() moved BEFORE panel.classList.add
        ('active') so DOM is rebuilt while panel is still hidden.
        Duplicate safeRender() at end of switchTab removed.
