@@ -68,10 +68,13 @@ describe('LAYER 1 — refreshSession typed error returns', function() {
   });
 
   it('10. client 50-min timer handles auth_expired', function() {
-    var clientTimer = authSrc.match(/_clientTokenTimer[\s\S]{0,400}/);
+    var clientTimer = authSrc.match(/50 \* 60 \* 1000[\s\S]{0,50}/);
     expect(clientTimer).toBeTruthy();
-    expect(clientTimer[0]).toContain("result.error === 'auth_expired'");
-    expect(clientTimer[0]).toContain('_clearSessionAndLogin');
+    // Verify the 50-min timer block contains auth_expired handling
+    var timerBlock = authSrc.match(/_clientTokenTimer = setInterval[\s\S]{0,600}/);
+    expect(timerBlock).toBeTruthy();
+    expect(timerBlock[0]).toContain("result.error === 'auth_expired'");
+    expect(timerBlock[0]).toContain('_clearSessionAndLogin');
   });
 
   it('11. non-client 50-min timer handles auth_expired', function() {

@@ -52,6 +52,8 @@ function _clearSessionAndLogin() {
   localStorage.removeItem('hinglish_email');
   localStorage.removeItem('hinglish_name');
   if (typeof stopRealtime === 'function') stopRealtime();
+  clearInterval(window._clientDataTimer); window._clientDataTimer = null;
+  clearInterval(window._clientTokenTimer); window._clientTokenTimer = null;
   showLoginOverlay();
 }
 window._clearSessionAndLogin = _clearSessionAndLogin;
@@ -350,6 +352,20 @@ function activateRole(role) {
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    // Client data poll — 15s interval, same guards as agency startRealtime
+    if (!window._clientDataTimer) {
+      window._clientDataTimer = setInterval(async function() {
+        if (document.hidden) return;
+        if (!localStorage.getItem('sb_access_token')) return;
+        if (window.AppState.ui.modalOpen) return;
+        try {
+          if (typeof loadPostsForClient === 'function') loadPostsForClient();
+        } catch(err) {
+          console.warn('[auth] client data poll failed', err);
+          window.logError && window.logError(err && err.message, err && err.stack, 'client-data-poll');
+        }
+      }, 15000);
+    }
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
         try {

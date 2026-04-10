@@ -130,6 +130,13 @@ function _drainDeferredRender() {
     clearTimeout(window.AppState.timers.renderTimer);
     window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
   }
+  // Fetch fresh server data after modal close so views are never stale
+  var _drRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+  if (_drRole === 'client') {
+    if (typeof loadPostsForClient === 'function') loadPostsForClient();
+  } else {
+    if (typeof loadPosts === 'function') loadPosts();
+  }
 }
 
 // -- Undo toast --------------------------------
@@ -269,6 +276,8 @@ function switchTab(btn) {
   btn.classList.add('active');
   const tab = btn.dataset.tab;
   const panel = document.getElementById('panel-' + tab);
+  // Re-render BEFORE making the panel visible so the user never sees stale DOM
+  safeRender();
   if (panel) panel.classList.add('active');
   const titleEl = document.getElementById('app-header-title');
   var greetHdr = document.getElementById('dash-greeting-hdr');
@@ -277,6 +286,13 @@ function switchTab(btn) {
     if (greetHdr) greetHdr.style.display = 'none';
     var appHdr = document.querySelector('.app-header');
     if (appHdr) appHdr.style.display = 'none';
+    // Fetch fresh data so pipeline never shows stale stages
+    var _plRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+    if (_plRole === 'client') {
+      if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    } else {
+      if (typeof loadPosts === 'function') loadPosts();
+    }
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (greetHdr) greetHdr.style.display = '';
@@ -294,7 +310,6 @@ function switchTab(btn) {
     window._taskFilter = null;
   }
   if (tab === 'updates') { loadNotifications(); }
-  safeRender();
   _fabAttachScroll();
 }
 

@@ -86,6 +86,8 @@ async function quickStage(postId, newStage) {
   const oldStage = post.stage;
   setStage(post, newStage, 'quickStage');
   post._isSaving = true;
+  // Safety net: clear _isSaving after 30s in case PATCH hangs
+  var _qsSafetyTimer = setTimeout(function() { post._isSaving = false; }, 30000);
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
   scheduleRender();
   try {
@@ -102,6 +104,7 @@ async function quickStage(postId, newStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
+    clearTimeout(_qsSafetyTimer);
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: oldStage, new_stage: newStage });
@@ -109,6 +112,7 @@ async function quickStage(postId, newStage) {
     if (_qsRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _qsRecipients, actor);
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
+    clearTimeout(_qsSafetyTimer);
     post._isSaving = false;
     setStage(post, oldStage, 'quickStage_rollback');
     scheduleRender();
@@ -222,6 +226,7 @@ async function clientApprove(postId, btn) {
     var oldStage = post.stage;
     setStage(post, 'scheduled', 'clientApprove');
     post._isSaving = true;
+    var _caSafetyTimer = setTimeout(function() { post._isSaving = false; }, 30000);
     try {
       // scheduled -> owner remains unchanged (per ownership rules)
       var rows = await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
@@ -234,6 +239,7 @@ async function clientApprove(postId, btn) {
         if (server.stage) server.stage = toUiStage(server.stage);
         Object.assign(post, server);
       }
+      clearTimeout(_caSafetyTimer);
       post._isSaving = false;
       // Show confirmation UI
       var confirmEl = document.getElementById('approved-confirm-' + postId);
@@ -261,6 +267,7 @@ async function clientApprove(postId, btn) {
       await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: oldStage, new_stage: 'scheduled' });
       window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
     } catch (err) {
+      clearTimeout(_caSafetyTimer);
       post._isSaving = false;
       setStage(post, oldStage, 'clientApprove_rollback');
       scheduleRender();
@@ -565,6 +572,8 @@ function _executeStageChange(postId, newStage) {
   const previousStage = post.stage;
   setStage(post, newStage, '_executeStageChange');
   post._isSaving = true;
+  // Safety net: clear _isSaving after 30s in case PATCH hangs
+  post._isSavingTimer = setTimeout(function() { post._isSaving = false; }, 30000);
   console.log('[PCS] LOCAL UPDATE:', postId, newStage, Date.now());
 
   // -- 2. Instant UI re-render (before DB) --
@@ -595,6 +604,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
+    clearTimeout(post._isSavingTimer);
     post._isSaving = false;
 
     // FINAL TRUTH RENDER
@@ -605,6 +615,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   } catch (err) {
     console.error('[PCS] DB WRITE FAILED:', postId, err);
 
+    clearTimeout(post._isSavingTimer);
     post._isSaving = false;
     setStage(post, previousStage, '_executeStageChange_rollback');
 
