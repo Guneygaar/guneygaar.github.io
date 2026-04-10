@@ -1811,10 +1811,11 @@ window._pcsSaveAllPhotos = async function(postId) {
   }
   showToast('Downloading ' + imgs.length + ' images...', 'success');
   var R2_BASE = 'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/';
+  var IMAGES_BASE = 'https://images.srtd.io/';
   var WORKER = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/download?key=';
   for (var i = 0; i < imgs.length; i++) {
     var url = typeof imgs[i] === 'string' ? imgs[i] : (imgs[i].url || imgs[i]);
-    var key = url.replace(R2_BASE, '');
+    var key = url.replace(R2_BASE, '').replace(IMAGES_BASE, '');
     var downloadUrl = WORKER + encodeURIComponent(key);
     var a = document.createElement('a');
     a.href = downloadUrl;
@@ -2028,32 +2029,22 @@ window._pcsLbClose = function() {
   if (actionBar) actionBar.style.display = 'none';
 }
 
-window._pcsLbDownload = async function() {
+window._pcsLbDownload = function() {
   var url = window._pcsLbImages[window._pcsLbIdx];
   if (!url) return;
   if (typeof url === 'object') url = url.url || url.src || '';
   if (!url) return;
-  try {
-    showToast && showToast('Downloading...', 'info');
-    var response = await fetch(url);
-    if (!response.ok) throw new Error('Fetch failed: ' + response.status);
-    var blob = await response.blob();
-    var blobUrl = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = 'sorted-photo-' + (window._pcsLbIdx + 1) + '.jpg';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-    }, 100);
-    showToast && showToast('Photo saved', 'success');
-  } catch(err) {
-    console.error('[pcs] download failed', err);
-    window.logError && window.logError(err && err.message, err && err.stack, 'pcs-lb-download');
-    showToast && showToast('Download failed — try long-press to save', 'error');
-  }
+  var R2_BASE = 'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/';
+  var IMAGES_BASE = 'https://images.srtd.io/';
+  var WORKER = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/download?key=';
+  var key = url.replace(R2_BASE, '').replace(IMAGES_BASE, '');
+  var a = document.createElement('a');
+  a.href = WORKER + encodeURIComponent(key);
+  a.download = 'sorted-photo-' + (window._pcsLbIdx + 1) + '.jpg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast && showToast('Downloading...', 'info');
 };
 
 (function() {
