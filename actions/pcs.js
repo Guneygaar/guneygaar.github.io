@@ -196,7 +196,7 @@ window._renderPCS = function(postId) {
   var topbarRight = document.getElementById('pcs-topbar-right');
   if (topbarRight) {
     var _showTopWA = post.caption && (
-      _pcsRole === 'client' || stageLC === 'awaiting_approval'
+      _pcsRole === 'client' || stageLC === 'awaiting_approval' || stageLC === 'in_production' || stageLC === 'scheduled'
     );
     topbarRight.innerHTML = _showTopWA
       ? '<button class="pcs-topbar-wa" onclick="window._sharePostOnWhatsApp(\'' + esc(id) + '\')">' +
@@ -770,7 +770,7 @@ function _buildLinkedInHtml(post, id, stageLC) {
 function _buildWAHtml(post, id, postId, stageLC) {
   var showWA = post.caption && (
     (window.AppState.user.effectiveRole || '').toLowerCase() === 'client' ||
-    stageLC === 'awaiting_approval'
+    stageLC === 'awaiting_approval' || stageLC === 'in_production' || stageLC === 'scheduled'
   );
   if (!showWA) return '';
   var _isDesktop = window.innerWidth > 768 && !('ontouchstart' in window);

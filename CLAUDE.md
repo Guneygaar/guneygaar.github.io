@@ -2171,6 +2171,25 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    fetch(), no blob, no async. Retained the "Downloading..." toast
    for user feedback. No other functions touched.
    508/508 unit passing. Bumped to ?v=20260410p.
+1. WhatsApp share button only available for awaiting_approval posts
+   Location: actions/pcs.js:198-200 (topbar WA icon) and
+   actions/pcs.js:771-774 (_buildWAHtml caption-pane section).
+   Both render gates accepted only _pcsRole === 'client' or
+   stageLC === 'awaiting_approval', so internal team members
+   (Admin/Servicing/Creative) could not preview in_production or
+   scheduled posts via WhatsApp without opening the full app. KV
+   previews are already seeded for every post at creation time
+   (06-post-create.js:322, render/brief.js:500), so the share URL
+   works for any stage — only the PCS render gates needed to widen.
+   Status: FIXED (PR#TBD) — added || stageLC === 'in_production'
+   || stageLC === 'scheduled' to both gates. Client view
+   engagement bar and card menu (render/client.js) intentionally
+   untouched — clients do not see in_production/scheduled posts.
+   Worker /generate-preview flow and hardcoded "Awaiting your
+   approval" OG description intentionally untouched — tracked as
+   a separate follow-up (KV previews would need regeneration on
+   stage change for stage-aware descriptions to propagate).
+   508/508 unit passing. Bumped to ?v=20260410r.
 1. Image download broken for new images.srtd.io CDN host
    Location: actions/pcs.js _pcsLbDownload() + _pcsSaveAllPhotos() —
    both functions only stripped the old r2.dev host prefix when
