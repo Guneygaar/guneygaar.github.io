@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410p
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410q
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2171,6 +2171,20 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    fetch(), no blob, no async. Retained the "Downloading..." toast
    for user feedback. No other functions touched.
    508/508 unit passing. Bumped to ?v=20260410p.
+1. Image download broken for new images.srtd.io CDN host
+   Location: actions/pcs.js _pcsLbDownload() + _pcsSaveAllPhotos() —
+   both functions only stripped the old r2.dev host prefix when
+   building the Worker /download?key= URL. Images now served from
+   the new https://images.srtd.io/ CDN host fell through with the
+   full URL included in the key, producing an invalid Worker lookup
+   and a silently broken download.
+   Status: FIXED (PR#TBD) — added IMAGES_BASE constant
+   ('https://images.srtd.io/') next to R2_BASE in both functions
+   and chained .replace(IMAGES_BASE, '') after the existing
+   .replace(R2_BASE, ''). Either host prefix is now stripped, the
+   bare R2 key is passed to the Worker, and download works for
+   both legacy r2.dev URLs and new images.srtd.io URLs. No other
+   functions touched. 508/508 unit passing. Bumped to ?v=20260410q.
 
 ## SECTION 13 — STABILITY ROADMAP
 

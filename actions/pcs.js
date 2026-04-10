@@ -1811,10 +1811,11 @@ window._pcsSaveAllPhotos = async function(postId) {
   }
   showToast('Downloading ' + imgs.length + ' images...', 'success');
   var R2_BASE = 'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/';
+  var IMAGES_BASE = 'https://images.srtd.io/';
   var WORKER = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/download?key=';
   for (var i = 0; i < imgs.length; i++) {
     var url = typeof imgs[i] === 'string' ? imgs[i] : (imgs[i].url || imgs[i]);
-    var key = url.replace(R2_BASE, '');
+    var key = url.replace(R2_BASE, '').replace(IMAGES_BASE, '');
     var downloadUrl = WORKER + encodeURIComponent(key);
     var a = document.createElement('a');
     a.href = downloadUrl;
@@ -2034,8 +2035,9 @@ window._pcsLbDownload = function() {
   if (typeof url === 'object') url = url.url || url.src || '';
   if (!url) return;
   var R2_BASE = 'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/';
+  var IMAGES_BASE = 'https://images.srtd.io/';
   var WORKER = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/download?key=';
-  var key = url.replace(R2_BASE, '');
+  var key = url.replace(R2_BASE, '').replace(IMAGES_BASE, '');
   var a = document.createElement('a');
   a.href = WORKER + encodeURIComponent(key);
   a.download = 'sorted-photo-' + (window._pcsLbIdx + 1) + '.jpg';
