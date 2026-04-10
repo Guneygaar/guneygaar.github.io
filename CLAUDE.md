@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410k
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410j
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -446,7 +446,7 @@ Pages branch:   main-/-root
 1. 04-router.js must always be LAST script tag
 1. apiFetch() never calls logout() on 401 — by design
 1. AppState.ui.modalOpen guards render — do not bypass
-1. 15-second poll interval, 50-minute token refresh (both agency AND client)
+1. 15-second poll interval, 50-minute token refresh
 1. Client DB role takes absolute priority over pcs_role_preview
 1. Silent .catch(function(){}) is a bug — always use window.logError
 1. Vitest must pass 508/508 before every push
@@ -2084,50 +2084,6 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    #505060→#606078. Stage pill arrow opacity .4→.6. Button borders
    #323244→#3a3a4a. Primary text (#F0F0F2), body text (#B8B8C0),
    role colors unchanged. 508/508 unit passing. Bumped to ?v=20260410j.
-1. Stale stages in Pipeline — Dashboard shows correct stage but
-   Pipeline shows old stage for the same post in the same session
-   Root cause: 7 cascading issues (audit confirmed all 7):
-   (a) switchTab('pipeline') never called loadPosts() — only
-       switchTab('tasks') did. Pipeline rendered from stale AppState.
-   (b) renderAll() only rendered the ACTIVE tab — inactive tab DOM
-       went stale whenever poll data arrived.
-   (c) Tab panel DOM was made visible BEFORE safeRender() ran, so
-       user saw stale HTML flash before re-render.
-   (d) Client role had zero data polling — only one-time fetch on
-       login, never refreshed post data.
-   (e) 15s poll skipped fetch entirely while modalOpen — AppState
-       went stale during PCS/modal use. scheduleRender already
-       defers rendering, so the modalOpen guard on fetch was wrong.
-   (f) _isSaving had no timeout — if a PATCH hung, the post was
-       permanently frozen in AppState (poll merge skipped it).
-   (g) index.html had no cache-control meta tags — browser could
-       serve stale HTML with old ?v= strings after deploy.
-   Location: 10-ui.js switchTab(), 07-post-load.js renderAll() +
-   startRealtime(), 03-auth.js activateRole() Client branch,
-   08-post-actions.js quickStage/_executeStageChange/clientApprove,
-   index.html <head>
-   Status: FIXED (PR#TBD) —
-   (a) switchTab: pipeline tab now calls loadPosts() (or
-       loadPostsForClient for client role) same as tasks tab.
-   (b) renderAll: pipeline always rendered regardless of active tab.
-       Dashboard widgets still only render when tasks tab active.
-   (c) switchTab: safeRender() moved BEFORE panel.classList.add
-       ('active') so DOM is rebuilt while panel is still hidden.
-       Duplicate safeRender() at end of switchTab removed.
-   (d) activateRole Client branch: added _clientDataTimer 15s
-       setInterval calling loadPostsForClient() with same guards
-       as agency polling (document.hidden, token check, modalOpen).
-       _clearSessionAndLogin clears both _clientDataTimer and
-       _clientTokenTimer.
-   (e) startRealtime: removed modalOpen guard from poll fetch.
-       Poll now always fetches and merges. scheduleRender() handles
-       render deferral. _drainDeferredRender: added loadPosts() /
-       loadPostsForClient() call so modal close gets fresh data.
-   (f) quickStage, clientApprove, _executeStageChange: added 30s
-       setTimeout safety net that clears _isSaving. Timer cleared
-       in both success and catch paths.
-   (g) index.html: added Cache-Control, Pragma, Expires meta tags.
-   508/508 unit passing. Bumped to ?v=20260410k.
 
 ## SECTION 13 — STABILITY ROADMAP
 
