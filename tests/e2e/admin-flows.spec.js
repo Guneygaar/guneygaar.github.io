@@ -95,8 +95,8 @@ test.describe('Admin Flow Tests', () => {
     // Wait for pipeline container
     await expect(page.locator('#pipeline-container')).toBeVisible({ timeout: 5000 });
 
-    // At least one post card (scoped to pipeline to avoid dashboard duplicate)
-    const card = page.locator('#pipeline-container').locator('text=[TEST] Smoke Post').first();
+    // At least one post card
+    const card = page.locator('text=[TEST] Smoke Post').first();
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // No error toast
@@ -113,8 +113,8 @@ test.describe('Admin Flow Tests', () => {
     await expect(pipeTab).toBeVisible({ timeout: 5000 });
     await pipeTab.click();
 
-    // Click post card (scoped to pipeline to avoid dashboard duplicate)
-    const card = page.locator('#pipeline-container').locator('text=[TEST] Smoke Post').first();
+    // Click post card
+    const card = page.locator('text=[TEST] Smoke Post').first();
     await expect(card).toBeVisible({ timeout: 5000 });
     await card.click();
 
@@ -132,7 +132,7 @@ test.describe('Admin Flow Tests', () => {
 
     await expect(page.locator('#pipeline-container')).toBeVisible({ timeout: 5000 });
 
-    const card = page.locator('#pipeline-container').locator('text=[TEST] Smoke Post').first();
+    const card = page.locator('text=[TEST] Smoke Post').first();
     await expect(card).toBeVisible({ timeout: 5000 });
     await card.click();
 

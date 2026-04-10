@@ -674,8 +674,6 @@ async function updatePost(postId, field, value) {
   const oldValue = post[field];
   post[field] = value;
   post._isSaving = true;
-  // Safety net: clear _isSaving after 30s in case PATCH hangs
-  var _upSafetyTimer = setTimeout(function() { post._isSaving = false; }, 30000);
 
   // (subtitle removed — stage shown in topbar pill + meta chips)
 
@@ -715,13 +713,11 @@ async function updatePost(postId, field, value) {
       if (server.stage) server.stage = toUiStage(server.stage);
       Object.assign(post, server);
     }
-    clearTimeout(_upSafetyTimer);
     post._isSaving = false;
     showToast('Saved', 'success');
     refreshSystemViews();
   } catch(e) {
     // Rollback optimistic update on failure
-    clearTimeout(_upSafetyTimer);
     post._isSaving = false;
     post[field] = oldValue;
     scheduleRender();
