@@ -2217,6 +2217,35 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    window._pcs.postId is falsy. `const postId` switched to `var`
    so the fallback can reassign. No other function touched.
    508/508 unit passing. Bumped to ?v=20260410s.
+1. PCS comment image lightbox — onclick passed wrong arg shape,
+   lightbox opened blank / showed wrong photos
+   Location: actions/pcs.js _pcsOpenLightbox() line 1903. Original
+   signature was (postId, idx) — two parameters. Comment image
+   onclicks in _renderSingleClient (line 1124) and _renderSingleNote
+   (line 1258) pass three arguments: (postId, urlArray, indexOfUrl).
+   The URL array landed in the `idx` parameter, got assigned to
+   window._pcsLbIdx (an array, truthy), and _pcsLbImages was still
+   overwritten with post.images. Net effect: clicking a comment
+   image opened the lightbox, showed the post's main photos (if
+   any) indexed by garbage, and made download impossible. On posts
+   with no images the lightbox was blank.
+   Status: FIXED (PR#TBD) — widened _pcsOpenLightbox to
+   (postId, arg2, arg3). Detects Array.isArray(arg2) to tell
+   comment mode (external URL list) from post-grid mode (integer
+   index). Sets window._pcsLbImages to the external list in comment
+   mode, post.images in normal mode. Adds window._pcsLbReadonly
+   flag set true in comment mode so the admin action bar
+   (ADD/EDIT/SAVE/REMOVE) is hidden — those buttons operate on
+   post.images and would corrupt comment galleries. Download still
+   works because _pcsLbDownload reads _pcsLbImages which now holds
+   the correct comment URLs. Zero changes to comment rendering,
+   _pcsLbRender, or _pcsLbDownload. Existing post-grid onclicks
+   that pass (postId, integer) keep working via the non-array
+   branch. Client feed rendering untouched — clients still see no
+   comment images in the feed itself, but once a post opens in PCS
+   (agency side) the comment image thumbs are now viewable in the
+   lightbox as intended. 508/508 unit passing. Bumped to
+   ?v=20260410s.
 
 ## SECTION 13 — STABILITY ROADMAP
 
