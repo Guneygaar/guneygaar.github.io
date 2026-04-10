@@ -127,7 +127,7 @@ test.describe('Client View Loads', () => {
   test('TEST 2 -- Client sees awaiting_approval posts', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
     await expect(page.locator('text=[TEST] Awaiting Approval Post')).toBeVisible();
   });
@@ -135,7 +135,7 @@ test.describe('Client View Loads', () => {
   test('TEST 3 -- Client sees awaiting_brand_input posts', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
-    const card = page.locator('[data-post-id="test-client-002"]');
+    const card = page.locator('.post-card[data-post-id="test-client-002"]');
     await expect(card).toBeVisible({ timeout: 5000 });
   });
 
@@ -172,7 +172,7 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 6 -- Comment input renders on awaiting_approval post', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const input = page.locator('#comment-input-test-client-001');
@@ -183,7 +183,7 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 7 -- Comment input renders on awaiting_brand_input post', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-002"]');
+    const card = page.locator('.post-card[data-post-id="test-client-002"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const input = page.locator('#comment-input-test-client-002');
@@ -192,7 +192,7 @@ test.describe('Client Comment Flow', () => {
 
   test('TEST 8 -- Comment input does NOT render on published post', async ({ page }) => {
     // Published post card should exist
-    const card = page.locator('[data-post-id="test-client-003"]');
+    const card = page.locator('.post-card[data-post-id="test-client-003"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // But no comment input
@@ -219,7 +219,7 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 11 -- PHOTO button visible below comment input', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const photoBtn = card.locator('text=PHOTO');
@@ -227,7 +227,7 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 12 -- @MENTION button visible below comment input', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const mentionBtn = card.locator('text=MENTION');
@@ -247,7 +247,7 @@ test.describe('Client Approve Flow', () => {
   });
 
   test('TEST 13 -- Approve button visible on awaiting_approval post', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const approveBtn = card.locator('[data-action="clientApprovePrompt"]');
@@ -255,7 +255,7 @@ test.describe('Client Approve Flow', () => {
   });
 
   test('TEST 14 -- Approve button NOT visible on awaiting_brand_input post', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-002"]');
+    const card = page.locator('.post-card[data-post-id="test-client-002"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // awaiting_brand_input gets an empty spacer div instead of approve button
@@ -264,7 +264,7 @@ test.describe('Client Approve Flow', () => {
   });
 
   test('TEST 15 -- Approve popup opens on approve click', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const approveBtn = card.locator('[data-action="clientApprovePrompt"]');
@@ -278,7 +278,7 @@ test.describe('Client Approve Flow', () => {
   });
 
   test('TEST 16 -- Approve popup closes on cancel', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-001"]');
+    const card = page.locator('.post-card[data-post-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // Open popup
@@ -385,7 +385,7 @@ test.describe('Client Published Post Read Only', () => {
   });
 
   test('TEST 22 -- Published post shows no comment input', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-003"]');
+    const card = page.locator('.post-card[data-post-id="test-client-003"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const input = page.locator('#comment-input-test-client-003');
@@ -393,7 +393,7 @@ test.describe('Client Published Post Read Only', () => {
   });
 
   test('TEST 23 -- Published post shows no approve button', async ({ page }) => {
-    const card = page.locator('[data-post-id="test-client-003"]');
+    const card = page.locator('.post-card[data-post-id="test-client-003"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
     const approveBtn = card.locator('[data-action="clientApprovePrompt"]');

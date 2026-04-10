@@ -271,16 +271,16 @@ test.describe('Client Feed Smoke Tests', () => {
     const commentText = card.locator('div').nth(3);
     await commentText.click({ force: true });
 
-    // Verify AppState.ui.modalOpen remains false throughout
-    const modalOpen = await page.evaluate(() => window.AppState.ui.modalOpen);
-    expect(modalOpen).toBeFalsy();
+    // Verify PCS overlay specifically never opens (client overlay may open, that's correct)
+    const pcsOpen = await page.evaluate(() => window.AppState.pcs.open);
+    expect(pcsOpen).toBeFalsy();
   });
 
   test('TEST 7 — Caption truncates at 210 chars', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
     // Find the card with the long caption
-    const longCapCard = page.locator('[data-post-id="POST-CF-LONGCAP"]');
+    const longCapCard = page.locator('.post-card[data-post-id="POST-CF-LONGCAP"]');
     await expect(longCapCard).toBeVisible({ timeout: 5000 });
 
     // Verify truncated text ends with ...more
