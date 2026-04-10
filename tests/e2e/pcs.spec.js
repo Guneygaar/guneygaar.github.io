@@ -149,7 +149,7 @@ test('TEST 4 — Stage pill shows current stage label', async ({ page }) => {
 
   // Advance button was removed from the redesign; the stage pill
   // in the PCS topbar now shows the current stage label.
-  const stagePill = page.locator('#pcs-stage-pill');
+  const stagePill = page.locator('#pcs-topbar-stage');
   await expect(stagePill).toBeVisible({ timeout: 5000 });
   await expect(stagePill).not.toBeEmpty();
 
@@ -176,7 +176,7 @@ test('TEST 6 — PCS caption is visible', async ({ page }) => {
 test('TEST 7 — PCS stage pill opens dropdown', async ({ page }) => {
   await openPCSCard(page);
 
-  const stagePill = page.locator('#pcs-stage-pill');
+  const stagePill = page.locator('#pcs-topbar-stage');
   await expect(stagePill).toBeVisible({ timeout: 5000 });
 
   // Click the stage pill to open the chip dropdown

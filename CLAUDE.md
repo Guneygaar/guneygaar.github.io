@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410n
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410o
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2097,6 +2097,31 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    mergePosts() + scheduleRender() so pipeline re-renders with
    fresh server data automatically.
    508/508 unit passing. Bumped to ?v=20260410n.
+1. PCS stage chip shows stale stage after stage change (CRITICAL)
+   Location: actions/pcs.js _renderPCS() line 213 — the topbar
+   stage element was initialized in index.html with id
+   "pcs-topbar-stage", but on every _renderPCS the code executed
+   topbarStage.id = 'pcs-stage-pill', permanently renaming the
+   element's id on the FIRST PCS open. On every subsequent open,
+   getElementById('pcs-topbar-stage') at line 210 returned null,
+   the entire update block (lines 211-221) was skipped, and the
+   stale innerHTML from the previous PCS open remained in the
+   DOM. This manifested as Pipeline correctly showing "Scheduled"
+   (reading post.stage from AppState.posts.all) while PCS showed
+   the old "Awaiting Approval" label from a previous open.
+   forcePCSReset() only resets styles/state — it does not rebuild
+   the DOM, so the renamed id persisted across opens until a full
+   page reload.
+   Status: FIXED (PR#TBD) — deleted the single line
+   `topbarStage.id = 'pcs-stage-pill';` at actions/pcs.js:213.
+   The element keeps its original id "pcs-topbar-stage" forever,
+   so getElementById always finds it and the stage label + overdue
+   badge always re-render with fresh post.stage. CSS class
+   .pcs-stage-pill is still assigned via className (line 212), so
+   styling is unchanged. Two e2e selectors in tests/e2e/pcs.spec.js
+   (TEST 4 line 152, TEST 7 line 179) updated from '#pcs-stage-pill'
+   to '#pcs-topbar-stage' to match the id that now persists.
+   508/508 unit passing. Bumped to ?v=20260410o.
 1. Post-deploy smoke test 5 timing out — wrong selector
    Location: tests/e2e/live-smoke-schedule.spec.js line 107 — test
    waited for #client-view [data-post-id], but live render/client.js
