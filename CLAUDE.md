@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410q
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410s
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2204,6 +2204,19 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    bare R2 key is passed to the Worker, and download works for
    both legacy r2.dev URLs and new images.srtd.io URLs. No other
    functions touched. 508/508 unit passing. Bumped to ?v=20260410q.
+1. Stage change does nothing when PCS is opened from Library
+   Location: actions/pcs.js changeStage() line 836 — read postId
+   from window._pcs.postId only. libOpenCard() in 09-library.js
+   opens PCS without populating window._pcs.postId, so changeStage
+   early-returned at the `if (!postId) return;` guard and the
+   confirm sheet never appeared. The hidden #pcs-post-id input is
+   set by _renderPCS on every open regardless of entry path, so a
+   DOM fallback recovers the id.
+   Status: FIXED (PR#TBD) — added a fallback to read
+   document.getElementById('pcs-post-id').value when
+   window._pcs.postId is falsy. `const postId` switched to `var`
+   so the fallback can reassign. No other function touched.
+   508/508 unit passing. Bumped to ?v=20260410s.
 
 ## SECTION 13 — STABILITY ROADMAP
 
