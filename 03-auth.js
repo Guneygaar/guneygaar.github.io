@@ -357,6 +357,7 @@ function activateRole(role) {
       window._clientDataTimer = setInterval(async function() {
         if (document.hidden) return;
         if (!localStorage.getItem('sb_access_token')) return;
+        if (window.AppState.ui.modalOpen) return;
         try {
           if (typeof loadPostsForClient === 'function') loadPostsForClient();
         } catch(err) {

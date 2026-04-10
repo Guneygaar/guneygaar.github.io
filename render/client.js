@@ -451,7 +451,7 @@ console.log('LOADED:', 'render/client.js');
         var inEl = document.getElementById('comment-input-' + postId);
         if (inEl) {
           inEl.focus();
-          var inCard = inEl.closest('[data-post-id]');
+          var inCard = inEl.closest('[data-card-id]');
           if (inCard) inCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
         break;
@@ -653,7 +653,7 @@ console.log('LOADED:', 'render/client.js');
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
-    return '<div class="post-card" data-post-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="' + opacity + '">' +
+    return '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="' + opacity + '">' +
       _cardHeaderHtml(post, pid) +
       /* caption */
       _captionHtml(post) +
@@ -1183,7 +1183,7 @@ console.log('LOADED:', 'render/client.js');
         /* -- card 3-dot menu -- */
         case 'openCardMenu':
           e.stopPropagation();
-          var cardEl = btn.closest('[data-post-id]');
+          var cardEl = btn.closest('[data-card-id]');
           var cardStage = cardEl ? cardEl.getAttribute('data-stage') : '';
           window._openClientCardMenu(btn, id, cardStage);
           break;
@@ -1235,7 +1235,7 @@ console.log('LOADED:', 'render/client.js');
               if (fcHtml) {
                 var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
                   root.querySelector('[data-engagement="' + id + '"]') ||
-                  root.querySelector('[data-post-id="' + id + '"]');
+                  root.querySelector('[data-card-id="' + id + '"]');
                 if (fcAnchor) {
                   fcAnchor.insertAdjacentHTML('afterend', fcHtml);
                   cInput = document.querySelector('#comment-input-' + id);
@@ -1680,7 +1680,7 @@ console.log('LOADED:', 'render/client.js');
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding-bottom:72px;">' +
-        '<div class="post-card" data-post-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '">' +
+        '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '">' +
           cardHtml +
         '</div>' +
       '</div>';
