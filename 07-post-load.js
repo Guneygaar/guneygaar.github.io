@@ -356,11 +356,11 @@ function startRealtime() {
   if (window.AppState.timers.realtimeTimer) return;
 
   // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
-  // Always fetches and merges even while modal is open so AppState stays fresh.
-  // scheduleRender() already defers rendering when modalOpen — no data is lost.
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     if (!localStorage.getItem('sb_access_token')) return;
+    // Skip poll while user is in a modal  -  they'll get fresh data on close
+    if (window.AppState.ui.modalOpen) return;
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
@@ -595,10 +595,10 @@ function renderAll() {
   run('updateStats',        updateStats);
   run('roleVisibility',     applyRoleVisibility);
 
-  // Active tab detection
+  // Active tab detection  -  only render the visible tab
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
 
-  // Always render dashboard widgets (lightweight stats used by both views)
+  // Tasks tab widgets (always needed when tasks visible)
   if (activeTab === 'tasks') {
     run('dashboard',          renderDashboard);
     run('dashHdr',            updateDashboardHeader);
@@ -609,11 +609,8 @@ function renderAll() {
     run('nextPost',           renderNextPost);
     run('tasks',              renderTasks);
     run('taskStageChips',     renderTaskStageChips);
-  }
-
-  // Always render pipeline so its DOM is never stale when user switches to it
-  if (typeof renderPipeline === 'function') run('pipeline', renderPipeline);
-  if (activeTab === 'pipeline' && typeof updatePipelineHeader === 'function') {
+  } else if (activeTab === 'pipeline') {
+    run('pipeline',           renderPipeline);
     run('pipelineHdr',        updatePipelineHeader);
   }
 
