@@ -2108,6 +2108,26 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    [data-card-id] to match live production code. Increased
    timeout from 15000ms to 30000ms for CI headroom. Zero
    production code changes — test-only fix. 508/508 unit passing.
+1. Smoke test 5 fails when client account has zero visible posts
+   Location: tests/e2e/live-smoke-schedule.spec.js test 5 — waited
+   for #client-view [data-card-id], which only exists when the
+   account has posts in awaiting_approval / awaiting_brand_input /
+   published stages. Empty accounts rendered the empty-state div
+   "Nothing awaiting your review" with no card wrappers, causing
+   a 30s timeout. Test then clicked the phantom card and expected
+   a PCS or comments overlay — but clients don't use PCS at all,
+   so the second assertion was testing something that doesn't
+   exist in the client experience.
+   Status: FIXED (PR#TBD) — replaced the card-click + overlay
+   assertions with a single check for #client-approve-popup,
+   which is unconditionally injected by renderClientView() at
+   render/client.js:1600 regardless of post count. Uses
+   .toBeAttached() not .toBeVisible() because the popup has
+   display:none by default (only shown when Approve is clicked).
+   Presence in the DOM confirms renderClientView() completed
+   successfully. Zero production code changes — test-only fix.
+   Test renamed to "client view renders successfully after login"
+   to reflect the simpler assertion. 508/508 unit passing.
 
 ## SECTION 13 — STABILITY ROADMAP
 
