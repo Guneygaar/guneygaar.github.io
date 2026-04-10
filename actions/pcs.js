@@ -1900,20 +1900,25 @@ window._pcsDoReplace = function(postId) {
   ta.focus();
 };
 
-window._pcsOpenLightbox = function(postId, idx) {
+window._pcsOpenLightbox = function(postId, arg2, arg3) {
+  var externalImgs = Array.isArray(arg2) ? arg2 : null;
+  var idx = externalImgs ? (arg3 || 0) : (arg2 || 0);
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  window._pcsLbImages = (post && Array.isArray(post.images)) ? post.images : [];
-  window._pcsLbIdx = idx || 0;
+  window._pcsLbImages = externalImgs
+    ? externalImgs
+    : ((post && Array.isArray(post.images)) ? post.images : []);
+  window._pcsLbIdx = idx;
+  window._pcsLbReadonly = !!externalImgs;
   _pcsLbRender();
   var lb = document.getElementById('pcs-lightbox');
   if (lb) { lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
   var actionBar = document.getElementById('pcs-lb-action-bar');
   if (actionBar) {
     var _r = (window.AppState.user.effectiveRole || '').toLowerCase();
-    var _canManageLb = _r !== 'client';
+    var _canManageLb = _r !== 'client' && !window._pcsLbReadonly;
     actionBar.style.display = _canManageLb ? 'flex' : 'none';
   }
-}
+};
 
 window._pcsLbRender = function() {
   if (window._pcsLbEditMode) {
