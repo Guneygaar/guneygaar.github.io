@@ -149,13 +149,13 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(clientView).toBeVisible({ timeout: 5000 });
 
     // Verify at least one post card appears
-    const cards = clientView.locator('[data-card-id]');
+    const cards = clientView.locator('[data-post-id]');
     await expect(cards.first()).toBeVisible({ timeout: 5000 });
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(1);
 
     // Verify no internal-stage posts are visible (scoped to cards only)
-    const internalCards = clientView.locator('[data-card-id][data-stage="in_production"], [data-card-id][data-stage="brief"], [data-card-id][data-stage="ready"]');
+    const internalCards = clientView.locator('[data-post-id][data-stage="in_production"], [data-post-id][data-stage="brief"], [data-post-id][data-stage="ready"]');
     await expect(internalCards).toHaveCount(0);
   });
 
@@ -195,8 +195,8 @@ test.describe('Client Feed Smoke Tests', () => {
   test('TEST 4 — Approve popup fires correctly', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
-    // Find first awaiting_approval card (scoped to data-card-id elements)
-    const approvalCard = page.locator('#client-view [data-card-id][data-stage="awaiting_approval"]').first();
+    // Find first awaiting_approval card (scoped to data-post-id elements)
+    const approvalCard = page.locator('#client-view [data-post-id][data-stage="awaiting_approval"]').first();
     await expect(approvalCard).toBeVisible({ timeout: 5000 });
 
     // Click Approve button
@@ -224,11 +224,11 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
     // Find first awaiting_approval card
-    const card = page.locator('#client-view [data-card-id][data-stage="awaiting_approval"]').first();
+    const card = page.locator('#client-view [data-post-id][data-stage="awaiting_approval"]').first();
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // Get post id from card
-    const postId = await card.getAttribute('data-card-id');
+    const postId = await card.getAttribute('data-post-id');
 
     // Click Comment button
     const commentBtn = card.locator('[data-action="focusComment"]');
@@ -247,7 +247,7 @@ test.describe('Client Feed Smoke Tests', () => {
   test('TEST 6 — PCS never opens for client', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
-    const card = page.locator('#client-view [data-card-id][data-stage="awaiting_approval"]').first();
+    const card = page.locator('#client-view [data-post-id][data-stage="awaiting_approval"]').first();
     await expect(card).toBeVisible({ timeout: 5000 });
 
     // Click every tappable element on a card
@@ -271,16 +271,16 @@ test.describe('Client Feed Smoke Tests', () => {
     const commentText = card.locator('div').nth(3);
     await commentText.click({ force: true });
 
-    // Verify AppState.ui.modalOpen remains false throughout
-    const modalOpen = await page.evaluate(() => window.AppState.ui.modalOpen);
-    expect(modalOpen).toBeFalsy();
+    // Verify PCS overlay specifically never opens (client overlay may open, that's correct)
+    const pcsOpen = await page.evaluate(() => window.AppState.pcs.open);
+    expect(pcsOpen).toBeFalsy();
   });
 
   test('TEST 7 — Caption truncates at 210 chars', async ({ page }) => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
     // Find the card with the long caption
-    const longCapCard = page.locator('[data-card-id="POST-CF-LONGCAP"]');
+    const longCapCard = page.locator('.post-card[data-post-id="POST-CF-LONGCAP"]');
     await expect(longCapCard).toBeVisible({ timeout: 5000 });
 
     // Verify truncated text ends with ...more
@@ -309,7 +309,7 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
 
     // Find published card (scoped to card elements)
-    const pubCard = page.locator('#client-view [data-card-id][data-stage="published"]').first();
+    const pubCard = page.locator('#client-view [data-post-id][data-stage="published"]').first();
     await expect(pubCard).toBeVisible({ timeout: 5000 });
 
     // Verify no Approve button
@@ -356,7 +356,7 @@ test.describe('Client Feed Smoke Tests', () => {
     await expect(page.locator('text=Nothing awaiting your review')).toBeVisible({ timeout: 5000 });
 
     // Verify no card elements
-    const cards = page.locator('#client-view [data-card-id]');
+    const cards = page.locator('#client-view [data-post-id]');
     await expect(cards).toHaveCount(0);
   });
 });

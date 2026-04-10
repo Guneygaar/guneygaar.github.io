@@ -598,22 +598,20 @@ function renderAll() {
   // Active tab detection
   const activeTab = document.querySelector('.tab-btn.active')?.dataset?.tab || 'tasks';
 
-  // Always render dashboard widgets (lightweight stats used by both views)
-  if (activeTab === 'tasks') {
-    run('dashboard',          renderDashboard);
-    run('dashHdr',            updateDashboardHeader);
-    run('productionMeter',    renderProductionMeter);
-    run('adminInsight',       renderAdminInsight);
-    run('taskBanner',         renderTaskBanner);
-    run('adminTaskPanel',     renderAdminTaskPanel);
-    run('nextPost',           renderNextPost);
-    run('tasks',              renderTasks);
-    run('taskStageChips',     renderTaskStageChips);
-  }
+  // Always render both dashboard AND pipeline so neither DOM goes stale
+  run('dashboard',          renderDashboard);
+  run('dashHdr',            updateDashboardHeader);
+  run('productionMeter',    renderProductionMeter);
+  run('adminInsight',       renderAdminInsight);
+  run('taskBanner',         renderTaskBanner);
+  run('adminTaskPanel',     renderAdminTaskPanel);
+  run('nextPost',           renderNextPost);
+  run('tasks',              renderTasks);
+  run('taskStageChips',     renderTaskStageChips);
 
   // Always render pipeline so its DOM is never stale when user switches to it
   if (typeof renderPipeline === 'function') run('pipeline', renderPipeline);
-  if (activeTab === 'pipeline' && typeof updatePipelineHeader === 'function') {
+  if (typeof updatePipelineHeader === 'function') {
     run('pipelineHdr',        updatePipelineHeader);
   }
 

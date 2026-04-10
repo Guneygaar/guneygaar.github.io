@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410k
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410m
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2109,8 +2109,8 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    Status: FIXED (PR#TBD) —
    (a) switchTab: pipeline tab now calls loadPosts() (or
        loadPostsForClient for client role) same as tasks tab.
-   (b) renderAll: pipeline always rendered regardless of active tab.
-       Dashboard widgets still only render when tasks tab active.
+   (b) renderAll: BOTH pipeline AND dashboard widgets always
+       rendered regardless of active tab. Neither DOM goes stale.
    (c) switchTab: safeRender() moved BEFORE panel.classList.add
        ('active') so DOM is rebuilt while panel is still hidden.
        Duplicate safeRender() at end of switchTab removed.
@@ -2127,7 +2127,49 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
        setTimeout safety net that clears _isSaving. Timer cleared
        in both success and catch paths.
    (g) index.html: added Cache-Control, Pragma, Expires meta tags.
-   508/508 unit passing. Bumped to ?v=20260410k.
+   508/508 unit passing. Bumped to ?v=20260410m.
+1. Client feed data-card-id mismatch — 3 cascading bugs
+   Location: render/client.js used data-card-id on post card wrapper
+   divs. The entire rest of the codebase (pipeline, dashboard,
+   library, notifications, _cardClickDelegate) uses data-post-id.
+   Bug 1: Smoke test 5 timeout — test correctly waited for
+   #client-view [data-post-id], cards had data-card-id → never found.
+   Bug 2: Client card body clicks dead — _cardClickDelegate at
+   07-post-load.js:2584 looked for [data-post-id], never matched
+   client cards. Users could only open posts via 3-dot menu.
+   Bug 3: Action Router click telemetry (10-ui.js:1851) looked for
+   closest('[data-post-id]') — silently logged null for all client
+   feed interactions.
+   Status: FIXED (PR#TBD) — renamed data-card-id to data-post-id in
+   render/client.js (5 locations: lines 454, 656, 1186, 1238, 1683),
+   tests/e2e/client-feed.spec.js (10 occurrences),
+   tests/e2e/client-flows.spec.js (12 occurrences). Zero data-card-id
+   references remain in the entire codebase.
+   508/508 unit passing. Bumped to ?v=20260410m.
+1. Smoke test 5 timeout too short for CI environments
+   Location: tests/e2e/live-smoke-schedule.spec.js line 108 —
+   15000ms timeout for waiting on #client-view [data-post-id].
+   Status: FIXED (PR#TBD) — increased timeout from 15000ms to
+   30000ms. CI environments and client data load (posts + requests
+   + comments) need more time.
+1. Client data poll skips fetch while modal is open
+   Location: 03-auth.js line 360 — client 15s poll had
+   window.AppState.ui.modalOpen guard. Agency poll in startRealtime
+   (07-post-load.js) already had this guard removed. Client poll
+   was inconsistent — data went stale during PCS/modal use.
+   Status: FIXED (PR#TBD) — removed modalOpen guard from client
+   data poll. loadPostsForClient() renders to #client-view which is
+   behind the modal, so rendering during modal open is harmless.
+   508/508 unit passing.
+1. updatePost _isSaving had no timeout safety net
+   Location: 08-post-actions.js updatePost() line 676 — set
+   post._isSaving = true but had no setTimeout safety net.
+   quickStage, clientApprove, _executeStageChange all had 30s
+   timers added in a previous PR, but updatePost was missed.
+   If a PATCH hung, the post was permanently frozen in AppState.
+   Status: FIXED (PR#TBD) — added 30s setTimeout safety net.
+   Timer cleared in both success and catch paths.
+   508/508 unit passing. Bumped to ?v=20260410m.
 
 ## SECTION 13 — STABILITY ROADMAP
 
