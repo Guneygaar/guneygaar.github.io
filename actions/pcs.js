@@ -833,7 +833,11 @@ window._pcsTitleEdit = function(el, postId) {
 
 // -- Unified stage change with confirmation --
 window.changeStage = function(newStage) {
-  const postId = window._pcs.postId;
+  var postId = window._pcs.postId;
+  if (!postId) {
+    var el = document.getElementById('pcs-post-id');
+    if (el) postId = el.value;
+  }
   if (!postId) return;
   if (newStage === 'published') {
     _showPublishSheet(postId);
