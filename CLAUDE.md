@@ -2097,6 +2097,17 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    mergePosts() + scheduleRender() so pipeline re-renders with
    fresh server data automatically.
    508/508 unit passing. Bumped to ?v=20260410n.
+1. Post-deploy smoke test 5 timing out — wrong selector
+   Location: tests/e2e/live-smoke-schedule.spec.js line 107 — test
+   waited for #client-view [data-post-id], but live render/client.js
+   post card wrappers use data-card-id (the inner comment <input>
+   carries data-post-id, but it only renders for awaiting_approval
+   and awaiting_brand_input stages). Test never found a card,
+   timed out at 15000ms.
+   Status: FIXED (PR#TBD) — changed smoke test selector to
+   [data-card-id] to match live production code. Increased
+   timeout from 15000ms to 30000ms for CI headroom. Zero
+   production code changes — test-only fix. 508/508 unit passing.
 
 ## SECTION 13 — STABILITY ROADMAP
 

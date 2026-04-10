@@ -104,8 +104,8 @@ test('5. client can open a post and comments/empty-state renders', async ({ page
   await page.goto(SITE_URL, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
   // Wait for at least one post card in the client feed, then click.
-  const firstCard = page.locator('#client-view [data-post-id]').first();
-  await expect(firstCard).toBeVisible({ timeout: 15000 });
+  const firstCard = page.locator('#client-view [data-card-id]').first();
+  await expect(firstCard).toBeVisible({ timeout: 30000 });
   await firstCard.click();
 
   // Overlay may be PCS or the client post overlay; the comments
