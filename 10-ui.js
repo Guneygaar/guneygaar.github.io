@@ -235,6 +235,8 @@ const _TAB_TITLES = {
   updates: 'Updates',
 };
 
+var _isFetchingPosts = false;
+
 function switchTab(btn) {
   if (typeof btn === 'string') {
     btn = document.querySelector('.tab-btn[data-tab="' + btn + '"]');
@@ -277,6 +279,11 @@ function switchTab(btn) {
     if (greetHdr) greetHdr.style.display = 'none';
     var appHdr = document.querySelector('.app-header');
     if (appHdr) appHdr.style.display = 'none';
+    // Fetch fresh data so pipeline never shows stale stages
+    if (!_isFetchingPosts && typeof loadPosts === 'function') {
+      _isFetchingPosts = true;
+      loadPosts().then(function() { _isFetchingPosts = false; }).catch(function() { _isFetchingPosts = false; });
+    }
   } else if (tab === 'tasks') {
     if (titleEl) titleEl.style.display = 'none';
     if (greetHdr) greetHdr.style.display = '';

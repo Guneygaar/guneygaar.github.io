@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410j
+Version format: ?v=YYYYMMDDx. Current: ?v=20260410n
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2084,6 +2084,19 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    #505060→#606078. Stage pill arrow opacity .4→.6. Button borders
    #323244→#3a3a4a. Primary text (#F0F0F2), body text (#B8B8C0),
    role colors unchanged. 508/508 unit passing. Bumped to ?v=20260410j.
+1. Pipeline tab shows stale stages after switching from Dashboard
+   Location: 10-ui.js switchTab() — tab === 'pipeline' branch had
+   no loadPosts() call. Tasks tab called loadPosts() on every switch
+   (line 287), but pipeline rendered from whatever stale data was
+   already in AppState.posts.all. If a stage changed in the DB while
+   the user was on Dashboard, pipeline showed the old stage until
+   the next 15s poll fired.
+   Status: FIXED (PR#TBD) — added loadPosts() call in pipeline
+   branch with _isFetchingPosts boolean guard to prevent double-
+   fetching on rapid tab spam. loadPosts() internally calls
+   mergePosts() + scheduleRender() so pipeline re-renders with
+   fresh server data automatically.
+   508/508 unit passing. Bumped to ?v=20260410n.
 
 ## SECTION 13 — STABILITY ROADMAP
 
