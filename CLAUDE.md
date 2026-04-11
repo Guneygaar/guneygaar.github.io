@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-10
+# Last updated: 2026-04-11
 
 # All facts verified from actual codebase
 
@@ -2246,6 +2246,92 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    (agency side) the comment image thumbs are now viewable in the
    lightbox as intended. 508/508 unit passing. Bumped to
    ?v=20260410s.
+1. AUDIT — _isSaving lock can persist forever if a PATCH hangs
+   Location: 08-post-actions.js — quickStage() L88, clientApprove()
+   L224, _executeStageChange() L567 (cleared in
+   _executeStageChangeAsync L598/L608), updatePost() L665. Each of
+   the 4 sites sets `post._isSaving = true` before an
+   `await apiFetch(...)` PATCH and clears it on both the success
+   path and the catch path. The lock is also honored by mergePosts
+   in 07-post-load.js:124, which skips poll-merge writes for any
+   post with _isSaving === true.
+   Failure mode: every site relies on apiFetch eventually rejecting
+   or resolving. apiFetch (05-api.js:20) is a thin wrapper around
+   fetch(); it has NO timeout, NO AbortController, NO signal. fetch()
+   itself has no built-in timeout. If the request HANGS (TCP open
+   but server never replies, iOS Safari background-tab throttle,
+   captive portal swallowing the response, mid-flight TLS stall),
+   the await never settles, neither the success-path clear nor the
+   catch-path clear runs, and post._isSaving stays true forever.
+   While true, the post is permanently frozen in the UI: every
+   subsequent stage change / field edit early-returns at the
+   `if (post._isSaving) return` guard, and mergePosts refuses to
+   overwrite the local copy from the 15s poll, so even a fresh
+   server stage will not surface. Recovery requires a full page
+   reload. Network rejections (DNS down, offline) DO reject fetch
+   normally and are handled — the gap is specifically the
+   indefinite-hang case.
+   Codebase context (no fix in this PR):
+   - AbortController: zero usage in any production .js file
+     (verified via grep across the repo). Only "abort" matches in
+     source are console.warn strings inside _saveLiUrlInline,
+     toggleTaskResolve, _pcsDoDeleteComment, _closeBrief,
+     _reopenBrief — all unrelated guards.
+   - apiFetch (05-api.js:20-68): no timeout, no signal forwarding;
+     401 path retries once via refreshSession but that retry uses
+     the same untimed fetch and would hang the same way.
+   - setStage (01-config.js:203-212): pure stage-mutation logger,
+     does not touch _isSaving. Safe to call from a timeout-driven
+     rollback path.
+   - Existing setTimeout-clears-flag reference patterns in the
+     codebase: _sendStageNotif at 08-post-actions.js:21-25 uses
+     setTimeout(fn, 5000) to null out window._lastNotifKey after
+     5s. 09-library.js:136 uses setTimeout(fn, 300) to clear a
+     local `tapped` boolean. Either pattern translates cleanly to
+     a per-post 10s safety timer that clears _isSaving and fires
+     a rollback + toast.
+   Status: FIXED (PR#TBD) — added two helpers at the top of
+   08-post-actions.js alongside _sendStageNotif:
+   _startSaveTimeout(post, postId) and _clearSaveTimeout(post).
+   _startSaveTimeout arms a 10-second setTimeout (constant
+   _SAVE_TIMEOUT_MS = 10000) that uses an identity guard
+   (if post._isSaving === true) mirroring the _lastNotifKey
+   pattern at L18-25. On fire, it sets post._isSaving = false,
+   logs console.warn('[SAVE TIMEOUT] _isSaving force-cleared
+   for', postId), calls scheduleRender(), and deletes the
+   post._saveTimer handle. The timer handle is stored on the
+   post object itself so every site has a stable reference.
+   _clearSaveTimeout reads post._saveTimer, calls clearTimeout,
+   and deletes the property. _startSaveTimeout also defensively
+   clears any stale timer on the same post before arming a new
+   one. Wired into all 4 set sites:
+   (a) quickStage L88 — _startSaveTimeout right after set,
+       _clearSaveTimeout in both success path (before L105
+       clear) and catch path (before L112 clear).
+   (b) clientApprove L224 — _startSaveTimeout right after set
+       inside the guardAction closure, _clearSaveTimeout in
+       success path (before L237 clear) and catch path (before
+       L264 clear). The guardAction key is unaffected.
+   (c) _executeStageChange L567 — _startSaveTimeout right after
+       set in the sync function, _clearSaveTimeout in
+       _executeStageChangeAsync success path (before L598
+       clear) and catch path (before L608 clear). Sync/async
+       split preserved — timer handle lives on the post object
+       so the async fn can still reach it.
+   (d) updatePost L665 — _startSaveTimeout right after set,
+       _clearSaveTimeout in the blocked-field sync early return
+       (before L685 clear), success path (before L705 clear),
+       and catch path (before L710 clear).
+   Only 08-post-actions.js touched. apiFetch (05-api.js),
+   setStage (01-config.js), and mergePosts (07-post-load.js)
+   all unchanged. No AbortController added. Normal successful
+   PATCHes (< 10s) clear the timer before it ever fires, so
+   the warning log and scheduleRender only run on a genuine
+   hang. A force-cleared post can be saved again immediately —
+   the guard at `if (post._isSaving) return` (L85, L608, L709)
+   reads the same flag the timeout just cleared, so the next
+   attempt goes through. 508/508 unit passing. Bumped to
+   ?v=20260411a.
 
 ## SECTION 13 — STABILITY ROADMAP
 
