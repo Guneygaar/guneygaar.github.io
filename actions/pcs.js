@@ -2525,8 +2525,8 @@ window.toggleTaskResolve = function(commentId, postId, isInternalNote) {
   apiFetch(_table + '?id=eq.' + commentId + '&select=resolved').then(function(rows) {
     var _isResolved = !!(rows && rows[0] && rows[0].resolved);
     var _payload = _isResolved
-      ? { resolved: false, resolved_by: null }
-      : { resolved: true, resolved_by: window.AppState.user.name || 'Admin' };
+      ? { resolved: false, resolved_by: null, resolved_at: null }
+      : { resolved: true, resolved_by: window.AppState.user.name || 'Admin', resolved_at: new Date().toISOString() };
     return apiFetch(_endpoint, {
       method: 'PATCH',
       headers: {'Prefer': 'return=minimal'},
