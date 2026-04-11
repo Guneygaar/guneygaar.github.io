@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260411q">
+ <link rel="stylesheet" href="styles.css?v=20260411f">
 
 </head>
 <body>
@@ -392,18 +392,20 @@
     <div class="notif-topbar">
       <div class="notif-topbar-row1">
         <div class="notif-role-label" id="notif-role-label">ADMIN &middot; SORTED</div>
-        <button class="notif-close-btn" data-action="close-notifications">&#x2715; CLOSE</button>
+        <div class="notif-topbar-actions">
+          <button class="notif-topbar-btn" data-action="mark-all-read">Mark read</button>
+          <span class="notif-topbar-sep">|</span>
+          <button class="notif-topbar-btn" data-action="close-notifications">Close</button>
+        </div>
       </div>
       <div class="notif-topbar-row2">
         <div class="notif-hey">Hey, <span id="notif-name">there</span></div>
-        <button class="mark-all-btn" data-action="mark-all-read">MARK ALL READ</button>
       </div>
       <div class="notif-chips" id="notif-chips">
-        <button class="notif-chip active" data-filter="all">ALL <span class="notif-chip-count" id="nchip-count-all"></span></button>
-        <button class="notif-chip nch-gold" data-filter="mentions"><span class="notif-chip-dot"></span>MENTIONS <span class="notif-chip-count" id="nchip-count-mentions"></span></button>
-        <button class="notif-chip nch-cyan" data-filter="comments"><span class="notif-chip-dot"></span>COMMENTS <span class="notif-chip-count" id="nchip-count-comments"></span></button>
-        <button class="notif-chip nch-purple" data-filter="moves"><span class="notif-chip-dot"></span>MOVES <span class="notif-chip-count" id="nchip-count-moves"></span></button>
-        <button class="notif-chip nch-green" data-filter="live"><span class="notif-chip-dot"></span>LIVE</button>
+        <button class="notif-chip active" data-filter="all">All<span class="notif-chip-count" id="nchip-count-all"></span></button>
+        <button class="notif-chip" data-filter="mentions">Mentions<span class="notif-chip-count" id="nchip-count-mentions"></span></button>
+        <button class="notif-chip" data-filter="comments">Comments<span class="notif-chip-count" id="nchip-count-comments"></span></button>
+        <button class="notif-chip" data-filter="moves">Moves<span class="notif-chip-count" id="nchip-count-moves"></span></button>
       </div>
     </div>
     <div class="notif-hdr-line"></div>
@@ -1079,27 +1081,27 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260411q"></script>
-<script src="00-appstate-compat.js?v=20260411q"></script>
-<script src="01-config.js?v=20260411q" defer></script>
-<script src="02-session.js?v=20260411q" defer></script>
-<script src="utils.js?v=20260411q" defer></script>
-<script src="03-auth.js?v=20260411q" defer></script>
-<script src="05-api.js?v=20260411q" defer></script>
-<script src="10-ui.js?v=20260411q" defer></script>
+<script src="00-appstate.js?v=20260411f"></script>
+<script src="00-appstate-compat.js?v=20260411f"></script>
+<script src="01-config.js?v=20260411f" defer></script>
+<script src="02-session.js?v=20260411f" defer></script>
+<script src="utils.js?v=20260411f" defer></script>
+<script src="03-auth.js?v=20260411f" defer></script>
+<script src="05-api.js?v=20260411f" defer></script>
+<script src="10-ui.js?v=20260411f" defer></script>
 
-<script src="06-post-create.js?v=20260411q" defer></script>
-<script defer src="render/dashboard.js?v=20260411q"></script>
-<script defer src="render/client.js?v=20260411q"></script>
-<script defer src="render/pipeline.js?v=20260411q"></script>
-<script defer src="render/brief.js?v=20260411q"></script>
-<script defer src="actions/pcs.js?v=20260411q"></script>
-<script defer src="actions/pcs-longpress.js?v=20260411q"></script>
-<script src="07-post-load.js?v=20260411q" defer></script>
-<script src="08-post-actions.js?v=20260411q" defer></script>
-<script src="09-library.js?v=20260411q" defer></script>
-<script src="09-approval.js?v=20260411q" defer></script>
-<script src="04-router.js?v=20260411q" defer></script>
+<script src="06-post-create.js?v=20260411f" defer></script>
+<script defer src="render/dashboard.js?v=20260411f"></script>
+<script defer src="render/client.js?v=20260411f"></script>
+<script defer src="render/pipeline.js?v=20260411f"></script>
+<script defer src="render/brief.js?v=20260411f"></script>
+<script defer src="actions/pcs.js?v=20260411f"></script>
+<script defer src="actions/pcs-longpress.js?v=20260411f"></script>
+<script src="07-post-load.js?v=20260411f" defer></script>
+<script src="08-post-actions.js?v=20260411f" defer></script>
+<script src="09-library.js?v=20260411f" defer></script>
+<script src="09-approval.js?v=20260411f" defer></script>
+<script src="04-router.js?v=20260411f" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

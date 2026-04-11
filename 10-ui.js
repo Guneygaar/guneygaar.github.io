@@ -453,17 +453,20 @@ async function loadNotifications() {
   }
 }
 
+// v6 design — visual-only rewrite. Data fetch, click routing, mark-read,
+// and delete paths are untouched. Structural class names + source
+// patterns preserved for unit tests (notif-item, notif-live-card,
+// nchip-count-*, grouped-comment keys, response-time snippet).
 function renderNotifications(name, role) {
   var notifs = _notifData;
   var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
-  var display = roleDisplayMap[effectiveR] || roleDisplayMap[role] || { name: name, label: role };
-  var displayName = display.name;
-  var titleRole = (role || 'Admin');
-  titleRole = titleRole.charAt(0).toUpperCase() + titleRole.slice(1).toLowerCase();
+  var titleRole = effectiveR.charAt(0).toUpperCase() + effectiveR.slice(1).toLowerCase();
   var roleLabelEl = document.getElementById('notif-role-label');
   if (roleLabelEl) roleLabelEl.textContent = titleRole.toUpperCase() + ' \xB7 SORTED';
+  // Greeting name comes ONLY from AppState.user.name — no hardcoded fallbacks.
+  var displayName = (window.AppState.user && window.AppState.user.name) || name || 'there';
   var nameEl = document.getElementById('notif-name');
-  if (nameEl) nameEl.textContent = displayName || name || 'there';
+  if (nameEl) nameEl.textContent = displayName;
 
   var posts = (window.AppState.posts && window.AppState.posts.all) || [];
   function postFor(pid) {
@@ -486,7 +489,7 @@ function renderNotifications(name, role) {
     });
   }
 
-  // Chip counts
+  // Tab counts
   var allCount     = notifs.length;
   var mentionCount = 0;
   notifs.forEach(function(n) {
@@ -497,16 +500,26 @@ function renderNotifications(name, role) {
   function _setChipCount(id, value) {
     var el = document.getElementById(id);
     if (!el) return;
-    if (value > 0) { el.textContent = value; el.style.display = ''; }
-    else { el.textContent = ''; el.style.display = 'none'; }
+    el.textContent = value > 0 ? String(value) : '';
+    el.style.display = '';
   }
   _setChipCount('nchip-count-all', allCount);
   _setChipCount('nchip-count-mentions', mentionCount);
   _setChipCount('nchip-count-comments', commentCount);
   _setChipCount('nchip-count-moves', movesCount);
 
-  // Filter
+  // Reflect active tab state on the text-tab row (v6 has no chip dots)
   var filter = _notifChipFilter || 'all';
+  var _tabsEl = document.getElementById('notif-chips');
+  if (_tabsEl) {
+    var _tabs = _tabsEl.querySelectorAll('.notif-chip');
+    for (var _ti = 0; _ti < _tabs.length; _ti++) {
+      var _tb = _tabs[_ti];
+      if ((_tb.dataset.filter || 'all') === filter) _tb.classList.add('active');
+      else _tb.classList.remove('active');
+    }
+  }
+
   var filtered = notifs.filter(function(n) { return _notifChipMatch(filter, n, mentionPostIds); });
   // Filter out System actor (noise)
   filtered = filtered.filter(function(n) {
@@ -536,23 +549,19 @@ function renderNotifications(name, role) {
     if (!commentGroupMap[key]) commentGroupMap[key] = [];
     commentGroupMap[key].push(n);
   });
-  // Flatten grouped comments back into the list, keeping the newest per group.
-  // commentGroups: array of { head: notification, count: N, groupId: key }
   var groupedList = nonCommentList.slice();
   Object.keys(commentGroupMap).forEach(function(k) {
     var arr = commentGroupMap[k];
-    // arr already ordered by fetched desc because notifs came in desc order
     arr[0]._groupCount = arr.length;
     groupedList.push(arr[0]);
   });
-  // Re-sort by created_at desc to maintain original ordering across types
   groupedList.sort(function(a, b) {
     var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
     var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
     return tb - ta;
   });
 
-  // Group by day
+  // Day grouping
   var todayStr     = new Date().toDateString();
   var yesterdayStr = new Date(Date.now() - 86400000).toDateString();
   var groups = { today: [], yesterday: [], earlier: [] };
@@ -563,9 +572,20 @@ function renderNotifications(name, role) {
     else groups.earlier.push(n);
   });
 
+  // Meta-row SVG icons (inline so color can differ per unread/read via CSS)
+  var WA_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
+    '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/>' +
+    '<path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.108-1.14l-.288-.173-2.98.78.795-2.903-.19-.3A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" fill="currentColor"/>' +
+    '</svg>';
+  var TRASH_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<polyline points="3 6 5 6 21 6"/>' +
+    '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+    '</svg>';
+
   function _buildItem(n) {
     var post = postFor(n.post_id);
-    var postThumb = post && Array.isArray(post.images) && post.images[0] ? post.images[0] : '';
+    var postHasImage = !!(post && Array.isArray(post.images) && post.images[0]);
+    var postThumb = postHasImage ? post.images[0] : '';
     var postTitle = '';
     if (post && post.title) {
       postTitle = post.title;
@@ -588,20 +608,6 @@ function renderNotifications(name, role) {
     var initial = actor ? actor.charAt(0).toUpperCase() : '?';
     var ts = _notifRelTime(n.created_at);
 
-    // Action buttons
-    var actionsHtml = '';
-    if (n.post_id) {
-      actionsHtml = '<div class="notif-actions">' +
-        '<button class="notif-action-btn nab-wa" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '">\u2197 WHATSAPP</button>' +
-        '<span class="notif-action-sep">\xB7</span>' +
-        '<button class="notif-action-btn nab-del" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '">DELETE</button>' +
-        '</div>';
-    } else {
-      actionsHtml = '<div class="notif-actions">' +
-        '<button class="notif-action-btn nab-del" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '">DELETE</button>' +
-        '</div>';
-    }
-
     // Response time for approval-resolved notifications
     var respTimeHtml = '';
     if (n.post_id && n.type === 'scheduled') {
@@ -621,45 +627,22 @@ function renderNotifications(name, role) {
       }
     }
 
-    // Live card (published)
-    if (n.type === 'published') {
-      return '<div class="notif-live-card"' +
-          ' data-notif-id="' + esc(n.id || '') + '"' +
-          ' data-post-id="' + esc(n.post_id || '') + '"' +
-          ' data-notif-type="published">' +
-          '<div class="notif-unread-dot"></div>' +
-          '<div class="notif-live-av">' + esc(initial) + '</div>' +
-          '<div class="notif-live-body">' +
-            '<div class="notif-live-tag">\u2713 POST IS LIVE</div>' +
-            '<div class="notif-live-title">' + esc(postTitle) + '</div>' +
-            '<div class="notif-live-sub">' +
-              [esc(actor), esc(ts), 'VIEW ON LINKEDIN \u2192']
-                .filter(function(s) { return s && s.length > 0; })
-                .join(' \xB7 ') +
-            '</div>' +
-            actionsHtml +
-          '</div>' +
-          '<div class="notif-thumb-wrap">' +
-            (postThumb
-              ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
-              : '<div class="notif-thumb"></div>') +
-          '</div>' +
-        '</div>';
-    }
-
     var isMention = n.type === 'comment' && n.post_id && mentionPostIds.has(n.post_id);
     var tClass = _notifTypeClass(n, isMention);
-
-    // Grouped comment copy
+    var isPublished = n.type === 'published';
     var groupCount = n._groupCount || 1;
+
+    // Action text (published has its own label above the main line)
     var actionText;
-    if (groupCount > 1) {
+    if (isPublished) {
+      actionText = 'published ' + (postTitle || 'post');
+    } else if (groupCount > 1) {
       actionText = 'left ' + groupCount + ' comments on ' + (postTitle || 'post');
     } else {
       actionText = _notifActionText(n);
     }
 
-    // Latest comment preview (only for comment notifications)
+    // Comment preview — no quotes, no italics, ellipsized in CSS
     var previewHtml = '';
     if (n.type === 'comment') {
       var latest = null;
@@ -671,40 +654,70 @@ function renderNotifications(name, role) {
         var msgPrev = latest.message.length > 80
           ? latest.message.slice(0, 80) + '...'
           : latest.message;
-        previewHtml = '<div class="notif-preview">&ldquo;' + esc(msgPrev) + '&rdquo;' +
+        previewHtml = '<div class="notif-preview">' + esc(msgPrev) +
           (groupCount > 1 ? '<span class="notif-more">+' + (groupCount - 1) + ' more</span>' : '') +
           '</div>';
       }
     }
 
+    // Meta row — time · icons · optional LinkedIn link on published
+    var linkedinHtml = '';
+    if (isPublished && post && post.linkedin_link) {
+      linkedinHtml = '<span class="notif-meta-sep">\xB7</span>' +
+        '<a class="notif-li-link" href="' + esc(post.linkedin_link) + '" target="_blank" rel="noopener"' +
+        ' onclick="event.stopPropagation();">LINKEDIN \u2192</a>';
+    }
+    var waBtn = n.post_id
+      ? '<button class="notif-mi-btn" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '" aria-label="Share on WhatsApp">' + WA_ICON + '</button>'
+      : '';
+    var delBtn = '<button class="notif-mi-btn" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '" aria-label="Delete">' + TRASH_ICON + '</button>';
+
+    var metaRow = '<div class="notif-meta">' +
+      '<span class="notif-time">' + esc(ts) + '</span>' +
+      '<span class="notif-meta-sep">\xB7</span>' +
+      waBtn +
+      delBtn +
+      linkedinHtml +
+      '</div>';
+
+    var pubLabel = isPublished
+      ? '<div class="notif-pub-label">\u2713 PUBLISHED</div>'
+      : '';
+
+    var unreadDot = n.read ? '' : '<span class="nnew-dot" aria-hidden="true"></span>';
+
+    var thumbHtml = postHasImage
+      ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
+      : '';
+
     var isBriefAttr = n.type === 'new_request' ? ' data-is-brief="1"' : '';
-    return '<div class="notif-item ' + tClass + (n.read ? ' read' : '') + '"' +
+    // notif-live-card retained as a marker class on published rows so the
+    // tap delegate still finds them via closest('.notif-item, .notif-live-card').
+    var liveMarker = isPublished ? ' notif-live-card' : '';
+
+    return '<div class="notif-item ' + tClass + liveMarker + (n.read ? ' read' : '') + '"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
       ' data-post-id="' + esc(n.post_id || '') + '"' +
       ' data-notif-type="' + esc(n.type || '') + '"' +
       isBriefAttr + '>' +
-      '<div class="notif-unread-dot"></div>' +
       '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
       '<div class="notif-body">' +
+        pubLabel +
         '<div class="notif-text">' +
+          unreadDot +
           '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
           respTimeHtml +
-          '<span class="notif-time-inline"> \xB7 ' + esc(ts) + '</span>' +
         '</div>' +
         previewHtml +
-        actionsHtml +
+        metaRow +
       '</div>' +
-      '<div class="notif-thumb-wrap">' +
-        (postThumb
-          ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
-          : '<div class="notif-thumb"></div>') +
-      '</div>' +
+      thumbHtml +
     '</div>';
   }
 
   var html = '';
   if (groups.today.length > 0) {
-    html += '<div class="notif-day-label">Today</div>';
+    html += '<div class="notif-day-label ndl-first">Today</div>';
     groups.today.forEach(function(n) { html += _buildItem(n); });
   }
   if (groups.yesterday.length > 0) {
@@ -715,6 +728,7 @@ function renderNotifications(name, role) {
     html += '<div class="notif-day-label">Earlier</div>';
     groups.earlier.forEach(function(n) { html += _buildItem(n); });
   }
+  html += '<div class="notif-foot">That\u2019s everything</div>';
   scroll.innerHTML = html;
 }
 
