@@ -553,49 +553,62 @@ console.log('LOADED:', 'render/client.js');
 
   var ICON_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" stroke-width="1.5" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
+  var _CLIENT_AVATAR_PALETTE = {
+    client:    { bg: '#FF6B8A30', fg: '#FF6B8A' },
+    servicing: { bg: '#22D3EE30', fg: '#22D3EE' },
+    admin:     { bg: '#C4A44A30', fg: '#C4A44A' },
+    creative:  { bg: '#9b87f530', fg: '#9b87f5' }
+  };
+
+  function _clientAvatarColors(role) {
+    var k = (role || '').toLowerCase();
+    return _CLIENT_AVATAR_PALETTE[k] || { bg: '#40405030', fg: '#A0A0B0' };
+  }
+
+  function _highlightClientMentions(escapedText) {
+    return escapedText.replace(/@(\w+)/g, '<span style="color:#4A9FD8;font-weight:600;">@$1</span>');
+  }
+
   function _singleCommentHtml(c) {
-    var isClient = (c.author_role || '').toLowerCase() === 'client';
-    var color = _roleColor(c.author_role);
+    var cid = _esc(c.id || '');
+    if (c.deleted) {
+      return '<div style="display:flex;gap:10px;padding:8px 14px;align-items:center;">' +
+        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#40405030;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#404050;">?</div>' +
+        '<div class="client-comment-tombstone">This message was deleted.</div>' +
+      '</div>';
+    }
+    var palette = _clientAvatarColors(c.author_role);
     var initial = (c.author || '?').charAt(0).toUpperCase();
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
-    var avatarInner = isClient
-      ? ICON_PERSON
-      : _esc(initial);
-    var avatarStyle = isClient
-      ? 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#111111;'
-      : 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + color + ';background:' + color + '1F;';
-    return '<div style="display:flex;gap:8px;padding:6px 14px;">' +
-      '<div style="' + avatarStyle + '">' + avatarInner + '</div>' +
+    var avatarStyle = 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
+    var messageHtml = _highlightClientMentions(_esc(c.message || ''));
+    return '<div style="display:flex;gap:10px;padding:10px 14px;">' +
+      '<div style="' + avatarStyle + '">' + _esc(initial) + '</div>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
-          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:12px;color:#ccc;">' + _esc(c.author) + '</span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;text-transform:uppercase;color:#8E8E93;">' + roleLabel + '</span>' +
-          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#8E8E93;">' + ts + '</span>' +
+          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(c.author) + '</span>' +
+          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
+          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;">' + ts + '</span>' +
         '</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#999;line-height:1.5;margin-top:2px;white-space:pre-wrap;">' + _esc(c.message) + '</div>' +
-        '<div class="pcs-comment-actions">' +
-        '<span class="pcs-comment-action" ' +
-          'onclick="window._clientSetReply(\'' +
-          _esc(c.id || '') + '\',\'' + _esc(c.author || '') + '\',\'' +
-          _esc(c.post_id || '') + '\')">REPLY</span>' +
-        '<span class="pcs-comment-action" ' +
-          'onclick="window._pcsCopyComment(\'' +
-          _esc(c.message || '') + '\')">COPY</span>' +
-        ((c.author === window.AppState.user.name || (window.AppState.user.effectiveRole || '').toLowerCase() === 'admin')
-          ? '<span class="pcs-comment-action" ' +
-            'onclick="window._pcsConfirmDeleteComment(\'' +
-            _esc(c.id || '') + '\',\'' + _esc(c.post_id || '') + '\')">DELETE</span>'
-          : '') +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#E0E0E8;line-height:1.55;margin-top:3px;white-space:pre-wrap;">' + messageHtml + '</div>' +
+        '<div class="client-comment-actions">' +
+          '<span class="pcs-comment-react" data-comment-id="' + cid + '" ' +
+            'onclick="window._pcsShowEmojiPicker(this)">' +
+            '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#B0B0B8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:5px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+            'Like' +
+          '</span>' +
+          '<span style="color:#505058;font-size:12px;">|</span>' +
+          '<span onclick="window._clientSetReply(\'' +
+            cid + '\',\'' + _esc(c.author || '') + '\',\'' +
+            _esc(c.post_id || '') + '\')">Reply</span>' +
         '</div>' +
       '</div>' +
     '</div>';
   }
 
   function _commentsListHtml(post) {
-    var visibleComments = (post.post_comments || []).filter(function(c) {
-      return !c.deleted;
-    });
+    var visibleComments = (post.post_comments || []);
     if (!visibleComments.length) return '';
     var pid = _esc(post.post_id || post.id || '');
     var show = visibleComments.length <= 3 ? visibleComments : visibleComments.slice(0, 3);
