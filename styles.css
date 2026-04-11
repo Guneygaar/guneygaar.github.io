@@ -5542,11 +5542,9 @@ body.client-mode .stats-bar {
   color: var(--text-secondary);
   font-family: 'DM Sans', sans-serif;
   padding: var(--space-2) var(--space-4);
-  /* Ground the bar so it doesn't float between the image and the
-     engagement bar: a visible divider below + a real min-height
-     give it actual vertical presence, and its border-bottom
-     connects directly to the .eng-bar border-top. */
-  border-bottom: 1px solid #2A2A34;
+  /* Grounded via min-height + flex centering. No border-bottom —
+     .eng-bar already draws a border-top at the same #2A2A34 tone,
+     so adding one here caused a visible double line. */
   min-height: 36px;
   display: flex;
   align-items: center;
