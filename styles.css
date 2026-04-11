@@ -5561,14 +5561,13 @@ body.client-mode .section-label {
 }
 
 body.client-mode .img-single {
-  max-height: 480px;
   width: 100%;
-  object-fit: cover;
   display: block;
 }
 
 body.client-mode .img-duo {
-  max-height: 400px;
+  width: 100%;
+  display: grid;
 }
 
 .lb-trigger-cell img {
