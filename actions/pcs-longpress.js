@@ -30,10 +30,6 @@ console.log("LOADED:", "actions/pcs-longpress.js");
     return el ? el.value : '';
   }
 
-  function _isTask(item) {
-    return item && !!item.querySelector('.pcs-task-check');
-  }
-
   function _showMenu(item) {
     // Remove existing menu
     _removeMenu();
@@ -43,7 +39,6 @@ console.log("LOADED:", "actions/pcs-longpress.js");
     var author = item.getAttribute('data-author') || '';
     var postId = _getPostId();
     var isInternalNote = zone === 'note';
-    var hasTask = _isTask(item);
     var textEl = item.querySelector('.pcs-comment-text');
     var message = textEl ? textEl.textContent : '';
 
@@ -64,11 +59,6 @@ console.log("LOADED:", "actions/pcs-longpress.js");
     menu.className = 'pcs-lp-menu';
 
     var html = '';
-
-    // Resolve task button (only for task comments)
-    if (hasTask) {
-      html += '<button class="pcs-lp-item pcs-lp-resolve" id="pcs-lp-resolve">Resolve task</button>';
-    }
 
     html += '<button class="pcs-lp-item" id="pcs-lp-copy">Copy text</button>';
     html += '<button class="pcs-lp-item" id="pcs-lp-reply">Reply</button>';
@@ -117,14 +107,6 @@ console.log("LOADED:", "actions/pcs-longpress.js");
       _removeMenu();
       if (typeof window._pcsConfirmDeleteComment === 'function') {
         window._pcsConfirmDeleteComment(commentId, postId, isInternalNote);
-      }
-    });
-
-    var resolveBtn = document.getElementById('pcs-lp-resolve');
-    if (resolveBtn) resolveBtn.addEventListener('click', function() {
-      _removeMenu();
-      if (typeof window.toggleTaskResolve === 'function') {
-        window.toggleTaskResolve(commentId, postId, isInternalNote);
       }
     });
   }

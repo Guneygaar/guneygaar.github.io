@@ -34,7 +34,7 @@ Root config files:
 ## SECTION 3 — FILE LOAD ORDER (sacred — matches index.html exactly)
 
 20 script tags + 1 stylesheet = 21 versioned resources total.
-Version format: ?v=YYYYMMDDx. Current: ?v=20260410s
+Version format: ?v=YYYYMMDDx. Current: ?v=20260411b
 
 styles.css               — all styles
 00-appstate.js           — AppState brain, NO defer, loads FIRST
@@ -2332,6 +2332,73 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    reads the same flag the timeout just cleared, so the next
    attempt goes through. 508/508 unit passing. Bumped to
    ?v=20260411a.
+1. Resolve toggle was one-way; only tasks could be resolved
+   Location: actions/pcs.js toggleTaskResolve() L2487 always
+   PATCHed { resolved: true } regardless of current state, so
+   "unresolve" was impossible. Resolve was also restricted to
+   task comments — long-press menu showed "Resolve task" only
+   when .pcs-task-check existed (pcs-longpress.js L69), and
+   the inline render code only emitted the "Resolved by"
+   label when (_isTask && c.resolved && c.resolved_by). Plain
+   comments and notes had no way to be marked resolved at all.
+   Status: FIXED (PR#TBD) —
+   (a) toggleTaskResolve now does a GET /post_comments or
+       /internal_notes ?id=eq.X&select=resolved first, branches
+       on the current value, and PATCHes either
+       { resolved:false, resolved_by:null } (unresolve) or
+       { resolved:true, resolved_by:user.name||'Admin' } (resolve).
+       All existing guards (commentId validation, post refresh
+       via loadPcsComments, error logging) preserved.
+   (b) _renderSingleClient and _renderSingleNote now wrap Reply
+       in a new .pcs-comment-actions flex row containing a new
+       .pcs-comment-resolve-btn span next to the existing
+       .pcs-comment-reply-btn (now also a span). Button label
+       is "Unresolve" when c.resolved, else "Resolve". onclick
+       calls toggleTaskResolve(c.id, postId, false) for client
+       comments and (..., true) for internal notes. Buttons are
+       NOT rendered on deleted comments (early-return branch
+       unchanged). Visibility tag rendering on notes preserved
+       intact.
+   (c) Resolved-by label guard widened from
+       (_isTask && c.resolved && c.resolved_by) to
+       (c.resolved && c.resolved_by) in both _renderSingleClient
+       and _renderSingleNote. Label HTML now prepends a
+       12x12 SVG checkmark circle (#3ECF8E stroke) before the
+       "Resolved by ..." text.
+   (d) loadPcsComments now splits clientRows into
+       activeClientRows and resolvedClientRows the same way
+       internalRows already split. Active rows render normally
+       via _renderClientThread; if resolvedClientRows.length,
+       a <details class="pcs-resolved-wrap"> accordion is
+       appended with a "↳ N Resolved Comment(s) (click to
+       expand)" summary, mirroring the existing internal-notes
+       accordion at L1389-1399. #pcs-comments-count is updated
+       to activeClientRows.length so the inline counter only
+       reflects unresolved comments; the tab badge
+       (#pcs-tab-client-count) still uses total clientRows.length.
+   (e) actions/pcs-longpress.js: removed the hasTask block that
+       rendered the "Resolve task" button (L69), removed the
+       resolveBtn click handler wiring (L123-129), removed the
+       now-unused _isTask helper. Long-press menu now only
+       shows Copy text / Reply / Delete / Cancel — Resolve has
+       moved into the visible action row on every comment.
+   (f) styles.css: .pcs-comment-actions repurposed from
+       display:none to display:flex with align-items:center,
+       gap:16px, margin-top:5px. .pcs-comment-actions
+       .pcs-comment-reply-btn margin-top reset to 0 so the
+       button no longer doubles up its existing 5px margin.
+       New .pcs-comment-resolve-btn rule mirrors
+       .pcs-comment-reply-btn exactly (IBM Plex Mono 9px
+       #8E8E93 .04em letter-spacing, no border, no padding,
+       cursor pointer). :active hover state #AEAEB2.
+   No opacity changes to resolved comments. No new
+   resolved-specific muting classes. Resolved comments simply
+   move into the accordion section and display the "Resolved
+   by" label. Tasks still render with their dotted-circle
+   .pcs-task-check checkbox; the inline Resolve button works
+   on tasks too (no conflict — both routes call
+   toggleTaskResolve via the same path).
+   508/508 unit passing. Bumped to ?v=20260411b.
 
 ## SECTION 13 — STABILITY ROADMAP
 

@@ -1131,8 +1131,9 @@ window.loadPcsComments = async function(postId) {
           }).join('') +
         '</div>';
       }
-      var _resolvedLabel = (_isTask && c.resolved && c.resolved_by)
-        ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
+      var _resolvedSvg = '<svg width="12" height="12" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:3px"><circle cx="9" cy="9" r="7" fill="none" stroke="#3ECF8E" stroke-width="1.5"/><polyline points="6,9 8.5,11.5 12.5,6.5" fill="none" stroke="#3ECF8E" stroke-width="1.5"/></svg>';
+      var _resolvedLabel = (c.resolved && c.resolved_by)
+        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
@@ -1144,6 +1145,7 @@ window.loadPcsComments = async function(postId) {
       _reactInner += _reactCount > 0
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
+      var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       return '<div class="pcs-comment-item" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
         '<div class="pcs-cmt-mid">' +
@@ -1159,10 +1161,15 @@ window.loadPcsComments = async function(postId) {
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
           _imgHtml +
           _resolvedLabel +
-          '<div class="pcs-comment-reply-btn" ' +
-            'onclick="window._pcsSetReply(\'client\',\'' +
-            esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-            _escapedMsg + '\')">Reply</div>' +
+          '<div class="pcs-comment-actions">' +
+            '<span class="pcs-comment-reply-btn" ' +
+              'onclick="window._pcsSetReply(\'client\',\'' +
+              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+              _escapedMsg + '\')">Reply</span>' +
+            '<span class="pcs-comment-resolve-btn" ' +
+              'onclick="toggleTaskResolve(\'' + esc(c.id) + '\',\'' + esc(postId) + '\',false)">' +
+              _resolveBtnLabel + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
           _reactInner +
@@ -1265,8 +1272,9 @@ window.loadPcsComments = async function(postId) {
           }).join('') +
         '</div>';
       }
-      var _resolvedLabel = (_isTask && c.resolved && c.resolved_by)
-        ? '<div class="pcs-resolved-label">Resolved by ' + esc(c.resolved_by) + '</div>'
+      var _resolvedSvg = '<svg width="12" height="12" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:3px"><circle cx="9" cy="9" r="7" fill="none" stroke="#3ECF8E" stroke-width="1.5"/><polyline points="6,9 8.5,11.5 12.5,6.5" fill="none" stroke="#3ECF8E" stroke-width="1.5"/></svg>';
+      var _resolvedLabel = (c.resolved && c.resolved_by)
+        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(c.resolved_by) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
@@ -1278,6 +1286,7 @@ window.loadPcsComments = async function(postId) {
       _reactInner += _reactCount > 0
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
+      var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       return '<div class="pcs-note-item' +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
@@ -1295,10 +1304,15 @@ window.loadPcsComments = async function(postId) {
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
           _imgHtml +
           _resolvedLabel +
-          '<div class="pcs-comment-reply-btn" ' +
-            'onclick="window._pcsSetReply(\'note\',\'' +
-            esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-            _escapedMsg + '\')">Reply</div>' +
+          '<div class="pcs-comment-actions">' +
+            '<span class="pcs-comment-reply-btn" ' +
+              'onclick="window._pcsSetReply(\'note\',\'' +
+              esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
+              _escapedMsg + '\')">Reply</span>' +
+            '<span class="pcs-comment-resolve-btn" ' +
+              'onclick="toggleTaskResolve(\'' + esc(c.id) + '\',\'' + esc(postId) + '\',true)">' +
+              _resolveBtnLabel + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
           _reactInner +
@@ -1356,11 +1370,28 @@ window.loadPcsComments = async function(postId) {
       '<div class="pcs-empty-text">No client comments yet.<br>Client and team see this thread.</div>' +
       '</div>';
 
-    list.innerHTML = _renderClientThread(clientRows, emptyClient);
+    var resolvedClientRows = clientRows.filter(function(c) { return c.resolved; });
+    var activeClientRows = clientRows.filter(function(c) { return !c.resolved; });
+
+    var clientHtml = _renderClientThread(activeClientRows, emptyClient);
+
+    if (resolvedClientRows.length) {
+      clientHtml +=
+        '<details class="pcs-resolved-wrap">' +
+        '<summary class="pcs-resolved-summary">' +
+        '\u21B3 ' + resolvedClientRows.length +
+        ' Resolved Comment' +
+        (resolvedClientRows.length > 1 ? 's' : '') +
+        ' (click to expand)</summary>' +
+        _renderClientThread(resolvedClientRows, '') +
+        '</details>';
+    }
+
+    list.innerHTML = clientHtml;
 
     var countEl = document.getElementById('pcs-comments-count');
     if (countEl) {
-      countEl.textContent = clientRows.length;
+      countEl.textContent = activeClientRows.length;
     }
 
     // Update tab count badge
@@ -2489,14 +2520,18 @@ window.toggleTaskResolve = function(commentId, postId, isInternalNote) {
     console.warn('toggleTaskResolve: missing or invalid commentId, aborting');
     return;
   }
-  var _endpoint = (isInternalNote ? '/internal_notes' : '/post_comments') + '?id=eq.' + commentId;
-  apiFetch(_endpoint, {
-    method: 'PATCH',
-    headers: {'Prefer': 'return=minimal'},
-    body: JSON.stringify({
-      resolved: true,
-      resolved_by: window.AppState.user.name || 'Admin'
-    })
+  var _table = isInternalNote ? '/internal_notes' : '/post_comments';
+  var _endpoint = _table + '?id=eq.' + commentId;
+  apiFetch(_table + '?id=eq.' + commentId + '&select=resolved').then(function(rows) {
+    var _isResolved = !!(rows && rows[0] && rows[0].resolved);
+    var _payload = _isResolved
+      ? { resolved: false, resolved_by: null }
+      : { resolved: true, resolved_by: window.AppState.user.name || 'Admin' };
+    return apiFetch(_endpoint, {
+      method: 'PATCH',
+      headers: {'Prefer': 'return=minimal'},
+      body: JSON.stringify(_payload)
+    });
   }).then(function() {
     loadPcsComments(postId);
   }).catch(function(e) {

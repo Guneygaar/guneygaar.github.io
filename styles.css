@@ -6320,7 +6320,28 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 .pcs-comment-actions {
-  display: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 5px;
+}
+
+.pcs-comment-actions .pcs-comment-reply-btn {
+  margin-top: 0;
+}
+
+.pcs-comment-resolve-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #8E8E93;
+  letter-spacing: .04em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.pcs-comment-resolve-btn:active {
+  color: #AEAEB2;
 }
 
 .pcs-comment-action {
