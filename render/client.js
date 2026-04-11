@@ -358,23 +358,27 @@ console.log('LOADED:', 'render/client.js');
   }
 
   function _statsBarHtml(post, isPublished) {
+    // 14x14 clock icon inherits currentColor from the wrapping span
+    var ICON_CLOCK_14 = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
     var left = '';
     if (isPublished) {
       var approvedDate = post.status_changed_at || post.statusChangedAt || post.updated_at || '';
-      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:#3ECF8E;font-size:11px;font-weight:600;">' +
+      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1;color:#3ECF8E;font-size:12px;font-weight:500;">' +
         ICON_CHECK + ' Approved' +
         (approvedDate ? ' &middot; ' + _esc(_fmtDate(approvedDate)) : '') +
         '</span>';
     } else {
       var days = _waitDays(post);
       var dColor = days > 2 ? '#EF4444' : '#FBBF24';
-      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:' + dColor + ';font-size:11px;font-weight:600;">' +
-        ICON_CLOCK + ' Waiting ' + days + ' day' + (days !== 1 ? 's' : '') +
+      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1;color:' + dColor + ';font-size:12px;font-weight:500;">' +
+        ICON_CLOCK_14 +
+        '<span>Waiting ' + days + ' day' + (days !== 1 ? 's' : '') + '</span>' +
         '</span>';
     }
     var count = _commentCount(post);
-    var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#B0B0B8;font-size:11px;">' +
-      ICON_COMMENT_SM + ' ' + count + '</span>';
+    var right = '<span style="display:inline-flex;align-items:center;line-height:1;color:#909098;font-size:12px;font-weight:500;">' +
+      count + ' comment' + (count === 1 ? '' : 's') +
+    '</span>';
     return '<div class="stats-bar" style="display:flex;align-items:center;justify-content:space-between;">' +
       left + right + '</div>';
   }
@@ -387,7 +391,7 @@ console.log('LOADED:', 'render/client.js');
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;' +
       'background:none;border:none;border-right:1px solid #2A2A34;' +
-      'color:#B0B0B8;font-size:11px;font-weight:500;' +
+      'color:#909098;font-size:11px;font-weight:500;' +
       'cursor:pointer;';
     var lastBtnStyle = btnStyle.replace('border-right:1px solid #2A2A34;', '');
 
@@ -857,7 +861,7 @@ console.log('LOADED:', 'render/client.js');
     return { c: '#C8A84B', bg: '#C8A84B0A', bc: '#C8A84B4D' };
   }
 
-  var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B0B0B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  var ICON_BELL_SM = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#909098" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 
   /* Smart awaiting-pill palette.
      State 1 (overdue):     red    #EF4444 / #EF444420
@@ -895,7 +899,7 @@ console.log('LOADED:', 'render/client.js');
     var clientName = _esc(window.AppState.user.name || '');
     var awaiting = (buckets.approval || []).concat(buckets.input || []);
     var pillData = _clientTopBarPill(awaiting);
-    var pillStyle = 'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;letter-spacing:0.04em;padding:3px 10px;border-radius:12px;background:' + pillData.bg + ';color:' + pillData.color + ';border:none;white-space:nowrap;';
+    var pillStyle = 'font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;padding:3px 8px;border-radius:10px;background:' + pillData.bg + ';color:' + pillData.color + ';border:none;white-space:nowrap;line-height:1.4;';
     var pill = '<span style="' + pillStyle + '">' + _esc(pillData.text) + '</span>';
 
     // Bell red dot only when unread notifications exist.
@@ -904,19 +908,19 @@ console.log('LOADED:', 'render/client.js');
       ? 'position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#EF4444;'
       : 'display:none;';
 
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px solid #2A2A34;">' +
-      '<div style="display:flex;align-items:baseline;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:12px;">' +
-        '<span style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;color:#D0D0D8;">' + _greeting() + '</span>' +
-        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:15px;color:#C4A44A;margin-left:6px;">' + clientName + '</span>' : '') +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px solid #2A2A34;">' +
+      '<div style="display:flex;align-items:center;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:12px;line-height:1.4;">' +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#B0B0B8;line-height:1.4;">' + _greeting() + '</span>' +
+        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#C4A44A;margin-left:6px;line-height:1.4;">' + clientName + '</span>' : '') +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">' +
+      '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">' +
         pill +
-        '<button data-action="open-notifications" style="position:relative;background:none;border:none;cursor:pointer;padding:4px;">' +
+        '<button data-action="open-notifications" style="position:relative;background:none;border:none;cursor:pointer;padding:2px;display:inline-flex;align-items:center;">' +
           ICON_BELL_SM +
           '<span data-bell-dot style="' + bellDotStyle + '"></span>' +
         '</button>' +
         '<div style="position:relative;">' +
-          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#909098;cursor:pointer;padding:4px;font-size:16px;">' + ICON_DOTS + '</button>' +
+          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#707078;cursor:pointer;padding:2px 4px;font-size:14px;line-height:1;display:inline-flex;align-items:center;">' + ICON_DOTS + '</button>' +
           '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px solid #2A2A34;border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px #00000099;">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
             '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #2A2A34;">Light Mode</button>' +

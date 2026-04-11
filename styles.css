@@ -5529,7 +5529,7 @@ body.client-mode .eng-btn {
 }
 
 body.client-mode .eng-btn svg {
-  stroke: #B0B0B8;
+  stroke: #909098;
 }
 
 body.client-mode .eng-btn:active {
@@ -5585,10 +5585,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* CLIENT COMMENTS SECTION */
 .client-comments-section {
-  background: #191924;
-  border: 1px solid #2A2A34;
-  box-shadow: inset 0 1px 0 #FFFFFF0A;
-  margin-bottom: 3px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 .client-section-header {
   padding: 12px 16px 10px;
