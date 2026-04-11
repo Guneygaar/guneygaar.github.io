@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-# Last updated: 2026-04-10
+# Last updated: 2026-04-11
 
 # All facts verified from actual codebase
 
@@ -2290,16 +2290,48 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
      local `tapped` boolean. Either pattern translates cleanly to
      a per-post 10s safety timer that clears _isSaving and fires
      a rollback + toast.
-   Status: AUDIT ONLY (PR#TBD) — no code changes. Fix scope for a
-   follow-up PR: add a 10s safety timeout at all 4 set sites that
-   (a) clears _isSaving, (b) rolls back the optimistic stage via
-   setStage(post, oldStage, '<site>_timeout'), (c) calls
-   scheduleRender / _renderPCS as appropriate, (d) shows
-   "Update timed out — try again" toast, and (e) is itself cleared
-   by both the success and catch paths to avoid double-rollback.
-   updatePost L665 needs the same treatment for non-stage fields
-   (rollback to oldValue at L711 instead of stage). 508/508 unit
-   passing. No version bump (audit only).
+   Status: FIXED (PR#TBD) — added two helpers at the top of
+   08-post-actions.js alongside _sendStageNotif:
+   _startSaveTimeout(post, postId) and _clearSaveTimeout(post).
+   _startSaveTimeout arms a 10-second setTimeout (constant
+   _SAVE_TIMEOUT_MS = 10000) that uses an identity guard
+   (if post._isSaving === true) mirroring the _lastNotifKey
+   pattern at L18-25. On fire, it sets post._isSaving = false,
+   logs console.warn('[SAVE TIMEOUT] _isSaving force-cleared
+   for', postId), calls scheduleRender(), and deletes the
+   post._saveTimer handle. The timer handle is stored on the
+   post object itself so every site has a stable reference.
+   _clearSaveTimeout reads post._saveTimer, calls clearTimeout,
+   and deletes the property. _startSaveTimeout also defensively
+   clears any stale timer on the same post before arming a new
+   one. Wired into all 4 set sites:
+   (a) quickStage L88 — _startSaveTimeout right after set,
+       _clearSaveTimeout in both success path (before L105
+       clear) and catch path (before L112 clear).
+   (b) clientApprove L224 — _startSaveTimeout right after set
+       inside the guardAction closure, _clearSaveTimeout in
+       success path (before L237 clear) and catch path (before
+       L264 clear). The guardAction key is unaffected.
+   (c) _executeStageChange L567 — _startSaveTimeout right after
+       set in the sync function, _clearSaveTimeout in
+       _executeStageChangeAsync success path (before L598
+       clear) and catch path (before L608 clear). Sync/async
+       split preserved — timer handle lives on the post object
+       so the async fn can still reach it.
+   (d) updatePost L665 — _startSaveTimeout right after set,
+       _clearSaveTimeout in the blocked-field sync early return
+       (before L685 clear), success path (before L705 clear),
+       and catch path (before L710 clear).
+   Only 08-post-actions.js touched. apiFetch (05-api.js),
+   setStage (01-config.js), and mergePosts (07-post-load.js)
+   all unchanged. No AbortController added. Normal successful
+   PATCHes (< 10s) clear the timer before it ever fires, so
+   the warning log and scheduleRender only run on a genuine
+   hang. A force-cleared post can be saved again immediately —
+   the guard at `if (post._isSaving) return` (L85, L608, L709)
+   reads the same flag the timeout just cleared, so the next
+   attempt goes through. 508/508 unit passing. Bumped to
+   ?v=20260411a.
 
 ## SECTION 13 — STABILITY ROADMAP
 
