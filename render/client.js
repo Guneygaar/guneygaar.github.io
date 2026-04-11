@@ -640,7 +640,7 @@ console.log('LOADED:', 'render/client.js');
         'data-author="' + _esc(c.author || '') + '" ' +
         'data-post-id="' + postId + '" ' +
         'data-message="' + _esc(c.message || '') + '" ' +
-        'onclick="window._clientShowCommentMenu(this)" ' +
+        'onclick="event.stopPropagation();window._clientShowCommentMenu(this)" ' +
         'style="margin-left:auto;cursor:pointer;display:inline-flex;align-items:center;padding:2px 4px;">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78788C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<circle cx="12" cy="5" r="1"/>' +
@@ -1067,7 +1067,8 @@ console.log('LOADED:', 'render/client.js');
   /* ---- Inline edit comment ---- */
 
   window._clientEditComment = function(commentId, currentMessage, postId) {
-    var wrap = document.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
+    var _host = document.getElementById('client-post-overlay') || document.getElementById('client-view');
+    var wrap = _host && _host.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
     if (!wrap) return;
     var msgEl = wrap.querySelector('.client-comment-body');
     if (!msgEl) return;
@@ -1232,7 +1233,8 @@ console.log('LOADED:', 'render/client.js');
             });
           });
         } catch (_) {}
-        var wrap = document.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
+        var _host = document.getElementById('client-post-overlay') || document.getElementById('client-view');
+        var wrap = _host && _host.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
         if (wrap && wrap.parentNode) {
           var tombHost = document.createElement('div');
           tombHost.innerHTML = _singleCommentHtml({ deleted: true, id: commentId });
