@@ -4114,20 +4114,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   pointer-events: none;
 }
 .notif-li-link {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   color: #0A66C2;
+  letter-spacing: 0.4px;
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-family: 'DM Mono', monospace;
 }
 .notif-li-link:hover { color: #3B8DE3; }
-/* Extra breathing room between the trash icon button and the
-   "LINKEDIN →" text inside the .meta-actions flex group. The
-   group's own gap:2px is tight and intentional for the icon pair;
-   the text link needs a bit more space to not crowd the icons. */
-.meta-actions .notif-li-link { margin-left: 4px; }
 
 /* Response time (inline pill kept for tests) */
 .notif-resp-time { color: #3ECF8E; font-size: 11px; margin-left: 4px; }
@@ -4209,12 +4204,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
    so `.notif-item.expanded` carries zero padding-bottom. */
 .notif-item.expanded {
   background: #16161F;
-  border-left: 3px solid #C8A84B4D;
+  border-left: 3px solid #C8A84B4D;    /* rgba(200,168,75,0.30) */
   border-radius: 10px;
   padding-left: 15px;   /* 18 - 3 so text still lines up */
   padding-bottom: 0;
   margin-bottom: 8px;
 }
+.notif-item.expanded:hover { background: #16161F; }
 .notif-item.expanded .notif-item-row { padding-right: 2px; }
 
 /* ── EXPAND CHIP ── */
@@ -4259,12 +4255,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-item.expanded .expand-chip-count { display: none; }
 
 /* ── THREAD DRAWER ── */
-/* Collapsed: max-height 0; opened by .notif-item.expanded. Using
-   max-height for the transition keeps the drawer cheap to animate. */
+/* Collapsed: max-height 0 + opacity 0; opened by .notif-item.expanded.
+   Using max-height + opacity keeps the transition smooth. */
 .thread-drawer {
   max-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease, margin-top 0.3s ease, padding 0.3s ease;
+  opacity: 0;
+  transition: max-height 0.3s ease, opacity 0.2s ease;
   margin: 0;
 }
 .notif-item.expanded .thread-drawer {
@@ -4272,21 +4269,21 @@ input[type="date"]::-webkit-calendar-picker-indicator {
      reply row + footer link + View-all link) without clipping, while
      still animating the collapse/expand transition. */
   max-height: 3000px;
+  opacity: 1;
   margin-top: 8px;
 }
 .thread-area {
-  background: #1C1926;              /* visible dark purple tint */
-  border: 1px solid #C8A84B1F;      /* rgba(200,168,75,0.12) gold border */
-  border-radius: 10px;
-  padding: 10px 12px 0;
+  background: #1C1926;
+  border: 1px solid #C8A84B1F;      /* rgba(200,168,75,0.12) */
+  border-radius: 8px;
+  padding: 6px 10px;
 }
 .thread-overflow {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
   color: #C8A84B;
   text-align: center;
-  padding: 4px 0 8px;
+  padding: 2px 0 4px;
+  font-weight: 500;
   cursor: pointer;
 }
 .thread-overflow:hover { color: #E4C666; }
@@ -4296,32 +4293,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── THREAD MESSAGE ── */
-/* Thread messages are deliberately smaller/tighter than notification
-   cards so the drawer reads as a nested conversation, not as more
-   notifications. 22px avatars, 11px author, 8px role pills, 12px
-   message body, 9px mono timestamp. */
+/* Ultra-compact: 18px avatars, 10px author, 7px role pill,
+   8px timestamp, 11px message body. Deliberately smaller than the
+   notification card typography so the drawer reads as a nested
+   conversation. */
 .thread-msg {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 7px 0;
-  border-bottom: 1px solid #FFFFFF0D; /* rgba(255,255,255,0.05) */
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid #FFFFFF0A; /* rgba(255,255,255,0.04) */
 }
 .thread-msg:last-of-type { border-bottom: none; }
 .thread-av {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: #000000D9;                   /* rgba(0,0,0,0.85) — dark ink on the light avatar fill */
   border: none;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .thread-av.nav-system {
   background: #666666;
@@ -4333,45 +4329,41 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .thread-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 4px;
 }
 .thread-author {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #FFFFFFCC;         /* rgba(255,255,255,0.80) */
+  color: #FFFFFFBF;                   /* rgba(255,255,255,0.75) */
 }
 .thread-role {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: #FFFFFF12;    /* rgba(255,255,255,0.07) */
-  color: #FFFFFF59;         /* rgba(255,255,255,0.35) */
+  padding: 0 4px;
+  border-radius: 2px;
+  background: #FFFFFF12;              /* rgba(255,255,255,0.07) */
+  color: #FFFFFF4D;                   /* rgba(255,255,255,0.30) */
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 .thread-time {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: #FFFFFF38;         /* rgba(255,255,255,0.22) */
+  font-size: 8px;
+  color: #FFFFFF33;                   /* rgba(255,255,255,0.20) */
   margin-left: auto;
+  font-family: 'DM Mono', monospace;
   white-space: nowrap;
 }
 .thread-message {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
-  line-height: 1.35;
-  color: #FFFFFFB3;         /* rgba(255,255,255,0.70) */
-  margin-top: 2px;
+  font-size: 11px;
+  color: #FFFFFFA6;                   /* rgba(255,255,255,0.65) */
+  line-height: 1.3;
+  margin-top: 1px;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 .thread-empty {
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   color: #FFFFFF40;
   padding: 6px 0;
   text-align: center;
@@ -4379,81 +4371,82 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── REPLY INPUT ── */
 .thread-reply {
-  margin-top: 6px;
-  padding-top: 8px;
-  padding-bottom: 10px;  /* carries the bottom edge of .thread-area */
-  /* 12% gold divider — visible separator between messages and the
-     reply row without shouting. */
-  border-top: 1px solid #C8A84B1F; /* rgba(200,168,75,0.12) */
+  border-top: 1px solid #C8A84B1A;    /* rgba(200,168,75,0.10) */
+  padding: 6px 0 4px;
+  margin-top: 4px;
 }
 .reply-row {
   display: flex;
+  gap: 6px;
   align-items: flex-end;
-  gap: 8px;
 }
 .reply-input {
   flex: 1;
-  min-height: 38px;
-  max-height: 80px;
-  padding: 9px 12px;
+  background: #FFFFFF0A;              /* rgba(255,255,255,0.04) */
+  border: 1px solid #FFFFFF14;        /* rgba(255,255,255,0.08) */
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 11px;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  line-height: 1.3;
-  color: #FFFFFFE6;         /* rgba(255,255,255,0.90) */
-  background: #FFFFFF0D;    /* rgba(255,255,255,0.05) */
-  border: 1px solid #FFFFFF14; /* rgba(255,255,255,0.08) */
-  border-radius: 8px;
-  resize: none;
+  color: #FFFFFFE6;                   /* rgba(255,255,255,0.90) */
   outline: none;
+  resize: none;
+  min-height: 32px;
+  max-height: 60px;
+  line-height: 1.3;
   -webkit-appearance: none;
   transition: border-color 0.2s ease;
   overflow-y: auto;
 }
-.reply-input::placeholder { color: #FFFFFF33; } /* rgba(255,255,255,0.20) */
-.reply-input:focus { border-color: #C8A84B66; } /* rgba(200,168,75,0.40) */
+.reply-input::placeholder { color: #FFFFFF26; } /* rgba(255,255,255,0.15) */
+.reply-input:focus { border-color: #C8A84B4D; } /* rgba(200,168,75,0.30) */
 .reply-input:disabled { opacity: 0.6; }
 .reply-send {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: none;
+  background: #FFFFFF0D;              /* rgba(255,255,255,0.05) */
+  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: #FFFFFF0F;    /* rgba(255,255,255,0.06) */
-  border: none;
-  border-radius: 8px;
-  color: #FFFFFF33;         /* rgba(255,255,255,0.20) — empty state */
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 }
+.reply-send svg {
+  width: 14px;
+  height: 14px;
+  color: #FFFFFF26;                   /* rgba(255,255,255,0.15) — empty state */
+  display: block;
+  pointer-events: none;
+}
 .reply-send.active {
-  background: #C8A84B26;    /* rgba(200,168,75,0.15) */
+  background: #C8A84B1F;              /* rgba(200,168,75,0.12) */
+}
+.reply-send.active svg {
   color: #C8A84B;
 }
 .reply-send:disabled { opacity: 0.5; cursor: default; }
-.reply-send svg { display: block; pointer-events: none; }
 .reply-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  color: #FFFFFF33;
-  margin-top: 6px;
-  letter-spacing: 0.2px;
+  font-size: 8px;
+  color: #FFFFFF1F;                   /* rgba(255,255,255,0.12) */
+  margin-top: 3px;
 }
 
 /* ── THREAD FOOTER (Open full post link) ── */
 .thread-footer {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  padding: 3px 0 2px;
 }
 .thread-open-post {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
   color: #C8A84B;
-  text-decoration: none;
+  font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
 }
 .thread-open-post:hover { color: #E4C666; }
 
