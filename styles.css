@@ -5578,6 +5578,17 @@ body.client-mode .img-duo {
   -webkit-touch-callout: none;
 }
 
+/* Backstop: every client-feed grid cell uses the PCS padding-bottom
+   box-sizing technique, and every <img> inside must be pinned
+   position:absolute;inset:0 so it cannot influence parent sizing.
+   Inline styles in _imgGridHtml already set this, but this rule
+   guards against any future drift. */
+body.client-mode .lb-trigger-cell img {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
 body.client-mode .stage-chip[data-stage="scheduled"],
 body.client-mode .stage-chip[data-stage="ready"],
 body.client-mode .stage-chip[data-stage="in_production"],
