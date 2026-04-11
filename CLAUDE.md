@@ -2246,6 +2246,60 @@ window._pcsConfirmDeleteComment, window._pcsDoDeleteComment
    (agency side) the comment image thumbs are now viewable in the
    lightbox as intended. 508/508 unit passing. Bumped to
    ?v=20260410s.
+1. AUDIT — _isSaving lock can persist forever if a PATCH hangs
+   Location: 08-post-actions.js — quickStage() L88, clientApprove()
+   L224, _executeStageChange() L567 (cleared in
+   _executeStageChangeAsync L598/L608), updatePost() L665. Each of
+   the 4 sites sets `post._isSaving = true` before an
+   `await apiFetch(...)` PATCH and clears it on both the success
+   path and the catch path. The lock is also honored by mergePosts
+   in 07-post-load.js:124, which skips poll-merge writes for any
+   post with _isSaving === true.
+   Failure mode: every site relies on apiFetch eventually rejecting
+   or resolving. apiFetch (05-api.js:20) is a thin wrapper around
+   fetch(); it has NO timeout, NO AbortController, NO signal. fetch()
+   itself has no built-in timeout. If the request HANGS (TCP open
+   but server never replies, iOS Safari background-tab throttle,
+   captive portal swallowing the response, mid-flight TLS stall),
+   the await never settles, neither the success-path clear nor the
+   catch-path clear runs, and post._isSaving stays true forever.
+   While true, the post is permanently frozen in the UI: every
+   subsequent stage change / field edit early-returns at the
+   `if (post._isSaving) return` guard, and mergePosts refuses to
+   overwrite the local copy from the 15s poll, so even a fresh
+   server stage will not surface. Recovery requires a full page
+   reload. Network rejections (DNS down, offline) DO reject fetch
+   normally and are handled — the gap is specifically the
+   indefinite-hang case.
+   Codebase context (no fix in this PR):
+   - AbortController: zero usage in any production .js file
+     (verified via grep across the repo). Only "abort" matches in
+     source are console.warn strings inside _saveLiUrlInline,
+     toggleTaskResolve, _pcsDoDeleteComment, _closeBrief,
+     _reopenBrief — all unrelated guards.
+   - apiFetch (05-api.js:20-68): no timeout, no signal forwarding;
+     401 path retries once via refreshSession but that retry uses
+     the same untimed fetch and would hang the same way.
+   - setStage (01-config.js:203-212): pure stage-mutation logger,
+     does not touch _isSaving. Safe to call from a timeout-driven
+     rollback path.
+   - Existing setTimeout-clears-flag reference patterns in the
+     codebase: _sendStageNotif at 08-post-actions.js:21-25 uses
+     setTimeout(fn, 5000) to null out window._lastNotifKey after
+     5s. 09-library.js:136 uses setTimeout(fn, 300) to clear a
+     local `tapped` boolean. Either pattern translates cleanly to
+     a per-post 10s safety timer that clears _isSaving and fires
+     a rollback + toast.
+   Status: AUDIT ONLY (PR#TBD) — no code changes. Fix scope for a
+   follow-up PR: add a 10s safety timeout at all 4 set sites that
+   (a) clears _isSaving, (b) rolls back the optimistic stage via
+   setStage(post, oldStage, '<site>_timeout'), (c) calls
+   scheduleRender / _renderPCS as appropriate, (d) shows
+   "Update timed out — try again" toast, and (e) is itself cleared
+   by both the success and catch paths to avoid double-rollback.
+   updatePost L665 needs the same treatment for non-stage fields
+   (rollback to oldValue at L711 instead of stage). 508/508 unit
+   passing. No version bump (audit only).
 
 ## SECTION 13 — STABILITY ROADMAP
 
