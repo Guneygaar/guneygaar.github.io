@@ -2767,11 +2767,21 @@ window._pcsShowEmojiPicker = function(reactEl) {
     picker.appendChild(btn);
   });
   var _rect = reactEl.getBoundingClientRect();
+  var _PICKER_W = 220; // approx: 6 btns * 32 + 5 gaps * 2 + padding + border
   picker.style.position = 'fixed';
   picker.style.top = (_rect.top - 40) + 'px';
-  picker.style.right = (window.innerWidth - _rect.right) + 'px';
   picker.style.bottom = 'auto';
-  picker.style.left = 'auto';
+  // Right-anchor by default (correct for PCS .pcs-cmt-rt column).
+  // If right-anchoring would push the picker off the left edge,
+  // switch to left-anchoring so it stays on-screen (client view
+  // Like span is left-aligned and triggers this branch).
+  if (_rect.right - _PICKER_W < 8) {
+    picker.style.left = Math.max(8, _rect.left) + 'px';
+    picker.style.right = 'auto';
+  } else {
+    picker.style.right = (window.innerWidth - _rect.right) + 'px';
+    picker.style.left = 'auto';
+  }
   document.body.appendChild(picker);
 
   // Close on outside click
