@@ -604,7 +604,7 @@ console.log('LOADED:', 'render/client.js');
       ? '<div style="position:absolute;left:17px;top:-8px;bottom:18px;width:2px;background:#404050;border-radius:1px;"></div>'
       : '';
     if (c.deleted) {
-      return '<div style="display:flex;gap:10px;padding:' + wrapperPad + ';align-items:center;position:relative;">' +
+      return '<div class="client-comment-wrap client-comment-tomb" data-comment-id="' + cid + '" style="display:flex;gap:10px;padding:' + wrapperPad + ';align-items:center;position:relative;">' +
         connectorHtml +
         '<div style="width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#40405030;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:#404050;">?</div>' +
         '<div class="client-comment-tombstone">This message was deleted.</div>' +
@@ -632,8 +632,15 @@ console.log('LOADED:', 'render/client.js');
           '\u21a9 <span style="color:#A0A0B0;font-weight:600;">' + _esc(parentAuthor) + '</span>' +
         '</div>'
       : '';
-    var dotsBtnHtml = '<span class="client-comment-dots" data-comment-id="' + cid + '" ' +
-        'onclick="if(window._clientCommentMenu){window._clientCommentMenu(this,\'' + cid + '\');}" ' +
+    var editedLabel = c.edited_at
+      ? '<span class="client-comment-edited-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#707078;font-style:italic;margin-left:6px;">(edited)</span>'
+      : '';
+    var dotsBtnHtml = '<span class="client-comment-dots" ' +
+        'data-comment-id="' + cid + '" ' +
+        'data-author="' + _esc(c.author || '') + '" ' +
+        'data-post-id="' + postId + '" ' +
+        'data-message="' + _esc(c.message || '') + '" ' +
+        'onclick="window._clientShowCommentMenu(this)" ' +
         'style="margin-left:auto;cursor:pointer;display:inline-flex;align-items:center;padding:2px 4px;">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78788C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
           '<circle cx="12" cy="5" r="1"/>' +
@@ -641,7 +648,7 @@ console.log('LOADED:', 'render/client.js');
           '<circle cx="12" cy="19" r="1"/>' +
         '</svg>' +
       '</span>';
-    return '<div style="display:flex;gap:10px;padding:' + wrapperPad + ';position:relative;">' +
+    return '<div class="client-comment-wrap" data-comment-id="' + cid + '" style="display:flex;gap:10px;padding:' + wrapperPad + ';position:relative;">' +
       connectorHtml +
       '<div style="' + avatarStyle + '">' + _esc(initial) + '</div>' +
       '<div style="flex:1;min-width:0;">' +
@@ -651,8 +658,8 @@ console.log('LOADED:', 'render/client.js');
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
           dotsBtnHtml +
         '</div>' +
-        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;margin-top:1px;">' + ts + '</div>' +
-        '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#E0E0E8;line-height:1.55;margin-top:3px;white-space:pre-wrap;">' + messageHtml + '</div>' +
+        '<div class="client-comment-time" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;margin-top:1px;">' + ts + editedLabel + '</div>' +
+        '<div class="client-comment-body" style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#E0E0E8;line-height:1.55;margin-top:3px;white-space:pre-wrap;">' + messageHtml + '</div>' +
         imgHtml +
         resolvedHtml +
         '<div class="client-comment-actions">' +
@@ -960,6 +967,287 @@ console.log('LOADED:', 'render/client.js');
       'client-reply-indicator-' + postId
     );
     if (indicator) indicator.style.display = 'none';
+  };
+
+  /* ---- 3-dot bottom sheet menu ---- */
+
+  window._clientShowCommentMenu = function(dotsEl) {
+    var existing = document.getElementById('client-comment-menu');
+    if (existing) existing.remove();
+
+    var cid = dotsEl.getAttribute('data-comment-id') || '';
+    var author = dotsEl.getAttribute('data-author') || '';
+    var postId = dotsEl.getAttribute('data-post-id') || '';
+    var message = dotsEl.getAttribute('data-message') || '';
+    var myName = (window.AppState && window.AppState.user && window.AppState.user.name) || '';
+    var isMine = author === myName;
+
+    var ICON_EDIT = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+    var ICON_COPY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+    var ICON_REPLY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>';
+    var ICON_DELETE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'client-comment-menu';
+    backdrop.style.cssText = 'position:fixed;inset:0;z-index:9800;background:#00000070;';
+
+    var sheet = document.createElement('div');
+    sheet.style.cssText = 'position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#1A1A22;border-radius:16px 16px 0 0;border:1px solid #2A2A34;border-bottom:none;';
+
+    var itemStyle = 'display:flex;width:100%;padding:16px 20px;background:none;border:none;text-align:left;font-size:15px;color:#F0F0F2;cursor:pointer;font-family:\'DM Sans\',sans-serif;align-items:center;gap:14px;';
+    var deleteStyle = 'display:flex;width:100%;padding:16px 20px;background:none;border:none;text-align:left;font-size:15px;color:#EF4444;cursor:pointer;font-family:\'DM Sans\',sans-serif;align-items:center;gap:14px;';
+    var cancelStyle = 'border-top:1px solid #2A2A34;display:block;width:100%;padding:16px 20px;text-align:center;font-size:13px;color:#808088;font-family:\'IBM Plex Mono\',monospace;font-weight:600;letter-spacing:1px;text-transform:uppercase;background:none;border-left:none;border-right:none;border-bottom:none;cursor:pointer;';
+
+    var html = '';
+    html += '<div style="height:4px;width:36px;border-radius:2px;background:#404050;margin:10px auto 6px;"></div>';
+    html += '<div style="padding:8px 20px 14px;border-bottom:1px solid #2A2A34;">' +
+      '<div style="font-size:12px;font-weight:600;color:#A0A0B0;font-family:\'DM Sans\',sans-serif;">' + _esc(author) + '</div>' +
+      '<div style="font-size:13px;color:#D0D0D8;font-family:\'DM Sans\',sans-serif;margin-top:2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + _esc(message) + '</div>' +
+    '</div>';
+    if (isMine) {
+      html += '<button type="button" data-menu-action="edit" style="' + itemStyle + '">' + ICON_EDIT + 'Edit</button>';
+    }
+    html += '<button type="button" data-menu-action="copy" style="' + itemStyle + '">' + ICON_COPY + 'Copy text</button>';
+    html += '<button type="button" data-menu-action="reply" style="' + itemStyle + '">' + ICON_REPLY + 'Reply</button>';
+    if (isMine) {
+      html += '<button type="button" data-menu-action="delete" style="' + deleteStyle + '">' + ICON_DELETE + 'Delete</button>';
+    }
+    html += '<button type="button" data-menu-action="cancel" style="' + cancelStyle + '">CANCEL</button>';
+
+    sheet.innerHTML = html;
+    backdrop.appendChild(sheet);
+    document.body.appendChild(backdrop);
+
+    function closeMenu() {
+      if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === backdrop) closeMenu();
+    });
+
+    sheet.addEventListener('click', function(e) {
+      var btn = e.target.closest && e.target.closest('button[data-menu-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-menu-action');
+      if (action === 'edit') {
+        closeMenu();
+        window._clientEditComment(cid, message, postId);
+      } else if (action === 'copy') {
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(message);
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = message;
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch(_) {}
+            document.body.removeChild(ta);
+          }
+          if (window.showToast) window.showToast('Copied', 'success');
+        } catch (err) {
+          if (window.logError) window.logError(err && err.message, err && err.stack, 'client-copy-comment');
+        }
+        closeMenu();
+      } else if (action === 'reply') {
+        closeMenu();
+        if (typeof window._clientSetReply === 'function') {
+          window._clientSetReply(cid, author, postId);
+        }
+      } else if (action === 'delete') {
+        closeMenu();
+        window._clientDeleteComment(cid, postId);
+      } else if (action === 'cancel') {
+        closeMenu();
+      }
+    });
+  };
+
+  /* ---- Inline edit comment ---- */
+
+  window._clientEditComment = function(commentId, currentMessage, postId) {
+    var wrap = document.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
+    if (!wrap) return;
+    var msgEl = wrap.querySelector('.client-comment-body');
+    if (!msgEl) return;
+    // Bail if already editing this comment
+    if (wrap.querySelector('.client-comment-edit')) return;
+
+    var originalHtml = msgEl.innerHTML;
+
+    var editContainer = document.createElement('div');
+    editContainer.className = 'client-comment-edit';
+    editContainer.style.cssText = 'margin-top:3px;';
+
+    var textarea = document.createElement('textarea');
+    textarea.value = currentMessage || '';
+    textarea.style.cssText = 'background:#111118;border:1px solid #2A2A34;border-radius:8px;width:100%;padding:10px;color:#E0E0E8;font-size:14px;font-family:\'DM Sans\',sans-serif;line-height:1.55;resize:none;outline:none;box-sizing:border-box;min-height:60px;';
+
+    function autoHeight() {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+    textarea.addEventListener('input', autoHeight);
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;margin-top:6px;';
+
+    var cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.style.cssText = 'background:none;border:1px solid #2A2A34;border-radius:6px;padding:6px 14px;color:#808088;font-size:12px;font-weight:500;cursor:pointer;font-family:\'DM Sans\',sans-serif;';
+    cancelBtn.addEventListener('click', function() {
+      msgEl.innerHTML = originalHtml;
+      msgEl.style.display = '';
+      if (editContainer.parentNode) editContainer.parentNode.removeChild(editContainer);
+    });
+
+    var saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.textContent = 'Save';
+    saveBtn.style.cssText = 'background:#C4A44A;border:none;border-radius:6px;padding:6px 14px;color:#000;font-size:12px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;';
+    saveBtn.addEventListener('click', function() {
+      var newText = (textarea.value || '').trim();
+      if (!newText) return;
+      if (newText === (currentMessage || '').trim()) {
+        // No change — revert
+        msgEl.innerHTML = originalHtml;
+        msgEl.style.display = '';
+        if (editContainer.parentNode) editContainer.parentNode.removeChild(editContainer);
+        return;
+      }
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      var nowIso = new Date().toISOString();
+      window.apiFetch('/post_comments?id=eq.' + encodeURIComponent(commentId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ message: newText, edited_at: nowIso })
+      }).then(function() {
+        // Update in-memory AppState so a subsequent re-render is consistent
+        try {
+          var posts = (window.AppState && window.AppState.posts && window.AppState.posts.all) || [];
+          posts.forEach(function(p) {
+            var pid = p.post_id || p.id;
+            if (pid !== postId || !Array.isArray(p.post_comments)) return;
+            p.post_comments = p.post_comments.map(function(cc) {
+              if (cc.id === commentId) {
+                return Object.assign({}, cc, { message: newText, edited_at: nowIso });
+              }
+              return cc;
+            });
+          });
+        } catch (_) {}
+        // Update DOM in place
+        msgEl.innerHTML = _highlightClientMentions(_esc(newText));
+        msgEl.style.display = '';
+        if (editContainer.parentNode) editContainer.parentNode.removeChild(editContainer);
+        var timeRow = wrap.querySelector('.client-comment-time');
+        if (timeRow && !timeRow.querySelector('.client-comment-edited-label')) {
+          var span = document.createElement('span');
+          span.className = 'client-comment-edited-label';
+          span.style.cssText = 'font-family:\'IBM Plex Mono\',monospace;font-size:8px;color:#707078;font-style:italic;margin-left:6px;';
+          span.textContent = '(edited)';
+          timeRow.appendChild(span);
+        }
+        if (window.showToast) window.showToast('Comment updated', 'success');
+      }).catch(function(err) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        if (window.showToast) window.showToast('Failed to save', 'error');
+        if (window.logError) window.logError(err && err.message, err && err.stack, 'client-edit-comment');
+      });
+    });
+
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(saveBtn);
+    editContainer.appendChild(textarea);
+    editContainer.appendChild(btnRow);
+
+    msgEl.style.display = 'none';
+    msgEl.parentNode.insertBefore(editContainer, msgEl.nextSibling);
+
+    setTimeout(function() {
+      autoHeight();
+      textarea.focus();
+      try { textarea.setSelectionRange(textarea.value.length, textarea.value.length); } catch (_) {}
+    }, 0);
+  };
+
+  /* ---- Delete comment (client side) ---- */
+
+  window._clientDeleteComment = function(commentId, postId) {
+    var existing = document.getElementById('client-delete-confirm');
+    if (existing) existing.remove();
+
+    var backdrop = document.createElement('div');
+    backdrop.id = 'client-delete-confirm';
+    backdrop.style.cssText = 'position:fixed;inset:0;z-index:9850;background:#00000080;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#1A1A22;border:1px solid #2A2A34;border-radius:12px;padding:24px;max-width:320px;width:100%;text-align:center;';
+    box.innerHTML =
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:16px;color:#F0F0F2;font-weight:600;margin-bottom:20px;">Delete this comment?</div>' +
+      '<div style="display:flex;gap:10px;">' +
+        '<button type="button" data-confirm-action="cancel" style="flex:1;background:none;border:1px solid #2A2A34;border-radius:8px;padding:10px;color:#B0B0B8;font-size:13px;font-weight:500;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Cancel</button>' +
+        '<button type="button" data-confirm-action="delete" style="flex:1;background:#EF4444;border:none;border-radius:8px;padding:10px;color:#FFF;font-size:13px;font-weight:600;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Delete</button>' +
+      '</div>';
+
+    backdrop.appendChild(box);
+    document.body.appendChild(backdrop);
+
+    function closeConfirm() {
+      if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+    }
+
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === backdrop) closeConfirm();
+    });
+
+    box.addEventListener('click', function(e) {
+      var btn = e.target.closest && e.target.closest('button[data-confirm-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-confirm-action');
+      if (action === 'cancel') {
+        closeConfirm();
+        return;
+      }
+      if (action !== 'delete') return;
+      btn.disabled = true;
+      btn.textContent = 'Deleting...';
+      window.apiFetch('/post_comments?id=eq.' + encodeURIComponent(commentId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ deleted: true })
+      }).then(function() {
+        try {
+          var posts = (window.AppState && window.AppState.posts && window.AppState.posts.all) || [];
+          posts.forEach(function(p) {
+            var pid = p.post_id || p.id;
+            if (pid !== postId || !Array.isArray(p.post_comments)) return;
+            p.post_comments = p.post_comments.map(function(cc) {
+              if (cc.id === commentId) return Object.assign({}, cc, { deleted: true });
+              return cc;
+            });
+          });
+        } catch (_) {}
+        var wrap = document.querySelector('.client-comment-wrap[data-comment-id="' + commentId + '"]');
+        if (wrap && wrap.parentNode) {
+          var tombHost = document.createElement('div');
+          tombHost.innerHTML = _singleCommentHtml({ deleted: true, id: commentId });
+          var tombNode = tombHost.firstChild;
+          if (tombNode) wrap.parentNode.replaceChild(tombNode, wrap);
+        }
+        closeConfirm();
+        if (window.showToast) window.showToast('Comment deleted', 'success');
+      }).catch(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Delete';
+        if (window.showToast) window.showToast('Failed to delete', 'error');
+        if (window.logError) window.logError(err && err.message, err && err.stack, 'client-delete-comment');
+      });
+    });
   };
 
   window._clientFeedPendingImgs = window._clientFeedPendingImgs || {};

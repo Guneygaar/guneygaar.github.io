@@ -30,9 +30,9 @@ Supabase: `vxokfscjzytpgdrmertk.supabase.co`. Always `apiFetch()`, never raw `fe
 
 NO `comments` column on posts. Never write to it.
 
-**post_comments** — PK id(uuid). Client-facing. Cols: post_id, author, author_role, message(text), created_at(timestamptz), visibility(text), mentioned_users(array), resolved(bool), attachments(jsonb), read(bool), resolved_by, post_title, reply_to(uuid), deleted(bool).
+**post_comments** — PK id(uuid). Client-facing. Cols: post_id, author, author_role, message(text), created_at(timestamptz), edited_at(timestamptz), visibility(text), mentioned_users(array), resolved(bool), attachments(jsonb), read(bool), resolved_by, post_title, reply_to(uuid), deleted(bool).
 
-**internal_notes** — PK id(uuid). Agency-only. Same shape as post_comments. `visibility` gates which agency roles see it.
+**internal_notes** — PK id(uuid). Agency-only. Same shape as post_comments (including `edited_at`). `visibility` gates which agency roles see it.
 
 **post_comment_reactions** — PK id(uuid). Cols: comment_id(uuid), post_id, author, author_role, emoji, created_at.
 
