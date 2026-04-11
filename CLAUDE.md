@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-11 (notification-panel-v6). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-12 (notification-thread-view). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -108,41 +108,30 @@ window.AppState = {
 - `AppState.pcs.post` is the SAME object as the row in `posts.all`. Apply server responses via `Object.assign(post, serverRow)`; do NOT replace the reference.
 
 ### _isSaving lock + 10-second safety net (08-post-actions.js)
-- Before every PATCH: set `post._isSaving = true` and call `_startSaveTimeout(post, postId)`.
-- On BOTH success and catch paths: `_clearSaveTimeout(post)` then `post._isSaving = false`.
-- If a PATCH hangs > 10s (`_SAVE_TIMEOUT_MS = 10000`) the timer force-clears `_isSaving`, logs `[SAVE TIMEOUT]`, and calls `scheduleRender()`. A force-cleared post can be saved again immediately.
-- `apiFetch` has NO timeout and NO AbortController — this timer is the only protection against indefinite hangs. Wired into `quickStage`, `clientApprove`, `_executeStageChange`/`Async`, `updatePost`.
+- Before every PATCH: `post._isSaving = true` + `_startSaveTimeout(post, postId)`. On success AND catch paths: `_clearSaveTimeout(post)` then `post._isSaving = false`.
+- If a PATCH hangs > 10s (`_SAVE_TIMEOUT_MS`) the timer force-clears the flag, logs `[SAVE TIMEOUT]`, and calls `scheduleRender()`. Force-cleared posts can be saved again immediately. `apiFetch` has no timeout — this is the only indefinite-hang guard. Wired into `quickStage`, `clientApprove`, `_executeStageChange`/`Async`, `updatePost`.
 
 ### Client 30s polling (`startClientRealtime` in 07-post-load.js)
-- Installed from `activateRole()` at 03-auth.js for every Client path; singleton via `window._clientPollTimer`. Cleared by `stopClientRealtime()`, which is called from `stopRealtime()` — so `logout()` / `_clearSessionAndLogin()` teardowns cascade automatically.
-- Interval body guards IN ORDER: `document.hidden`, `sb_access_token`, `window._isLoadingClientPosts` (in-flight), and an active-typing check (`document.activeElement` is INPUT / TEXTAREA / contentEditable). Any guard hit → return without fetching.
-- Delegates to `loadPostsForClient(true)`. The boolean `skipRenderIfUnchanged` flag makes the fetch re-render only when `_clientPostsFingerprint(posts.all) !== window._lastClientFp`. Initial load (no arg) renders unconditionally and seeds `_lastClientFp`.
-- `_clientPostsFingerprint` extends `_postsFingerprint` with per-post `post_comments.length` so new comments trigger re-render (not just stage flips).
-- `loadPostsForClient` skips overwriting `post.post_comments` for any post currently flagged `_commentSaving === true` (object-level lock set by `_handleSubmitComment` in render/client.js). This protects the optimistic comment row from poll clobber.
-- `_teardownClientTokenTimer()` in 03-auth.js clears the 50-min client token interval on logout (previously leaked across logout/login cycles).
-- `renderClientView` wires cv click listeners exactly ONCE via `cv._clientEventsWired` (render/client.js ~L2073). cv is persistent across re-renders (only innerHTML swaps), so unguarded `addEventListener` used to stack on every poll and break symmetric toggles like `_clientToggleComments`. Always guard cv-level listeners.
-- Client @mention roster is fetched live from `/user_roles?select=name,email,role` on first render, cached in `window._clientMentionRoster` via `_fetchClientMentionRoster()` (render/client.js). `_clientToggleMention` and `_handleSubmitComment`'s mention-notification loop both read from that cache — no more hardcoded roster arrays.
+- Singleton via `window._clientPollTimer`, installed from `activateRole()` (03-auth.js) and cleared by `stopClientRealtime()` (called by `stopRealtime()` → cascades on logout). `_teardownClientTokenTimer()` clears the 50-min token interval.
+- Interval guards (in order): `document.hidden`, `sb_access_token`, `window._isLoadingClientPosts`, active-typing (input/textarea/contenteditable). Any hit → return.
+- Delegates to `loadPostsForClient(true)` with `skipRenderIfUnchanged` — re-renders only when `_clientPostsFingerprint(posts.all) !== window._lastClientFp`. Fingerprint extends `_postsFingerprint` with per-post `post_comments.length`.
+- `loadPostsForClient` skips overwriting `post.post_comments` when `_commentSaving === true` — object-level lock set by `_handleSubmitComment` (render/client.js) so in-flight optimistic rows aren't clobbered.
+- `renderClientView` guards cv click listeners via `cv._clientEventsWired` (cv persists across re-renders, unguarded `addEventListener` stacks on every poll).
+- Client @mention roster fetched live from `/user_roles`, cached in `window._clientMentionRoster` via `_fetchClientMentionRoster()`.
 
 ### Render pipeline
-- `setStage(post, stage)` is a PURE logger — mutates `post.stage` and appends to activity log. It does NOT touch `_isSaving`, does NOT fire notifications, does NOT render. Safe for rollback paths.
-- `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true`, flipping `window._deferredRender = true`. `_drainDeferredRender()` fires the queued render on modal close AND drains the agency poll stash via `_drainPollStash()`.
-- `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when the fingerprint is unchanged — always mutate via `setAll` so the fingerprint changes.
-- `_renderBackgroundViews()` re-renders dashboard + pipeline + client feed without tearing down PCS — call after a successful PATCH.
-- PCS render goes through `_renderPCS()`. Do not mutate PCS DOM from other modules. `09-library.js` is the one exception (opens PCS without the router).
+- `setStage(post, stage)` is a PURE logger — mutates `post.stage`, appends activity log. Does NOT touch `_isSaving`, fire notifications, or render. Safe for rollback.
+- `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true` → `window._deferredRender = true`. `_drainDeferredRender()` fires the queued render on modal close + drains the poll stash.
+- `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when unchanged — always mutate via `setAll`. `_renderBackgroundViews()` re-renders dashboard/pipeline/client feed without tearing down PCS. PCS render goes through `_renderPCS()`; `09-library.js` is the one exception.
 
 ### Agency poll fetch-and-stash (`startRealtime` in 07-post-load.js)
-- The 15s agency poll NO LONGER skips while a modal is open. It fetches, normalises, and if the fingerprint differs, stashes the fresh array in `window._postsPollStash` (+ `window._postsPollStashFp`). Latest-wins, no queue — subsequent polls overwrite the stash.
-- `_drainPollStash()` in 07-post-load.js reads the stash, clears it, runs `mergePosts(stash)`, `scheduleRender()`, and `updateNotifBadge()`. It is a no-op when the stash is null.
-- `_drainDeferredRender()` in 10-ui.js now calls `_drainPollStash()` unconditionally after its existing safeRender debounce — so every modal-close site that drains also picks up stashed poll data.
-- Drain sites (all call `_drainDeferredRender` after setting `modalOpen = false`): `forcePCSReset` (actions/pcs.js:156), `closeAdminEdit` (08-post-actions.js:195), `closeNewPostModal` (06-post-create.js:231), `closeNotifications` (10-ui.js), `closePipelineFilter` (10-ui.js), `_lbClose` (render/client.js), client post overlay close + back-to-notifs paths (render/client.js).
-- The client 30s poll (`startClientRealtime`) still has NO stash. It uses the active-typing guard + `_clientPostsFingerprint` to avoid clobbering open inputs, and does not need a modal gate.
+- 15s agency poll fetches regardless of modal state. If fingerprint differs, stashes the array into `window._postsPollStash` (+ `_postsPollStashFp`). Latest-wins, no queue.
+- `_drainPollStash()` reads the stash, clears it, runs `mergePosts(stash)`, `scheduleRender()`, `updateNotifBadge()` — no-op when stash is null.
+- `_drainDeferredRender()` calls `_drainPollStash()` unconditionally after its safeRender debounce, so every modal-close drain site also flushes poll data. Drain sites: `forcePCSReset` (actions/pcs.js), `closeAdminEdit` / `closeNewPostModal`, `closeNotifications` / `closePipelineFilter` (10-ui.js), `_lbClose` and client post overlay close (render/client.js).
+- Client 30s poll has NO stash — active-typing guard + `_clientPostsFingerprint` are enough.
 
 ### Runtime-enriched fields (NOT in DB — added by loadPosts)
-- `_commentCount` (int), `_clientCommentAt` (ISO | null) — set after batch comment fetch.
-- `_isRequest` (true) — set on rows merged from `requests`. Brief / assign / close / reopen all branch on this to route API calls to `/requests` vs `/posts`.
-- `_isSaving` (bool) — optimistic save lock.
-- `_saveTimer` — timer handle set by `_startSaveTimeout`, deleted by `_clearSaveTimeout`.
-- `_commentSaving` (bool) — set by `_handleSubmitComment` (render/client.js) while a client comment POST is in flight; `loadPostsForClient` honours it and will not overwrite that post's `post_comments` until the insert resolves.
+- `_commentCount` (int), `_clientCommentAt` (ISO|null) — set after batch comment fetch. `_isRequest` (true) — set on rows merged from `requests`; brief/assign/close/reopen branch on this to route `/requests` vs `/posts`. `_isSaving` (bool) + `_saveTimer` — optimistic save lock. `_commentSaving` (bool) — set by `_handleSubmitComment` during an in-flight insert; `loadPostsForClient` honours it so the optimistic row isn't clobbered.
 
 ### Design system
 - Zero border-radius on inputs/buttons. NO `rgba()` — use 8-digit hex (#RRGGBBAA). Approved exceptions: `.pcs-more-ov`, `.pcs-more-l`, SVG fill at index.html:1140.
@@ -151,33 +140,19 @@ window.AppState = {
 - Use `100dvh`, never `100vh` (iOS Safari address bar).
 - Image compression: posts max 1200px q0.82, comments max 800px q0.80, save as .jpg.
 
-### Notification panel v6 (10-ui.js `renderNotifications`)
-- Visual-only rewrite. Data fetch (`loadNotifications`), badge (`updateNotifBadge`), mark-read (`markNotifRead`, `markAllNotificationsRead`), delete (`deleteNotification`), and the `openNotifications`/`closeNotifications` tap-delegate + chip-filter click handler are UNCHANGED. Do not modify them when tweaking the visual layer.
-- Header row1 is a mono role label (`effectiveRole.toUpperCase() + ' · SORTED'`) on the left and two plain-text buttons on the right: `Mark read | Close` (`.notif-topbar-btn`, pipe `.notif-topbar-sep`). No boxed buttons, no borders. `data-action="mark-all-read"` / `data-action="close-notifications"` unchanged.
-- Header row2 is a single large greeting: `Hey, <AppState.user.name>` (DM Sans 22px 700 #E8E8F0) with the name portion in gold #C8A84B. No summary lines, no counters in the header. Greeting name pulls ONLY from `AppState.user.name` — no hardcoded person map.
-- Role label text is fed from `AppState.user.effectiveRole` (title-cased → uppercased). `roleDisplayMap` is intentionally no longer read by the renderer (left in place as dead metadata).
-- Filter tabs (`.notif-chips > .notif-chip`) are plain text, not chips: 10px IBM Plex Mono, marginRight 20px, border-bottom 1px #18182A on the row, 500 #404050 inactive / 700 #E0E0EC active. Counts render in the same `nchip-count-*` spans (#333340 inactive, #C8A84B active). Tabs are: All, Mentions, Comments, Moves (Live tab dropped from UI; the `live` branch inside `_notifChipMatch` is retained so tests pass and an admin can re-enable the tab later).
-- `renderNotifications` re-applies the active class across the tab row each call — this is redundant with the chip-row click delegate but keeps the UI in sync when the filter is flipped programmatically.
-- Cards: flex row, `.notif-item` is the ONLY card class; published rows get an additional `notif-live-card` marker class so the tap delegate `closest('.notif-item, .notif-live-card')` still finds them. Background is ALWAYS transparent regardless of read state — read and unread items are visually identical, and the 5px gold dot (`.nnew-dot`) before the actor name is the ONLY unread indicator. No background swap, no opacity change, no color differences between read and unread. No left color bar, no hover swap. Border-bottom 1px #14141E.
-- Avatars (`.notif-av`): 32px solid-fill circles, white letter, no border/ring. Palette: `.nav-client` #FF4B4B, `.nav-chitra` #22D3EE, `.nav-pranav` #9b87f5, `.nav-shubham` #C8A84B, `.nav-system` #555566 (same class mapping returned by `_notifActorClass`).
-- Unread indicator is an inline `<span class="nnew-dot">` gold 5px dot rendered before the actor name (the old `.notif-unread-dot` absolute-positioned dot is gone). Read items omit the span entirely.
-- Meta row (`.notif-meta`): time · icons · optional LinkedIn link. Icons are inline SVG (WhatsApp 11×11, trash 10×10) centered inside `.notif-mi-btn` 32×32 tap targets that retain `data-action="notif-wa"` / `data-action="notif-delete"`. Buttons use negative vertical margin (`-8px 0`) so the 32px tap area doesn't inflate the meta row; the two icon buttons are separated by a 16px `margin-left` via `.notif-mi-btn + .notif-mi-btn`. SVG children are `pointer-events:none` so every click resolves to the button, which keeps `closest('.notif-mi-btn')` reliable. The panel tap delegate in `openNotifications` skips `.notif-mi-btn`, `.notif-topbar-btn`, and `.notif-li-link` so those buttons/links reach the Action Router instead of opening PCS. LinkedIn link is rendered only when the underlying post has `linkedin_link` and carries inline `onclick="event.stopPropagation()"` belt-and-braces so the surrounding item tap never fires.
-- Published cards: no bordered badge. A `.notif-pub-label` div (`✓ PUBLISHED`, 8px gold-green #3ECF8E) sits above the main text line, and `actionText` is `published <title>`. All other structure is identical to non-published items.
-- Thumbnails (`.notif-thumb`) render ONLY when the linked post has `images[0]`. No 44×44 placeholder for imageless cards; the body simply stretches. Thumbs are 44×44, border-radius 6px, object-fit cover, background #14141E.
-- Day labels (`.notif-day-label`): 8px mono 700 #333340 with 1.6px letter-spacing. Today section has a `.ndl-first` modifier with top padding 14px; Yesterday/Earlier use 18px.
-- Footer: `That's everything` centered in `.notif-foot` (8px mono #222230) — appended after the last day group.
-- The overlay shell (`#notif-overlay` + `#panel-updates`) is unchanged structurally: background `#0a0a0f`, inner panel `#0e0e16`, max-width 480px, full-height flex column. `closeNotifications()` still calls `_drainDeferredRender()`.
-- Tests: all structural class names + source patterns the static-analysis tests grep for (`notif-item`, `notif-live-card`, `nchip-count-*`, grouped-comment key `(n.post_id||'') + '|' + (n.actor||'')`, response-time `notif-resp-time` block, `Today`/`Yesterday`/`Earlier`, `"left " + n + " comments on "` template) are preserved verbatim. 508/508 unit tests still pass after the rewrite.
+### Notification panel (10-ui.js `renderNotifications`)
+- `loadNotifications`, `updateNotifBadge`, `markNotifRead`, `markAllNotificationsRead`, `deleteNotification`, `openNotifications`, `closeNotifications` stay stable — tweak visuals in `renderNotifications` / `_buildItem` only.
+- Header: mono `<effectiveRole> · SORTED` label + plain-text `Mark read | Close`; greeting row `Hey, <AppState.user.name>` (name gold). Name/role pull ONLY from `AppState.user` — no hardcoded map.
+- Tabs (`.notif-chips > .notif-chip`): text-only (All / Mentions / Comments / Moves), counts in `nchip-count-*` spans. Active class reapplied by the renderer on every pass.
+- Cards: `.notif-item` is the single card class; published rows get `notif-live-card` as a marker so the tap delegate `closest('.notif-item, .notif-live-card')` still resolves. Background always transparent — read and unread items look identical. Inline `<span class="nnew-dot">` (gold 5px) before the actor name is the ONLY unread indicator. Avatars solid-fill 32px (no border/ring). Published cards render a `.notif-pub-label` eyebrow (`✓ PUBLISHED`) above the main text line.
+- Meta row (`.notif-meta`): flex with `gap: 6px` — every child (timestamp, separator dots, expand chip, WA/trash icon buttons, LinkedIn link) sits exactly 6px apart. `.notif-mi-btn` is a 32×32 tap target around an 11×10 SVG with `-8px 0` vertical margin so the row stays compact. SVG children are `pointer-events:none`. Skip list in the panel tap delegate includes `.notif-mi-btn`, `.notif-topbar-btn`, `.notif-li-link`, and the thread-view controls below.
+- **Expand-in-place thread view** — for comment notifications with `_groupCount > 1`, `_buildItem` emits a gold `.expand-chip` inline in the meta row AND a collapsed `.thread-drawer` below the row. Tap on the card body OR the chip toggles `.notif-item.expanded`, mounts the thread HTML into the drawer, anchors scroll so the tapped card stays in place, and marks the notif as read on first expand (not on re-collapse). State is persisted across `scroll.innerHTML` rebuilds via `window._notifExpandedSet` (Set of notif IDs). Thread content is built from `window._notifComments` (now SELECT'd with `author_role,resolved,resolved_at,visibility,post_title`), filtered `post_id === n.post_id && !resolved`, sorted ASC by `created_at`; results are cached per post in `window._notifThreadCache` (cleared at the top of `loadNotifications`). The drawer contains a `.reply-input` + `.reply-send` row and an `Open full post →` footer link. Replies POST to `/post_comments` ONLY — the JS fan-out is intentionally skipped so `notify-comment` (edge) is the single writer and there are no duplicate notification rows. Reply author is always `AppState.user.name`, author_role is `effectiveRole` title-cased, so the same code path works for both agency and client users. The panel tap delegate skips `.expand-chip`, `.reply-input`, `.reply-send`, `.thread-msg`, `.thread-area`, `.thread-reply`, `.thread-footer`, `.reply-label`, and routes `.thread-open-post` clicks through `closeNotifications()` + `openPCS` / `_openClientPostOverlay`.
+- Tests: structural class names + source patterns (`notif-item`, `notif-live-card`, `nchip-count-*`, grouped key `(n.post_id||'') + '|' + (n.actor||'')`, `notif-resp-time`, day labels, `"left " + n + " comments on "`) are preserved verbatim. 508/508 unit tests still pass.
 
 ### Misc gotchas
-- `_commentInputHtml()` only renders for stages `awaiting_approval` + `awaiting_brand_input` and MUST be called inside `_cardHtml()` or the input never exists.
-- `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it.
-- Silent `.catch(()=>{})` is a bug — always `window.logError`.
-- 15-second poll interval (agency, startRealtime). 30-second poll interval (client, startClientRealtime). 50-minute token refresh.
-- Client DB role takes absolute priority over `pcs_role_preview`.
-- Deep link: `srtd.io/?open=POST_ID` → stored in `window._pendingOpenPost`, fired after loadPosts.
-- PCS document-click-close listener skips close when the active dropdown contains `input[type="date"]` (native calendar interaction).
-- `_cardClickDelegate` (07-post-load.js) guards `e.target.closest('input, textarea, button, [contenteditable="true"], a, [role="button"]')` — don't narrow the guard.
+- `_commentInputHtml()` only renders for `awaiting_approval`/`awaiting_brand_input` and MUST be called inside `_cardHtml()`. `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it. Silent `.catch(()=>{})` is a bug — always `window.logError`.
+- Polling: 15s agency (`startRealtime`), 30s client (`startClientRealtime`), 50min token refresh. Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
+- PCS document-click-close skips close when the active dropdown contains `input[type="date"]`. `_cardClickDelegate` (07-post-load.js) guards `input, textarea, button, [contenteditable="true"], a, [role="button"]` — don't narrow.
 - Image download: `_pcsLbDownload` + `_pcsSaveAllPhotos` must strip BOTH `https://images.srtd.io/` and legacy `pub-*.r2.dev` prefix before hitting the R2 worker `/download?key=`.
 
 ## 5 — AUTH AND ROLES
@@ -211,7 +186,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411g`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260412a`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
