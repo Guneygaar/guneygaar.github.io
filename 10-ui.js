@@ -130,6 +130,10 @@ function _drainDeferredRender() {
     clearTimeout(window.AppState.timers.renderTimer);
     window.AppState.timers.renderTimer = setTimeout(safeRender, 60);
   }
+  // Also drain any poll data that was stashed while a modal was open.
+  // _drainPollStash is a no-op when there is nothing stashed, so this is
+  // safe to call from every modal-close site.
+  if (typeof window._drainPollStash === 'function') window._drainPollStash();
 }
 
 // -- Undo toast --------------------------------
@@ -1637,6 +1641,7 @@ function closeNotifications() {
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
   window.AppState.ui.modalOpen = false;
+  _drainDeferredRender();
 }
 
 window.openNotifications = openNotifications;
@@ -1795,6 +1800,7 @@ function closePipelineFilter() {
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
   window.AppState.ui.modalOpen = false;
+  _drainDeferredRender();
 }
 
 window.openPipelineFilter = openPipelineFilter;

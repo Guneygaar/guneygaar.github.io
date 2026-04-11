@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-11 (client-poll). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-11 (poll-stash). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -68,7 +68,7 @@ Root:
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
 - `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed
-- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 15s poll), startClientRealtime/stopClientRealtime (client 30s poll), _postsFingerprint, _clientPostsFingerprint, _renderBackgroundViews, bottom sheets, _cardClickDelegate
+- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 15s poll with modal-open fetch-and-stash), startClientRealtime/stopClientRealtime (client 30s poll), _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
@@ -123,10 +123,17 @@ window.AppState = {
 
 ### Render pipeline
 - `setStage(post, stage)` is a PURE logger — mutates `post.stage` and appends to activity log. It does NOT touch `_isSaving`, does NOT fire notifications, does NOT render. Safe for rollback paths.
-- `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true`, queuing intent in `AppState.ui.deferredRender`. `_drainDeferredRender()` fires the queued render on PCS close.
+- `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true`, flipping `window._deferredRender = true`. `_drainDeferredRender()` fires the queued render on modal close AND drains the agency poll stash via `_drainPollStash()`.
 - `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when the fingerprint is unchanged — always mutate via `setAll` so the fingerprint changes.
 - `_renderBackgroundViews()` re-renders dashboard + pipeline + client feed without tearing down PCS — call after a successful PATCH.
 - PCS render goes through `_renderPCS()`. Do not mutate PCS DOM from other modules. `09-library.js` is the one exception (opens PCS without the router).
+
+### Agency poll fetch-and-stash (`startRealtime` in 07-post-load.js)
+- The 15s agency poll NO LONGER skips while a modal is open. It fetches, normalises, and if the fingerprint differs, stashes the fresh array in `window._postsPollStash` (+ `window._postsPollStashFp`). Latest-wins, no queue — subsequent polls overwrite the stash.
+- `_drainPollStash()` in 07-post-load.js reads the stash, clears it, runs `mergePosts(stash)`, `scheduleRender()`, and `updateNotifBadge()`. It is a no-op when the stash is null.
+- `_drainDeferredRender()` in 10-ui.js now calls `_drainPollStash()` unconditionally after its existing safeRender debounce — so every modal-close site that drains also picks up stashed poll data.
+- Drain sites (all call `_drainDeferredRender` after setting `modalOpen = false`): `forcePCSReset` (actions/pcs.js:156), `closeAdminEdit` (08-post-actions.js:195), `closeNewPostModal` (06-post-create.js:231), `closeNotifications` (10-ui.js), `closePipelineFilter` (10-ui.js), `_lbClose` (render/client.js), client post overlay close + back-to-notifs paths (render/client.js).
+- The client 30s poll (`startClientRealtime`) still has NO stash. It uses the active-typing guard + `_clientPostsFingerprint` to avoid clobbering open inputs, and does not need a modal gate.
 
 ### Runtime-enriched fields (NOT in DB — added by loadPosts)
 - `_commentCount` (int), `_clientCommentAt` (ISO | null) — set after batch comment fetch.
@@ -184,7 +191,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411c`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411d`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
