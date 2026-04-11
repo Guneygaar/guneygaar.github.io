@@ -4186,16 +4186,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .notif-item { flex-direction: column; }
 
-/* Expanded card gets a subtle gold left border + a faint gold wash
-   so you can see which card owns the open drawer at a glance. The
-   extra padding-bottom + margin-bottom keep the thread-area off the
-   next card's top edge so the drawer never visually merges with the
-   notification rows below. */
+/* Expanded card gets a 3px gold left border + a slightly lighter
+   background so it clearly stands out from its siblings, and the
+   padding-bottom + margin-bottom + thread-area margin-top keep the
+   drawer off the next card's top edge. */
 .notif-item.expanded {
-  border-left: 2px solid #C8A84B4D;
-  padding-left: 16px;
-  padding-bottom: 12px;
-  margin-bottom: 4px;
+  background: #16161F;
+  border-left: 3px solid #C8A84B4D;
+  padding-left: 15px;   /* 18 - 3 so text still lines up */
+  padding-bottom: 14px;
+  margin-bottom: 6px;
 }
 .notif-item.expanded .notif-item-row { padding-right: 2px; }
 
@@ -4250,44 +4250,58 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 0;
 }
 .notif-item.expanded .thread-drawer {
-  /* 3000px is high enough to fit any realistic thread (messages +
-     reply row + footer link) without clipping, while still keeping
-     the max-height transition smooth. `max-height: none` would break
-     the animation; the outer #notif-list-scroll container handles
-     actual overflow. */
+  /* 3000px fits any realistic thread (capped at 5 visible messages +
+     reply row + footer link + View-all link) without clipping, while
+     still animating the collapse/expand transition. */
   max-height: 3000px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 .thread-area {
-  background: #C8A84B12;    /* rgba(200,168,75,0.07) — stronger gold wash for boundary */
-  border: 1px solid #C8A84B1A; /* rgba(200,168,75,0.10) — visible containment */
-  border-radius: 8px;
-  padding: 10px;
+  background: #1E1A2A;              /* visible dark purple-gold tint */
+  border: 1px solid #C8A84B26;      /* rgba(200,168,75,0.15) gold border */
+  border-radius: 10px;
+  padding: 12px;
+  margin-top: 8px;
 }
+.thread-overflow {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #C8A84B;
+  text-align: center;
+  padding: 4px 0 8px;
+  cursor: pointer;
+}
+.thread-overflow:hover { color: #E4C666; }
 .thread-msgs {
   display: flex;
   flex-direction: column;
 }
 
 /* ── THREAD MESSAGE ── */
+/* Thread messages are deliberately smaller/tighter than notification
+   cards so the drawer reads as a nested conversation, not as more
+   notifications. Sizes drop 1-2px across the board, padding is 6px,
+   and the divider is slightly stronger (6% vs 4% white) so the
+   message boundaries are visible. */
 .thread-msg {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid #FFFFFF0A; /* rgba(255,255,255,0.04) */
+  padding: 6px 0;
+  border-bottom: 1px solid #FFFFFF0F; /* rgba(255,255,255,0.06) */
 }
-.thread-msg:last-child { border-bottom: none; }
+.thread-msg:last-of-type { border-bottom: none; }
 .thread-av {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: #FFFFFF;
   border: none;
@@ -4318,24 +4332,24 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   padding: 1px 5px;
   border-radius: 3px;
-  background: #FFFFFF0F;    /* rgba(255,255,255,0.06) */
-  color: #FFFFFF59;         /* rgba(255,255,255,0.35) */
+  background: #FFFFFF14;    /* rgba(255,255,255,0.08) */
+  color: #FFFFFF66;         /* rgba(255,255,255,0.40) */
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 .thread-time {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
-  color: #FFFFFF40;         /* rgba(255,255,255,0.25) */
+  color: #FFFFFF4D;         /* rgba(255,255,255,0.30) */
   margin-left: auto;
   white-space: nowrap;
 }
 .thread-message {
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  line-height: 1.4;
-  color: #FFFFFFCC;         /* rgba(255,255,255,0.80) */
-  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #FFFFFFBF;         /* rgba(255,255,255,0.75) */
+  margin-top: 2px;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -4349,10 +4363,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── REPLY INPUT ── */
 .thread-reply {
-  margin-top: 10px;
+  margin-top: 6px;
   padding-top: 10px;
-  /* Stronger gold divider so the reply row is visually distinct from
-     the messages above it (was #FFFFFF0A — 4% white, invisible). */
+  /* 15% gold divider — clearly visible separator between messages
+     and the reply row. */
   border-top: 1px solid #C8A84B26; /* rgba(200,168,75,0.15) */
 }
 .reply-row {
