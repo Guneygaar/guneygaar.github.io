@@ -393,8 +393,22 @@ function startRealtime() {
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     if (!localStorage.getItem('sb_access_token')) return;
-    // Skip poll while user is in a modal  -  they'll get fresh data on close
-    if (window.AppState.ui.modalOpen) return;
+    // Modal open: FETCH but STASH — keep the network flowing so a drain on
+    // modal close is instant, without mutating posts.all / re-rendering
+    // under the user's active overlay. Latest-wins (no queue).
+    if (window.AppState.ui.modalOpen) {
+      try {
+        const data = await apiFetch('/posts?select=*&order=created_at.desc');
+        const fresh = normalise(data);
+        if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
+          window._postsPollStash = fresh;
+          window._postsPollStashFp = _postsFingerprint(fresh);
+        }
+      } catch (e) {
+        console.warn('[poll] stash fetch error', e);
+      }
+      return;
+    }
     try {
       const data  = await apiFetch('/posts?select=*&order=created_at.desc');
       const fresh = normalise(data);
@@ -438,6 +452,21 @@ function stopRealtime() {
   // sessions are fully cleaned up through a single entry point.
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
 }
+
+// Drain the agency-poll stash. Called from 10-ui.js:_drainDeferredRender
+// on every modal-close path. If the 15s poll stashed a fresh normalised
+// array while a modal was open, merge it now and re-render. Latest-wins,
+// no queue — stash is cleared before mergePosts runs.
+function _drainPollStash() {
+  var stash = window._postsPollStash;
+  if (!stash) return;
+  window._postsPollStash = null;
+  window._postsPollStashFp = null;
+  mergePosts(stash);
+  scheduleRender();
+  if (typeof updateNotifBadge === 'function') updateNotifBadge();
+}
+window._drainPollStash = _drainPollStash;
 
 // 30-second background data poll for the Client role. Mirrors the
 // startRealtime() pattern but hits the client-scoped fetch (via

@@ -1763,6 +1763,7 @@ console.log('LOADED:', 'render/client.js');
     _lbIndex = 0;
     window.AppState.ui.modalOpen = false;
     document.body.style.overflow = '';
+    if (typeof _drainDeferredRender === 'function') _drainDeferredRender();
   }
 
   function _lbPrev() {
@@ -2130,6 +2131,7 @@ console.log('LOADED:', 'render/client.js');
           _self_overlay.remove();
           window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
+          if (typeof _drainDeferredRender === 'function') _drainDeferredRender();
           setTimeout(function() {
             if (typeof window.openNotifications === 'function') window.openNotifications();
           }, 150);
@@ -2145,6 +2147,7 @@ console.log('LOADED:', 'render/client.js');
           _self_overlay.remove();
           window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
+          if (typeof _drainDeferredRender === 'function') _drainDeferredRender();
         });
       }
     });
