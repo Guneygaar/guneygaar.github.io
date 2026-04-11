@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-11 (resolved-at). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-11 (notification-panel-v6). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -72,7 +72,7 @@ Root:
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
-- `10-ui.js` — toasts, notifications panel, switchTab, Action Router, click telemetry flush
+- `10-ui.js` — toasts, notifications panel (v6 redesign — see §4 “Notification panel v6”), switchTab, Action Router, click telemetry flush
 
 render/:
 - `render/dashboard.js` — dashboard, scoreboard, runway/stage sheets
@@ -151,6 +151,24 @@ window.AppState = {
 - Use `100dvh`, never `100vh` (iOS Safari address bar).
 - Image compression: posts max 1200px q0.82, comments max 800px q0.80, save as .jpg.
 
+### Notification panel v6 (10-ui.js `renderNotifications`)
+- Visual-only rewrite. Data fetch (`loadNotifications`), badge (`updateNotifBadge`), mark-read (`markNotifRead`, `markAllNotificationsRead`), delete (`deleteNotification`), and the `openNotifications`/`closeNotifications` tap-delegate + chip-filter click handler are UNCHANGED. Do not modify them when tweaking the visual layer.
+- Header row1 is a mono role label (`effectiveRole.toUpperCase() + ' · SORTED'`) on the left and two plain-text buttons on the right: `Mark read | Close` (`.notif-topbar-btn`, pipe `.notif-topbar-sep`). No boxed buttons, no borders. `data-action="mark-all-read"` / `data-action="close-notifications"` unchanged.
+- Header row2 is a single large greeting: `Hey, <AppState.user.name>` (DM Sans 22px 700 #E8E8F0) with the name portion in gold #C8A84B. No summary lines, no counters in the header. Greeting name pulls ONLY from `AppState.user.name` — no hardcoded person map.
+- Role label text is fed from `AppState.user.effectiveRole` (title-cased → uppercased). `roleDisplayMap` is intentionally no longer read by the renderer (left in place as dead metadata).
+- Filter tabs (`.notif-chips > .notif-chip`) are plain text, not chips: 10px IBM Plex Mono, marginRight 20px, border-bottom 1px #18182A on the row, 500 #404050 inactive / 700 #E0E0EC active. Counts render in the same `nchip-count-*` spans (#333340 inactive, #C8A84B active). Tabs are: All, Mentions, Comments, Moves (Live tab dropped from UI; the `live` branch inside `_notifChipMatch` is retained so tests pass and an admin can re-enable the tab later).
+- `renderNotifications` re-applies the active class across the tab row each call — this is redundant with the chip-row click delegate but keeps the UI in sync when the filter is flipped programmatically.
+- Cards: flex row, `.notif-item` is the ONLY card class; published rows get an additional `notif-live-card` marker class so the tap delegate `closest('.notif-item, .notif-live-card')` still finds them. Unread background `#141420`, read background `transparent`, no opacity change between states, no left color bar, no hover swap. Border-bottom 1px #14141E.
+- Avatars (`.notif-av`): 32px solid-fill circles, white letter, no border/ring. Palette: `.nav-client` #FF4B4B, `.nav-chitra` #22D3EE, `.nav-pranav` #9b87f5, `.nav-shubham` #C8A84B, `.nav-system` #555566 (same class mapping returned by `_notifActorClass`).
+- Unread indicator is an inline `<span class="nnew-dot">` gold 5px dot rendered before the actor name (the old `.notif-unread-dot` absolute-positioned dot is gone). Read items omit the span entirely.
+- Meta row (`.notif-meta`): time · icons · optional LinkedIn link. Icons are inline SVG (WhatsApp 11×11, trash 10×10) wrapped in `.notif-mi-btn` buttons that retain `data-action="notif-wa"` / `data-action="notif-delete"`. Icon color drives from `currentColor` so `.notif-item.read .notif-mi-btn` flips them to #2A2A36 without touching markup. LinkedIn link is rendered only when the underlying post has `linkedin_link` and carries inline `onclick="event.stopPropagation()"` so the surrounding item tap still fires mark-read but the browser navigates to LinkedIn.
+- Published cards: no bordered badge. A `.notif-pub-label` div (`✓ PUBLISHED`, 8px gold-green #3ECF8E) sits above the main text line, and `actionText` is `published <title>`. All other structure is identical to non-published items.
+- Thumbnails (`.notif-thumb`) render ONLY when the linked post has `images[0]`. No 44×44 placeholder for imageless cards; the body simply stretches. Thumbs are 44×44, border-radius 6px, object-fit cover, background #14141E.
+- Day labels (`.notif-day-label`): 8px mono 700 #333340 with 1.6px letter-spacing. Today section has a `.ndl-first` modifier with top padding 14px; Yesterday/Earlier use 18px.
+- Footer: `That's everything` centered in `.notif-foot` (8px mono #222230) — appended after the last day group.
+- The overlay shell (`#notif-overlay` + `#panel-updates`) is unchanged structurally: background `#0a0a0f`, inner panel `#0e0e16`, max-width 480px, full-height flex column. `closeNotifications()` still calls `_drainDeferredRender()`.
+- Tests: all structural class names + source patterns the static-analysis tests grep for (`notif-item`, `notif-live-card`, `nchip-count-*`, grouped-comment key `(n.post_id||'') + '|' + (n.actor||'')`, response-time `notif-resp-time` block, `Today`/`Yesterday`/`Earlier`, `"left " + n + " comments on "` template) are preserved verbatim. 508/508 unit tests still pass after the rewrite.
+
 ### Misc gotchas
 - `_commentInputHtml()` only renders for stages `awaiting_approval` + `awaiting_brand_input` and MUST be called inside `_cardHtml()` or the input never exists.
 - `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it.
@@ -193,7 +211,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411q`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411f`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
