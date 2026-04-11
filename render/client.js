@@ -233,7 +233,7 @@ console.log('LOADED:', 'render/client.js');
 
     var imgsJson = _esc(JSON.stringify(imgs));
     var wrap = function (src, idx, css, overlay) {
-      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;">' +
+      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;border-radius:0;">' +
         '<img src="' + _esc(src) + '"' +
         ' data-action="openLightbox"' +
         ' data-images=\'' + imgsJson + '\'' +
@@ -244,38 +244,46 @@ console.log('LOADED:', 'render/client.js');
         (overlay || '') + '</div>';
     };
 
+    /* +N overlay (PCS-style: big number + small "more" label). Used by 4+ case. */
+    var _overlayHtml = function (extra) {
+      return '<div class="client-img-overlay" style="position:absolute;inset:0;background:rgba(8,8,8,0.72);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;pointer-events:none;">' +
+        '<div style="font-size:22px;font-weight:700;color:#ffffff;line-height:1;">+' + extra + '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:rgba(255,255,255,0.5);letter-spacing:0.14em;text-transform:uppercase;">more</div>' +
+        '</div>';
+    };
+
     if (n === 1) {
-      return '<div class="img-single" style="padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
-        wrap(imgs[0], 0, 'aspect-ratio:4/3;border-radius:8px;') +
+      return '<div class="img-single" style="padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
+        wrap(imgs[0], 0, 'aspect-ratio:1/1;') +
         '</div>';
     }
 
     if (n === 2) {
-      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;user-select:none;-webkit-user-select:none;">' +
-        wrap(imgs[0], 0, 'aspect-ratio:1/1;border-radius:8px 0 0 8px;') +
-        wrap(imgs[1], 1, 'aspect-ratio:1/1;border-radius:0 8px 8px 0;') +
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
+        wrap(imgs[0], 0, 'aspect-ratio:1/1;') +
+        wrap(imgs[1], 1, 'aspect-ratio:1/1;') +
         '</div>';
     }
 
-    if (n === 3) {
-      return '<div class="img-trio" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;aspect-ratio:5/3;user-select:none;-webkit-user-select:none;">' +
-        wrap(imgs[0], 0, 'grid-row:1/3;border-radius:8px 0 0 8px;') +
-        wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
-        wrap(imgs[2], 2, 'border-radius:0 0 8px 0;') +
-        '</div>';
-    }
-
-    /* 4+ : 2x2 grid with +N overlay on last cell */
-    var extra = n > 4 ? n - 4 : 0;
-    var overlayHtml = extra > 0
-      ? '<div style="position:absolute;inset:0;background:rgba(8,8,8,0.72);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;font-family:\'DM Sans\',sans-serif;font-size:20px;font-weight:700;color:#fff;pointer-events:none;">+' + extra + '</div>'
-      : '';
-    return '<div class="img-quad" style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:0 14px;margin-top:10px;aspect-ratio:1/1;user-select:none;-webkit-user-select:none;">' +
-      wrap(imgs[0], 0, 'border-radius:8px 0 0 0;') +
-      wrap(imgs[1], 1, 'border-radius:0 8px 0 0;') +
-      wrap(imgs[2], 2, 'border-radius:0 0 0 8px;') +
-      wrap(imgs[3] || imgs[2], 3, 'border-radius:0 0 8px 0;', overlayHtml) +
+    /* 3 and 4+ share the same hero+stack flex layout (PCS .pcs-pg-3 / .pcs-pg-3plus parity).
+       4+ adds a +N overlay on cell 2. */
+    if (n >= 3) {
+      var extra = n - 3;
+      var overlay = extra > 0 ? _overlayHtml(extra) : '';
+      return '<div class="img-trio" style="display:flex;gap:2px;padding:0;margin:0;aspect-ratio:5/3;user-select:none;-webkit-user-select:none;">' +
+        '<div style="flex:0 0 calc(60% - 1px);position:relative;overflow:hidden;">' +
+          wrap(imgs[0], 0, '') +
+        '</div>' +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:2px;">' +
+          '<div style="flex:1;position:relative;overflow:hidden;">' +
+            wrap(imgs[1], 1, '') +
+          '</div>' +
+          '<div style="flex:1;position:relative;overflow:hidden;">' +
+            wrap(imgs[2], 2, '', overlay) +
+          '</div>' +
+        '</div>' +
       '</div>';
+    }
   }
 
   /* ---- metadata rows ---- */
