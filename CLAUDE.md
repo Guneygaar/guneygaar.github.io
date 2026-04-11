@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-11 (poll-stash). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-11 (resolved-at). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -30,9 +30,9 @@ Supabase: `vxokfscjzytpgdrmertk.supabase.co`. Always `apiFetch()`, never raw `fe
 
 NO `comments` column on posts. Never write to it.
 
-**post_comments** — PK id(uuid). Client-facing. Cols: post_id, author, author_role, message(text), created_at(timestamptz), edited_at(timestamptz), visibility(text), mentioned_users(array), resolved(bool), attachments(jsonb), read(bool), resolved_by, post_title, reply_to(uuid), deleted(bool).
+**post_comments** — PK id(uuid). Client-facing. Cols: post_id, author, author_role, message(text), created_at(timestamptz), edited_at(timestamptz), visibility(text), mentioned_users(array), resolved(bool), resolved_at(timestamptz), attachments(jsonb), read(bool), resolved_by, post_title, reply_to(uuid), deleted(bool).
 
-**internal_notes** — PK id(uuid). Agency-only. Same shape as post_comments (including `edited_at`). `visibility` gates which agency roles see it.
+**internal_notes** — PK id(uuid). Agency-only. Same shape as post_comments (including `edited_at` + `resolved_at`). `visibility` gates which agency roles see it.
 
 **post_comment_reactions** — PK id(uuid). Cols: comment_id(uuid), post_id, author, author_role, emoji, created_at.
 
@@ -81,7 +81,7 @@ render/:
 - `render/brief.js` — brief sheet, dynamic assign dropdown, reassign
 
 actions/:
-- `actions/pcs.js` — Post Card System full-page overlay
+- `actions/pcs.js` — Post Card System full-page overlay. `toggleTaskResolve` writes/clears `resolved_at` timestamp alongside `resolved` + `resolved_by` on post_comments/internal_notes PATCH.
 - `actions/pcs-longpress.js` — long-press bottom sheet for PCS comments (wraps openPCS)
 
 Other: `index.html`, `styles.css`, `r2-upload-worker.js`, `wrangler.toml`, `package.json`, `vitest.config.js`, `playwright.config.js`, `rollback.sql`, `sql/`, `preview/`, `sorted-preview-worker/`, `mockups/`.
@@ -193,7 +193,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411g`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411q`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
