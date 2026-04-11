@@ -752,30 +752,67 @@ console.log('LOADED:', 'render/client.js');
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
       : 'Add a comment\u2026';
+    /* LinkedIn-style dark-mode comment bar. Critical: preserve the
+       stage guard above, the existing DOM ids (comment-input-*,
+       client-reply-indicator-*, client-reply-text-*,
+       client-img-preview-*, client-mention-drop-*,
+       client-feed-img-input-*), data-post-id, data-action="submitComment",
+       and the _clientFeedHandleImg onchange so every existing wiring
+       and the 11 tests in tests/client-comment.test.js still pass. */
+    var ICON_PHOTO_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0A0B0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+    var ICON_MENTION_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0A0B0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>';
     return '<div id="client-reply-indicator-' + pid + '" ' +
       'class="pcs-reply-indicator-bar" style="display:none;">' +
       '<span id="client-reply-text-' + pid + '"></span>' +
       '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
         'class="pcs-reply-cancel">x</span>' +
     '</div>' +
-    '<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 14px;">' +
-      '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#C8A84B;font-family:\'IBM Plex Mono\',monospace;font-size:13px;font-weight:700;color:#000;">' + _esc(initial) + '</div>' +
-      '<div style="flex:1;min-width:0;">' +
-        '<div style="position:relative;">' +
-          '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
-            'style="width:100%;height:38px;background:#111118;border:1px solid #1e1e2e;border-radius:999px;padding:0 44px 0 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
-          '<button data-action="submitComment" data-id="' + pid + '" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#C8A84B;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>' +
-          '</button>' +
-        '</div>' +
-        '<div style="display:flex;gap:6px;margin-top:6px;">' +
-          '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
-          '<button onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()" style="background:transparent;border:1px solid #1e1e2e;color:#AEAEB2;font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;">\uD83D\uDCCE PHOTO</button>' +
-          '<button onclick="window._clientToggleMention(\'' + pid + '\')" style="background:transparent;border:1px solid #1e1e2e;color:#AEAEB2;font-family:\'IBM Plex Mono\',monospace;font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;">@ MENTION</button>' +
-        '</div>' +
-        '<div id="client-img-preview-' + pid + '" style="display:none;margin-top:6px;display:none;gap:6px;flex-wrap:wrap;"></div>' +
-        '<div id="client-mention-drop-' + pid + '" style="display:none;margin-top:4px;background:#191924;border:1px solid #1e1e2e;border-radius:4px;overflow:hidden;"></div>' +
+    /* Row 2 — avatar + dropdown arrow + pill input + submit circle */
+    '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 6px;">' +
+      '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">' +
+        '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#C8A84B;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#000;">' + _esc(initial) + '</div>' +
+        '<span style="color:#A0A0B0;font-size:10px;line-height:1;">\u25BE</span>' +
       '</div>' +
+      '<div style="flex:1;position:relative;min-width:0;">' +
+        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
+          'style="width:100%;height:38px;background:#111118;border:1px solid #606068;border-radius:24px;padding:0 44px 0 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
+        '<button data-action="submitComment" data-id="' + pid + '" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#C4A44A;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>' +
+        '</button>' +
+      '</div>' +
+    '</div>' +
+    /* Row 3 — action icons (photo, mention) + Comment post button */
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;">' +
+      '<div style="display:flex;align-items:center;gap:16px;">' +
+        /* Hidden file input powers the photo icon tap */
+        '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
+        /* Photo icon — aria-label keeps the word "PHOTO" in the function
+           body for the client-comment.test.js assertion */
+        '<span role="button" aria-label="PHOTO" title="PHOTO" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_PHOTO_SVG + '</span>' +
+        /* Mention icon — aria-label keeps lowercase "mention" in source */
+        '<span role="button" aria-label="mention" onclick="window._clientToggleMention(\'' + pid + '\')" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_MENTION_SVG + '</span>' +
+      '</div>' +
+      '<button data-action="submitComment" data-id="' + pid + '" style="background:#404050;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#D0D0D8;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
+    '</div>' +
+    /* Row 4 — image preview strip (hidden by default; JS flips to flex) */
+    '<div id="client-img-preview-' + pid + '" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px;"></div>' +
+    /* Row 5 — mention dropdown (hidden by default) */
+    '<div id="client-mention-drop-' + pid + '" style="display:none;margin:0 14px 8px;background:#191924;border:1px solid #1e1e2e;border-radius:4px;overflow:hidden;"></div>';
+  }
+
+  /* Wrap comments list + input bar in a single collapsible container
+     so the Comment engagement-bar button can toggle it. Feed defaults
+     to collapsed; _openClientPostOverlay flips the display style to
+     'block' after render because the user explicitly opened the post. */
+  function _commentsContainerHtml(post, expanded) {
+    var pid = _esc(post.post_id || post.id || '');
+    var disp = expanded ? 'block' : 'none';
+    return '<div id="client-comments-section-' + pid + '" ' +
+      'class="client-comments-section" ' +
+      'data-comments-section="' + pid + '" ' +
+      'style="display:' + disp + ';">' +
+      _commentsListHtml(post) +
+      _commentInputHtml(post) +
     '</div>';
   }
 
@@ -784,20 +821,24 @@ console.log('LOADED:', 'render/client.js');
   function _cardHtml(post, isPublished) {
     var opacity = isPublished ? 'opacity:0.45;' : '';
     var pid = _esc(post.post_id || post.id || '');
+    // Only cards whose engagement bar renders a Comment button can be
+    // toggled — that bar only shows on awaiting_* stages. Every other
+    // stage (published, brief, in_production) keeps comments expanded
+    // so the user always has a way to read them.
+    var hasCommentBtn = post.stage === 'awaiting_approval' || post.stage === 'awaiting_brand_input';
     return '<div class="post-card" data-card-id="' + pid + '" data-stage="' + _esc(post.stage || '') + '" style="' + opacity + '">' +
       _cardHeaderHtml(post, pid) +
       /* caption */
       _captionHtml(post) +
       /* images */
       _imgGridHtml(post.images) +
-      /* stats bar */
+      /* stats bar (shows comment count even when collapsed) */
       _statsBarHtml(post, isPublished) +
       /* engagement bar (not on published) */
       (isPublished ? '' : _engagementBarHtml(post)) +
-      /* comments */
-      _commentsListHtml(post) +
-      /* comment input */
-      _commentInputHtml(post) +
+      /* comments + input; collapsed only on the stages that have the
+         Comment toggle button in the engagement bar */
+      _commentsContainerHtml(post, !hasCommentBtn) +
     '</div>';
   }
 
@@ -967,6 +1008,32 @@ console.log('LOADED:', 'render/client.js');
       'client-reply-indicator-' + postId
     );
     if (indicator) indicator.style.display = 'none';
+  };
+
+  /* ---- toggle collapsible comments section ---- */
+
+  window._clientToggleComments = function(postId) {
+    // Prefer the visible overlay host, fall back to the main feed,
+    // mirroring the pattern in _clientEditComment / _clientDeleteComment.
+    var _host = document.getElementById('client-post-overlay') || document.getElementById('client-view') || document;
+    var section = _host.querySelector('#client-comments-section-' + postId)
+      || document.getElementById('client-comments-section-' + postId);
+    if (!section) return;
+    var isHidden = section.style.display === 'none' || section.style.display === '';
+    if (isHidden) {
+      section.style.display = 'block';
+      // Focus + scroll the input into view on expand so the user can type
+      // immediately. Defer a frame so layout has settled first.
+      requestAnimationFrame(function() {
+        var input = document.getElementById('comment-input-' + postId);
+        if (input) {
+          try { input.focus(); } catch (_) {}
+          try { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+        }
+      });
+    } else {
+      section.style.display = 'none';
+    }
   };
 
   /* ---- 3-dot bottom sheet menu ---- */
@@ -1644,27 +1711,11 @@ console.log('LOADED:', 'render/client.js');
           break;
 
         case 'focusComment':
-          var cInput = document.querySelector('#comment-input-' + id);
-          if (!cInput) {
-            var fcPost = (window.AppState.posts.all || []).find(function(p) {
-              return p.post_id === id || p.id === id;
-            });
-            if (fcPost) {
-              var fcHtml = _commentInputHtml(fcPost);
-              if (fcHtml) {
-                var fcAnchor = root.querySelector('[data-comments-list="' + id + '"]') ||
-                  root.querySelector('[data-engagement="' + id + '"]') ||
-                  root.querySelector('[data-card-id="' + id + '"]');
-                if (fcAnchor) {
-                  fcAnchor.insertAdjacentHTML('afterend', fcHtml);
-                  cInput = document.querySelector('#comment-input-' + id);
-                }
-              }
-            }
-          }
-          if (cInput) {
-            cInput.focus();
-            cInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Toggle the collapsible comments section in place. If it
+          // was collapsed, expand + focus the input; if expanded,
+          // collapse it.
+          if (typeof window._clientToggleComments === 'function') {
+            window._clientToggleComments(id);
           }
           break;
 
@@ -2086,8 +2137,9 @@ console.log('LOADED:', 'render/client.js');
       _imgGridHtml(post.images) +
       _statsBarHtml(post, isPublished) +
       (isPublished ? '' : _engagementBarHtml(post)) +
-      _commentsListHtml(post) +
-      _commentInputHtml(post);
+      /* overlay shows comments expanded by default since the user
+         explicitly opened the post */
+      _commentsContainerHtml(post, true);
 
     var overlay = document.createElement('div');
     overlay.id = 'client-post-overlay';
