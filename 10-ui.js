@@ -725,8 +725,7 @@ function renderNotifications(name, role) {
     var metaRow = '<div class="notif-meta">' +
       '<span class="notif-time">' + esc(ts) + '</span>' +
       (isExpandable ? expandChipHtml : '') +
-      '<div class="meta-actions">' + waBtn + delBtn + '</div>' +
-      linkedinHtml +
+      '<div class="meta-actions">' + waBtn + delBtn + linkedinHtml + '</div>' +
       '</div>';
 
     var pubLabel = isPublished
