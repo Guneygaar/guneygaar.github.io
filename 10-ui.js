@@ -724,8 +724,9 @@ function renderNotifications(name, role) {
 
     var metaRow = '<div class="notif-meta">' +
       '<span class="notif-time">' + esc(ts) + '</span>' +
+      linkedinHtml +
       (isExpandable ? expandChipHtml : '') +
-      '<div class="meta-actions">' + waBtn + delBtn + linkedinHtml + '</div>' +
+      '<div class="meta-actions">' + waBtn + delBtn + '</div>' +
       '</div>';
 
     var pubLabel = isPublished
@@ -1958,6 +1959,42 @@ function openNotifications() {
       // wrapper itself (between the buttons) should also be ignored
       // so they don't bubble up to the card tap.
       if (e.target.closest('.meta-actions')) return;
+
+      // Thumbnail click ALWAYS navigates to PCS / the client overlay,
+      // never expands the thread drawer. This gives users a reliable
+      // way to open the full post even from comment/mention cards that
+      // would otherwise expand on body tap.
+      if (e.target.closest('.notif-thumb-wrap')) {
+        e.stopPropagation();
+        var thumbItem = e.target.closest('.notif-item, .notif-live-card');
+        if (!thumbItem) return;
+        var _tPid = thumbItem.getAttribute('data-post-id');
+        var _tNotifId = thumbItem.getAttribute('data-notif-id');
+        if (_tNotifId) markNotifRead(_tNotifId);
+        thumbItem.classList.add('read');
+        var _tDot = thumbItem.querySelector('.nnew-dot');
+        if (_tDot) _tDot.style.display = 'none';
+        if (!_tPid) return;
+        var _tIsBrief = thumbItem.getAttribute('data-is-brief') === '1' ||
+          thumbItem.getAttribute('data-notif-type') === 'new_request';
+        window._notifOpenedPCS = true;
+        closeNotifications();
+        setTimeout(function() {
+          var _tRole = (window.AppState && window.AppState.user &&
+            window.AppState.user.effectiveRole || '').toLowerCase();
+          var _tIsClient = _tRole === 'client';
+          if (_tIsBrief) {
+            if (typeof _openBriefSheet === 'function') _openBriefSheet(_tPid);
+          } else if (_tIsClient) {
+            if (typeof window._openClientPostOverlay === 'function')
+              window._openClientPostOverlay(_tPid);
+          } else {
+            openPCS(_tPid, '');
+          }
+        }, 150);
+        return;
+      }
+
       // Expand-in-place thread view — the expand chip, the reply input,
       // the send button, individual thread messages, and the "Open full
       // post" link all live inside a .notif-item and would otherwise be
