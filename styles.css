@@ -5383,14 +5383,14 @@ input[type="date"].nps-select::-webkit-date-and-time-value {
 body.client-mode .topbar,
 body.client-mode header,
 body.client-mode #top-bar {
-  background: #1b1f23 !important;
+  background: #0D0D12 !important;
   backdrop-filter: none !important;
   filter: none !important;
   box-shadow: none !important;
 }
 
 body.client-mode .bottom-nav {
-  background: #1b1f23 !important;
+  background: #0D0D12 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   filter: none !important;
@@ -5420,8 +5420,8 @@ body.client-mode {
   --text-primary: #FFFFFF;
   --text-secondary: #B0B0B8;  /* brighter meta / eng labels */
   --text-tertiary: #909098;   /* date line, etc. */
-  --layer-0: #1b1f23;
-  --layer-1: #000000;
+  --layer-0: #0D0D12;         /* unified client bg */
+  --layer-1: #0D0D12;         /* unified client bg — cards match wrapper */
   --divider: #2A2A34;         /* bumped from #FFFFFF0F for visibility */
   --status-overdue: #EF4444;
   --status-waiting: #FBBF24;
@@ -5542,6 +5542,14 @@ body.client-mode .stats-bar {
   color: var(--text-secondary);
   font-family: 'DM Sans', sans-serif;
   padding: var(--space-2) var(--space-4);
+  /* Ground the bar so it doesn't float between the image and the
+     engagement bar: a visible divider below + a real min-height
+     give it actual vertical presence, and its border-bottom
+     connects directly to the .eng-bar border-top. */
+  border-bottom: 1px solid #2A2A34;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
 }
 
 body.client-mode .section-label {
