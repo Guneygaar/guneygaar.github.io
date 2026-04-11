@@ -4054,14 +4054,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── META ROW ── */
-/* Meta row — uniform 6px gap between every child. All child margins are
-   zero; the parent gap is the single source of truth for spacing, so
-   every item (timestamp, dot, expand chip, WA button, trash button,
-   LinkedIn link) sits exactly 6px apart. */
+/* Meta row — flex with gap:10px between the timestamp, the optional
+   expand chip, and the `.meta-actions` icon cluster. `.meta-actions`
+   carries `margin-left: auto` so the WA+trash unit is always pushed
+   to the right edge of the row. No dot separators anywhere. */
 .notif-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   margin-top: 4px;
 }
 .notif-time {
@@ -4071,31 +4071,43 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: #4A4A5C;
   white-space: nowrap;
 }
-.notif-meta-sep {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: #222230;
-  margin: 0;
-  user-select: none;
+/* .notif-meta-sep left defined but no longer emitted anywhere — kept
+   as a no-op class so any stale HTML cache doesn't break layout. */
+.notif-meta-sep { display: none; }
+
+/* `.meta-actions` groups the WhatsApp + trash buttons tight together
+   (2px internal gap) and floats them to the right of the row via
+   `margin-left: auto`. */
+.meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
 }
 
-/* Meta-row icon buttons — 32x32 tap target centered around the small
-   SVG. Negative vertical margin keeps the meta row compact even though
-   the buttons are 32px tall. Horizontal spacing is handled by the
-   parent `.notif-meta { gap: 6px }` so the buttons carry zero margin. */
+/* Meta-row icon buttons — 28x28 tap target centered around the small
+   SVG, with a 6px rounded-square hover background for feedback.
+   Child SVGs use `pointer-events: none` so every click resolves to
+   the button and `closest('.notif-mi-btn')` stays reliable in the
+   panel delegate skip list. */
 .notif-mi-btn {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   background: none;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   color: #3A3A4C;
-  margin: -8px 0;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.notif-mi-btn:hover {
+  background: #FFFFFF0A;     /* rgba(255,255,255,0.04) */
+  color: #5A5A70;
 }
 .notif-mi-btn svg {
   display: block;
@@ -4186,16 +4198,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .notif-item { flex-direction: column; }
 
-/* Expanded card gets a 3px gold left border + a slightly lighter
-   background so it clearly stands out from its siblings, and the
-   padding-bottom + margin-bottom + thread-area margin-top keep the
-   drawer off the next card's top edge. */
+/* Expanded card — slightly lighter background, 3px gold left border,
+   rounded outer corners, 8px bottom gap before the next card. The
+   thread-area's own padding handles the drawer's interior spacing
+   so `.notif-item.expanded` carries zero padding-bottom. */
 .notif-item.expanded {
   background: #16161F;
   border-left: 3px solid #C8A84B4D;
+  border-radius: 10px;
   padding-left: 15px;   /* 18 - 3 so text still lines up */
-  padding-bottom: 14px;
-  margin-bottom: 6px;
+  padding-bottom: 0;
+  margin-bottom: 8px;
 }
 .notif-item.expanded .notif-item-row { padding-right: 2px; }
 
@@ -4257,11 +4270,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin-top: 8px;
 }
 .thread-area {
-  background: #1E1A2A;              /* visible dark purple-gold tint */
-  border: 1px solid #C8A84B26;      /* rgba(200,168,75,0.15) gold border */
+  background: #1C1926;              /* visible dark purple tint */
+  border: 1px solid #C8A84B1F;      /* rgba(200,168,75,0.12) gold border */
   border-radius: 10px;
-  padding: 12px;
-  margin-top: 8px;
+  padding: 10px 12px 0;
 }
 .thread-overflow {
   font-family: 'DM Sans', sans-serif;
@@ -4281,15 +4293,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── THREAD MESSAGE ── */
 /* Thread messages are deliberately smaller/tighter than notification
    cards so the drawer reads as a nested conversation, not as more
-   notifications. Sizes drop 1-2px across the board, padding is 6px,
-   and the divider is slightly stronger (6% vs 4% white) so the
-   message boundaries are visible. */
+   notifications. 22px avatars, 11px author, 8px role pills, 12px
+   message body, 9px mono timestamp. */
 .thread-msg {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  padding: 6px 0;
-  border-bottom: 1px solid #FFFFFF0F; /* rgba(255,255,255,0.06) */
+  padding: 7px 0;
+  border-bottom: 1px solid #FFFFFF0D; /* rgba(255,255,255,0.05) */
 }
 .thread-msg:last-of-type { border-bottom: none; }
 .thread-av {
@@ -4301,7 +4312,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   color: #FFFFFF;
   border: none;
@@ -4322,25 +4333,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .thread-author {
   font-family: 'DM Sans', sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: #FFFFFFD9;         /* rgba(255,255,255,0.85) */
+  color: #FFFFFFCC;         /* rgba(255,255,255,0.80) */
 }
 .thread-role {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  font-weight: 500;
+  font-size: 8px;
+  font-weight: 600;
   padding: 1px 5px;
   border-radius: 3px;
-  background: #FFFFFF14;    /* rgba(255,255,255,0.08) */
-  color: #FFFFFF66;         /* rgba(255,255,255,0.40) */
+  background: #FFFFFF12;    /* rgba(255,255,255,0.07) */
+  color: #FFFFFF59;         /* rgba(255,255,255,0.35) */
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 .thread-time {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  color: #FFFFFF4D;         /* rgba(255,255,255,0.30) */
+  font-size: 9px;
+  color: #FFFFFF38;         /* rgba(255,255,255,0.22) */
   margin-left: auto;
   white-space: nowrap;
 }
@@ -4348,7 +4359,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   line-height: 1.35;
-  color: #FFFFFFBF;         /* rgba(255,255,255,0.75) */
+  color: #FFFFFFB3;         /* rgba(255,255,255,0.70) */
   margin-top: 2px;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -4364,10 +4375,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── REPLY INPUT ── */
 .thread-reply {
   margin-top: 6px;
-  padding-top: 10px;
-  /* 15% gold divider — clearly visible separator between messages
-     and the reply row. */
-  border-top: 1px solid #C8A84B26; /* rgba(200,168,75,0.15) */
+  padding-top: 8px;
+  padding-bottom: 10px;  /* carries the bottom edge of .thread-area */
+  /* 12% gold divider — visible separator between messages and the
+     reply row without shouting. */
+  border-top: 1px solid #C8A84B1F; /* rgba(200,168,75,0.12) */
 }
 .reply-row {
   display: flex;

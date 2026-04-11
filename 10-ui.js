@@ -499,6 +499,17 @@ function renderNotifications(name, role) {
     });
   }
 
+  // Pre-compute a map of post_id → non-resolved comment count. Used by
+  // `_buildItem` to drive the expand chip (visibility + label).
+  // Decoupled from the notification-grouping bucket count so any post
+  // with 2+ visible comments gets a chip regardless of how the
+  // notifications happen to be split across (post, actor, day) keys.
+  var _threadCountMap = {};
+  commentsArr.forEach(function(c) {
+    if (!c || c.resolved === true || !c.post_id) return;
+    _threadCountMap[c.post_id] = (_threadCountMap[c.post_id] || 0) + 1;
+  });
+
   // Tab counts
   var allCount     = notifs.length;
   var mentionCount = 0;
@@ -549,11 +560,14 @@ function renderNotifications(name, role) {
     return;
   }
 
-  // Group comments by (post_id + actor + day)
+  // Group comment + mention notifications by (post_id + actor + day).
+  // Mentions are included so @-mention rows also participate in the
+  // expand-in-place thread view — they point to the same comment data
+  // and should behave identically to plain comments.
   var commentGroupMap = {};
   var nonCommentList = [];
   filtered.forEach(function(n) {
-    if (n.type !== 'comment') { nonCommentList.push(n); return; }
+    if (n.type !== 'comment' && n.type !== 'mention') { nonCommentList.push(n); return; }
     var dayKey = n.created_at ? new Date(n.created_at).toDateString() : '';
     var key = (n.post_id||'') + '|' + (n.actor||'') + '|' + dayKey;
     if (!commentGroupMap[key]) commentGroupMap[key] = [];
@@ -671,19 +685,12 @@ function renderNotifications(name, role) {
     }
 
     // Expand chip — only for grouped comment notifications (>1 comment).
-    // Lives inline in the meta row between the timestamp dot and the
-    // WhatsApp icon. CSS handles the collapsed/expanded/hover states.
-    // postCommentCount is the TOTAL non-resolved comments on this
-    // notification's post, pulled from window._notifComments. It
-    // drives both `isExpandable` (so any post with >1 comment gets
-    // the chip regardless of how the notifications were grouped)
-    // and the chip label. Falls back to `groupCount` on notifications
-    // that don't have a post_id match in the comment cache.
-    var postCommentCount = (n.type === 'comment' && n.post_id)
-      ? _notifPostCommentCount(n.post_id)
-      : 0;
-    var expandCount = postCommentCount > 0 ? postCommentCount : groupCount;
-    var isExpandable = n.type === 'comment' && expandCount > 1;
+    // Expand chip — gated on `_threadCountMap[post_id]` so any comment
+    // or mention notif whose post has 2+ non-resolved comments gets a
+    // chip regardless of how the notifications were grouped. Label
+    // shows the full thread count, not the grouping bucket count.
+    var postThreadCount = (n.post_id && _threadCountMap[n.post_id]) || 0;
+    var isExpandable = (n.type === 'comment' || n.type === 'mention') && postThreadCount > 1;
     var isExpanded = isExpandable && _expandedSet.has(n.id);
     var expandChipHtml = '';
     if (isExpandable) {
@@ -693,17 +700,17 @@ function renderNotifications(name, role) {
           '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
             '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
           '</svg>' +
-          '<span class="expand-chip-count">' + expandCount + '</span>' +
+          '<span class="expand-chip-count">' + postThreadCount + '</span>' +
         '</button>';
     }
 
-    // Meta row — time [expand] WhatsApp trash [LinkedIn]
-    // Flex `gap: 6px` on .notif-meta (see styles.css) is the ONLY
-    // source of spacing between children, so every pair of siblings
-    // sits exactly 6px apart. No .notif-meta-sep dot spans are
-    // emitted anywhere in the row — they used to sit between some
-    // items and not others, which made the perceived gap jump
-    // between ~6px and ~16px across the row.
+    // Meta row — time [chip] [auto-push] <meta-actions>WA trash</meta-actions> [LinkedIn]
+    // The `.meta-actions` wrapper groups the icon buttons tight
+    // together (2px internal gap) and gets `margin-left: auto` via
+    // CSS so it always sits on the right edge of the row. The flex
+    // `gap: 10px` on `.notif-meta` handles the spacing between the
+    // timestamp, optional expand chip, and the meta-actions unit.
+    // No dot separators anywhere.
     var linkedinHtml = '';
     if (isPublished && post && post.linkedin_link) {
       linkedinHtml =
@@ -718,8 +725,7 @@ function renderNotifications(name, role) {
     var metaRow = '<div class="notif-meta">' +
       '<span class="notif-time">' + esc(ts) + '</span>' +
       (isExpandable ? expandChipHtml : '') +
-      waBtn +
-      delBtn +
+      '<div class="meta-actions">' + waBtn + delBtn + '</div>' +
       linkedinHtml +
       '</div>';
 
@@ -821,21 +827,6 @@ function _notifThreadAvClass(author, authorRole) {
   if (a === 'pranav'  || r === 'creative')                        return 'nav-pranav';
   if (a === 'shubham' || r === 'admin')                           return 'nav-shubham';
   return 'nav-system';
-}
-
-// Return the count of visible (non-resolved) comments on a given post
-// from window._notifComments. Used by _buildItem to drive the expand
-// chip (label + visibility) and by _notifBuildThreadHtml for the
-// overflow link.
-function _notifPostCommentCount(postId) {
-  if (!postId) return 0;
-  var all = window._notifComments || [];
-  var n = 0;
-  for (var i = 0; i < all.length; i++) {
-    var c = all[i];
-    if (c && c.post_id === postId && c.resolved !== true) n++;
-  }
-  return n;
 }
 
 // Render the scrollable list of thread messages for a given notification.
@@ -1963,6 +1954,11 @@ function openNotifications() {
       if (e.target.closest('.notif-mi-btn')) return;
       if (e.target.closest('.notif-topbar-btn')) return;
       if (e.target.closest('.notif-li-link')) return;
+      // `.meta-actions` is the WA+trash wrapper — its child buttons
+      // have their own `.notif-mi-btn` skip, but bare clicks on the
+      // wrapper itself (between the buttons) should also be ignored
+      // so they don't bubble up to the card tap.
+      if (e.target.closest('.meta-actions')) return;
       // Expand-in-place thread view — the expand chip, the reply input,
       // the send button, individual thread messages, and the "Open full
       // post" link all live inside a .notif-item and would otherwise be
@@ -2042,9 +2038,11 @@ function openNotifications() {
       var notifType = item.getAttribute('data-notif-type') || '';
       var isExpandable = item.getAttribute('data-expandable') === '1';
 
-      // Comment notifications with a group (>1 comment) expand in place
-      // on body tap instead of routing into PCS/client overlay.
-      if (isExpandable && notifType === 'comment' && !isBrief) {
+      // Comment AND mention notifications with 2+ comments on the post
+      // expand in place on body tap instead of routing into PCS/client
+      // overlay. Non-expandable rows continue through to the open-post
+      // path below.
+      if (isExpandable && (notifType === 'comment' || notifType === 'mention') && !isBrief) {
         if (!item.classList.contains('expanded')) {
           if (notifId) markNotifRead(notifId);
           item.classList.add('read');
