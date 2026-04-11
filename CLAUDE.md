@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-12 (notification-thread-view). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-12 (notif-thread-view-fixes). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -50,9 +50,7 @@ NO `comments` column on posts. Never write to it.
 
 **tasks** — PK id(bigint). Cols: assigned_to, message, due_date, done(bool), created_at. RLS unrestricted.
 
-**click_log** — telemetry sink (session_id, etc.) fed by `_flushClickBuffer`.
-
-Storage: R2 bucket `sorted-images`. Public CDN `https://images.srtd.io/` (preferred) or legacy `pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev`.
+**click_log** — telemetry sink (session_id, etc.) fed by `_flushClickBuffer`. Storage: R2 bucket `sorted-images`, CDN `https://images.srtd.io/` (legacy `pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev`).
 
 ## 3 — FILE MAP
 
@@ -145,8 +143,10 @@ window.AppState = {
 - Header: mono `<effectiveRole> · SORTED` label + plain-text `Mark read | Close`; greeting row `Hey, <AppState.user.name>` (name gold). Name/role pull ONLY from `AppState.user` — no hardcoded map.
 - Tabs (`.notif-chips > .notif-chip`): text-only (All / Mentions / Comments / Moves), counts in `nchip-count-*` spans. Active class reapplied by the renderer on every pass.
 - Cards: `.notif-item` is the single card class; published rows get `notif-live-card` as a marker so the tap delegate `closest('.notif-item, .notif-live-card')` still resolves. Background always transparent — read and unread items look identical. Inline `<span class="nnew-dot">` (gold 5px) before the actor name is the ONLY unread indicator. Avatars solid-fill 32px (no border/ring). Published cards render a `.notif-pub-label` eyebrow (`✓ PUBLISHED`) above the main text line.
-- Meta row (`.notif-meta`): flex with `gap: 6px` — every child (timestamp, separator dots, expand chip, WA/trash icon buttons, LinkedIn link) sits exactly 6px apart. `.notif-mi-btn` is a 32×32 tap target around an 11×10 SVG with `-8px 0` vertical margin so the row stays compact. SVG children are `pointer-events:none`. Skip list in the panel tap delegate includes `.notif-mi-btn`, `.notif-topbar-btn`, `.notif-li-link`, and the thread-view controls below.
-- **Expand-in-place thread view** — for comment notifications with `_groupCount > 1`, `_buildItem` emits a gold `.expand-chip` inline in the meta row AND a collapsed `.thread-drawer` below the row. Tap on the card body OR the chip toggles `.notif-item.expanded`, mounts the thread HTML into the drawer, anchors scroll so the tapped card stays in place, and marks the notif as read on first expand (not on re-collapse). State is persisted across `scroll.innerHTML` rebuilds via `window._notifExpandedSet` (Set of notif IDs). Thread content is built from `window._notifComments` (now SELECT'd with `author_role,resolved,resolved_at,visibility,post_title`), filtered `post_id === n.post_id && !resolved`, sorted ASC by `created_at`; results are cached per post in `window._notifThreadCache` (cleared at the top of `loadNotifications`). The drawer contains a `.reply-input` + `.reply-send` row and an `Open full post →` footer link. Replies POST to `/post_comments` ONLY — the JS fan-out is intentionally skipped so `notify-comment` (edge) is the single writer and there are no duplicate notification rows. Reply author is always `AppState.user.name`, author_role is `effectiveRole` title-cased, so the same code path works for both agency and client users. The panel tap delegate skips `.expand-chip`, `.reply-input`, `.reply-send`, `.thread-msg`, `.thread-area`, `.thread-reply`, `.thread-footer`, `.reply-label`, and routes `.thread-open-post` clicks through `closeNotifications()` + `openPCS` / `_openClientPostOverlay`.
+- Meta row (`.notif-meta`): flex `gap: 6px` is the ONLY source of spacing — every child (timestamp, expand chip, WA/trash icon buttons, LinkedIn link) sits exactly 6px apart. No `.notif-meta-sep` dot spans are emitted anywhere in the row. `.notif-mi-btn` is a 32×32 tap target around an 11×10 SVG with `-8px 0` vertical margin so the row stays compact. SVG children are `pointer-events:none`. Skip list in the panel tap delegate includes `.notif-mi-btn`, `.notif-topbar-btn`, `.notif-li-link`, and the thread-view controls below.
+- **Expand-in-place thread view** — for comment notifications with `_groupCount > 1`, `_buildItem` emits a gold `.expand-chip` inline in the meta row AND a collapsed `.thread-drawer` below the row. Tap on the card body OR the chip toggles `.notif-item.expanded`, mounts the thread HTML into the drawer, anchors scroll so the tapped card stays in place, and marks the notif as read on first expand (not on re-collapse). State is persisted across `scroll.innerHTML` rebuilds via `window._notifExpandedSet` (Set of notif IDs). Thread content is built from `window._notifComments` (SELECT'd with `author_role,resolved,resolved_at,visibility,post_title`), filtered `post_id === n.post_id && !resolved`, sorted ASC by `created_at`; results are cached per post in `window._notifThreadCache` (cleared at the top of `loadNotifications`).
+- Drawer visuals: `.thread-area` carries `background: #C8A84B12` + `border: 1px solid #C8A84B1A` + `border-radius: 8px` so the drawer is visually contained — the earlier 4% gold wash was too faint and the thread messages visually merged with the notification cards below. `.notif-item.expanded` adds `padding-bottom: 12px` + `margin-bottom: 4px` so the drawer can't touch the next card. `.notif-item.expanded .thread-drawer` uses `max-height: 3000px` (bumped from 800px) so the reply row + `Open full post →` link are never clipped on long threads. `.thread-reply` uses a `border-top: 1px solid #C8A84B26` divider so the reply row is visually distinct from the messages.
+- The drawer contains a `.reply-input` + `.reply-send` row and an `Open full post →` footer link. Replies POST to `/post_comments` ONLY — the JS fan-out is intentionally skipped so `notify-comment` (edge) is the single writer and there are no duplicate notification rows. Reply author is always `AppState.user.name`, author_role is `effectiveRole` title-cased, so the same code path works for both agency and client users. The panel tap delegate skips `.expand-chip`, `.reply-input`, `.reply-send`, `.thread-msg`, `.thread-area`, `.thread-reply`, `.thread-footer`, `.reply-label`, and routes `.thread-open-post` clicks through `closeNotifications()` + `openPCS` / `_openClientPostOverlay`.
 - Tests: structural class names + source patterns (`notif-item`, `notif-live-card`, `nchip-count-*`, grouped key `(n.post_id||'') + '|' + (n.actor||'')`, `notif-resp-time`, day labels, `"left " + n + " comments on "`) are preserved verbatim. 508/508 unit tests still pass.
 
 ### Misc gotchas
@@ -186,7 +186,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260412a`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260412b`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
