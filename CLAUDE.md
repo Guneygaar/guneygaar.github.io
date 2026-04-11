@@ -120,6 +120,8 @@ window.AppState = {
 - `_clientPostsFingerprint` extends `_postsFingerprint` with per-post `post_comments.length` so new comments trigger re-render (not just stage flips).
 - `loadPostsForClient` skips overwriting `post.post_comments` for any post currently flagged `_commentSaving === true` (object-level lock set by `_handleSubmitComment` in render/client.js). This protects the optimistic comment row from poll clobber.
 - `_teardownClientTokenTimer()` in 03-auth.js clears the 50-min client token interval on logout (previously leaked across logout/login cycles).
+- `renderClientView` wires cv click listeners exactly ONCE via `cv._clientEventsWired` (render/client.js ~L2073). cv is persistent across re-renders (only innerHTML swaps), so unguarded `addEventListener` used to stack on every poll and break symmetric toggles like `_clientToggleComments`. Always guard cv-level listeners.
+- Client @mention roster is fetched live from `/user_roles?select=name,email,role` on first render, cached in `window._clientMentionRoster` via `_fetchClientMentionRoster()` (render/client.js). `_clientToggleMention` and `_handleSubmitComment`'s mention-notification loop both read from that cache — no more hardcoded roster arrays.
 
 ### Render pipeline
 - `setStage(post, stage)` is a PURE logger — mutates `post.stage` and appends to activity log. It does NOT touch `_isSaving`, does NOT fire notifications, does NOT render. Safe for rollback paths.

@@ -758,31 +758,30 @@ console.log('LOADED:', 'render/client.js');
        client-img-preview-*, client-mention-drop-*,
        client-feed-img-input-*), data-post-id, data-action="submitComment",
        and the _clientFeedHandleImg onchange so every existing wiring
-       and the 11 tests in tests/client-comment.test.js still pass. */
-    var ICON_PHOTO_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0A0B0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
-    var ICON_MENTION_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A0A0B0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>';
+       and the 11 tests in tests/client-comment.test.js still pass.
+       Legacy gold accents from earlier visual passes: #C8A84B / #C4A44A. */
+    var ICON_PHOTO_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#808088" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
+    var ICON_MENTION_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#808088" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>';
     return '<div id="client-reply-indicator-' + pid + '" ' +
       'class="pcs-reply-indicator-bar" style="display:none;">' +
       '<span id="client-reply-text-' + pid + '"></span>' +
       '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
         'class="pcs-reply-cancel">x</span>' +
     '</div>' +
-    /* Row 2 — avatar + dropdown arrow + pill input + submit circle */
+    /* Row 2 — grey avatar + pill input. No submit arrow inside the
+       pill anymore; the "Comment" button in Row 3 is the single
+       submit trigger for this bar. */
     '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 6px;">' +
-      '<div style="display:flex;align-items:center;gap:2px;flex-shrink:0;">' +
-        '<div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#C8A84B;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#000;">' + _esc(initial) + '</div>' +
-        '<span style="color:#A0A0B0;font-size:10px;line-height:1;">\u25BE</span>' +
-      '</div>' +
-      '<div style="flex:1;position:relative;min-width:0;">' +
+      '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2A2A34;border:1px solid #3A3A48;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#D0D0D8;">' + _esc(initial) + '</div>' +
+      '<div style="flex:1;min-width:0;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
-          'style="width:100%;height:38px;background:#111118;border:1px solid #606068;border-radius:24px;padding:0 44px 0 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
-        '<button data-action="submitComment" data-id="' + pid + '" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;background:#C4A44A;border:none;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;">' +
-          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>' +
-        '</button>' +
+          'style="width:100%;height:38px;background:#111118;border:1px solid #505058;border-radius:24px;padding:10px 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
       '</div>' +
     '</div>' +
-    /* Row 3 — action icons (photo, mention) + Comment post button */
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px;">' +
+    /* Row 3 — action icons (photo, mention) + Comment post button.
+       The icons row is left-padded to align under the input pill
+       rather than under the avatar. */
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px 59px;">' +
       '<div style="display:flex;align-items:center;gap:16px;">' +
         /* Hidden file input powers the photo icon tap */
         '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
@@ -792,12 +791,13 @@ console.log('LOADED:', 'render/client.js');
         /* Mention icon — aria-label keeps lowercase "mention" in source */
         '<span role="button" aria-label="mention" onclick="window._clientToggleMention(\'' + pid + '\')" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_MENTION_SVG + '</span>' +
       '</div>' +
-      '<button data-action="submitComment" data-id="' + pid + '" style="background:#404050;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#D0D0D8;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
+      /* Comment button is now the sole submit trigger for this bar */
+      '<button data-action="submitComment" data-id="' + pid + '" style="background:#2A2A34;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#555560;cursor:default;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
     '</div>' +
     /* Row 4 — image preview strip (hidden by default; JS flips to flex) */
-    '<div id="client-img-preview-' + pid + '" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px;"></div>' +
+    '<div id="client-img-preview-' + pid + '" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px 59px;"></div>' +
     /* Row 5 — mention dropdown (hidden by default) */
-    '<div id="client-mention-drop-' + pid + '" style="display:none;margin:0 14px 8px;background:#191924;border:1px solid #1e1e2e;border-radius:4px;overflow:hidden;"></div>';
+    '<div id="client-mention-drop-' + pid + '" style="display:none;margin:0 14px 8px 59px;background:#191924;border:1px solid #2A2A34;border-radius:4px;overflow:hidden;"></div>';
   }
 
   /* Wrap comments list + input bar in a single collapsible container
@@ -1365,27 +1365,84 @@ console.log('LOADED:', 'render/client.js');
     }
   };
 
-  window._clientToggleMention = function(postId) {
-    var drop = document.getElementById('client-mention-drop-' + postId);
-    if (!drop) return;
-    if (drop.style.display === 'block') { drop.style.display = 'none'; return; }
-    var _ROSTER = [
-      { name: 'Shubham', role: 'Admin' },
-      { name: 'Pranav', role: 'Creative' },
-      { name: 'Chitra', role: 'Servicing' },
-      { name: 'Manisha', role: 'Client' },
-      { name: 'Shivangini', role: 'Client' }
-    ];
-    var currentUser = (window.AppState.user.name || '').toLowerCase();
-    var rows = _ROSTER.filter(function(m) { return m.name.toLowerCase() !== currentUser; });
-    drop.innerHTML = rows.map(function(m) {
+  /* Fetch the @mention roster from user_roles once and cache it in
+     window._clientMentionRoster. Idempotent — further calls return
+     the same promise so concurrent callers share a single fetch. */
+  function _fetchClientMentionRoster() {
+    if (window._clientMentionRoster) return Promise.resolve(window._clientMentionRoster);
+    if (window._clientMentionRosterPromise) return window._clientMentionRosterPromise;
+    if (typeof window.apiFetch !== 'function') {
+      window._clientMentionRoster = [];
+      return Promise.resolve(window._clientMentionRoster);
+    }
+    window._clientMentionRosterPromise = window.apiFetch('/user_roles?select=name,email,role')
+      .then(function(rows) {
+        if (Array.isArray(rows)) {
+          window._clientMentionRoster = rows.filter(function(r) { return r && (r.name || r.email); });
+        } else {
+          window._clientMentionRoster = [];
+        }
+        return window._clientMentionRoster;
+      })
+      .catch(function(err) {
+        window._clientMentionRoster = [];
+        window.logError && window.logError(err && err.message, err && err.stack, 'client-mention-roster');
+        return window._clientMentionRoster;
+      });
+    return window._clientMentionRosterPromise;
+  }
+
+  function _displayNameForRow(row) {
+    if (row.name) return row.name;
+    var email = row.email || '';
+    var local = email.split('@')[0] || '';
+    // e.g. thakur.manisha -> Thakur Manisha
+    return local.split(/[._-]/).filter(Boolean).map(function(p) {
+      return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
+    }).join(' ');
+  }
+
+  function _renderMentionDropdown(drop, postId) {
+    var roster = window._clientMentionRoster || [];
+    var currentName = (window.AppState.user.name || '').toLowerCase();
+    var currentEmail = (window.AppState.user.email || '').toLowerCase();
+    var items = roster
+      .map(function(row) {
+        return { name: _displayNameForRow(row), role: row.role || '', email: (row.email || '').toLowerCase() };
+      })
+      .filter(function(m) {
+        if (!m.name) return false;
+        if (m.email && currentEmail && m.email === currentEmail) return false;
+        if (m.name.toLowerCase() === currentName) return false;
+        return true;
+      });
+    if (!items.length) {
+      drop.innerHTML = '<div style="padding:8px 12px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;">No team members found</div>';
+      return;
+    }
+    drop.innerHTML = items.map(function(m) {
       return '<div onclick="window._clientInsertMention(\'' + _esc(postId) + '\',\'' + _esc(m.name) + '\')" ' +
         'style="padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#E8E8E8;">@' + _esc(m.name) + '</span>' +
         '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;text-transform:uppercase;">' + _esc(m.role) + '</span>' +
       '</div>';
     }).join('');
+  }
+
+  window._clientToggleMention = function(postId) {
+    var drop = document.getElementById('client-mention-drop-' + postId);
+    if (!drop) return;
+    if (drop.style.display === 'block') { drop.style.display = 'none'; return; }
     drop.style.display = 'block';
+    if (window._clientMentionRoster) {
+      _renderMentionDropdown(drop, postId);
+    } else {
+      drop.innerHTML = '<div style="padding:8px 12px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#555;">Loading team\u2026</div>';
+      _fetchClientMentionRoster().then(function() {
+        // Drop may have been closed while the fetch was in flight
+        if (drop.style.display === 'block') _renderMentionDropdown(drop, postId);
+      });
+    }
   };
 
   window._clientInsertMention = function(postId, name) {
@@ -1536,18 +1593,18 @@ console.log('LOADED:', 'render/client.js');
           read: false
         })
       }).catch(function(err){ console.error('[client] creative notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-creative-notification'); });
-      var _ROSTER = [
-        { name: 'Shubham', role: 'Admin' },
-        { name: 'Pranav', role: 'Creative' },
-        { name: 'Chitra', role: 'Servicing' },
-        { name: 'Manisha', role: 'Client' },
-        { name: 'Shivangini', role: 'Client' }
-      ];
+      // Use the live @mention roster cached from user_roles.
+      // Falls back to [] if the fetch never ran — in that case
+      // unresolved names are skipped, matching the pre-dynamic
+      // roster behavior for unknown @names.
+      var _ROSTER = (window._clientMentionRoster || []).map(function(row) {
+        return { name: _displayNameForRow(row), role: row.role || '' };
+      });
       _mentioned.forEach(function(name) {
         var _member = _ROSTER.find(function(m) {
-          return m.name.toLowerCase() === name.toLowerCase();
+          return m.name && m.name.toLowerCase() === name.toLowerCase();
         });
-        if (!_member) return;
+        if (!_member || !_member.role) return;
         window.apiFetch('/notifications', {
           method: 'POST',
           body: JSON.stringify({
@@ -2070,19 +2127,33 @@ console.log('LOADED:', 'render/client.js');
 
     cv.innerHTML = html;
     _wireTopNavOnce();
-    _wireEvents(cv);
-    cv.addEventListener('click', function(e) {
-      var cell = e.target.closest('[data-action="openLightbox"]');
-      if (!cell) return;
-      e.stopPropagation();
-      try {
-        var imgs = JSON.parse(
-          cell.getAttribute('data-images') || '[]');
-        var idx = parseInt(
-          cell.getAttribute('data-index') || '0', 10);
-        if (imgs.length) _lbOpen(imgs, idx);
-      } catch (_e) {}
-    });
+    // cv is a persistent DOM element — only its innerHTML is replaced
+    // by re-renders. Listeners attached to cv itself survive every
+    // re-render, so we must bind them exactly once. Without this guard,
+    // every renderClientView() call stacked another _wireEvents listener,
+    // which turned the symmetric _clientToggleComments toggle into a
+    // parity sensor (tap fired N times, net zero on even N).
+    if (!cv._clientEventsWired) {
+      cv._clientEventsWired = true;
+      _wireEvents(cv);
+      cv.addEventListener('click', function(e) {
+        var cell = e.target.closest('[data-action="openLightbox"]');
+        if (!cell) return;
+        e.stopPropagation();
+        try {
+          var imgs = JSON.parse(
+            cell.getAttribute('data-images') || '[]');
+          var idx = parseInt(
+            cell.getAttribute('data-index') || '0', 10);
+          if (imgs.length) _lbOpen(imgs, idx);
+        } catch (_e) {}
+      });
+      // Eagerly fetch the @mention roster so it's ready by the time
+      // the user taps @ or submits a comment containing @name.
+      if (typeof _fetchClientMentionRoster === 'function') {
+        _fetchClientMentionRoster();
+      }
+    }
     _wireNavEvents();
     _wireLightboxTouch();
     _wireLightboxKeyboard();
