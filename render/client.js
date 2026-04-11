@@ -232,15 +232,15 @@ console.log('LOADED:', 'render/client.js');
     if (n === 0) return '';
 
     var imgsJson = _esc(JSON.stringify(imgs));
-    var wrap = function (src, idx, cellCss, overlay) {
-      return '<div class="lb-trigger-cell" style="' + cellCss + '">' +
+    var wrap = function (src, idx, css, overlay) {
+      return '<div class="lb-trigger-cell" style="' + css + 'position:relative;display:block;width:100%;height:100%;overflow:hidden;background:#111;border-radius:0;">' +
         '<img src="' + _esc(src) + '"' +
         ' data-action="openLightbox"' +
         ' data-images=\'' + imgsJson + '\'' +
         ' data-index="' + idx + '"' +
         ' draggable="false"' +
         ' alt="" loading="lazy"' +
-        ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;cursor:pointer;-webkit-user-drag:none;pointer-events:auto;">' +
+        ' style="cursor:pointer;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none;pointer-events:auto;">' +
         (overlay || '') + '</div>';
     };
 
@@ -252,43 +252,34 @@ console.log('LOADED:', 'render/client.js');
         '</div>';
     };
 
-    /* All three layouts below use the PCS padding-bottom technique for box
-       sizing (not CSS aspect-ratio) to avoid the iOS Safari quirk where
-       aspect-ratio-derived heights are not treated as definite for
-       descendant percentage resolution. Every cell is position:relative
-       and every <img> is position:absolute;inset:0 (applied by wrap()). */
-
     if (n === 1) {
-      /* Matches PCS .pcs-pg-1 (padding-bottom:100% -> 1:1 square). */
-      return '<div class="img-single" style="width:100%;position:relative;overflow:hidden;padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
-        wrap(imgs[0], 0, 'width:100%;padding-bottom:100%;position:relative;overflow:hidden;background:#111;') +
+      return '<div class="img-single" style="padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
+        wrap(imgs[0], 0, 'aspect-ratio:1/1;') +
         '</div>';
     }
 
     if (n === 2) {
-      /* Matches PCS .pcs-pg-2 / .pcs-pg-2-inner / .pcs-pg-2-cell
-         (padding-bottom:50% -> 2:1 container, two square halves). */
-      return '<div class="img-duo" style="width:100%;padding-bottom:50%;position:relative;overflow:hidden;display:block;padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
-        '<div style="position:absolute;inset:0;display:flex;gap:2px;">' +
-          wrap(imgs[0], 0, 'flex:1;position:relative;overflow:hidden;background:#111;') +
-          wrap(imgs[1], 1, 'flex:1;position:relative;overflow:hidden;background:#111;') +
-        '</div>' +
-      '</div>';
+      return '<div class="img-duo" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
+        wrap(imgs[0], 0, 'aspect-ratio:1/1;') +
+        wrap(imgs[1], 1, 'aspect-ratio:1/1;') +
+        '</div>';
     }
 
-    /* 3 and 4+ share the same hero+stack layout (PCS .pcs-pg-3 / .pcs-pg-3plus).
-       padding-bottom:60% -> H = 0.6W. Hero flex-basis 60% of W stretches to H,
-       so hero_W = hero_H = 0.6W -> hero is a square.
-       4+ adds a +N overlay on the third (bottom-right) small cell. */
+    /* 3 and 4+ share the same hero+stack flex layout (PCS .pcs-pg-3 / .pcs-pg-3plus parity).
+       4+ adds a +N overlay on cell 2. */
     if (n >= 3) {
       var extra = n - 3;
       var overlay = extra > 0 ? _overlayHtml(extra) : '';
-      return '<div class="img-trio" style="width:100%;padding-bottom:60%;position:relative;overflow:hidden;display:block;padding:0;margin:0;user-select:none;-webkit-user-select:none;">' +
-        '<div style="position:absolute;inset:0;display:flex;gap:2px;">' +
-          wrap(imgs[0], 0, 'flex:0 0 calc(60% - 1px);position:relative;overflow:hidden;background:#111;') +
-          '<div style="flex:1;display:flex;flex-direction:column;gap:2px;">' +
-            wrap(imgs[1], 1, 'flex:1;position:relative;overflow:hidden;background:#111;') +
-            wrap(imgs[2], 2, 'flex:1;position:relative;overflow:hidden;background:#111;', overlay) +
+      return '<div class="img-trio" style="display:flex;gap:2px;padding:0;margin:0;aspect-ratio:1/1;user-select:none;-webkit-user-select:none;">' +
+        '<div style="flex:0 0 calc(60% - 1px);position:relative;overflow:hidden;">' +
+          wrap(imgs[0], 0, '') +
+        '</div>' +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:2px;">' +
+          '<div style="flex:1;position:relative;overflow:hidden;">' +
+            wrap(imgs[1], 1, '') +
+          '</div>' +
+          '<div style="flex:1;position:relative;overflow:hidden;">' +
+            wrap(imgs[2], 2, '', overlay) +
           '</div>' +
         '</div>' +
       '</div>';
