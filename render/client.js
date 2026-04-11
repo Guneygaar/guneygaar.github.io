@@ -569,11 +569,44 @@ console.log('LOADED:', 'render/client.js');
     return escapedText.replace(/@(\w+)/g, '<span style="color:#4A9FD8;font-weight:600;">@$1</span>');
   }
 
-  function _singleCommentHtml(c) {
+  function _parseCommentAttachments(c) {
+    try {
+      return typeof c.attachments === 'string'
+        ? JSON.parse(c.attachments)
+        : c.attachments;
+    } catch (e) { return null; }
+  }
+
+  function _commentImgHtml(c) {
+    var _att = _parseCommentAttachments(c);
+    if (!_att || _att.type !== 'images' || !_att.urls || !_att.urls.length) return '';
+    var urls = _att.urls;
+    var postIdArg = _esc(c.post_id || '');
+    var jsArr = '[' + urls.map(function(u){ return '&#39;' + _esc(u) + '&#39;'; }).join(',') + ']';
+    return '<div class="pcs-comment-imgs">' +
+      urls.map(function(u, i) {
+        return '<img src="' + _esc(u) + '" class="pcs-comment-img-thumb" ' +
+          'onclick="window._pcsOpenLightbox(&#39;' + postIdArg + '&#39;,' + jsArr + ',' + i + ')">';
+      }).join('') +
+    '</div>';
+  }
+
+  function _singleCommentHtml(c, opts) {
+    opts = opts || {};
+    var isReply = !!opts.isReply;
+    var parentAuthor = opts.parentAuthor || '';
     var cid = _esc(c.id || '');
+    var postId = _esc(c.post_id || '');
+    var avSize = isReply ? 22 : 28;
+    var avFontPx = isReply ? 9 : 10;
+    var wrapperPad = isReply ? '8px 14px 8px 46px' : '10px 14px';
+    var connectorHtml = isReply
+      ? '<div style="position:absolute;left:17px;top:-8px;bottom:18px;width:2px;background:#404050;border-radius:1px;"></div>'
+      : '';
     if (c.deleted) {
-      return '<div style="display:flex;gap:10px;padding:8px 14px;align-items:center;">' +
-        '<div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#40405030;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:#404050;">?</div>' +
+      return '<div style="display:flex;gap:10px;padding:' + wrapperPad + ';align-items:center;position:relative;">' +
+        connectorHtml +
+        '<div style="width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#40405030;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:#404050;">?</div>' +
         '<div class="client-comment-tombstone">This message was deleted.</div>' +
       '</div>';
     }
@@ -581,17 +614,26 @@ console.log('LOADED:', 'render/client.js');
     var initial = (c.author || '?').charAt(0).toUpperCase();
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
-    var avatarStyle = 'width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
+    var avatarStyle = 'width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
     var messageHtml = _highlightClientMentions(_esc(c.message || ''));
-    return '<div style="display:flex;gap:10px;padding:10px 14px;">' +
+    var imgHtml = _commentImgHtml(c);
+    var replyTagHtml = (isReply && parentAuthor)
+      ? '<div style="font-family:\'DM Sans\',sans-serif;font-size:11px;color:#A0A0B0;margin-bottom:3px;">' +
+          '\u21a9 <span style="color:#A0A0B0;font-weight:600;">' + _esc(parentAuthor) + '</span>' +
+        '</div>'
+      : '';
+    return '<div style="display:flex;gap:10px;padding:' + wrapperPad + ';position:relative;">' +
+      connectorHtml +
       '<div style="' + avatarStyle + '">' + _esc(initial) + '</div>' +
       '<div style="flex:1;min-width:0;">' +
+        replyTagHtml +
         '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
           '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(c.author) + '</span>' +
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
           '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;">' + ts + '</span>' +
         '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#E0E0E8;line-height:1.55;margin-top:3px;white-space:pre-wrap;">' + messageHtml + '</div>' +
+        imgHtml +
         '<div class="client-comment-actions">' +
           '<span class="pcs-comment-react" data-comment-id="' + cid + '" ' +
             'onclick="window._pcsShowEmojiPicker(this)">' +
@@ -601,24 +643,72 @@ console.log('LOADED:', 'render/client.js');
           '<span style="color:#505058;font-size:12px;">|</span>' +
           '<span onclick="window._clientSetReply(\'' +
             cid + '\',\'' + _esc(c.author || '') + '\',\'' +
-            _esc(c.post_id || '') + '\')">Reply</span>' +
+            postId + '\')">Reply</span>' +
         '</div>' +
       '</div>' +
     '</div>';
+  }
+
+  /* Build threaded HTML for a flat list of comments.
+     topCap: max top-level entries to render (null = all).
+     Returns an object { html, remainingTop }. */
+  function _buildThreadedCommentsHtml(comments, topCap, pid) {
+    var topLevel = [];
+    var replyMap = {};
+    var byId = {};
+    comments.forEach(function(c) { if (c.id) byId[c.id] = c; });
+    comments.forEach(function(c) {
+      if (c.reply_to && byId[c.reply_to]) {
+        if (!replyMap[c.reply_to]) replyMap[c.reply_to] = [];
+        replyMap[c.reply_to].push(c);
+      } else {
+        topLevel.push(c);
+      }
+    });
+    var cap = (typeof topCap === 'number' && topCap > 0) ? topCap : topLevel.length;
+    var showTop = topLevel.slice(0, cap);
+    var remainingTop = topLevel.length - showTop.length;
+    var html = '';
+    for (var i = 0; i < showTop.length; i++) {
+      var parent = showTop[i];
+      html += _singleCommentHtml(parent);
+      var replies = replyMap[parent.id] || [];
+      if (!replies.length) continue;
+      var parentAuthor = parent.author || '';
+      if (replies.length === 1) {
+        html += _singleCommentHtml(replies[0], { isReply: true, parentAuthor: parentAuthor });
+      } else if (replies.length === 2) {
+        html += _singleCommentHtml(replies[0], { isReply: true, parentAuthor: parentAuthor });
+        html += _singleCommentHtml(replies[1], { isReply: true, parentAuthor: parentAuthor });
+      } else {
+        var first = replies[0];
+        var last = replies[replies.length - 1];
+        var middle = replies.slice(1, replies.length - 1);
+        var hiddenId = 'client-hidden-replies-' + _esc(parent.id || '') + '-' + i;
+        html += _singleCommentHtml(first, { isReply: true, parentAuthor: parentAuthor });
+        html += '<div class="pcs-expand-link" onclick="(function(el){var t=document.getElementById(\'' + hiddenId + '\');if(t){t.style.display=\'block\';}el.style.display=\'none\';})(this)" style="padding:6px 14px 6px 46px;cursor:pointer;color:#4A9FD8;font-size:13px;font-weight:600;font-family:\'DM Sans\',sans-serif;">' +
+          'See ' + middle.length + ' more repl' + (middle.length === 1 ? 'y' : 'ies') +
+        '</div>';
+        html += '<div id="' + hiddenId + '" style="display:none;">';
+        middle.forEach(function(r) {
+          html += _singleCommentHtml(r, { isReply: true, parentAuthor: parentAuthor });
+        });
+        html += '</div>';
+        html += _singleCommentHtml(last, { isReply: true, parentAuthor: parentAuthor });
+      }
+    }
+    return { html: html, remainingTop: remainingTop };
   }
 
   function _commentsListHtml(post) {
     var visibleComments = (post.post_comments || []);
     if (!visibleComments.length) return '';
     var pid = _esc(post.post_id || post.id || '');
-    var show = visibleComments.length <= 3 ? visibleComments : visibleComments.slice(0, 3);
-    var remaining = visibleComments.length - show.length;
+    var built = _buildThreadedCommentsHtml(visibleComments, 5, pid);
     var html = '<div data-comments-list="' + pid + '" data-full-comments="' + _esc(JSON.stringify(visibleComments)) + '" style="margin-top:6px;">';
-    for (var i = 0; i < show.length; i++) {
-      html += _singleCommentHtml(show[i]);
-    }
-    if (remaining > 0) {
-      html += '<div data-action="expandComments" data-id="' + pid + '" style="font-size:12px;color:#555;padding:4px 14px 8px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">View ' + remaining + ' more comment' + (remaining > 1 ? 's' : '') + '</div>';
+    html += built.html;
+    if (built.remainingTop > 0) {
+      html += '<div data-action="expandComments" data-id="' + pid + '" style="font-size:12px;color:#555;padding:4px 14px 8px;cursor:pointer;font-family:\'DM Sans\',sans-serif;">View ' + built.remainingTop + ' more comment' + (built.remainingTop > 1 ? 's' : '') + '</div>';
     }
     html += '</div>';
     return html;
@@ -1272,11 +1362,8 @@ console.log('LOADED:', 'render/client.js');
           if (clDiv) {
             try {
               var allComments = JSON.parse(clDiv.getAttribute('data-full-comments') || '[]');
-              var ecHtml = '';
-              for (var ecI = 0; ecI < allComments.length; ecI++) {
-                ecHtml += _singleCommentHtml(allComments[ecI]);
-              }
-              clDiv.innerHTML = ecHtml;
+              var built = _buildThreadedCommentsHtml(allComments, null, id);
+              clDiv.innerHTML = built.html;
             } catch (_ec) {}
           }
           break;
