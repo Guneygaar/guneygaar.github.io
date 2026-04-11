@@ -270,7 +270,7 @@ console.log('LOADED:', 'render/client.js');
     if (n >= 3) {
       var extra = n - 3;
       var overlay = extra > 0 ? _overlayHtml(extra) : '';
-      return '<div class="img-trio" style="display:flex;gap:2px;padding:0;margin:0;aspect-ratio:5/3;user-select:none;-webkit-user-select:none;">' +
+      return '<div class="img-trio" style="display:flex;gap:2px;padding:0;margin:0;aspect-ratio:1/1;user-select:none;-webkit-user-select:none;">' +
         '<div style="flex:0 0 calc(60% - 1px);position:relative;overflow:hidden;">' +
           wrap(imgs[0], 0, '') +
         '</div>' +
