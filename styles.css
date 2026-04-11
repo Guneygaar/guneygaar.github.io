@@ -4123,6 +4123,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   letter-spacing: 0.5px;
 }
 .notif-li-link:hover { color: #3B8DE3; }
+/* Extra breathing room between the trash icon button and the
+   "LINKEDIN →" text inside the .meta-actions flex group. The
+   group's own gap:2px is tight and intentional for the icon pair;
+   the text link needs a bit more space to not crowd the icons. */
+.meta-actions .notif-li-link { margin-left: 4px; }
 
 /* Response time (inline pill kept for tests) */
 .notif-resp-time { color: #3ECF8E; font-size: 11px; margin-left: 4px; }
