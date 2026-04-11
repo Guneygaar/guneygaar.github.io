@@ -797,7 +797,7 @@ console.log('LOADED:', 'render/client.js');
         '<span role="button" aria-label="mention" onclick="window._clientToggleMention(\'' + pid + '\')" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_MENTION_SVG + '</span>' +
       '</div>' +
       /* Comment button is now the sole submit trigger for this bar */
-      '<button data-action="submitComment" data-id="' + pid + '" style="background:#2A2A34;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#555560;cursor:default;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
+      '<button data-action="submitComment" data-id="' + pid + '" style="background:#2A2A34;border:1px solid transparent;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#555560;cursor:default;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
     '</div>' +
     /* Row 4 — image preview strip (hidden by default; JS flips to flex) */
     '<div id="client-img-preview-' + pid + '" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px 59px;"></div>' +
@@ -2123,11 +2123,16 @@ console.log('LOADED:', 'render/client.js');
             window._clientFeedPendingImgs[pid] &&
             window._clientFeedPendingImgs[pid].length > 0;
           if (hasContent || hasPendingImgs) {
-            btn.style.background = '#C4A44A';
-            btn.style.color = '#000000';
+            // SEND REQUEST–matching look: transparent fill + gold
+            // outline + gold text. Border is always present so the
+            // button's bounding box doesn't jump between states.
+            btn.style.background = 'transparent';
+            btn.style.border = '1px solid #C4A44A';
+            btn.style.color = '#C4A44A';
             btn.style.cursor = 'pointer';
           } else {
             btn.style.background = '#2A2A34';
+            btn.style.border = '1px solid transparent';
             btn.style.color = '#555560';
             btn.style.cursor = 'default';
           }
