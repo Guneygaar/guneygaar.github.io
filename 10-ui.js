@@ -687,13 +687,16 @@ function renderNotifications(name, role) {
         '</button>';
     }
 
-    // Meta row — time · [expand] · WhatsApp · trash · [LinkedIn]
-    // Flex `gap: 6px` on .notif-meta (see styles.css) gives uniform
-    // spacing between every child, so the dot separators themselves
-    // carry zero margin.
+    // Meta row — time [expand] WhatsApp trash [LinkedIn]
+    // Flex `gap: 6px` on .notif-meta (see styles.css) is the ONLY
+    // source of spacing between children, so every pair of siblings
+    // sits exactly 6px apart. No .notif-meta-sep dot spans are
+    // emitted anywhere in the row — they used to sit between some
+    // items and not others, which made the perceived gap jump
+    // between ~6px and ~16px across the row.
     var linkedinHtml = '';
     if (isPublished && post && post.linkedin_link) {
-      linkedinHtml = '<span class="notif-meta-sep">\xB7</span>' +
+      linkedinHtml =
         '<a class="notif-li-link" href="' + esc(post.linkedin_link) + '" target="_blank" rel="noopener"' +
         ' onclick="event.stopPropagation();">LINKEDIN \u2192</a>';
     }
@@ -704,8 +707,7 @@ function renderNotifications(name, role) {
 
     var metaRow = '<div class="notif-meta">' +
       '<span class="notif-time">' + esc(ts) + '</span>' +
-      (isExpandable ? '<span class="notif-meta-sep">\xB7</span>' + expandChipHtml : '') +
-      '<span class="notif-meta-sep">\xB7</span>' +
+      (isExpandable ? expandChipHtml : '') +
       waBtn +
       delBtn +
       linkedinHtml +

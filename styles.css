@@ -4187,10 +4187,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-item { flex-direction: column; }
 
 /* Expanded card gets a subtle gold left border + a faint gold wash
-   so you can see which card owns the open drawer at a glance. */
+   so you can see which card owns the open drawer at a glance. The
+   extra padding-bottom + margin-bottom keep the thread-area off the
+   next card's top edge so the drawer never visually merges with the
+   notification rows below. */
 .notif-item.expanded {
   border-left: 2px solid #C8A84B4D;
   padding-left: 16px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
 }
 .notif-item.expanded .notif-item-row { padding-right: 2px; }
 
@@ -4245,11 +4250,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 0;
 }
 .notif-item.expanded .thread-drawer {
-  max-height: 800px;
+  /* 3000px is high enough to fit any realistic thread (messages +
+     reply row + footer link) without clipping, while still keeping
+     the max-height transition smooth. `max-height: none` would break
+     the animation; the outer #notif-list-scroll container handles
+     actual overflow. */
+  max-height: 3000px;
   margin-top: 10px;
 }
 .thread-area {
-  background: #C8A84B0A;    /* rgba(200,168,75,0.04) */
+  background: #C8A84B12;    /* rgba(200,168,75,0.07) — stronger gold wash for boundary */
+  border: 1px solid #C8A84B1A; /* rgba(200,168,75,0.10) — visible containment */
   border-radius: 8px;
   padding: 10px;
 }
@@ -4340,7 +4351,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .thread-reply {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #FFFFFF0A;
+  /* Stronger gold divider so the reply row is visually distinct from
+     the messages above it (was #FFFFFF0A — 4% white, invisible). */
+  border-top: 1px solid #C8A84B26; /* rgba(200,168,75,0.15) */
 }
 .reply-row {
   display: flex;
