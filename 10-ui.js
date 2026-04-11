@@ -413,6 +413,9 @@ var roleDisplayMap = {
 
 async function loadNotifications() {
   if (!localStorage.getItem('sb_access_token')) return;
+  // Reset the per-post thread cache on every panel load so the next expand
+  // picks up fresh server state (new comments, resolved flag flips, etc).
+  window._notifThreadCache = {};
   try {
     var _notifRole = window.AppState.user.effectiveRole || window.AppState.user.role || 'Admin';
     _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
@@ -424,7 +427,11 @@ async function loadNotifications() {
     if (!Array.isArray(data)) { console.error('Notifications load error:', data); return; }
     _notifData = data;
 
-    // Batch-fetch post_comments for every post that has a comment notification
+    // Batch-fetch post_comments for every post that has a comment notification.
+    // SELECT now pulls the extra fields the expand-in-place thread view needs:
+    // author_role (for the mini role tag), post_title (fallback for reply payload),
+    // resolved + resolved_at (to hide resolved comments from the thread),
+    // visibility (so client threads never surface agency-only rows).
     var commentPostIds = [];
     var seen = {};
     data.forEach(function(n) {
@@ -437,7 +444,7 @@ async function loadNotifications() {
     if (commentPostIds.length > 0) {
       try {
         var idList = commentPostIds.join(',');
-        var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,message,created_at,mentioned_users';
+        var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,author_role,message,created_at,mentioned_users,resolved,resolved_at,visibility,post_title';
         var comments = await apiFetch(commentUrl);
         if (Array.isArray(comments)) window._notifComments = comments;
       } catch (ce) {
@@ -459,6 +466,9 @@ async function loadNotifications() {
 // nchip-count-*, grouped-comment keys, response-time snippet).
 function renderNotifications(name, role) {
   var notifs = _notifData;
+  // Expand-in-place state — persisted across innerHTML rebuilds.
+  if (!window._notifExpandedSet) window._notifExpandedSet = new Set();
+  var _expandedSet = window._notifExpandedSet;
   var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
   var titleRole = effectiveR.charAt(0).toUpperCase() + effectiveR.slice(1).toLowerCase();
   var roleLabelEl = document.getElementById('notif-role-label');
@@ -660,7 +670,27 @@ function renderNotifications(name, role) {
       }
     }
 
-    // Meta row — time · icons · optional LinkedIn link on published
+    // Expand chip — only for grouped comment notifications (>1 comment).
+    // Lives inline in the meta row between the timestamp dot and the
+    // WhatsApp icon. CSS handles the collapsed/expanded/hover states.
+    var isExpandable = n.type === 'comment' && groupCount > 1;
+    var isExpanded = isExpandable && _expandedSet.has(n.id);
+    var expandChipHtml = '';
+    if (isExpandable) {
+      expandChipHtml =
+        '<button class="expand-chip" data-action="notif-expand"' +
+          ' data-notif-id="' + esc(n.id || '') + '" aria-label="Expand thread">' +
+          '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
+            '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
+          '</svg>' +
+          '<span class="expand-chip-count">' + groupCount + '</span>' +
+        '</button>';
+    }
+
+    // Meta row — time · [expand] · WhatsApp · trash · [LinkedIn]
+    // Flex `gap: 6px` on .notif-meta (see styles.css) gives uniform
+    // spacing between every child, so the dot separators themselves
+    // carry zero margin.
     var linkedinHtml = '';
     if (isPublished && post && post.linkedin_link) {
       linkedinHtml = '<span class="notif-meta-sep">\xB7</span>' +
@@ -674,6 +704,7 @@ function renderNotifications(name, role) {
 
     var metaRow = '<div class="notif-meta">' +
       '<span class="notif-time">' + esc(ts) + '</span>' +
+      (isExpandable ? '<span class="notif-meta-sep">\xB7</span>' + expandChipHtml : '') +
       '<span class="notif-meta-sep">\xB7</span>' +
       waBtn +
       delBtn +
@@ -694,24 +725,40 @@ function renderNotifications(name, role) {
     // notif-live-card retained as a marker class on published rows so the
     // tap delegate still finds them via closest('.notif-item, .notif-live-card').
     var liveMarker = isPublished ? ' notif-live-card' : '';
+    var expandableAttr = isExpandable ? ' data-expandable="1"' : '';
+    var expandedClass = isExpanded ? ' expanded' : '';
 
-    return '<div class="notif-item ' + tClass + liveMarker + (n.read ? ' read' : '') + '"' +
+    // Thread drawer — always emitted as a collapsed `<div class="thread-drawer">`
+    // for expandable rows, pre-populated with the current thread HTML if the
+    // notification is currently in _notifExpandedSet. CSS max-height:0 keeps
+    // it hidden until .notif-item.expanded flips it open.
+    var threadDrawerHtml = '';
+    if (isExpandable) {
+      var innerHtml = isExpanded ? _notifBuildThreadHtml(n, post, postTitle) : '';
+      threadDrawerHtml = '<div class="thread-drawer">' + innerHtml + '</div>';
+    }
+
+    return '<div class="notif-item ' + tClass + liveMarker + (n.read ? ' read' : '') + expandedClass + '"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
       ' data-post-id="' + esc(n.post_id || '') + '"' +
       ' data-notif-type="' + esc(n.type || '') + '"' +
+      expandableAttr +
       isBriefAttr + '>' +
-      '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
-      '<div class="notif-body">' +
-        pubLabel +
-        '<div class="notif-text">' +
-          unreadDot +
-          '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
-          respTimeHtml +
+      '<div class="notif-item-row">' +
+        '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
+        '<div class="notif-body">' +
+          pubLabel +
+          '<div class="notif-text">' +
+            unreadDot +
+            '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+            respTimeHtml +
+          '</div>' +
+          previewHtml +
+          metaRow +
         '</div>' +
-        previewHtml +
-        metaRow +
+        thumbHtml +
       '</div>' +
-      thumbHtml +
+      threadDrawerHtml +
     '</div>';
   }
 
@@ -730,6 +777,293 @@ function renderNotifications(name, role) {
   }
   html += '<div class="notif-foot">That\u2019s everything</div>';
   scroll.innerHTML = html;
+}
+
+// ===================================================================
+// EXPAND-IN-PLACE THREAD VIEW
+// ===================================================================
+// Helpers used by renderNotifications + the panel click delegate.
+// window._notifExpandedSet — Set of expanded data-notif-id values,
+//   persisted across innerHTML rebuilds.
+// window._notifThreadCache — { [post_id]: htmlString } cache reset by
+//   loadNotifications() so repeat expands skip the filter+sort work.
+// ===================================================================
+
+// Inline send-arrow SVG used by the thread drawer reply input.
+var _NOTIF_SEND_SVG =
+  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"' +
+  ' stroke="currentColor" stroke-width="2" stroke-linecap="round"' +
+  ' stroke-linejoin="round" aria-hidden="true">' +
+    '<line x1="22" y1="2" x2="11" y2="13"/>' +
+    '<polygon points="22 2 15 22 11 13 2 9 22 2"/>' +
+  '</svg>';
+
+// Map an author name OR author_role to a mini-avatar colour class that
+// mirrors .notif-av. Kept local to the thread view so the agency-wide
+// _notifActorClass stays untouched.
+function _notifThreadAvClass(author, authorRole) {
+  var a = (author || '').toLowerCase();
+  var r = (authorRole || '').toLowerCase();
+  if (a === 'manisha' || a === 'shivangini' || r === 'client')    return 'nav-client';
+  if (a === 'chitra'  || r === 'servicing')                       return 'nav-chitra';
+  if (a === 'pranav'  || r === 'creative')                        return 'nav-pranav';
+  if (a === 'shubham' || r === 'admin')                           return 'nav-shubham';
+  return 'nav-system';
+}
+
+// Render the scrollable list of thread messages for a given notification.
+// Shows every comment on that post (not just the grouped actor's),
+// sorted ascending by created_at. Resolved comments are filtered out.
+// Relies on window._notifComments populated by loadNotifications.
+function _notifBuildThreadHtml(n, post, postTitle) {
+  var postId = n && n.post_id;
+  if (!postId) return '';
+  if (!window._notifThreadCache) window._notifThreadCache = {};
+  // Cached HTML uses the latest post_comments + optimistic appends.
+  // Cache is keyed per-post so two notifications on the same post share
+  // the same rendered thread and stay in sync.
+  if (window._notifThreadCache[postId]) return window._notifThreadCache[postId];
+
+  var list = (window._notifComments || [])
+    .filter(function(c) { return c.post_id === postId && c.resolved !== true; })
+    .slice()
+    .sort(function(a, b) {
+      var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return ta - tb;
+    });
+
+  var msgsHtml = '';
+  if (list.length === 0) {
+    msgsHtml = '<div class="thread-empty">No comments yet.</div>';
+  } else {
+    list.forEach(function(c) {
+      msgsHtml += _notifThreadMsgHtml(c);
+    });
+  }
+
+  // Reply input row + "Open full post" footer link.
+  var replyPlaceholder = 'Reply to ' + (postTitle || 'post') + '\u2026';
+  var replyHtml =
+    '<div class="thread-reply">' +
+      '<div class="reply-row">' +
+        '<textarea class="reply-input" rows="1"' +
+          ' data-post-id="' + esc(postId) + '"' +
+          ' placeholder="' + esc(replyPlaceholder) + '"></textarea>' +
+        '<button class="reply-send" data-action="notif-reply-send"' +
+          ' data-post-id="' + esc(postId) + '"' +
+          ' data-notif-id="' + esc(n.id || '') + '" aria-label="Send reply">' +
+          _NOTIF_SEND_SVG +
+        '</button>' +
+      '</div>' +
+      '<div class="reply-label">Posts as comment \xB7 visible to all</div>' +
+    '</div>' +
+    '<div class="thread-footer">' +
+      '<a class="thread-open-post" data-action="notif-open-post"' +
+        ' data-post-id="' + esc(postId) + '"' +
+        ' data-notif-id="' + esc(n.id || '') + '" href="#">Open full post \u2192</a>' +
+    '</div>';
+
+  var html =
+    '<div class="thread-area">' +
+      '<div class="thread-msgs">' + msgsHtml + '</div>' +
+      replyHtml +
+    '</div>';
+
+  window._notifThreadCache[postId] = html;
+  return html;
+}
+
+// Render a single thread message (mini avatar + header + body).
+function _notifThreadMsgHtml(c) {
+  var author = c.author || '';
+  var authorRole = c.author_role || '';
+  var avClass = _notifThreadAvClass(author, authorRole);
+  var initial = author ? author.charAt(0).toUpperCase() : '?';
+  var ts = _notifRelTime(c.created_at);
+  var roleTag = authorRole
+    ? '<span class="thread-role">' + esc(authorRole) + '</span>'
+    : '';
+  return '<div class="thread-msg">' +
+      '<div class="thread-av ' + avClass + '">' + esc(initial) + '</div>' +
+      '<div class="thread-content">' +
+        '<div class="thread-header">' +
+          '<span class="thread-author">' + esc(author) + '</span>' +
+          roleTag +
+          '<span class="thread-time">' + esc(ts) + '</span>' +
+        '</div>' +
+        '<div class="thread-message">' + esc(c.message || '') + '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+// Toggle expand state for a comment notification card. Anchors scroll so
+// the tapped card's top edge stays at the same viewport position after
+// the thread drawer mounts, then updates _notifExpandedSet so the state
+// survives the next renderNotifications rebuild.
+function _notifToggleExpand(item) {
+  if (!item) return;
+  var notifId = item.getAttribute('data-notif-id');
+  if (!notifId) return;
+  if (!window._notifExpandedSet) window._notifExpandedSet = new Set();
+  var set = window._notifExpandedSet;
+  var scroll = document.getElementById('notif-list-scroll');
+  var preRect = item.getBoundingClientRect();
+  var preScrollTop = scroll ? scroll.scrollTop : 0;
+
+  if (set.has(notifId)) {
+    // Collapse — just strip the class; keep the drawer HTML in place so
+    // re-expand is instant. The drawer is display:none via max-height:0.
+    set.delete(notifId);
+    item.classList.remove('expanded');
+    return;
+  }
+
+  // Expand — mount the thread drawer content if it hasn't been built yet.
+  set.add(notifId);
+  var drawer = item.querySelector(':scope > .thread-drawer');
+  if (drawer && !drawer.innerHTML) {
+    var pid = item.getAttribute('data-post-id') || '';
+    var n = (window._notifData || _notifData || []).find(function(x) { return x.id === notifId; });
+    var posts = (window.AppState.posts && window.AppState.posts.all) || [];
+    var post = null;
+    for (var i = 0; i < posts.length; i++) {
+      if (posts[i].post_id === pid) { post = posts[i]; break; }
+    }
+    var postTitle = post && post.title ? post.title : (n && n.message ? n.message : pid);
+    drawer.innerHTML = _notifBuildThreadHtml(n || { id: notifId, post_id: pid }, post, postTitle);
+  }
+  item.classList.add('expanded');
+
+  // Scroll anchoring — after layout flushes, shift scrollTop so the card's
+  // top edge is back where it was pre-expand.
+  if (scroll) {
+    requestAnimationFrame(function() {
+      var postRect = item.getBoundingClientRect();
+      var delta = postRect.top - preRect.top;
+      if (delta !== 0) scroll.scrollTop = preScrollTop + delta;
+    });
+  }
+
+  // Auto-resize wiring for the reply textarea.
+  var ta = item.querySelector('.reply-input');
+  if (ta) {
+    ta.addEventListener('input', _notifReplyInputResize);
+  }
+}
+
+// Grow the reply textarea up to its CSS max-height as the user types,
+// and flip .active on the sibling send button once there is any text.
+function _notifReplyInputResize(e) {
+  var ta = e.currentTarget || e.target;
+  if (!ta) return;
+  ta.style.height = 'auto';
+  var next = Math.min(ta.scrollHeight, 80);
+  ta.style.height = next + 'px';
+  var row = ta.parentNode;
+  if (!row) return;
+  var btn = row.querySelector('.reply-send');
+  if (!btn) return;
+  if (ta.value && ta.value.trim().length > 0) btn.classList.add('active');
+  else btn.classList.remove('active');
+}
+
+// Submit a reply from the thread drawer. Posts to /post_comments with
+// the payload shape documented in CLAUDE.md §2 (post_comments schema).
+// We DO NOT fire the notify-comment fan-out POST from JS — the Supabase
+// edge function handles it (see CLAUDE.md §6), which avoids the existing
+// dual-writer duplicate-row problem.
+async function _notifSubmitReply(sendBtn) {
+  if (!sendBtn || sendBtn.dataset.submitting === '1') return;
+  var postId = sendBtn.getAttribute('data-post-id');
+  var notifId = sendBtn.getAttribute('data-notif-id');
+  var item = document.querySelector(
+    '.notif-item[data-notif-id="' + (notifId || '').replace(/"/g, '\\"') + '"]'
+  );
+  if (!item) return;
+  var ta = item.querySelector('.reply-input');
+  if (!ta) return;
+  var msg = (ta.value || '').trim();
+  if (!msg) return;
+
+  sendBtn.dataset.submitting = '1';
+  sendBtn.disabled = true;
+  ta.disabled = true;
+
+  var posts = (window.AppState.posts && window.AppState.posts.all) || [];
+  var post = null;
+  for (var i = 0; i < posts.length; i++) {
+    if (posts[i].post_id === postId) { post = posts[i]; break; }
+  }
+  // Fallback for post_title: look up the matching notification's message,
+  // which usually embeds the post title (e.g. "Chitra commented on <title>").
+  var notifMatch = _notifData.find(function(x) { return x.id === notifId; });
+  var postTitle = (post && post.title) || (notifMatch && notifMatch.message) || postId;
+
+  var authorName = (window.AppState.user && window.AppState.user.name) || 'Unknown';
+  var effRole = (window.AppState.user && window.AppState.user.effectiveRole) ||
+                (window.AppState.user && window.AppState.user.role) || 'Admin';
+  var authorRole = effRole.charAt(0).toUpperCase() + effRole.slice(1).toLowerCase();
+
+  // Parse any @mentions (very loose — matches the client/pcs parsers)
+  var mentioned = [];
+  var mRe = /@([A-Za-z][A-Za-z0-9_\-\s]*)/g;
+  var m;
+  while ((m = mRe.exec(msg)) !== null) {
+    var raw = (m[1] || '').trim();
+    if (raw) mentioned.push(raw);
+  }
+
+  var payload = {
+    post_id:         postId,
+    post_title:      postTitle,
+    author:          authorName,
+    author_role:     authorRole,
+    message:         msg,
+    visibility:      'all',
+    mentioned_users: mentioned,
+    reply_to:        null,
+    resolved:        false,
+    resolved_by:     null,
+    attachments:     '[]'
+  };
+
+  try {
+    var resp = await apiFetch('/post_comments', {
+      method: 'POST',
+      headers: { 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload)
+    });
+    var created = Array.isArray(resp) && resp[0] ? resp[0] : null;
+    var row = created || Object.assign({}, payload, {
+      id: 'tmp-' + Date.now(),
+      created_at: new Date().toISOString()
+    });
+    // Append to the in-memory comment cache so subsequent expands see it.
+    if (!Array.isArray(window._notifComments)) window._notifComments = [];
+    window._notifComments.push(row);
+    // Bust the cache entry for this post so the next render is fresh,
+    // then append the new message directly to the open drawer.
+    if (window._notifThreadCache) delete window._notifThreadCache[postId];
+    var msgsBox = item.querySelector('.thread-msgs');
+    if (msgsBox) {
+      var empty = msgsBox.querySelector('.thread-empty');
+      if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
+      msgsBox.insertAdjacentHTML('beforeend', _notifThreadMsgHtml(row));
+    }
+    ta.value = '';
+    ta.style.height = 'auto';
+    sendBtn.classList.remove('active');
+  } catch (err) {
+    console.error('[notif-reply] POST failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'notif-reply');
+    if (typeof showToast === 'function') showToast('Reply failed', 'error');
+  } finally {
+    delete sendBtn.dataset.submitting;
+    sendBtn.disabled = false;
+    ta.disabled = false;
+    ta.focus();
+  }
 }
 
 async function markNotifRead(id) {
@@ -1583,6 +1917,72 @@ function openNotifications() {
       if (e.target.closest('.notif-mi-btn')) return;
       if (e.target.closest('.notif-topbar-btn')) return;
       if (e.target.closest('.notif-li-link')) return;
+      // Expand-in-place thread view — the expand chip, the reply input,
+      // the send button, individual thread messages, and the "Open full
+      // post" link all live inside a .notif-item and would otherwise be
+      // swallowed by the item delegate below.
+      var expandBtn = e.target.closest('.expand-chip');
+      var replyInput = e.target.closest('.reply-input');
+      var replySend = e.target.closest('.reply-send');
+      var threadOpen = e.target.closest('.thread-open-post');
+      var threadMsg = e.target.closest('.thread-msg');
+      var threadArea = e.target.closest('.thread-area, .thread-reply, .thread-footer, .reply-label');
+
+      if (replyInput) return;                // let the textarea focus/type
+      if (replySend) {                       // submit the reply
+        e.stopPropagation();
+        _notifSubmitReply(replySend);
+        return;
+      }
+      if (threadOpen) {                      // "Open full post ->" link
+        e.preventDefault();
+        e.stopPropagation();
+        var _openItem = threadOpen.closest('.notif-item, .notif-live-card');
+        var _openPid = threadOpen.getAttribute('data-post-id') ||
+          (_openItem && _openItem.getAttribute('data-post-id'));
+        var _openNotifId = threadOpen.getAttribute('data-notif-id') ||
+          (_openItem && _openItem.getAttribute('data-notif-id'));
+        if (_openNotifId) markNotifRead(_openNotifId);
+        window._notifOpenedPCS = true;
+        closeNotifications();
+        setTimeout(function() {
+          var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
+          if (_role === 'client') {
+            if (typeof window._openClientPostOverlay === 'function')
+              window._openClientPostOverlay(_openPid);
+          } else {
+            openPCS(_openPid, '');
+            setTimeout(function() {
+              if (typeof window._pcsTabSwitch === 'function')
+                window._pcsTabSwitch('client');
+            }, 300);
+          }
+        }, 150);
+        return;
+      }
+      if (expandBtn) {
+        e.stopPropagation();
+        var _chipItem = expandBtn.closest('.notif-item');
+        if (!_chipItem) return;
+        // Mark-read on first expand, mirrors the card-tap semantic.
+        if (!_chipItem.classList.contains('expanded')) {
+          var _nid = _chipItem.getAttribute('data-notif-id');
+          if (_nid) markNotifRead(_nid);
+          _chipItem.classList.add('read');
+          var _cDot = _chipItem.querySelector('.nnew-dot');
+          if (_cDot) _cDot.style.display = 'none';
+        }
+        _notifToggleExpand(_chipItem);
+        return;
+      }
+      if (threadMsg || threadArea) {
+        // Any click inside an already-expanded drawer that isn't on a
+        // tracked control should be ignored (don't open PCS, don't
+        // re-fire markNotifRead).
+        e.stopPropagation();
+        return;
+      }
+
       var item = e.target.closest('.notif-item, .notif-live-card');
       if (!item) return;
       e.stopPropagation();
@@ -1590,13 +1990,28 @@ function openNotifications() {
       var isBrief = item.getAttribute('data-is-brief') === '1' ||
         item.getAttribute('data-notif-type') === 'new_request';
       var notifId = item.getAttribute('data-notif-id');
+      var notifType = item.getAttribute('data-notif-type') || '';
+      var isExpandable = item.getAttribute('data-expandable') === '1';
+
+      // Comment notifications with a group (>1 comment) expand in place
+      // on body tap instead of routing into PCS/client overlay.
+      if (isExpandable && notifType === 'comment' && !isBrief) {
+        if (!item.classList.contains('expanded')) {
+          if (notifId) markNotifRead(notifId);
+          item.classList.add('read');
+          var _bDot = item.querySelector('.nnew-dot');
+          if (_bDot) _bDot.style.display = 'none';
+        }
+        _notifToggleExpand(item);
+        return;
+      }
+
       if (notifId) markNotifRead(notifId);
       // Instant visual mark-as-read
       item.classList.add('read');
       var _tapDot = item.querySelector('.notif-unread-dot');
       if (_tapDot) _tapDot.style.display = 'none';
       if (!pid) return;
-      var notifType = item.getAttribute('data-notif-type') || '';
       window._notifOpenedPCS = true;
       closeNotifications();
       setTimeout(function() {

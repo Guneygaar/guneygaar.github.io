@@ -4054,9 +4054,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── META ROW ── */
+/* Meta row — uniform 6px gap between every child. All child margins are
+   zero; the parent gap is the single source of truth for spacing, so
+   every item (timestamp, dot, expand chip, WA button, trash button,
+   LinkedIn link) sits exactly 6px apart. */
 .notif-meta {
   display: flex;
   align-items: center;
+  gap: 6px;
   margin-top: 4px;
 }
 .notif-time {
@@ -4070,16 +4075,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   color: #222230;
-  margin: 0 5px;
+  margin: 0;
   user-select: none;
 }
 
 /* Meta-row icon buttons — 32x32 tap target centered around the small
-   SVG, with a 16px visual gap between WhatsApp and trash. Negative
-   vertical margin keeps the meta row compact even though the buttons
-   are 32px tall. Child SVG uses pointer-events:none so every click
-   hits the button itself, not the path, which keeps closest('.notif-mi-btn')
-   reliable in the panel tap delegate skip list. */
+   SVG. Negative vertical margin keeps the meta row compact even though
+   the buttons are 32px tall. Horizontal spacing is handled by the
+   parent `.notif-meta { gap: 6px }` so the buttons carry zero margin. */
 .notif-mi-btn {
   width: 32px;
   height: 32px;
@@ -4094,8 +4097,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: -8px 0;
   -webkit-tap-highlight-color: transparent;
 }
-.notif-mi-btn + .notif-mi-btn { margin-left: 16px; }
-.notif-mi-btn:last-of-type { margin-right: 0; }
 .notif-mi-btn svg {
   display: block;
   pointer-events: none;
@@ -4167,6 +4168,250 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
   padding: 28px 18px;
 }
+
+/* ===================================================
+   EXPAND-IN-PLACE THREAD VIEW (v6.2)
+   =================================================== */
+/* CLAUDE.md §4 forbids rgba() — every translucent colour in this
+   section is the 8-digit hex equivalent of the design spec's rgba(). */
+
+/* The .notif-item wrapper now carries its row content inside
+   .notif-item-row so the thread drawer can slot in directly below
+   without breaking the flex row layout. */
+.notif-item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+.notif-item { flex-direction: column; }
+
+/* Expanded card gets a subtle gold left border + a faint gold wash
+   so you can see which card owns the open drawer at a glance. */
+.notif-item.expanded {
+  border-left: 2px solid #C8A84B4D;
+  padding-left: 16px;
+}
+.notif-item.expanded .notif-item-row { padding-right: 2px; }
+
+/* ── EXPAND CHIP ── */
+/* Collapsed state — tiny gold-tinted pill in the meta row. */
+.expand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  padding: 1px 6px;
+  margin: -8px 0;           /* match the meta-icon negative margin */
+  background: #C8A84B14;    /* rgba(200,168,75,0.08) */
+  border: 1px solid #C8A84B1A; /* rgba(200,168,75,0.10) */
+  color: #C8A84B80;         /* rgba(200,168,75,0.50) */
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.expand-chip:hover {
+  background: #C8A84B24;    /* rgba(200,168,75,0.14) */
+  color: #C8A84BCC;         /* rgba(200,168,75,0.80) */
+}
+.expand-chip-arrow {
+  display: block;
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+.expand-chip-count { pointer-events: none; }
+.expand-chip svg { pointer-events: none; }
+
+/* Expanded state — flipped triangle + filled gold, count hidden. */
+.notif-item.expanded .expand-chip {
+  background: #C8A84B1F;    /* rgba(200,168,75,0.12) */
+  color: #C8A84B;
+  border-color: #C8A84B33;  /* rgba(200,168,75,0.20) */
+}
+.notif-item.expanded .expand-chip-arrow { transform: rotate(90deg); }
+.notif-item.expanded .expand-chip-count { display: none; }
+
+/* ── THREAD DRAWER ── */
+/* Collapsed: max-height 0; opened by .notif-item.expanded. Using
+   max-height for the transition keeps the drawer cheap to animate. */
+.thread-drawer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin-top 0.3s ease, padding 0.3s ease;
+  margin: 0;
+}
+.notif-item.expanded .thread-drawer {
+  max-height: 800px;
+  margin-top: 10px;
+}
+.thread-area {
+  background: #C8A84B0A;    /* rgba(200,168,75,0.04) */
+  border-radius: 8px;
+  padding: 10px;
+}
+.thread-msgs {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── THREAD MESSAGE ── */
+.thread-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #FFFFFF0A; /* rgba(255,255,255,0.04) */
+}
+.thread-msg:last-child { border-bottom: none; }
+.thread-av {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #FFFFFF;
+  border: none;
+  margin-top: 1px;
+}
+.thread-av.nav-system {
+  background: #666666;
+}
+.thread-content {
+  flex: 1;
+  min-width: 0;
+}
+.thread-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.thread-author {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #FFFFFFD9;         /* rgba(255,255,255,0.85) */
+}
+.thread-role {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: #FFFFFF0F;    /* rgba(255,255,255,0.06) */
+  color: #FFFFFF59;         /* rgba(255,255,255,0.35) */
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.thread-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #FFFFFF40;         /* rgba(255,255,255,0.25) */
+  margin-left: auto;
+  white-space: nowrap;
+}
+.thread-message {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #FFFFFFCC;         /* rgba(255,255,255,0.80) */
+  margin-top: 3px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.thread-empty {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: #FFFFFF40;
+  padding: 6px 0;
+  text-align: center;
+}
+
+/* ── REPLY INPUT ── */
+.thread-reply {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #FFFFFF0A;
+}
+.reply-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.reply-input {
+  flex: 1;
+  min-height: 38px;
+  max-height: 80px;
+  padding: 9px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.3;
+  color: #FFFFFFE6;         /* rgba(255,255,255,0.90) */
+  background: #FFFFFF0D;    /* rgba(255,255,255,0.05) */
+  border: 1px solid #FFFFFF14; /* rgba(255,255,255,0.08) */
+  border-radius: 8px;
+  resize: none;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s ease;
+  overflow-y: auto;
+}
+.reply-input::placeholder { color: #FFFFFF33; } /* rgba(255,255,255,0.20) */
+.reply-input:focus { border-color: #C8A84B66; } /* rgba(200,168,75,0.40) */
+.reply-input:disabled { opacity: 0.6; }
+.reply-send {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF0F;    /* rgba(255,255,255,0.06) */
+  border: none;
+  border-radius: 8px;
+  color: #FFFFFF33;         /* rgba(255,255,255,0.20) — empty state */
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.reply-send.active {
+  background: #C8A84B26;    /* rgba(200,168,75,0.15) */
+  color: #C8A84B;
+}
+.reply-send:disabled { opacity: 0.5; cursor: default; }
+.reply-send svg { display: block; pointer-events: none; }
+.reply-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #FFFFFF33;
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}
+
+/* ── THREAD FOOTER (Open full post link) ── */
+.thread-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.thread-open-post {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #C8A84B;
+  text-decoration: none;
+  cursor: pointer;
+}
+.thread-open-post:hover { color: #E4C666; }
 
 /* PCS back-to-notifications button */
 .pcs-back-notif-btn {
