@@ -5634,6 +5634,19 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-style: italic;
   padding: 8px 0;
 }
+/* Client Like button must match Reply brightness — override the
+   shared .pcs-comment-react dim (.55 opacity, #78788C stroke) so
+   the heart + "Like" text read at the same weight as Reply. */
+.client-comment-actions .pcs-comment-react {
+  opacity: 1;
+  color: #B0B0B8;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+}
+.client-comment-actions .pcs-comment-react svg {
+  stroke: #B0B0B8;
+}
 
 /* INTERNAL NOTES SECTION */
 /* SHARED COMMENT ITEMS — Instagram-style (Part 2A) */

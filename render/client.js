@@ -617,23 +617,44 @@ console.log('LOADED:', 'render/client.js');
     var avatarStyle = 'width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
     var messageHtml = _highlightClientMentions(_esc(c.message || ''));
     var imgHtml = _commentImgHtml(c);
+    var resolvedHtml = '';
+    if (c.resolved && c.resolved_by) {
+      resolvedHtml = '<div style="display:flex;align-items:center;gap:4px;margin-top:6px;">' +
+        '<svg width="12" height="12" viewBox="0 0 18 18" fill="none" stroke="#3ECF8E" stroke-width="1.5">' +
+          '<circle cx="9" cy="9" r="7"/>' +
+          '<polyline points="6,9 8.5,11.5 12.5,6.5"/>' +
+        '</svg>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#3ECF8E;font-weight:500;">Resolved by ' + _esc(c.resolved_by) + '</span>' +
+      '</div>';
+    }
     var replyTagHtml = (isReply && parentAuthor)
       ? '<div style="font-family:\'DM Sans\',sans-serif;font-size:11px;color:#A0A0B0;margin-bottom:3px;">' +
           '\u21a9 <span style="color:#A0A0B0;font-weight:600;">' + _esc(parentAuthor) + '</span>' +
         '</div>'
       : '';
+    var dotsBtnHtml = '<span class="client-comment-dots" data-comment-id="' + cid + '" ' +
+        'onclick="if(window._clientCommentMenu){window._clientCommentMenu(this,\'' + cid + '\');}" ' +
+        'style="margin-left:auto;cursor:pointer;display:inline-flex;align-items:center;padding:2px 4px;">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#78788C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+          '<circle cx="12" cy="5" r="1"/>' +
+          '<circle cx="12" cy="12" r="1"/>' +
+          '<circle cx="12" cy="19" r="1"/>' +
+        '</svg>' +
+      '</span>';
     return '<div style="display:flex;gap:10px;padding:' + wrapperPad + ';position:relative;">' +
       connectorHtml +
       '<div style="' + avatarStyle + '">' + _esc(initial) + '</div>' +
       '<div style="flex:1;min-width:0;">' +
         replyTagHtml +
-        '<div style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;">' +
+        '<div style="display:flex;align-items:center;flex-wrap:nowrap;gap:6px;">' +
           '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(c.author) + '</span>' +
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
-          '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;">' + ts + '</span>' +
+          dotsBtnHtml +
         '</div>' +
+        '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;margin-top:1px;">' + ts + '</div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;color:#E0E0E8;line-height:1.55;margin-top:3px;white-space:pre-wrap;">' + messageHtml + '</div>' +
         imgHtml +
+        resolvedHtml +
         '<div class="client-comment-actions">' +
           '<span class="pcs-comment-react" data-comment-id="' + cid + '" ' +
             'onclick="window._pcsShowEmojiPicker(this)">' +
