@@ -256,7 +256,7 @@ async function loadPosts() {
   }
 }
 
-async function loadPostsForClient() {
+async function loadPostsForClient(skipRenderIfUnchanged) {
   const reqId = _newPostsRequest();
   try {
     const allowedStages =
@@ -304,6 +304,16 @@ async function loadPostsForClient() {
         if (Array.isArray(comments)) {
           data.forEach(function(p) {
             var pid = p.post_id || p.id;
+            // Guard: if an in-flight optimistic comment is being saved on
+            // this post, keep the existing post_comments array (which holds
+            // the optimistic row) instead of clobbering with server state.
+            var existingPost = (window.AppState.posts.all || []).find(function(ep) {
+              return (ep.post_id || ep.id) === pid;
+            });
+            if (existingPost && existingPost._commentSaving) {
+              p.post_comments = existingPost.post_comments || [];
+              return;
+            }
             p.post_comments = comments.filter(function(c) {
               return c.post_id === pid;
             });
@@ -321,7 +331,18 @@ async function loadPostsForClient() {
 
     mergePosts(normalise(data));
     hideErrorBanner();
-    renderClientView();
+    if (skipRenderIfUnchanged) {
+      // Poll path: only re-render when fingerprint changes
+      var newFp = _clientPostsFingerprint(window.AppState.posts.all);
+      if (newFp !== window._lastClientFp) {
+        window._lastClientFp = newFp;
+        renderClientView();
+      }
+    } else {
+      // Initial load path: render unconditionally and seed fingerprint
+      window._lastClientFp = _clientPostsFingerprint(window.AppState.posts.all);
+      renderClientView();
+    }
   } catch (err) {
     window.logError && window.logError(err && err.message, err && err.stack, 'load-posts-client');
     if (window.AppState.posts.cached.length) {
@@ -348,6 +369,19 @@ function _postsFingerprint(posts) {
   let s = '' + posts.length;
   for (let i = 0; i < posts.length; i++) {
     s += '|' + (posts[i].post_id || posts[i].id || '') + ':' + (posts[i].stage || '');
+  }
+  return s;
+}
+
+// Client fingerprint: like _postsFingerprint but ALSO mixes in comment count
+// per post, so the 30-second client poll can detect new comments (not just
+// stage transitions).
+function _clientPostsFingerprint(posts) {
+  let s = '' + posts.length;
+  for (let i = 0; i < posts.length; i++) {
+    var p = posts[i];
+    var cc = (p && p.post_comments && p.post_comments.length) || 0;
+    s += '|' + (p.post_id || p.id || '') + ':' + (p.stage || '') + ':' + cc;
   }
   return s;
 }
@@ -400,6 +434,47 @@ function stopRealtime() {
   window.AppState.timers.realtimeTimer = null;
   clearInterval(window.AppState.timers.tokenRefresh);
   window.AppState.timers.tokenRefresh = null;
+  // Tear down the client-side poll timer too, so both agency and client
+  // sessions are fully cleaned up through a single entry point.
+  if (typeof stopClientRealtime === 'function') stopClientRealtime();
+}
+
+// 30-second background data poll for the Client role. Mirrors the
+// startRealtime() pattern but hits the client-scoped fetch (via
+// loadPostsForClient(true)) and gates re-renders on _clientPostsFingerprint
+// so typing and scroll position survive.
+function startClientRealtime() {
+  if (window._clientPollTimer) return;
+  window._clientPollTimer = setInterval(async function() {
+    // Guard 1: tab hidden — no point polling
+    if (document.hidden) return;
+    // Guard 2: no auth token — another flow will re-login
+    if (!localStorage.getItem('sb_access_token')) return;
+    // Guard 3: in-flight fetch — skip overlapping polls
+    if (window._isLoadingClientPosts) return;
+    // Guard 4: user is typing — do not rebuild the DOM underneath them
+    var ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+
+    window._isLoadingClientPosts = true;
+    try {
+      await loadPostsForClient(true);
+    } catch (e) {
+      // Keep poll quiet — no error banner thrash on transient failures
+      console.warn('[client-poll]', e);
+    } finally {
+      window._isLoadingClientPosts = false;
+    }
+  }, 30000);
+}
+
+function stopClientRealtime() {
+  if (window._clientPollTimer) {
+    clearInterval(window._clientPollTimer);
+  }
+  window._clientPollTimer = null;
+  window._isLoadingClientPosts = false;
+  window._lastClientFp = null;
 }
 
 async function loadTasks() {

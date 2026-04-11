@@ -1010,6 +1010,10 @@ console.log('LOADED:', 'render/client.js');
 
     input.dataset.submitting = 'true';
     if (_sendBtn) { _sendBtn.dataset.submitting = 'true'; _sendBtn.disabled = true; }
+    // Object-level flag so 07-post-load.js:loadPostsForClient can skip
+    // overwriting this post's post_comments array while the insert is
+    // still in flight (protects the optimistic row from poll clobber).
+    if (post) post._commentSaving = true;
 
     window.apiFetch('/post_comments', {
       method: 'POST',
@@ -1103,6 +1107,7 @@ console.log('LOADED:', 'render/client.js');
     }).finally(function() {
       delete input.dataset.submitting;
       if (_sendBtn) { delete _sendBtn.dataset.submitting; _sendBtn.disabled = false; }
+      if (post) delete post._commentSaving;
     });
   }
 
