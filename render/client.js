@@ -363,20 +363,20 @@ console.log('LOADED:', 'render/client.js');
     var left = '';
     if (isPublished) {
       var approvedDate = post.status_changed_at || post.statusChangedAt || post.updated_at || '';
-      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1;color:#3ECF8E;font-size:12px;font-weight:500;">' +
+      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1.4;color:#3ECF8E;font-size:12px;font-weight:500;">' +
         ICON_CHECK + ' Approved' +
         (approvedDate ? ' &middot; ' + _esc(_fmtDate(approvedDate)) : '') +
         '</span>';
     } else {
       var days = _waitDays(post);
       var dColor = days > 2 ? '#EF4444' : '#FBBF24';
-      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1;color:' + dColor + ';font-size:12px;font-weight:500;">' +
+      left = '<span style="display:inline-flex;align-items:center;gap:6px;line-height:1.4;color:' + dColor + ';font-size:12px;font-weight:500;">' +
         ICON_CLOCK_14 +
         '<span>Waiting ' + days + ' day' + (days !== 1 ? 's' : '') + '</span>' +
         '</span>';
     }
     var count = _commentCount(post);
-    var right = '<span style="display:inline-flex;align-items:center;line-height:1;color:#909098;font-size:12px;font-weight:500;">' +
+    var right = '<span style="display:inline-flex;align-items:center;line-height:1.4;color:#909098;font-size:12px;font-weight:500;">' +
       count + ' comment' + (count === 1 ? '' : 's') +
     '</span>';
     return '<div class="stats-bar" style="display:flex;align-items:center;justify-content:space-between;">' +
@@ -908,7 +908,7 @@ console.log('LOADED:', 'render/client.js');
       ? 'position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#EF4444;'
       : 'display:none;';
 
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px solid #2A2A34;">' +
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;position:sticky;top:0;background:#0D0D12;z-index:100;border-bottom:1px solid #2A2A34;">' +
       '<div style="display:flex;align-items:center;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:12px;line-height:1.4;">' +
         '<span style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:500;color:#B0B0B8;line-height:1.4;">' + _greeting() + '</span>' +
         (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#C4A44A;margin-left:6px;line-height:1.4;">' + clientName + '</span>' : '') +
@@ -949,7 +949,7 @@ console.log('LOADED:', 'render/client.js');
       var color = _clientActiveNav === action ? '#C8A84B' : '#555';
       return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
     };
-    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#1B1F23;border-top:1px solid #2A2A34;z-index:100;max-width:430px;margin:0 auto;';
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#0D0D12;border-top:1px solid #2A2A34;z-index:100;max-width:430px;margin:0 auto;';
     nav.className = '';
     nav.innerHTML =
       '<button class="tab-btn" data-tab="tasks" data-action="nav-feed" style="' + btnStyle('feed') + '">' +
@@ -2109,6 +2109,29 @@ console.log('LOADED:', 'render/client.js');
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 300);
         });
+        // Glow the "Comment" submit button gold when the input has
+        // content OR when the user has staged pending images. When
+        // both are empty the button returns to dim grey with
+        // cursor:default so it reads inert.
+        input.addEventListener('input', function() {
+          var pid = this.id.replace(/^comment-input-/, '');
+          var btn = document.querySelector(
+            'button[data-action="submitComment"][data-id="' + pid + '"]');
+          if (!btn) return;
+          var hasContent = this.value.trim().length > 0;
+          var hasPendingImgs = window._clientFeedPendingImgs &&
+            window._clientFeedPendingImgs[pid] &&
+            window._clientFeedPendingImgs[pid].length > 0;
+          if (hasContent || hasPendingImgs) {
+            btn.style.background = '#C4A44A';
+            btn.style.color = '#000000';
+            btn.style.cursor = 'pointer';
+          } else {
+            btn.style.background = '#2A2A34';
+            btn.style.color = '#555560';
+            btn.style.cursor = 'default';
+          }
+        });
       })(inputs[i]);
     }
   }
@@ -2123,7 +2146,7 @@ console.log('LOADED:', 'render/client.js');
     _ensurePulseStyle();
     _ensureReqOverlay();
     cv.style.display = 'block';
-    cv.style.background = '#1b1f23';
+    cv.style.background = '#0D0D12';
 
     var fab = document.getElementById('fab');
     if (fab) fab.style.display = 'none';
@@ -2257,9 +2280,9 @@ console.log('LOADED:', 'render/client.js');
 
     var overlay = document.createElement('div');
     overlay.id = 'client-post-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#0D0D12;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
     overlay.innerHTML =
-      '<div style="position:sticky;top:0;z-index:10;background:#1B1F23;padding:0;border-bottom:1px solid #2A2A34;">' +
+      '<div style="position:sticky;top:0;z-index:10;background:#0D0D12;padding:0;border-bottom:1px solid #2A2A34;">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding-bottom:72px;">' +
