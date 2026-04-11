@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-11. Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-11 (client-poll). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -64,11 +64,11 @@ Root:
 - `01-config.js` — constants, ROLE_STAGES, ROLE_TABS, `setStage()` (pure stage mutator + logger)
 - `02-session.js` — session globals
 - `utils.js` — esc(), formatDate()
-- `03-auth.js` — magic link, OTP, refreshSession (typed errors), cross-tab refresh lock, visibilitychange refresh, normalizeRole
+- `03-auth.js` — magic link, OTP, refreshSession (typed errors), cross-tab refresh lock, visibilitychange refresh, normalizeRole, `_teardownClientTokenTimer()` (cleans 50-min client token interval on logout)
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
 - `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed
-- `07-post-load.js` — loadPosts, mergePosts, startRealtime poll, _renderBackgroundViews, bottom sheets, _cardClickDelegate
+- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 15s poll), startClientRealtime/stopClientRealtime (client 30s poll), _postsFingerprint, _clientPostsFingerprint, _renderBackgroundViews, bottom sheets, _cardClickDelegate
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
@@ -113,6 +113,14 @@ window.AppState = {
 - If a PATCH hangs > 10s (`_SAVE_TIMEOUT_MS = 10000`) the timer force-clears `_isSaving`, logs `[SAVE TIMEOUT]`, and calls `scheduleRender()`. A force-cleared post can be saved again immediately.
 - `apiFetch` has NO timeout and NO AbortController — this timer is the only protection against indefinite hangs. Wired into `quickStage`, `clientApprove`, `_executeStageChange`/`Async`, `updatePost`.
 
+### Client 30s polling (`startClientRealtime` in 07-post-load.js)
+- Installed from `activateRole()` at 03-auth.js for every Client path; singleton via `window._clientPollTimer`. Cleared by `stopClientRealtime()`, which is called from `stopRealtime()` — so `logout()` / `_clearSessionAndLogin()` teardowns cascade automatically.
+- Interval body guards IN ORDER: `document.hidden`, `sb_access_token`, `window._isLoadingClientPosts` (in-flight), and an active-typing check (`document.activeElement` is INPUT / TEXTAREA / contentEditable). Any guard hit → return without fetching.
+- Delegates to `loadPostsForClient(true)`. The boolean `skipRenderIfUnchanged` flag makes the fetch re-render only when `_clientPostsFingerprint(posts.all) !== window._lastClientFp`. Initial load (no arg) renders unconditionally and seeds `_lastClientFp`.
+- `_clientPostsFingerprint` extends `_postsFingerprint` with per-post `post_comments.length` so new comments trigger re-render (not just stage flips).
+- `loadPostsForClient` skips overwriting `post.post_comments` for any post currently flagged `_commentSaving === true` (object-level lock set by `_handleSubmitComment` in render/client.js). This protects the optimistic comment row from poll clobber.
+- `_teardownClientTokenTimer()` in 03-auth.js clears the 50-min client token interval on logout (previously leaked across logout/login cycles).
+
 ### Render pipeline
 - `setStage(post, stage)` is a PURE logger — mutates `post.stage` and appends to activity log. It does NOT touch `_isSaving`, does NOT fire notifications, does NOT render. Safe for rollback paths.
 - `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true`, queuing intent in `AppState.ui.deferredRender`. `_drainDeferredRender()` fires the queued render on PCS close.
@@ -125,6 +133,7 @@ window.AppState = {
 - `_isRequest` (true) — set on rows merged from `requests`. Brief / assign / close / reopen all branch on this to route API calls to `/requests` vs `/posts`.
 - `_isSaving` (bool) — optimistic save lock.
 - `_saveTimer` — timer handle set by `_startSaveTimeout`, deleted by `_clearSaveTimeout`.
+- `_commentSaving` (bool) — set by `_handleSubmitComment` (render/client.js) while a client comment POST is in flight; `loadPostsForClient` honours it and will not overwrite that post's `post_comments` until the insert resolves.
 
 ### Design system
 - Zero border-radius on inputs/buttons. NO `rgba()` — use 8-digit hex (#RRGGBBAA). Approved exceptions: `.pcs-more-ov`, `.pcs-more-l`, SVG fill at index.html:1140.
@@ -137,7 +146,7 @@ window.AppState = {
 - `_commentInputHtml()` only renders for stages `awaiting_approval` + `awaiting_brand_input` and MUST be called inside `_cardHtml()` or the input never exists.
 - `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it.
 - Silent `.catch(()=>{})` is a bug — always `window.logError`.
-- 15-second poll interval, 50-minute token refresh.
+- 15-second poll interval (agency, startRealtime). 30-second poll interval (client, startClientRealtime). 50-minute token refresh.
 - Client DB role takes absolute priority over `pcs_role_preview`.
 - Deep link: `srtd.io/?open=POST_ID` → stored in `window._pendingOpenPost`, fired after loadPosts.
 - PCS document-click-close listener skips close when the active dropdown contains `input[type="date"]` (native calendar interaction).
@@ -150,7 +159,7 @@ DB roles (canonical, Title Case): `Admin`, `Servicing`, `Creative`, `Client`. Pe
 
 - `effectiveRole` = the canonical DB role the app acts as, possibly overridden by admin preview.
 - `normalizeRole(x)` canonicalizes any person name / casing to a DB role.
-- Client activation: skips `startRealtime()` (no pipeline polling — only the client feed loads).
+- Client activation: skips `startRealtime()` and instead calls `startClientRealtime()` (30-second client poll, see §4).
 - Admin preview: set `AppState.user.previewRole` (stored as `pcs_role_preview` in localStorage) to render as another role without touching the DB. A real Client DB role ALWAYS wins.
 - `switchTab(tabOrEl)` accepts a string (`'dashboard'`, `'pipeline'`, `'tasks'`, `'client'`) OR a DOM element from click delegation. The `pipeline` branch triggers `loadPosts()` with a `_isFetchingPosts` guard to prevent double fetches on rapid tab spam.
 - Sessions: `refreshSession()` returns typed errors: `{token}` | `{error:'auth_expired'|'server'|'network'}`. Network errors KEEP tokens. Cross-tab refresh lock via `localStorage._srtd_refresh_lock` prevents Supabase token-reuse revocation. `visibilitychange` listener guarded by `window._authReady` refreshes on tab focus.
@@ -175,7 +184,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411a`.
+1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260411c`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.

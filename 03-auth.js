@@ -52,6 +52,8 @@ function _clearSessionAndLogin() {
   localStorage.removeItem('hinglish_email');
   localStorage.removeItem('hinglish_name');
   if (typeof stopRealtime === 'function') stopRealtime();
+  if (typeof stopClientRealtime === 'function') stopClientRealtime();
+  if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
   showLoginOverlay();
 }
 window._clearSessionAndLogin = _clearSessionAndLogin;
@@ -308,6 +310,8 @@ function logout() {
   localStorage.removeItem('sb_refresh_token');
   localStorage.removeItem('hinglish_pending_email');
   stopRealtime();
+  if (typeof stopClientRealtime === 'function') stopClientRealtime();
+  if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');
   showLoginOverlay();
@@ -350,6 +354,7 @@ function activateRole(role) {
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
+    if (typeof startClientRealtime === 'function') startClientRealtime();
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
         try {
@@ -381,6 +386,7 @@ function activateRole(role) {
   if (window.AppState.user.effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
+    if (typeof startClientRealtime === 'function') startClientRealtime();
   } else {
     document.getElementById('dashboard-view')?.classList.add('active');
     const lbl = document.getElementById('topbar-role-label');
@@ -412,6 +418,17 @@ window.resetRolePreview = function() {
   localStorage.removeItem('pcs_role_preview');
   location.reload();
 };
+
+// Tear down the client 50-min token refresh interval. Declared below
+// activateRole() so that the first textual occurrence of _clientTokenTimer
+// in this file remains the setInterval block above (keeps session-resilience
+// test 10 anchored to the right code path).
+function _teardownClientTokenTimer() {
+  if (window._clientTokenTimer) {
+    clearInterval(window._clientTokenTimer);
+    window._clientTokenTimer = null;
+  }
+}
 
 function _buildUserMenu() {
   const menu = document.getElementById('user-menu');
