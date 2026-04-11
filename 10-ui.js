@@ -1580,6 +1580,9 @@ function openNotifications() {
       if (e.target.closest('.mark-all-btn')) return;
       if (e.target.closest('.notif-close-btn')) return;
       if (e.target.closest('.notif-action-btn')) return;
+      if (e.target.closest('.notif-mi-btn')) return;
+      if (e.target.closest('.notif-topbar-btn')) return;
+      if (e.target.closest('.notif-li-link')) return;
       var item = e.target.closest('.notif-item, .notif-live-card');
       if (!item) return;
       e.stopPropagation();

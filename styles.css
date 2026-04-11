@@ -3965,9 +3965,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   padding: 11px 18px;
   border-bottom: 1px solid #14141E;
   cursor: pointer;
-  background: #141420;
+  background: transparent;
 }
-/* READ state — background swap only. No opacity change. */
+/* Read and unread items are visually identical — the ONLY difference
+   is the 5px gold dot (.nnew-dot) that unread items render inline
+   before the actor name. No background swap, no opacity change,
+   no color differences. Zero read-state CSS overrides. */
 .notif-item.read { background: transparent; }
 
 /* ── AVATAR ── */
@@ -4017,10 +4020,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 600;
   color: #F0F0F8;
 }
-.notif-item.read .notif-text { color: #707080; }
-.notif-item.read .notif-text strong { color: #888898; }
 
-/* Inline unread gold dot */
+/* Inline unread gold dot — the ONLY unread indicator on the card. */
 .nnew-dot {
   display: inline-block;
   width: 5px;
@@ -4043,8 +4044,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.notif-item.read .notif-preview { color: #444452; }
-
 .notif-more {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
@@ -4058,7 +4057,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-meta {
   display: flex;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 .notif-time {
   font-family: 'IBM Plex Mono', monospace;
@@ -4067,7 +4066,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   color: #4A4A5C;
   white-space: nowrap;
 }
-.notif-item.read .notif-time { color: #333340; }
 .notif-meta-sep {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
@@ -4075,19 +4073,33 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   margin: 0 5px;
   user-select: none;
 }
+
+/* Meta-row icon buttons — 32x32 tap target centered around the small
+   SVG, with a 16px visual gap between WhatsApp and trash. Negative
+   vertical margin keeps the meta row compact even though the buttons
+   are 32px tall. Child SVG uses pointer-events:none so every click
+   hits the button itself, not the path, which keeps closest('.notif-mi-btn')
+   reliable in the panel tap delegate skip list. */
 .notif-mi-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
   background: none;
   border: none;
-  padding: 0;
-  margin: 0 8px 0 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   color: #3A3A4C;
+  margin: -8px 0;
+  -webkit-tap-highlight-color: transparent;
 }
+.notif-mi-btn + .notif-mi-btn { margin-left: 16px; }
 .notif-mi-btn:last-of-type { margin-right: 0; }
-.notif-mi-btn svg { display: block; }
-.notif-item.read .notif-mi-btn { color: #2A2A36; }
+.notif-mi-btn svg {
+  display: block;
+  pointer-events: none;
+}
 .notif-li-link {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
