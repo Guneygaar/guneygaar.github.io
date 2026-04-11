@@ -673,7 +673,17 @@ function renderNotifications(name, role) {
     // Expand chip — only for grouped comment notifications (>1 comment).
     // Lives inline in the meta row between the timestamp dot and the
     // WhatsApp icon. CSS handles the collapsed/expanded/hover states.
-    var isExpandable = n.type === 'comment' && groupCount > 1;
+    // postCommentCount is the TOTAL non-resolved comments on this
+    // notification's post, pulled from window._notifComments. It
+    // drives both `isExpandable` (so any post with >1 comment gets
+    // the chip regardless of how the notifications were grouped)
+    // and the chip label. Falls back to `groupCount` on notifications
+    // that don't have a post_id match in the comment cache.
+    var postCommentCount = (n.type === 'comment' && n.post_id)
+      ? _notifPostCommentCount(n.post_id)
+      : 0;
+    var expandCount = postCommentCount > 0 ? postCommentCount : groupCount;
+    var isExpandable = n.type === 'comment' && expandCount > 1;
     var isExpanded = isExpandable && _expandedSet.has(n.id);
     var expandChipHtml = '';
     if (isExpandable) {
@@ -683,7 +693,7 @@ function renderNotifications(name, role) {
           '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
             '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
           '</svg>' +
-          '<span class="expand-chip-count">' + groupCount + '</span>' +
+          '<span class="expand-chip-count">' + expandCount + '</span>' +
         '</button>';
     }
 
@@ -813,9 +823,26 @@ function _notifThreadAvClass(author, authorRole) {
   return 'nav-system';
 }
 
+// Return the count of visible (non-resolved) comments on a given post
+// from window._notifComments. Used by _buildItem to drive the expand
+// chip (label + visibility) and by _notifBuildThreadHtml for the
+// overflow link.
+function _notifPostCommentCount(postId) {
+  if (!postId) return 0;
+  var all = window._notifComments || [];
+  var n = 0;
+  for (var i = 0; i < all.length; i++) {
+    var c = all[i];
+    if (c && c.post_id === postId && c.resolved !== true) n++;
+  }
+  return n;
+}
+
 // Render the scrollable list of thread messages for a given notification.
-// Shows every comment on that post (not just the grouped actor's),
-// sorted ascending by created_at. Resolved comments are filtered out.
+// Shows up to the LATEST 5 non-resolved comments on that post (from any
+// author), displayed in chronological order within those 5. If more than
+// 5 exist, a "View all N comments" link sits at the top of the drawer
+// and opens the full post in PCS / client overlay.
 // Relies on window._notifComments populated by loadNotifications.
 function _notifBuildThreadHtml(n, post, postTitle) {
   var postId = n && n.post_id;
@@ -826,14 +853,30 @@ function _notifBuildThreadHtml(n, post, postTitle) {
   // the same rendered thread and stay in sync.
   if (window._notifThreadCache[postId]) return window._notifThreadCache[postId];
 
-  var list = (window._notifComments || [])
+  // Filter + sort DESC so `.slice(0,5)` keeps the NEWEST five, then
+  // reverse so the oldest of the 5 appears first in display order
+  // (chronological within the truncated window).
+  var all = (window._notifComments || [])
     .filter(function(c) { return c.post_id === postId && c.resolved !== true; })
     .slice()
     .sort(function(a, b) {
       var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
       var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return ta - tb;
+      return tb - ta;
     });
+  var totalCount = all.length;
+  var list = all.slice(0, 5).reverse();
+
+  // Overflow link — only when there are more comments than we display.
+  var overflowHtml = '';
+  if (totalCount > 5) {
+    overflowHtml =
+      '<div class="thread-overflow" data-action="notif-open-post"' +
+      ' data-post-id="' + esc(postId) + '"' +
+      ' data-notif-id="' + esc(n.id || '') + '">' +
+      'View all ' + totalCount + ' comments' +
+      '</div>';
+  }
 
   var msgsHtml = '';
   if (list.length === 0) {
@@ -868,6 +911,7 @@ function _notifBuildThreadHtml(n, post, postTitle) {
 
   var html =
     '<div class="thread-area">' +
+      overflowHtml +
       '<div class="thread-msgs">' + msgsHtml + '</div>' +
       replyHtml +
     '</div>';
@@ -1926,7 +1970,10 @@ function openNotifications() {
       var expandBtn = e.target.closest('.expand-chip');
       var replyInput = e.target.closest('.reply-input');
       var replySend = e.target.closest('.reply-send');
-      var threadOpen = e.target.closest('.thread-open-post');
+      // Both the footer "Open full post ->" link and the top-of-drawer
+      // "View all N comments" overflow link route through the same
+      // open-post handler below.
+      var threadOpen = e.target.closest('.thread-open-post, .thread-overflow');
       var threadMsg = e.target.closest('.thread-msg');
       var threadArea = e.target.closest('.thread-area, .thread-reply, .thread-footer, .reply-label');
 
