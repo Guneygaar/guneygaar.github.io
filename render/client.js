@@ -214,13 +214,13 @@ console.log('LOADED:', 'render/client.js');
     var id = 'cap-' + (post.post_id || post.id || '');
 
     if (short) {
-      return '<div id="' + _esc(id) + '" style="font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55;color:#ccc;padding:0 14px;margin-top:8px;">' +
+      return '<div id="' + _esc(id) + '" class="cf-caption" style="font-family:\'DM Sans\',sans-serif;font-size:14px;line-height:1.6;color:#E0E0E8;padding:0 14px;margin-top:8px;">' +
         _hashtagHtml(short) +
-        '<span data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#0a66c2;cursor:pointer;font-size:12px;">...more</span>' +
+        '<span class="see-more" data-action="expand-caption" data-id="' + _esc(id) + '" style="color:#4A9FD8;font-weight:500;cursor:pointer;font-size:13px;">...more</span>' +
         '<span style="display:none;" data-full>' + _hashtagHtml(text) + '</span>' +
         '</div>';
     }
-    return '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;line-height:1.55;color:#ccc;padding:0 14px;margin-top:8px;">' + _hashtagHtml(text) + '</div>';
+    return '<div class="cf-caption" style="font-family:\'DM Sans\',sans-serif;font-size:14px;line-height:1.6;color:#E0E0E8;padding:0 14px;margin-top:8px;">' + _hashtagHtml(text) + '</div>';
   }
 
   /* ---- image grid ---- */
@@ -361,19 +361,19 @@ console.log('LOADED:', 'render/client.js');
     var left = '';
     if (isPublished) {
       var approvedDate = post.status_changed_at || post.statusChangedAt || post.updated_at || '';
-      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:#22c55e;">' +
+      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:#3ECF8E;font-size:11px;font-weight:600;">' +
         ICON_CHECK + ' Approved' +
         (approvedDate ? ' &middot; ' + _esc(_fmtDate(approvedDate)) : '') +
         '</span>';
     } else {
       var days = _waitDays(post);
-      var dColor = days > 2 ? '#FF4B4B' : '#444';
-      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:' + dColor + ';">' +
+      var dColor = days > 2 ? '#EF4444' : '#FBBF24';
+      left = '<span style="display:inline-flex;align-items:center;gap:4px;color:' + dColor + ';font-size:11px;font-weight:600;">' +
         ICON_CLOCK + ' Waiting ' + days + ' day' + (days !== 1 ? 's' : '') +
         '</span>';
     }
     var count = _commentCount(post);
-    var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#444;">' +
+    var right = '<span style="display:inline-flex;align-items:center;gap:4px;color:#B0B0B8;font-size:11px;">' +
       ICON_COMMENT_SM + ' ' + count + '</span>';
     return '<div class="stats-bar" style="display:flex;align-items:center;justify-content:space-between;">' +
       left + right + '</div>';
@@ -386,9 +386,10 @@ console.log('LOADED:', 'render/client.js');
     var pid = _esc(post.post_id || post.id || '');
     var title = _esc(post.title || '');
     var btnStyle = 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;' +
-      'background:none;border:none;border-right:1px solid #FFFFFF08;' +
+      'background:none;border:none;border-right:1px solid #2A2A34;' +
+      'color:#B0B0B8;font-size:11px;font-weight:500;' +
       'cursor:pointer;';
-    var lastBtnStyle = btnStyle.replace('border-right:1px solid #FFFFFF08;', '');
+    var lastBtnStyle = btnStyle.replace('border-right:1px solid #2A2A34;', '');
 
     var btn1 = '';
     if (post.stage === 'awaiting_approval') {
@@ -417,7 +418,7 @@ console.log('LOADED:', 'render/client.js');
 
   function _approvePopupHtml() {
     return '<div id="client-approve-popup" style="display:none;position:fixed;inset:0;z-index:1500;background:#000000BF;align-items:center;justify-content:center;">' +
-      '<div style="background:#1a1a1a;border:1px solid #FFFFFF14;border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center;">' +
+      '<div style="background:#1a1a1a;border:1px solid #2A2A34;border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center;">' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-weight:600;font-size:16px;color:#e8e2d9;">Approve this post?</div>' +
         '<div id="client-approve-title" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#C8A84B;margin-top:10px;"></div>' +
         '<div style="font-family:\'DM Sans\',sans-serif;font-size:12px;color:#666;margin-top:10px;line-height:1.5;">This will send it for scheduling. Your team will be notified immediately.</div>' +
@@ -432,7 +433,7 @@ console.log('LOADED:', 'render/client.js');
   /* ---- card 3-dot menu (singleton, repositioned on open) ---- */
 
   var _menuBtnStyle = 'display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;';
-  var _menuBtnBorder = 'border-top:1px solid #FFFFFF0F;';
+  var _menuBtnBorder = 'border-top:1px solid #2A2A34;';
 
   function _handleCardMenuAction(action, postId) {
     var post = (window.AppState.posts.all || []).find(function (p) { return p.post_id === postId || p.id === postId; });
@@ -845,7 +846,7 @@ console.log('LOADED:', 'render/client.js');
   /* ---- section label ---- */
 
   function _sectionLabel(text) {
-    return '<div class="section-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;">' + text + '</div>';
+    return '<div class="section-label" style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:#A0A0B0;">' + text + '</div>';
   }
 
   /* ---- top bar ---- */
@@ -856,32 +857,70 @@ console.log('LOADED:', 'render/client.js');
     return { c: '#C8A84B', bg: '#C8A84B0A', bc: '#C8A84B4D' };
   }
 
-  var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  var ICON_BELL_SM = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#B0B0B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 
-  function _topBarHtml(awaitCount) {
-    var clientName = _esc(window.AppState.user.name || '');
-    var pill = '';
-    if (awaitCount > 0) {
-      var pc = _pillColor(awaitCount);
-      pill = '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:0.06em;padding:3px 9px;border-radius:10px;background:' + pc.bg + ';color:' + pc.c + ';border:1px dotted ' + pc.bc + ';">' + awaitCount + ' AWAITING</span>';
+  /* Smart awaiting-pill palette.
+     State 1 (overdue):     red    #EF4444 / #EF444420
+     State 2 (awaiting):    gold   #C4A44A / #C4A44A18
+     State 3 (all clear):   green  #3ECF8E / #3ECF8E18 */
+  function _clientTopBarPill(awaitingPosts) {
+    var count = awaitingPosts.length;
+    if (count === 0) {
+      return {
+        text: 'All clear \u2713',
+        color: '#3ECF8E',
+        bg: '#3ECF8E18'
+      };
     }
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px dotted #FFFFFF14;">' +
-      '<div style="display:flex;align-items:baseline;">' +
-        '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;color:#555;">' + _greeting() + '</span>' +
-        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:500;font-size:13px;color:#C8A84B;margin-left:5px;">' + clientName + '</span>' : '') +
+    var todayStr = new Date().toISOString().slice(0, 10);
+    var overdue = awaitingPosts.some(function(p) {
+      var td = p.targetDate || p.target_date || '';
+      return td && td < todayStr;
+    });
+    if (overdue) {
+      return {
+        text: count + ' awaiting',
+        color: '#EF4444',
+        bg: '#EF444420'
+      };
+    }
+    return {
+      text: count + ' awaiting',
+      color: '#C4A44A',
+      bg: '#C4A44A18'
+    };
+  }
+
+  function _topBarHtml(buckets) {
+    var clientName = _esc(window.AppState.user.name || '');
+    var awaiting = (buckets.approval || []).concat(buckets.input || []);
+    var pillData = _clientTopBarPill(awaiting);
+    var pillStyle = 'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;letter-spacing:0.04em;padding:3px 10px;border-radius:12px;background:' + pillData.bg + ';color:' + pillData.color + ';border:none;white-space:nowrap;';
+    var pill = '<span style="' + pillStyle + '">' + _esc(pillData.text) + '</span>';
+
+    // Bell red dot only when unread notifications exist.
+    var unread = (window.AppState && window.AppState.ui && window.AppState.ui.unreadCount) || 0;
+    var bellDotStyle = unread > 0
+      ? 'position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:#EF4444;'
+      : 'display:none;';
+
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;position:sticky;top:0;background:#1b1f23;z-index:100;border-bottom:1px solid #2A2A34;">' +
+      '<div style="display:flex;align-items:baseline;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-right:12px;">' +
+        '<span style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;color:#D0D0D8;">' + _greeting() + '</span>' +
+        (clientName ? '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:15px;color:#C4A44A;margin-left:6px;">' + clientName + '</span>' : '') +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:12px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">' +
         pill +
-        '<button data-action="open-notifications" style="position:relative;background:none;border:none;color:#444;cursor:pointer;padding:4px;">' +
+        '<button data-action="open-notifications" style="position:relative;background:none;border:none;cursor:pointer;padding:4px;">' +
           ICON_BELL_SM +
-          '<span data-bell-dot style="position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:#ef4444;"></span>' +
+          '<span data-bell-dot style="' + bellDotStyle + '"></span>' +
         '</button>' +
         '<div style="position:relative;">' +
-          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#444;cursor:pointer;padding:4px;">' + ICON_DOTS + '</button>' +
-          '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px dotted #FFFFFF1F;border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px #00000099;">' +
+          '<button data-action="top-menu-toggle" style="background:none;border:none;color:#909098;cursor:pointer;padding:4px;font-size:16px;">' + ICON_DOTS + '</button>' +
+          '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px solid #2A2A34;border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px #00000099;">' +
             '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
-            '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #FFFFFF0F;">Light Mode</button>' +
-            '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #FFFFFF0F;">Sign Out</button>' +
+            '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #2A2A34;">Light Mode</button>' +
+            '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #2A2A34;">Sign Out</button>' +
           '</div>' +
         '</div>' +
       '</div>' +
@@ -906,7 +945,7 @@ console.log('LOADED:', 'render/client.js');
       var color = _clientActiveNav === action ? '#C8A84B' : '#555';
       return 'display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:' + color + ';cursor:pointer;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:0.04em;padding:4px 12px;';
     };
-    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#1B1F23;border-top:1px solid #FFFFFF0F;z-index:100;max-width:430px;margin:0 auto;';
+    nav.style.cssText = 'position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 calc(8px + env(safe-area-inset-bottom));background:#1B1F23;border-top:1px solid #2A2A34;z-index:100;max-width:430px;margin:0 auto;';
     nav.className = '';
     nav.innerHTML =
       '<button class="tab-btn" data-tab="tasks" data-action="nav-feed" style="' + btnStyle('feed') + '">' +
@@ -2092,7 +2131,7 @@ console.log('LOADED:', 'render/client.js');
     var buckets = _bucket(posts);
     var awaitCount = buckets.approval.length + buckets.input.length;
 
-    var html = _topBarHtml(awaitCount);
+    var html = _topBarHtml(buckets);
 
     var hasContent = buckets.approval.length || buckets.input.length || buckets.published.length;
 
@@ -2216,7 +2255,7 @@ console.log('LOADED:', 'render/client.js');
     overlay.id = 'client-post-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;background:#1b1f23;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:\'DM Sans\',sans-serif;';
     overlay.innerHTML =
-      '<div style="position:sticky;top:0;z-index:10;background:#1B1F23;padding:0;border-bottom:1px solid #FFFFFF0F;">' +
+      '<div style="position:sticky;top:0;z-index:10;background:#1B1F23;padding:0;border-bottom:1px solid #2A2A34;">' +
         '<button id="client-overlay-close" style="background:none;border:none;color:#888;font-size:24px;cursor:pointer;padding:12px 16px;">&#x2715;</button>' +
       '</div>' +
       '<div style="padding-bottom:72px;">' +
