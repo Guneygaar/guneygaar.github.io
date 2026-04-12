@@ -191,7 +191,8 @@ function toggleUserMenu() {
   m.style.display = 'block';
   setTimeout(function() {
     document.addEventListener('click', function _close(e) {
-      if (!m.contains(e.target)) {
+      var trigger = document.getElementById('prof-trigger');
+      if (!m.contains(e.target) && !(trigger && trigger.contains(e.target))) {
         m.style.display = 'none';
         document.removeEventListener('click', _close);
       }

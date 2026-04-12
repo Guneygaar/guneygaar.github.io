@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260413i">
+ <link rel="stylesheet" href="styles.css?v=20260413j">
 
 </head>
 <body>
@@ -157,19 +157,13 @@
       Good morning, <span id="dash-greeting-name" style="color:#C8A84B;font-weight:500;">Shubham</span>
     </div>
     <div class="app-header-right">
-      <!-- Profile trigger -->
-      <button class="app-icon-btn prof-trigger-btn" id="prof-trigger" onclick="openProfilePanel()" title="My Profile" style="width:28px;height:28px;padding:0;overflow:hidden;border-radius:50%"></button>
+      <!-- Profile avatar / menu trigger -->
+      <button class="app-icon-btn prof-trigger-btn" id="prof-trigger" onclick="toggleUserMenu()" title="Menu" style="width:36px;height:36px;padding:0;overflow:hidden;border-radius:50%"></button>
       <!-- Bell icon -->
       <button class="app-icon-btn" id="notif-bell" onclick="openNotifications()" title="Notifications" style="position:relative">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
         <span class="nav-badge" id="notif-bell-badge" style="display:none"></span>
       </button>
-      <!-- Three-dot menu -->
-      <div class="user-menu-wrap" id="user-menu-wrap">
-        <button class="app-icon-btn" onclick="toggleUserMenu()" title="Menu">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
-        </button>
-      </div>
     </div>
   </header>
 
@@ -1083,28 +1077,28 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260413i"></script>
-<script src="00-appstate-compat.js?v=20260413i"></script>
-<script src="01-config.js?v=20260413i" defer></script>
-<script src="02-session.js?v=20260413i" defer></script>
-<script src="utils.js?v=20260413i" defer></script>
-<script src="12-profiles.js?v=20260413i" defer></script>
-<script src="03-auth.js?v=20260413i" defer></script>
-<script src="05-api.js?v=20260413i" defer></script>
-<script src="10-ui.js?v=20260413i" defer></script>
+<script src="00-appstate.js?v=20260413j"></script>
+<script src="00-appstate-compat.js?v=20260413j"></script>
+<script src="01-config.js?v=20260413j" defer></script>
+<script src="02-session.js?v=20260413j" defer></script>
+<script src="utils.js?v=20260413j" defer></script>
+<script src="12-profiles.js?v=20260413j" defer></script>
+<script src="03-auth.js?v=20260413j" defer></script>
+<script src="05-api.js?v=20260413j" defer></script>
+<script src="10-ui.js?v=20260413j" defer></script>
 
-<script src="06-post-create.js?v=20260413i" defer></script>
-<script defer src="render/dashboard.js?v=20260413i"></script>
-<script defer src="render/client.js?v=20260413i"></script>
-<script defer src="render/pipeline.js?v=20260413i"></script>
-<script defer src="render/brief.js?v=20260413i"></script>
-<script defer src="actions/pcs.js?v=20260413i"></script>
-<script defer src="actions/pcs-longpress.js?v=20260413i"></script>
-<script src="07-post-load.js?v=20260413i" defer></script>
-<script src="08-post-actions.js?v=20260413i" defer></script>
-<script src="09-library.js?v=20260413i" defer></script>
-<script src="09-approval.js?v=20260413i" defer></script>
-<script src="04-router.js?v=20260413i" defer></script>
+<script src="06-post-create.js?v=20260413j" defer></script>
+<script defer src="render/dashboard.js?v=20260413j"></script>
+<script defer src="render/client.js?v=20260413j"></script>
+<script defer src="render/pipeline.js?v=20260413j"></script>
+<script defer src="render/brief.js?v=20260413j"></script>
+<script defer src="actions/pcs.js?v=20260413j"></script>
+<script defer src="actions/pcs-longpress.js?v=20260413j"></script>
+<script src="07-post-load.js?v=20260413j" defer></script>
+<script src="08-post-actions.js?v=20260413j" defer></script>
+<script src="09-library.js?v=20260413j" defer></script>
+<script src="09-approval.js?v=20260413j" defer></script>
+<script src="04-router.js?v=20260413j" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

@@ -440,6 +440,11 @@ function _buildUserMenu() {
   var _roleLower = (window.AppState.user.effectiveRole || window.AppState.user.role || '').toLowerCase();
   let html = '';
 
+  // My Profile item (all roles)
+  var _profAv = (typeof renderAvatar === 'function') ? renderAvatar(window.AppState.user.email || '', _roleLower, 20) : '';
+  html += '<button class="user-menu-item" onclick="openProfilePanel(); closeUserMenu()">' + _profAv + ' My Profile</button>';
+  html += '<div class="um-divider"></div>';
+
   // Client gets a dedicated slim menu
   if (_roleLower === 'client') {
     html += '<button class="user-menu-item" onclick="openClientRequestForm(); closeUserMenu()" style="color:#C8A84B;">+ New Request</button>';

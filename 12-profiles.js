@@ -559,5 +559,7 @@ function _renderProfileTrigger() {
   if (!wrap) return;
   var email = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
   var role = (window.AppState && window.AppState.user && (window.AppState.user.effectiveRole || window.AppState.user.role)) || '';
-  wrap.innerHTML = renderAvatar(email, role, 28);
+  var colors = _avatarColors(role);
+  wrap.style.border = '2px solid ' + colors.bg;
+  wrap.innerHTML = renderAvatar(email, role, 32);
 }
