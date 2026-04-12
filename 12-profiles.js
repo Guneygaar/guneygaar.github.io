@@ -45,35 +45,62 @@ async function fetchProfiles() {
 
 function getDisplayName(emailOrName) {
   if (!emailOrName) return 'Unknown';
-  var input = String(emailOrName).toLowerCase();
-  if (!input) return 'Unknown';
+  var key = String(emailOrName).toLowerCase().trim();
+  if (!key) return 'Unknown';
   var cache = window._profilesCache;
-  if (cache && cache[input] && cache[input].display_name) {
-    return cache[input].display_name;
+  if (cache && cache[key] && cache[key].display_name) {
+    return cache[key].display_name;
   }
-  if (input.indexOf('@') > -1) {
-    var local = input.split('@')[0];
+  if (cache) {
+    var keys = Object.keys(cache);
+    for (var i = 0; i < keys.length; i++) {
+      var p = cache[keys[i]];
+      if (p.display_name && p.display_name.toLowerCase() === key) {
+        return p.display_name;
+      }
+    }
+  }
+  if (key.indexOf('@') >= 0) {
+    var local = key.split('@')[0];
     return local.charAt(0).toUpperCase() + local.slice(1);
   }
   return emailOrName;
 }
 
-function getAvatarUrl(emailOrName) {
-  if (!emailOrName) return null;
-  var input = String(emailOrName).toLowerCase();
-  if (!input) return null;
+function getAvatarUrl(nameOrEmail) {
+  if (!nameOrEmail) return null;
+  var key = String(nameOrEmail).toLowerCase().trim();
+  if (!key) return null;
   var cache = window._profilesCache;
-  if (cache && cache[input] && cache[input].avatar_url) {
-    return cache[input].avatar_url;
+  if (cache && cache[key] && cache[key].avatar_url) {
+    return cache[key].avatar_url;
+  }
+  if (cache) {
+    var keys = Object.keys(cache);
+    for (var i = 0; i < keys.length; i++) {
+      var p = cache[keys[i]];
+      if (p.display_name && p.display_name.toLowerCase() === key) {
+        return p.avatar_url || null;
+      }
+    }
   }
   return null;
 }
 
-function getProfileByEmail(email) {
-  if (!email) return null;
+function getProfileByEmail(nameOrEmail) {
+  if (!nameOrEmail) return null;
+  var key = String(nameOrEmail).toLowerCase().trim();
   var cache = window._profilesCache;
   if (!cache) return null;
-  return cache[String(email).toLowerCase()] || null;
+  if (cache[key]) return cache[key];
+  var keys = Object.keys(cache);
+  for (var i = 0; i < keys.length; i++) {
+    var p = cache[keys[i]];
+    if (p.display_name && p.display_name.toLowerCase() === key) {
+      return p;
+    }
+  }
+  return null;
 }
 
 function updateLastActive() {
