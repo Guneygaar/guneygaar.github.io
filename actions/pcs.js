@@ -1155,7 +1155,7 @@ window.loadPcsComments = async function(postId) {
         : '';
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       return '<div class="pcs-comment-item" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
-        '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
+        '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
         '<div class="pcs-cmt-mid">' +
           (c.reply_to && c.reply_to_author ?
             '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
@@ -1298,7 +1298,7 @@ window.loadPcsComments = async function(postId) {
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       return '<div class="pcs-note-item' +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
-        '<div class="pcs-cmt-av"><div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div></div>' +
+        '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
         '<div class="pcs-cmt-mid">' +
           (c.reply_to && c.reply_to_author ?
             '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'

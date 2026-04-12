@@ -622,12 +622,12 @@ console.log('LOADED:', 'render/client.js');
         '<div class="client-comment-tombstone">This message was deleted.</div>' +
       '</div>';
     }
-    var palette = _clientAvatarColors(c.author_role);
     var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.author) : (c.author || '?');
-    var initial = _authorDisplay.charAt(0).toUpperCase();
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
-    var avatarStyle = 'width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
+    var avatarHtml = (typeof renderAvatar === 'function')
+      ? renderAvatar(c.author, c.author_role, avSize || 32)
+      : (function() { var palette = _clientAvatarColors(c.author_role); var initial = _authorDisplay.charAt(0).toUpperCase(); return '<div style="width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';">' + _esc(initial) + '</div>'; })();
     var messageHtml = _highlightClientMentions(_esc(c.message || ''));
     var imgHtml = _commentImgHtml(c);
     var resolvedHtml = '';
@@ -663,7 +663,7 @@ console.log('LOADED:', 'render/client.js');
       '</span>';
     return '<div class="client-comment-wrap" data-comment-id="' + cid + '" style="display:flex;gap:10px;padding:' + wrapperPad + ';position:relative;">' +
       connectorHtml +
-      '<div style="' + avatarStyle + '">' + _esc(initial) + '</div>' +
+      avatarHtml +
       '<div style="flex:1;min-width:0;">' +
         replyTagHtml +
         '<div style="display:flex;align-items:center;flex-wrap:nowrap;gap:6px;">' +
@@ -785,7 +785,7 @@ console.log('LOADED:', 'render/client.js');
        pill anymore; the "Comment" button in Row 3 is the single
        submit trigger for this bar. */
     '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 6px;">' +
-      '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2A2A34;border:1px solid #3A3A48;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#D0D0D8;">' + _esc(initial) + '</div>' +
+      ((typeof renderAvatar === 'function') ? renderAvatar(window.AppState.user.email || window.AppState.user.name, window.AppState.user.effectiveRole, 32) : '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2A2A34;border:1px solid #3A3A48;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#D0D0D8;">' + _esc(initial) + '</div>') +
       '<div style="flex:1;min-width:0;">' +
         '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
           'style="width:100%;height:38px;background:#111118;border:1px solid #505058;border-radius:24px;padding:10px 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
