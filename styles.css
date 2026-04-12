@@ -7507,3 +7507,12 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.prof-scratchpad {
+  min-height: 120px;
+  max-height: 300px;
+  resize: vertical;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  border-radius: 0;
+}
