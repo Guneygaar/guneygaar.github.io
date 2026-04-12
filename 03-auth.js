@@ -353,6 +353,8 @@ function activateRole(role) {
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
+    if (typeof fetchProfiles === 'function') fetchProfiles();
+    if (typeof updateLastActive === 'function') updateLastActive();
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
     if (typeof startClientRealtime === 'function') startClientRealtime();
     if (!window._clientTokenTimer) {
@@ -383,6 +385,8 @@ function activateRole(role) {
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
   updateActionButton();
+  if (typeof fetchProfiles === 'function') fetchProfiles();
+  if (typeof updateLastActive === 'function') updateLastActive();
   if (window.AppState.user.effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
