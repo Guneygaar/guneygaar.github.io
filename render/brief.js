@@ -356,10 +356,7 @@ window._openBriefSheet = function(postId) {
       'color:#E8E8E8;margin-bottom:10px;">Assigned To</div>' +
       '<div style="display:flex;align-items:center;gap:10px;background:#141420;' +
       'border:1px solid #252535;border-radius:8px;padding:11px 14px;">' +
-      '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;' +
-      'border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;' +
-      'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' +
-      esc((_assigneeName || '?').charAt(0).toUpperCase()) + '</div>' +
+      ((typeof renderAvatar === 'function') ? renderAvatar(_assigneeName, 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc((_assigneeName || '?').charAt(0).toUpperCase()) + '</div>') +
       '<div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">' +
       esc(_assigneeName) + '</div>' +
@@ -435,10 +432,7 @@ window._briefShowAssignDropdown = function(postId, isReassign) {
         html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(name) + '\',' + isReassign + ')" ' +
           'style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;' +
           'background:#0d0d12;border:none;border-bottom:1px solid #191924;cursor:pointer;">' +
-          '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;' +
-          'border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;' +
-          'font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' +
-          esc(initial) + '</div>' +
+          ((typeof renderAvatar === 'function') ? renderAvatar(m.email || name, 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc(initial) + '</div>') +
           '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">' +
           esc(name) + '</div>' +
           '</button>';

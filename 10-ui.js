@@ -770,7 +770,7 @@ function renderNotifications(name, role) {
       expandableAttr +
       isBriefAttr + '>' +
       '<div class="notif-item-row">' +
-        '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>' +
+        (typeof renderAvatar === 'function' ? renderAvatar(actor, getRoleFor(actor), 32, { classes: 'notif-av' }) : '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>') +
         '<div class="notif-body">' +
           pubLabel +
           '<div class="notif-text">' +
@@ -940,7 +940,7 @@ function _notifThreadMsgHtml(c) {
     ? '<span class="thread-role">' + esc(authorRole) + '</span>'
     : '';
   return '<div class="thread-msg">' +
-      '<div class="thread-av ' + avClass + '">' + esc(initial) + '</div>' +
+      (typeof renderAvatar === 'function' ? renderAvatar(author, getRoleFor(authorRole || author), 18, { classes: 'thread-av', fontSize: '7px' }) : '<div class="thread-av ' + avClass + '">' + esc(initial) + '</div>') +
       '<div class="thread-content">' +
         '<div class="thread-header">' +
           '<span class="thread-author">' + esc(_authorDisplay) + '</span>' +

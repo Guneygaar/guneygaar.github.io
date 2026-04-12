@@ -1098,7 +1098,7 @@ window._updateNextScheduled = function(allP) {
     if (metaParts.length) html += '<div style="font-family:var(--mono);font-size:8px;color:#444;letter-spacing:0.04em;text-transform:uppercase;">' + metaParts.join(' - ') + '</div>';
     html += '</div>';
     html += '<div style="padding:8px 14px 8px 8px;display:flex;align-items:center;flex-shrink:0;">';
-    html += '<div style="width:26px;height:26px;border-radius:50%;background:#FFFFFF0D;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;letter-spacing:0.04em;color:' + _ownerColor(owner) + ';">' + esc(initials) + '</div>';
+    html += (typeof renderAvatar === 'function') ? renderAvatar(owner, getRoleFor(owner), 26, { fontSize: '8px', fontFamily: 'var(--mono)' }) : '<div style="width:26px;height:26px;border-radius:50%;background:#FFFFFF0D;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;letter-spacing:0.04em;color:' + _ownerColor(owner) + ';">' + esc(initials) + '</div>';
     html += '</div></div>';
   }
   listEl.innerHTML = html;
