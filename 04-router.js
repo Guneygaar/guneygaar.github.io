@@ -39,6 +39,8 @@ async function _startRouter() {
   if (savedRole && (savedToken || refreshToken)) {
     var savedName = localStorage.getItem('hinglish_name');
     if (savedName) window.AppState.user.name = savedName;
+    var savedEmail = localStorage.getItem('hinglish_email');
+    if (savedEmail) window.AppState.user.email = savedEmail;
     if (savedRole) window.AppState.user.effectiveRole = savedRole;
     // Try to refresh the session silently first
     if (refreshToken) {

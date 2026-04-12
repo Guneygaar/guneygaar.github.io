@@ -37,10 +37,11 @@ function isPostStale(p) {
 }
 
 function _ownerColor(owner) {
-  var o = (owner || '').toLowerCase();
-  if (o === 'chitra' || o === 'servicing') return '#22D3EE';
-  if (o === 'pranav' || o === 'creative') return '#9b87f5';
-  if (o === 'client') return '#FF4B4B';
+  var role = (typeof getRoleFor === 'function') ? getRoleFor(owner) : (owner || '').toLowerCase();
+  if (role === 'client')    return '#FF4B4B';
+  if (role === 'servicing') return '#22D3EE';
+  if (role === 'creative')  return '#9b87f5';
+  if (role === 'admin')     return '#C8A84B';
   return '#666';
 }
 

@@ -1074,10 +1074,17 @@ window.loadPcsComments = async function(postId) {
     }
 
     function _avatarClass(c) {
-      var _r = (c.author_role||'').toLowerCase();
-      if (_r==='client') return 'pcs-avatar av-client';
-      if (_r==='servicing'||_r==='chitra') return 'pcs-avatar av-servicing';
-      if (_r==='creative'||_r==='pranav') return 'pcs-avatar av-creative';
+      var _role = (typeof getRoleFor === 'function') ? (getRoleFor(c.author_role) || getRoleFor(c.author)) : '';
+      if (!_role) {
+        var _r = (c.author_role||'').toLowerCase();
+        if (_r==='client') _role = 'client';
+        else if (_r==='servicing'||_r==='chitra') _role = 'servicing';
+        else if (_r==='creative'||_r==='pranav') _role = 'creative';
+        else _role = 'admin';
+      }
+      if (_role==='client')    return 'pcs-avatar av-client';
+      if (_role==='servicing') return 'pcs-avatar av-servicing';
+      if (_role==='creative')  return 'pcs-avatar av-creative';
       return 'pcs-avatar av-admin';
     }
 
