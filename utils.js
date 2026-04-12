@@ -92,12 +92,10 @@ function formatIST(ts) {
   });
 }
 
-// Resolve actor display name from effectiveRole
+// Resolve actor identifier — returns email (unique, immutable)
 function resolveActor() {
-  var role = window.AppState.user.effectiveRole || window.AppState.user.role || '';
-  if (role === 'Admin') return 'Shubham';
-  if (role === 'Servicing') return 'Chitra';
-  if (role === 'Creative') return 'Pranav';
-  if (role === 'Client') return 'Client';
-  return 'Shubham';
+  return window.AppState.user.email
+    || localStorage.getItem('hinglish_email')
+    || window.AppState.user.name
+    || 'unknown';
 }
