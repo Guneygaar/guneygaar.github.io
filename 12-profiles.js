@@ -10,7 +10,7 @@ window._profilesCache = null;
 
 async function fetchProfiles() {
   try {
-    var rows = await apiFetch('/profiles?select=email,display_name,username,title,avatar_url,status,notification_email,notification_digest,notification_client_comments,notification_whatsapp');
+    var rows = await apiFetch('/profiles?select=email,display_name,username,title,avatar_url,status,scratchpad,notification_email,notification_digest,notification_client_comments,notification_whatsapp');
     var cache = {};
     if (Array.isArray(rows)) {
       for (var i = 0; i < rows.length; i++) {
@@ -273,6 +273,7 @@ function openProfilePanel() {
   var notifDigest = profile ? (profile.notification_digest !== false) : true;
   var notifClient = profile ? (profile.notification_client_comments !== false) : true;
   var notifWA = profile ? (profile.notification_whatsapp === true) : false;
+  var scratchpadVal = (profile && profile.scratchpad) || '';
 
   // Build panel content
   var panel = document.getElementById('prof-panel');
@@ -340,6 +341,16 @@ function openProfilePanel() {
   // Divider
   html += '<div class="prof-divider"></div>';
 
+  // Scratchpad section
+  html += '<div class="prof-section-hdr">\uD83D\uDCDD SCRATCHPAD</div>';
+  html += '<div class="prof-fields">';
+  html += '<textarea class="prof-input prof-scratchpad" id="prof-scratchpad" placeholder="Quick notes, reminders, to-dos..." rows="5">' + esc(scratchpadVal) + '</textarea>';
+  html += '<div class="prof-field-helper">AUTO-SAVES WHEN YOU TAP OUTSIDE</div>';
+  html += '</div>';
+
+  // Divider
+  html += '<div class="prof-divider"></div>';
+
   // Admin-controlled section
   html += '<div class="prof-section-hdr">\uD83D\uDD12 ADMIN-CONTROLLED</div>';
   html += '<div class="prof-fields">';
@@ -399,6 +410,32 @@ function openProfilePanel() {
       }
     };
   }
+
+  // Wire scratchpad auto-save on blur
+  var scratchpad = document.getElementById('prof-scratchpad');
+  if (scratchpad) {
+    scratchpad._lastSaved = scratchpad.value;
+    scratchpad.addEventListener('blur', function() {
+      var val = this.value;
+      if (val === this._lastSaved) return;
+      this._lastSaved = val;
+      var userEmail = (AppState.user.email || '');
+      apiFetch('/profiles?email=eq.' + encodeURIComponent(userEmail), {
+        method: 'PATCH',
+        body: JSON.stringify({ scratchpad: val, updated_at: new Date().toISOString() })
+      }).then(function() {
+        var ck = userEmail.toLowerCase();
+        if (window._profilesCache && window._profilesCache[ck]) {
+          window._profilesCache[ck].scratchpad = val;
+        }
+        if (typeof showToast === 'function') showToast('Notes saved', 'success');
+      }).catch(function(err) {
+        console.error('[profiles] scratchpad save failed:', err);
+        if (typeof window.logError === 'function') window.logError(err, 'scratchpad-save');
+        if (typeof showToast === 'function') showToast('Failed to save notes', 'error');
+      });
+    });
+  }
 }
 
 function closeProfilePanel() {
@@ -421,6 +458,8 @@ async function saveProfile() {
   var notifDigest = document.getElementById('prof-notif-digest').getAttribute('data-on') === 'true';
   var notifClient = document.getElementById('prof-notif-client').getAttribute('data-on') === 'true';
   var notifWA = document.getElementById('prof-notif-wa').getAttribute('data-on') === 'true';
+  var scratchpadEl = document.getElementById('prof-scratchpad');
+  var scratchpad = scratchpadEl ? scratchpadEl.value : undefined;
 
   var email = (AppState.user.email || '');
   var payload = {
@@ -433,6 +472,7 @@ async function saveProfile() {
     notification_whatsapp: notifWA,
     updated_at: new Date().toISOString()
   };
+  if (scratchpad !== undefined) payload.scratchpad = scratchpad;
 
   try {
     await apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
@@ -506,13 +546,22 @@ async function handleAvatarUpload(file) {
     return;
   }
 
+  console.log('[avatar] Starting upload, file:', file.name, file.type, file.size);
+
+  // Compress to max 400x400 JPEG q0.80
+  file = await _compressAvatar(file);
+  console.log('[avatar] Compressed, new size:', file.size);
+
   var email = (AppState.user.email || '');
   var sanitized = email.toLowerCase().replace(/@/g, '-at-').replace(/\./g, '-');
   var filename = 'profile-pictures/' + sanitized + '.jpeg';
 
+  if (typeof showToast === 'function') showToast('Uploading photo...', 'info');
+
   try {
     var workerUrl = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/upload'
       + '?filename=' + encodeURIComponent(filename);
+    console.log('[avatar] Uploading to:', workerUrl);
 
     var res = await fetch(workerUrl, {
       method: 'POST',
@@ -522,22 +571,25 @@ async function handleAvatarUpload(file) {
       },
       body: file,
     });
+    console.log('[avatar] Worker response:', res.status, res.statusText);
     if (!res.ok) throw new Error('Upload ' + res.status);
 
-    var r2Url = 'https://images.srtd.io/' + filename;
+    // Store clean URL in DB, cache-busted URL for immediate display
+    var cleanUrl = 'https://images.srtd.io/' + filename;
+    var displayUrl = cleanUrl + '?t=' + Date.now();
 
     // PATCH profile
     await apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
       method: 'PATCH',
-      body: JSON.stringify({ avatar_url: r2Url, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ avatar_url: cleanUrl, updated_at: new Date().toISOString() })
     });
 
-    // Update caches
+    // Update caches with cache-busted URL for immediate display
     var cacheKey = email.toLowerCase();
     if (window._profilesCache && window._profilesCache[cacheKey]) {
-      window._profilesCache[cacheKey].avatar_url = r2Url;
+      window._profilesCache[cacheKey].avatar_url = displayUrl;
     }
-    AppState.user.avatarUrl = r2Url;
+    AppState.user.avatarUrl = displayUrl;
 
     // Re-render hero + topbar trigger
     _profileRenderHero();
@@ -545,7 +597,7 @@ async function handleAvatarUpload(file) {
 
     if (typeof showToast === 'function') showToast('Photo updated', 'success');
   } catch (err) {
-    console.error('[profiles] handleAvatarUpload failed:', err);
+    console.error('[avatar] Upload failed:', err);
     if (typeof window.logError === 'function') window.logError(err, 'handleAvatarUpload');
     if (typeof showToast === 'function') showToast('Upload failed. Try again.', 'error');
   }
