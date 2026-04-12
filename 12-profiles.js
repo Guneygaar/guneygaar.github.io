@@ -32,6 +32,14 @@ async function fetchProfiles() {
           if (u.email) nrc[u.email.toLowerCase()] = uRole;
         }
         window._nameToRoleCache = nrc;
+        var nec = {};
+        for (var k = 0; k < rolesRes.length; k++) {
+          var ur = rolesRes[k];
+          if (ur.name && ur.email) {
+            nec[ur.name.toLowerCase()] = ur.email.toLowerCase();
+          }
+        }
+        window._nameToEmailCache = nec;
       }
     } catch (roleErr) {
       console.warn('[profiles] user_roles fetch failed:', roleErr);
@@ -60,6 +68,13 @@ function getDisplayName(emailOrName) {
       }
     }
   }
+  // Short name lookup via user_roles.name
+  if (window._nameToEmailCache && window._nameToEmailCache[key]) {
+    var resolvedEmail = window._nameToEmailCache[key];
+    if (cache && cache[resolvedEmail] && cache[resolvedEmail].display_name) {
+      return cache[resolvedEmail].display_name;
+    }
+  }
   if (key.indexOf('@') >= 0) {
     var local = key.split('@')[0];
     return local.charAt(0).toUpperCase() + local.slice(1);
@@ -84,6 +99,13 @@ function getAvatarUrl(nameOrEmail) {
       }
     }
   }
+  // Short name lookup via user_roles.name
+  if (window._nameToEmailCache && window._nameToEmailCache[key]) {
+    var resolvedEmail = window._nameToEmailCache[key];
+    if (cache && cache[resolvedEmail]) {
+      return cache[resolvedEmail].avatar_url || null;
+    }
+  }
   return null;
 }
 
@@ -99,6 +121,11 @@ function getProfileByEmail(nameOrEmail) {
     if (p.display_name && p.display_name.toLowerCase() === key) {
       return p;
     }
+  }
+  // Short name lookup via user_roles.name
+  if (window._nameToEmailCache && window._nameToEmailCache[key]) {
+    var resolvedEmail = window._nameToEmailCache[key];
+    if (cache[resolvedEmail]) return cache[resolvedEmail];
   }
   return null;
 }
