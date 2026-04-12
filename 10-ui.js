@@ -48,7 +48,7 @@ function _flushClickBuffer() {
       method: 'POST',
       headers: { 'Prefer': 'return=minimal' },
       body: JSON.stringify(payload)
-    }).catch(function(err){
+    }, { allowLogout: false }).catch(function(err){
       console.warn('[click_log] insert failed:', err && err.message);
     });
   }
@@ -1215,7 +1215,7 @@ function updateNotifBadge() {
     encodeURIComponent(_badgeRole) + '&select=id';
   if (_badgeActor) _badgeUrl += '&actor=neq.' + encodeURIComponent(_badgeActor);
 
-  apiFetch(_badgeUrl)
+  apiFetch(_badgeUrl, {}, { allowLogout: false })
   .then(function(rows) {
     var count = Array.isArray(rows) ? rows.length : 0;
     var show = count > 0;

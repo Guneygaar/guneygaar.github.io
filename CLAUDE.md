@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-12 (notif-thread-surgical). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-13 (session-resilience-401-fix). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -153,6 +153,13 @@ window.AppState = {
 - The drawer contains a `.reply-input` + `.reply-send` row and an `Open full post →` footer link. Replies POST to `/post_comments` ONLY — the JS fan-out is intentionally skipped so `notify-comment` (edge) is the single writer and there are no duplicate notification rows. Reply author is always `AppState.user.name`, author_role is `effectiveRole` title-cased, so the same code path works for both agency and client users. The panel tap delegate skips `.expand-chip`, `.reply-input`, `.reply-send`, `.thread-msg`, `.thread-area`, `.thread-reply`, `.thread-footer`, `.reply-label`, `.meta-actions`, and routes `.thread-open-post` / `.thread-overflow` clicks through `closeNotifications()` + `openPCS` / `_openClientPostOverlay`.
 - Tests: structural class names + source patterns (`notif-item`, `notif-live-card`, `nchip-count-*`, grouped key `(n.post_id||'') + '|' + (n.actor||'')`, `notif-resp-time`, day labels, `"left " + n + " comments on "`) are preserved verbatim. 508/508 unit tests still pass.
 
+### Session resilience (05-api.js + 03-auth.js) — 401 hardening
+- `apiFetch(path, options, meta)` — optional third `meta` arg. `meta.allowLogout === false` disables the `_clearSessionAndLogin()` call on the `auth_expired` branch so a transient 401 in a background poll CANNOT evict the user. Only user-initiated actions (comments, stage changes, approvals) get the default `allowLogout: true` behaviour.
+- Background pollers that pass `{ allowLogout: false }`: `updateNotifBadge` (10-ui.js), `_flushClickBuffer` (10-ui.js, 5s interval), `startRealtime` both 15s agency poll branches (07-post-load.js), and `loadPostsForClient(true, true)` called from `startClientRealtime` (30s client poll). `loadPostsForClient` accepts a new `fromPoll` boolean; when truthy it builds `_apiMeta = { allowLogout: false }` and threads it through every internal apiFetch call (posts, requests, post_comments). User-facing first-render calls leave `fromPoll` unset so the flag stays off.
+- `apiFetch` second-chance refresh: after the first `refreshSession()` returns `{error:'server'|'network'}`, apiFetch now waits 1500 ms and retries `refreshSession()` one more time. On success it replays the original request; on failure it falls through to the pre-existing soft-banner + throw. `auth_expired` classification from the retry is honoured.
+- `window._tokenRefreshTimer` — unified 50-minute proactive refresh installed at the TOP of `activateRole()` (03-auth.js) so every branch (admin, agency, admin-preview, client) gets it before any early return. Coexists safely with the legacy `AppState.timers.tokenRefresh` (startRealtime) and `window._clientTokenTimer` (client branch) because `refreshSession()` is internally deduped via `_refreshInProgress`. Torn down in `logout()` and `_clearSessionAndLogin()` alongside the legacy timers.
+- `sendMagicLink` catch branch now classifies `TypeError` as a network failure and shows "Unable to reach the server. Check your connection and try again." instead of Safari's raw "Load failed" string. Rate-limit errors containing "31 seconds" get a friendly "Please wait a moment before requesting another code." message.
+
 ### Misc gotchas
 - `_commentInputHtml()` only renders for `awaiting_approval`/`awaiting_brand_input` and MUST be called inside `_cardHtml()`. `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it. Silent `.catch(()=>{})` is a bug — always `window.logError`.
 - Polling: 15s agency (`startRealtime`), 30s client (`startClientRealtime`), 50min token refresh. Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
@@ -190,7 +197,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413m`.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413p`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.

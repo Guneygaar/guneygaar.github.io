@@ -257,20 +257,26 @@ async function loadPosts() {
   }
 }
 
-async function loadPostsForClient(skipRenderIfUnchanged) {
+async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
   const reqId = _newPostsRequest();
+  // Background polls pass fromPoll=true so apiFetch won't force logout on
+  // transient 401s. User-initiated loads (first render, tab switch) leave
+  // it unset so a truly dead session still re-routes to the login overlay.
+  var _apiMeta = fromPoll ? { allowLogout: false } : undefined;
   try {
     const allowedStages =
       'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
     var data  = await apiFetch(
       '/posts?stage=in.(' + allowedStages +
-      ')&select=*&order=created_at.desc'
+      ')&select=*&order=created_at.desc',
+      {},
+      _apiMeta
     );
     if (!_commitPostsResult(reqId, 'network')) return;
 
     // Fetch pending requests for client view (shows as brief cards)
     try {
-      var clientReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc');
+      var clientReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc', {}, _apiMeta);
       if (Array.isArray(clientReqs)) {
         clientReqs.forEach(function(r) {
           data.push({
@@ -300,7 +306,9 @@ async function loadPostsForClient(skipRenderIfUnchanged) {
       try {
         var comments = await apiFetch(
           '/post_comments?post_id=in.(' + postIds.join(',') +
-          ')&order=created_at.asc'
+          ')&order=created_at.asc',
+          {},
+          _apiMeta
         );
         if (Array.isArray(comments)) {
           data.forEach(function(p) {
@@ -399,7 +407,7 @@ function startRealtime() {
     // under the user's active overlay. Latest-wins (no queue).
     if (window.AppState.ui.modalOpen) {
       try {
-        const data = await apiFetch('/posts?select=*&order=created_at.desc');
+        const data = await apiFetch('/posts?select=*&order=created_at.desc', {}, { allowLogout: false });
         const fresh = normalise(data);
         if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
           window._postsPollStash = fresh;
@@ -411,7 +419,7 @@ function startRealtime() {
       return;
     }
     try {
-      const data  = await apiFetch('/posts?select=*&order=created_at.desc');
+      const data  = await apiFetch('/posts?select=*&order=created_at.desc', {}, { allowLogout: false });
       const fresh = normalise(data);
       if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
         mergePosts(fresh);
@@ -488,7 +496,9 @@ function startClientRealtime() {
 
     window._isLoadingClientPosts = true;
     try {
-      await loadPostsForClient(true);
+      // fromPoll=true so internal apiFetch calls use { allowLogout: false }
+      // — a transient 401 during a background poll must not evict the user.
+      await loadPostsForClient(true, true);
     } catch (e) {
       // Keep poll quiet — no error banner thrash on transient failures
       console.warn('[client-poll]', e);
