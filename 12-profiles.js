@@ -185,7 +185,7 @@ function renderAvatar(emailOrName, role, size, opts) {
   var photoUrl = getAvatarUrl(emailOrName);
   if (photoUrl) {
     return '<div class="' + classes + '" style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;overflow:hidden;flex-shrink:0;' + (opts.border || '') + '">' +
-      '<img src="' + photoUrl.replace(/"/g, '&quot;') + '" width="' + sz + '" height="' + sz + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">' +
+      '<img src="' + photoUrl.replace(/"/g, '&quot;') + '" loading="lazy" width="' + sz + '" height="' + sz + '" style="width:100%;height:100%;object-fit:cover;display:block;" alt="">' +
       '</div>';
   }
   var displayName = getDisplayName(emailOrName);
