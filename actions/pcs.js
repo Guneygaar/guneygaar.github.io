@@ -1109,7 +1109,8 @@ window.loadPcsComments = async function(postId) {
           '<div class="pcs-deleted-msg">This message was deleted.</div>' +
           '</div><div class="pcs-cmt-rt"></div></div>';
       }
-      var _initial = (c.author||'?').charAt(0).toUpperCase();
+      var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.author) : (c.author||'?');
+      var _initial = _authorDisplay.charAt(0).toUpperCase();
       var _taskObj = _parseTask(c);
       var _isTask = !!_taskObj;
       var _taskPrefix = _isTask
@@ -1160,7 +1161,7 @@ window.loadPcsComments = async function(postId) {
             '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
             : '') +
           '<div class="pcs-comment-meta">' +
-            '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+            '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
           '</div>' +
           '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
@@ -1236,7 +1237,8 @@ window.loadPcsComments = async function(postId) {
           '<div class="pcs-deleted-msg">This message was deleted.</div>' +
           '</div><div class="pcs-cmt-rt"></div></div>';
       }
-      var _initial = (c.author||'?').charAt(0).toUpperCase();
+      var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.author) : (c.author||'?');
+      var _initial = _authorDisplay.charAt(0).toUpperCase();
       var _vis = (c.visibility||'all').toUpperCase();
       if (_vis === 'SERVICING') _vis = 'SERV';
       if (_vis === 'CREATIVE') _vis = 'CREAT';
@@ -1302,7 +1304,7 @@ window.loadPcsComments = async function(postId) {
             '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
             : '') +
           '<div class="pcs-comment-meta">' +
-            '<span class="pcs-comment-author">' + esc(c.author) + '</span>' +
+            '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
             _visTag +
           '</div>' +
@@ -1523,7 +1525,7 @@ window.pcsDoDelete = async function() {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
       logActivity({
         post_id: id,
-        actor: window.AppState.user.name || 'Admin',
+        actor: window.AppState.user.email || 'Admin',
         actor_role: 'Admin',
         action: 'deleted post'
       });
@@ -2206,7 +2208,7 @@ window._saveCaptionEdit = async function(postId) {
         action:     'caption_updated',
         old_value:  oldCaption.slice(0, 1000),
         new_value:  newCaption.slice(0, 1000),
-        changed_by: (window.AppState.user.name || window.AppState.user.email || 'team'),
+        changed_by: (window.AppState.user.email || window.AppState.user.name || 'team'),
         changed_at: new Date().toISOString()
       })
     });
@@ -2296,7 +2298,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   });
   var _realPostId = _post ? _post.post_id : postId;
   var _title = _post ? (_post.title || postId) : postId;
-  var _author = window.AppState.user.name || 'Team';
+  var _author = window.AppState.user.email || window.AppState.user.name || 'Team';
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
@@ -2533,7 +2535,7 @@ window.toggleTaskResolve = function(commentId, postId, isInternalNote) {
     var _isResolved = !!(rows && rows[0] && rows[0].resolved);
     var _payload = _isResolved
       ? { resolved: false, resolved_by: null, resolved_at: null }
-      : { resolved: true, resolved_by: window.AppState.user.name || 'Admin', resolved_at: new Date().toISOString() };
+      : { resolved: true, resolved_by: window.AppState.user.email || window.AppState.user.name || 'Admin', resolved_at: new Date().toISOString() };
     return apiFetch(_endpoint, {
       method: 'PATCH',
       headers: {'Prefer': 'return=minimal'},
@@ -2807,7 +2809,7 @@ window._pcsAddReaction = function(commentId, emoji, reactEl) {
     try {
       var _postIdEl = document.getElementById('pcs-post-id');
       var _postId = _postIdEl ? _postIdEl.value : '';
-      var _name = (window.AppState.user.name || '');
+      var _name = (window.AppState.user.email || window.AppState.user.name || '');
       var _role = (window.AppState.user.effectiveRole || 'Admin');
       var _normalRole = _role.charAt(0).toUpperCase() + _role.slice(1).toLowerCase();
 

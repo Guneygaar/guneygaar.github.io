@@ -933,7 +933,8 @@ function _notifThreadMsgHtml(c) {
   var author = c.author || '';
   var authorRole = c.author_role || '';
   var avClass = _notifThreadAvClass(author, authorRole);
-  var initial = author ? author.charAt(0).toUpperCase() : '?';
+  var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
+  var initial = _authorDisplay ? _authorDisplay.charAt(0).toUpperCase() : '?';
   var ts = _notifRelTime(c.created_at);
   var roleTag = authorRole
     ? '<span class="thread-role">' + esc(authorRole) + '</span>'
@@ -942,7 +943,7 @@ function _notifThreadMsgHtml(c) {
       '<div class="thread-av ' + avClass + '">' + esc(initial) + '</div>' +
       '<div class="thread-content">' +
         '<div class="thread-header">' +
-          '<span class="thread-author">' + esc(author) + '</span>' +
+          '<span class="thread-author">' + esc(_authorDisplay) + '</span>' +
           roleTag +
           '<span class="thread-time">' + esc(ts) + '</span>' +
         '</div>' +
@@ -1054,7 +1055,7 @@ async function _notifSubmitReply(sendBtn) {
   var notifMatch = _notifData.find(function(x) { return x.id === notifId; });
   var postTitle = (post && post.title) || (notifMatch && notifMatch.message) || postId;
 
-  var authorName = (window.AppState.user && window.AppState.user.name) || 'Unknown';
+  var authorName = (window.AppState.user && window.AppState.user.email) || (window.AppState.user && window.AppState.user.name) || 'Unknown';
   var effRole = (window.AppState.user && window.AppState.user.effectiveRole) ||
                 (window.AppState.user && window.AppState.user.role) || 'Admin';
   var authorRole = effRole.charAt(0).toUpperCase() + effRole.slice(1).toLowerCase();
@@ -1866,7 +1867,7 @@ async function _fabAssignTask(postId, assignee, message) {
       }),
     });
     showToast('Task assigned OK', 'success');
-    await logActivity({ post_id: postId, actor: resolveActor(), actor_role: window.AppState.user.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
+    await logActivity({ post_id: postId, actor: window.AppState.user.email || resolveActor(), actor_role: window.AppState.user.effectiveRole || 'Admin', action: 'Assigned task to ' + assignee });
     if (typeof loadTasks === 'function') loadTasks();
   } catch (err) {
     console.error('[AssignTask] FAILED:', err);

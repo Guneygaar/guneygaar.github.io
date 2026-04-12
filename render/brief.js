@@ -460,7 +460,7 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
 
-  var actorName = window.AppState.user.name || 'Unknown';
+  var actorName = window.AppState.user.email || window.AppState.user.name || 'Unknown';
   var actorRole = window.AppState.user.effectiveRole || 'Admin';
   var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + ownerName;
   var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
