@@ -500,34 +500,31 @@ async function handleAvatarUpload(file) {
     if (typeof showToast === 'function') showToast('Only JPG, PNG, or WebP allowed', 'error');
     return;
   }
-  // Validate size (2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    if (typeof showToast === 'function') showToast('Image must be under 2MB', 'error');
+  // Validate size (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    if (typeof showToast === 'function') showToast('Image must be under 5MB', 'error');
     return;
   }
 
   var email = (AppState.user.email || '');
-  var username = AppState.user.username || email.split('@')[0];
+  var sanitized = email.toLowerCase().replace(/@/g, '-at-').replace(/\./g, '-');
+  var filename = 'profile-pictures/' + sanitized + '.jpeg';
 
   try {
-    // Compress
-    var compressed = await _compressAvatar(file);
-    var ext = compressed.name.split('.').pop();
-    var filename = 'profile-pictures/' + username + '.' + ext;
     var workerUrl = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/upload'
       + '?filename=' + encodeURIComponent(filename);
 
     var res = await fetch(workerUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': compressed.type,
+        'Content-Type': file.type,
         'X-Upload-Secret': 'srtd2026xK9mN3pQ',
       },
-      body: compressed,
+      body: file,
     });
     if (!res.ok) throw new Error('Upload ' + res.status);
-    var data = await res.json();
-    var r2Url = data.url;
+
+    var r2Url = 'https://images.srtd.io/' + filename;
 
     // PATCH profile
     await apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
@@ -550,7 +547,7 @@ async function handleAvatarUpload(file) {
   } catch (err) {
     console.error('[profiles] handleAvatarUpload failed:', err);
     if (typeof window.logError === 'function') window.logError(err, 'handleAvatarUpload');
-    if (typeof showToast === 'function') showToast('Photo upload failed. Try again.', 'error');
+    if (typeof showToast === 'function') showToast('Upload failed. Try again.', 'error');
   }
 }
 
