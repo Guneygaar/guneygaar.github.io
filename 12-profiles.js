@@ -648,30 +648,14 @@ async function handleAvatarUpload(file) {
     }
     AppState.user.avatarUrl = displayUrl;
 
-    // Replace progress ring with new photo (green border + glow)
-    var ringWrap = document.getElementById('upload-ring-wrap');
-    if (ringWrap) {
-      ringWrap.outerHTML =
-        '<div style="position:relative;display:inline-block;">' +
-          '<div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #3ECF8E;box-shadow:0 0 24px #3ECF8E4D;">' +
-            '<img src="' + displayUrl + '" style="width:100%;height:100%;object-fit:cover;">' +
-          '</div>' +
-          '<button class="prof-photo-edit" id="prof-photo-edit-btn" title="Change photo">' +
-            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
-          '</button>' +
-        '</div>';
-      // Re-wire photo edit button
-      var editBtn = document.getElementById('prof-photo-edit-btn');
-      if (editBtn) {
-        editBtn.onclick = function() {
-          var inp = document.getElementById('prof-photo-input');
-          if (inp) inp.click();
-        };
-      }
-    }
+    // Wait 500ms for the ring animation to feel complete
+    await new Promise(function(r) { setTimeout(r, 500); });
 
-    // Update topbar avatar
-    _renderProfileTrigger();
+    // Re-render the ENTIRE profile hero (not just the ring)
+    if (typeof _profileRenderHero === 'function') _profileRenderHero();
+
+    // Re-render the topbar avatar trigger
+    if (typeof _renderProfileTrigger === 'function') _renderProfileTrigger();
 
     if (typeof showToast === 'function') showToast('Photo updated', 'success');
   } catch (err) {
@@ -684,37 +668,37 @@ async function handleAvatarUpload(file) {
 }
 
 /* ===============================================
-   Scratchpad strip — below topbar
+   Scratchpad — full-screen overlay opened from dropdown
 =============================================== */
 
-var _scratchTimer = null;
+function _scratchLoad() {
+  // No DOM updates needed - panel reads from cache when opened
+}
 
-function toggleScratchpad() {
-  var panel = document.getElementById('scratch-panel');
+function openScratchpadPanel() {
+  var panel = document.getElementById('scratchpad-panel');
   if (!panel) return;
-  var isOpen = panel.style.display !== 'none';
-  panel.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    var input = document.getElementById('scratch-input');
-    if (input) input.focus();
+  panel.style.display = 'flex';
+  var profile = getProfileByEmail(AppState.user.email);
+  var input = document.getElementById('scratchpad-textarea');
+  if (input) {
+    input.value = (profile && profile.scratchpad) || '';
+    input.focus();
   }
 }
 
-function _scratchChanged() {
-  clearTimeout(_scratchTimer);
-  var saved = document.getElementById('scratch-saved');
-  if (saved) saved.style.opacity = '0';
-  _scratchTimer = setTimeout(function() { _scratchSave(); }, 2000);
+function closeScratchpadPanel() {
+  _scratchSaveFromPanel();
+  var panel = document.getElementById('scratchpad-panel');
+  if (panel) panel.style.display = 'none';
 }
 
-function _scratchSave() {
-  clearTimeout(_scratchTimer);
-  var input = document.getElementById('scratch-input');
+function _scratchSaveFromPanel() {
+  var input = document.getElementById('scratchpad-textarea');
   if (!input) return;
   var val = input.value;
   var email = AppState.user.email;
   if (!email) return;
-
   apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
     method: 'PATCH',
     body: JSON.stringify({ scratchpad: val })
@@ -723,33 +707,11 @@ function _scratchSave() {
     if (window._profilesCache && window._profilesCache[cacheKey]) {
       window._profilesCache[cacheKey].scratchpad = val;
     }
-    var saved = document.getElementById('scratch-saved');
-    if (saved) { saved.style.opacity = '1'; setTimeout(function() { saved.style.opacity = '0'; }, 2000); }
+    if (typeof showToast === 'function') showToast('Notes saved', 'success');
   }).catch(function(err) {
     console.warn('[scratch] Save failed:', err);
-    if (typeof window.logError === 'function') window.logError(err, 'scratchpad-strip-save');
+    if (typeof showToast === 'function') showToast('Failed to save notes', 'error');
   });
-
-  // Update preview
-  var preview = document.getElementById('scratch-preview');
-  if (preview) {
-    var first = val.split('\n')[0].slice(0, 60);
-    preview.textContent = first ? first + (val.length > 60 ? '...' : '') : 'Quick notes, reminders, to-dos...';
-    preview.style.color = first ? 'var(--text2,#BCBCD0)' : 'var(--text3,#7a7a90)';
-  }
-}
-
-function _scratchLoad() {
-  var profile = getProfileByEmail(AppState.user.email);
-  var val = (profile && profile.scratchpad) || '';
-  var input = document.getElementById('scratch-input');
-  if (input) input.value = val;
-  var preview = document.getElementById('scratch-preview');
-  if (preview) {
-    var first = val.split('\n')[0].slice(0, 60);
-    preview.textContent = first ? first + (val.length > 60 ? '...' : '') : 'Quick notes, reminders, to-dos...';
-    preview.style.color = first ? 'var(--text2,#BCBCD0)' : 'var(--text3,#7a7a90)';
-  }
 }
 
 function _renderProfileTrigger() {
