@@ -398,7 +398,7 @@ function _clientPostsFingerprint(posts) {
 function startRealtime() {
   if (window.AppState.timers.realtimeTimer) return;
 
-  // Data polling  -  every 15 seconds (was 8s; reduces API calls & DOM churn)
+  // Data polling  -  every 5 seconds (tightened from 15s for responsiveness)
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     if (!localStorage.getItem('sb_access_token')) return;
@@ -430,7 +430,7 @@ function startRealtime() {
       console.warn('realtime poll failed:', e.message);
       window.logError && window.logError(e && e.message, e && e.stack, 'realtime-poll');
     }
-  }, 15000);
+  }, 5000);
 
   // Proactive token refresh  -  every 50 minutes
   // Keeps sessions alive indefinitely without user action
@@ -477,7 +477,7 @@ function _drainPollStash() {
 }
 window._drainPollStash = _drainPollStash;
 
-// 30-second background data poll for the Client role. Mirrors the
+// 5-second background data poll for the Client role. Mirrors the
 // startRealtime() pattern but hits the client-scoped fetch (via
 // loadPostsForClient(true)) and gates re-renders on _clientPostsFingerprint
 // so typing and scroll position survive.
@@ -505,7 +505,7 @@ function startClientRealtime() {
     } finally {
       window._isLoadingClientPosts = false;
     }
-  }, 30000);
+  }, 5000);
 }
 
 function stopClientRealtime() {
