@@ -145,3 +145,9 @@ function renderAvatar(emailOrName, role, size, opts) {
     initial +
     '</div>';
 }
+
+function displayNameSafe(nameOrEmail) {
+  if (!nameOrEmail) return 'Unknown';
+  if (nameOrEmail.indexOf('@') >= 0) return getDisplayName(nameOrEmail);
+  return nameOrEmail;
+}
