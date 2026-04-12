@@ -377,12 +377,19 @@ function _notifTypeClass(n, isMention) {
 }
 
 function _notifActorClass(actor) {
-  var a = (actor || '').toLowerCase();
-  if (!a) return 'nav-system';
-  if (a === 'manisha' || a === 'shivangini' || a === 'client') return 'nav-client';
-  if (a === 'chitra' || a === 'servicing') return 'nav-chitra';
-  if (a === 'pranav' || a === 'creative') return 'nav-pranav';
-  if (a === 'shubham' || a === 'admin') return 'nav-shubham';
+  if (!actor) return 'nav-system';
+  var role = (typeof getRoleFor === 'function') ? getRoleFor(actor) : '';
+  if (!role) {
+    var a = (actor || '').toLowerCase();
+    if (a === 'manisha' || a === 'shivangini' || a === 'client') role = 'client';
+    else if (a === 'chitra' || a === 'servicing') role = 'servicing';
+    else if (a === 'pranav' || a === 'creative') role = 'creative';
+    else if (a === 'shubham' || a === 'admin') role = 'admin';
+  }
+  if (role === 'client')    return 'nav-client';
+  if (role === 'servicing') return 'nav-chitra';
+  if (role === 'creative')  return 'nav-pranav';
+  if (role === 'admin')     return 'nav-shubham';
   return 'nav-system';
 }
 
@@ -820,12 +827,22 @@ var _NOTIF_SEND_SVG =
 // mirrors .notif-av. Kept local to the thread view so the agency-wide
 // _notifActorClass stays untouched.
 function _notifThreadAvClass(author, authorRole) {
-  var a = (author || '').toLowerCase();
-  var r = (authorRole || '').toLowerCase();
-  if (a === 'manisha' || a === 'shivangini' || r === 'client')    return 'nav-client';
-  if (a === 'chitra'  || r === 'servicing')                       return 'nav-chitra';
-  if (a === 'pranav'  || r === 'creative')                        return 'nav-pranav';
-  if (a === 'shubham' || r === 'admin')                           return 'nav-shubham';
+  var role = '';
+  if (typeof getRoleFor === 'function') {
+    role = getRoleFor(authorRole) || getRoleFor(author);
+  }
+  if (!role) {
+    var a = (author || '').toLowerCase();
+    var r = (authorRole || '').toLowerCase();
+    if (a === 'manisha' || a === 'shivangini' || r === 'client') role = 'client';
+    else if (a === 'chitra' || r === 'servicing') role = 'servicing';
+    else if (a === 'pranav' || r === 'creative') role = 'creative';
+    else if (a === 'shubham' || r === 'admin') role = 'admin';
+  }
+  if (role === 'client')    return 'nav-client';
+  if (role === 'servicing') return 'nav-chitra';
+  if (role === 'creative')  return 'nav-pranav';
+  if (role === 'admin')     return 'nav-shubham';
   return 'nav-system';
 }
 

@@ -95,16 +95,15 @@ console.log('LOADED:', 'render/client.js');
   /* ---- role color map ---- */
 
   var ROLE_COLORS = {
-    'chitra': '#22D3EE',
-    'servicing': '#22D3EE',
-    'pranav': '#9b87f5',
-    'creative': '#9b87f5',
     'client': '#FF4B4B',
+    'servicing': '#22D3EE',
+    'creative': '#9b87f5',
     'admin': '#C8A84B'
   };
 
   function _roleColor(role) {
-    return ROLE_COLORS[(role || '').toLowerCase()] || '#C8A84B';
+    var r = (typeof getRoleFor === 'function') ? getRoleFor(role) : (role || '').toLowerCase();
+    return ROLE_COLORS[r] || '#C8A84B';
   }
 
   /* ---- relative timestamp ---- */
@@ -567,15 +566,15 @@ console.log('LOADED:', 'render/client.js');
   var ICON_PERSON = '<svg viewBox="0 0 24 24" fill="none" stroke="#3a3a3a" stroke-width="1.5" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
 
   var _CLIENT_AVATAR_PALETTE = {
-    client:    { bg: '#FF6B8A30', fg: '#FF6B8A' },
+    client:    { bg: '#FF4B4B30', fg: '#FF4B4B' },
     servicing: { bg: '#22D3EE30', fg: '#22D3EE' },
-    admin:     { bg: '#C4A44A30', fg: '#C4A44A' },
+    admin:     { bg: '#C8A84B30', fg: '#C8A84B' },
     creative:  { bg: '#9b87f530', fg: '#9b87f5' }
   };
 
   function _clientAvatarColors(role) {
-    var k = (role || '').toLowerCase();
-    return _CLIENT_AVATAR_PALETTE[k] || { bg: '#40405030', fg: '#A0A0B0' };
+    var r = (typeof getRoleFor === 'function') ? getRoleFor(role) : (role || '').toLowerCase();
+    return _CLIENT_AVATAR_PALETTE[r] || { bg: '#40405030', fg: '#A0A0B0' };
   }
 
   function _highlightClientMentions(escapedText) {

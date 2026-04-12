@@ -64,7 +64,7 @@ Root:
 - `01-config.js` — constants, ROLE_STAGES, ROLE_TABS, `setStage()` (pure stage mutator + logger)
 - `02-session.js` — session globals
 - `utils.js` — esc(), formatDate()
-- `12-profiles.js` — Profile data loader and helpers. Fetches `profiles` table on login, caches in `window._profilesCache` (keyed by email). Exposes: `getDisplayName(email)`, `getAvatarUrl(email)`, `getProfileByEmail(email)`, `updateLastActive()`, `fetchProfiles()`, `enrichAppStateUser()`, `renderAvatar(emailOrName, role, size, opts)`, `_avatarColors(role)`. All helpers return graceful fallbacks if cache not loaded or fetch failed. `enrichAppStateUser()` sets `AppState.user.displayName`, `.avatarUrl`, `.title`, `.username` from the cached profile after fetch.
+- `12-profiles.js` — Profile data loader and helpers. Fetches `profiles` table on login, caches in `window._profilesCache` (keyed by email). Also fetches `user_roles` to build `window._nameToRoleCache` (maps names and emails to roles). Exposes: `getDisplayName(email)`, `getAvatarUrl(email)`, `getProfileByEmail(email)`, `getRoleFor(nameOrEmail)`, `updateLastActive()`, `fetchProfiles()`, `enrichAppStateUser()`, `renderAvatar(emailOrName, role, size, opts)`, `_avatarColors(role)`. All helpers return graceful fallbacks if cache not loaded or fetch failed. `enrichAppStateUser()` sets `AppState.user.displayName`, `.avatarUrl`, `.title`, `.username` from the cached profile after fetch. `getRoleFor()` resolves any name or email to a canonical role string via `_nameToRoleCache`; returns `''` for unknown inputs.
 - `03-auth.js` — magic link, OTP, refreshSession (typed errors), cross-tab refresh lock, visibilitychange refresh, normalizeRole, `_teardownClientTokenTimer()` (cleans 50-min client token interval on logout)
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
@@ -190,7 +190,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413a`.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413b`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
