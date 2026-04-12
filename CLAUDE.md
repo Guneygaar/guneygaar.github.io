@@ -50,11 +50,13 @@ NO `comments` column on posts. Never write to it.
 
 **tasks** — PK id(bigint). Cols: assigned_to, message, due_date, done(bool), created_at. RLS unrestricted.
 
+**profiles** — PK id(uuid). Cols: email(text UNIQUE, FK → user_roles.email), display_name, username(text UNIQUE), title, avatar_url, status(text DEFAULT 'offline'), last_active_at(timestamptz), default_view(text DEFAULT 'dashboard'), timezone(text DEFAULT 'Asia/Kolkata'), notification_email(bool DEFAULT true), notification_digest(bool DEFAULT true), notification_client_comments(bool DEFAULT true), notification_whatsapp(bool DEFAULT false), onboarding_complete(bool DEFAULT false), created_at(timestamptz), updated_at(timestamptz). Cached client-side in `window._profilesCache` by `12-profiles.js`. RLS: SELECT unrestricted, UPDATE own row only.
+
 **click_log** — telemetry sink (session_id, etc.) fed by `_flushClickBuffer`. Storage: R2 bucket `sorted-images`, CDN `https://images.srtd.io/` (legacy `pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev`).
 
 ## 3 — FILE MAP
 
-21 versioned resources (1 css + 20 js). `00-appstate.js` + `00-appstate-compat.js` have NO `defer`. `04-router.js` MUST be the LAST script. `actions/pcs-longpress.js` must load AFTER `actions/pcs.js`.
+22 versioned resources (1 css + 21 js). `00-appstate.js` + `00-appstate-compat.js` have NO `defer`. `04-router.js` MUST be the LAST script. `actions/pcs-longpress.js` must load AFTER `actions/pcs.js`. `12-profiles.js` must load AFTER `utils.js` and BEFORE `03-auth.js`.
 
 Root:
 - `00-appstate.js` — AppState brain, logError, onerror, onunhandledrejection, guardAction, _sessionId
@@ -62,6 +64,7 @@ Root:
 - `01-config.js` — constants, ROLE_STAGES, ROLE_TABS, `setStage()` (pure stage mutator + logger)
 - `02-session.js` — session globals
 - `utils.js` — esc(), formatDate()
+- `12-profiles.js` — Profile data loader and helpers. Fetches `profiles` table on login, caches in `window._profilesCache` (keyed by email). Exposes: `getDisplayName(email)`, `getAvatarUrl(email)`, `getProfileByEmail(email)`, `updateLastActive()`, `fetchProfiles()`. All helpers return graceful fallbacks if cache not loaded or fetch failed.
 - `03-auth.js` — magic link, OTP, refreshSession (typed errors), cross-tab refresh lock, visibilitychange refresh, normalizeRole, `_teardownClientTokenTimer()` (cleans 50-min client token interval on logout)
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
@@ -187,7 +190,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 21 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 20 scripts). Current: `?v=20260412f`.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260412g`.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
