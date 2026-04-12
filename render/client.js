@@ -623,7 +623,8 @@ console.log('LOADED:', 'render/client.js');
       '</div>';
     }
     var palette = _clientAvatarColors(c.author_role);
-    var initial = (c.author || '?').charAt(0).toUpperCase();
+    var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.author) : (c.author || '?');
+    var initial = _authorDisplay.charAt(0).toUpperCase();
     var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
     var avatarStyle = 'width:' + avSize + 'px;height:' + avSize + 'px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:' + avFontPx + 'px;font-weight:700;color:' + palette.fg + ';background:' + palette.bg + ';';
@@ -636,7 +637,7 @@ console.log('LOADED:', 'render/client.js');
           '<circle cx="9" cy="9" r="7"/>' +
           '<polyline points="6,9 8.5,11.5 12.5,6.5"/>' +
         '</svg>' +
-        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#3ECF8E;font-weight:500;">Resolved by ' + _esc(c.resolved_by) + '</span>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#3ECF8E;font-weight:500;">Resolved by ' + _esc((typeof getDisplayName === 'function') ? getDisplayName(c.resolved_by) : c.resolved_by) + '</span>' +
       '</div>';
     }
     var replyTagHtml = (isReply && parentAuthor)
@@ -666,7 +667,7 @@ console.log('LOADED:', 'render/client.js');
       '<div style="flex:1;min-width:0;">' +
         replyTagHtml +
         '<div style="display:flex;align-items:center;flex-wrap:nowrap;gap:6px;">' +
-          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(c.author) + '</span>' +
+          '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(_authorDisplay) + '</span>' +
           '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
           dotsBtnHtml +
         '</div>' +
@@ -1521,7 +1522,7 @@ console.log('LOADED:', 'render/client.js');
     var savedValue = input.value;
     input.value = '';
 
-    var authorName = window.AppState.user.name || 'Client';
+    var authorName = window.AppState.user.email || window.AppState.user.name || 'Client';
     var _mentioned = _parseMentions(message);
     var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;

@@ -620,7 +620,7 @@ window.executeBatchAction = async function(targetStage) {
         stage: dbStage,
         status_changed_at: now,
         updated_at: now,
-        updated_by: actor
+        updated_by: window.AppState.user.email || actor
       }),
     });
 

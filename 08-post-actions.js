@@ -132,7 +132,7 @@ async function quickStage(postId, newStage) {
     const actor = resolveActor();
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: window.AppState.user.email || actor }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response
@@ -144,7 +144,7 @@ async function quickStage(postId, newStage) {
     _clearSaveTimeout(post);
     post._isSaving = false;
     scheduleRender();
-    await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: oldStage, new_stage: newStage });
+    await logActivity({ post_id: postId, actor: window.AppState.user.email || actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: oldStage, new_stage: newStage });
     var _qsRecipients = _stageRecipients(newStage);
     if (_qsRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _qsRecipients, actor);
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
@@ -241,7 +241,7 @@ async function saveAdminEdit() {
       body: JSON.stringify(_payload),
     });
     console.log('[saveAdminEdit] API SUCCESS for', postId);
-    await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
+    await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Admin', actor_role: 'Admin', action: 'Full edit saved' });
     closeAdminEdit();
     await loadPosts();
     showToast('Post saved ok', 'success');
@@ -301,7 +301,7 @@ async function clientApprove(postId, btn) {
       scheduleRender();
       _renderBackgroundViews();
       // Non-critical side effects
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: oldStage, new_stage: 'scheduled' });
+      await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: oldStage, new_stage: 'scheduled' });
       window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
     } catch (err) {
       _clearSaveTimeout(post);
@@ -322,7 +322,7 @@ async function clientAcknowledge(postId) {
         method: 'PATCH',
         body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
       });
-      await logActivity({ post_id: postId, actor: 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
+      await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
       var _ackPost = getPostById(postId);
       window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Creative'], window.AppState.user.name || 'Client');
       showToast('Got it! The team has been notified.', 'success');
@@ -413,7 +413,7 @@ async function submitClientRequest() {
       target_date:  reqDate,
       images:       imageUrls.length ? imageUrls : [],
       drive_link:   window._reqDriveLink || null,
-      created_by:   window.AppState.user.name || window.AppState.user.email || email,
+      created_by:   window.AppState.user.email || email,
       status:       'pending'
     };
 
@@ -478,7 +478,7 @@ async function flagIssue(postId) {
       method: 'PATCH',
       body: JSON.stringify({ client_feedback: `! ${msg}`, updated_at: new Date().toISOString() }),
     });
-    await logActivity({ post_id: postId, actor: window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
+    await logActivity({ post_id: postId, actor: window.AppState.user.email || window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
     await loadPosts();
   } catch (err) { showToast('Failed  -  try again', 'error'); window.logError && window.logError(err && err.message, err && err.stack, 'flag-issue'); }
@@ -498,7 +498,7 @@ async function deletePost(postId) {
   if (btn) btn.disabled = true;
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, { method: 'DELETE' });
-    await logActivity({ post_id: postId, actor: 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
+    await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Admin', actor_role: 'Admin', action: `Post deleted: ${title}` });
     closeAdminEdit();
     var next423 = window.AppState.posts.all.filter(function(p) {
       return getPostId(p) !== postId;
@@ -560,7 +560,7 @@ function _confirmPublish(postId) {
     window.AppState.posts.setAll(_next_408);
     await logActivity({
       post_id: postId,
-      actor: window.AppState.user.name || 'Shubham',
+      actor: window.AppState.user.email || window.AppState.user.name || 'Shubham',
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published',
       old_stage: _pubOldStage,
@@ -629,7 +629,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: window.AppState.user.email || actor }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -663,7 +663,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
   }
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
-  try { await logActivity({ post_id: postId, actor: actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: previousStage, new_stage: newStage }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
+  try { await logActivity({ post_id: postId, actor: window.AppState.user.email || actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: previousStage, new_stage: newStage }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
   try { var _esRecipients = _stageRecipients(newStage); if (_esRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _esRecipients, actor); } catch(e) { console.warn('[PCS] stage notif failed:', e); }
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }

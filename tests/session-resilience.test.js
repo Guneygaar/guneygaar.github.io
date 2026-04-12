@@ -178,7 +178,7 @@ describe('BONUS — clientApprove guardAction + approval payload', function() {
   it('24. submitApproval approved PATCH includes updated_by Client', function() {
     var approvedMatch = approvalSrc.match(/type === 'approved'[\s\S]{0,400}/);
     expect(approvedMatch).toBeTruthy();
-    expect(approvedMatch[0]).toContain("updated_by: 'Client'");
+    expect(approvedMatch[0]).toContain("updated_by: window.AppState.user.email || 'Client'");
   });
 
   it('25. _clearSessionAndLogin is exported to window', function() {
