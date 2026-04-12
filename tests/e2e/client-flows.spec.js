@@ -175,6 +175,10 @@ test.describe('Client Comment Flow', () => {
     const card = page.locator('[data-card-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
+    // Comment section is collapsed by default — click Comment button to expand
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
+
     const input = page.locator('#comment-input-test-client-001');
     await expect(input).toBeVisible({ timeout: 5000 });
 
@@ -185,6 +189,10 @@ test.describe('Client Comment Flow', () => {
   test('TEST 7 -- Comment input renders on awaiting_brand_input post', async ({ page }) => {
     const card = page.locator('[data-card-id="test-client-002"]');
     await expect(card).toBeVisible({ timeout: 5000 });
+
+    // Comment section is collapsed by default — click Comment button to expand
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
 
     const input = page.locator('#comment-input-test-client-002');
     await expect(input).toBeVisible({ timeout: 5000 });
@@ -201,6 +209,13 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 9 -- Client can type in comment input', async ({ page }) => {
+    const card = page.locator('[data-card-id="test-client-001"]');
+    await expect(card).toBeVisible({ timeout: 5000 });
+
+    // Expand collapsed comment section
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
+
     const input = page.locator('#comment-input-test-client-001');
     await expect(input).toBeVisible({ timeout: 5000 });
 
@@ -210,6 +225,13 @@ test.describe('Client Comment Flow', () => {
   });
 
   test('TEST 10 -- Comment send button visible when input has text', async ({ page }) => {
+    const card = page.locator('[data-card-id="test-client-001"]');
+    await expect(card).toBeVisible({ timeout: 5000 });
+
+    // Expand collapsed comment section
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
+
     const input = page.locator('#comment-input-test-client-001');
     await expect(input).toBeVisible({ timeout: 5000 });
     await input.fill('Some text');
@@ -222,7 +244,11 @@ test.describe('Client Comment Flow', () => {
     const card = page.locator('[data-card-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
-    const photoBtn = card.locator('text=PHOTO');
+    // Expand collapsed comment section
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
+
+    const photoBtn = card.locator('[aria-label="PHOTO"]');
     await expect(photoBtn).toBeVisible({ timeout: 3000 });
   });
 
@@ -230,7 +256,11 @@ test.describe('Client Comment Flow', () => {
     const card = page.locator('[data-card-id="test-client-001"]');
     await expect(card).toBeVisible({ timeout: 5000 });
 
-    const mentionBtn = card.locator('text=MENTION');
+    // Expand collapsed comment section
+    const commentBtn = card.locator('button[data-action="focusComment"]');
+    await commentBtn.click();
+
+    const mentionBtn = card.locator('[aria-label="mention"]');
     await expect(mentionBtn).toBeVisible({ timeout: 3000 });
   });
 });

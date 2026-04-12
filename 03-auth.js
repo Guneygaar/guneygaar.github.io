@@ -353,9 +353,9 @@ function activateRole(role) {
     var loginOv = document.getElementById('login-overlay');
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
+    if (typeof loadPostsForClient === 'function') loadPostsForClient();
     if (typeof fetchProfiles === 'function') fetchProfiles();
     if (typeof updateLastActive === 'function') updateLastActive();
-    if (typeof loadPostsForClient === 'function') loadPostsForClient();
     if (typeof startClientRealtime === 'function') startClientRealtime();
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
