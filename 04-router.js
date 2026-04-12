@@ -47,6 +47,7 @@ async function _startRouter() {
       const result = await refreshSession();
       if (result && result.token) {
         activateRole(savedRole);
+        if (typeof fetchProfiles === 'function') fetchProfiles();
         window._authReady = true;
         return;
       }
@@ -59,6 +60,7 @@ async function _startRouter() {
       // Network/server error — keep tokens, try with stale token
       if (savedToken) {
         activateRole(savedRole);
+        if (typeof fetchProfiles === 'function') fetchProfiles();
         window._authReady = true;
         return;
       }
@@ -70,6 +72,7 @@ async function _startRouter() {
     }
     if (savedToken) {
       activateRole(savedRole);
+      if (typeof fetchProfiles === 'function') fetchProfiles();
       window._authReady = true;
       return;
     }
