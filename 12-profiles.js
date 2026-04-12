@@ -45,6 +45,7 @@ async function fetchProfiles() {
       console.warn('[profiles] user_roles fetch failed:', roleErr);
     }
     enrichAppStateUser();
+    _scratchLoad();
   } catch (err) {
     console.error('[profiles] fetchProfiles failed:', err);
     window._profilesCache = {};
@@ -549,30 +550,86 @@ async function handleAvatarUpload(file) {
   console.log('[avatar] Starting upload, file:', file.name, file.type, file.size);
 
   // Compress to max 400x400 JPEG q0.80
-  file = await _compressAvatar(file);
+  try {
+    file = await _compressAvatar(file);
+  } catch (compErr) {
+    console.warn('[avatar] Compression failed, using original:', compErr);
+  }
   console.log('[avatar] Compressed, new size:', file.size);
 
   var email = (AppState.user.email || '');
   var sanitized = email.toLowerCase().replace(/@/g, '-at-').replace(/\./g, '-');
   var filename = 'profile-pictures/' + sanitized + '.jpeg';
 
-  if (typeof showToast === 'function') showToast('Uploading photo...', 'info');
+  // Progress ring constants
+  var ringSize = 88;
+  var r = 40;
+  var circumference = 2 * Math.PI * r;
+
+  // Replace hero avatar with progress ring
+  var heroEl = document.getElementById('prof-hero');
+  var originalHeroHtml = heroEl ? heroEl.innerHTML : '';
+
+  if (heroEl) {
+    var progressHtml =
+      '<div id="upload-ring-wrap">' +
+      '<div style="position:relative;width:' + ringSize + 'px;height:' + ringSize + 'px;margin:0 auto 16px;">' +
+        '<svg width="' + ringSize + '" height="' + ringSize + '" viewBox="0 0 ' + ringSize + ' ' + ringSize + '" style="transform:rotate(-90deg);position:absolute;top:0;left:0;">' +
+          '<circle cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + r + '" fill="none" stroke="#1c1c2a" stroke-width="4"/>' +
+          '<circle id="upload-progress-ring" cx="' + (ringSize/2) + '" cy="' + (ringSize/2) + '" r="' + r + '" fill="none" stroke="#3ECF8E" stroke-width="4" stroke-linecap="round" stroke-dasharray="' + circumference + '" stroke-dashoffset="' + circumference + '"/>' +
+        '</svg>' +
+        '<div style="position:absolute;top:4px;left:4px;width:' + (ringSize-8) + 'px;height:' + (ringSize-8) + 'px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#141420;">' +
+          (AppState.user.avatarUrl
+            ? '<img src="' + AppState.user.avatarUrl + '" style="width:100%;height:100%;object-fit:cover;opacity:0.4;">'
+            : '<span style="font-family:IBM Plex Mono,monospace;font-size:24px;font-weight:700;color:#555;">' + (AppState.user.displayName || 'U').charAt(0) + '</span>') +
+        '</div>' +
+        '<div id="upload-pct" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:IBM Plex Mono,monospace;font-size:16px;font-weight:700;color:#3ECF8E;">0%</div>' +
+      '</div>' +
+      '</div>';
+
+    var photoWrap = heroEl.querySelector('[style*="position:relative"]');
+    if (photoWrap) {
+      photoWrap.outerHTML = progressHtml;
+    } else {
+      heroEl.insertAdjacentHTML('afterbegin', progressHtml);
+    }
+  }
 
   try {
     var workerUrl = 'https://srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/upload'
       + '?filename=' + encodeURIComponent(filename);
     console.log('[avatar] Uploading to:', workerUrl);
 
-    var res = await fetch(workerUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type,
-        'X-Upload-Secret': 'srtd2026xK9mN3pQ',
-      },
-      body: file,
+    // Use XHR for upload progress tracking
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', workerUrl, true);
+    xhr.setRequestHeader('Content-Type', file.type || 'image/jpeg');
+    xhr.setRequestHeader('X-Upload-Secret', 'srtd2026xK9mN3pQ');
+
+    xhr.upload.onprogress = function(e) {
+      if (e.lengthComputable) {
+        var pct = Math.round((e.loaded / e.total) * 100);
+        var ring = document.getElementById('upload-progress-ring');
+        var label = document.getElementById('upload-pct');
+        if (ring) {
+          var offset = circumference - (pct / 100) * circumference;
+          ring.style.strokeDashoffset = offset;
+        }
+        if (label) label.textContent = pct + '%';
+      }
+    };
+
+    var uploadPromise = new Promise(function(resolve, reject) {
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error('Upload ' + xhr.status));
+      };
+      xhr.onerror = function() { reject(new Error('Upload network error')); };
     });
-    console.log('[avatar] Worker response:', res.status, res.statusText);
-    if (!res.ok) throw new Error('Upload ' + res.status);
+
+    xhr.send(file);
+    await uploadPromise;
+    console.log('[avatar] Upload complete');
 
     // Store clean URL in DB, cache-busted URL for immediate display
     var cleanUrl = 'https://images.srtd.io/' + filename;
@@ -591,15 +648,107 @@ async function handleAvatarUpload(file) {
     }
     AppState.user.avatarUrl = displayUrl;
 
-    // Re-render hero + topbar trigger
-    _profileRenderHero();
+    // Replace progress ring with new photo (green border + glow)
+    var ringWrap = document.getElementById('upload-ring-wrap');
+    if (ringWrap) {
+      ringWrap.outerHTML =
+        '<div style="position:relative;display:inline-block;">' +
+          '<div style="width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid #3ECF8E;box-shadow:0 0 24px #3ECF8E4D;">' +
+            '<img src="' + displayUrl + '" style="width:100%;height:100%;object-fit:cover;">' +
+          '</div>' +
+          '<button class="prof-photo-edit" id="prof-photo-edit-btn" title="Change photo">' +
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>' +
+          '</button>' +
+        '</div>';
+      // Re-wire photo edit button
+      var editBtn = document.getElementById('prof-photo-edit-btn');
+      if (editBtn) {
+        editBtn.onclick = function() {
+          var inp = document.getElementById('prof-photo-input');
+          if (inp) inp.click();
+        };
+      }
+    }
+
+    // Update topbar avatar
     _renderProfileTrigger();
 
     if (typeof showToast === 'function') showToast('Photo updated', 'success');
   } catch (err) {
     console.error('[avatar] Upload failed:', err);
     if (typeof window.logError === 'function') window.logError(err, 'handleAvatarUpload');
+    // Revert hero to original
+    if (heroEl && originalHeroHtml) heroEl.innerHTML = originalHeroHtml;
     if (typeof showToast === 'function') showToast('Upload failed. Try again.', 'error');
+  }
+}
+
+/* ===============================================
+   Scratchpad strip — below topbar
+=============================================== */
+
+var _scratchTimer = null;
+
+function toggleScratchpad() {
+  var panel = document.getElementById('scratch-panel');
+  if (!panel) return;
+  var isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    var input = document.getElementById('scratch-input');
+    if (input) input.focus();
+  }
+}
+
+function _scratchChanged() {
+  clearTimeout(_scratchTimer);
+  var saved = document.getElementById('scratch-saved');
+  if (saved) saved.style.opacity = '0';
+  _scratchTimer = setTimeout(function() { _scratchSave(); }, 2000);
+}
+
+function _scratchSave() {
+  clearTimeout(_scratchTimer);
+  var input = document.getElementById('scratch-input');
+  if (!input) return;
+  var val = input.value;
+  var email = AppState.user.email;
+  if (!email) return;
+
+  apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
+    method: 'PATCH',
+    body: JSON.stringify({ scratchpad: val })
+  }).then(function() {
+    var cacheKey = email.toLowerCase();
+    if (window._profilesCache && window._profilesCache[cacheKey]) {
+      window._profilesCache[cacheKey].scratchpad = val;
+    }
+    var saved = document.getElementById('scratch-saved');
+    if (saved) { saved.style.opacity = '1'; setTimeout(function() { saved.style.opacity = '0'; }, 2000); }
+  }).catch(function(err) {
+    console.warn('[scratch] Save failed:', err);
+    if (typeof window.logError === 'function') window.logError(err, 'scratchpad-strip-save');
+  });
+
+  // Update preview
+  var preview = document.getElementById('scratch-preview');
+  if (preview) {
+    var first = val.split('\n')[0].slice(0, 60);
+    preview.textContent = first ? first + (val.length > 60 ? '...' : '') : 'Quick notes, reminders, to-dos...';
+    preview.style.color = first ? 'var(--text2,#BCBCD0)' : 'var(--text3,#7a7a90)';
+  }
+}
+
+function _scratchLoad() {
+  var profile = getProfileByEmail(AppState.user.email);
+  var val = (profile && profile.scratchpad) || '';
+  var input = document.getElementById('scratch-input');
+  if (input) input.value = val;
+  var preview = document.getElementById('scratch-preview');
+  if (preview) {
+    var first = val.split('\n')[0].slice(0, 60);
+    preview.textContent = first ? first + (val.length > 60 ? '...' : '') : 'Quick notes, reminders, to-dos...';
+    preview.style.color = first ? 'var(--text2,#BCBCD0)' : 'var(--text3,#7a7a90)';
   }
 }
 
