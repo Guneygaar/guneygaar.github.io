@@ -167,6 +167,25 @@
     </div>
   </header>
 
+  <!-- SCRATCHPAD STRIP -->
+  <div id="scratch-strip" style="padding:8px 20px 12px;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);">
+    <div id="scratch-row" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);" onclick="toggleScratchpad()">
+      <span style="font-size:14px;flex-shrink:0;">&#x1F4DD;</span>
+      <span id="scratch-preview" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3,#7a7a90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Quick notes, reminders, to-dos...</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--text4,#444458);flex-shrink:0;">Edit</span>
+    </div>
+  </div>
+
+  <div id="scratch-panel" style="display:none;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);">
+    <div style="padding:10px 20px 4px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-b,#e0c060);">&#x1F4DD; My Notes</span>
+      <span id="scratch-saved" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--green,#3ECF8E);opacity:0;transition:opacity .2s;">Saved &#x2713;</span>
+    </div>
+    <div style="padding:0 20px 12px;">
+      <textarea id="scratch-input" style="width:100%;min-height:100px;max-height:250px;resize:vertical;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text,#F0F0F2);outline:none;line-height:1.6;" placeholder="Quick notes, reminders, to-dos..." oninput="_scratchChanged()" onblur="_scratchSave()"></textarea>
+    </div>
+  </div>
+
   <!-- ERROR BANNER -->
   <div id="error-banner">
     <span id="error-banner-msg"></span>
