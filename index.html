@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260413n">
+ <link rel="stylesheet" href="styles.css?v=20260413o">
 
 </head>
 <body>
@@ -166,25 +166,6 @@
       <button class="app-icon-btn prof-trigger-btn" id="prof-trigger" onclick="toggleUserMenu()" title="Menu" style="width:36px;height:36px;padding:0;overflow:hidden;border-radius:50%"></button>
     </div>
   </header>
-
-  <!-- SCRATCHPAD STRIP -->
-  <div id="scratch-strip" style="padding:8px 20px 12px;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);">
-    <div id="scratch-row" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);" onclick="toggleScratchpad()">
-      <span style="font-size:14px;flex-shrink:0;">&#x1F4DD;</span>
-      <span id="scratch-preview" style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3,#7a7a90);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Quick notes, reminders, to-dos...</span>
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--text4,#444458);flex-shrink:0;">Edit</span>
-    </div>
-  </div>
-
-  <div id="scratch-panel" style="display:none;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);">
-    <div style="padding:10px 20px 4px;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-b,#e0c060);">&#x1F4DD; My Notes</span>
-      <span id="scratch-saved" style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--green,#3ECF8E);opacity:0;transition:opacity .2s;">Saved &#x2713;</span>
-    </div>
-    <div style="padding:0 20px 12px;">
-      <textarea id="scratch-input" style="width:100%;min-height:100px;max-height:250px;resize:vertical;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);padding:12px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text,#F0F0F2);outline:none;line-height:1.6;" placeholder="Quick notes, reminders, to-dos..." oninput="_scratchChanged()" onblur="_scratchSave()"></textarea>
-    </div>
-  </div>
 
   <!-- ERROR BANNER -->
   <div id="error-banner">
@@ -1096,28 +1077,28 @@ window.setPcsVisibility = function(el, vis) {
 };
 </script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260413n"></script>
-<script src="00-appstate-compat.js?v=20260413n"></script>
-<script src="01-config.js?v=20260413n" defer></script>
-<script src="02-session.js?v=20260413n" defer></script>
-<script src="utils.js?v=20260413n" defer></script>
-<script src="12-profiles.js?v=20260413n" defer></script>
-<script src="03-auth.js?v=20260413n" defer></script>
-<script src="05-api.js?v=20260413n" defer></script>
-<script src="10-ui.js?v=20260413n" defer></script>
+<script src="00-appstate.js?v=20260413o"></script>
+<script src="00-appstate-compat.js?v=20260413o"></script>
+<script src="01-config.js?v=20260413o" defer></script>
+<script src="02-session.js?v=20260413o" defer></script>
+<script src="utils.js?v=20260413o" defer></script>
+<script src="12-profiles.js?v=20260413o" defer></script>
+<script src="03-auth.js?v=20260413o" defer></script>
+<script src="05-api.js?v=20260413o" defer></script>
+<script src="10-ui.js?v=20260413o" defer></script>
 
-<script src="06-post-create.js?v=20260413n" defer></script>
-<script defer src="render/dashboard.js?v=20260413n"></script>
-<script defer src="render/client.js?v=20260413n"></script>
-<script defer src="render/pipeline.js?v=20260413n"></script>
-<script defer src="render/brief.js?v=20260413n"></script>
-<script defer src="actions/pcs.js?v=20260413n"></script>
-<script defer src="actions/pcs-longpress.js?v=20260413n"></script>
-<script src="07-post-load.js?v=20260413n" defer></script>
-<script src="08-post-actions.js?v=20260413n" defer></script>
-<script src="09-library.js?v=20260413n" defer></script>
-<script src="09-approval.js?v=20260413n" defer></script>
-<script src="04-router.js?v=20260413n" defer></script>
+<script src="06-post-create.js?v=20260413o" defer></script>
+<script defer src="render/dashboard.js?v=20260413o"></script>
+<script defer src="render/client.js?v=20260413o"></script>
+<script defer src="render/pipeline.js?v=20260413o"></script>
+<script defer src="render/brief.js?v=20260413o"></script>
+<script defer src="actions/pcs.js?v=20260413o"></script>
+<script defer src="actions/pcs-longpress.js?v=20260413o"></script>
+<script src="07-post-load.js?v=20260413o" defer></script>
+<script src="08-post-actions.js?v=20260413o" defer></script>
+<script src="09-library.js?v=20260413o" defer></script>
+<script src="09-approval.js?v=20260413o" defer></script>
+<script src="04-router.js?v=20260413o" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1710,6 +1691,26 @@ window.setPcsVisibility = function(el, vis) {
 <!-- PROFILE PANEL OVERLAY -->
 <div id="prof-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:#0a0a0f;align-items:stretch;justify-content:center;">
   <div id="prof-panel" style="width:100%;max-width:480px;height:100%;overflow-y:auto;background:#0e0e16;-ms-overflow-style:none;scrollbar-width:none;"></div>
+</div>
+
+<!-- SCRATCHPAD PANEL OVERLAY -->
+<div id="scratchpad-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100vh;background:var(--bg,#0a0a0f);z-index:3100;flex-direction:column;overflow-y:auto;">
+  <!-- Topbar -->
+  <div style="padding:14px 20px 12px;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <div>
+      <div style="font-size:20px;font-weight:700;color:#fff;">Scratchpad</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text2,#BCBCD0);letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">Your private notes</div>
+    </div>
+    <button onclick="closeScratchpadPanel()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;color:var(--text3,#7a7a90);background:none;border:1px solid var(--border2,#2a2a3a);padding:5px 12px;cursor:pointer;">&#x2715; CLOSE</button>
+  </div>
+  <!-- Textarea -->
+  <div style="flex:1;padding:16px 20px;">
+    <textarea id="scratchpad-textarea" style="width:100%;min-height:300px;height:calc(100vh - 180px);resize:none;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text,#F0F0F2);outline:none;line-height:1.7;" placeholder="Quick notes, reminders, to-dos..."></textarea>
+  </div>
+  <!-- Save button -->
+  <div style="padding:12px 20px 24px;flex-shrink:0;">
+    <button onclick="_scratchSaveFromPanel()" style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;background:var(--green,#3ECF8E);border:none;padding:14px;cursor:pointer;">Save Notes</button>
+  </div>
 </div>
 
 </body>

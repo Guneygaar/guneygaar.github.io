@@ -354,8 +354,12 @@ function activateRole(role) {
     if (loginOv) loginOv.classList.add('hidden');
     document.getElementById('client-view')?.classList.add('active');
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
-    if (typeof fetchProfiles === 'function') fetchProfiles();
-    if (typeof updateLastActive === 'function') updateLastActive();
+    if (typeof fetchProfiles === 'function') {
+      try { fetchProfiles(); } catch(e) { console.warn('[auth] fetchProfiles error:', e); }
+    }
+    if (typeof updateLastActive === 'function') {
+      try { updateLastActive(); } catch(e) { console.warn('[auth] updateLastActive error:', e); }
+    }
     if (typeof startClientRealtime === 'function') startClientRealtime();
     if (!window._clientTokenTimer) {
       window._clientTokenTimer = setInterval(async function() {
@@ -385,8 +389,12 @@ function activateRole(role) {
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');
   updateActionButton();
-  if (typeof fetchProfiles === 'function') fetchProfiles();
-  if (typeof updateLastActive === 'function') updateLastActive();
+  if (typeof fetchProfiles === 'function') {
+    try { fetchProfiles(); } catch(e) { console.warn('[auth] fetchProfiles error:', e); }
+  }
+  if (typeof updateLastActive === 'function') {
+    try { updateLastActive(); } catch(e) { console.warn('[auth] updateLastActive error:', e); }
+  }
   if (window.AppState.user.effectiveRole === 'Client') {
     document.getElementById('client-view')?.classList.add('active');
     loadPostsForClient();
@@ -443,6 +451,7 @@ function _buildUserMenu() {
   // My Profile item (all roles)
   var _profAv = (typeof renderAvatar === 'function') ? renderAvatar(window.AppState.user.email || '', _roleLower, 20) : '';
   html += '<button class="user-menu-item" onclick="openProfilePanel(); closeUserMenu()">' + _profAv + ' My Profile</button>';
+  html += '<button class="user-menu-item" onclick="openScratchpadPanel();closeUserMenu();"><span style="font-size:14px;margin-right:8px;">\uD83D\uDCDD</span> Scratchpad</button>';
   html += '<div class="um-divider"></div>';
 
   // Client gets a dedicated slim menu
