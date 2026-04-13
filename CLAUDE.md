@@ -1,12 +1,12 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-13 (refresh-400-recovery + collapse-timers + interval-rollback). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-13 (client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
 Social media content ops platform for agencies — workflow + client trust, NOT a scheduler.
 
-Stack: Vanilla JS (no framework, no build step), Supabase (PostgREST + auth), Cloudflare Workers + R2, GitHub Pages, Resend (email).
+Stack: Vanilla JS (no framework, no build step), Supabase (PostgREST + auth + Realtime), Cloudflare Workers + R2, GitHub Pages, Resend (email). Client-side Realtime uses `@supabase/supabase-js@2.45.4` loaded as a UMD bundle from jsDelivr (see `index.html`); all REST traffic still flows through `apiFetch()`, the SDK is ONLY used for the Realtime WebSocket.
 
 Repo: `github.com/Guneygaar/guneygaar.github.io`. ALL files at REPO ROOT. Never reference `/sorted/` — it does not exist. Subdirs: `render/ actions/ tests/ tests/e2e/ sorted-preview-worker/ sql/ preview/ mockups/`.
 
@@ -69,7 +69,7 @@ Root:
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
 - `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed
-- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 15s poll with modal-open fetch-and-stash), startClientRealtime/stopClientRealtime (client 30s poll), _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
+- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 10s poll with modal-open fetch-and-stash), startClientRealtime/stopClientRealtime (client Supabase Realtime WebSocket — 4 postgres_changes listeners, no polling), _initSupabaseRealtimeClient, _clientRealtimeRefresh (400 ms debounced loadPostsForClient), _onClientNotificationInsert, _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
@@ -112,12 +112,22 @@ window.AppState = {
 - Before every PATCH: `post._isSaving = true` + `_startSaveTimeout(post, postId)`. On success AND catch paths: `_clearSaveTimeout(post)` then `post._isSaving = false`.
 - If a PATCH hangs > 10s (`_SAVE_TIMEOUT_MS`) the timer force-clears the flag, logs `[SAVE TIMEOUT]`, and calls `scheduleRender()`. Force-cleared posts can be saved again immediately. `apiFetch` has no timeout — this is the only indefinite-hang guard. Wired into `quickStage`, `clientApprove`, `_executeStageChange`/`Async`, `updatePost`.
 
-### Client 30s polling (`startClientRealtime` in 07-post-load.js)
-- Singleton via `window._clientPollTimer`, installed from `activateRole()` (03-auth.js) and cleared by `stopClientRealtime()` (called by `stopRealtime()` → cascades on logout). The unified `window._tokenRefreshTimer` handles the 50-min proactive refresh for all roles.
-- Interval guards (in order): `document.hidden`, `sb_access_token`, `window._isLoadingClientPosts`, active-typing (input/textarea/contenteditable). Any hit → return.
-- Delegates to `loadPostsForClient(true)` with `skipRenderIfUnchanged` — re-renders only when `_clientPostsFingerprint(posts.all) !== window._lastClientFp`. Fingerprint extends `_postsFingerprint` with per-post `post_comments.length`.
-- `loadPostsForClient` skips overwriting `post.post_comments` when `_commentSaving === true` — object-level lock set by `_handleSubmitComment` (render/client.js) so in-flight optimistic rows aren't clobbered.
-- `renderClientView` guards cv click listeners via `cv._clientEventsWired` (cv persists across re-renders, unguarded `addEventListener` stacks on every poll).
+### Client Realtime subscriptions (`startClientRealtime` in 07-post-load.js)
+- **No polling.** Replaces the legacy 10s `setInterval` (which was the #1 cause of iPhone-Safari 401/logout churn on the Client role). Installs a single Supabase Realtime WebSocket via `window._supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:10 } }, global:{ headers:{ Authorization:'Bearer '+token } } })` (`_initSupabaseRealtimeClient`), then subscribes ONE channel (`'srtd-client'`) with four `postgres_changes` listeners: `posts` (all events) → debounced refresh, `requests` (all events) → debounced refresh, `post_comments` (all events) → debounced refresh, and `notifications` (INSERT only, filter `user_role=eq.Client`) → `updateNotifBadge()` direct.
+- **Singleton + cleanup.** `window._clientRealtimeChannel` holds the channel; `window._supabaseClient` holds the client. `stopClientRealtime()` calls `_supabaseClient.removeChannel(_clientRealtimeChannel)`, clears both globals, kills the `_clientRealtimeDebounce` timer, and defensively clears the legacy `window._clientPollTimer` slot in case any stale hot-reloaded build still has one running. `stopRealtime()` cascades to `stopClientRealtime()` on logout.
+- **Debounced refresh.** `_clientRealtimeRefresh` collapses bursty INSERT/UPDATE events into one `loadPostsForClient(true, true)` call with a 400 ms debounce. Guards (in order): `document.hidden`, `sb_access_token`, `window._isLoadingClientPosts`, active-typing (input/textarea/contenteditable). `fromPoll=true` threads `{ allowLogout:false }` through apiFetch so a transient 401 during the refresh fetch cannot evict the user.
+- **Visibility reconnect.** Single `visibilitychange` listener gated on `window._clientRealtimeVisBound`. On `visibilityState==='visible'`, inspects `_clientRealtimeChannel.state` (phoenix channel state: `closed | errored | joined | joining | leaving`). If anything other than `joined`/`joining`, tears the channel down and re-subscribes. **Does NOT poll or fetch posts on focus** — the first INSERT/UPDATE delivered after reconnect triggers the refresh.
+- **Notification badge bypass.** The agency-side `AppState.timers.notifBadgeTimer` (10-ui.js, 20 s cadence) skips when `AppState.user.effectiveRole === 'Client'` — the notification Realtime INSERT handler fires `updateNotifBadge()` directly, so the bell is incremental instead of polled.
+- **Required Supabase publication setup (run ONCE on the database):**
+  ```sql
+  ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+  ALTER PUBLICATION supabase_realtime ADD TABLE requests;
+  ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+  ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+  ```
+  All four tables must be in the `supabase_realtime` publication or `postgres_changes` delivers zero events. RLS is disabled on `notifications` (see §2), so the `user_role=eq.Client` clause is a SERVER-SIDE broadcast filter applied by the Realtime server, not a row-level security policy.
+- `loadPostsForClient` still skips overwriting `post.post_comments` when `_commentSaving === true` — object-level lock set by `_handleSubmitComment` (render/client.js) so in-flight optimistic rows aren't clobbered.
+- `renderClientView` guards cv click listeners via `cv._clientEventsWired` (cv persists across re-renders, unguarded `addEventListener` stacks on every render).
 - Client @mention roster fetched live from `/user_roles`, cached in `window._clientMentionRoster` via `_fetchClientMentionRoster()`.
 
 ### Render pipeline
@@ -163,7 +173,7 @@ window.AppState = {
 
 ### Misc gotchas
 - `_commentInputHtml()` only renders for `awaiting_approval`/`awaiting_brand_input` and MUST be called inside `_cardHtml()`. `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it. Silent `.catch(()=>{})` is a bug — always `window.logError`.
-- Polling: 10s agency (`startRealtime`), 10s client (`startClientRealtime`), 20s notif badge, 5s click-log flush, 50min token refresh. Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
+- Polling: 10s agency (`startRealtime`), 20s agency notif badge (skipped for Client — see §4 Client Realtime), 5s click-log flush, 50min token refresh. **Client role uses a Supabase Realtime WebSocket and polls NOTHING.** Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
 - PCS document-click-close skips close when the active dropdown contains `input[type="date"]`. `_cardClickDelegate` (07-post-load.js) guards `input, textarea, button, [contenteditable="true"], a, [role="button"]` — don't narrow.
 - Image download: `_pcsLbDownload` + `_pcsSaveAllPhotos` must strip BOTH `https://images.srtd.io/` and legacy `pub-*.r2.dev` prefix before hitting the R2 worker `/download?key=`.
 
@@ -173,7 +183,7 @@ DB roles (canonical, Title Case): `Admin`, `Servicing`, `Creative`, `Client`. Pe
 
 - `effectiveRole` = the canonical DB role the app acts as, possibly overridden by admin preview.
 - `normalizeRole(x)` canonicalizes any person name / casing to a DB role.
-- Client activation: skips `startRealtime()` and instead calls `startClientRealtime()` (10-second client poll, see §4).
+- Client activation: skips `startRealtime()` and instead calls `startClientRealtime()` (Supabase Realtime WebSocket — no polling; see §4).
 - Admin preview: set `AppState.user.previewRole` (stored as `pcs_role_preview` in localStorage) to render as another role without touching the DB. A real Client DB role ALWAYS wins.
 - `switchTab(tabOrEl)` accepts a string (`'dashboard'`, `'pipeline'`, `'tasks'`, `'client'`) OR a DOM element from click delegation. The `pipeline` branch triggers `loadPosts()` with a `_isFetchingPosts` guard to prevent double fetches on rapid tab spam.
 - Sessions: `refreshSession()` returns typed errors: `{token}` | `{error:'auth_expired'|'server'|'network'}`. Network errors KEEP tokens. Cross-tab refresh lock via `localStorage._srtd_refresh_lock` prevents Supabase token-reuse revocation. `visibilitychange` listener guarded by `window._authReady` refreshes on tab focus.
@@ -198,7 +208,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413r`.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413s`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
