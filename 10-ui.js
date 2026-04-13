@@ -761,7 +761,7 @@ function renderNotifications(name, role) {
       ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
       : '';
 
-    var isBriefAttr = n.type === 'new_request' ? ' data-is-brief="1"' : '';
+    var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done') ? ' data-is-brief="1"' : '';
     // notif-live-card retained as a marker class on published rows so the
     // tap delegate still finds them via closest('.notif-item, .notif-live-card').
     var liveMarker = isPublished ? ' notif-live-card' : '';
@@ -2273,7 +2273,8 @@ function openPipelineFilter() {
   var overlay = document.getElementById('pipeline-filter-overlay');
   if (!overlay) return;
   _buildPFChips('pf-stage-chips', 'stage', [
-    {val:'all',label:'All'}, {val:'awaiting_approval',label:'Approval'},
+    {val:'all',label:'All'}, {val:'brief',label:'Brief'},
+    {val:'awaiting_approval',label:'Approval'},
     {val:'awaiting_brand_input',label:'Input'},
     {val:'scheduled',label:'Scheduled'}, {val:'ready',label:'Ready'},
     {val:'in_production',label:'Production'}
@@ -2309,7 +2310,8 @@ function _buildPFChips(containerId, key, options) {
 function _pfChip(key, val) {
   _PF[key] = val;
   if (key === 'stage') _buildPFChips('pf-stage-chips', 'stage',
-    [{val:'all',label:'All'},{val:'awaiting_approval',label:'Approval'},
+    [{val:'all',label:'All'},{val:'brief',label:'Brief'},
+     {val:'awaiting_approval',label:'Approval'},
      {val:'awaiting_brand_input',label:'Input'},
      {val:'scheduled',label:'Scheduled'},{val:'ready',label:'Ready'},
      {val:'in_production',label:'Production'}]);

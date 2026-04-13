@@ -123,9 +123,20 @@ describe('Deep-link ?open=POST_ID — source analysis', function() {
     expect(openIdx).toBeGreaterThan(clearIdx);
   });
 
-  it('15. renderAll calls openPCS with the stored post ID', function() {
-    var match = postLoadSrc.match(/var _pid = window\._pendingOpenPost;\s*window\._pendingOpenPost = null;\s*if \(typeof openPCS === 'function'\) openPCS\(_pid\)/);
-    expect(match).toBeTruthy();
+  it('15. renderAll routes deep-link by stage: brief sheet, client overlay, or PCS', function() {
+    // The deep-link drain reads _pendingOpenPost into _pid, clears it, then
+    // routes by stage: brief / brief_done / _isRequest -> _openBriefSheet,
+    // client effectiveRole -> _openClientPostOverlay, otherwise -> openPCS.
+    var clearMatch = postLoadSrc.match(/var _pid = window\._pendingOpenPost;\s*window\._pendingOpenPost = null;/);
+    expect(clearMatch).toBeTruthy();
+    expect(postLoadSrc).toContain("window._openBriefSheet(_pid)");
+    expect(postLoadSrc).toContain("window._openClientPostOverlay(_pid)");
+    expect(postLoadSrc).toContain("openPCS(_pid)");
+    // The brief-routing branch must trigger on stage === 'brief' OR
+    // stage === 'brief_done' OR _isRequest.
+    expect(postLoadSrc).toMatch(/_dlStage === 'brief'/);
+    expect(postLoadSrc).toMatch(/_dlStage === 'brief_done'/);
+    expect(postLoadSrc).toMatch(/_isRequest/);
   });
 
   it('16. deep-link block is inside renderAll function', function() {

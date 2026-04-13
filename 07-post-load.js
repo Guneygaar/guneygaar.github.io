@@ -1050,11 +1050,23 @@ function renderAll() {
   const libCount = window.AppState.posts.all.filter(p => _libDefault.includes(p.stage || '')).length;
   if (ll) ll.textContent = `${libCount} posts`;
 
-  // Deep-link: open PCS for ?open=POST_ID after posts load
+  // Deep-link: open the right overlay for ?open=POST_ID after posts load.
+  // Brief stage / brief_done / request stubs route to the brief sheet;
+  // client role uses the client post overlay; everything else opens PCS.
   if (window._pendingOpenPost && window.AppState.posts.loaded) {
     var _pid = window._pendingOpenPost;
     window._pendingOpenPost = null;
-    if (typeof openPCS === 'function') openPCS(_pid);
+    var _dlPost = (typeof getPostById === 'function') ? getPostById(_pid) : null;
+    var _dlStage = _dlPost ? (_dlPost.stage || '') : '';
+    var _dlIsBrief = _dlPost && (_dlStage === 'brief' || _dlStage === 'brief_done' || _dlPost._isRequest);
+    var _dlRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+    if (_dlIsBrief && typeof window._openBriefSheet === 'function') {
+      window._openBriefSheet(_pid);
+    } else if (_dlRole === 'client' && typeof window._openClientPostOverlay === 'function') {
+      window._openClientPostOverlay(_pid);
+    } else if (typeof openPCS === 'function') {
+      openPCS(_pid);
+    }
   }
 }
 

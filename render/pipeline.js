@@ -153,7 +153,7 @@ window.handlePipelineSearch = function(query) {
   var container = document.getElementById('pipeline-container');
   var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
 
-  var pipelineStages = ['awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
+  var pipelineStages = ['brief','brief_done','awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
   var pipelinePosts = posts.filter(function(p) { return pipelineStages.indexOf(p.stage) > -1; });
 
   if (!query || query.trim() === '') {
@@ -167,6 +167,8 @@ window.handlePipelineSearch = function(query) {
   var q = query.toLowerCase().trim();
 
   var stageDisplayMap = {
+    'brief': 'Brief',
+    'brief_done': 'Brief Done',
     'awaiting_approval': 'Approval',
     'awaiting_brand_input': 'Input',
     'scheduled': 'Scheduled',
@@ -174,6 +176,8 @@ window.handlePipelineSearch = function(query) {
     'in_production': 'Production'
   };
   var stageColorMap = {
+    'brief': '#C8A84B',
+    'brief_done': '#C8A84B',
     'awaiting_approval': '#FF4B4B',
     'awaiting_brand_input': '#9b87f5',
     'scheduled': '#22D3EE',
@@ -472,6 +476,7 @@ window.updatePipelineChipCounts = function() {
   // Inject colored dots into stage chips (after counts and visibility)
   var dotColors = {
     all: '#666',
+    brief: '#C8A84B',
     awaiting_approval: 'var(--c-red)',
     awaiting_brand_input: 'var(--c-purple)',
     scheduled: 'var(--c-cyan)',
