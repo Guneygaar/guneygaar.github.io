@@ -134,8 +134,27 @@ console.log('LOADED:', 'render/client.js');
     var approval = [];
     var input = [];
     var published = [];
+    var requests = [];
     for (var i = 0; i < posts.length; i++) {
       var p = posts[i];
+      if (p._isRequest) {
+        // Only surface requests that need client input: assigned_to is
+        // empty/null AND at least one agency comment exists. Briefs
+        // already picked up by creative (assigned_to set) or still
+        // waiting on agency to reply (no agency comment yet) stay
+        // hidden from the client feed.
+        var assigned = (p.assigned_to || '').trim();
+        if (assigned) continue;
+        var comments = p.post_comments || [];
+        var hasAgencyComment = false;
+        for (var ci = 0; ci < comments.length; ci++) {
+          var cRole = String(comments[ci].author_role || '').toLowerCase();
+          if (cRole && cRole !== 'client') { hasAgencyComment = true; break; }
+        }
+        if (!hasAgencyComment) continue;
+        requests.push(p);
+        continue;
+      }
       if (p.stage === 'awaiting_approval') approval.push(p);
       else if (p.stage === 'awaiting_brand_input') input.push(p);
       else if (p.stage === 'published') published.push(p);
@@ -143,7 +162,8 @@ console.log('LOADED:', 'render/client.js');
     _sortAsc(approval);
     _sortAsc(input);
     _sortDesc(published);
-    return { approval: approval, input: input, published: published };
+    _sortDesc(requests);
+    return { approval: approval, input: input, published: published, requests: requests };
   }
 
   /* ---- avatar ---- */
@@ -887,6 +907,74 @@ console.log('LOADED:', 'render/client.js');
       /* comments + input; collapsed only on the stages that have the
          Comment toggle button in the engagement bar */
       _commentsContainerHtml(post, !hasCommentBtn) +
+    '</div>';
+  }
+
+  /* ---- brief card (requests bucket) ---- */
+
+  function _briefRelTime(iso) {
+    if (typeof window._notifRelTime === 'function') {
+      return window._notifRelTime(iso);
+    }
+    return _relativeTime(iso);
+  }
+
+  function _briefCardHtml(post) {
+    var pid = post.post_id || post.id || '';
+    var title = post.title || 'Untitled request';
+    var tag = post.content_pillar || post.format || post.content_type || '';
+    var created = post.created_at || '';
+
+    // Latest agency comment (last non-client by created_at)
+    var comments = (post.post_comments || []).slice().sort(function(a, b) {
+      return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+    });
+    var latestAgency = null;
+    for (var i = comments.length - 1; i >= 0; i--) {
+      var cRole = String(comments[i].author_role || '').toLowerCase();
+      if (cRole && cRole !== 'client') { latestAgency = comments[i]; break; }
+    }
+    var totalCount = comments.length;
+
+    var chipStyle = 'display:inline-flex;align-items:center;gap:5px;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:2px;background:#FBBF2410;color:#FBBF24;border:1px solid #FBBF2425;';
+    var chipDot = '<span style="width:5px;height:5px;border-radius:50%;background:#FBBF24;display:inline-block;"></span>';
+    var chipHtml = '<span style="' + chipStyle + '">' + chipDot + 'NEEDS YOUR INPUT</span>';
+
+    var timeStyle = 'font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#545460;font-weight:500;';
+    var timeHtml = '<span style="' + timeStyle + '">' + _esc(_briefRelTime(created)) + '</span>';
+
+    var topRow = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' + chipHtml + timeHtml + '</div>';
+
+    var titleHtml = '<div style="font-size:15px;font-weight:700;color:#FFFFFF;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(title) + '</div>';
+
+    var tagHtml = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:.06em;color:#545460;text-transform:uppercase;font-weight:500;margin-bottom:10px;">' + _esc(tag || '') + '</div>';
+
+    var previewHtml = '';
+    if (latestAgency) {
+      var authorName = latestAgency.author || '';
+      var initial = (authorName.charAt(0) || '?').toUpperCase();
+      var msg = String(latestAgency.message || '').replace(/\s+/g, ' ').trim();
+      var avStyle = 'width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:700;background:#22D3EE18;color:#22D3EE;border:1px solid #22D3EE30;flex-shrink:0;';
+      var nameStyle = 'font-size:10px;font-weight:600;color:#B2B2B7;';
+      var textStyle = 'font-size:11px;font-weight:500;color:#92929B;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;';
+      previewHtml = '<div style="padding:8px 10px;background:#15151F;border-radius:4px;border-left:2px solid #22D3EE;display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">' +
+        '<div style="' + avStyle + '">' + _esc(initial) + '</div>' +
+        '<div style="min-width:0;flex:1;">' +
+          '<div style="' + nameStyle + '">' + _esc(authorName) + '</div>' +
+          '<div style="' + textStyle + '">' + _esc(msg) + '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    var countIcon = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#545460" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    var countHtml = '<div style="display:inline-flex;align-items:center;gap:5px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#545460;font-weight:500;">' + countIcon + '<span>' + totalCount + '</span></div>';
+
+    return '<div data-brief-card="' + _esc(pid) + '" onclick="window._openBriefSheet(\'' + _esc(pid) + '\')" style="background:#0D0D12;border-bottom:1px solid #2A2A34;padding:14px 16px;cursor:pointer;">' +
+      topRow +
+      titleHtml +
+      tagHtml +
+      previewHtml +
+      countHtml +
     '</div>';
   }
 
@@ -2226,13 +2314,19 @@ console.log('LOADED:', 'render/client.js');
 
     var html = _topBarHtml(buckets);
 
-    var hasContent = buckets.approval.length || buckets.input.length || buckets.published.length;
+    var hasContent = buckets.approval.length || buckets.input.length || buckets.published.length || (buckets.requests && buckets.requests.length);
 
     html += '<div style="padding-bottom:72px;max-width:560px;margin:0 auto;">';
 
     if (!hasContent) {
-      html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:#FFFFFF59;">Nothing awaiting your review.</div>';
+      html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:#FFFFFF59;">All caught up. Nothing pending.</div>';
     } else {
+      if (buckets.requests && buckets.requests.length) {
+        html += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#505058;font-weight:600;padding:18px 16px 8px;">YOUR REQUESTS <span style="color:#C8A84B;font-weight:700;">' + buckets.requests.length + '</span></div>';
+        for (var r = 0; r < buckets.requests.length; r++) {
+          html += _briefCardHtml(buckets.requests[r]);
+        }
+      }
       if (buckets.approval.length) {
         html += _sectionLabel('&#9670; Awaiting Your Approval');
         for (var a = 0; a < buckets.approval.length; a++) {
