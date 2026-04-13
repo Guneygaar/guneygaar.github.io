@@ -3833,6 +3833,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: #0e0e16;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* ── HEADER ── */
@@ -3849,9 +3852,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-role-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 1.5px;
-  color: #333340;
+  color: #545460;
   text-transform: uppercase;
 }
 .notif-topbar-actions {
@@ -3862,8 +3865,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-topbar-btn {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  font-weight: 600;
-  color: #444455;
+  font-weight: 500;
+  color: #545460;
   background: none;
   border: none;
   padding: 2px 0;
@@ -3911,7 +3914,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #404050;
+  color: #545460;
   background: none;
   border: none;
   padding: 0;
@@ -3948,9 +3951,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-day-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  font-weight: 700;
+  font-weight: 500;
   letter-spacing: 1.6px;
-  color: #333340;
+  color: #545460;
   text-transform: uppercase;
   padding: 18px 18px 8px;
 }
@@ -4013,12 +4016,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-text {
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
+  font-weight: 500;
   line-height: 1.45;
-  color: #D8D8E4;
+  color: #B2B2B7;
 }
 .notif-text strong {
-  font-weight: 600;
-  color: #F0F0F8;
+  font-weight: 700;
+  color: #FFFFFF;
 }
 
 /* Inline unread gold dot — the ONLY unread indicator on the card. */
@@ -4035,9 +4039,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── COMMENT PREVIEW ── */
 .notif-preview {
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 500;
   font-style: normal;
-  color: #6A6A80;
+  color: #92929B;
   line-height: 1.4;
   margin-top: 3px;
   white-space: nowrap;
@@ -4068,7 +4073,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   font-weight: 500;
-  color: #4A4A5C;
+  color: #545460;
   white-space: nowrap;
 }
 /* .notif-meta-sep left defined but no longer emitted anywhere — kept
