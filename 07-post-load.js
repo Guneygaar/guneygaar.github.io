@@ -459,44 +459,181 @@ function _drainPollStash() {
 }
 window._drainPollStash = _drainPollStash;
 
-// 10-second background data poll for the Client role. Mirrors the
-// startRealtime() pattern but hits the client-scoped fetch (via
-// loadPostsForClient(true)) and gates re-renders on _clientPostsFingerprint
-// so typing and scroll position survive.
-function startClientRealtime() {
-  if (window._clientPollTimer) return;
-  window._clientPollTimer = setInterval(async function() {
-    // Guard 1: tab hidden — no point polling
+// -----------------------------------------------------------------
+// Client-side Supabase Realtime subscriptions
+// -----------------------------------------------------------------
+// Replaces the legacy setInterval-based startClientRealtime poll.
+// Rationale: the 10s client poll (posts + requests + post_comments,
+// 3 endpoints) was the single largest source of 401s + token races
+// on iPhone Safari. Swapping to a single WebSocket removes the
+// polling fan-out entirely — token refresh only has to fire on the
+// 50-minute cadence installed by activateRole().
+//
+// All four subscriptions live on one channel ('srtd-client') so
+// there's only one WebSocket. Events are debounced (400 ms) into
+// a single loadPostsForClient(true, true) call — `fromPoll=true`
+// so internal apiFetch calls still use { allowLogout: false } and
+// a transient 401 during the refresh fetch cannot evict the user.
+// Notification INSERT events call updateNotifBadge() directly so
+// the bell badge updates without refetching posts.
+//
+// Required Supabase setup (see CLAUDE.md §6):
+//   ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE requests;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+function _initSupabaseRealtimeClient() {
+  if (window._supabaseClient) return window._supabaseClient;
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    console.warn('[realtime] Supabase SDK not loaded — cannot init client');
+    return null;
+  }
+  var token = localStorage.getItem('sb_access_token');
+  try {
+    window._supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        },
+        realtime: {
+          params: { eventsPerSecond: 10 }
+        },
+        global: {
+          headers: token ? { Authorization: 'Bearer ' + token } : {}
+        }
+      }
+    );
+    // Push the JWT onto the Realtime socket so any future RLS-gated
+    // postgres_changes filters work. Harmless if RLS is disabled.
+    if (token && window._supabaseClient.realtime &&
+        typeof window._supabaseClient.realtime.setAuth === 'function') {
+      try { window._supabaseClient.realtime.setAuth(token); }
+      catch(e) { console.warn('[realtime] setAuth failed', e); }
+    }
+  } catch (err) {
+    console.error('[realtime] createClient failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'realtime-create-client');
+    window._supabaseClient = null;
+    return null;
+  }
+  return window._supabaseClient;
+}
+window._initSupabaseRealtimeClient = _initSupabaseRealtimeClient;
+
+// Debounced refresh — collapses rapid-fire INSERT/UPDATE events into
+// a single loadPostsForClient() call. 400 ms window chosen so a burst
+// (e.g. new post + comment inserted back-to-back) fans into one fetch.
+function _clientRealtimeRefresh() {
+  if (window._clientRealtimeDebounce) {
+    clearTimeout(window._clientRealtimeDebounce);
+  }
+  window._clientRealtimeDebounce = setTimeout(function() {
+    window._clientRealtimeDebounce = null;
     if (document.hidden) return;
-    // Guard 2: no auth token — another flow will re-login
     if (!localStorage.getItem('sb_access_token')) return;
-    // Guard 3: in-flight fetch — skip overlapping polls
     if (window._isLoadingClientPosts) return;
-    // Guard 4: user is typing — do not rebuild the DOM underneath them
+    // Guard: user is typing — do not rebuild the DOM underneath them.
+    // The realtime event will be re-delivered on the next change, and
+    // a focus/blur will naturally drain queued updates on the next tap.
     var ae = document.activeElement;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
-
     window._isLoadingClientPosts = true;
-    try {
-      // fromPoll=true so internal apiFetch calls use { allowLogout: false }
-      // — a transient 401 during a background poll must not evict the user.
-      await loadPostsForClient(true, true);
-    } catch (e) {
-      // Keep poll quiet — no error banner thrash on transient failures
-      console.warn('[client-poll]', e);
-    } finally {
-      window._isLoadingClientPosts = false;
-    }
-  }, 10000);
+    Promise.resolve(loadPostsForClient(true, true))
+      .catch(function(e) { console.warn('[client-realtime] refresh failed', e); })
+      .then(function() { window._isLoadingClientPosts = false; });
+  }, 400);
+}
+window._clientRealtimeRefresh = _clientRealtimeRefresh;
+
+function _onClientNotificationInsert(payload) {
+  // Incremental path: Realtime dropped a brand-new Client notification
+  // row into our lap, so we can bump the badge without round-tripping
+  // to the REST endpoint. updateNotifBadge() also runs as a safety net.
+  if (typeof updateNotifBadge === 'function') {
+    try { updateNotifBadge(); } catch(e) { console.warn('[client-realtime] updateNotifBadge', e); }
+  }
+}
+
+function startClientRealtime() {
+  if (window._clientRealtimeChannel) return;
+  var sb = _initSupabaseRealtimeClient();
+  if (!sb) {
+    console.warn('[client-realtime] Supabase client unavailable — realtime disabled');
+    return;
+  }
+  try {
+    var channel = sb.channel('srtd-client')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'posts' },
+        function(payload) { _clientRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        function(payload) { _clientRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'post_comments' },
+        function(payload) { _clientRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.Client' },
+        function(payload) { _onClientNotificationInsert(payload); })
+      .subscribe(function(status, err) {
+        if (err) {
+          console.warn('[client-realtime] subscribe error', status, err);
+          window.logError && window.logError(err && err.message, err && err.stack, 'client-realtime-subscribe');
+        } else {
+          console.log('[client-realtime] channel status:', status);
+        }
+      });
+    window._clientRealtimeChannel = channel;
+  } catch (err) {
+    console.error('[client-realtime] startClientRealtime failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'client-realtime-start');
+  }
+
+  // Visibility-driven reconnect: when the tab returns to focus, verify
+  // the channel is still JOINED. If the socket dropped (phone locked,
+  // app backgrounded on iOS Safari) tear the channel down and rebuild.
+  // We do NOT poll or fetch posts here — loadPostsForClient runs on the
+  // first INSERT/UPDATE delivered after reconnect.
+  if (!window._clientRealtimeVisBound) {
+    window._clientRealtimeVisBound = true;
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState !== 'visible') return;
+      if (!window._clientRealtimeChannel) return;
+      var ch = window._clientRealtimeChannel;
+      var state = ch && ch.state;
+      // phoenix channel state: 'closed' | 'errored' | 'joined' | 'joining' | 'leaving'
+      if (state && state !== 'joined' && state !== 'joining') {
+        console.log('[client-realtime] reconnect on focus; state was', state);
+        try { stopClientRealtime(); } catch(e) {}
+        startClientRealtime();
+      }
+    });
+  }
 }
 
 function stopClientRealtime() {
-  if (window._clientPollTimer) {
-    clearInterval(window._clientPollTimer);
+  if (window._clientRealtimeDebounce) {
+    clearTimeout(window._clientRealtimeDebounce);
+    window._clientRealtimeDebounce = null;
   }
-  window._clientPollTimer = null;
+  if (window._clientRealtimeChannel && window._supabaseClient &&
+      typeof window._supabaseClient.removeChannel === 'function') {
+    try { window._supabaseClient.removeChannel(window._clientRealtimeChannel); }
+    catch (e) { console.warn('[client-realtime] removeChannel error', e); }
+  }
+  window._clientRealtimeChannel = null;
   window._isLoadingClientPosts = false;
   window._lastClientFp = null;
+  // Legacy poll-timer slot: clear it defensively in case any stale build
+  // is still running alongside a hot-reloaded session.
+  if (window._clientPollTimer) {
+    clearInterval(window._clientPollTimer);
+    window._clientPollTimer = null;
+  }
 }
 
 async function loadTasks() {

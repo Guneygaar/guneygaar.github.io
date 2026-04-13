@@ -2352,9 +2352,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof updateDashGreeting === 'function') updateDashGreeting();
 });
 
+// Agency-only badge refresh. Client users receive notification updates
+// via the Supabase Realtime subscription wired in 07-post-load.js
+// (_onClientNotificationInsert), so this interval skips them to avoid
+// the extra REST round-trip + token race on iPhone Safari.
 window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (document.hidden) return;
   if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
+  var _er = (window.AppState.user && window.AppState.user.effectiveRole) || '';
+  if (_er === 'Client') return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }, 20000);
 
