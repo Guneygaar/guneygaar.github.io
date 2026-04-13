@@ -38,14 +38,246 @@ window._shareBriefOnWhatsApp = function(postId) {
 };
 
 // ===============================================
+// Brief Discussion helpers
+// ===============================================
+function _briefRoleColor(role) {
+  var r = (role || '').toLowerCase();
+  if (r === 'admin')     return { bg:'#C8A84B40', border:'#C8A84B99', text:'#C8A84B' };
+  if (r === 'client')    return { bg:'#FF4B4B40', border:'#FF4B4B99', text:'#FF4B4B' };
+  if (r === 'servicing') return { bg:'#22D3EE40', border:'#22D3EE99', text:'#22D3EE' };
+  if (r === 'creative')  return { bg:'#9b87f540', border:'#9b87f599', text:'#9b87f5' };
+  return { bg:'#55556640', border:'#55556699', text:'#aeaeb2' };
+}
+
+function _briefAvatarHtml(author, role) {
+  var photoUrl = null;
+  try {
+    if (typeof getAvatarUrl === 'function') photoUrl = getAvatarUrl(author);
+  } catch (_) {}
+  if (photoUrl) {
+    return '<div style="width:30px;height:30px;border-radius:50%;overflow:hidden;' +
+      'flex-shrink:0;">' +
+      '<img src="' + photoUrl.replace(/"/g, '&quot;') + '" loading="lazy" ' +
+      'width="30" height="30" style="width:100%;height:100%;object-fit:cover;' +
+      'display:block;" alt="">' +
+      '</div>';
+  }
+  var colors = _briefRoleColor(role);
+  var displayName = '';
+  try {
+    if (typeof getDisplayName === 'function') displayName = getDisplayName(author);
+  } catch (_) {}
+  if (!displayName) displayName = author || '?';
+  var initial = (displayName.charAt(0) || '?').toUpperCase();
+  return '<div style="width:30px;height:30px;border-radius:50%;flex-shrink:0;' +
+    'background:' + colors.bg + ';border:1px solid ' + colors.border + ';' +
+    'display:flex;align-items:center;justify-content:center;' +
+    'font-family:\'DM Sans\',sans-serif;font-size:11px;font-weight:700;' +
+    'color:' + colors.text + ';">' + esc(initial) + '</div>';
+}
+
+function _briefFormatCommentTime(iso) {
+  if (!iso) return '';
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var diff = (Date.now() - d.getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return d.toLocaleDateString('en-IN',
+      {day:'numeric',month:'short',timeZone:'Asia/Kolkata'});
+  } catch (_) { return ''; }
+}
+
+function _briefCommentRowHtml(c) {
+  var author = c.author || 'Unknown';
+  var role = c.author_role || '';
+  var displayName = author;
+  try {
+    if (typeof getDisplayName === 'function') displayName = getDisplayName(author);
+  } catch (_) {}
+  var colors = _briefRoleColor(role);
+  var timeStr = _briefFormatCommentTime(c.created_at);
+  return '<div class="brief-cmt-row" data-cmt-id="' + esc(c.id || '') + '" ' +
+    'style="display:flex;gap:10px;padding:10px 0;' +
+    'border-bottom:1px solid #1e1e2e;">' +
+    _briefAvatarHtml(author, role) +
+    '<div style="flex:1;min-width:0;">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;' +
+    'flex-wrap:wrap;">' +
+    '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+    'font-weight:700;color:#FFFFFF;">' + esc(displayName) + '</span>' +
+    (role ?
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
+      'font-weight:600;letter-spacing:0.1em;text-transform:uppercase;' +
+      'padding:2px 6px;border-radius:4px;background:' + colors.bg + ';' +
+      'border:1px solid ' + colors.border + ';color:' + colors.text + ';">' +
+      esc(role) + '</span>'
+      : '') +
+    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'color:#777788;letter-spacing:0.04em;">' + esc(timeStr) + '</span>' +
+    '</div>' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+    'color:#E0E0EE;line-height:1.55;white-space:pre-wrap;word-wrap:break-word;">' +
+    esc(c.message || '') + '</div>' +
+    '</div></div>';
+}
+
+function _briefBuildDiscussionHtml(postId, comments, sectionNumber) {
+  var count = (comments || []).length;
+  var badgeBg = count > 0 ? '#C8A84B' : '#1e1e2e';
+  var badgeColor = count > 0 ? '#000000' : '#777788';
+  var listHtml = '';
+  if (count === 0) {
+    listHtml =
+      '<div id="brief-cmt-empty-' + postId + '" ' +
+      'style="padding:18px 0 8px;display:flex;flex-direction:column;' +
+      'align-items:center;text-align:center;gap:10px;">' +
+      '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="#555566" stroke-width="1.6" stroke-linecap="round" ' +
+      'stroke-linejoin="round">' +
+      '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+      '</svg>' +
+      '<div style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
+      'color:#666677;line-height:1.5;max-width:280px;">' +
+      'No comments yet. Discuss the brief before assigning.</div>' +
+      '</div>';
+  } else {
+    listHtml = comments.map(_briefCommentRowHtml).join('');
+  }
+  return '<div style="padding:16px 20px;border-bottom:1px solid #1e1e2e;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'font-weight:600;letter-spacing:0.12em;text-transform:uppercase;' +
+    'color:#C8A84B;margin-bottom:2px;">' + sectionNumber + '</div>' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">' +
+    '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;' +
+    'font-weight:700;color:#FFFFFF;">Discussion</div>' +
+    '<div id="brief-cmt-count-' + postId + '" ' +
+    'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
+    'font-weight:700;padding:3px 8px;border-radius:10px;' +
+    'background:' + badgeBg + ';color:' + badgeColor + ';">' +
+    count + '</div>' +
+    '</div>' +
+    '<div id="brief-cmt-list-' + postId + '">' + listHtml + '</div>' +
+    '<div style="display:flex;align-items:flex-end;gap:10px;' +
+    'padding:12px 0 2px;margin-top:6px;' +
+    'border-bottom:1.5px solid #444455;">' +
+    '<textarea id="brief-cmt-input-' + postId + '" rows="1" ' +
+    'placeholder="Ask a question or add context..." ' +
+    'style="flex:1;background:transparent;border:none;outline:none;' +
+    'resize:none;font-family:\'DM Sans\',sans-serif;font-size:14px;' +
+    'color:#FFFFFF;line-height:1.5;padding:4px 0;caret-color:#C8A84B;"></textarea>' +
+    '<button id="brief-cmt-send-' + postId + '" ' +
+    'onclick="window._briefSubmitComment(\'' + esc(postId) + '\')" ' +
+    'aria-label="Send comment" ' +
+    'style="width:34px;height:34px;border-radius:50%;' +
+    'background:#C8A84B;border:none;cursor:pointer;flex-shrink:0;' +
+    'display:flex;align-items:center;justify-content:center;">' +
+    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" ' +
+    'stroke-linejoin="round">' +
+    '<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>' +
+    '</svg>' +
+    '</button>' +
+    '</div>' +
+    '</div>';
+}
+
+// Submit a brief comment — optimistic insert, rolls back on failure.
+window._briefSubmitComment = function(postId) {
+  var input = document.getElementById('brief-cmt-input-' + postId);
+  if (!input) return;
+  var text = (input.value || '').trim();
+  if (!text) return;
+  var authorName = (window.AppState.user && window.AppState.user.name) || 'Unknown';
+  var rawRole = (window.AppState.user && window.AppState.user.effectiveRole) || 'Admin';
+  var normRole = (typeof normalizeRole === 'function') ?
+    (normalizeRole(rawRole) || 'Admin') : rawRole;
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  var nowISO = new Date().toISOString();
+  var optimistic = {
+    id: '_optimistic_' + Date.now(),
+    post_id: postId,
+    author: authorName,
+    author_role: normRole,
+    message: text,
+    post_title: (post && post.title) || '',
+    created_at: nowISO
+  };
+
+  var listEl = document.getElementById('brief-cmt-list-' + postId);
+  var emptyEl = document.getElementById('brief-cmt-empty-' + postId);
+  if (emptyEl && emptyEl.parentNode) emptyEl.parentNode.removeChild(emptyEl);
+  var rowWrap = document.createElement('div');
+  rowWrap.innerHTML = _briefCommentRowHtml(optimistic);
+  var optimisticNode = rowWrap.firstChild;
+  if (listEl && optimisticNode) listEl.appendChild(optimisticNode);
+
+  // Bump count badge
+  var countEl = document.getElementById('brief-cmt-count-' + postId);
+  var prevBadge = null;
+  if (countEl) {
+    prevBadge = {
+      text: countEl.textContent,
+      bg: countEl.style.background,
+      color: countEl.style.color
+    };
+    var newCount = parseInt(countEl.textContent, 10) || 0;
+    newCount += 1;
+    countEl.textContent = newCount;
+    countEl.style.background = '#C8A84B';
+    countEl.style.color = '#000000';
+  }
+
+  input.value = '';
+  input.style.height = '';
+
+  apiFetch('/post_comments', {
+    method: 'POST',
+    body: JSON.stringify({
+      post_id: postId,
+      author: authorName,
+      author_role: normRole,
+      message: text,
+      post_title: (post && post.title) || '',
+      created_at: nowISO
+    })
+  }).catch(function(err) {
+    console.error('[brief] submit comment failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'brief-submit-comment');
+    if (optimisticNode && optimisticNode.parentNode) {
+      optimisticNode.parentNode.removeChild(optimisticNode);
+    }
+    if (countEl && prevBadge) {
+      countEl.textContent = prevBadge.text;
+      countEl.style.background = prevBadge.bg;
+      countEl.style.color = prevBadge.color;
+    }
+    if (typeof showToast === 'function') showToast('Failed - try again', 'error');
+  });
+};
+
+// ===============================================
 // Brief Sheet - full-screen overlay for brief/REQ posts
 // ===============================================
-window._openBriefSheet = function(postId) {
+window._openBriefSheet = async function(postId) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
 
   var existing = document.getElementById('brief-sheet-overlay');
   if (existing) existing.remove();
+
+  // Fetch comments for this brief (non-deleted, chronological)
+  var briefComments = [];
+  try {
+    briefComments = await apiFetch('/post_comments?post_id=eq.' +
+      encodeURIComponent(postId) + '&deleted=eq.false&order=created_at.asc');
+    if (!Array.isArray(briefComments)) briefComments = [];
+  } catch (e) {
+    briefComments = [];
+  }
 
   var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
@@ -342,11 +574,14 @@ window._openBriefSheet = function(postId) {
 
     '</div>' +
 
-    // SECTION 02 — REFERENCE PHOTOS
+    // SECTION 02 — DISCUSSION
+    _briefBuildDiscussionHtml(postId, briefComments, '02') +
+
+    // SECTION 03 — REFERENCE PHOTOS
     (Array.isArray(post.images) && post.images.length ?
       '<div style="padding:16px 20px;border-bottom:1px solid #1e1e2e;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
-      'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">02</div>' +
+      'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">03</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
       'color:#E8E8E8;margin-bottom:4px;">Reference Photos</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
@@ -362,12 +597,12 @@ window._openBriefSheet = function(postId) {
       '</div></div>'
       : '') +
 
-    // SECTION 03 — ASSIGNED TO (dynamic)
+    // SECTION 04 — ASSIGNED TO (dynamic)
     (_isAssigned ?
       '<div style="padding:16px 20px;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;' +
       'letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;margin-bottom:2px;">' +
-      (Array.isArray(post.images) && post.images.length ? '03' : '02') + '</div>' +
+      (Array.isArray(post.images) && post.images.length ? '04' : '03') + '</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:15px;font-weight:600;' +
       'color:#E8E8E8;margin-bottom:10px;">Assigned To</div>' +
       '<div style="display:flex;align-items:center;gap:10px;background:#141420;' +
@@ -405,6 +640,17 @@ window._openBriefSheet = function(postId) {
 
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
+
+  // Wire Enter-key submit (Shift+Enter = newline) for the comment textarea
+  var _cmtInputEl = document.getElementById('brief-cmt-input-' + postId);
+  if (_cmtInputEl) {
+    _cmtInputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        window._briefSubmitComment(postId);
+      }
+    });
+  }
 
   overlay.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-action]');
