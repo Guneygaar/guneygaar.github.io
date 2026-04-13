@@ -360,8 +360,17 @@ function _notifActionText(n) {
   var actor = n.actor || '';
   var msg = n.message || '';
   var actionText = msg;
+  // Strip the actor prefix in either raw form (email) or display-name
+  // form, so historical rows that embedded an email in the message
+  // ("manisha@srtd.io commented on ...") render cleanly after the
+  // _buildItem strong tag swaps in the resolved display name.
+  var displayActor = (typeof getDisplayName === 'function')
+    ? getDisplayName(actor)
+    : actor;
   if (actor && msg.toLowerCase().indexOf(actor.toLowerCase()) === 0) {
     actionText = msg.slice(actor.length).trim();
+  } else if (displayActor && msg.toLowerCase().indexOf(displayActor.toLowerCase()) === 0) {
+    actionText = msg.slice(displayActor.length).trim();
   }
   Object.keys(_NOTIF_STAGE_LABELS).forEach(function(key) {
     actionText = actionText.replace(new RegExp('\\b' + key + '\\b', 'gi'), _NOTIF_STAGE_LABELS[key]);
@@ -636,8 +645,16 @@ function renderNotifications(name, role) {
       }
     }
     var actor = n.actor || '';
+    // Resolve the raw actor field (which may be an email for older
+    // notification rows written before the displayName fix) to a clean
+    // display name so the card always shows a friendly name. The avatar
+    // + color class still key off the raw `actor` value because both
+    // `renderAvatar` and `getRoleFor` already accept either form.
+    var displayActor = (typeof getDisplayName === 'function')
+      ? getDisplayName(actor)
+      : actor;
     var avClass = _notifActorClass(actor);
-    var initial = actor ? actor.charAt(0).toUpperCase() : '?';
+    var initial = displayActor ? displayActor.charAt(0).toUpperCase() : '?';
     var ts = _notifRelTime(n.created_at);
 
     // Response time for approval-resolved notifications
@@ -776,7 +793,7 @@ function renderNotifications(name, role) {
           pubLabel +
           '<div class="notif-text">' +
             unreadDot +
-            '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+            '<strong>' + esc(displayActor) + '</strong> ' + esc(actionText) +
             respTimeHtml +
           '</div>' +
           previewHtml +
