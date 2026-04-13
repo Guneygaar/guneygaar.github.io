@@ -829,6 +829,39 @@ console.log('LOADED:', 'render/client.js');
     '</div>';
   }
 
+  /* ---- drive link card ----
+     Read-only mirror of actions/pcs.js:_buildDriveLinkCard for the
+     client feed. No edit/remove buttons (clients can't manage drive
+     links), no add-link CTA when missing — empty driveLink yields an
+     empty string so the card disappears entirely. Visual styling
+     matches the PCS card byte-for-byte. */
+  function _driveLinkCardHtml(driveLink) {
+    if (!driveLink) return '';
+    return '<div class="drive-link-wrap" style="padding:10px 14px 0;">' +
+      '<div style="background:#0d1117;border:1px solid #1a1f27;border-radius:8px;overflow:hidden;">' +
+        '<a href="' + _esc(driveLink) + '" target="_blank" rel="noopener" ' +
+          'style="display:flex;align-items:center;gap:10px;padding:12px 14px;text-decoration:none;">' +
+          '<div style="width:40px;height:40px;border-radius:6px;background:#1a1a0a;border:1px solid #3d2e0a;' +
+            'display:flex;align-items:center;justify-content:center;flex-shrink:0;">' +
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F6A623" stroke-width="1.5">' +
+              '<path d="M15 10l4.553-2.069A1 1 0 0121 8.87V15.13a1 1 0 01-1.447.9L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:12px;font-weight:600;color:#e8eaed;margin-bottom:2px;">View on Drive</div>' +
+            '<div style="font-size:10px;color:#556070;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              _esc(driveLink) +
+            '</div>' +
+          '</div>' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#556070" stroke-width="2">' +
+            '<path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>' +
+            '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>' +
+          '</svg>' +
+        '</a>' +
+      '</div>' +
+    '</div>';
+  }
+
   /* ---- single card ---- */
 
   function _cardHtml(post, isPublished) {
@@ -845,6 +878,8 @@ console.log('LOADED:', 'render/client.js');
       _captionHtml(post) +
       /* images */
       _imgGridHtml(post.images) +
+      /* drive link card (read-only; hidden when post has no drive_link) */
+      _driveLinkCardHtml(post.drive_link || post.driveLink || '') +
       /* stats bar (shows comment count even when collapsed) */
       _statsBarHtml(post, isPublished) +
       /* engagement bar (not on published) */
@@ -2159,6 +2194,23 @@ console.log('LOADED:', 'render/client.js');
     try {
     _ensurePulseStyle();
     _ensureReqOverlay();
+
+    // Capture which comment sections are currently expanded so we can
+    // restore them after innerHTML is rebuilt. Without this, a Realtime
+    // refresh (post_comments INSERT/UPDATE) collapses any thread the
+    // user had manually opened via the Comment toggle button.
+    var _expandedCommentPids = {};
+    try {
+      var _openSecs = cv.querySelectorAll('[data-comments-section]');
+      for (var _i = 0; _i < _openSecs.length; _i++) {
+        var _sec = _openSecs[_i];
+        if (_sec.style && _sec.style.display === 'block') {
+          var _spid = _sec.getAttribute('data-comments-section');
+          if (_spid) _expandedCommentPids[_spid] = 1;
+        }
+      }
+    } catch (_capErr) {}
+
     cv.style.display = 'block';
     cv.style.background = '#0D0D12';
 
@@ -2321,6 +2373,7 @@ console.log('LOADED:', 'render/client.js');
       _cardHeaderHtml(post, pid) +
       _captionHtml(post) +
       _imgGridHtml(post.images) +
+      _driveLinkCardHtml(post.drive_link || post.driveLink || '') +
       _statsBarHtml(post, isPublished) +
       (isPublished ? '' : _engagementBarHtml(post)) +
       /* overlay shows comments expanded by default since the user
