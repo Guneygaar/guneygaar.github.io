@@ -417,9 +417,20 @@ describe('Avatar crop modal — source contract (12-profiles.js)', function() {
       expect(src).toContain('srtd-r2-upload.ksg-kumarshubhamgune.workers.dev/upload');
     });
 
-    it('still PATCHes /profiles with the clean avatar_url', function() {
+    it('PATCHes /profiles with the cache-busted displayUrl (NOT the clean URL)', function() {
+      // BUG FIX: the DB must store the cache-busted URL so refreshes see
+      // the new bytes too. Storing cleanUrl was the "stale avatar after
+      // refresh" bug.
       expect(src).toContain("apiFetch('/profiles?email=eq.'");
-      expect(src).toContain('avatar_url: cleanUrl');
+      expect(src).toContain('avatar_url: displayUrl');
+      // Regression guard: must NOT revert to storing cleanUrl
+      expect(src).not.toMatch(/avatar_url:\s*cleanUrl\b/);
+    });
+
+    it('builds displayUrl as cleanUrl + "?t=" + Date.now() timestamp', function() {
+      expect(src).toMatch(/cleanUrl\s*=\s*['"]https:\/\/images\.srtd\.io\/['"]\s*\+\s*filename/);
+      expect(src).toMatch(/stamp\s*=\s*Date\.now\(\)/);
+      expect(src).toMatch(/displayUrl\s*=\s*cleanUrl\s*\+\s*['"]\?t=['"]\s*\+\s*stamp/);
     });
 
     it('still uses the profile-pictures/ R2 prefix', function() {
@@ -429,5 +440,68 @@ describe('Avatar crop modal — source contract (12-profiles.js)', function() {
     it('still calls _compressAvatar before upload (extra safety net)', function() {
       expect(src).toContain('_compressAvatar(file)');
     });
+
+    it('updates _profilesCache with the same cache-busted displayUrl', function() {
+      // Items 4 + 5 in the bug report — the in-memory cache must mirror
+      // what we just persisted, so the current session shows the new
+      // image immediately AND the next fetchProfiles() does not blow it
+      // away with a stale value.
+      expect(src).toMatch(
+        /window\._profilesCache\[cacheKey\]\.avatar_url\s*=\s*displayUrl/
+      );
+      expect(src).toMatch(/AppState\.user\.avatarUrl\s*=\s*displayUrl/);
+    });
+  });
+
+  // ====================================================
+  // 11. getAvatarUrl + renderAvatar — must not strip ?t=
+  // ====================================================
+  describe('avatar render path — does not strip ?t= cache buster', function() {
+    it('getAvatarUrl returns cache.avatar_url verbatim (no .split, no .replace)', function() {
+      var m = profilesSrc.match(/function getAvatarUrl\([\s\S]*?\n\}/);
+      expect(m).toBeTruthy();
+      var src = m[0];
+      // Must just `return cache[...].avatar_url` without manipulating it
+      expect(src).toMatch(/return\s+cache\[key\]\.avatar_url/);
+      // Must NOT be calling .split('?') or .replace(/\?.*$/) on the URL
+      expect(src).not.toMatch(/avatar_url\.split\(/);
+      expect(src).not.toMatch(/avatar_url\.replace\(\s*\/\\\?/);
+    });
+
+    it('renderAvatar passes photoUrl into <img src> without stripping query', function() {
+      var m = profilesSrc.match(/function renderAvatar\([\s\S]*?\n\}/);
+      expect(m).toBeTruthy();
+      var src = m[0];
+      // Only escapes double-quotes for HTML safety — must NOT strip ?
+      expect(src).toMatch(/photoUrl\.replace\(\/\"\/g,\s*['"]&quot;['"]\)/);
+      expect(src).not.toMatch(/photoUrl\.split\(\s*['"]\?['"]/);
+      expect(src).not.toMatch(/photoUrl\.replace\(\s*\/\\\?/);
+    });
+  });
+});
+
+// ====================================================
+// 12. R2 worker — Cache-Control immutable on avatars
+// ====================================================
+describe('R2 upload worker — avatar cache-control', function() {
+  var workerSrc = fs.readFileSync(
+    path.join(__dirname, '..', 'r2-upload-worker.js'),
+    'utf8'
+  );
+
+  it('sets Cache-Control immutable on profile-pictures/ uploads', function() {
+    expect(workerSrc).toContain("'public, max-age=31536000, immutable'");
+  });
+
+  it('only applies the immutable header to profile-pictures/ prefix', function() {
+    // Other paths (post images) should not get the immutable header
+    expect(workerSrc).toMatch(
+      /filename\.indexOf\(['"]profile-pictures\/['"]\)\s*===\s*0/
+    );
+  });
+
+  it('still passes contentType through R2 httpMetadata', function() {
+    expect(workerSrc).toContain('contentType');
+    expect(workerSrc).toContain('httpMetadata');
   });
 });

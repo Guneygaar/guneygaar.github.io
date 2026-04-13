@@ -978,17 +978,24 @@ async function handleAvatarUpload(file) {
     await uploadPromise;
     console.log('[avatar] Upload complete');
 
-    // Store clean URL in DB, cache-busted URL for immediate display
+    // Build cache-busted URL: store the ?t= timestamp in the DB so the URL
+    // is unique per upload. Cloudflare's CDN treats it as a different cache
+    // entry and the browser image cache picks up the new bytes immediately
+    // — no stale-image-after-refresh bug. The R2 object itself is served
+    // with `Cache-Control: immutable` (see r2-upload-worker.js) which is
+    // safe because the URL changes every time.
     var cleanUrl = 'https://images.srtd.io/' + filename;
-    var displayUrl = cleanUrl + '?t=' + Date.now();
+    var stamp = Date.now();
+    var displayUrl = cleanUrl + '?t=' + stamp;
 
-    // PATCH profile
+    // PATCH profile — persist the cache-busted URL so refreshes see it too.
     await apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
       method: 'PATCH',
-      body: JSON.stringify({ avatar_url: cleanUrl, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ avatar_url: displayUrl, updated_at: new Date().toISOString() })
     });
 
-    // Update caches with cache-busted URL for immediate display
+    // Update in-memory caches so the current session reflects the change
+    // without waiting for the next fetchProfiles().
     var cacheKey = email.toLowerCase();
     if (window._profilesCache && window._profilesCache[cacheKey]) {
       window._profilesCache[cacheKey].avatar_url = displayUrl;

@@ -24,9 +24,17 @@ export default {
     const body = await request.arrayBuffer();
     const contentType = request.headers.get('Content-Type')
       || 'image/jpeg';
-    await env.SORTED_IMAGES.put(filename, body, {
-      httpMetadata: { contentType }
-    });
+    // Profile pictures get an immutable cache header. The client appends
+    // a ?t=<timestamp> query string to every new avatar URL, so the CDN
+    // and browser treat each upload as a fresh resource — there is no
+    // chance of serving a stale avatar after re-upload. Other assets
+    // (post images, etc.) keep R2's default cache behavior so we don't
+    // change their semantics.
+    const httpMetadata = { contentType };
+    if (filename.indexOf('profile-pictures/') === 0) {
+      httpMetadata.cacheControl = 'public, max-age=31536000, immutable';
+    }
+    await env.SORTED_IMAGES.put(filename, body, { httpMetadata });
     const publicUrl =
       'https://pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev/'
       + filename;
