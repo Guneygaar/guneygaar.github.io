@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -44,9 +44,22 @@ describe('_notifRelTime', function() {
     expect(helpers._notifRelTime(iso)).toBe('3 hr ago');
   });
   it('returns Yesterday label for yesterday', function() {
-    var d = new Date(); d.setDate(d.getDate()-1); d.setHours(0,1,0,0);
-    var out = helpers._notifRelTime(d.toISOString());
-    expect(out.indexOf('Yesterday')).toBe(0);
+    // Anchor "now" mid-day so the 24-hour threshold in _notifRelTime can be
+    // crossed reliably. Without this, CI runs that start within the first
+    // ~60 seconds of the local day (seen in Asia/Kolkata) compute
+    // "yesterday 00:01" as < 24h ago and hit the "X hr ago" branch before
+    // the Yesterday branch is reached.
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-04-12T15:00:00.000Z'));
+      // Target: 30 hours ago (> 24h threshold, still wall-clock "yesterday"
+      // in every timezone the CI will ever run in).
+      var target = new Date('2026-04-11T09:00:00.000Z');
+      var out = helpers._notifRelTime(target.toISOString());
+      expect(out.indexOf('Yesterday')).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it('returns full date for older than yesterday', function() {
     var d = new Date(); d.setDate(d.getDate()-5); d.setHours(9,0,0,0);

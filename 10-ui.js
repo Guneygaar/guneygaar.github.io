@@ -48,7 +48,7 @@ function _flushClickBuffer() {
       method: 'POST',
       headers: { 'Prefer': 'return=minimal' },
       body: JSON.stringify(payload)
-    }).catch(function(err){
+    }, { allowLogout: false }).catch(function(err){
       console.warn('[click_log] insert failed:', err && err.message);
     });
   }
@@ -1215,7 +1215,7 @@ function updateNotifBadge() {
     encodeURIComponent(_badgeRole) + '&select=id';
   if (_badgeActor) _badgeUrl += '&actor=neq.' + encodeURIComponent(_badgeActor);
 
-  apiFetch(_badgeUrl)
+  apiFetch(_badgeUrl, {}, { allowLogout: false })
   .then(function(rows) {
     var count = Array.isArray(rows) ? rows.length : 0;
     var show = count > 0;
@@ -2355,7 +2355,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
-}, 60000);
+}, 10000);
 
 // ===============================================
 // GLOBAL ACTION ROUTER (Phase 4 — event delegation)

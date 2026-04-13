@@ -116,10 +116,10 @@ describe('Notification badge', function() {
     expect(uiSrc).toMatch(/setInterval\(function\(\)\s*\{[\s\S]*?updateNotifBadge/);
   });
 
-  it('periodic badge refresh interval is 60 seconds', function() {
+  it('periodic badge refresh interval is 10 seconds', function() {
     var match = uiSrc.match(/AppState\.timers\.notifBadgeTimer\s*=\s*setInterval\([\s\S]*?,\s*(\d+)\)/);
     expect(match).not.toBeNull();
-    expect(parseInt(match[1])).toBe(60000);
+    expect(parseInt(match[1])).toBe(10000);
   });
 
 });

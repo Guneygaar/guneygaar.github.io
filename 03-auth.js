@@ -54,6 +54,10 @@ function _clearSessionAndLogin() {
   if (typeof stopRealtime === 'function') stopRealtime();
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
   if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
+  if (window._tokenRefreshTimer) {
+    clearInterval(window._tokenRefreshTimer);
+    window._tokenRefreshTimer = null;
+  }
   showLoginOverlay();
 }
 window._clearSessionAndLogin = _clearSessionAndLogin;
@@ -197,8 +201,16 @@ window.sendMagicLink = async function sendMagicLink() {
       setTimeout(() => document.getElementById('login-code-input')?.focus(), 100);
     }
   } catch (err) {
+    var msg;
+    if (err && err.name === 'TypeError') {
+      msg = 'Unable to reach the server. Check your connection and try again.';
+    } else if (err && err.message && err.message.indexOf('31 seconds') !== -1) {
+      msg = 'Please wait a moment before requesting another code.';
+    } else {
+      msg = (err && err.message) || 'Could not send code. Please try again.';
+    }
     const errMsg = document.getElementById('login-error');
-    if (errMsg) errMsg.textContent = err.message || 'Could not send code. Try again.';
+    if (errMsg) errMsg.textContent = msg;
     window.logError && window.logError(err && err.message, err && err.stack, 'send-magic-link');
     btn.disabled = false;
     btn.textContent = 'Send Code ->';
@@ -312,6 +324,10 @@ function logout() {
   stopRealtime();
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
   if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
+  if (window._tokenRefreshTimer) {
+    clearInterval(window._tokenRefreshTimer);
+    window._tokenRefreshTimer = null;
+  }
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');
   showLoginOverlay();
@@ -319,6 +335,25 @@ function logout() {
 
 function activateRole(role) {
   role = normalizeRole(role) || role;
+
+  // Proactive token refresh for all roles (50 min).
+  // Installed at the top so every branch (admin, client, agency, preview)
+  // gets the timer before any early return. Coexists with the legacy
+  // AppState.timers.tokenRefresh in startRealtime and the client branch
+  // timer below — refreshSession() is internally deduped so duplicates
+  // are safe.
+  if (window._tokenRefreshTimer) clearInterval(window._tokenRefreshTimer);
+  window._tokenRefreshTimer = setInterval(async function() {
+    if (document.hidden) return;
+    if (!localStorage.getItem('sb_refresh_token')) return;
+    try {
+      var r = await refreshSession();
+      if (r && r.error === 'auth_expired') {
+        if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+      }
+    } catch(e) { console.warn('[auth] Proactive refresh failed:', e); }
+  }, 50 * 60 * 1000);
+
   // Clear stale preview role for non-admin users
   var _dbRole = (role || '').toLowerCase();
   if (_dbRole !== 'admin') {

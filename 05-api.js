@@ -17,7 +17,7 @@ function getAuthHeaders(extra = {}) {
   };
 }
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options = {}, meta) {
   const url = `${SUPABASE_URL}/rest/v1${path}`;
   const res = await fetch(url, {
     ...options,
@@ -29,7 +29,7 @@ async function apiFetch(path, options = {}) {
   // Supabase blip, an RLS policy, or a multi-tab token race. Killing the
   // session on any 401 is the #1 cause of unexpected logouts.
   if (res.status === 401) {
-    const result = await refreshSession();
+    let result = await refreshSession();
     if (result && result.token) {
       const retry = await fetch(url, {
         ...options,
@@ -44,10 +44,43 @@ async function apiFetch(path, options = {}) {
       const body = await retry.text().catch(() => '');
       throw new Error(`Supabase ${retry.status}: ${body}`);
     }
+
+    // FIX 5: Retry refresh once on server/network errors before surrendering.
+    // A single transient hiccup (cellular handoff, Supabase blip) should not
+    // force the user into the error banner. Runs BEFORE the existing
+    // auth_expired / soft-banner branches below.
+    if (result && (result.error === 'server' || result.error === 'network')) {
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      let retryRefresh = null;
+      try { retryRefresh = await refreshSession(); } catch(e) {}
+      if (retryRefresh && retryRefresh.token) {
+        const retryHeaders = getAuthHeaders(options && options.headers ? options.headers : {});
+        const retryOpts = {};
+        for (const k in options) { if (options.hasOwnProperty(k)) retryOpts[k] = options[k]; }
+        retryOpts.headers = retryHeaders;
+        const retryRes = await fetch(url, retryOpts);
+        if (retryRes.ok) {
+          const retryText = await retryRes.text();
+          return retryText ? JSON.parse(retryText) : [];
+        }
+      }
+      // If the second-chance refresh returned auth_expired, promote the
+      // classification so the branches below take the right action.
+      if (retryRefresh && retryRefresh.error === 'auth_expired') {
+        result = retryRefresh;
+      }
+      // Otherwise fall through to the existing soft-banner/throw path.
+    }
+
     // Refresh failed  -  branch on error type
     if (result && result.error === 'auth_expired') {
-      // Genuine auth expiry — clear tokens and force re-login
-      if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+      // FIX 3: Background pollers (notif badge, click log, realtime polls)
+      // pass { allowLogout: false } and must NOT kick the user out. Only
+      // user-initiated actions are allowed to force the login overlay.
+      if (!meta || meta.allowLogout !== false) {
+        // Genuine auth expiry — clear tokens and force re-login
+        if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
+      }
       throw new Error('Supabase 401: session expired');
     }
     // Network or server error — do NOT clear tokens, show soft banner
