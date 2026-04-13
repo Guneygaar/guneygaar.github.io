@@ -361,7 +361,11 @@ window._openBriefSheet = async function(postId) {
         post._requestStatus = reqRows[0].status || '';
       }
     } catch (e) {
-      // Non-fatal — fall through with whatever is cached on the post.
+      // Non-fatal — fall through with whatever is cached on the post,
+      // but surface the failure so we can see when the refetch drops
+      // (otherwise a silent 4xx leaves a stale assigned_to in memory).
+      console.error('[brief] fetch assigned_to failed', e);
+      if (window.logError) window.logError(e && e.message, e && e.stack, 'brief-fetch-assigned');
     }
   }
 
@@ -369,6 +373,7 @@ window._openBriefSheet = async function(postId) {
   var _isClient = _role === 'client';
   var _isCreativeRole = _role === 'creative' || _role === 'pranav';
   var _canAssign = _role === 'admin' || _role === 'servicing' || _role === 'chitra' || _role === 'shubham';
+  var _isChitra = _canAssign;
   var _isBriefDone = (post.stage || '') === 'brief_done';
   var sentTime = '';
   if (post.status_changed_at && post.status_changed_at !== 'null') {
@@ -749,14 +754,6 @@ window._openBriefSheet = async function(postId) {
     '<div style="display:flex;flex-direction:column;gap:8px;">' +
     _footerActions +
     '</div>' +
-    '<button onclick="document.getElementById(\'brief-sheet-overlay\').remove();' +
-    'document.body.style.overflow=\'\';" ' +
-    'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
-    'background:transparent;border:1px solid #252535;border-radius:10px;' +
-    'padding:11px 20px;cursor:pointer;width:100%;margin-top:8px;">' +
-    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:500;' +
-    'letter-spacing:0.1em;text-transform:uppercase;color:#555566;">&#x2715;   CLOSE BRIEF</span>' +
-    '</button>' +
     '</div>';
 
   document.body.appendChild(overlay);
@@ -800,7 +797,7 @@ window._briefFetchTeamMembers = function() {
     return Promise.resolve(window._briefTeamMembersCache);
   }
   // SELECT name, role FROM user_roles WHERE role != 'client' ORDER BY name
-  return apiFetch('/user_roles?role=neq.client&select=name,role,email&order=name.asc', { method: 'GET' })
+  return apiFetch('/user_roles?role=neq.Client&select=name,role,email&order=name.asc', { method: 'GET' })
     .then(function(rows) {
       var list = Array.isArray(rows) ? rows.filter(function(r) { return r && r.name; }) : [];
       window._briefTeamMembersCache = list;
