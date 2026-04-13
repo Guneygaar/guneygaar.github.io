@@ -300,6 +300,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
             drive_link: r.drive_link || null,
             created_at: r.created_at || '',
             updated_at: r.created_at || '',
+            assigned_to: r.assigned_to || null,
             _isRequest: true
           });
         });

@@ -244,6 +244,74 @@ window._briefSubmitComment = function(postId) {
       post_title: (post && post.title) || '',
       created_at: nowISO
     })
+  }).then(function() {
+    // Notification fan-out — route based on author role so the
+    // Client bell lights up when agency replies on a brief, and
+    // Servicing + Admin get notified when the client responds.
+    // notify-comment (edge) does NOT fire on brief comments today,
+    // so this JS fan-out is the only writer for these rows. Each
+    // POST is wrapped in its own catch so a failed insert cannot
+    // block the comment UI.
+    try {
+      var authorEmail = (window.AppState.user && window.AppState.user.email) || '';
+      var actor = authorEmail || authorName;
+      var briefTitle = (post && post.title) || 'your request';
+      var preview = text.length > 50 ? text.slice(0, 50) : text;
+      var roleLower = String(normRole || '').toLowerCase();
+      if (roleLower !== 'client') {
+        // Agency user commenting — notify the Client role
+        var agencyMsg = authorName + ' commented on your request: ' + preview;
+        try {
+          apiFetch('/notifications', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_role: 'Client',
+              post_id: postId,
+              type: 'comment',
+              message: agencyMsg,
+              actor: actor,
+              read: false,
+              created_at: new Date().toISOString()
+            })
+          }).catch(function(e) {
+            console.warn('[brief] client notification POST failed', e);
+            window.logError && window.logError(e && e.message, e && e.stack, 'brief-notify-client');
+          });
+        } catch (e) {
+          console.warn('[brief] client notification threw', e);
+        }
+      } else {
+        // Client responding — notify Servicing AND Admin
+        var clientMsg = authorName + ' replied on ' + briefTitle + ': ' + preview;
+        var roles = ['Servicing', 'Admin'];
+        for (var ri = 0; ri < roles.length; ri++) {
+          (function(targetRole) {
+            try {
+              apiFetch('/notifications', {
+                method: 'POST',
+                body: JSON.stringify({
+                  user_role: targetRole,
+                  post_id: postId,
+                  type: 'comment',
+                  message: clientMsg,
+                  actor: actor,
+                  read: false,
+                  created_at: new Date().toISOString()
+                })
+              }).catch(function(e) {
+                console.warn('[brief] ' + targetRole + ' notification POST failed', e);
+                window.logError && window.logError(e && e.message, e && e.stack, 'brief-notify-' + targetRole.toLowerCase());
+              });
+            } catch (e) {
+              console.warn('[brief] ' + targetRole + ' notification threw', e);
+            }
+          })(roles[ri]);
+        }
+      }
+    } catch (fanErr) {
+      console.warn('[brief] notification fan-out threw', fanErr);
+      window.logError && window.logError(fanErr && fanErr.message, fanErr && fanErr.stack, 'brief-notify-fanout');
+    }
   }).catch(function(err) {
     console.error('[brief] submit comment failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'brief-submit-comment');
