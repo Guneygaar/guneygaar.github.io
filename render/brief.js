@@ -952,7 +952,8 @@ window._assignBrief = function(postId, ownerName, isReassign) {
       owner: dbOwner,
       client_feedback: updatedFeedback,
       status_changed_at: nowISO,
-      updated_at: nowISO
+      updated_at: nowISO,
+      updated_by: resolveActor()
     })
   }).then(function() {
     // Persist the display name on the in-memory row so the reopen
@@ -1060,7 +1061,8 @@ window._closeBrief = function(postId) {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief_done',
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      updated_by: resolveActor()
     })
   }).then(function() {
     var overlay = document.getElementById('brief-sheet-overlay');
@@ -1114,7 +1116,8 @@ window._reopenBrief = function(postId) {
     body: JSON.stringify({
       stage: 'brief',
       owner: 'Servicing',
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      updated_by: resolveActor()
     })
   }).then(function() {
     var overlay = document.getElementById('brief-sheet-overlay');

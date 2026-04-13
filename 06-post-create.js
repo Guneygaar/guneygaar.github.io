@@ -366,7 +366,8 @@ if (window._activeBriefPostId) {
     body: JSON.stringify({
       stage: 'brief_done',
       linked_post_id: _newPostId || null,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      updated_by: resolveActor()
     })
   }).catch(function(err) {
     console.warn('[post-create] brief close failed', err);

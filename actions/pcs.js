@@ -936,7 +936,7 @@ window._saveLiUrlInline = function(postId) {
 
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(_liPostId), {
     method: 'PATCH',
-    body: JSON.stringify({ linkedin_link: url })
+    body: JSON.stringify({ linkedin_link: url, updated_by: resolveActor() })
   }).then(function() {
     var _found_615 = false;
     var _next_615 = window.AppState.posts.all.map(function(p) {
@@ -1592,7 +1592,7 @@ window._pcsHandlePhotoInput = async function(postId, input) {
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ images: newImages })
+      body: JSON.stringify({ images: newImages, updated_by: resolveActor() })
     });
     var _found_1379 = false;
     var _next_1379 = window.AppState.posts.all.map(function(p) {
@@ -1640,7 +1640,7 @@ window._pcsRemovePhoto = async function(postId, idx) {
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ images: imgs })
+      body: JSON.stringify({ images: imgs, updated_by: resolveActor() })
     });
     var _found_1407 = false;
     var _next_1407 = window.AppState.posts.all.map(function(p) {
@@ -1755,7 +1755,7 @@ window._pcsDoRemovePhotoEdit = async function(postId, idx) {
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ images: imgs })
+      body: JSON.stringify({ images: imgs, updated_by: resolveActor() })
     });
     var _next = window.AppState.posts.all.map(function(p) {
       if (getPostId(p) === postId) {
@@ -1826,7 +1826,7 @@ window._pcsDoClearing = async function(postId) {
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ caption: '' })
+      body: JSON.stringify({ caption: '', updated_by: resolveActor() })
     });
     var _next = window.AppState.posts.all.map(function(p) {
       if (getPostId(p) === postId) {
@@ -2191,7 +2191,7 @@ window._saveCaptionEdit = async function(postId) {
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ caption: newCaption })
+      body: JSON.stringify({ caption: newCaption, updated_by: resolveActor() })
     });
   } catch (err) {
     console.error('[pcs] save caption failed', err);

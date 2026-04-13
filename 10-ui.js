@@ -2464,7 +2464,7 @@ if (!window._routerBound) {
           _dlNew = _dlNew.trim();
           apiFetch('/posts?post_id=eq.' + encodeURIComponent(_dlPostId), {
             method: 'PATCH',
-            body: JSON.stringify({ drive_link: _dlNew || null })
+            body: JSON.stringify({ drive_link: _dlNew || null, updated_by: resolveActor() })
           }).then(function() {
             if (window.AppState && window.AppState.pcs && window.AppState.pcs.post) {
               window.AppState.pcs.post.drive_link = _dlNew || null;
@@ -2477,7 +2477,7 @@ if (!window._routerBound) {
           var _clPostId = actionEl.dataset.id;
           apiFetch('/posts?post_id=eq.' + encodeURIComponent(_clPostId), {
             method: 'PATCH',
-            body: JSON.stringify({ drive_link: null })
+            body: JSON.stringify({ drive_link: null, updated_by: resolveActor() })
           }).then(function() {
             if (window.AppState && window.AppState.pcs && window.AppState.pcs.post) {
               window.AppState.pcs.post.drive_link = null;
