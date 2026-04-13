@@ -57,7 +57,6 @@ window.AppState = window.AppState || {
   },
 
   timers: {
-    tokenRefresh: null,
     dashDatetime: null,
     renderTimer: null
   }

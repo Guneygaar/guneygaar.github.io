@@ -53,7 +53,6 @@ function _clearSessionAndLogin() {
   localStorage.removeItem('hinglish_name');
   if (typeof stopRealtime === 'function') stopRealtime();
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
-  if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
   if (window._tokenRefreshTimer) {
     clearInterval(window._tokenRefreshTimer);
     window._tokenRefreshTimer = null;
@@ -105,9 +104,37 @@ async function _doRefresh(refreshToken) {
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
       body: JSON.stringify({ refresh_token: refreshToken }),
     });
-    if (res.status === 400 || res.status === 401 || res.status === 403) {
+
+    // HTTP 400 from /auth/v1/token is almost always refresh-token REUSE
+    // (another tab already rotated this token). The previously-stored
+    // sb_access_token is still valid for its TTL window — return it
+    // instead of evicting the user. Only a missing access token falls
+    // through to auth_expired classification.
+    if (res.status === 400) {
+      var storedAccess = localStorage.getItem('sb_access_token');
+      if (storedAccess) {
+        console.warn('[auth] refresh returned 400 (token-reuse race), using stored sb_access_token');
+        return { token: storedAccess };
+      }
       return { error: 'auth_expired' };
     }
+
+    // 401/403: narrow auth_expired to bodies that carry a refresh_token_*
+    // error code. Any other 401/403 (unexpected server responses, edge
+    // function hiccups, CORS preflight oddities) are treated as transient
+    // server errors and will not evict the user.
+    if (res.status === 401 || res.status === 403) {
+      var body = await res.json().catch(function() { return {}; });
+      var code = ((body && (body.error || body.error_code || body.msg)) || '').toString().toLowerCase();
+      if (code.indexOf('refresh_token_not_found') !== -1 ||
+          code.indexOf('refresh_token_already_used') !== -1 ||
+          code.indexOf('invalid_grant') !== -1 ||
+          code.indexOf('refresh_token_expired') !== -1) {
+        return { error: 'auth_expired' };
+      }
+      return { error: 'server' };
+    }
+
     if (!res.ok) {
       return { error: 'server' };
     }
@@ -323,7 +350,6 @@ function logout() {
   localStorage.removeItem('hinglish_pending_email');
   stopRealtime();
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
-  if (typeof _teardownClientTokenTimer === 'function') _teardownClientTokenTimer();
   if (window._tokenRefreshTimer) {
     clearInterval(window._tokenRefreshTimer);
     window._tokenRefreshTimer = null;
@@ -336,12 +362,12 @@ function logout() {
 function activateRole(role) {
   role = normalizeRole(role) || role;
 
-  // Proactive token refresh for all roles (50 min).
-  // Installed at the top so every branch (admin, client, agency, preview)
-  // gets the timer before any early return. Coexists with the legacy
-  // AppState.timers.tokenRefresh in startRealtime and the client branch
-  // timer below — refreshSession() is internally deduped so duplicates
-  // are safe.
+  // Proactive token refresh for all roles (50 min). Single canonical
+  // timer — the legacy AppState.timers.tokenRefresh (07-post-load.js)
+  // and window._clientTokenTimer (03-auth.js client branch) duplicates
+  // were removed. Installed at the top so every activateRole branch
+  // (admin, client, agency, preview) gets the timer before any early
+  // return. refreshSession() is internally deduped via _refreshInProgress.
   if (window._tokenRefreshTimer) clearInterval(window._tokenRefreshTimer);
   window._tokenRefreshTimer = setInterval(async function() {
     if (document.hidden) return;
@@ -396,21 +422,10 @@ function activateRole(role) {
       try { updateLastActive(); } catch(e) { console.warn('[auth] updateLastActive error:', e); }
     }
     if (typeof startClientRealtime === 'function') startClientRealtime();
-    if (!window._clientTokenTimer) {
-      window._clientTokenTimer = setInterval(async function() {
-        try {
-          var result = await refreshSession();
-          if (result && result.error === 'auth_expired') {
-            _clearSessionAndLogin();
-          } else if (result && result.error) {
-            console.warn('[auth] client token refresh: ' + result.error);
-          }
-        } catch(err) {
-          console.error('[auth] client token refresh threw', err);
-          window.logError && window.logError(err && err.message, err && err.stack, 'client-token-refresh');
-        }
-      }, 50 * 60 * 1000);
-    }
+    // Proactive token refresh is installed once at the top of
+    // activateRole() via window._tokenRefreshTimer — no client-specific
+    // timer needed here. The legacy window._clientTokenTimer duplicate
+    // was removed so every role goes through one refresh code path.
     return;
   }
 
@@ -465,17 +480,6 @@ window.resetRolePreview = function() {
   localStorage.removeItem('pcs_role_preview');
   location.reload();
 };
-
-// Tear down the client 50-min token refresh interval. Declared below
-// activateRole() so that the first textual occurrence of _clientTokenTimer
-// in this file remains the setInterval block above (keeps session-resilience
-// test 10 anchored to the right code path).
-function _teardownClientTokenTimer() {
-  if (window._clientTokenTimer) {
-    clearInterval(window._clientTokenTimer);
-    window._clientTokenTimer = null;
-  }
-}
 
 function _buildUserMenu() {
   const menu = document.getElementById('user-menu');

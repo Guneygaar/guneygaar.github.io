@@ -2356,7 +2356,7 @@ window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (document.hidden) return;
   if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
-}, 10000);
+}, 20000);
 
 // ===============================================
 // GLOBAL ACTION ROUTER (Phase 4 — event delegation)

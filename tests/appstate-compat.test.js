@@ -24,8 +24,7 @@ describe('AppState compat layer', function() {
         pipelineFilter: [], nrsUrgency: 'normal',
         retryCount: 0, retryTimer: null,
         realtimeTimer: null, unreadCount: 0 },
-      timers: { tokenRefresh: null,
-        dashDatetime: null, renderTimer: null }
+      timers: { dashDatetime: null, renderTimer: null }
     };
 
     delete window.currentRole;
