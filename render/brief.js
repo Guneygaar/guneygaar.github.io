@@ -279,6 +279,24 @@ window._openBriefSheet = async function(postId) {
     briefComments = [];
   }
 
+  // For request rows, the real assignment lives in the requests table
+  // (requests.assigned_to + requests.status). 07-post-load.js does not
+  // hydrate assigned_to into the merged stub, so pull it fresh here.
+  // This is also the one round-trip that picks up assignments made in
+  // another tab / session while the page was idle.
+  if (post._isRequest) {
+    try {
+      var reqRows = await apiFetch('/requests?id=eq.' +
+        encodeURIComponent(postId) + '&select=assigned_to,status');
+      if (Array.isArray(reqRows) && reqRows[0]) {
+        post.assigned_to = reqRows[0].assigned_to || '';
+        post._requestStatus = reqRows[0].status || '';
+      }
+    } catch (e) {
+      // Non-fatal — fall through with whatever is cached on the post.
+    }
+  }
+
   var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
   var _isCreativeRole = _role === 'creative' || _role === 'pranav';
@@ -323,17 +341,40 @@ window._openBriefSheet = async function(postId) {
     }
   }
 
-  // Check if brief is assigned to any creative (not just Pranav)
+  // Assignment state — for request rows the source of truth is
+  // `post.assigned_to` (hydrated from requests.assigned_to above);
+  // for legacy brief-stage posts it falls back to post.assigned_to
+  // set by _assignBrief after the PATCH, then to post.owner when the
+  // owner is a creative role string (historical rows).
+  var _assignedToName = (post.assigned_to || '').trim();
   var _ownerLower = (post.owner || '').toLowerCase();
-  var _isAssigned =
-    (_ownerLower !== '' && _ownerLower !== 'servicing' && _ownerLower !== 'chitra' &&
-     _ownerLower !== 'admin' && _ownerLower !== 'shubham' && _ownerLower !== 'client') &&
-    !_isBriefDone;
-  // Check if current user is the creative assigned to THIS brief
+  var _isAssigned = false;
+  var _assigneeName = '';
+  if (post._isRequest) {
+    _isAssigned = !!_assignedToName && !_isBriefDone;
+    _assigneeName = _isAssigned ? _assignedToName : '';
+  } else {
+    // Legacy brief posts — _assignedToName wins if set, else fall
+    // back to the old post.owner heuristic so historical briefs
+    // assigned before this PR still render as assigned.
+    if (_assignedToName) {
+      _isAssigned = !_isBriefDone;
+      _assigneeName = _assignedToName;
+    } else {
+      _isAssigned =
+        (_ownerLower !== '' && _ownerLower !== 'servicing' && _ownerLower !== 'chitra' &&
+         _ownerLower !== 'admin' && _ownerLower !== 'shubham' && _ownerLower !== 'client') &&
+        !_isBriefDone;
+      _assigneeName = _isAssigned ? (post.owner || '') : '';
+    }
+  }
+  // Check if the current user is the specific creative assigned
+  // to THIS brief — compare by name, never by role (role === 'creative'
+  // matched every creative and made the Create Post button appear for
+  // everyone in the old flow).
   var _userName = (window.AppState.user.name || '').toLowerCase();
   var _isAssignedCreative = _isCreativeRole && _isAssigned &&
-    (_ownerLower === _userName || _ownerLower === 'creative');
-  var _assigneeName = _isAssigned ? (post.owner || '') : '';
+    _assigneeName.toLowerCase() === _userName;
   var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
   if (_hasLinkedPost) {
@@ -404,9 +445,25 @@ window._openBriefSheet = async function(postId) {
       return _viewPostBtn +
         (_isChitra ? _closeBtn : '');
     }
-    // STATE: assigned to creative, no linked post yet
+    // STATE: assigned, no linked post yet
+    // Create Post button visibility (Fix C):
+    //   • Creative whose name matches _assigneeName → show
+    //   • Admin → always show
+    //   • Servicing → always show
+    //   • Other creatives → hide (read-only)
+    //   • Other roles → hide (read-only)
+    var _createPostBtn =
+      '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
+      'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
+      'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
+      'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
+      'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
+      'color:#C8A84B;cursor:pointer;margin-top:8px;">' +
+      '&#x2192; Create Post</button>';
     if (_isAssigned) {
       if (_canAssign) {
+        // Admin / Servicing: show the assignment summary, allow
+        // reassign, and per Fix C also get the Create Post button.
         return '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
           'font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
           'color:#555566;background:#0e0e0e;border:1px solid #252535;border-radius:10px;' +
@@ -420,16 +477,12 @@ window._openBriefSheet = async function(postId) {
           'font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;' +
           'color:#555566;cursor:pointer;margin-top:8px;">' +
           '&#x21BA; Reassign</button>' +
-          '<div id="brief-assign-dropdown-' + postId + '"></div>' + _closeBtn;
+          '<div id="brief-assign-dropdown-' + postId + '"></div>' +
+          _createPostBtn +
+          _closeBtn;
       }
       if (_isAssignedCreative) {
-        return '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
-          'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
-          'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
-          'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
-          'font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;' +
-          'color:#C8A84B;cursor:pointer;">' +
-          '&#x2192; Create Post</button>' + _closeBtn;
+        return _createPostBtn + _closeBtn;
       }
       return _readOnly;
     }
@@ -669,7 +722,24 @@ window._openBriefSheet = async function(postId) {
   });
 }
 
-// Fetch creative members from user_roles and show assignment dropdown
+// Fetch team members (non-client roles) from user_roles and show
+// assignment dropdown. Uses window._briefTeamMembersCache so the
+// result is re-used across renders and re-opens within a session.
+window._briefTeamMembersCache = null;
+
+window._briefFetchTeamMembers = function() {
+  if (Array.isArray(window._briefTeamMembersCache) && window._briefTeamMembersCache.length) {
+    return Promise.resolve(window._briefTeamMembersCache);
+  }
+  // SELECT name, role FROM user_roles WHERE role != 'client' ORDER BY name
+  return apiFetch('/user_roles?role=neq.client&select=name,role,email&order=name.asc', { method: 'GET' })
+    .then(function(rows) {
+      var list = Array.isArray(rows) ? rows.filter(function(r) { return r && r.name; }) : [];
+      window._briefTeamMembersCache = list;
+      return list;
+    });
+};
+
 window._briefShowAssignDropdown = function(postId, isReassign) {
   var container = document.getElementById('brief-assign-dropdown-' + postId);
   if (!container) return;
@@ -680,37 +750,50 @@ window._briefShowAssignDropdown = function(postId, isReassign) {
   }
   container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'color:#555566;padding:10px 0;">Loading&hellip;</div>';
-  apiFetch('/user_roles?role=eq.creative&select=name,email', { method: 'GET' })
+  window._briefFetchTeamMembers()
     .then(function(members) {
       if (!Array.isArray(members) || !members.length) {
         container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-          'color:#FF4B4B;padding:10px 0;">No creative members found</div>';
+          'color:#FF4B4B;padding:10px 0;">No team members found</div>';
         return;
       }
       var html = '<div style="margin-top:8px;border:1px solid #252535;border-radius:8px;overflow:hidden;">';
       members.forEach(function(m) {
         var name = m.name || m.email || '';
+        var memberRole = (m.role || '').toLowerCase();
         var initial = (name.charAt(0) || '?').toUpperCase();
         html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(name) + '\',' + isReassign + ')" ' +
           'style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;' +
           'background:#0d0d12;border:none;border-bottom:1px solid #191924;cursor:pointer;">' +
-          ((typeof renderAvatar === 'function') ? renderAvatar(m.email || name, 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc(initial) + '</div>') +
+          ((typeof renderAvatar === 'function') ? renderAvatar(m.email || name, memberRole || 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc(initial) + '</div>') +
+          '<div style="flex:1;text-align:left;">' +
           '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;font-weight:600;color:#F0F0F2;">' +
           esc(name) + '</div>' +
+          '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.08em;text-transform:uppercase;color:#555566;margin-top:1px;">' +
+          esc(m.role || '') + '</div>' +
+          '</div>' +
           '</button>';
       });
       html += '</div>';
       container.innerHTML = html;
     })
     .catch(function(err) {
-      console.error('[brief] fetch creative members failed', err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'brief-fetch-creatives');
+      console.error('[brief] fetch team members failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'brief-fetch-team');
       container.innerHTML = '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
         'color:#FF4B4B;padding:10px 0;">Failed to load — try again</div>';
     });
 }
 
-// Assign or reassign brief to a specific creative member
+// Assign or reassign a brief to a specific team member by name.
+// - Request rows: PATCH requests { assigned_to, status:'assigned' }
+//   (no posts row is created here — Create Post creates it later).
+// - Legacy brief-stage posts: PATCH posts { owner: <role> } where
+//   <role> is the canonical DB role (Creative/Servicing/...) so the
+//   posts_owner_check constraint passes. The person's name is kept
+//   only for display (toast, logActivity, notification message).
+// On success an in-app notification row is inserted with
+// user_role='Creative' and the person's name embedded in the message.
 window._assignBrief = function(postId, ownerName, isReassign) {
   var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
@@ -720,76 +803,67 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   var actorRole = window.AppState.user.effectiveRole || 'Admin';
   var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + ownerName;
   var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
-  // Normalize person name ('Pranav') → canonical DB role ('Creative') so the
-  // posts.owner CHECK constraint (posts_owner_check) does not reject the write.
-  // ownerName is still used for display (toasts, logActivity, UI labels).
-  var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerName) || 'Creative') : 'Creative';
+  var nowISO = new Date().toISOString();
 
-  if (post._isRequest) {
-    // Request from requests table: create the post FIRST, then mark the
-    // request assigned. If the POST fails (e.g. transient error), the
-    // request stays pending and visible instead of vanishing.
-    var nowISO = new Date().toISOString();
-    var updatedFeedback = (post.client_feedback || '');
-    if (direction.trim()) {
-      updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
-    }
-    var newPostId = 'POST-' + Date.now();
-    // 1. Create new post linked to this request
-    apiFetch('/posts', {
+  function _postAssignNotification(targetPostId, postTitle) {
+    // Notify creatives that a brief has been assigned. user_role is
+    // ALWAYS the role string 'Creative' — the person's name belongs
+    // in the message body, never in user_role.
+    return apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
-        post_id: newPostId,
-        title: post.title || '',
-        stage: 'brief',
-        owner: dbOwner,
-        client_feedback: updatedFeedback,
-        target_date: post.target_date || null,
-        images: post.images || [],
-        linked_post_id: post.post_id,
-        created_at: nowISO,
-        updated_at: nowISO
+        user_role: 'Creative',
+        post_id: targetPostId,
+        type: 'brief',
+        message: actionLabel,
+        actor: actorName,
+        read: false,
+        created_at: nowISO
+      })
+    }).catch(function(err) {
+      // Non-fatal — the assign itself already succeeded.
+      console.warn('[brief] assign notification failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief-notif');
+    });
+  }
+
+  function _reopenBriefAfterAssign() {
+    document.body.style.overflow = '';
+    showToast(toastMsg, 'success');
+    // Re-render the brief panel so it shows the new assigned state.
+    if (typeof window._openBriefSheet === 'function') {
+      window._openBriefSheet(postId);
+    }
+    if (typeof scheduleRender === 'function') scheduleRender();
+  }
+
+  if (post._isRequest) {
+    // Request from the requests table — store the selected person's
+    // name in requests.assigned_to and flip status to 'assigned'. Do
+    // NOT create a posts row here and do NOT touch posts.owner. The
+    // posts row is created later when the creative (or admin) taps
+    // Create Post and fills out the new post form.
+    // NOTE: requests table has no updated_at column — do not include it.
+    apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
+      method: 'PATCH',
+      body: JSON.stringify({
+        assigned_to: ownerName,
+        status: 'assigned'
       })
     }).then(function() {
-      // 2. Post created — NOW mark the originating request as assigned
-      return apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'assigned' })
-      });
-    }).then(function() {
-      var _briefPostTitle = post.title || '';
-      var _briefPostImage = (Array.isArray(post.images) && post.images.length) ? post.images[0] : '';
-      _generateWhatsAppPreview(newPostId, _briefPostTitle, _briefPostImage);
-
+      // Mutate the in-memory request stub so the brief sheet reopen
+      // reflects the new assignee without waiting for a poll.
+      post.assigned_to = ownerName;
+      post._requestStatus = 'assigned';
       logActivity({
-        post_id: newPostId,
+        post_id: postId,
         actor: actorName,
         actor_role: actorRole,
-        action: actionLabel +
-          (direction.trim() ? ' with direction' : '')
+        action: actionLabel + (direction.trim() ? ' with direction' : '')
       });
-      // Update AppState: remove request entry, add new post
-      var filtered = (window.AppState.posts.all || []).filter(function(p) {
-        return (p.post_id || p.id) !== postId;
-      });
-      filtered.push({
-        post_id: newPostId,
-        id: newPostId,
-        title: post.title || '',
-        stage: 'brief',
-        owner: dbOwner,
-        client_feedback: updatedFeedback,
-        target_date: post.target_date || null,
-        images: post.images || [],
-        linked_post_id: post.post_id,
-        created_at: nowISO,
-        updated_at: nowISO
-      });
-      window.AppState.posts.setAll(filtered);
-      document.getElementById('brief-sheet-overlay').remove();
-      document.body.style.overflow = '';
-      showToast(toastMsg, 'success');
-      if (typeof scheduleRender === 'function') scheduleRender();
+      return _postAssignNotification(postId, post.title || '');
+    }).then(function() {
+      _reopenBriefAfterAssign();
     }).catch(function(err) {
       console.error('[brief] assign request failed', err);
       window.logError && window.logError(err && err.message, err && err.stack, 'assign-request');
@@ -798,7 +872,10 @@ window._assignBrief = function(postId, ownerName, isReassign) {
     return;
   }
 
-  // Existing posts flow — PATCH the post directly
+  // Legacy brief-stage post flow — posts.owner stays a ROLE string
+  // (posts_owner_check only allows Creative/Servicing/Client/Admin).
+  // The person's name is preserved only for display + notification.
+  var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerName) || 'Creative') : 'Creative';
   var updatedFeedback = (post.client_feedback || '');
   if (direction.trim()) {
     updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
@@ -809,31 +886,29 @@ window._assignBrief = function(postId, ownerName, isReassign) {
       stage: 'brief',
       owner: dbOwner,
       client_feedback: updatedFeedback,
-      status_changed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      status_changed_at: nowISO,
+      updated_at: nowISO
     })
   }).then(function() {
+    // Persist the display name on the in-memory row so the reopen
+    // shows the individual (dbOwner only carries the role).
+    post.owner = dbOwner;
+    post.assigned_to = ownerName;
+    post.client_feedback = updatedFeedback;
     logActivity({
       post_id: postId,
       actor: actorName,
       actor_role: actorRole,
-      action: actionLabel +
-        (direction.trim() ? ' with direction' : '')
+      action: actionLabel + (direction.trim() ? ' with direction' : '')
     });
-    document.getElementById('brief-sheet-overlay').remove();
-    document.body.style.overflow = '';
-    showToast(toastMsg, 'success');
-    loadPosts();
+    return _postAssignNotification(postId, post.title || '');
+  }).then(function() {
+    _reopenBriefAfterAssign();
   }).catch(function(err) {
     console.error('[brief] assign brief failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief');
     showToast('Failed - try again', 'error');
   });
-}
-
-// Keep backward compat — old callers still reference _assignBriefToPranav
-window._assignBriefToPranav = function(postId) {
-  window._assignBrief(postId, 'Pranav', false);
 }
 
 window._closeBriefConfirm = function(postId) {
