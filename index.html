@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260413t">
+ <link rel="stylesheet" href="styles.css?v=20260413u">
 
 </head>
 <body>
@@ -1080,28 +1080,28 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260413t"></script>
-<script src="00-appstate-compat.js?v=20260413t"></script>
-<script src="01-config.js?v=20260413t" defer></script>
-<script src="02-session.js?v=20260413t" defer></script>
-<script src="utils.js?v=20260413t" defer></script>
-<script src="12-profiles.js?v=20260413t" defer></script>
-<script src="03-auth.js?v=20260413t" defer></script>
-<script src="05-api.js?v=20260413t" defer></script>
-<script src="10-ui.js?v=20260413t" defer></script>
+<script src="00-appstate.js?v=20260413u"></script>
+<script src="00-appstate-compat.js?v=20260413u"></script>
+<script src="01-config.js?v=20260413u" defer></script>
+<script src="02-session.js?v=20260413u" defer></script>
+<script src="utils.js?v=20260413u" defer></script>
+<script src="12-profiles.js?v=20260413u" defer></script>
+<script src="03-auth.js?v=20260413u" defer></script>
+<script src="05-api.js?v=20260413u" defer></script>
+<script src="10-ui.js?v=20260413u" defer></script>
 
-<script src="06-post-create.js?v=20260413t" defer></script>
-<script defer src="render/dashboard.js?v=20260413t"></script>
-<script defer src="render/client.js?v=20260413t"></script>
-<script defer src="render/pipeline.js?v=20260413t"></script>
-<script defer src="render/brief.js?v=20260413t"></script>
-<script defer src="actions/pcs.js?v=20260413t"></script>
-<script defer src="actions/pcs-longpress.js?v=20260413t"></script>
-<script src="07-post-load.js?v=20260413t" defer></script>
-<script src="08-post-actions.js?v=20260413t" defer></script>
-<script src="09-library.js?v=20260413t" defer></script>
-<script src="09-approval.js?v=20260413t" defer></script>
-<script src="04-router.js?v=20260413t" defer></script>
+<script src="06-post-create.js?v=20260413u" defer></script>
+<script defer src="render/dashboard.js?v=20260413u"></script>
+<script defer src="render/client.js?v=20260413u"></script>
+<script defer src="render/pipeline.js?v=20260413u"></script>
+<script defer src="render/brief.js?v=20260413u"></script>
+<script defer src="actions/pcs.js?v=20260413u"></script>
+<script defer src="actions/pcs-longpress.js?v=20260413u"></script>
+<script src="07-post-load.js?v=20260413u" defer></script>
+<script src="08-post-actions.js?v=20260413u" defer></script>
+<script src="09-library.js?v=20260413u" defer></script>
+<script src="09-approval.js?v=20260413u" defer></script>
+<script src="04-router.js?v=20260413u" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1697,22 +1697,21 @@ window.setPcsVisibility = function(el, vis) {
 </div>
 
 <!-- SCRATCHPAD PANEL OVERLAY -->
-<div id="scratchpad-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100vh;background:var(--bg,#0a0a0f);z-index:3100;flex-direction:column;overflow-y:auto;">
+<div id="scratchpad-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:var(--bg,#0a0a0f);z-index:3100;flex-direction:column;overflow-y:auto;">
   <!-- Topbar -->
   <div style="padding:14px 20px 12px;background:var(--surface,#0e0e16);border-bottom:1px solid var(--border2,#2a2a3a);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
     <div>
-      <div style="font-size:20px;font-weight:700;color:#fff;">Scratchpad</div>
+      <div style="display:flex;align-items:baseline;gap:10px;">
+        <div style="font-size:20px;font-weight:700;color:#fff;">Scratchpad</div>
+        <div id="scratchpad-status" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7a7a90;letter-spacing:.04em;opacity:0;transition:opacity .3s ease;"></div>
+      </div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text2,#BCBCD0);letter-spacing:.06em;text-transform:uppercase;margin-top:2px;">Your private notes</div>
     </div>
     <button onclick="closeScratchpadPanel()" style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.08em;color:var(--text3,#7a7a90);background:none;border:1px solid var(--border2,#2a2a3a);padding:5px 12px;cursor:pointer;">&#x2715; CLOSE</button>
   </div>
   <!-- Textarea -->
-  <div style="flex:1;padding:16px 20px;">
-    <textarea id="scratchpad-textarea" style="width:100%;min-height:300px;height:calc(100vh - 180px);resize:none;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text,#F0F0F2);outline:none;line-height:1.7;" placeholder="Quick notes, reminders, to-dos..."></textarea>
-  </div>
-  <!-- Save button -->
-  <div style="padding:12px 20px 24px;flex-shrink:0;">
-    <button onclick="_scratchSaveFromPanel()" style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;background:var(--green,#3ECF8E);border:none;padding:14px;cursor:pointer;">Save Notes</button>
+  <div style="flex:1;padding:16px 20px 24px;">
+    <textarea id="scratchpad-textarea" style="width:100%;min-height:300px;height:calc(100dvh - 140px);resize:none;background:var(--surface2,#141420);border:1px solid var(--border,#1e1e2e);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text,#F0F0F2);outline:none;line-height:1.7;" placeholder="Quick notes, reminders, to-dos..."></textarea>
   </div>
 </div>
 

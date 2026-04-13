@@ -668,8 +668,18 @@ async function handleAvatarUpload(file) {
 }
 
 /* ===============================================
-   Scratchpad — full-screen overlay opened from dropdown
+   Scratchpad — full-screen overlay opened from dropdown.
+   Google-Docs-style debounced auto-save: 1.5s after the
+   user stops typing, PATCH profiles.scratchpad. Subtle
+   status indicator (Saving… / Saved / Save failed —
+   retrying…). One retry after 3s on failure.
 =============================================== */
+
+window._scratchSaveTimer = null;
+window._scratchRetryTimer = null;
+window._scratchSavedHideTimer = null;
+window._scratchLastSaved = '';
+window._scratchInFlight = false;
 
 function _scratchLoad() {
   // No DOM updates needed - panel reads from cache when opened
@@ -680,38 +690,109 @@ function openScratchpadPanel() {
   if (!panel) return;
   panel.style.display = 'flex';
   var profile = getProfileByEmail(AppState.user.email);
+  var content = (profile && profile.scratchpad) || '';
   var input = document.getElementById('scratchpad-textarea');
   if (input) {
-    input.value = (profile && profile.scratchpad) || '';
+    input.value = content;
+    window._scratchLastSaved = content;
+    if (!input._autoSaveWired) {
+      input.addEventListener('input', _scratchOnInput);
+      input._autoSaveWired = true;
+    }
     input.focus();
   }
+  _scratchSetStatus('');
 }
 
 function closeScratchpadPanel() {
-  _scratchSaveFromPanel();
+  // Flush any pending debounced save immediately so nothing is lost.
+  if (window._scratchSaveTimer) {
+    clearTimeout(window._scratchSaveTimer);
+    window._scratchSaveTimer = null;
+    _scratchPerformSave(false);
+  }
   var panel = document.getElementById('scratchpad-panel');
   if (panel) panel.style.display = 'none';
 }
 
-function _scratchSaveFromPanel() {
+function _scratchOnInput() {
+  // New keystroke — cancel any queued save or retry.
+  if (window._scratchSaveTimer) { clearTimeout(window._scratchSaveTimer); window._scratchSaveTimer = null; }
+  if (window._scratchRetryTimer) { clearTimeout(window._scratchRetryTimer); window._scratchRetryTimer = null; }
+  _scratchSetStatus('');
+  window._scratchSaveTimer = setTimeout(function() {
+    window._scratchSaveTimer = null;
+    _scratchPerformSave(false);
+  }, 1500);
+}
+
+function _scratchPerformSave(isRetry) {
   var input = document.getElementById('scratchpad-textarea');
   if (!input) return;
   var val = input.value;
+  if (val === window._scratchLastSaved) { _scratchSetStatus(''); return; }
   var email = AppState.user.email;
   if (!email) return;
+  window._scratchInFlight = true;
+  _scratchSetStatus('saving');
   apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
     method: 'PATCH',
-    body: JSON.stringify({ scratchpad: val })
+    body: JSON.stringify({ scratchpad: val, updated_at: new Date().toISOString() })
   }).then(function() {
+    window._scratchInFlight = false;
+    window._scratchLastSaved = val;
     var cacheKey = email.toLowerCase();
     if (window._profilesCache && window._profilesCache[cacheKey]) {
       window._profilesCache[cacheKey].scratchpad = val;
     }
-    if (typeof showToast === 'function') showToast('Notes saved', 'success');
+    _scratchSetStatus('saved');
   }).catch(function(err) {
+    window._scratchInFlight = false;
     console.warn('[scratch] Save failed:', err);
-    if (typeof showToast === 'function') showToast('Failed to save notes', 'error');
+    if (typeof window.logError === 'function') window.logError(err, 'scratchpad-autosave');
+    if (isRetry) {
+      _scratchSetStatus('failed');
+    } else {
+      _scratchSetStatus('retrying');
+      window._scratchRetryTimer = setTimeout(function() {
+        window._scratchRetryTimer = null;
+        _scratchPerformSave(true);
+      }, 3000);
+    }
   });
+}
+
+function _scratchSetStatus(state) {
+  var el = document.getElementById('scratchpad-status');
+  if (!el) return;
+  if (window._scratchSavedHideTimer) {
+    clearTimeout(window._scratchSavedHideTimer);
+    window._scratchSavedHideTimer = null;
+  }
+  if (state === 'saving') {
+    el.textContent = 'Saving\u2026';
+    el.style.color = '#7a7a90';
+    el.style.opacity = '1';
+  } else if (state === 'saved') {
+    el.textContent = 'Saved';
+    el.style.color = '#7a7a90';
+    el.style.opacity = '1';
+    window._scratchSavedHideTimer = setTimeout(function() {
+      el.style.opacity = '0';
+      window._scratchSavedHideTimer = null;
+    }, 2000);
+  } else if (state === 'retrying') {
+    el.textContent = 'Save failed \u2014 retrying\u2026';
+    el.style.color = '#F6A623';
+    el.style.opacity = '1';
+  } else if (state === 'failed') {
+    el.textContent = 'Save failed';
+    el.style.color = '#FF4B4B';
+    el.style.opacity = '1';
+  } else {
+    el.textContent = '';
+    el.style.opacity = '0';
+  }
 }
 
 function _renderProfileTrigger() {
