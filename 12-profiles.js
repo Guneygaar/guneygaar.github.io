@@ -401,12 +401,14 @@ function openProfilePanel() {
     };
   }
 
-  // Wire photo upload
+  // Wire photo upload — opens crop modal first, then handleAvatarUpload runs
+  // on the cropped result. The original upload pipeline is unchanged; the
+  // crop step just sits in front of it.
   var photoInput = document.getElementById('prof-photo-input');
   if (photoInput) {
     photoInput.onchange = function() {
       if (this.files && this.files[0]) {
-        handleAvatarUpload(this.files[0]);
+        openAvatarCropModal(this.files[0]);
         this.value = '';
       }
     };
@@ -504,6 +506,351 @@ async function saveProfile() {
   }
 
   if (btn) { btn.textContent = 'SAVE CHANGES'; btn.disabled = false; }
+}
+
+/* ===============================================
+   Avatar Crop Modal — pinch/scroll-zoom + drag-pan
+   over a circular crop overlay. Sits between file
+   selection and handleAvatarUpload so the upload
+   pipeline below is untouched.
+=============================================== */
+
+window._cropState = null;
+
+function openAvatarCropModal(file) {
+  // Validate type up-front (same allowlist as handleAvatarUpload)
+  var validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!file || validTypes.indexOf(file.type) === -1) {
+    if (typeof showToast === 'function') showToast('Only JPG, PNG, or WebP allowed', 'error');
+    return;
+  }
+  // Cap raw input at 10MB; the cropped output is re-compressed downstream
+  if (file.size > 10 * 1024 * 1024) {
+    if (typeof showToast === 'function') showToast('Image must be under 10MB', 'error');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      _cropMountModal(img, file);
+    };
+    img.onerror = function() {
+      if (typeof showToast === 'function') showToast('Could not read image', 'error');
+    };
+    img.src = e.target.result;
+  };
+  reader.onerror = function() {
+    if (typeof showToast === 'function') showToast('Could not read file', 'error');
+  };
+  reader.readAsDataURL(file);
+}
+
+function _cropMountModal(img, originalFile) {
+  var overlay = document.getElementById('prof-crop-overlay');
+  if (!overlay) return;
+
+  // Stage size: mobile-first, capped so it fits on small screens
+  var vw = Math.min(window.innerWidth || 360, 480);
+  var STAGE = Math.max(240, Math.min(vw - 48, 340));
+  // Inset the circle 8px so the gold ring and rounding are visible
+  var R = Math.floor(STAGE / 2) - 8;
+
+  // Initial scale: image just fully covers the crop circle
+  var minScale = Math.max((2 * R) / img.width, (2 * R) / img.height);
+  var maxScale = minScale * 8;
+
+  window._cropState = {
+    img: img,
+    originalFile: originalFile,
+    stage: STAGE,
+    radius: R,
+    scale: minScale,
+    minScale: minScale,
+    maxScale: maxScale,
+    tx: 0,
+    ty: 0,
+    // gesture scratch
+    startTx: 0,
+    startTy: 0,
+    startScale: 0,
+    startDist: 0,
+    startMidX: 0,
+    startMidY: 0,
+    pinching: false
+  };
+
+  overlay.innerHTML = _cropModalHtml(STAGE, R);
+  overlay.style.display = 'flex';
+  // Profile panel already set body overflow + AppState.ui.modalOpen — leave both.
+
+  _cropDraw();
+  _cropWireGestures();
+
+  document.getElementById('crop-cancel-btn').onclick = closeAvatarCropModal;
+  document.getElementById('crop-save-btn').onclick = _cropConfirm;
+  var slider = document.getElementById('crop-zoom-slider');
+  if (slider) {
+    slider.min = '0';
+    slider.max = '1000';
+    slider.value = '0';
+    slider.oninput = function() {
+      var s = window._cropState;
+      if (!s) return;
+      var t = parseFloat(this.value) / 1000;
+      s.scale = s.minScale + (s.maxScale - s.minScale) * t;
+      _cropConstrain();
+      _cropDraw();
+    };
+  }
+}
+
+function _cropModalHtml(STAGE, R) {
+  // SVG mask creates the circular cutout with a darkened backdrop.
+  // pointer-events:none on the SVG so the canvas underneath captures
+  // every touch and mouse event.
+  var maskId = 'crop-mask-' + Date.now();
+  return '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:' + (STAGE + 24) + 'px;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;letter-spacing:.12em;color:#BCBCD0;text-transform:uppercase;text-align:center;">Position your photo</div>' +
+    '<div style="position:relative;width:' + STAGE + 'px;height:' + STAGE + 'px;background:#000;overflow:hidden;touch-action:none;">' +
+      '<canvas id="crop-canvas" style="position:absolute;inset:0;display:block;width:' + STAGE + 'px;height:' + STAGE + 'px;touch-action:none;cursor:grab;"></canvas>' +
+      '<svg width="' + STAGE + '" height="' + STAGE + '" viewBox="0 0 ' + STAGE + ' ' + STAGE + '" style="position:absolute;inset:0;pointer-events:none;">' +
+        '<defs>' +
+          '<mask id="' + maskId + '">' +
+            '<rect width="' + STAGE + '" height="' + STAGE + '" fill="white"/>' +
+            '<circle cx="' + (STAGE / 2) + '" cy="' + (STAGE / 2) + '" r="' + R + '" fill="black"/>' +
+          '</mask>' +
+        '</defs>' +
+        '<rect width="' + STAGE + '" height="' + STAGE + '" fill="#000000B3" mask="url(#' + maskId + ')"/>' +
+        '<circle cx="' + (STAGE / 2) + '" cy="' + (STAGE / 2) + '" r="' + R + '" fill="none" stroke="#C8A84B" stroke-width="2"/>' +
+      '</svg>' +
+    '</div>' +
+    '<input type="range" id="crop-zoom-slider" min="0" max="1000" value="0" style="width:100%;max-width:' + STAGE + 'px;accent-color:#C8A84B;">' +
+    '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#7a7a90;text-align:center;letter-spacing:.08em;text-transform:uppercase;">Drag to position \u00B7 Pinch or scroll to zoom</div>' +
+    '<div style="display:flex;gap:10px;width:100%;max-width:' + STAGE + 'px;margin-top:6px;">' +
+      '<button id="crop-cancel-btn" style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#BCBCD0;background:#1a1a26;border:1px solid #2a2a3a;padding:14px;cursor:pointer;">Cancel</button>' +
+      '<button id="crop-save-btn" style="flex:1;font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#000;background:#C8A84B;border:none;padding:14px;cursor:pointer;">Save</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function _cropDraw() {
+  var s = window._cropState;
+  if (!s) return;
+  var canvas = document.getElementById('crop-canvas');
+  if (!canvas) return;
+  var DPR = window.devicePixelRatio || 1;
+  // Resize backing store on first draw (or DPR change)
+  if (canvas.width !== s.stage * DPR) {
+    canvas.width = s.stage * DPR;
+    canvas.height = s.stage * DPR;
+  }
+  var ctx = canvas.getContext('2d');
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, s.stage, s.stage);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, s.stage, s.stage);
+  var iw = s.img.width * s.scale;
+  var ih = s.img.height * s.scale;
+  var dx = (s.stage - iw) / 2 + s.tx;
+  var dy = (s.stage - ih) / 2 + s.ty;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(s.img, dx, dy, iw, ih);
+  // Sync slider position so the UI matches programmatic scale changes
+  var slider = document.getElementById('crop-zoom-slider');
+  if (slider && s.maxScale > s.minScale) {
+    var t = (s.scale - s.minScale) / (s.maxScale - s.minScale);
+    if (t < 0) t = 0;
+    if (t > 1) t = 1;
+    slider.value = String(Math.round(t * 1000));
+  }
+}
+
+function _cropConstrain() {
+  var s = window._cropState;
+  if (!s) return;
+  if (s.scale < s.minScale) s.scale = s.minScale;
+  if (s.scale > s.maxScale) s.scale = s.maxScale;
+  // Keep the image always covering the crop circle
+  var maxTx = (s.img.width * s.scale) / 2 - s.radius;
+  var maxTy = (s.img.height * s.scale) / 2 - s.radius;
+  if (maxTx < 0) maxTx = 0;
+  if (maxTy < 0) maxTy = 0;
+  if (s.tx > maxTx) s.tx = maxTx;
+  if (s.tx < -maxTx) s.tx = -maxTx;
+  if (s.ty > maxTy) s.ty = maxTy;
+  if (s.ty < -maxTy) s.ty = -maxTy;
+}
+
+function _cropWireGestures() {
+  var canvas = document.getElementById('crop-canvas');
+  if (!canvas) return;
+  // Touch (mobile + iPhone Safari)
+  canvas.addEventListener('touchstart', _cropTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', _cropTouchMove, { passive: false });
+  canvas.addEventListener('touchend', _cropTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', _cropTouchEnd, { passive: false });
+  // Mouse + wheel (desktop)
+  canvas.addEventListener('mousedown', _cropMouseDown);
+  canvas.addEventListener('wheel', _cropWheel, { passive: false });
+}
+
+function _cropTouchStart(e) {
+  e.preventDefault();
+  var s = window._cropState;
+  if (!s) return;
+  if (e.touches.length === 1) {
+    s.pinching = false;
+    s.startTx = s.tx;
+    s.startTy = s.ty;
+    s.startMidX = e.touches[0].clientX;
+    s.startMidY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    s.pinching = true;
+    var dx = e.touches[0].clientX - e.touches[1].clientX;
+    var dy = e.touches[0].clientY - e.touches[1].clientY;
+    s.startDist = Math.sqrt(dx * dx + dy * dy) || 1;
+    s.startScale = s.scale;
+    s.startTx = s.tx;
+    s.startTy = s.ty;
+    s.startMidX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    s.startMidY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+  }
+}
+
+function _cropTouchMove(e) {
+  e.preventDefault();
+  var s = window._cropState;
+  if (!s) return;
+  if (e.touches.length === 1 && !s.pinching) {
+    s.tx = s.startTx + (e.touches[0].clientX - s.startMidX);
+    s.ty = s.startTy + (e.touches[0].clientY - s.startMidY);
+    _cropConstrain();
+    _cropDraw();
+  } else if (e.touches.length === 2) {
+    var dx = e.touches[0].clientX - e.touches[1].clientX;
+    var dy = e.touches[0].clientY - e.touches[1].clientY;
+    var dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    s.scale = s.startScale * (dist / s.startDist);
+    var midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    var midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    s.tx = s.startTx + (midX - s.startMidX);
+    s.ty = s.startTy + (midY - s.startMidY);
+    _cropConstrain();
+    _cropDraw();
+  }
+}
+
+function _cropTouchEnd(e) {
+  // No preventDefault here — Safari needs the touchend to bubble for tap-to-button.
+  var s = window._cropState;
+  if (!s) return;
+  if (e.touches.length === 0) {
+    s.pinching = false;
+  } else if (e.touches.length === 1) {
+    s.pinching = false;
+    s.startTx = s.tx;
+    s.startTy = s.ty;
+    s.startMidX = e.touches[0].clientX;
+    s.startMidY = e.touches[0].clientY;
+  }
+}
+
+function _cropMouseDown(e) {
+  e.preventDefault();
+  var s = window._cropState;
+  if (!s) return;
+  s.startTx = s.tx;
+  s.startTy = s.ty;
+  s.startMidX = e.clientX;
+  s.startMidY = e.clientY;
+  function move(ev) {
+    s.tx = s.startTx + (ev.clientX - s.startMidX);
+    s.ty = s.startTy + (ev.clientY - s.startMidY);
+    _cropConstrain();
+    _cropDraw();
+  }
+  function up() {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+function _cropWheel(e) {
+  e.preventDefault();
+  var s = window._cropState;
+  if (!s) return;
+  var factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+  s.scale = s.scale * factor;
+  _cropConstrain();
+  _cropDraw();
+}
+
+function closeAvatarCropModal() {
+  var overlay = document.getElementById('prof-crop-overlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+    overlay.innerHTML = '';
+  }
+  window._cropState = null;
+  // Profile panel still owns body overflow + AppState.ui.modalOpen — don't touch.
+}
+
+function _cropConfirm() {
+  var s = window._cropState;
+  if (!s) return;
+
+  var OUTPUT = 512;
+  var W = s.stage;
+  var R = s.radius;
+
+  // Stage → image-space inverse mapping. The image is drawn at:
+  //   dx = (W - iw)/2 + tx, dy = (W - ih)/2 + ty   where iw = img.width * scale
+  // For a stage point (sx, sy):
+  //   imgX = (sx - dx) / scale = (sx - W/2 - tx) / scale + img.width/2
+  // The crop area is the square inscribing the gold circle:
+  //   corner = (W/2 - R, W/2 - R), side = 2R
+  var srcX = (W / 2 - R - W / 2 - s.tx) / s.scale + s.img.width / 2;
+  var srcY = (W / 2 - R - W / 2 - s.ty) / s.scale + s.img.height / 2;
+  var srcSize = (2 * R) / s.scale;
+  var srcW = srcSize;
+  var srcH = srcSize;
+
+  // Defensive clamp — _cropConstrain already guarantees this, but a single
+  // pixel of float drift would crash drawImage on Safari. Belt + braces.
+  if (srcX < 0) { srcW += srcX; srcX = 0; }
+  if (srcY < 0) { srcH += srcY; srcY = 0; }
+  if (srcX + srcW > s.img.width)  srcW = s.img.width  - srcX;
+  if (srcY + srcH > s.img.height) srcH = s.img.height - srcY;
+
+  var out = document.createElement('canvas');
+  out.width = OUTPUT;
+  out.height = OUTPUT;
+  var octx = out.getContext('2d');
+  octx.fillStyle = '#000';
+  octx.fillRect(0, 0, OUTPUT, OUTPUT);
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(s.img, srcX, srcY, srcW, srcH, 0, 0, OUTPUT, OUTPUT);
+
+  var saveBtn = document.getElementById('crop-save-btn');
+  if (saveBtn) { saveBtn.textContent = 'PROCESSING...'; saveBtn.disabled = true; }
+
+  var origName = (s.originalFile && s.originalFile.name) || 'avatar.jpg';
+  out.toBlob(function(blob) {
+    if (!blob) {
+      if (typeof showToast === 'function') showToast('Crop failed', 'error');
+      if (saveBtn) { saveBtn.textContent = 'SAVE'; saveBtn.disabled = false; }
+      return;
+    }
+    var croppedFile = new File([blob], origName.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+    closeAvatarCropModal();
+    handleAvatarUpload(croppedFile);
+  }, 'image/jpeg', 0.92);
 }
 
 async function _compressAvatar(file) {
