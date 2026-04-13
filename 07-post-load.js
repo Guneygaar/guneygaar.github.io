@@ -169,20 +169,26 @@ function showLoadingSkeleton(containerId) {
   el.innerHTML = [1,2,3].map(() => `<div class="skeleton skeleton-card"></div>`).join('');
 }
 
-async function loadPosts() {
+async function loadPosts(fromPoll) {
   if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     if (typeof loadPostsForClient === 'function') loadPostsForClient();
     return;
   }
-  showLoadingSkeleton('tasks-container');
+  // fromPoll=true is set by the agency Realtime refresh handler. In that
+  // path: skip the loading skeleton (no flash under a steady UI), thread
+  // { allowLogout: false } through every apiFetch so a transient 401 on a
+  // background refresh cannot evict the user, and suppress the "X posts
+  // loaded" toast + error banners so silent realtime refreshes stay quiet.
+  if (!fromPoll) showLoadingSkeleton('tasks-container');
   const reqId = _newPostsRequest();
+  var _apiMeta = fromPoll ? { allowLogout: false } : undefined;
   try {
-    const data = await apiFetch('/posts?select=*&order=id.desc');
+    const data = await apiFetch('/posts?select=*&order=id.desc', {}, _apiMeta);
     if (!_commitPostsResult(reqId, 'network')) return;
     // Fetch pending requests and merge as brief-stage entries
     var reqData = [];
     try {
-      var rawReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc');
+      var rawReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc', {}, _apiMeta);
       if (Array.isArray(rawReqs)) {
         reqData = rawReqs.map(function(r) {
           return {
@@ -210,7 +216,7 @@ async function loadPosts() {
     hideErrorBanner();
     scheduleRender();
     // Fetch comment counts + client comment timestamps for all posts
-    apiFetch('/post_comments?select=post_id,created_at,author_role&order=created_at.desc')
+    apiFetch('/post_comments?select=post_id,created_at,author_role&order=created_at.desc', {}, _apiMeta)
       .then(function(rows) {
         if (!Array.isArray(rows)) return;
         var counts = {};
@@ -229,10 +235,12 @@ async function loadPosts() {
         });
         scheduleRender();
       }).catch(function(err){ console.error('[07-post-load] comment-counts', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-counts'); });
-    showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
+    if (!fromPoll) showToast(`${window.AppState.posts.all.length} posts loaded`, 'success');
   } catch (err) {
     console.error('loadPosts:', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'load-posts');
+    // Realtime-driven refreshes stay silent — no error banner / toast churn.
+    if (fromPoll) return;
     if (window.AppState.posts.cached.length) {
       if (!_commitPostsResult(reqId, 'cache')) return;
       window.AppState.posts.setAll(
@@ -395,10 +403,27 @@ function _clientPostsFingerprint(posts) {
 function startRealtime() {
   if (window.AppState.timers.realtimeTimer) return;
 
-  // Data polling  -  every 10 seconds (rolled back from 5s to halve API load)
+  // Realtime-first: install a Supabase Realtime subscription for the
+  // agency path. If it succeeds, window._agencyRealtimeChannel is set
+  // and the fallback interval below short-circuits on every tick. If
+  // the SDK / socket fails to initialise, we keep the 10s poll running
+  // as a safety net so the agency UI still refreshes.
+  try {
+    if (typeof startAgencyRealtime === 'function') startAgencyRealtime();
+  } catch (e) {
+    console.warn('[realtime] startAgencyRealtime threw', e);
+    window.logError && window.logError(e && e.message, e && e.stack, 'start-agency-realtime');
+  }
+
+  // Data polling  -  every 10 seconds (realtime-first fallback only)
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     if (!localStorage.getItem('sb_access_token')) return;
+    // Realtime-first fallback gate: when the agency Supabase Realtime
+    // channel is active, it drives refreshes via _agencyRealtimeRefresh()
+    // and this interval stays wired only as a cold-start / disconnect
+    // safety net. Skip the HTTP poll on every tick while it's live.
+    if (window._agencyRealtimeChannel) return;
     // Modal open: FETCH but STASH — keep the network flowing so a drain on
     // modal close is instant, without mutating posts.all / re-rendering
     // under the user's active overlay. Latest-wins (no queue).
@@ -439,8 +464,9 @@ function startRealtime() {
 function stopRealtime() {
   clearInterval(window.AppState.timers.realtimeTimer);
   window.AppState.timers.realtimeTimer = null;
-  // Tear down the client-side poll timer too, so both agency and client
-  // sessions are fully cleaned up through a single entry point.
+  // Tear down BOTH realtime channels and the client poll timer through
+  // one entry point. Logout and _clearSessionAndLogin both call this.
+  if (typeof stopAgencyRealtime === 'function') stopAgencyRealtime();
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
 }
 
@@ -635,6 +661,175 @@ function stopClientRealtime() {
     window._clientPollTimer = null;
   }
 }
+
+// -----------------------------------------------------------------
+// Agency-side Supabase Realtime subscriptions
+// -----------------------------------------------------------------
+// Mirror of the client Realtime block above for the agency roles
+// (Admin / Servicing / Creative). Replaces the 10 s `/posts` poll and
+// the 20 s `/notifications` badge poll with a single WebSocket on
+// channel 'srtd-agency' carrying four postgres_changes listeners:
+// posts (*), requests (*), post_comments (*), and notifications
+// (INSERT, filter=user_role=eq.<effectiveRole>).
+//
+// Data listeners debounce into a single loadPosts(true) call with
+// `fromPoll=true` so background refreshes thread { allowLogout:false }
+// through every apiFetch and a transient 401 cannot evict the user.
+// When AppState.ui.modalOpen is true, the handler fetches /posts and
+// pushes the normalised array into window._postsPollStash instead of
+// calling scheduleRender — this preserves the existing _drainPollStash
+// contract so every modal-close drain site (forcePCSReset,
+// closeAdminEdit, closeNotifications, closePipelineFilter, lbClose)
+// continues to flush pending updates on modal close exactly as it did
+// under the 10 s poll.
+//
+// The notification INSERT handler calls updateNotifBadge() directly,
+// so the bell badge updates incrementally without another REST round
+// trip. The 20 s notifBadgeTimer in 10-ui.js is gated on
+// window._agencyRealtimeChannel and acts as a cold-start fallback
+// only.
+//
+// Required Supabase setup: same four tables as the client channel
+// (already added in the client Realtime PR):
+//   ALTER PUBLICATION supabase_realtime ADD TABLE posts;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE requests;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE post_comments;
+//   ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+function _agencyRealtimeRefresh() {
+  if (window._agencyRealtimeDebounce) {
+    clearTimeout(window._agencyRealtimeDebounce);
+  }
+  window._agencyRealtimeDebounce = setTimeout(async function() {
+    window._agencyRealtimeDebounce = null;
+    if (document.hidden) return;
+    if (!localStorage.getItem('sb_access_token')) return;
+    // Modal-open branch: fetch /posts and stash. Do NOT call loadPosts()
+    // or scheduleRender() — the active modal must not see posts.all
+    // mutate underneath it. _drainPollStash (called from every
+    // modal-close drain site via _drainDeferredRender) will mergePosts
+    // and re-render when the modal closes.
+    if (window.AppState.ui.modalOpen) {
+      try {
+        const data = await apiFetch('/posts?select=*&order=created_at.desc', {}, { allowLogout: false });
+        const fresh = normalise(data);
+        if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
+          window._postsPollStash = fresh;
+          window._postsPollStashFp = _postsFingerprint(fresh);
+        }
+      } catch (e) {
+        console.warn('[agency-realtime] stash fetch error', e);
+      }
+      return;
+    }
+    // Modal-closed branch: full refresh via loadPosts(true). fromPoll
+    // threads { allowLogout:false } through the posts + requests +
+    // comment-counts fetches and silences the loading skeleton,
+    // success toast, and error banner so Realtime-driven refreshes
+    // stay invisible when everything is healthy.
+    try {
+      await loadPosts(true);
+    } catch (e) {
+      console.warn('[agency-realtime] loadPosts failed', e);
+    }
+  }, 400);
+}
+window._agencyRealtimeRefresh = _agencyRealtimeRefresh;
+
+function _onAgencyNotificationInsert(payload) {
+  // Incremental notification badge: a brand-new row landed for this
+  // agency user, so bump the badge without a /notifications GET. The
+  // REST-backed updateNotifBadge() call also acts as a safety net in
+  // case the Realtime payload arrives out of order with the read flag.
+  if (typeof updateNotifBadge === 'function') {
+    try { updateNotifBadge(); }
+    catch(e) { console.warn('[agency-realtime] updateNotifBadge', e); }
+  }
+}
+
+function startAgencyRealtime() {
+  if (window._agencyRealtimeChannel) return;
+  // Do not run for the Client role — that path is handled by
+  // startClientRealtime() and a real Client session should never hit
+  // this function. Guard is defensive against admin-preview flows.
+  var _er = (window.AppState.user && window.AppState.user.effectiveRole) || '';
+  if (_er === 'Client') return;
+
+  var sb = _initSupabaseRealtimeClient();
+  if (!sb) {
+    console.warn('[agency-realtime] Supabase client unavailable — realtime disabled');
+    return;
+  }
+
+  // Title-case role for the PostgREST eq. filter. effectiveRole is
+  // already canonicalised by _normaliseRole() in activateRole() but
+  // we re-normalise defensively in case a preview role slips through.
+  var role = _er || 'Admin';
+  var _roleTc = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+
+  try {
+    var channel = sb.channel('srtd-agency')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'posts' },
+        function(payload) { _agencyRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'requests' },
+        function(payload) { _agencyRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'post_comments' },
+        function(payload) { _agencyRealtimeRefresh(); })
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.' + _roleTc },
+        function(payload) { _onAgencyNotificationInsert(payload); })
+      .subscribe(function(status, err) {
+        if (err) {
+          console.warn('[agency-realtime] subscribe error', status, err);
+          window.logError && window.logError(err && err.message, err && err.stack, 'agency-realtime-subscribe');
+        } else {
+          console.log('[agency-realtime] channel status:', status);
+        }
+      });
+    window._agencyRealtimeChannel = channel;
+  } catch (err) {
+    console.error('[agency-realtime] startAgencyRealtime failed', err);
+    window.logError && window.logError(err && err.message, err && err.stack, 'agency-realtime-start');
+  }
+
+  // Visibility-driven reconnect: when the tab returns to focus, verify
+  // the channel is still JOINED. If the phoenix socket dropped (laptop
+  // sleep, flaky wifi, Supabase blip) tear the channel down and rebuild.
+  // We do NOT fetch or poll on focus — the first INSERT/UPDATE delivered
+  // after reconnect drives the refresh via _agencyRealtimeRefresh().
+  if (!window._agencyRealtimeVisBound) {
+    window._agencyRealtimeVisBound = true;
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState !== 'visible') return;
+      if (!window._agencyRealtimeChannel) return;
+      var ch = window._agencyRealtimeChannel;
+      var state = ch && ch.state;
+      // phoenix channel state: 'closed' | 'errored' | 'joined' | 'joining' | 'leaving'
+      if (state && state !== 'joined' && state !== 'joining') {
+        console.log('[agency-realtime] reconnect on focus; state was', state);
+        try { stopAgencyRealtime(); } catch(e) {}
+        startAgencyRealtime();
+      }
+    });
+  }
+}
+window.startAgencyRealtime = startAgencyRealtime;
+
+function stopAgencyRealtime() {
+  if (window._agencyRealtimeDebounce) {
+    clearTimeout(window._agencyRealtimeDebounce);
+    window._agencyRealtimeDebounce = null;
+  }
+  if (window._agencyRealtimeChannel && window._supabaseClient &&
+      typeof window._supabaseClient.removeChannel === 'function') {
+    try { window._supabaseClient.removeChannel(window._agencyRealtimeChannel); }
+    catch (e) { console.warn('[agency-realtime] removeChannel error', e); }
+  }
+  window._agencyRealtimeChannel = null;
+}
+window.stopAgencyRealtime = stopAgencyRealtime;
 
 async function loadTasks() {
   try {

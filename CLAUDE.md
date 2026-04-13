@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-13 (client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-13 (agency-realtime-subscriptions + client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -69,7 +69,7 @@ Root:
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
 - `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed
-- `07-post-load.js` — loadPosts, loadPostsForClient(skipRenderIfUnchanged), mergePosts, startRealtime (agency 10s poll with modal-open fetch-and-stash), startClientRealtime/stopClientRealtime (client Supabase Realtime WebSocket — 4 postgres_changes listeners, no polling), _initSupabaseRealtimeClient, _clientRealtimeRefresh (400 ms debounced loadPostsForClient), _onClientNotificationInsert, _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
+- `07-post-load.js` — loadPosts(fromPoll), loadPostsForClient(skipRenderIfUnchanged, fromPoll), mergePosts, startRealtime (installs agency Realtime then wires a 10s polling fallback gated on `window._agencyRealtimeChannel`), startAgencyRealtime/stopAgencyRealtime (agency Supabase Realtime WebSocket — 4 postgres_changes listeners, replaces the 10s poll + the 20s notifBadgeTimer for agency users), _agencyRealtimeRefresh (400 ms debounced loadPosts(true), stashes into _postsPollStash when a modal is open), _onAgencyNotificationInsert, startClientRealtime/stopClientRealtime (client Supabase Realtime WebSocket — 4 postgres_changes listeners, no polling), _initSupabaseRealtimeClient (shared by agency + client), _clientRealtimeRefresh (400 ms debounced loadPostsForClient), _onClientNotificationInsert, _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
@@ -135,11 +135,21 @@ window.AppState = {
 - `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true` → `window._deferredRender = true`. `_drainDeferredRender()` fires the queued render on modal close + drains the poll stash.
 - `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when unchanged — always mutate via `setAll`. `_renderBackgroundViews()` re-renders dashboard/pipeline/client feed without tearing down PCS. PCS render goes through `_renderPCS()`; `09-library.js` is the one exception.
 
-### Agency poll fetch-and-stash (`startRealtime` in 07-post-load.js)
-- 10s agency poll fetches regardless of modal state. If fingerprint differs, stashes the array into `window._postsPollStash` (+ `_postsPollStashFp`). Latest-wins, no queue.
-- `_drainPollStash()` reads the stash, clears it, runs `mergePosts(stash)`, `scheduleRender()`, `updateNotifBadge()` — no-op when stash is null.
-- `_drainDeferredRender()` calls `_drainPollStash()` unconditionally after its safeRender debounce, so every modal-close drain site also flushes poll data. Drain sites: `forcePCSReset` (actions/pcs.js), `closeAdminEdit` / `closeNewPostModal`, `closeNotifications` / `closePipelineFilter` (10-ui.js), `_lbClose` and client post overlay close (render/client.js).
-- Client 30s poll has NO stash — active-typing guard + `_clientPostsFingerprint` are enough.
+### Agency Realtime subscriptions (`startAgencyRealtime` in 07-post-load.js)
+- **Realtime-first, polling-fallback.** `startRealtime()` (called from the agency branch of `activateRole`) first calls `startAgencyRealtime()` to open a Supabase Realtime WebSocket on channel `'srtd-agency'`, THEN installs the legacy 10 s `window.AppState.timers.realtimeTimer` interval. The interval callback short-circuits (`if (window._agencyRealtimeChannel) return;`) on every tick when the channel is live, so no `/posts` HTTP traffic fires. The interval stays wired as a safety net — if the Supabase JS SDK failed to load or the WebSocket never opens, the 10 s fallback kicks in unchanged.
+- **Four postgres_changes listeners on one channel.** Mirrors the client channel shape: `posts *` → `_agencyRealtimeRefresh()`, `requests *` → `_agencyRealtimeRefresh()`, `post_comments *` → `_agencyRealtimeRefresh()`, `notifications INSERT` (filter `user_role=eq.<effectiveRole>` — title-cased) → `_onAgencyNotificationInsert()` → `updateNotifBadge()` direct. Uses the shared `_initSupabaseRealtimeClient()` so agency + client sessions use ONE underlying `window._supabaseClient` (which is idempotent).
+- **Debounced refresh + modal-open stash.** `_agencyRealtimeRefresh` collapses bursty events into a single `loadPosts(true)` call with a 400 ms debounce. Guards: `document.hidden`, `sb_access_token`. **Modal-open branch:** when `AppState.ui.modalOpen === true`, fetches `/posts?select=*&order=created_at.desc` and pushes the normalised array into `window._postsPollStash` + `_postsPollStashFp` — does NOT call `loadPosts()`, `mergePosts()`, or `scheduleRender()`, exactly matching the legacy poll's stash contract so every existing modal-close drain site (see Agency drain-stash contract below) keeps working without changes. **Modal-closed branch:** calls `loadPosts(true)` which threads `{ allowLogout:false }` through the posts + requests + comment-counts fetches, skips `showLoadingSkeleton`, silences the success toast, and silences error banners on realtime-driven refreshes.
+- **Visibility reconnect.** Single `visibilitychange` listener gated on `window._agencyRealtimeVisBound`. On `visibilityState === 'visible'`, inspects `_agencyRealtimeChannel.state`; if not `joined`/`joining`, tears the channel down and re-subscribes. Does NOT fetch or poll on focus — the first INSERT/UPDATE delivered after reconnect triggers the refresh through `_agencyRealtimeRefresh()`.
+- **Notification badge gate.** `AppState.timers.notifBadgeTimer` (10-ui.js, 20 s cadence, preserved for the defensive-guards test) short-circuits when `window._agencyRealtimeChannel` is set, in addition to the Client guard from PR #826. Cadence is unchanged at 20 000 ms so the `notifications.test.js` regex `AppState\.timers\.notifBadgeTimer\s*=\s*setInterval[\s\S]*?,\s*20000` still matches. Falls through to the REST badge call only if the agency Realtime channel never established.
+- **`stopRealtime()` cascades** to both `stopAgencyRealtime()` and `stopClientRealtime()` on logout / `_clearSessionAndLogin`. Both realtime teardown calls are idempotent.
+- **Required Supabase setup:** the four ALTER PUBLICATION commands are the same as the client Realtime PR — already applied on the database. No new ALTER TABLE needed for this PR.
+
+### Agency drain-stash contract (`_postsPollStash` in 07-post-load.js)
+- Writers: `_agencyRealtimeRefresh()` modal-open branch (Realtime path, primary), the 10 s `startRealtime()` poll fallback modal-open branch (legacy path, only active when Realtime dropped).
+- Reader: `_drainPollStash()` reads the stash, clears it, runs `mergePosts(stash)`, `scheduleRender()`, `updateNotifBadge()` — no-op when stash is null.
+- Trigger: `_drainDeferredRender()` calls `_drainPollStash()` unconditionally after its `safeRender` debounce, so every modal-close drain site also flushes stash data. Drain sites: `forcePCSReset` (actions/pcs.js), `closeAdminEdit` / `closeNewPostModal`, `closeNotifications` / `closePipelineFilter` (10-ui.js), `_lbClose` and client post overlay close (render/client.js).
+- Latest-wins, no queue — stash is cleared before `mergePosts` runs.
+- Client Realtime path has NO stash — `startClientRealtime` never fetches posts during a modal; active-typing guard + `loadPostsForClient(true, true)` fingerprint check handle all refresh cases.
 
 ### Runtime-enriched fields (NOT in DB — added by loadPosts)
 - `_commentCount` (int), `_clientCommentAt` (ISO|null) — set after batch comment fetch. `_isRequest` (true) — set on rows merged from `requests`; brief/assign/close/reopen branch on this to route `/requests` vs `/posts`. `_isSaving` (bool) + `_saveTimer` — optimistic save lock. `_commentSaving` (bool) — set by `_handleSubmitComment` during an in-flight insert; `loadPostsForClient` honours it so the optimistic row isn't clobbered.
@@ -173,7 +183,7 @@ window.AppState = {
 
 ### Misc gotchas
 - `_commentInputHtml()` only renders for `awaiting_approval`/`awaiting_brand_input` and MUST be called inside `_cardHtml()`. `apiFetch()` never calls `logout()` on 401 by design — refresh flow handles it. Silent `.catch(()=>{})` is a bug — always `window.logError`.
-- Polling: 10s agency (`startRealtime`), 20s agency notif badge (skipped for Client — see §4 Client Realtime), 5s click-log flush, 50min token refresh. **Client role uses a Supabase Realtime WebSocket and polls NOTHING.** Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
+- Timers: **10s agency `startRealtime` poll is a realtime-fallback only — short-circuits on `window._agencyRealtimeChannel`**. **20s agency notifBadgeTimer is also a realtime-fallback — short-circuits on `window._agencyRealtimeChannel` OR Client effectiveRole**. 5s click-log flush (write batcher, unchanged). 50min token refresh (auth, unchanged). **Both Client and Agency roles use a Supabase Realtime WebSocket as the primary data path; the legacy intervals are kept wired as cold-start + disconnect safety nets only.** Client DB role takes priority over `pcs_role_preview`. Deep link `srtd.io/?open=POST_ID` → `window._pendingOpenPost` fired after loadPosts.
 - PCS document-click-close skips close when the active dropdown contains `input[type="date"]`. `_cardClickDelegate` (07-post-load.js) guards `input, textarea, button, [contenteditable="true"], a, [role="button"]` — don't narrow.
 - Image download: `_pcsLbDownload` + `_pcsSaveAllPhotos` must strip BOTH `https://images.srtd.io/` and legacy `pub-*.r2.dev` prefix before hitting the R2 worker `/download?key=`.
 
@@ -208,7 +218,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413s`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413t`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.

@@ -2352,15 +2352,23 @@ document.addEventListener('DOMContentLoaded', () => {
   if (typeof updateDashGreeting === 'function') updateDashGreeting();
 });
 
-// Agency-only badge refresh. Client users receive notification updates
-// via the Supabase Realtime subscription wired in 07-post-load.js
-// (_onClientNotificationInsert), so this interval skips them to avoid
-// the extra REST round-trip + token race on iPhone Safari.
+// Badge refresh fallback. Both Client AND agency users now receive
+// notification INSERT events via Supabase Realtime subscriptions wired
+// in 07-post-load.js (_onClientNotificationInsert / _onAgencyNotifica-
+// tionInsert), so this interval short-circuits when either realtime
+// channel is live. It stays wired as a cold-start safety net in case
+// the SDK fails to initialise or the WebSocket drops without a
+// successful reconnect. Cadence preserved at 20 s so the defensive-
+// guards test still matches the setInterval(..., 20000) pattern.
 window.AppState.timers.notifBadgeTimer = setInterval(function() {
   if (document.hidden) return;
   if (!localStorage.getItem('sb_access_token') && !localStorage.getItem('sb_refresh_token')) return;
   var _er = (window.AppState.user && window.AppState.user.effectiveRole) || '';
   if (_er === 'Client') return;
+  // Realtime-first: skip the poll when the agency channel is live.
+  // Falls through (and hits /notifications) only if realtime was
+  // never established — e.g., the Supabase JS SDK failed to load.
+  if (window._agencyRealtimeChannel) return;
   if (typeof updateNotifBadge === 'function') updateNotifBadge();
 }, 20000);
 
