@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-13 (agency-realtime-subscriptions + client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback + scratchpad-auto-save). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-13 (agency-realtime-subscriptions + client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback + scratchpad-auto-save + comment-collapse-preservation + notif-actor-display-name). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -218,7 +218,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413v`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413y`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.

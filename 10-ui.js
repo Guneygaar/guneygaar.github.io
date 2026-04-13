@@ -645,16 +645,13 @@ function renderNotifications(name, role) {
       }
     }
     var actor = n.actor || '';
-    // Resolve the raw actor field (which may be an email for older
-    // notification rows written before the displayName fix) to a clean
-    // display name so the card always shows a friendly name. The avatar
-    // + color class still key off the raw `actor` value because both
-    // `renderAvatar` and `getRoleFor` already accept either form.
-    var displayActor = (typeof getDisplayName === 'function')
-      ? getDisplayName(actor)
-      : actor;
+    // Resolve raw actor (which may be an email for older notifications
+    // written before the display-name fix) to a clean display name via
+    // the profiles cache. Falls back to the raw string when the helper
+    // is unavailable or the cache hasn't loaded yet.
+    var actorDisplay = (typeof getDisplayName === 'function' && actor) ? getDisplayName(actor) : actor;
     var avClass = _notifActorClass(actor);
-    var initial = displayActor ? displayActor.charAt(0).toUpperCase() : '?';
+    var initial = actorDisplay ? actorDisplay.charAt(0).toUpperCase() : '?';
     var ts = _notifRelTime(n.created_at);
 
     // Response time for approval-resolved notifications
@@ -793,7 +790,7 @@ function renderNotifications(name, role) {
           pubLabel +
           '<div class="notif-text">' +
             unreadDot +
-            '<strong>' + esc(displayActor) + '</strong> ' + esc(actionText) +
+            '<strong>' + esc(actorDisplay) + '</strong> ' + esc(actionText) +
             respTimeHtml +
           '</div>' +
           previewHtml +

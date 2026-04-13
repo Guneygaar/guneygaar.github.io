@@ -2257,19 +2257,28 @@ console.log('LOADED:', 'render/client.js');
     html += _approvePopupHtml();
     html += _lightboxHtml();
 
+    // Capture which comment sections are currently expanded BEFORE we
+    // rebuild innerHTML. The client realtime refresh and any other
+    // renderClientView() call would otherwise reset every awaiting_*
+    // card back to collapsed state, wiping the user's explicit toggle.
+    var _expandedCommentIds = [];
+    var _prevSections = cv.querySelectorAll('.client-comments-section');
+    for (var _psi = 0; _psi < _prevSections.length; _psi++) {
+      if (_prevSections[_psi].style.display === 'block') {
+        var _pid = _prevSections[_psi].getAttribute('data-comments-section');
+        if (_pid) _expandedCommentIds.push(_pid);
+      }
+    }
+
     cv.innerHTML = html;
 
-    // Restore any comment sections that were expanded before the rebuild.
-    // The Comment toggle button writes display:block/none directly on the
-    // [data-comments-section] element, so we re-apply that flag here.
-    try {
-      var _restoreKeys = Object.keys(_expandedCommentPids);
-      for (var _r = 0; _r < _restoreKeys.length; _r++) {
-        var _rpid = _restoreKeys[_r];
-        var _restoreEl = document.getElementById('client-comments-section-' + _rpid);
-        if (_restoreEl) _restoreEl.style.display = 'block';
-      }
-    } catch (_restErr) {}
+    // Restore the expanded comment sections captured above. Safe no-op
+    // when the post is gone from the new render or the section defaults
+    // to expanded already (non-awaiting stages).
+    for (var _rsi = 0; _rsi < _expandedCommentIds.length; _rsi++) {
+      var _restoreEl = cv.querySelector('[data-comments-section="' + _expandedCommentIds[_rsi] + '"]');
+      if (_restoreEl) _restoreEl.style.display = 'block';
+    }
 
     _wireTopNavOnce();
     // cv is a persistent DOM element — only its innerHTML is replaced
@@ -2327,23 +2336,19 @@ console.log('LOADED:', 'render/client.js');
       return;
     }
 
-    // Mirror the renderClientView preservation pattern: if the overlay
-    // is already open (e.g. a Realtime refresh re-mounts it), capture
-    // any comment sections that were expanded so we can re-apply that
-    // display state after the new HTML is mounted below.
-    var _overlayExpandedPids = {};
+    // Capture expanded comment sections from an existing overlay before
+    // we tear it down, so a re-open of the same post (or any re-render
+    // while already open) preserves the user's explicit toggle state.
     var existing = document.getElementById('client-post-overlay');
+    var _overlayExpandedIds = [];
     if (existing) {
-      try {
-        var _exSecs = existing.querySelectorAll('[data-comments-section]');
-        for (var _ex = 0; _ex < _exSecs.length; _ex++) {
-          var _exSec = _exSecs[_ex];
-          if (_exSec.style && _exSec.style.display === 'block') {
-            var _expid = _exSec.getAttribute('data-comments-section');
-            if (_expid) _overlayExpandedPids[_expid] = 1;
-          }
+      var _exSecs = existing.querySelectorAll('.client-comments-section');
+      for (var _esi = 0; _esi < _exSecs.length; _esi++) {
+        if (_exSecs[_esi].style.display === 'block') {
+          var _esId = _exSecs[_esi].getAttribute('data-comments-section');
+          if (_esId) _overlayExpandedIds.push(_esId);
         }
-      } catch (_oexErr) {}
+      }
       existing.remove();
     }
 
@@ -2391,18 +2396,15 @@ console.log('LOADED:', 'render/client.js');
     var _self_overlay = overlay;
     requestAnimationFrame(function() {
       document.body.appendChild(_self_overlay);
-      // Re-apply any comment sections that were expanded on the prior
-      // overlay before it got re-mounted (mirrors renderClientView).
-      try {
-        var _orestKeys = Object.keys(_overlayExpandedPids);
-        for (var _o = 0; _o < _orestKeys.length; _o++) {
-          var _opid = _orestKeys[_o];
-          var _orestEl = _self_overlay.querySelector(
-            '[data-comments-section="' + _opid + '"]'
-          );
-          if (_orestEl) _orestEl.style.display = 'block';
-        }
-      } catch (_orestErr) {}
+      // Restore any expanded comment sections captured from the prior
+      // overlay. _commentsContainerHtml(post, true) already defaults the
+      // overlay card's section to display:block, so this is a no-op for
+      // the common case and only matters if the prior overlay had a
+      // different post open or had more than one section rendered.
+      for (var _orsi = 0; _orsi < _overlayExpandedIds.length; _orsi++) {
+        var _orEl = _self_overlay.querySelector('[data-comments-section="' + _overlayExpandedIds[_orsi] + '"]');
+        if (_orEl) _orEl.style.display = 'block';
+      }
       window.AppState.ui.modalOpen = true;
       document.body.style.overflow = 'hidden';
       _wireEvents(_self_overlay);
