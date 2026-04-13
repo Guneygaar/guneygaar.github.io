@@ -1523,6 +1523,7 @@ console.log('LOADED:', 'render/client.js');
     input.value = '';
 
     var authorName = window.AppState.user.email || window.AppState.user.name || 'Client';
+    var displayName = (typeof getDisplayName === 'function') ? getDisplayName(authorName) : (window.AppState.user.displayName || window.AppState.user.name || 'Client');
     var _mentioned = _parseMentions(message);
     var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
@@ -1617,8 +1618,8 @@ console.log('LOADED:', 'render/client.js');
           user_role: 'Servicing',
           type: 'comment',
           post_id: realPostId,
-          message: authorName + ' commented on ' + postTitle,
-          actor: window.AppState.user.name || 'Client',
+          message: displayName + ' commented on ' + postTitle,
+          actor: displayName,
           read: false
         })
       }).catch(function(err){ console.error('[client] comment patch', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-patch'); });
@@ -1628,8 +1629,8 @@ console.log('LOADED:', 'render/client.js');
           user_role: 'Admin',
           type: 'comment',
           post_id: realPostId,
-          message: authorName + ' commented on ' + postTitle,
-          actor: window.AppState.user.name || 'Client',
+          message: displayName + ' commented on ' + postTitle,
+          actor: displayName,
           read: false
         })
       }).catch(function(err){ console.error('[client] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-notification'); });
@@ -1639,8 +1640,8 @@ console.log('LOADED:', 'render/client.js');
           user_role: 'Creative',
           type: 'comment',
           post_id: realPostId,
-          message: authorName + ' commented on ' + postTitle,
-          actor: window.AppState.user.name || 'Client',
+          message: displayName + ' commented on ' + postTitle,
+          actor: displayName,
           read: false
         })
       }).catch(function(err){ console.error('[client] creative notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-creative-notification'); });
@@ -1662,8 +1663,8 @@ console.log('LOADED:', 'render/client.js');
             user_role: _member.role,
             post_id: realPostId,
             type: 'mention',
-            message: authorName + ' mentioned you on "' + postTitle + '"',
-            actor: window.AppState.user.name || 'Client',
+            message: displayName + ' mentioned you on "' + postTitle + '"',
+            actor: displayName,
             read: false
           })
         }).catch(function(err) { console.error('[mention notif]', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-mention-notif'); });
