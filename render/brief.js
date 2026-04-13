@@ -19,6 +19,24 @@ function _generateWhatsAppPreview(postId, title, imageUrl) {
   }).catch(function() {});
 }
 
+// Share brief on WhatsApp. Uses location.href (not window.open) because iOS
+// Safari's popup blocker drops window.open('_blank') handoffs to the
+// whatsapp:// scheme. Mirrors actions/pcs.js _sharePostOnWhatsApp.
+window._shareBriefOnWhatsApp = function(postId) {
+  var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  if (!post) {
+    if (typeof showToast === 'function') showToast('Brief not found', 'error');
+    return;
+  }
+  var title = (post.title || 'New Brief').replace(/'/g, '');
+  var postIdRaw = post.post_id || post.id || postId || '';
+  var shortId = postIdRaw.replace(/[^0-9]/g, '').slice(-4);
+  if (!shortId) shortId = postIdRaw.slice(-4);
+  var previewUrl = 'https://srtd.io/p/' + shortId;
+  var message = 'Brief: ' + title + '\n\n' + previewUrl;
+  location.href = 'https://wa.me/?text=' + encodeURIComponent(message);
+};
+
 // ===============================================
 // Brief Sheet - full-screen overlay for brief/REQ posts
 // ===============================================
@@ -223,9 +241,7 @@ window._openBriefSheet = function(postId) {
     'background:none;border:none;cursor:pointer;">&#x2190; BACK</button>' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;' +
     'letter-spacing:0.16em;text-transform:uppercase;color:#C8A84B;">BRIEF</div>' +
-    '<div onclick="window.open(\'https://wa.me/?text=\' + encodeURIComponent(\'Brief: ' +
-    esc((post.title || '').replace(/'/g, '')) +
-    '\\n\\nhttps://srtd.io/?open=' + esc(postId) + '\'), \'_blank\')" ' +
+    '<div onclick="window._shareBriefOnWhatsApp(\'' + esc(postId) + '\')" ' +
     'style="display:flex;align-items:center;gap:5px;background:#1a2e1a;' +
     'border:1px solid #25D366;border-radius:6px;padding:5px 10px;cursor:pointer;">' +
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
@@ -458,35 +474,41 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   var actorRole = window.AppState.user.effectiveRole || 'Admin';
   var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + ownerName;
   var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
+  // Normalize person name ('Pranav') → canonical DB role ('Creative') so the
+  // posts.owner CHECK constraint (posts_owner_check) does not reject the write.
+  // ownerName is still used for display (toasts, logActivity, UI labels).
+  var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerName) || 'Creative') : 'Creative';
 
   if (post._isRequest) {
-    // Request from requests table: mark assigned, then create a new post
+    // Request from requests table: create the post FIRST, then mark the
+    // request assigned. If the POST fails (e.g. transient error), the
+    // request stays pending and visible instead of vanishing.
     var nowISO = new Date().toISOString();
     var updatedFeedback = (post.client_feedback || '');
     if (direction.trim()) {
       updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
     }
     var newPostId = 'POST-' + Date.now();
-    // 1. PATCH request status to assigned
-    apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'assigned' })
+    // 1. Create new post linked to this request
+    apiFetch('/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: newPostId,
+        title: post.title || '',
+        stage: 'brief',
+        owner: dbOwner,
+        client_feedback: updatedFeedback,
+        target_date: post.target_date || null,
+        images: post.images || [],
+        linked_post_id: post.post_id,
+        created_at: nowISO,
+        updated_at: nowISO
+      })
     }).then(function() {
-      // 2. Create new post linked to this request
-      return apiFetch('/posts', {
-        method: 'POST',
-        body: JSON.stringify({
-          post_id: newPostId,
-          title: post.title || '',
-          stage: 'brief',
-          owner: ownerName,
-          client_feedback: updatedFeedback,
-          target_date: post.target_date || null,
-          images: post.images || [],
-          linked_post_id: post.post_id,
-          created_at: nowISO,
-          updated_at: nowISO
-        })
+      // 2. Post created — NOW mark the originating request as assigned
+      return apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'assigned' })
       });
     }).then(function() {
       var _briefPostTitle = post.title || '';
@@ -509,7 +531,7 @@ window._assignBrief = function(postId, ownerName, isReassign) {
         id: newPostId,
         title: post.title || '',
         stage: 'brief',
-        owner: ownerName,
+        owner: dbOwner,
         client_feedback: updatedFeedback,
         target_date: post.target_date || null,
         images: post.images || [],
@@ -539,7 +561,7 @@ window._assignBrief = function(postId, ownerName, isReassign) {
     method: 'PATCH',
     body: JSON.stringify({
       stage: 'brief',
-      owner: ownerName,
+      owner: dbOwner,
       client_feedback: updatedFeedback,
       status_changed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()

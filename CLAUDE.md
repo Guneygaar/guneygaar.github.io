@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-13 (agency-realtime-subscriptions + client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback + scratchpad-auto-save + comment-collapse-preservation + notif-actor-display-name). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-13 (agency-realtime-subscriptions + client-realtime-subscriptions + refresh-400-recovery + collapse-timers + interval-rollback + scratchpad-auto-save + comment-collapse-preservation + notif-actor-display-name + brief-assign-owner-normalize + brief-whatsapp-ios-fix + brief-assign-order-swap). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -79,7 +79,7 @@ render/:
 - `render/dashboard.js` — dashboard, scoreboard, runway/stage sheets
 - `render/client.js` — client feed, comment input, new request overlay
 - `render/pipeline.js` — pipeline view, batch mode, chip + person filters
-- `render/brief.js` — brief sheet, dynamic assign dropdown, reassign
+- `render/brief.js` — brief sheet, dynamic assign dropdown, reassign. `_assignBrief` normalizes the raw person name from `/user_roles?role=eq.creative` through `normalizeRole()` into a canonical DB role (`dbOwner`) before writing to `posts.owner`, because the posts table has a CHECK constraint `posts_owner_check` that only allows `{Admin, Servicing, Creative, Client}`. `ownerName` is still used for display (toast, logActivity, UI). For `_isRequest` posts, `_assignBrief` now creates the new post FIRST and only PATCHes the originating request to `status=assigned` AFTER the POST succeeds — so a failed post creation leaves the request pending and visible instead of vanishing. Brief sheet WhatsApp share uses `window._shareBriefOnWhatsApp(postId)` which mirrors `actions/pcs.js _sharePostOnWhatsApp` (location.href + `srtd.io/p/XXXX` short URL) — the old inline `window.open(url, '_blank')` was dropped by iOS Safari's popup blocker on the whatsapp:// scheme handoff.
 
 actions/:
 - `actions/pcs.js` — Post Card System full-page overlay. `toggleTaskResolve` writes/clears `resolved_at` timestamp alongside `resolved` + `resolved_by` on post_comments/internal_notes PATCH.
@@ -218,7 +218,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413y`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260413z`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
