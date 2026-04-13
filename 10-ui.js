@@ -636,8 +636,13 @@ function renderNotifications(name, role) {
       }
     }
     var actor = n.actor || '';
+    // Resolve raw actor (which may be an email for older notifications
+    // written before the display-name fix) to a clean display name via
+    // the profiles cache. Falls back to the raw string when the helper
+    // is unavailable or the cache hasn't loaded yet.
+    var actorDisplay = (typeof getDisplayName === 'function' && actor) ? getDisplayName(actor) : actor;
     var avClass = _notifActorClass(actor);
-    var initial = actor ? actor.charAt(0).toUpperCase() : '?';
+    var initial = actorDisplay ? actorDisplay.charAt(0).toUpperCase() : '?';
     var ts = _notifRelTime(n.created_at);
 
     // Response time for approval-resolved notifications
@@ -776,7 +781,7 @@ function renderNotifications(name, role) {
           pubLabel +
           '<div class="notif-text">' +
             unreadDot +
-            '<strong>' + esc(actor) + '</strong> ' + esc(actionText) +
+            '<strong>' + esc(actorDisplay) + '</strong> ' + esc(actionText) +
             respTimeHtml +
           '</div>' +
           previewHtml +
