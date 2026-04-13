@@ -67,18 +67,20 @@ describe('LAYER 1 — refreshSession typed error returns', function() {
     expect(routerSrc).toContain("result.error === 'auth_expired'");
   });
 
-  it('10. client 50-min timer handles auth_expired', function() {
-    var clientTimer = authSrc.match(/_clientTokenTimer[\s\S]{0,400}/);
-    expect(clientTimer).toBeTruthy();
-    expect(clientTimer[0]).toContain("result.error === 'auth_expired'");
-    expect(clientTimer[0]).toContain('_clearSessionAndLogin');
+  it('10. canonical _tokenRefreshTimer handles auth_expired', function() {
+    // Single unified timer (03-auth.js:activateRole) replaced the prior
+    // duplicates AppState.timers.tokenRefresh (07-post-load.js) and
+    // window._clientTokenTimer (03-auth.js client branch). This test
+    // asserts the remaining timer evicts on auth_expired.
+    var timer = authSrc.match(/_tokenRefreshTimer\s*=\s*setInterval[\s\S]{0,500}/);
+    expect(timer).toBeTruthy();
+    expect(timer[0]).toContain("r.error === 'auth_expired'");
+    expect(timer[0]).toContain('_clearSessionAndLogin');
   });
 
-  it('11. non-client 50-min timer handles auth_expired', function() {
-    var timer = postLoadSrc.match(/tokenRefresh[\s\S]{0,800}50 \* 60/);
-    expect(timer).toBeTruthy();
-    expect(timer[0]).toContain("result.error === 'auth_expired'");
-    expect(timer[0]).toContain('_clearSessionAndLogin');
+  it('11. _tokenRefreshTimer fires at 50-minute cadence', function() {
+    var match = authSrc.match(/_tokenRefreshTimer\s*=\s*setInterval\([\s\S]*?,\s*50\s*\*\s*60\s*\*\s*1000\s*\)/);
+    expect(match).toBeTruthy();
   });
 });
 

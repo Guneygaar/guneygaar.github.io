@@ -370,9 +370,6 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
   }
 }
 
-// Background token refresh interval handle (separate from data poll)
-window.AppState.timers.tokenRefresh = null;
-
 // Lightweight fingerprint: count + ids + stages (avoids full JSON.stringify)
 function _postsFingerprint(posts) {
   let s = '' + posts.length;
@@ -398,7 +395,7 @@ function _clientPostsFingerprint(posts) {
 function startRealtime() {
   if (window.AppState.timers.realtimeTimer) return;
 
-  // Data polling  -  every 5 seconds (tightened from 15s for responsiveness)
+  // Data polling  -  every 10 seconds (rolled back from 5s to halve API load)
   window.AppState.timers.realtimeTimer = setInterval(async () => {
     if (document.hidden) return;
     if (!localStorage.getItem('sb_access_token')) return;
@@ -430,33 +427,18 @@ function startRealtime() {
       console.warn('realtime poll failed:', e.message);
       window.logError && window.logError(e && e.message, e && e.stack, 'realtime-poll');
     }
-  }, 5000);
+  }, 10000);
 
-  // Proactive token refresh  -  every 50 minutes
-  // Keeps sessions alive indefinitely without user action
-  if (!window.AppState.timers.tokenRefresh) {
-    window.AppState.timers.tokenRefresh = setInterval(async () => {
-      if (!localStorage.getItem('sb_refresh_token')) return;
-      try {
-        var result = await refreshSession();
-        if (result && result.error === 'auth_expired') {
-          if (typeof _clearSessionAndLogin === 'function') _clearSessionAndLogin();
-        } else if (result && result.error) {
-          console.warn('Background token refresh: ' + result.error);
-        }
-      } catch (e) {
-        console.error('[post-load] token refresh failed', e);
-        window.logError && window.logError(e && e.message, e && e.stack, 'token-refresh');
-      }
-    }, 50 * 60 * 1000); // 50 minutes
-  }
+  // Proactive token refresh is handled by the single canonical
+  // window._tokenRefreshTimer installed in activateRole() (03-auth.js).
+  // The legacy AppState.timers.tokenRefresh duplicate was removed so
+  // refresh flow has one owner; refreshSession() dedupe kept this
+  // harmless for network load but obscured the mental model.
 }
 
 function stopRealtime() {
   clearInterval(window.AppState.timers.realtimeTimer);
   window.AppState.timers.realtimeTimer = null;
-  clearInterval(window.AppState.timers.tokenRefresh);
-  window.AppState.timers.tokenRefresh = null;
   // Tear down the client-side poll timer too, so both agency and client
   // sessions are fully cleaned up through a single entry point.
   if (typeof stopClientRealtime === 'function') stopClientRealtime();
@@ -477,7 +459,7 @@ function _drainPollStash() {
 }
 window._drainPollStash = _drainPollStash;
 
-// 5-second background data poll for the Client role. Mirrors the
+// 10-second background data poll for the Client role. Mirrors the
 // startRealtime() pattern but hits the client-scoped fetch (via
 // loadPostsForClient(true)) and gates re-renders on _clientPostsFingerprint
 // so typing and scroll position survive.
@@ -505,7 +487,7 @@ function startClientRealtime() {
     } finally {
       window._isLoadingClientPosts = false;
     }
-  }, 5000);
+  }, 10000);
 }
 
 function stopClientRealtime() {
