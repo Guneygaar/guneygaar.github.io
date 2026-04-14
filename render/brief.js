@@ -872,6 +872,30 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
         actor_role: actorRole,
         action: actionLabel + (direction.trim() ? ' with direction' : '')
       });
+      // Assign PATCH targets /requests, so notify-stage does NOT fire.
+      // Write the assign notification directly here so the assignee
+      // actually hears about it. notify-stage cannot handle this path.
+      var _assigneeRole = (typeof normalizeRole === 'function')
+        ? (normalizeRole(ownerRole) || 'Creative') : 'Creative';
+      window.apiFetch('/notifications', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_role: _assigneeRole,
+          post_id:   postId,
+          type:      'assign',
+          message:   (displayName || 'Someone') +
+                     ' assigned you a brief: "' +
+                     (post.title || 'Untitled') + '"',
+          actor:     (window.AppState.user.name ||
+                      window.currentUserName || 'Admin'),
+          read:      false
+        })
+      }).catch(function(err) {
+        window.logError && window.logError(
+          err && err.message, err && err.stack,
+          'assign-brief-notif'
+        );
+      });
       _reopenBriefAfterAssign();
     }).catch(function(err) {
       console.error('[brief] assign request failed', err);
@@ -918,6 +942,30 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
       actor: actorName,
       actor_role: actorRole,
       action: actionLabel + (direction.trim() ? ' with direction' : '')
+    });
+    // Write the assign notification directly. The _postAssignNotification
+    // helper was removed in PR #844 on the assumption notify-stage would
+    // handle it, but the assignee needs a reliable notif on this path too.
+    var _assigneeRole = (typeof normalizeRole === 'function')
+      ? (normalizeRole(ownerRole) || 'Creative') : 'Creative';
+    window.apiFetch('/notifications', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_role: _assigneeRole,
+        post_id:   postId,
+        type:      'assign',
+        message:   (displayName || 'Someone') +
+                   ' assigned you a brief: "' +
+                   (post.title || 'Untitled') + '"',
+        actor:     (window.AppState.user.name ||
+                    window.currentUserName || 'Admin'),
+        read:      false
+      })
+    }).catch(function(err) {
+      window.logError && window.logError(
+        err && err.message, err && err.stack,
+        'assign-brief-notif'
+      );
     });
     _reopenBriefAfterAssign();
   }).catch(function(err) {

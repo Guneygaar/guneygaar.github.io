@@ -361,18 +361,36 @@ if (window._activeBriefPostId) {
     console.warn('[post-create] sort for linked post failed', e);
   }
 
-  apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
-    method: 'PATCH',
-    body: JSON.stringify({
-      stage: 'brief_done',
-      linked_post_id: _newPostId || null,
-      updated_at: new Date().toISOString(),
-      updated_by: resolveActor()
-    })
-  }).catch(function(err) {
-    console.warn('[post-create] brief close failed', err);
-    window.logError && window.logError(err && err.message, err && err.stack, 'brief-close-post-create');
-  });
+  if (_bid && _bid.toString().indexOf('REQ-') === 0) {
+    // This brief came from a request row, not a posts row. The old
+    // /posts PATCH matched zero rows and left the request orphaned
+    // at status='assigned' forever. Close the request instead.
+    // NOTE: requests table has no updated_at or linked_post_id
+    // columns — only `status` is safe to PATCH here.
+    apiFetch('/requests?id=eq.' + encodeURIComponent(_bid), {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status: 'closed'
+      })
+    }).catch(function(err) {
+      console.warn('[post-create] close request failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'close-request-on-convert');
+    });
+  } else {
+    // Legacy flow: brief was a posts row. Original PATCH unchanged.
+    apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
+      method: 'PATCH',
+      body: JSON.stringify({
+        stage: 'brief_done',
+        linked_post_id: _newPostId || null,
+        updated_at: new Date().toISOString(),
+        updated_by: resolveActor()
+      })
+    }).catch(function(err) {
+      console.warn('[post-create] brief close failed', err);
+      window.logError && window.logError(err && err.message, err && err.stack, 'brief-close-post-create');
+    });
+  }
 }
 
 setTimeout(function() {
