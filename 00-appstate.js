@@ -59,7 +59,13 @@ window.AppState = window.AppState || {
   timers: {
     dashDatetime: null,
     renderTimer: null
-  }
+  },
+
+  // Workspace-level feature flags + metadata loaded once on login via
+  // loadWorkspaceSettings() (05-api.js). Initialised to an empty object
+  // so AI feature gates can safely read `AppState.workspace.ai_writer`
+  // even before the post-login fetch resolves.
+  workspace: {}
 
 };
 

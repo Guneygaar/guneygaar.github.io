@@ -1,0 +1,13 @@
+name = "srtd-ai"
+main = "src/index.js"
+compatibility_date = "2026-04-14"
+
+[[r2_buckets]]
+binding     = "SORTED_IMAGES"
+bucket_name = "sorted-images"
+
+# Secrets provisioned separately via `wrangler secret put`:
+# ANTHROPIC_API_KEY
+# AI_SECRET
+# (Supabase creds hardcoded in src/index.js, consistent with existing
+#  Worker pattern in this repo — see sorted-preview-worker/src/index.js)

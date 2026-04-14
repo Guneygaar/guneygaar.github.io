@@ -393,6 +393,14 @@ function activateRole(role) {
     } catch(e) { console.warn('[auth] Proactive refresh failed:', e); }
   }, 50 * 60 * 1000);
 
+  // Load workspace_settings once per session so every AI feature gate
+  // (writer / qc / chat / email_brief) can read window.AppState.workspace
+  // synchronously without a network call. Fire-and-forget: activateRole
+  // continues immediately so the render path is never blocked on it.
+  if (typeof loadWorkspaceSettings === 'function') {
+    loadWorkspaceSettings();
+  }
+
   // Clear stale preview role for non-admin users
   var _dbRole = (role || '').toLowerCase();
   if (_dbRole !== 'admin') {

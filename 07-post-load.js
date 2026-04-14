@@ -183,7 +183,10 @@ async function loadPosts(fromPoll) {
   const reqId = _newPostsRequest();
   var _apiMeta = fromPoll ? { allowLogout: false } : undefined;
   try {
-    const data = await apiFetch('/posts?select=*&order=id.desc', {}, _apiMeta);
+    const isDraftFilter = (window.AppState.user.effectiveRole === 'Admin')
+      ? ''
+      : '&is_draft=eq.false';
+    const data = await apiFetch('/posts?select=*' + isDraftFilter + '&order=id.desc', {}, _apiMeta);
     if (!_commitPostsResult(reqId, 'network')) return;
     // Fetch pending requests and merge as brief-stage entries
     var reqData = [];
@@ -276,7 +279,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
       'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
     var data  = await apiFetch(
       '/posts?stage=in.(' + allowedStages +
-      ')&select=*&order=created_at.desc',
+      ')&is_draft=eq.false&select=*&order=created_at.desc',
       {},
       _apiMeta
     );
