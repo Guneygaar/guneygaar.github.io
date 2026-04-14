@@ -1780,10 +1780,12 @@ console.log('LOADED:', 'render/client.js');
           return m.name && m.name.toLowerCase() === name.toLowerCase();
         });
         if (!_member || !_member.role) return;
+        var safeRole = _member.role ? String(_member.role) : 'Client';
+        var titleCaseRole = safeRole.charAt(0).toUpperCase() + safeRole.slice(1).toLowerCase();
         window.apiFetch('/notifications', {
           method: 'POST',
           body: JSON.stringify({
-            user_role: _member.role,
+            user_role: titleCaseRole,
             post_id: realPostId,
             type: 'mention',
             message: displayName + ' mentioned you on "' + postTitle + '"',
