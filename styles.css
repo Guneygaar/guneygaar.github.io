@@ -8146,3 +8146,104 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   pointer-events: none;
 }
 /* Done button is NEVER dimmed — always active */
+
+/* ═══════════════════════════════════════════════════════════
+   PR 4 — Gmail import in New Post form (Admin only).
+   Zero rgba() — 8-digit hex throughout, per CLAUDE.md §4.
+   ═══════════════════════════════════════════════════════════ */
+
+@keyframes npsBlink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.2; }
+}
+
+.nps-gmail-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nps-gmail-btn:active { background: #0c0c14; }
+
+.nps-gmail-left { display: flex; align-items: center; gap: 10px; }
+
+.nps-gmail-icon {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1a1624; border: 1px solid #2a2244;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.nps-gmail-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: .08em;
+  text-transform: uppercase; color: #9b87f5;
+}
+.nps-gmail-sub { font-size: 11px; color: #555; margin-top: 2px; }
+.nps-gmail-arr { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #333; }
+
+.nps-email-item {
+  padding: 11px 18px;
+  border-bottom: 1px solid #0f0f14;
+  cursor: pointer;
+  transition: background .1s;
+}
+.nps-email-item:last-child { border-bottom: none; }
+.nps-email-item:active { background: #0c0c14; }
+.nps-email-item.nps-email-selected {
+  background: #0f0d16;
+  border-left: 2px solid #9b87f5;
+  padding-left: 16px;
+}
+.nps-email-sender {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: .05em;
+  text-transform: uppercase; color: #9b87f5;
+}
+.nps-email-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; color: #333;
+}
+.nps-email-subject { font-size: 13px; font-weight: 600; color: #E8E8E8; margin-bottom: 2px; }
+.nps-email-preview { font-size: 12px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.nps-cap-opt {
+  background: #0c0c11;
+  border: 1px solid #191924;
+  padding: 11px 12px;
+  cursor: pointer;
+  position: relative;
+  transition: background .1s;
+}
+.nps-cap-opt.nps-cap-opt--sel {
+  background: #0f0d16;
+  border-color: #2a2244;
+  border-left: 2px solid #9b87f5;
+}
+.nps-cap-opt-n {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px; letter-spacing: .08em; text-transform: uppercase;
+  color: #9b87f5; margin-bottom: 4px;
+  display: flex; justify-content: space-between;
+}
+.nps-cap-opt-tag { color: #333; }
+.nps-cap-opt--sel .nps-cap-opt-tag { color: #9b87f5; }
+.nps-cap-opt-txt { font-size: 13px; color: #B8B8C0; line-height: 1.5; }
+.nps-cap-sel-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid #333;
+  position: absolute; top: 11px; right: 11px;
+}
+.nps-cap-opt--sel .nps-cap-sel-dot { background: #9b87f5; border-color: #9b87f5; }
+
+.nps-ai-tag {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px; letter-spacing: .06em; text-transform: uppercase;
+  color: #9b87f5; background: #1a1624;
+  border: 1px solid #2a2244; padding: 2px 6px; margin-left: 6px;
+}
