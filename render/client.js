@@ -49,7 +49,7 @@ console.log('LOADED:', 'render/client.js');
   }
 
   function _hashtagHtml(text) {
-    return _nl2br(_esc(text)).replace(/(#\w[\w]*)/g, '<span style="color:#378fe9;">$1</span>');
+    return _nl2br(_esc(text)).replace(/(?<!&)(#[a-zA-Z]\w*)/g, '<span style="color:#378fe9;">$1</span>');
   }
 
   function _parseMentions(message) {
