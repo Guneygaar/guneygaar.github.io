@@ -325,6 +325,11 @@ window._renderPCS = function(postId) {
   _pcsTabSwitch('caption');
 
   // l) Mention dropup (notes + client)
+  //    Pre-load the roster from /user_roles so the dropup filter has data
+  //    before the user starts typing. Fire-and-forget; internal cache.
+  if (typeof _fetchPcsRoster === 'function') {
+    try { _fetchPcsRoster(); } catch (e) {}
+  }
   if (typeof window._initMentionDropup === 'function') {
     window._initMentionDropup('pcs-note-input', 'pcs-mention-dropup');
     window._initMentionDropup('pcs-comment-input', 'pcs-client-mention-dropup');
@@ -2502,13 +2507,39 @@ window.toggleTaskResolve = function(commentId, postId, isInternalNote) {
 };
 
 // -- @mention dropup system --
-var _AGENCY_MEMBERS = [
-  { name: 'Shubham', role: 'Admin' },
-  { name: 'Pranav', role: 'Creative' },
-  { name: 'Chitra', role: 'Servicing' },
-  { name: 'Manisha', role: 'Client' },
-  { name: 'Shivangini', role: 'Client' }
-];
+var _pcsRoster = null;
+var _pcsRosterPromise = null;
+
+function _fetchPcsRoster() {
+  if (_pcsRoster) return Promise.resolve(_pcsRoster);
+  if (_pcsRosterPromise) return _pcsRosterPromise;
+  _pcsRosterPromise = window.apiFetch(
+    '/user_roles?select=name,role,email&order=name.asc',
+    { method: 'GET' }
+  ).then(function(rows) {
+    _pcsRoster = Array.isArray(rows)
+      ? rows.filter(function(r) { return r && (r.name || r.email); })
+          .map(function(r) {
+            var safeRole = r.role
+              ? String(r.role) : 'client';
+            return {
+              name: r.name || r.email.split('@')[0],
+              role: safeRole.charAt(0).toUpperCase() +
+                    safeRole.slice(1).toLowerCase(),
+              email: r.email || ''
+            };
+          })
+      : [];
+    _pcsRosterPromise = null;
+    return _pcsRoster;
+  }).catch(function() {
+    _pcsRoster = [];
+    _pcsRosterPromise = null;
+    return [];
+  });
+  return _pcsRosterPromise;
+}
+window._fetchPcsRoster = _fetchPcsRoster;
 
 function _hideMentionDropup(dropupId) {
   var id = dropupId || 'pcs-mention-dropup';
@@ -2538,7 +2569,11 @@ window._initMentionDropup = function(inputId, dropupId) {
     if (/\s/.test(query)) { _hideMentionDropup(dropId); return; }
 
     _currentMentionStart = atIndex;
-    var filtered = _AGENCY_MEMBERS.filter(function(m) {
+    var _isInternal = (textareaId === 'pcs-note-input');
+    var filtered = (_pcsRoster || []).filter(function(m) {
+      if (_isInternal && m.role && m.role.toLowerCase() === 'client') return false;
+      return true;
+    }).filter(function(m) {
       return m.name.toLowerCase().startsWith(query.toLowerCase());
     });
 
@@ -2582,7 +2617,7 @@ window._showTaskAssign = function(inputId, taskBtnId) {
 
   var dropup = document.createElement('div');
   dropup.id = 'pcs-task-assign-dropup';
-  dropup.innerHTML = _AGENCY_MEMBERS.filter(function(m) {
+  dropup.innerHTML = (_pcsRoster || []).filter(function(m) {
     return m.role !== 'Client';
   }).map(function(m) {
     return '<div class="pcs-mention-item" data-name="' + m.name + '">' +
