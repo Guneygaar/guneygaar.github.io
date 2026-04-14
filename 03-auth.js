@@ -7,15 +7,10 @@ console.log("LOADED:", "03-auth.js");
 function normalizeRole(r) {
   if (!r) return null;
   var map = {
-    pranav: 'Creative',
-    chitra: 'Servicing',
-    shubham: 'Admin',
-    manisha: 'Client',
-    shivangini: 'Client',
-    creative: 'Creative',
+    creative:  'Creative',
     servicing: 'Servicing',
-    admin: 'Admin',
-    client: 'Client'
+    admin:     'Admin',
+    client:    'Client'
   };
   return map[String(r).toLowerCase()] || r;
 }

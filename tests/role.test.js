@@ -148,38 +148,6 @@ describe('normalizeRole', () => {
     expect(normalizeRole(undefined)).toBe(null);
   });
 
-  it("'pranav' -> 'Creative'", () => {
-    expect(normalizeRole('pranav')).toBe('Creative');
-  });
-
-  it("'Pranav' -> 'Creative'", () => {
-    expect(normalizeRole('Pranav')).toBe('Creative');
-  });
-
-  it("'chitra' -> 'Servicing'", () => {
-    expect(normalizeRole('chitra')).toBe('Servicing');
-  });
-
-  it("'Chitra' -> 'Servicing'", () => {
-    expect(normalizeRole('Chitra')).toBe('Servicing');
-  });
-
-  it("'shubham' -> 'Admin'", () => {
-    expect(normalizeRole('shubham')).toBe('Admin');
-  });
-
-  it("'Shubham' -> 'Admin'", () => {
-    expect(normalizeRole('Shubham')).toBe('Admin');
-  });
-
-  it("'manisha' -> 'Client'", () => {
-    expect(normalizeRole('manisha')).toBe('Client');
-  });
-
-  it("'shivangini' -> 'Client'", () => {
-    expect(normalizeRole('shivangini')).toBe('Client');
-  });
-
   it("'creative' -> 'Creative'", () => {
     expect(normalizeRole('creative')).toBe('Creative');
   });
