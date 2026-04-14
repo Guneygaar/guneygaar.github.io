@@ -827,7 +827,7 @@ window._briefShowAssignDropdown = function(postId, isReassign) {
         var name = m.name || m.email || '';
         var memberRole = (m.role || '').toLowerCase();
         var initial = (name.charAt(0) || '?').toUpperCase();
-        html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(name) + '\',' + isReassign + ')" ' +
+        html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(m.role || '') + '\',' + isReassign + ')" ' +
           'style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;' +
           'background:#0d0d12;border:none;border-bottom:1px solid #191924;cursor:pointer;">' +
           ((typeof renderAvatar === 'function') ? renderAvatar(m.email || name, memberRole || 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc(initial) + '</div>') +
@@ -941,6 +941,14 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   // (posts_owner_check only allows Creative/Servicing/Client/Admin).
   // The person's name is preserved only for display + notification.
   var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerName) || 'Creative') : 'Creative';
+  var _validOwners = ['Creative','Servicing','Admin','Client'];
+  if (_validOwners.indexOf(dbOwner) === -1) {
+    window.logError && window.logError(
+      'assign-brief: invalid dbOwner: ' + dbOwner,
+      null, 'assign-brief-owner-guard'
+    );
+    return;
+  }
   var updatedFeedback = (post.client_feedback || '');
   if (direction.trim()) {
     updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
