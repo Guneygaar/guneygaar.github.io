@@ -7672,3 +7672,477 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
   color: #9b87f5; white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PR 3 — PCS AI Zone 1 (two-zone caption pane)
+   All new classes. Hex only, no rgba().
+   ═══════════════════════════════════════════════════════════ */
+
+/* Zone 1 root */
+.pcs-zone-ai {
+  display: block;
+  padding-bottom: 8px;
+}
+
+/* Zone AI header */
+.pcs-zone-ai-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 0;
+}
+.pcs-zone-ai-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: #9b87f5;
+}
+.pcs-zone-ai-dots-wrap { position: relative; }
+.pcs-zone-ai-dots {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.pcs-zone-ai-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #606078;
+}
+
+/* Dots menu */
+.pcs-dots-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 26px;
+  background: #101016;
+  border: 1px solid #323244;
+  z-index: 50;
+  min-width: 180px;
+}
+.pcs-dots-menu.open { display: block; }
+.pcs-dots-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #18181f;
+}
+.pcs-dots-menu-item:last-child { border-bottom: none; }
+.pcs-dots-menu-item svg {
+  width: 13px;
+  height: 13px;
+  stroke: #8E8E93;
+  fill: none;
+  stroke-width: 1.8;
+}
+.pcs-dots-menu-item-lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #B8B8C0;
+}
+
+/* QC sheet */
+.pcs-qc-sheet {
+  display: none;
+  margin: 8px 16px 8px;
+  border: 1px solid #1e2e1e;
+  background: #080e08;
+}
+.pcs-qc-sheet-row {
+  display: flex;
+  align-items: stretch;
+}
+.pcs-qc-sheet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  padding: 11px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.pcs-qc-sheet-text { flex: 1; }
+.pcs-qc-lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #3ECF8E;
+}
+.pcs-qc-sheet .pcs-qc-sub {
+  font-size: 11px;
+  color: #606078;
+  margin-top: 2px;
+}
+.pcs-qc-sheet-close {
+  background: none;
+  border: none;
+  border-left: 1px solid #1e2e1e;
+  color: #606078;
+  padding: 0 14px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+}
+.pcs-qc-sheet .pcs-qc-result {
+  margin: 0;
+  border: none;
+  border-top: 1px solid #1e2e1e;
+  background: #0c0c11;
+}
+
+/* Chat sheet */
+.pcs-chat-sheet {
+  display: none;
+  margin: 8px 16px 8px;
+  border: 1px solid #1c1c28;
+}
+.pcs-chat-sheet .pcs-chat-thread {
+  background: #0c0c11;
+  border: none;
+  margin-bottom: 0;
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+.pcs-chat-sheet .pcs-chat-who-you {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+  color: #606078;
+  margin-bottom: 2px;
+}
+.pcs-chat-sheet .pcs-chat-who-ai,
+.pcs-chat-sheet .pcs-chat-who-claude {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+  color: #9b87f5;
+  margin-bottom: 2px;
+}
+.pcs-chat-sheet .pcs-chat-msg-txt,
+.pcs-chat-sheet .pcs-chat-txt {
+  font-size: 13px;
+  color: #B8B8C0;
+  line-height: 1.5;
+}
+.pcs-chat-sheet .pcs-chat-row {
+  border-top: 1px solid #1c1c28;
+}
+.pcs-chat-sheet .pcs-chat-input {
+  border: none;
+  background: #0c0c11;
+}
+.pcs-chat-sheet-close {
+  background: none;
+  border: none;
+  border-left: 1px solid #1c1c28;
+  color: #606078;
+  padding: 0 14px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+}
+
+/* Rewrite from comments button */
+.pcs-rewrite-btn,
+.pcs-write-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+.pcs-rw-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #1a1624;
+  border: 1px solid #2a2244;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pcs-rw-icon svg {
+  width: 13px;
+  height: 13px;
+  stroke: #9b87f5;
+  fill: none;
+  stroke-width: 1.8;
+}
+.pcs-rw-icon--dim {
+  background: #101016;
+  border-color: #1c1c28;
+}
+.pcs-rw-icon--dim svg { stroke: #606078; }
+.pcs-rw-text {
+  flex: 1;
+  margin-left: 10px;
+  min-width: 0;
+}
+.pcs-rw-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9b87f5;
+}
+.pcs-rw-title--dim { color: #606078; }
+.pcs-rw-sub {
+  font-size: 11px;
+  color: #606078;
+  margin-top: 2px;
+}
+.pcs-rw-arr {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #606078;
+}
+
+/* Rewrite result panel */
+.pcs-rewrite-result {
+  display: none;
+  margin: 0 16px 8px;
+  border: 1px solid #2a2244;
+  background: #0c0c11;
+}
+.pcs-rwr-flags { padding: 10px 12px 0; }
+.pcs-rwr-flag {
+  display: flex;
+  gap: 6px;
+  padding: 7px 10px;
+  border-left: 2px solid #3a3264;
+  margin-bottom: 6px;
+  background: #0f0d16;
+}
+.pcs-rwr-flag-txt {
+  font-size: 12px;
+  color: #8E8E93;
+  line-height: 1.5;
+}
+.pcs-rwr-sep {
+  height: 1px;
+  background: #18181f;
+  margin: 0 12px;
+}
+.pcs-rwr-caption {
+  font-size: 14px;
+  color: #F0F0F2;
+  line-height: 1.65;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+.pcs-rwr-actions {
+  display: flex;
+  border-top: 1px solid #18181f;
+}
+.pcs-rwr-apply {
+  flex: 2;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #080808;
+  background: #9b87f5;
+  border: none;
+  border-right: 1px solid #2a2244;
+  padding: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+.pcs-rwr-btn {
+  flex: 1;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9b87f5;
+  background: none;
+  border: none;
+  border-right: 1px solid #1c1c28;
+  padding: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+.pcs-rwr-btn-close {
+  flex: 0 0 44px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #606078;
+  background: none;
+  border: none;
+  padding: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Refine */
+.pcs-refine-wrap {
+  display: none;
+  border-top: 1px solid #18181f;
+  background: #080808;
+}
+.pcs-refine-row { display: flex; }
+.pcs-refine-input {
+  flex: 1;
+  background: #0c0c11;
+  border: none;
+  border-right: 1px solid #323244;
+  padding: 10px 12px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #F0F0F2;
+  outline: none;
+}
+.pcs-refine-input::placeholder { color: #2e2e3a; }
+.pcs-refine-send {
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9b87f5;
+}
+.pcs-refine-cancel {
+  width: 100%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #323244;
+  background: none;
+  border: none;
+  border-top: 1px solid #18181f;
+  padding: 7px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* Write options panel */
+.pcs-write-opts {
+  display: none;
+  margin: 0 16px 8px;
+  border: 1px solid #1c1c28;
+  background: #0c0c11;
+}
+.pcs-write-loading,
+.pcs-write-error {
+  padding: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #606078;
+  text-align: center;
+}
+.pcs-write-error { color: #FF4B4B; }
+.pcs-write-opt {
+  padding: 12px 14px;
+  border-bottom: 1px solid #18181f;
+  cursor: pointer;
+  position: relative;
+  transition: background .1s;
+}
+.pcs-write-opt--sel {
+  background: #0f0d16;
+  border-left: 2px solid #9b87f5;
+}
+.pcs-write-opt .pcs-ai-opt-n {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #9b87f5;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+.pcs-write-opt .pcs-ai-opt-tag { font-size: 7px; color: #2e2e3a; }
+.pcs-write-opt--sel .pcs-ai-opt-tag { color: #9b87f5; }
+.pcs-write-opt .pcs-ai-opt-txt {
+  font-size: 13px;
+  color: #B8B8C0;
+  line-height: 1.55;
+}
+.pcs-write-opt .pcs-ai-sel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid #2e2e3a;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+.pcs-write-opt--sel .pcs-ai-sel-dot {
+  background: #9b87f5;
+  border-color: #9b87f5;
+}
+.pcs-write-use-btn {
+  width: 100%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #080808;
+  background: #9b87f5;
+  border: none;
+  border-top: 1px solid #2a2244;
+  padding: 13px;
+  cursor: pointer;
+}
+.pcs-write-collapse {
+  width: 100%;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #606078;
+  background: none;
+  border: none;
+  border-top: 1px solid #18181f;
+  padding: 11px;
+  cursor: pointer;
+}
+
+/* Zone 2 — manual footer */
+.pcs-zone-manual {
+  padding: 10px 16px 0;
+  flex-shrink: 0;
+}
+/* Strip the legacy horizontal paddings/margins on the children so the zone
+   padding does not compound and squeeze the buttons. The original
+   cap-actions/close-btn rules used the pane padding; zone-manual now owns it. */
+.pcs-zone-manual .pcs-cap-actions {
+  padding-left: 0;
+  padding-right: 0;
+}
+.pcs-zone-manual .pcs-close-btn {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+}
+.pcs-zone-manual--dim .pcs-cap-btn {
+  opacity: 0.3;
+  pointer-events: none;
+}
+/* Done button is NEVER dimmed — always active */
