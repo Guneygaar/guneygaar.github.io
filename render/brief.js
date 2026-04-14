@@ -267,7 +267,34 @@ window._briefSubmitComment = function(postId) {
 // ===============================================
 window._openBriefSheet = async function(postId) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) return;
+  if (!post) {
+    try {
+      var fallback = await apiFetch(
+        '/requests?id=eq.' + encodeURIComponent(postId) +
+        '&select=*&limit=1', {}, { allowLogout: false }
+      );
+      if (Array.isArray(fallback) && fallback[0]) {
+        var r = fallback[0];
+        post = {
+          post_id: r.id,
+          title: r.title,
+          stage: 'brief',
+          owner: r.assigned_to ? 'Creative' : 'Servicing',
+          assigned_to: r.assigned_to || null,
+          _isRequest: true,
+          _requestStatus: r.status,
+          description: r.description,
+          content_type: r.content_type,
+          target_date: r.target_date,
+          images: r.images || [],
+          drive_link: r.drive_link || null,
+          created_by: r.created_by,
+          created_at: r.created_at
+        };
+      }
+    } catch (e) {}
+    if (!post) return;
+  }
 
   var existing = document.getElementById('brief-sheet-overlay');
   if (existing) existing.remove();
