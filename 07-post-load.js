@@ -191,7 +191,7 @@ async function loadPosts(fromPoll) {
     // Fetch pending requests and merge as brief-stage entries
     var reqData = [];
     try {
-      var rawReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc', {}, _apiMeta);
+      var rawReqs = await apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
       if (Array.isArray(rawReqs)) {
         reqData = rawReqs.map(function(r) {
           return {
@@ -199,7 +199,7 @@ async function loadPosts(fromPoll) {
             id: r.id,
             title: r.title || '',
             stage: 'brief',
-            owner: 'Servicing',
+            owner: r.assigned_to ? 'Creative' : 'Servicing',
             client_feedback: r.description || '',
             content_type: r.content_type || '',
             target_date: r.target_date || '',
@@ -207,6 +207,8 @@ async function loadPosts(fromPoll) {
             drive_link: r.drive_link || null,
             created_at: r.created_at || '',
             updated_at: r.created_at || '',
+            assigned_to: r.assigned_to || null,
+            _requestStatus: r.status || 'pending',
             _isRequest: true
           };
         });
@@ -287,7 +289,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
 
     // Fetch pending requests for client view (shows as brief cards)
     try {
-      var clientReqs = await apiFetch('/requests?status=eq.pending&order=created_at.desc', {}, _apiMeta);
+      var clientReqs = await apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
       if (Array.isArray(clientReqs)) {
         clientReqs.forEach(function(r) {
           data.push({
@@ -295,7 +297,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
             id: r.id,
             title: r.title || '',
             stage: 'brief',
-            owner: 'Servicing',
+            owner: r.assigned_to ? 'Creative' : 'Servicing',
             client_feedback: r.description || '',
             content_type: r.content_type || '',
             target_date: r.target_date || '',
@@ -304,6 +306,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
             created_at: r.created_at || '',
             updated_at: r.created_at || '',
             assigned_to: r.assigned_to || null,
+            _requestStatus: r.status || 'pending',
             _isRequest: true
           });
         });
