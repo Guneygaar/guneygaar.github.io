@@ -154,6 +154,15 @@ window.forcePCSReset = function() {
 
   // 7. Flush any deferred background renders
   _drainDeferredRender();
+
+  // 8. Remove every AI section node so they can never accumulate across
+  //    post opens. PR 2's per-post-id idempotency guard did not cover the
+  //    cross-post case because #pcs-ai-section-<old> was never torn down,
+  //    so opening post B after post A left the old section wedged in the
+  //    caption pane and the new guard-miss injected a second one.
+  document.querySelectorAll('[id^="pcs-ai-section-"]').forEach(function(el) {
+    el.parentNode && el.parentNode.removeChild(el);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -195,25 +204,26 @@ async function _callSrtdAI(feature, messages, postId) {
   }
 }
 
-window._pcsAiDraft = async function(id, btn) {
+window._pcsAiWrite = async function(id) {
   var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
   if (!post) return;
 
+  var wrap = document.getElementById('pcs-write-opts-' + id);
+  var writeBtn = document.getElementById('pcs-write-btn-' + id);
+  if (!wrap || !writeBtn) return;
+
   // Toggle off if already open
-  var existingOpts = document.getElementById('pcs-ai-opts-' + id);
-  if (existingOpts) {
-    existingOpts.remove();
-    var capTextEl = document.getElementById('pcs-caption-text');
-    if (capTextEl) capTextEl.style.display = '';
-    var seeMoreToggle = document.getElementById('pcs-caption-see-more');
-    if (seeMoreToggle) seeMoreToggle.style.display = '';
-    btn.textContent = '\u2726 Draft';
-    btn.classList.remove('pcs-ai-draft-btn--active');
+  if (wrap.style.display === 'block') {
+    wrap.style.display = 'none';
+    wrap.innerHTML = '';
+    _pcsDimManualZone(false);
     return;
   }
 
-  btn.textContent = '...';
-  btn.disabled = true;
+  // Loading state inside the write-opts wrap
+  wrap.innerHTML = '<div class="pcs-write-loading">\u2726 Generating options\u2026</div>';
+  wrap.style.display = 'block';
+  _pcsDimManualZone(true);
 
   var brief = post.title || '';
   var pillar = post.content_pillar || '';
@@ -226,22 +236,10 @@ window._pcsAiDraft = async function(id, btn) {
 
   var result = await _callSrtdAI('writer', messages, id);
 
-  btn.textContent = '\u2726 Draft';
-  btn.disabled = false;
-
   if (!result.success) {
-    btn.textContent = 'Error';
-    setTimeout(function() { btn.textContent = '\u2726 Draft'; }, 2000);
+    wrap.innerHTML = '<div class="pcs-write-error">Error \u2014 tap Write to retry</div>';
     return;
   }
-
-  btn.classList.add('pcs-ai-draft-btn--active');
-
-  // Hide existing caption while options are open
-  var capText = document.getElementById('pcs-caption-text');
-  if (capText) capText.style.display = 'none';
-  var seeMore = document.getElementById('pcs-caption-see-more');
-  if (seeMore) seeMore.style.display = 'none';
 
   // Parse 3 options from response (numbered "1." / "2." / "3." or "Option 01" etc.)
   var raw = result.content || '';
@@ -260,20 +258,22 @@ window._pcsAiDraft = async function(id, btn) {
   while (opts.length < 3) opts.push(raw);
   opts = opts.slice(0, 3);
 
-  var optsHtml = '<div id="pcs-ai-opts-' + id + '" class="pcs-ai-opts-wrap">';
+  var optsHtml = '';
   opts.forEach(function(txt, i) {
-    optsHtml += '<div class="pcs-ai-opt" data-idx="' + i + '" onclick="window._pcsPickAiOpt(this, \'' + id + '\')">' +
+    optsHtml += '<div class="pcs-write-opt" data-idx="' + i + '" onclick="window._pcsPickWriteOpt(this, \'' + esc(id) + '\')">' +
       '<div class="pcs-ai-opt-n">Option 0' + (i + 1) + ' <span class="pcs-ai-opt-tag">Tap to select</span></div>' +
       '<div class="pcs-ai-opt-txt">' + txt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
       '<div class="pcs-ai-sel-dot"></div>' +
     '</div>';
   });
-  optsHtml += '</div>';
+  optsHtml +=
+    '<button class="pcs-write-use-btn" onclick="window._pcsUseWriteSelection(\'' + esc(id) + '\')">Use selected</button>' +
+    '<button class="pcs-write-collapse" onclick="window._pcsCollapseWrite(\'' + esc(id) + '\')">\u2715 Collapse</button>';
 
-  var capSection = document.getElementById('pcs-caption-section');
-  if (capSection) capSection.insertAdjacentHTML('beforeend', optsHtml);
+  wrap.innerHTML = optsHtml;
 };
 
+// --- Legacy PR 2 option picker (kept for any external caller) ---
 window._pcsPickAiOpt = function(el, id) {
   document.querySelectorAll('#pcs-ai-opts-' + id + ' .pcs-ai-opt').forEach(function(o) {
     o.classList.remove('pcs-ai-opt--sel');
@@ -293,7 +293,9 @@ window._pcsRunQC = async function(id, btn) {
     return;
   }
 
-  var titleEl = btn.querySelector('.pcs-qc-title');
+  // Zone 1 sheet uses .pcs-qc-lbl; fall back to legacy .pcs-qc-title for any
+  // path that still renders the old button shape.
+  var titleEl = btn.querySelector('.pcs-qc-lbl') || btn.querySelector('.pcs-qc-title');
   var subEl   = btn.querySelector('.pcs-qc-sub');
   if (titleEl) titleEl.textContent = 'Checking...';
   btn.disabled = true;
@@ -365,6 +367,395 @@ window._pcsAiChat = async function(id) {
     }
   }
   thread.scrollTop = 99999;
+};
+
+// ═══════════════════════════════════════════════════════════════
+// Zone 1 builder + handlers (PR 3)
+// ═══════════════════════════════════════════════════════════════
+
+function _pcsBuildAiZoneHtml(rawId, commentCount) {
+  var id = esc(rawId);
+  var showQC = !!(window.AppState.workspace && window.AppState.workspace.ai_qc);
+  var showChat = !!(window.AppState.workspace && window.AppState.workspace.ai_chat);
+
+  var ICON_QC = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+  var ICON_CHAT = '<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  var ICON_SPARK = '<svg viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>';
+
+  var dotsMenuHtml = '';
+  if (showQC) {
+    dotsMenuHtml += '<div class="pcs-dots-menu-item" onclick="window._pcsOpenQcSheet(\'' + id + '\')">' +
+      ICON_QC +
+      '<span class="pcs-dots-menu-item-lbl">QC Brand Guide</span>' +
+    '</div>';
+  }
+  if (showChat) {
+    dotsMenuHtml += '<div class="pcs-dots-menu-item" onclick="window._pcsOpenChatSheet(\'' + id + '\')">' +
+      ICON_CHAT +
+      '<span class="pcs-dots-menu-item-lbl">Ask Claude</span>' +
+    '</div>';
+  }
+
+  return '<div class="pcs-zone-ai" id="pcs-zone-ai-' + id + '">' +
+    // Header row
+    '<div class="pcs-zone-ai-header">' +
+      '<span class="pcs-zone-ai-label">\u2726 AI</span>' +
+      '<div class="pcs-zone-ai-dots-wrap">' +
+        '<button class="pcs-zone-ai-dots" onclick="window._pcsToggleDotsMenu(\'' + id + '\')" aria-label="AI menu">' +
+          '<span></span><span></span><span></span>' +
+        '</button>' +
+        '<div class="pcs-dots-menu" id="pcs-dots-menu-' + id + '">' +
+          dotsMenuHtml +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    // QC sheet (hidden by default; slides in from dots menu)
+    (showQC ?
+      '<div class="pcs-qc-sheet" id="pcs-qc-sheet-' + id + '">' +
+        '<div class="pcs-qc-sheet-row">' +
+          '<button class="pcs-qc-sheet-btn" onclick="window._pcsRunQC(\'' + id + '\', this)">' +
+            '<div class="pcs-qc-sheet-text">' +
+              '<div class="pcs-qc-lbl">QC against Brand Guide</div>' +
+              '<div class="pcs-qc-sub">Check tone, voice and brand language</div>' +
+            '</div>' +
+            '<span class="pcs-qc-arr">\u2192</span>' +
+          '</button>' +
+          '<button class="pcs-qc-sheet-close" onclick="window._pcsCloseQcSheet(\'' + id + '\')" aria-label="Close">\u2715</button>' +
+        '</div>' +
+        '<div class="pcs-qc-result" id="pcs-qc-result-' + id + '" style="display:none"></div>' +
+      '</div>'
+    : '') +
+    // Chat sheet (hidden by default; slides in from dots menu)
+    (showChat ?
+      '<div class="pcs-chat-sheet" id="pcs-chat-sheet-' + id + '">' +
+        '<div class="pcs-chat-thread" id="pcs-chat-thread-' + id + '"></div>' +
+        '<div class="pcs-chat-row">' +
+          '<input class="pcs-chat-input" id="pcs-chat-input-' + id + '" type="text" placeholder="Rewrite, shorten, add a hook...">' +
+          '<button class="pcs-chat-send" onclick="window._pcsAiChat(\'' + id + '\')">Send</button>' +
+          '<button class="pcs-chat-sheet-close" onclick="window._pcsCloseChatSheet(\'' + id + '\')" aria-label="Close">\u2715</button>' +
+        '</div>' +
+      '</div>'
+    : '') +
+    // Rewrite from comments button (always visible in Zone 1)
+    '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window._pcsRewriteFromComments(\'' + id + '\')">' +
+      '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
+      '<div class="pcs-rw-text">' +
+        '<div class="pcs-rw-title">\u2726 Rewrite from comments</div>' +
+        '<div class="pcs-rw-sub">' + commentCount + ' comment' + (commentCount === 1 ? '' : 's') + ' on this post</div>' +
+      '</div>' +
+      '<span class="pcs-rw-arr">\u2192</span>' +
+    '</button>' +
+    // Rewrite result panel (hidden by default, expands inline)
+    '<div class="pcs-rewrite-result" id="pcs-rewrite-result-' + id + '">' +
+      '<div class="pcs-rwr-flags"></div>' +
+      '<div class="pcs-rwr-sep"></div>' +
+      '<div class="pcs-rwr-caption"></div>' +
+      '<div class="pcs-rwr-actions">' +
+        '<button class="pcs-rwr-apply" onclick="window._pcsApplyRewrite(\'' + id + '\')">Apply to caption</button>' +
+        '<button class="pcs-rwr-btn" onclick="window._pcsOpenRefine(\'' + id + '\')">Refine</button>' +
+        '<button class="pcs-rwr-btn-close" onclick="window._pcsDismissRewrite(\'' + id + '\')" aria-label="Dismiss">\u2715</button>' +
+      '</div>' +
+      '<div class="pcs-refine-wrap" id="pcs-refine-wrap-' + id + '">' +
+        '<div class="pcs-refine-row">' +
+          '<input class="pcs-refine-input" id="pcs-refine-input-' + id + '" type="text" placeholder="Tell Claude what to change...">' +
+          '<button class="pcs-refine-send" onclick="window._pcsRefineSend(\'' + id + '\')">Send</button>' +
+        '</div>' +
+        '<button class="pcs-refine-cancel" onclick="window._pcsRefineCancel(\'' + id + '\')">\u2715 Cancel</button>' +
+      '</div>' +
+    '</div>' +
+    // Write fresh options button (always visible below rewrite section)
+    '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._pcsAiWrite(\'' + id + '\')">' +
+      '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
+      '<div class="pcs-rw-text">' +
+        '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Write fresh options</div>' +
+      '</div>' +
+      '<span class="pcs-rw-arr">\u2192</span>' +
+    '</button>' +
+    // Write options panel (populated lazily by _pcsAiWrite)
+    '<div class="pcs-write-opts" id="pcs-write-opts-' + id + '"></div>' +
+  '</div>';
+}
+
+// --- Dots menu (open/close + outside-click) ---
+window._pcsToggleDotsMenu = function(id) {
+  var menu = document.getElementById('pcs-dots-menu-' + id);
+  if (!menu) return;
+  var isOpen = menu.classList.contains('open');
+  // Always close any open menus first
+  document.querySelectorAll('.pcs-dots-menu.open').forEach(function(m) { m.classList.remove('open'); });
+  if (!isOpen) {
+    menu.classList.add('open');
+    // Install a one-shot outside-click handler (deferred so the click
+    // that opened the menu does not immediately close it)
+    setTimeout(function() {
+      var handler = function(e) {
+        if (!menu.contains(e.target) && !e.target.closest('.pcs-zone-ai-dots')) {
+          menu.classList.remove('open');
+          document.removeEventListener('click', handler, true);
+        }
+      };
+      document.addEventListener('click', handler, true);
+    }, 0);
+  }
+};
+
+// --- QC / Chat sheet mutex: only one open at a time ---
+window._pcsOpenQcSheet = function(id) {
+  var qc = document.getElementById('pcs-qc-sheet-' + id);
+  var ch = document.getElementById('pcs-chat-sheet-' + id);
+  if (ch) ch.style.display = 'none';
+  if (qc) qc.style.display = 'block';
+  var menu = document.getElementById('pcs-dots-menu-' + id);
+  if (menu) menu.classList.remove('open');
+};
+
+window._pcsCloseQcSheet = function(id) {
+  var qc = document.getElementById('pcs-qc-sheet-' + id);
+  if (qc) qc.style.display = 'none';
+  var result = document.getElementById('pcs-qc-result-' + id);
+  if (result) result.style.display = 'none';
+};
+
+window._pcsOpenChatSheet = function(id) {
+  var qc = document.getElementById('pcs-qc-sheet-' + id);
+  var ch = document.getElementById('pcs-chat-sheet-' + id);
+  if (qc) qc.style.display = 'none';
+  if (ch) ch.style.display = 'block';
+  var menu = document.getElementById('pcs-dots-menu-' + id);
+  if (menu) menu.classList.remove('open');
+  var input = document.getElementById('pcs-chat-input-' + id);
+  if (input) { try { input.focus(); } catch (_) {} }
+};
+
+window._pcsCloseChatSheet = function(id) {
+  var ch = document.getElementById('pcs-chat-sheet-' + id);
+  if (ch) ch.style.display = 'none';
+};
+
+// --- Manual zone dim/undim mutex ---
+function _pcsDimManualZone(on) {
+  var z = document.querySelector('.pcs-zone-manual');
+  if (!z) return;
+  if (on) z.classList.add('pcs-zone-manual--dim');
+  else z.classList.remove('pcs-zone-manual--dim');
+}
+
+// --- Rewrite result controls ---
+window._pcsApplyRewrite = function(id) {
+  var result = document.getElementById('pcs-rewrite-result-' + id);
+  if (!result) return;
+  var newCaption = result.dataset.newCaption || '';
+  if (!newCaption) { window._pcsDismissRewrite(id); return; }
+
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (!post) { window._pcsDismissRewrite(id); return; }
+
+  // Persist the new caption through the existing API surface
+  (async function() {
+    try {
+      await apiFetch('/posts?post_id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ caption: newCaption, updated_at: new Date().toISOString() })
+      });
+      post.caption = newCaption;
+      window._pcsDismissRewrite(id);
+      if (typeof _renderPCS === 'function') _renderPCS(id);
+      if (typeof showToast === 'function') showToast('Caption updated', 'success');
+    } catch (err) {
+      window.logError && window.logError(err && err.message, err && err.stack, 'pcs-apply-rewrite');
+      if (typeof showToast === 'function') showToast('Failed to apply caption', 'error');
+    }
+  })();
+};
+
+window._pcsDismissRewrite = function(id) {
+  var result = document.getElementById('pcs-rewrite-result-' + id);
+  if (result) {
+    result.style.display = 'none';
+    result.dataset.newCaption = '';
+    var flags = result.querySelector('.pcs-rwr-flags'); if (flags) flags.innerHTML = '';
+    var capEl = result.querySelector('.pcs-rwr-caption'); if (capEl) capEl.textContent = '';
+  }
+  var refine = document.getElementById('pcs-refine-wrap-' + id);
+  if (refine) refine.style.display = 'none';
+  // Reset the rewrite button label
+  var rewriteBtn = document.getElementById('pcs-rewrite-btn-' + id);
+  if (rewriteBtn) {
+    var title = rewriteBtn.querySelector('.pcs-rw-title');
+    if (title) title.textContent = '\u2726 Rewrite from comments';
+  }
+  _pcsDimManualZone(false);
+};
+
+window._pcsOpenRefine = function(id) {
+  var refine = document.getElementById('pcs-refine-wrap-' + id);
+  if (!refine) return;
+  refine.style.display = 'block';
+  var input = document.getElementById('pcs-refine-input-' + id);
+  if (input) { try { input.focus(); } catch (_) {} }
+};
+
+window._pcsRefineCancel = function(id) {
+  var refine = document.getElementById('pcs-refine-wrap-' + id);
+  if (refine) refine.style.display = 'none';
+  var input = document.getElementById('pcs-refine-input-' + id);
+  if (input) input.value = '';
+};
+
+window._pcsRefineSend = async function(id) {
+  var input = document.getElementById('pcs-refine-input-' + id);
+  if (!input) return;
+  var instruction = (input.value || '').trim();
+  if (!instruction) return;
+
+  var result = document.getElementById('pcs-rewrite-result-' + id);
+  if (!result) return;
+  var currentCaption = result.dataset.newCaption || '';
+
+  // Close refine row immediately and show a thinking state in the caption
+  var capEl = result.querySelector('.pcs-rwr-caption');
+  if (capEl) capEl.textContent = 'Refining\u2026';
+  window._pcsRefineCancel(id);
+
+  var messages = [{
+    role: 'user',
+    content: 'Current caption:\n' + currentCaption + '\n\nRefinement instruction:\n' + instruction + '\n\nReturn ONLY the revised caption, no preamble.'
+  }];
+  var response = await _callSrtdAI('chat', messages, id);
+
+  if (!response.success) {
+    if (capEl) capEl.textContent = currentCaption;
+    if (typeof showToast === 'function') showToast('Refine failed, try again', 'error');
+    return;
+  }
+
+  var revised = (response.content || '').trim();
+  result.dataset.newCaption = revised;
+  if (capEl) capEl.textContent = revised;
+};
+
+window._pcsRewriteFromComments = async function(id) {
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (!post) return;
+
+  var rewriteResult = document.getElementById('pcs-rewrite-result-' + id);
+  var rewriteBtn = document.getElementById('pcs-rewrite-btn-' + id);
+  if (!rewriteResult || !rewriteBtn) return;
+
+  // Idempotent: if the result panel is already open, do nothing
+  if (rewriteResult.style.display === 'block') return;
+
+  // Collect visible client comments from the DOM
+  var commentEls = document.querySelectorAll('#pcs-pane-client .pcs-comment-text');
+  var commentTexts = [];
+  commentEls.forEach(function(el) {
+    var text = el.textContent.trim();
+    if (text && text !== 'This message was deleted.') commentTexts.push(text);
+  });
+  var commentContext = commentTexts.length
+    ? 'Client comments on this post:\n' + commentTexts.slice(0, 15).join('\n---\n')
+    : 'No comments yet.';
+
+  // Update button state
+  var titleEl = rewriteBtn.querySelector('.pcs-rw-title');
+  var subEl = rewriteBtn.querySelector('.pcs-rw-sub');
+  if (titleEl) titleEl.textContent = '\u2726 Reading comments\u2026';
+  if (subEl) subEl.textContent = 'Analysing ' + commentTexts.length + ' comments...';
+
+  var messages = [{
+    role: 'user',
+    content: 'Current caption:\n' + (post.caption || '') + '\n\n' + commentContext + '\n\nRewrite the caption addressing the client feedback. Return: 1) A brief list of what you changed and why (one line per change, prefix with CHANGE:). 2) Then the full revised caption. Separate them with ---'
+  }];
+
+  var result = await _callSrtdAI('chat', messages, id);
+
+  if (!result.success) {
+    if (titleEl) titleEl.textContent = '\u2726 Rewrite from comments';
+    if (subEl) subEl.textContent = 'Error \u2014 tap to retry';
+    return;
+  }
+
+  if (titleEl) titleEl.textContent = '\u2726 Rewrite ready';
+  if (subEl) subEl.textContent = 'Based on ' + commentTexts.length + ' comments';
+
+  // Parse response: split on ---
+  var parts = (result.content || '').split('---');
+  var changesRaw = parts[0] || '';
+  var newCaption = (parts[1] || result.content || '').trim();
+
+  // Build flags HTML from CHANGE: lines
+  var flagsHtml = '';
+  changesRaw.split('\n').forEach(function(line) {
+    var clean = line.replace(/^CHANGE:\s*/i, '').trim();
+    if (clean) {
+      flagsHtml += '<div class="pcs-rwr-flag"><div class="pcs-rwr-flag-txt">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+    }
+  });
+
+  var flagsEl = rewriteResult.querySelector('.pcs-rwr-flags');
+  if (flagsEl) flagsEl.innerHTML = flagsHtml;
+
+  var capEl2 = rewriteResult.querySelector('.pcs-rwr-caption');
+  if (capEl2) capEl2.textContent = newCaption;
+
+  // Store new caption for Apply
+  rewriteResult.dataset.newCaption = newCaption;
+  rewriteResult.style.display = 'block';
+
+  // Dim manual zone
+  _pcsDimManualZone(true);
+};
+
+// --- Write fresh options (Zone 1 version) ---
+window._pcsPickWriteOpt = function(el, id) {
+  document.querySelectorAll('#pcs-write-opts-' + id + ' .pcs-write-opt').forEach(function(o) {
+    o.classList.remove('pcs-write-opt--sel');
+    var tag = o.querySelector('.pcs-ai-opt-tag');
+    if (tag) tag.textContent = 'Tap to select';
+  });
+  el.classList.add('pcs-write-opt--sel');
+  var elTag = el.querySelector('.pcs-ai-opt-tag');
+  if (elTag) elTag.textContent = 'Selected';
+};
+
+window._pcsCollapseWrite = function(id) {
+  var wrap = document.getElementById('pcs-write-opts-' + id);
+  if (wrap) { wrap.style.display = 'none'; wrap.innerHTML = ''; }
+  _pcsDimManualZone(false);
+};
+
+window._pcsUseWriteSelection = function(id) {
+  var wrap = document.getElementById('pcs-write-opts-' + id);
+  if (!wrap) return;
+  var selected = wrap.querySelector('.pcs-write-opt--sel');
+  if (!selected) {
+    if (typeof showToast === 'function') showToast('Select an option first', 'error');
+    return;
+  }
+  var txtEl = selected.querySelector('.pcs-ai-opt-txt');
+  var newCaption = txtEl ? txtEl.textContent : '';
+  if (!newCaption) return;
+
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (!post) return;
+
+  (async function() {
+    try {
+      await apiFetch('/posts?post_id=eq.' + encodeURIComponent(id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ caption: newCaption, updated_at: new Date().toISOString() })
+      });
+      post.caption = newCaption;
+      window._pcsCollapseWrite(id);
+      if (typeof _renderPCS === 'function') _renderPCS(id);
+      if (typeof showToast === 'function') showToast('Caption updated', 'success');
+    } catch (err) {
+      window.logError && window.logError(err && err.message, err && err.stack, 'pcs-use-write');
+      if (typeof showToast === 'function') showToast('Failed to update caption', 'error');
+    }
+  })();
 };
 
 window._renderPCS = function(postId) {
@@ -497,16 +888,15 @@ window._renderPCS = function(postId) {
   var waContainer = document.getElementById('pcs-wa-container');
   if (waContainer) waContainer.innerHTML = '';
 
-  // f2) Caption action buttons (canManage only) + AI Draft (Admin only)
+  // f2) Caption action buttons (canManage only). The AI \u2726 Write button
+  //     that lived in this row in PR 2 has moved to Zone 1 in PR 3 (see
+  //     the two-zone layout below), so cap-actions is back to the
+  //     original Edit/Copy/Clear trio.
   var capActionsContainer = document.getElementById('pcs-cap-actions-container');
   if (capActionsContainer) {
     if (canManage) {
-      var aiDraftBtn = (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_writer)
-        ? '<button class="pcs-cap-btn pcs-ai-draft-btn" id="pcs-ai-draft-btn-' + esc(id) + '" onclick="window._pcsAiDraft(\'' + esc(id) + '\', this)">\u2726 Draft</button>'
-        : '';
       capActionsContainer.innerHTML =
         '<div class="pcs-cap-actions">' +
-        aiDraftBtn +
         '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
         '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
         (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
@@ -516,48 +906,23 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // f3) AI section (QC + Chat) — Admin only, gated on workspace flags.
-  //     Injected into the caption pane, right BEFORE the Done button
-  //     so it sits between the cap-actions row and the Done footer.
-  //     Skips re-injection on subsequent renders via the id guard.
-  if (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_enabled) {
-    var existingAiSection = document.getElementById('pcs-ai-section-' + esc(id));
-    if (!existingAiSection) {
-      var aiSection = document.createElement('div');
-      aiSection.id = 'pcs-ai-section-' + esc(id);
-      aiSection.className = 'pcs-ai-section';
-
-      var showQC = window.AppState.workspace.ai_qc;
-      var showChat = window.AppState.workspace.ai_chat;
-
-      aiSection.innerHTML =
-        (showQC ?
-          '<button class="pcs-qc-btn" onclick="window._pcsRunQC(\'' + esc(id) + '\', this)">' +
-            '<div class="pcs-qc-left">' +
-              '<div>' +
-                '<div class="pcs-qc-title">QC against Brand Guide</div>' +
-                '<div class="pcs-qc-sub">Check tone, voice and brand language</div>' +
-              '</div>' +
-            '</div>' +
-            '<span class="pcs-qc-arr">\u2192</span>' +
-          '</button>' +
-          '<div class="pcs-qc-result" id="pcs-qc-result-' + esc(id) + '" style="display:none"></div>'
-        : '') +
-        (showChat ?
-          '<div class="pcs-chat-hd">Ask Claude</div>' +
-          '<div class="pcs-chat-thread" id="pcs-chat-thread-' + esc(id) + '"></div>' +
-          '<div class="pcs-chat-row">' +
-            '<input class="pcs-chat-input" id="pcs-chat-input-' + esc(id) + '" type="text" placeholder="Rewrite, shorten, add a hook...">' +
-            '<button class="pcs-chat-send" onclick="window._pcsAiChat(\'' + esc(id) + '\')">Send</button>' +
-          '</div>'
-        : '');
-
-      var closeBtn = capActionsContainer.parentElement.querySelector('.pcs-close-btn');
-      if (closeBtn) {
-        closeBtn.parentElement.insertBefore(aiSection, closeBtn);
-      } else {
-        capActionsContainer.parentElement.appendChild(aiSection);
-      }
+  // f3) Zone 1 (AI) — Admin + AppState.workspace.ai_enabled only.
+  //     Injected into the dedicated #pcs-zone-ai-container (added to
+  //     index.html in this PR) which sits inside the #pcs-caption-scroll
+  //     wrapper, above the non-scrolling .pcs-zone-manual footer. The
+  //     container's innerHTML is rewritten on every render so there is
+  //     no per-post id-guard; cross-post accumulation is also handled
+  //     defensively by forcePCSReset() stripping every
+  //     [id^="pcs-ai-section-"] node on PCS close.
+  var aiZoneContainer = document.getElementById('pcs-zone-ai-container');
+  if (aiZoneContainer) {
+    if (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_enabled) {
+      var _commentCount = Array.isArray(post.post_comments)
+        ? post.post_comments.filter(function(c) { return c && !c.deleted; }).length
+        : (typeof post._commentCount === 'number' ? post._commentCount : 0);
+      aiZoneContainer.innerHTML = _pcsBuildAiZoneHtml(id, _commentCount);
+    } else {
+      aiZoneContainer.innerHTML = '';
     }
   }
 
