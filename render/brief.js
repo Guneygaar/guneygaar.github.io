@@ -267,7 +267,36 @@ window._briefSubmitComment = function(postId) {
 // ===============================================
 window._openBriefSheet = async function(postId) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
-  if (!post) return;
+  if (!post) {
+    try {
+      var _fbRows = await apiFetch(
+        '/requests?id=eq.' + encodeURIComponent(postId) +
+        '&select=*&limit=1',
+        {}, { allowLogout: false }
+      );
+      if (Array.isArray(_fbRows) && _fbRows[0]) {
+        var _r = _fbRows[0];
+        post = {
+          post_id: _r.id,
+          title: _r.title || '',
+          stage: 'brief',
+          owner: _r.assigned_to ? 'Creative' : 'Servicing',
+          assigned_to: _r.assigned_to || null,
+          _isRequest: true,
+          _requestStatus: _r.status || 'pending',
+          description: _r.description || '',
+          client_feedback: _r.description || '',
+          content_type: _r.content_type || '',
+          target_date: _r.target_date || null,
+          images: Array.isArray(_r.images) ? _r.images : [],
+          drive_link: _r.drive_link || null,
+          created_by: _r.created_by || '',
+          created_at: _r.created_at || ''
+        };
+      }
+    } catch (_fbErr) {}
+    if (!post) return;
+  }
 
   var existing = document.getElementById('brief-sheet-overlay');
   if (existing) existing.remove();
@@ -883,7 +912,9 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
           user_role: _assigneeRole,
           post_id:   postId,
           type:      'assign',
-          message:   (displayName || 'Someone') +
+          message:   (window.AppState.user.name ||
+                      window.AppState.user.email ||
+                      'Someone') +
                      ' assigned you a brief: "' +
                      (post.title || 'Untitled') + '"',
           actor:     (window.AppState.user.name ||
@@ -954,7 +985,9 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
         user_role: _assigneeRole,
         post_id:   postId,
         type:      'assign',
-        message:   (displayName || 'Someone') +
+        message:   (window.AppState.user.name ||
+                    window.AppState.user.email ||
+                    'Someone') +
                    ' assigned you a brief: "' +
                    (post.title || 'Untitled') + '"',
         actor:     (window.AppState.user.name ||
