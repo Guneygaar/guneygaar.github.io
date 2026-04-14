@@ -3,44 +3,10 @@
 =============================================== */
 console.log("LOADED:", "08-post-actions.js");
 
-// -- Stage change notification helper --
-// recipients: array of names e.g. ['Admin', 'Chitra', 'Pranav', 'Client']
-// Maps names to DB user_role values before inserting.
-window._sendStageNotif = function(postId, postTitle, stage, recipients, actorName) {
-  var roleMap = {
-    'Admin': 'Admin',
-    'Chitra': 'Servicing',
-    'Pranav': 'Creative',
-    'Client': 'Client'
-  };
-  var label = (typeof _stageLabel === 'function' && _stageLabel(stage)) || stage;
-  // Guard against double-fire (same post + stage within 5 seconds = blocked)
-  var _notifKey = postId + '|' + stage;
-  if (window._lastNotifKey === _notifKey) return;
-  window._lastNotifKey = _notifKey;
-  setTimeout(function() {
-    if (window._lastNotifKey === _notifKey) {
-      window._lastNotifKey = null;
-    }
-  }, 5000);
-  recipients.forEach(function(name) {
-    var userRole = roleMap[name] || name;
-    apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: userRole,
-        post_id: postId,
-        type: stage,
-        message: actorName + ' moved ' + postTitle + ' to ' + label,
-        actor: actorName,
-        read: false
-      })
-    }).catch(function(err) {
-      console.error('[stage-notif] failed for ' + userRole, err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'stage-notif-' + stage);
-    });
-  });
-};
+// -- Stage change notifications are handled entirely by the
+// notify-stage edge function (writes notification rows AND sends
+// emails). The JS fan-out helper _sendStageNotif was removed to
+// eliminate duplicate notification rows.
 
 // -- Save timeout safety net --
 // If a PATCH hangs (no resolve, no reject — e.g. iOS background-tab
@@ -145,8 +111,7 @@ async function quickStage(postId, newStage) {
     post._isSaving = false;
     scheduleRender();
     await logActivity({ post_id: postId, actor: window.AppState.user.email || actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: oldStage, new_stage: newStage });
-    var _qsRecipients = _stageRecipients(newStage);
-    if (_qsRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _qsRecipients, actor);
+    // Stage change notification is handled by the notify-stage edge function.
     showUndoToast('Moved to ' + _stageLabel(newStage), function() { quickStage(postId, oldStage); });
   } catch (err) {
     _clearSaveTimeout(post);
@@ -302,7 +267,7 @@ async function clientApprove(postId, btn) {
       _renderBackgroundViews();
       // Non-critical side effects
       await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled', old_stage: oldStage, new_stage: 'scheduled' });
-      window._sendStageNotif(postId, getTitle(post), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || 'Client');
+      // Stage change notification is handled by the notify-stage edge function.
     } catch (err) {
       _clearSaveTimeout(post);
       post._isSaving = false;
@@ -323,8 +288,7 @@ async function clientAcknowledge(postId) {
         body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
       });
       await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
-      var _ackPost = getPostById(postId);
-      window._sendStageNotif(postId, (_ackPost ? getTitle(_ackPost) : postId), 'in_production', ['Creative'], window.AppState.user.name || 'Client');
+      // Stage change notification is handled by the notify-stage edge function.
       showToast('Got it! The team has been notified.', 'success');
       setTimeout(() => loadPostsForClient(), 800);
     } catch (err) {
@@ -567,8 +531,7 @@ function _confirmPublish(postId) {
       old_stage: _pubOldStage,
       new_stage: 'published'
     });
-    var _pubPost = getPostById(postId);
-    window._sendStageNotif(postId, (_pubPost ? getTitle(_pubPost) : postId), 'published', ['Admin', 'Servicing', 'Creative', 'Client'], window.AppState.user.name || 'Shubham');
+    // Stage change notification is handled by the notify-stage edge function.
     showToast('Published', 'success');
     if (typeof _removePublishSheet === 'function') _removePublishSheet();
     if (typeof closePCS === 'function') closePCS();
@@ -665,7 +628,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
   // -- NON-CRITICAL  -  completely outside DB try/catch --
   try { await logActivity({ post_id: postId, actor: window.AppState.user.email || actor, actor_role: window.AppState.user.role, action: `Stage -> ${newStage}`, old_stage: previousStage, new_stage: newStage }); } catch(e) { console.warn('[PCS] logActivity failed:', e); }
-  try { var _esRecipients = _stageRecipients(newStage); if (_esRecipients.length) window._sendStageNotif(postId, getTitle(post), newStage, _esRecipients, actor); } catch(e) { console.warn('[PCS] stage notif failed:', e); }
+  // Stage change notification is handled by the notify-stage edge function.
   try { showUndoToast(`Moved to ${newStage}`, () => _executeStageChange(postId, previousStage)); } catch(e) { console.warn('[PCS] showUndoToast failed:', e); }
 }
 
