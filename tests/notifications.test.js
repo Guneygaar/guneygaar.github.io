@@ -145,9 +145,15 @@ describe('Comment notifications', function() {
     expect(matches).toBeNull();
   });
 
-  it('render/brief.js has zero notification POSTs', function() {
+  it('render/brief.js has zero comment notification POSTs', function() {
+    // Comment fan-out must stay in the notify-comment edge function.
+    // An intentional exception exists for the assign path (type: 'assign'):
+    // assign PATCHes target /requests, so notify-stage does NOT fire and
+    // the assignee would hear nothing unless brief.js writes directly.
+    // This test narrows the pcs.js-style ban to the comment type only,
+    // matching the pcs.js assertion a few lines above.
     var briefSrc = readFileSync(resolve(__dirname, '..', 'render', 'brief.js'), 'utf8');
-    var matches = briefSrc.match(/apiFetch\(['"]\/notifications['"],\s*\{[\s\S]*?method:\s*['"]POST['"]/g);
+    var matches = briefSrc.match(/type:\s*['"]comment['"]/g);
     expect(matches).toBeNull();
   });
 
