@@ -128,32 +128,33 @@ describe('Notification badge', function() {
 // =========================================================
 // GROUP 3: Comment notifications (source analysis)
 // =========================================================
+// Comment notification fan-out now lives entirely in the notify-comment
+// edge function. The JS-side POST to /notifications for comments was
+// removed in the js-notif-fanout PR. These tests verify the removal
+// and preserve the pure routing-logic assertions.
 describe('Comment notifications', function() {
 
-  // Check actions/pcs.js (main moved submitPcsComment there)
-  var commentSrc = pcsSrc || actionsSrc;
-
-  it('comment notification uses type:comment', function() {
-    expect(commentSrc).toMatch(/type:\s*['"]comment['"]/);
+  it('pcs.js has zero comment notification POSTs', function() {
+    var matches = pcsSrc.match(/type:\s*['"]comment['"]/g);
+    expect(matches).toBeNull();
   });
 
-  it('comment notification includes actor field', function() {
-    // Find the notification insert block in comment handler
-    var match = commentSrc.match(/type:\s*['"]comment['"][\s\S]{0,200}/);
-    expect(match).not.toBeNull();
-    // Look nearby for actor field
-    var nearbyBlock = commentSrc.substring(
-      commentSrc.indexOf("type: 'comment'") - 200,
-      commentSrc.indexOf("type: 'comment'") + 300
-    );
-    expect(nearbyBlock).toContain('actor:');
+  it('render/client.js has zero notification POSTs', function() {
+    var clientSrc = readFileSync(resolve(__dirname, '..', 'render', 'client.js'), 'utf8');
+    var matches = clientSrc.match(/apiFetch\(['"]\/notifications['"],\s*\{[\s\S]*?method:\s*['"]POST['"]/g);
+    expect(matches).toBeNull();
   });
 
-  it('comment notification actor uses AppState.user.name', function() {
-    var idx = commentSrc.indexOf("type: 'comment'");
-    if (idx === -1) idx = commentSrc.indexOf('type: "comment"');
-    var nearbyBlock = commentSrc.substring(idx - 200, idx + 300);
-    expect(nearbyBlock).toContain('AppState.user.name');
+  it('render/brief.js has zero notification POSTs', function() {
+    var briefSrc = readFileSync(resolve(__dirname, '..', 'render', 'brief.js'), 'utf8');
+    var matches = briefSrc.match(/apiFetch\(['"]\/notifications['"],\s*\{[\s\S]*?method:\s*['"]POST['"]/g);
+    expect(matches).toBeNull();
+  });
+
+  it('render/pipeline.js has zero notification POSTs', function() {
+    var pipelineSrc = readFileSync(resolve(__dirname, '..', 'render', 'pipeline.js'), 'utf8');
+    var matches = pipelineSrc.match(/apiFetch\(['"]\/notifications['"],\s*\{[\s\S]*?method:\s*['"]POST['"]/g);
+    expect(matches).toBeNull();
   });
 
   it('Client comments notify Servicing and Admin', function() {
@@ -345,11 +346,24 @@ describe('No duplicate stage-change notifications from JS', function() {
     expect(hasNotifPost).toBe(false);
   });
 
-  it('08-post-actions.js has exactly 3 notification POSTs (2x new_request + _sendStageNotif helper)', function() {
+  it('08-post-actions.js has exactly 2 notification POSTs (2x new_request only)', function() {
     var matches = actionsSrc.match(/apiFetch\('\/notifications',\s*\{[\s\S]*?method:\s*'POST'/g);
-    // 1 = submitClientRequest Servicing, 2 = submitClientRequest Admin, 3 = _sendStageNotif helper
+    // 1 = submitClientRequest Servicing, 2 = submitClientRequest Admin.
+    // _sendStageNotif helper was removed — notify-stage edge function
+    // now writes all stage change notification rows.
     expect(matches).not.toBeNull();
-    expect(matches.length).toBe(3);
+    expect(matches.length).toBe(2);
+  });
+
+  it('_sendStageNotif helper has been removed from 08-post-actions.js', function() {
+    // The helper and all its call sites were removed in the js-notif-fanout PR.
+    expect(actionsSrc).not.toMatch(/window\._sendStageNotif\s*=\s*function/);
+    expect(actionsSrc).not.toMatch(/window\._sendStageNotif\s*\(/);
+  });
+
+  it('09-approval.js has no _sendStageNotif call sites', function() {
+    var approvalSrc = readFileSync(resolve(__dirname, '..', '09-approval.js'), 'utf8');
+    expect(approvalSrc).not.toMatch(/_sendStageNotif\s*\(/);
   });
 
   it('07-post-load.js has zero notification POSTs', function() {
@@ -582,56 +596,26 @@ describe('@mention notification routing', function() {
 
 });
 
-describe('@mention notifications in _doSubmitComment (source analysis)', function() {
+// @mention notification fan-out was moved into the notify-comment
+// edge function. The JS-side POST to /notifications with type:'mention'
+// was removed in the js-notif-fanout PR. These tests verify the removal
+// and preserve the pure name→role resolution checks in the block above.
+describe('@mention notifications removed from JS fan-out', function() {
 
-  it('pcs.js contains a mention notification loop after comment notifications', function() {
-    expect(pcsSrc).toContain("type: 'mention'");
+  it('pcs.js has no type:mention notification POST', function() {
+    expect(pcsSrc).not.toContain("type: 'mention'");
   });
 
-  it('mention notification maps name to role via _AGENCY_MEMBERS', function() {
-    var idx = pcsSrc.indexOf("type: 'mention'");
-    var mentionBlock = pcsSrc.substring(Math.max(0, idx - 800), idx + 200);
-    expect(mentionBlock).toContain('_AGENCY_MEMBERS');
+  it('render/client.js has no type:mention notification POST', function() {
+    var clientSrc = readFileSync(resolve(__dirname, '..', 'render', 'client.js'), 'utf8');
+    expect(clientSrc).not.toContain("type: 'mention'");
   });
 
-  it('mention notification skips names not in _AGENCY_MEMBERS', function() {
-    var mentionBlock = pcsSrc.substring(
-      pcsSrc.indexOf("type: 'mention'") - 500,
-      pcsSrc.indexOf("type: 'mention'") + 200
-    );
-    expect(mentionBlock).toMatch(/if\s*\(\s*!|continue/);
-  });
-
-  it('mention notification skips roles already in _targets to avoid doubles', function() {
-    var mentionBlock = pcsSrc.substring(
-      pcsSrc.indexOf("type: 'mention'") - 500,
-      pcsSrc.indexOf("type: 'mention'") + 200
-    );
-    expect(mentionBlock).toContain('_targets');
-    expect(mentionBlock).toMatch(/indexOf|includes/);
-  });
-
-  it('mention notification only runs when opts.mentioned has entries', function() {
-    var idx = pcsSrc.indexOf("type: 'mention'");
-    var mentionBlock = pcsSrc.substring(Math.max(0, idx - 800), idx + 200);
-    expect(mentionBlock).toMatch(/opts\.mentioned[\s\S]*?length/);
-  });
-
-  it('the old buggy fallback (targets = opts.mentioned) is removed', function() {
-    var targetBlock = pcsSrc.match(
-      /var _targets = \[\];[\s\S]*?_targets\.forEach/
-    );
-    expect(targetBlock).not.toBeNull();
-    var body = targetBlock[0];
-    expect(body).not.toContain('_targets = opts.mentioned');
-  });
-
-  it('mention message differs for internal notes vs client comments', function() {
-    var mentionBlock = pcsSrc.substring(
-      pcsSrc.indexOf("type: 'mention'") - 500,
-      pcsSrc.indexOf("type: 'mention'") + 300
-    );
-    expect(mentionBlock).toMatch(/isInternal|internal/i);
+  it('_lookupMentionEmails is preserved for display purposes', function() {
+    // Used to build window._lastMentionContacts for the UI, not for
+    // notification writes. Must stay after the fan-out removal.
+    expect(pcsSrc).toContain('_lookupMentionEmails');
+    expect(pcsSrc).toContain('window._lastMentionContacts');
   });
 
 });

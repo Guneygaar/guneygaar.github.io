@@ -245,73 +245,8 @@ window._briefSubmitComment = function(postId) {
       created_at: nowISO
     })
   }).then(function() {
-    // Notification fan-out — route based on author role so the
-    // Client bell lights up when agency replies on a brief, and
-    // Servicing + Admin get notified when the client responds.
-    // notify-comment (edge) does NOT fire on brief comments today,
-    // so this JS fan-out is the only writer for these rows. Each
-    // POST is wrapped in its own catch so a failed insert cannot
-    // block the comment UI.
-    try {
-      var authorEmail = (window.AppState.user && window.AppState.user.email) || '';
-      var actor = authorEmail || authorName;
-      var briefTitle = (post && post.title) || 'your request';
-      var preview = text.length > 50 ? text.slice(0, 50) : text;
-      var roleLower = String(normRole || '').toLowerCase();
-      if (roleLower !== 'client') {
-        // Agency user commenting — notify the Client role
-        var agencyMsg = authorName + ' commented on your request: ' + preview;
-        try {
-          apiFetch('/notifications', {
-            method: 'POST',
-            body: JSON.stringify({
-              user_role: 'Client',
-              post_id: postId,
-              type: 'comment',
-              message: agencyMsg,
-              actor: actor,
-              read: false,
-              created_at: new Date().toISOString()
-            })
-          }).catch(function(e) {
-            console.warn('[brief] client notification POST failed', e);
-            window.logError && window.logError(e && e.message, e && e.stack, 'brief-notify-client');
-          });
-        } catch (e) {
-          console.warn('[brief] client notification threw', e);
-        }
-      } else {
-        // Client responding — notify Servicing AND Admin
-        var clientMsg = authorName + ' replied on ' + briefTitle + ': ' + preview;
-        var roles = ['Servicing', 'Admin'];
-        for (var ri = 0; ri < roles.length; ri++) {
-          (function(targetRole) {
-            try {
-              apiFetch('/notifications', {
-                method: 'POST',
-                body: JSON.stringify({
-                  user_role: targetRole,
-                  post_id: postId,
-                  type: 'comment',
-                  message: clientMsg,
-                  actor: actor,
-                  read: false,
-                  created_at: new Date().toISOString()
-                })
-              }).catch(function(e) {
-                console.warn('[brief] ' + targetRole + ' notification POST failed', e);
-                window.logError && window.logError(e && e.message, e && e.stack, 'brief-notify-' + targetRole.toLowerCase());
-              });
-            } catch (e) {
-              console.warn('[brief] ' + targetRole + ' notification threw', e);
-            }
-          })(roles[ri]);
-        }
-      }
-    } catch (fanErr) {
-      console.warn('[brief] notification fan-out threw', fanErr);
-      window.logError && window.logError(fanErr && fanErr.message, fanErr && fanErr.stack, 'brief-notify-fanout');
-    }
+    // Notification fan-out removed — notify-comment edge function
+    // now writes all brief-comment notification rows and sends emails.
   }).catch(function(err) {
     console.error('[brief] submit comment failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'brief-submit-comment');
@@ -870,27 +805,9 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
   var nowISO = new Date().toISOString();
 
-  function _postAssignNotification(targetPostId, postTitle) {
-    // Notify creatives that a brief has been assigned. user_role is
-    // ALWAYS the role string 'Creative' — the person's name belongs
-    // in the message body, never in user_role.
-    return apiFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify({
-        user_role: 'Creative',
-        post_id: targetPostId,
-        type: 'brief',
-        message: actionLabel,
-        actor: actorName,
-        read: false,
-        created_at: nowISO
-      })
-    }).catch(function(err) {
-      // Non-fatal — the assign itself already succeeded.
-      console.warn('[brief] assign notification failed', err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'assign-brief-notif');
-    });
-  }
+  // Assign notification is handled by the notify-stage edge function
+  // (brief stage writes trigger it). The JS-side _postAssignNotification
+  // helper was removed to eliminate duplicate notification rows.
 
   function _reopenBriefAfterAssign() {
     document.body.style.overflow = '';
@@ -926,8 +843,6 @@ window._assignBrief = function(postId, ownerName, isReassign) {
         actor_role: actorRole,
         action: actionLabel + (direction.trim() ? ' with direction' : '')
       });
-      return _postAssignNotification(postId, post.title || '');
-    }).then(function() {
       _reopenBriefAfterAssign();
     }).catch(function(err) {
       console.error('[brief] assign request failed', err);
@@ -975,8 +890,6 @@ window._assignBrief = function(postId, ownerName, isReassign) {
       actor_role: actorRole,
       action: actionLabel + (direction.trim() ? ' with direction' : '')
     });
-    return _postAssignNotification(postId, post.title || '');
-  }).then(function() {
     _reopenBriefAfterAssign();
   }).catch(function(err) {
     console.error('[brief] assign brief failed', err);

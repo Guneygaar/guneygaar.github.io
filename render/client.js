@@ -1735,65 +1735,9 @@ console.log('LOADED:', 'render/client.js');
         }
         return;
       }
-      window.apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: 'Servicing',
-          type: 'comment',
-          post_id: realPostId,
-          message: displayName + ' commented on ' + postTitle,
-          actor: displayName,
-          read: false
-        })
-      }).catch(function(err){ console.error('[client] comment patch', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'comment-patch'); });
-      window.apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: 'Admin',
-          type: 'comment',
-          post_id: realPostId,
-          message: displayName + ' commented on ' + postTitle,
-          actor: displayName,
-          read: false
-        })
-      }).catch(function(err){ console.error('[client] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-notification'); });
-      window.apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: 'Creative',
-          type: 'comment',
-          post_id: realPostId,
-          message: displayName + ' commented on ' + postTitle,
-          actor: displayName,
-          read: false
-        })
-      }).catch(function(err){ console.error('[client] creative notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-creative-notification'); });
-      // Use the live @mention roster cached from user_roles.
-      // Falls back to [] if the fetch never ran — in that case
-      // unresolved names are skipped, matching the pre-dynamic
-      // roster behavior for unknown @names.
-      var _ROSTER = (window._clientMentionRoster || []).map(function(row) {
-        return { name: _displayNameForRow(row), role: row.role || '' };
-      });
-      _mentioned.forEach(function(name) {
-        var _member = _ROSTER.find(function(m) {
-          return m.name && m.name.toLowerCase() === name.toLowerCase();
-        });
-        if (!_member || !_member.role) return;
-        var safeRole = _member.role ? String(_member.role) : 'Client';
-        var titleCaseRole = safeRole.charAt(0).toUpperCase() + safeRole.slice(1).toLowerCase();
-        window.apiFetch('/notifications', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_role: titleCaseRole,
-            post_id: realPostId,
-            type: 'mention',
-            message: displayName + ' mentioned you on "' + postTitle + '"',
-            actor: displayName,
-            read: false
-          })
-        }).catch(function(err) { console.error('[mention notif]', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'client-mention-notif'); });
-      });
+      // Notification fan-out removed — notify-comment edge function now
+      // writes all comment + mention notification rows and sends emails.
+      // JS-side fan-out caused duplicate notifications.
     }).catch(function (err) {
       if (typeof window.showToast === 'function') {
         window.showToast('Failed to send comment', 'error');

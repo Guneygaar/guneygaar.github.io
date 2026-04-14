@@ -146,7 +146,7 @@ async function submitApproval(type, postId, btn) {
           body: JSON.stringify({ stage: 'in_production', client_feedback: text, updated_at: new Date().toISOString(), updated_by: resolveActor() }),
         });
         await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: `Changes requested: ${text.substring(0,80)}` });
-        if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, postId, 'in_production', ['Admin', 'Creative'], window.AppState.user.name || window.currentUserName || 'Client');
+        // Stage change notification is handled by the notify-stage edge function.
         const c = document.getElementById('approval-confirmation');
         if (c) { c.style.display = ''; c.textContent = 'Changes sent  -  the team will review it.'; }
         document.querySelector('.approval-actions')?.remove();
@@ -167,7 +167,7 @@ async function submitApproval(type, postId, btn) {
           body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
         });
         await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Approved  -  moved to Scheduled' });
-        if (typeof window._sendStageNotif === 'function') window._sendStageNotif(postId, esc(title), 'scheduled', ['Admin', 'Servicing', 'Creative'], window.AppState.user.name || window.currentUserName || 'Client');
+        // Stage change notification is handled by the notify-stage edge function.
         const c = document.getElementById('approval-confirmation');
         if (c) { c.style.display = ''; c.textContent = 'ok Approved! The team has been notified.'; }
         document.querySelector('.approval-actions')?.remove();

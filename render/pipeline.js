@@ -629,30 +629,9 @@ window.executeBatchAction = async function(targetStage) {
       }),
     });
 
-    var notifActor = resolveActor() || 'Chitra';
-    var count = ids.length;
-    var stageLabel = targetStage === 'awaiting_approval'
-      ? 'for approval' : 'for brand input';
-    var batchMsg = notifActor + ' sent ' + count + ' posts ' + stageLabel;
-    var batchRecipients = targetStage === 'awaiting_approval'
-      ? ['Client', 'Admin'] : ['Client', 'Admin'];
-    batchRecipients.forEach(function(name) {
-      var roleMap = { 'Admin': 'Admin', 'Chitra': 'Servicing', 'Pranav': 'Creative', 'Client': 'Client' };
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: roleMap[name] || name,
-          post_id: null,
-          type: targetStage,
-          message: batchMsg,
-          actor: notifActor,
-          read: false
-        })
-      }).catch(function(err) {
-        console.error('[batch-notif]', err);
-        window.logError && window.logError(err && err.message, err && err.stack, 'batch-stage-notif');
-      });
-    });
+    // Batch stage change notifications are handled by the notify-stage
+    // edge function (fires per-row on the posts PATCH). The JS fan-out
+    // was removed to eliminate duplicate notification rows.
 
     toggleBatchMode();
     loadPosts();

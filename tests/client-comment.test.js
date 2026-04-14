@@ -414,50 +414,47 @@ describe('@mention parsing', function() {
 
 
 // =========================================================
-// GROUP 6 — Notification firing
+// GROUP 6 — Notification firing (post js-notif-fanout removal)
 // =========================================================
+// The JS comment/mention notification fan-out was removed entirely —
+// notify-comment edge function is now the single writer for comment
+// and mention notification rows. These tests guard that the removal
+// stays removed.
 describe('comment notifications', function() {
 
   var fnMatch = clientSrc.match(/function _handleSubmitComment[\s\S]*?\n  \}/);
   var fnBody = fnMatch ? fnMatch[0] : '';
 
-  it('41. On submit -> fires notification to user_role:\'Servicing\'', function() {
-    expect(fnBody).toMatch(/user_role:\s*['"]Servicing['"]/);
+  it('41. _handleSubmitComment has no /notifications POST', function() {
+    var matches = fnBody.match(/apiFetch\(['"]\/notifications['"],\s*\{[\s\S]*?method:\s*['"]POST['"]/g);
+    expect(matches).toBeNull();
   });
 
-  it('42. On submit -> fires notification to user_role:\'Admin\'', function() {
-    expect(fnBody).toMatch(/user_role:\s*['"]Admin['"]/);
+  it('42. _handleSubmitComment has no user_role fan-out', function() {
+    expect(fnBody).not.toMatch(/user_role:\s*['"]Servicing['"]/);
+    expect(fnBody).not.toMatch(/user_role:\s*['"]Admin['"]/);
+    expect(fnBody).not.toMatch(/user_role:\s*['"]Creative['"]/);
   });
 
-  it('43. @Pranav -> fires additional mention notification type:\'mention\'', function() {
-    // After standard comment notifications, should fire mention-specific ones
-    expect(fnBody).toMatch(/type:\s*['"]mention['"]/);
+  it('43. _handleSubmitComment has no type:\'mention\' POST', function() {
+    expect(fnBody).not.toMatch(/type:\s*['"]mention['"]/);
   });
 
-  it('44. @Pranav -> mention notification has user_role:\'Creative\'', function() {
-    // Pranav is Creative in _AGENCY_MEMBERS
-    // The mention notification loop should resolve name -> role
-    expect(fnBody).toMatch(/mention|_AGENCY_MEMBERS|Creative/);
+  it('44. _handleSubmitComment still POSTs the comment itself', function() {
+    // Comment row still gets written to /post_comments — only the
+    // /notifications fan-out is removed.
+    expect(fnBody).toMatch(/apiFetch\(['"]\/post_comments['"]/);
   });
 
-  it('45. @Shubham -> mention notification has user_role:\'Admin\'', function() {
-    // Shubham is Admin — should resolve mention to Admin role notification
-    expect(fnBody).toMatch(/mention|_AGENCY_MEMBERS|_lookupMention/);
-  });
-
-  it('46. Unknown @name -> no mention notification fired', function() {
-    // Mention loop should skip unresolved names
-    expect(fnBody).toMatch(/if\s*\(!|filter|find/);
-  });
-
-  it('47. Failed POST -> no notifications fired', function() {
-    // Notifications are chained in .then() — if POST fails, .catch runs instead
+  it('45. _handleSubmitComment still has the .then / .catch chain', function() {
     expect(fnBody).toMatch(/\.then\(function/);
     expect(fnBody).toMatch(/\.catch\(function/);
-    // Notification calls must be inside .then(), not before it
-    var thenIdx = fnBody.indexOf('.then(function');
-    var notifIdx = fnBody.indexOf("'/notifications'");
-    expect(thenIdx).toBeLessThan(notifIdx);
+  });
+
+  it('46. client mention roster helpers are preserved for display', function() {
+    // window._clientMentionRoster and _displayNameForRow are used by
+    // the autocomplete UI and are kept intact after the fan-out removal.
+    expect(clientSrc).toContain('_clientMentionRoster');
   });
 });
 

@@ -2441,58 +2441,9 @@ window._doSubmitComment = async function(opts) {
       action: 'Commented: ' + opts.message
     });
 
-    var _targets = [];
-    if (opts.visibility === 'all') {
-      if (_roleLower === 'client') {
-        _targets = ['Servicing', 'Admin', 'Creative'];
-      } else {
-        _targets = ['Client'];
-      }
-    } else if (opts.visibility === 'admin') {
-      _targets = ['Admin'];
-    } else if (opts.visibility === 'servicing') {
-      _targets = ['Servicing'];
-    } else if (opts.visibility === 'creative') {
-      _targets = ['Creative'];
-    }
-
-    _targets.forEach(function(role) {
-      apiFetch('/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          user_role: role,
-          post_id: opts.postId,
-          type: 'comment',
-          message: opts.author + ' commented on ' + opts.title,
-          actor: (window.AppState.user.name || window.currentUserName || 'Unknown'),
-          read: false
-        })
-      }).catch(function(err){ console.error('[pcs] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'pcs-notification-2'); });
-    });
-
-    if (opts.mentioned && opts.mentioned.length > 0) {
-      opts.mentioned.forEach(function(name) {
-        var _member = _AGENCY_MEMBERS.find(function(m) {
-          return m.name.toLowerCase() === name.toLowerCase();
-        });
-        if (!_member) return;
-        if (_targets.indexOf(_member.role) !== -1) return;
-        var _mentionMsg = opts.isInternal
-          ? opts.author + ' mentioned you in a note on "' + opts.title + '"'
-          : opts.author + ' mentioned you on "' + opts.title + '"';
-        apiFetch('/notifications', {
-          method: 'POST',
-          body: JSON.stringify({
-            user_role: _member.role,
-            post_id: opts.postId,
-            type: 'mention',
-            message: _mentionMsg,
-            actor: (window.AppState.user.name || window.currentUserName || 'Unknown'),
-            read: false
-          })
-        }).catch(function(err){ console.error('[pcs] mention notification failed', err); window.logError && window.logError(err && err.message, err && err.stack, 'mention-notification'); });
-      });
-    }
+    // Notification fan-out removed — notify-comment edge function now
+    // writes all comment + mention notification rows and sends emails.
+    // JS-side fan-out caused duplicate notifications.
 
     var _mentionContacts = await _lookupMentionEmails(opts.mentioned);
     window._lastMentionContacts = _mentionContacts;
