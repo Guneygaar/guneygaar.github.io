@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-14 (brief-stage-comprehensive-fix: brief-discussion-section + brief-chip-strip + brief-deeplink-routing + brief-pipeline-search-filter + brief-notif-tap-routing). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-14 (caption-hashtag-entity-fix: client-side `_hashtagHtml` hashtag regex now uses `(?<!&)(#[a-zA-Z]\w*)` so `#39` inside `&#39;` HTML entities is no longer wrapped in a hashtag span — fixes apostrophes/quotes rendering as `&#39;` in client captions). Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -220,7 +220,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260414a`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260414k`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
