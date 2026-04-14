@@ -115,7 +115,7 @@ async function checkWorkspaceEnabled(workspaceId, feature) {
 
 async function loadBrandGuide(env) {
   try {
-    const obj = await env.SORTED_IMAGES.get('ai/brand-guide.txt');
+    const obj = await env.AI_ASSETS.get('brand-guide.txt');
     if (!obj) return '';
     return await obj.text();
   } catch (e) {
