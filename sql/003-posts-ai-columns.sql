@@ -1,0 +1,52 @@
+-- ═══════════════════════════════════════════════════════════════
+-- PR 1 — Sorted AI Foundation
+-- Migration 003: add is_draft + ai_origin columns to posts
+-- ═══════════════════════════════════════════════════════════════
+--
+-- PURPOSE:
+--   is_draft  — true = AI-created draft, only visible to the admin
+--               who created it. false = live in the pipeline.
+--               Every non-Admin query in 07-post-load.js is scoped
+--               by `is_draft=eq.false` so Servicing / Creative /
+--               Client never see drafts. Admin sees everything.
+--
+--   ai_origin — permanent provenance flag. true = this post was
+--               ever AI-created. NEVER flipped back to false — it
+--               survives push-to-production and any future edit.
+--               Used for the ✦ symbol in future AI PRs.
+--
+-- SAFETY:
+--   Both columns ship with DEFAULT false so every existing row is
+--   backfilled as "not a draft, not AI-origin" with zero downtime.
+--   Adding a boolean column with a constant default is a metadata-
+--   only operation in Postgres 11+ — no table rewrite.
+--
+-- RUN ORDER:
+--   1. sql/003-posts-ai-columns.sql   (this file)
+--   2. sql/004-ai-usage-table.sql
+--
+-- DEPLOYMENT:
+--   Shubham runs this manually in the Supabase SQL editor before
+--   the corresponding web deploy goes live. Nothing in this file
+--   is auto-applied by the app.
+-- ═══════════════════════════════════════════════════════════════
+
+ALTER TABLE posts ADD COLUMN is_draft  boolean DEFAULT false;
+ALTER TABLE posts ADD COLUMN ai_origin boolean DEFAULT false;
+
+-- ─────────────────────────────────────────────────────────────
+-- VERIFICATION (run after applying):
+--
+--   SELECT column_name, data_type, column_default, is_nullable
+--   FROM   information_schema.columns
+--   WHERE  table_name = 'posts'
+--     AND  column_name IN ('is_draft', 'ai_origin')
+--   ORDER  BY column_name;
+--   -- Both rows should show data_type = 'boolean',
+--   --                    column_default = 'false',
+--   --                    is_nullable    = 'YES'.
+--
+--   -- Backfill sanity check:
+--   SELECT COUNT(*) FROM posts WHERE is_draft  IS NULL;  -- expect 0
+--   SELECT COUNT(*) FROM posts WHERE ai_origin IS NULL;  -- expect 0
+-- ─────────────────────────────────────────────────────────────

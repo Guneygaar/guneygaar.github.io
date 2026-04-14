@@ -171,6 +171,27 @@ async function uploadPostAsset(file, postId) {
   return data.url;
 }
 
+// Fetches workspace_settings row for the active workspace and stashes
+// the result on window.AppState.workspace so every AI feature gate can
+// read it without making a network call. Called once from activateRole()
+// (03-auth.js) right after the post-login token refresh timer is wired,
+// BEFORE any render function runs. Fire-and-forget: never blocks login,
+// never shows a toast, and swallows errors into an empty object so the
+// app degrades gracefully if workspace_settings is unreachable.
+async function loadWorkspaceSettings() {
+  try {
+    const rows = await apiFetch(
+      '/workspace_settings?workspace_id=eq.default&select=*&limit=1',
+      {},
+      { allowLogout: false }
+    );
+    window.AppState.workspace = (Array.isArray(rows) && rows[0]) ? rows[0] : {};
+  } catch (err) {
+    window.AppState.workspace = window.AppState.workspace || {};
+    window.logError && window.logError(err && err.message, err && err.stack, 'load-workspace-settings');
+  }
+}
+
 async function logActivity({ post_id, actor, actor_role, action, old_stage, new_stage }) {
   console.log('[logActivity] called:', { post_id, actor, action, old_stage, new_stage });
   var token = localStorage.getItem('sb_access_token');
