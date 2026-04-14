@@ -156,6 +156,217 @@ window.forcePCSReset = function() {
   _drainDeferredRender();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// AI helpers (PR 2 — Sorted AI PCS Writer + QC + Chat, Admin only)
+//
+// _callSrtdAI() is the single POST helper every AI feature in PCS
+// uses to talk to the srtd-ai Cloudflare Worker. All four AI UI
+// entry points (writer / qc / chat, plus the option picker) are
+// gated per-feature at render time on
+//   isAdmin && AppState.workspace.ai_* === true
+// so non-Admin roles and disabled workspaces never see a button.
+// Every handler also returns early at the top on a missing
+// window.AI_CONFIG so this file remains safe to load even if the
+// PR-1 ai-config.js script failed to ship.
+// ═══════════════════════════════════════════════════════════════
+
+async function _callSrtdAI(feature, messages, postId) {
+  var cfg = window.AI_CONFIG;
+  if (!cfg || !cfg.workerUrl) return { success: false, error: 'AI not configured' };
+  try {
+    var res = await fetch(cfg.workerUrl + '/ai/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AI-Secret': cfg.secret
+      },
+      body: JSON.stringify({
+        feature: feature,
+        messages: messages,
+        post_id: postId || null,
+        workspace_id: 'default',
+        created_by: (window.AppState.user.email || '')
+      })
+    });
+    var data = await res.json();
+    return data;
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+window._pcsAiDraft = async function(id, btn) {
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (!post) return;
+
+  // Toggle off if already open
+  var existingOpts = document.getElementById('pcs-ai-opts-' + id);
+  if (existingOpts) {
+    existingOpts.remove();
+    var capTextEl = document.getElementById('pcs-caption-text');
+    if (capTextEl) capTextEl.style.display = '';
+    var seeMoreToggle = document.getElementById('pcs-caption-see-more');
+    if (seeMoreToggle) seeMoreToggle.style.display = '';
+    btn.textContent = '\u2726 Draft';
+    btn.classList.remove('pcs-ai-draft-btn--active');
+    return;
+  }
+
+  btn.textContent = '...';
+  btn.disabled = true;
+
+  var brief = post.title || '';
+  var pillar = post.content_pillar || '';
+  var messages = [{
+    role: 'user',
+    content: 'Write 3 LinkedIn caption options for this post.\n\nTitle: ' + brief +
+      '\nContent pillar: ' + pillar +
+      (post.caption ? '\nExisting draft: ' + post.caption : '')
+  }];
+
+  var result = await _callSrtdAI('writer', messages, id);
+
+  btn.textContent = '\u2726 Draft';
+  btn.disabled = false;
+
+  if (!result.success) {
+    btn.textContent = 'Error';
+    setTimeout(function() { btn.textContent = '\u2726 Draft'; }, 2000);
+    return;
+  }
+
+  btn.classList.add('pcs-ai-draft-btn--active');
+
+  // Hide existing caption while options are open
+  var capText = document.getElementById('pcs-caption-text');
+  if (capText) capText.style.display = 'none';
+  var seeMore = document.getElementById('pcs-caption-see-more');
+  if (seeMore) seeMore.style.display = 'none';
+
+  // Parse 3 options from response (numbered "1." / "2." / "3." or "Option 01" etc.)
+  var raw = result.content || '';
+  var opts = [];
+  var lines = raw.split('\n');
+  var current = '';
+  lines.forEach(function(line) {
+    if (/^(option\s*0?[123]|[123][.):])/i.test(line.trim())) {
+      if (current.trim()) opts.push(current.trim());
+      current = line.replace(/^(option\s*0?[123]|[123][.):]\s*)/i, '').trim();
+    } else {
+      current += (current ? '\n' : '') + line;
+    }
+  });
+  if (current.trim()) opts.push(current.trim());
+  while (opts.length < 3) opts.push(raw);
+  opts = opts.slice(0, 3);
+
+  var optsHtml = '<div id="pcs-ai-opts-' + id + '" class="pcs-ai-opts-wrap">';
+  opts.forEach(function(txt, i) {
+    optsHtml += '<div class="pcs-ai-opt" data-idx="' + i + '" onclick="window._pcsPickAiOpt(this, \'' + id + '\')">' +
+      '<div class="pcs-ai-opt-n">Option 0' + (i + 1) + ' <span class="pcs-ai-opt-tag">Tap to select</span></div>' +
+      '<div class="pcs-ai-opt-txt">' + txt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+      '<div class="pcs-ai-sel-dot"></div>' +
+    '</div>';
+  });
+  optsHtml += '</div>';
+
+  var capSection = document.getElementById('pcs-caption-section');
+  if (capSection) capSection.insertAdjacentHTML('beforeend', optsHtml);
+};
+
+window._pcsPickAiOpt = function(el, id) {
+  document.querySelectorAll('#pcs-ai-opts-' + id + ' .pcs-ai-opt').forEach(function(o) {
+    o.classList.remove('pcs-ai-opt--sel');
+    var tag = o.querySelector('.pcs-ai-opt-tag');
+    if (tag) tag.textContent = 'Tap to select';
+  });
+  el.classList.add('pcs-ai-opt--sel');
+  var elTag = el.querySelector('.pcs-ai-opt-tag');
+  if (elTag) elTag.textContent = 'Selected';
+};
+
+window._pcsRunQC = async function(id, btn) {
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (!post || !post.caption) {
+    var subNoCap = btn.querySelector('.pcs-qc-sub');
+    if (subNoCap) subNoCap.textContent = 'No caption to check';
+    return;
+  }
+
+  var titleEl = btn.querySelector('.pcs-qc-title');
+  var subEl   = btn.querySelector('.pcs-qc-sub');
+  if (titleEl) titleEl.textContent = 'Checking...';
+  btn.disabled = true;
+
+  var messages = [{ role: 'user', content: 'Check this LinkedIn caption:\n\n' + post.caption }];
+  var result = await _callSrtdAI('qc', messages, id);
+
+  if (titleEl) titleEl.textContent = 'QC against Brand Guide';
+  if (subEl)   subEl.textContent   = 'Check tone, voice and brand language';
+  btn.disabled = false;
+
+  var resultDiv = document.getElementById('pcs-qc-result-' + id);
+  if (!resultDiv) return;
+
+  if (!result.success) {
+    resultDiv.innerHTML = '<div class="pcs-qc-error">QC failed. Try again.</div>';
+    resultDiv.style.display = 'block';
+    return;
+  }
+
+  resultDiv.innerHTML =
+    '<div class="pcs-qc-rh">' +
+      '<span class="pcs-qc-rs-lbl">Brand QC Result</span>' +
+      '<span class="pcs-qc-rt">Just now</span>' +
+    '</div>' +
+    '<div class="pcs-qc-body">' +
+      (result.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') +
+    '</div>' +
+    '<button class="pcs-qc-dis" onclick="document.getElementById(\'pcs-qc-result-' + id + '\').style.display=\'none\'">Dismiss</button>';
+  resultDiv.style.display = 'block';
+};
+
+window._pcsAiChat = async function(id) {
+  var input = document.getElementById('pcs-chat-input-' + id);
+  var thread = document.getElementById('pcs-chat-thread-' + id);
+  if (!input || !thread) return;
+  var val = input.value.trim();
+  if (!val) return;
+
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  var capContext = post && post.caption ? 'Current caption:\n' + post.caption + '\n\n' : '';
+
+  thread.innerHTML += '<div class="pcs-chat-msg">' +
+      '<div class="pcs-chat-who-you">You</div>' +
+      '<div class="pcs-chat-txt">' + val.replace(/</g, '&lt;') + '</div>' +
+    '</div>';
+  input.value = '';
+
+  var thinkingId = 'thinking-' + Date.now();
+  thread.innerHTML += '<div id="' + thinkingId + '" class="pcs-chat-msg">' +
+      '<div class="pcs-chat-who-claude">Claude</div>' +
+      '<div class="pcs-chat-txt pcs-chat-thinking">...</div>' +
+    '</div>';
+  thread.scrollTop = 99999;
+
+  var messages = [{ role: 'user', content: capContext + val }];
+  var result = await _callSrtdAI('chat', messages, id);
+
+  var thinking = document.getElementById(thinkingId);
+  if (thinking) {
+    var thinkingTxt = thinking.querySelector('.pcs-chat-txt');
+    if (result.success) {
+      if (thinkingTxt) {
+        thinkingTxt.textContent = result.content || '';
+        thinkingTxt.classList.remove('pcs-chat-thinking');
+      }
+    } else {
+      if (thinkingTxt) thinkingTxt.textContent = 'Error. Try again.';
+    }
+  }
+  thread.scrollTop = 99999;
+};
+
 window._renderPCS = function(postId) {
   _removePcsConfirm();
 
@@ -286,18 +497,67 @@ window._renderPCS = function(postId) {
   var waContainer = document.getElementById('pcs-wa-container');
   if (waContainer) waContainer.innerHTML = '';
 
-  // f2) Caption action buttons (canManage only)
+  // f2) Caption action buttons (canManage only) + AI Draft (Admin only)
   var capActionsContainer = document.getElementById('pcs-cap-actions-container');
   if (capActionsContainer) {
     if (canManage) {
+      var aiDraftBtn = (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_writer)
+        ? '<button class="pcs-cap-btn pcs-ai-draft-btn" id="pcs-ai-draft-btn-' + esc(id) + '" onclick="window._pcsAiDraft(\'' + esc(id) + '\', this)">\u2726 Draft</button>'
+        : '';
       capActionsContainer.innerHTML =
         '<div class="pcs-cap-actions">' +
-        '<button class="pcs-cap-btn" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
+        aiDraftBtn +
+        '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
         '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
         (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
         '</div>';
     } else {
       capActionsContainer.innerHTML = '';
+    }
+  }
+
+  // f3) AI section (QC + Chat) — Admin only, gated on workspace flags.
+  //     Injected into the caption pane, right BEFORE the Done button
+  //     so it sits between the cap-actions row and the Done footer.
+  //     Skips re-injection on subsequent renders via the id guard.
+  if (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_enabled) {
+    var existingAiSection = document.getElementById('pcs-ai-section-' + esc(id));
+    if (!existingAiSection) {
+      var aiSection = document.createElement('div');
+      aiSection.id = 'pcs-ai-section-' + esc(id);
+      aiSection.className = 'pcs-ai-section';
+
+      var showQC = window.AppState.workspace.ai_qc;
+      var showChat = window.AppState.workspace.ai_chat;
+
+      aiSection.innerHTML =
+        (showQC ?
+          '<button class="pcs-qc-btn" onclick="window._pcsRunQC(\'' + esc(id) + '\', this)">' +
+            '<div class="pcs-qc-left">' +
+              '<div>' +
+                '<div class="pcs-qc-title">QC against Brand Guide</div>' +
+                '<div class="pcs-qc-sub">Check tone, voice and brand language</div>' +
+              '</div>' +
+            '</div>' +
+            '<span class="pcs-qc-arr">\u2192</span>' +
+          '</button>' +
+          '<div class="pcs-qc-result" id="pcs-qc-result-' + esc(id) + '" style="display:none"></div>'
+        : '') +
+        (showChat ?
+          '<div class="pcs-chat-hd">Ask Claude</div>' +
+          '<div class="pcs-chat-thread" id="pcs-chat-thread-' + esc(id) + '"></div>' +
+          '<div class="pcs-chat-row">' +
+            '<input class="pcs-chat-input" id="pcs-chat-input-' + esc(id) + '" type="text" placeholder="Rewrite, shorten, add a hook...">' +
+            '<button class="pcs-chat-send" onclick="window._pcsAiChat(\'' + esc(id) + '\')">Send</button>' +
+          '</div>'
+        : '');
+
+      var closeBtn = capActionsContainer.parentElement.querySelector('.pcs-close-btn');
+      if (closeBtn) {
+        closeBtn.parentElement.insertBefore(aiSection, closeBtn);
+      } else {
+        capActionsContainer.parentElement.appendChild(aiSection);
+      }
     }
   }
 
