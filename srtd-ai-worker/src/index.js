@@ -312,6 +312,226 @@ async function handleLog(request, env) {
   }
 }
 
+// ─── Gmail import (PR 4) ─────────────────────────────────────
+//
+// Two routes that front the Gmail REST API on behalf of the
+// srtd-ai worker. handleGmailList fetches recent messages from a
+// fixed allowlist of client addresses. handleGmailBrief fetches a
+// single message body, then asks Claude to extract a title + 3
+// LinkedIn caption options + internal notes as strict JSON.
+//
+// Secrets provisioned separately via `wrangler secret put`:
+//   GMAIL_CLIENT_ID
+//   GMAIL_CLIENT_SECRET
+//   GMAIL_REFRESH_TOKEN
+// OAuth flow: refresh_token grant against oauth2.googleapis.com,
+// then Bearer token against gmail.googleapis.com/gmail/v1.
+
+async function getGmailAccessToken(env) {
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GMAIL_CLIENT_ID,
+      client_secret: env.GMAIL_CLIENT_SECRET,
+      refresh_token: env.GMAIL_REFRESH_TOKEN,
+      grant_type: 'refresh_token'
+    })
+  });
+  const tokenData = await tokenRes.json();
+  return tokenData.access_token || null;
+}
+
+async function handleGmailList(request, env) {
+  try {
+    if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
+      return errorResponse('Unauthorized', 401);
+    }
+
+    const accessToken = await getGmailAccessToken(env);
+    if (!accessToken) {
+      return errorResponse('Failed to get Gmail access token', 500);
+    }
+
+    // Allowlist: only pull from known client addresses. Hardcoded
+    // so a compromised client cannot ask the worker to read arbitrary
+    // senders. Window: last 7 days, cap 10 results.
+    const query = 'from:thakur.manisha@somaiya.com OR from:shivangini.j@somaiya.com newer_than:7d';
+    const listRes = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&q=' + encodeURIComponent(query),
+      { headers: { 'Authorization': 'Bearer ' + accessToken } }
+    );
+    const listData = await listRes.json();
+    const messages = listData.messages || [];
+
+    if (messages.length === 0) {
+      return jsonResponse({ success: true, emails: [] });
+    }
+
+    // Hydrate each message with subject + snippet + sender + date.
+    const emails = await Promise.all(messages.map(async function(msg) {
+      try {
+        const msgRes = await fetch(
+          'https://gmail.googleapis.com/gmail/v1/users/me/messages/' + msg.id +
+            '?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date',
+          { headers: { 'Authorization': 'Bearer ' + accessToken } }
+        );
+        const msgData = await msgRes.json();
+        const headers = (msgData.payload && msgData.payload.headers) || [];
+        const getHeader = function(name) {
+          const h = headers.find(function(h) { return h.name === name; });
+          return h ? h.value : '';
+        };
+        const fromRaw = getHeader('From');
+        const senderName = fromRaw.indexOf('Manisha') !== -1 ? 'Manisha' :
+                           fromRaw.indexOf('Shivangini') !== -1 ? 'Shivangini' :
+                           (fromRaw.split('<')[0].trim() || fromRaw);
+        return {
+          id: msg.id,
+          subject: getHeader('Subject') || '(no subject)',
+          snippet: (msgData.snippet || '')
+            .replace(/&#39;/g, "'")
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .slice(0, 120),
+          sender: senderName,
+          date: getHeader('Date')
+        };
+      } catch (e) {
+        return null;
+      }
+    }));
+
+    return jsonResponse({
+      success: true,
+      emails: emails.filter(Boolean)
+    });
+  } catch (err) {
+    return errorResponse((err && err.message) || 'unknown error', 500);
+  }
+}
+
+async function handleGmailBrief(request, env) {
+  try {
+    if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
+      return errorResponse('Unauthorized', 401);
+    }
+
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return errorResponse('Invalid JSON', 400);
+    }
+
+    const messageId   = body && body.message_id;
+    const workspaceId = (body && body.workspace_id) || 'default';
+    const createdBy   = (body && body.created_by) || '';
+
+    if (!messageId) return errorResponse('message_id required', 400);
+
+    // Workspace-level feature gate. Uses the 'email_brief' key in
+    // FEATURE_FLAGS → 'ai_email_briefs' in workspace_settings.
+    const gate = await checkWorkspaceEnabled(workspaceId, 'email_brief');
+    if (!gate.ok) return jsonResponse({ success: false, error: gate.reason }, 403);
+
+    const accessToken = await getGmailAccessToken(env);
+    if (!accessToken) return errorResponse('Failed to get Gmail access token', 500);
+
+    // Pull the full message so we can walk the MIME tree and lift
+    // out the text/plain part.
+    const msgRes = await fetch(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages/' + messageId + '?format=full',
+      { headers: { 'Authorization': 'Bearer ' + accessToken } }
+    );
+    const msgData = await msgRes.json();
+
+    function extractBody(payload) {
+      if (!payload) return '';
+      if (payload.mimeType === 'text/plain' && payload.body && payload.body.data) {
+        try {
+          return atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
+        } catch (e) {
+          return '';
+        }
+      }
+      if (payload.parts) {
+        for (var i = 0; i < payload.parts.length; i++) {
+          var result = extractBody(payload.parts[i]);
+          if (result) return result;
+        }
+      }
+      return '';
+    }
+
+    // 3000-char cap — keeps the prompt inside a sane token budget
+    // even on a forwarded-thread-of-doom email.
+    const emailBody = extractBody(msgData.payload).slice(0, 3000);
+    const headers = (msgData.payload && msgData.payload.headers) || [];
+    const subject = (headers.find(function(h) { return h.name === 'Subject'; }) || {}).value || '';
+
+    // Load GBL brand context — shared with the writer / qc flows.
+    const brandGuide      = await loadBrandGuide(env);
+    const approvedContext = await loadApprovedContext();
+
+    // System prompt pins Claude to a strict JSON schema so the
+    // frontend can JSON.parse() the result without a regex dance.
+    const systemPrompt =
+      'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL). ' +
+      'Read the email below and extract the content brief. ' +
+      'Return a JSON object only — no preamble, no markdown, no backticks — with these exact keys: ' +
+      'title (string, 5-8 words, the post title), ' +
+      'copy_option_1 (string, full LinkedIn caption option 1), ' +
+      'copy_option_2 (string, full LinkedIn caption option 2), ' +
+      'copy_option_3 (string, full LinkedIn caption option 3), ' +
+      'internal_notes (string, 1-2 lines: source of brief + key instructions from client). ' +
+      'Write 3 distinct caption options in GBL voice. Each should be complete and post-ready. ' +
+      'Here are approved posts for reference:\n\n' + approvedContext +
+      '\n\nBrand guide:\n' + brandGuide;
+
+    const messages = [{
+      role: 'user',
+      content: 'Email subject: ' + subject + '\n\nEmail body:\n' + emailBody
+    }];
+
+    const anthropicRes = await callAnthropic(env, systemPrompt, messages);
+    const rawText = (anthropicRes.content && anthropicRes.content[0] && anthropicRes.content[0].text) || '';
+
+    let parsed;
+    try {
+      const clean = rawText.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch (e) {
+      return errorResponse('Claude did not return valid JSON: ' + rawText.slice(0, 200), 500);
+    }
+
+    // Fire-and-forget usage telemetry — never blocks the response.
+    const usage = anthropicRes.usage || {};
+    const inputTokens  = Number(usage.input_tokens)  || 0;
+    const outputTokens = Number(usage.output_tokens) || 0;
+    logUsage({
+      workspace_id:  workspaceId,
+      post_id:       null,
+      feature:       'email_brief',
+      tokens_input:  inputTokens,
+      tokens_output: outputTokens,
+      cost_usd:      calcCostUsd(inputTokens, outputTokens),
+      created_by:    createdBy
+    });
+
+    return jsonResponse({
+      success:        true,
+      title:          parsed.title          || subject,
+      copy_option_1:  parsed.copy_option_1  || '',
+      copy_option_2:  parsed.copy_option_2  || '',
+      copy_option_3:  parsed.copy_option_3  || '',
+      internal_notes: parsed.internal_notes || ''
+    });
+  } catch (err) {
+    return errorResponse((err && err.message) || 'unknown error', 500);
+  }
+}
+
 // ─── entry point ─────────────────────────────────────────────
 
 export default {
@@ -327,6 +547,12 @@ export default {
     }
     if (request.method === 'POST' && url.pathname === '/ai/log') {
       return handleLog(request, env);
+    }
+    if (request.method === 'POST' && url.pathname === '/gmail/list') {
+      return handleGmailList(request, env);
+    }
+    if (request.method === 'POST' && url.pathname === '/gmail/brief') {
+      return handleGmailBrief(request, env);
     }
 
     return new Response('Not Found', { status: 404, headers: CORS_HEADERS });

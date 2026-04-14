@@ -22,6 +22,13 @@ const DRAFT_KEY = 'hinglish_new_post_draft';
 let _draftTimer = null;
 let _draftDebounce = null;
 
+// PR 4 — Gmail import state. Mirrored onto window.* so handlers
+// wired via inline onclick can read/write them.
+var _npsSelectedOptIdx = 0;   // 1 | 2 | 3 — which AI caption option is picked
+var _npsGmailImported  = false; // true once the form has been prefilled from Gmail
+window._npsSelectedOptIdx = _npsSelectedOptIdx;
+window._npsGmailImported  = _npsGmailImported;
+
 function saveDraftDebounced() {
 clearTimeout(_draftDebounce);
 _draftDebounce = setTimeout(saveDraft, 800);
@@ -139,6 +146,13 @@ if (closeBtn) closeBtn.onclick = function() { closeNewPostModal(); };
 var createBtn = document.getElementById('nps-create-btn');
 if (createBtn) createBtn.onclick = function() { submitNewPost(); };
 
+// PR 4 — Gmail import wiring. Safe to call on every re-open;
+// re-assignment of .onclick replaces the previous handler.
+var gmailBtnEl = document.getElementById('nps-gmail-btn');
+if (gmailBtnEl) gmailBtnEl.onclick = window._npsShowEmailList;
+var emailCancelEl = document.getElementById('nps-email-cancel');
+if (emailCancelEl) emailCancelEl.onclick = window._npsHideEmailList;
+
 // Wire saveDraftDebounced to remaining fields
 ['new-post-stage','new-post-pillar','new-post-format','new-post-location','new-post-date'].forEach(function(id) {
   var el = document.getElementById(id);
@@ -155,6 +169,248 @@ if (captionWire) captionWire.oninput = function() {
   saveDraftDebounced();
 };
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PR 4 — Gmail import handlers (Admin only)
+//
+// _npsShowEmailList   — POSTs to <worker>/gmail/list, renders up
+//                       to 10 recent client briefs.
+// _npsHideEmailList   — collapses the list back to the button.
+// _npsSelectEmail     — POSTs to <worker>/gmail/brief, pre-fills
+//                       the title, swaps the caption textarea for
+//                       3 clickable caption options, pre-fills
+//                       internal notes, and flips the button into
+//                       "Brief imported" state.
+// _npsPickOpt         — single-selection toggle across the 3
+//                       option cards; stores the idx on
+//                       window._npsSelectedOptIdx for submit.
+// _npsRefine          — sends the current 3 options + the user's
+//                       refine instruction to the writer feature
+//                       and replaces all 3 option texts in place.
+//
+// Every handler returns early on missing window.AI_CONFIG so the
+// form still works if ai-config.js fails to ship for any reason.
+// ═══════════════════════════════════════════════════════════════
+
+window._npsShowEmailList = async function() {
+  var emailList = document.getElementById('nps-email-list');
+  var items = document.getElementById('nps-email-items');
+  if (!emailList || !items) return;
+
+  items.innerHTML = '<div style="padding:12px 18px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#555">Loading...</div>';
+  emailList.style.display = 'block';
+
+  try {
+    var cfg = window.AI_CONFIG;
+    if (!cfg || !cfg.workerUrl) throw new Error('AI not configured');
+
+    var res = await fetch(cfg.workerUrl + '/gmail/list', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AI-Secret': cfg.secret },
+      body: JSON.stringify({ workspace_id: 'default' })
+    });
+    var data = await res.json();
+
+    if (!data.success || !data.emails || data.emails.length === 0) {
+      items.innerHTML = '<div style="padding:12px 18px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#555">No recent briefs found</div>';
+      return;
+    }
+
+    items.innerHTML = '';
+    data.emails.forEach(function(email) {
+      var div = document.createElement('div');
+      div.className = 'nps-email-item';
+      var dateStr = '';
+      try {
+        if (email.date) {
+          dateStr = new Date(email.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        }
+      } catch (e) { dateStr = ''; }
+      div.innerHTML =
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">' +
+          '<span class="nps-email-sender">' + ((email.sender || 'Client') + '').replace(/</g, '&lt;') + '</span>' +
+          '<span class="nps-email-time">' + dateStr + '</span>' +
+        '</div>' +
+        '<div class="nps-email-subject">' + ((email.subject || '') + '').replace(/</g, '&lt;') + '</div>' +
+        '<div class="nps-email-preview">' + ((email.snippet || '') + '').replace(/</g, '&lt;') + '</div>';
+      div.onclick = function() { window._npsSelectEmail(email.id, email.subject); };
+      items.appendChild(div);
+    });
+  } catch (e) {
+    items.innerHTML = '<div style="padding:12px 18px;font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:#FF4B4B">Error loading emails</div>';
+  }
+};
+
+window._npsHideEmailList = function() {
+  var emailList = document.getElementById('nps-email-list');
+  if (emailList) emailList.style.display = 'none';
+};
+
+window._npsSelectEmail = async function(messageId, subject) {
+  var emailList = document.getElementById('nps-email-list');
+  var proc      = document.getElementById('nps-gmail-processing');
+  var procTxt   = document.getElementById('nps-proc-txt');
+  if (emailList) emailList.style.display = 'none';
+  if (proc)      proc.style.display = 'flex';
+  if (procTxt)   procTxt.textContent = 'Claude is reading the brief...';
+
+  try {
+    var cfg = window.AI_CONFIG;
+    if (!cfg || !cfg.workerUrl) throw new Error('AI not configured');
+
+    var res = await fetch(cfg.workerUrl + '/gmail/brief', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AI-Secret': cfg.secret },
+      body: JSON.stringify({
+        message_id:   messageId,
+        workspace_id: 'default',
+        created_by:   (window.AppState.user && window.AppState.user.email) || ''
+      })
+    });
+    var data = await res.json();
+
+    if (proc) proc.style.display = 'none';
+
+    if (!data.success) {
+      if (typeof showToast === 'function') showToast('Could not read brief - try again', 'error');
+      return;
+    }
+
+    // Pre-fill title
+    var titleEl = document.getElementById('new-post-title');
+    if (titleEl) titleEl.value = data.title || subject || '';
+
+    // Swap the textarea for the 3-option AI picker and seed each.
+    var textarea = document.getElementById('new-post-caption');
+    var optsWrap = document.getElementById('nps-caption-opts');
+    if (textarea) textarea.style.display = 'none';
+    if (optsWrap) {
+      document.getElementById('nps-opt-txt-1').textContent = data.copy_option_1 || '';
+      document.getElementById('nps-opt-txt-2').textContent = data.copy_option_2 || '';
+      document.getElementById('nps-opt-txt-3').textContent = data.copy_option_3 || '';
+      optsWrap.style.display = 'flex';
+      // Default pick: option 1.
+      window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
+    }
+
+    // Pre-fill internal notes (Brief / Internal Notes field 08).
+    var notesEl = document.getElementById('new-post-comments');
+    if (notesEl) notesEl.value = data.internal_notes || '';
+
+    // Flip the "Import" button into its "Brief imported" state.
+    document.querySelectorAll('.nps-ai-tag').forEach(function(el) { el.style.display = 'inline-flex'; });
+    var title = document.getElementById('nps-gmail-title');
+    var sub   = document.getElementById('nps-gmail-sub');
+    var arr   = document.getElementById('nps-gmail-arr');
+    if (title) title.textContent = '\u2726 Brief imported \u2713';
+    if (sub)   sub.textContent = ((data.title || subject || '') + '').substring(0, 40) + '... \u00b7 Tap to change';
+    if (arr)   arr.style.display = 'none';
+
+    window._npsGmailImported = true;
+
+    // Re-wire the Import button to "reset + re-fetch list" so a
+    // second tap lets the user pick a different email.
+    var gmailBtnReimport = document.getElementById('nps-gmail-btn');
+    if (gmailBtnReimport) {
+      gmailBtnReimport.onclick = function() {
+        window._npsGmailImported = false;
+        window._npsSelectedOptIdx = 0;
+        var textarea2 = document.getElementById('new-post-caption');
+        var opts2     = document.getElementById('nps-caption-opts');
+        if (textarea2) textarea2.style.display = '';
+        if (opts2)     opts2.style.display = 'none';
+        if (title) title.textContent = '\u2726 Import from Gmail';
+        if (sub)   sub.textContent = 'Check for briefs from Manisha or Shivangini';
+        if (arr)   arr.style.display = '';
+        gmailBtnReimport.onclick = window._npsShowEmailList;
+        document.querySelectorAll('.nps-ai-tag').forEach(function(el) { el.style.display = 'none'; });
+        window._npsShowEmailList();
+        _npsCheckValid();
+      };
+    }
+
+    _npsCheckValid();
+  } catch (e) {
+    if (proc) proc.style.display = 'none';
+    if (typeof showToast === 'function') showToast('Error reading brief', 'error');
+  }
+};
+
+window._npsPickOpt = function(el) {
+  if (!el) return;
+  document.querySelectorAll('.nps-cap-opt').forEach(function(o) {
+    o.classList.remove('nps-cap-opt--sel');
+    var tag = o.querySelector('.nps-cap-opt-tag');
+    if (tag) tag.textContent = 'Tap to select';
+  });
+  el.classList.add('nps-cap-opt--sel');
+  var selTag = el.querySelector('.nps-cap-opt-tag');
+  if (selTag) selTag.textContent = 'Selected';
+  window._npsSelectedOptIdx = parseInt(el.dataset.idx || '1', 10);
+};
+
+window._npsRefine = async function() {
+  var input   = document.getElementById('nps-refine-input');
+  var sendBtn = document.getElementById('nps-refine-send');
+  var instruction = input ? (input.value || '').trim() : '';
+  if (!instruction) return;
+
+  if (sendBtn) { sendBtn.textContent = '...'; sendBtn.disabled = true; }
+
+  var currentOpts = [
+    document.getElementById('nps-opt-txt-1') ? (document.getElementById('nps-opt-txt-1').textContent || '') : '',
+    document.getElementById('nps-opt-txt-2') ? (document.getElementById('nps-opt-txt-2').textContent || '') : '',
+    document.getElementById('nps-opt-txt-3') ? (document.getElementById('nps-opt-txt-3').textContent || '') : ''
+  ];
+
+  try {
+    var cfg = window.AI_CONFIG;
+    if (!cfg || !cfg.workerUrl) throw new Error('AI not configured');
+
+    var messages = [{
+      role: 'user',
+      content: 'Here are 3 LinkedIn caption options:\n\n' +
+        'Option 1:\n' + currentOpts[0] +
+        '\n\nOption 2:\n' + currentOpts[1] +
+        '\n\nOption 3:\n' + currentOpts[2] +
+        '\n\nInstruction: ' + instruction +
+        '\n\nRewrite all 3 options following this instruction. ' +
+        'Return JSON only with keys: copy_option_1, copy_option_2, copy_option_3.'
+    }];
+
+    var res = await fetch(cfg.workerUrl + '/ai/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-AI-Secret': cfg.secret },
+      body: JSON.stringify({
+        feature:      'writer',
+        messages:     messages,
+        workspace_id: 'default',
+        created_by:   (window.AppState.user && window.AppState.user.email) || ''
+      })
+    });
+    var data = await res.json();
+
+    if (data.success && data.content) {
+      try {
+        var clean = data.content.replace(/```json|```/g, '').trim();
+        var parsed = JSON.parse(clean);
+        if (parsed.copy_option_1) document.getElementById('nps-opt-txt-1').textContent = parsed.copy_option_1;
+        if (parsed.copy_option_2) document.getElementById('nps-opt-txt-2').textContent = parsed.copy_option_2;
+        if (parsed.copy_option_3) document.getElementById('nps-opt-txt-3').textContent = parsed.copy_option_3;
+        // Re-select option 1 after replacement so the submit path
+        // always points at a fresh option.
+        window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
+        if (input) input.value = '';
+      } catch (e) {
+        // JSON parse failed — keep the existing options visible.
+      }
+    }
+  } catch (e) {
+    // Network / config failure — keep existing options, swallow.
+  }
+
+  if (sendBtn) { sendBtn.textContent = 'Refine'; sendBtn.disabled = false; }
+};
 
 function openNewPostModal() {
 
@@ -198,6 +454,19 @@ var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = 'none';
 document.body.style.overflow = 'hidden';
 
+// PR 4 — Gmail import: show only for Admin when ai_email_briefs
+// is enabled in workspace_settings. Initial state on every open
+// is "button visible, list/processing hidden, no option picked".
+var gmailWrap = document.getElementById('nps-gmail-wrap');
+var orDivider = document.getElementById('nps-or-divider');
+var _npsRole = ((window.AppState && window.AppState.user && window.AppState.user.effectiveRole) || '').toLowerCase();
+var _npsIsAdmin = _npsRole === 'admin';
+var _npsAiEnabled = !!(window.AppState && window.AppState.workspace && window.AppState.workspace.ai_email_briefs);
+if (gmailWrap) gmailWrap.style.display = (_npsIsAdmin && _npsAiEnabled) ? 'block' : 'none';
+if (orDivider) orDivider.style.display = (_npsIsAdmin && _npsAiEnabled) ? 'flex' : 'none';
+window._npsGmailImported  = false;
+window._npsSelectedOptIdx = 0;
+
 _npsWireEvents();
 _npsCheckValid();
 startDraftAutosave();
@@ -228,6 +497,31 @@ var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = '';
 document.body.style.overflow = '';
 window.AppState.ui.modalOpen = false;
+
+// PR 4 — Gmail import: tear down every per-open UI shim so the
+// next open starts clean (button label, option wrap, processing
+// row, email list, AI tags).
+window._npsGmailImported  = false;
+window._npsSelectedOptIdx = 0;
+var captionOpts = document.getElementById('nps-caption-opts');
+if (captionOpts) captionOpts.style.display = 'none';
+var captionTextarea = document.getElementById('new-post-caption');
+if (captionTextarea) captionTextarea.style.display = '';
+var gmailBtn = document.getElementById('nps-gmail-btn');
+if (gmailBtn) {
+  var t = document.getElementById('nps-gmail-title');
+  var s = document.getElementById('nps-gmail-sub');
+  var a = document.getElementById('nps-gmail-arr');
+  if (t) t.textContent = '\u2726 Import from Gmail';
+  if (s) s.textContent = 'Check for briefs from Manisha or Shivangini';
+  if (a) a.style.display = '';
+}
+var emailList = document.getElementById('nps-email-list');
+if (emailList) emailList.style.display = 'none';
+var proc = document.getElementById('nps-gmail-processing');
+if (proc) proc.style.display = 'none';
+document.querySelectorAll('.nps-ai-tag').forEach(function(el) { el.style.display = 'none'; });
+
 _drainDeferredRender();
 }
 
@@ -242,7 +536,19 @@ const location = _s('new-post-location')?.value || '';
 const stage    = _s('new-post-stage')?.value || '';
 const date     = _s('new-post-date')?.value || '';
 const postLink = (_s('new-post-link')?.value || '').trim();
-var captionVal = (_s('new-post-caption')?.value || '').trim();
+// PR 4 — Gmail import: when the form was pre-filled from Gmail
+// and the user has (or defaulted to) one of the 3 AI caption
+// options, ship THAT option as the caption. Fall back to the
+// textarea value if nothing is selected OR the user swapped back
+// to manual entry.
+var captionVal = '';
+if (window._npsGmailImported && window._npsSelectedOptIdx > 0) {
+  var selectedOptEl = document.getElementById('nps-opt-txt-' + window._npsSelectedOptIdx);
+  captionVal = selectedOptEl ? (selectedOptEl.textContent || '').trim() : '';
+}
+if (!captionVal) {
+  captionVal = (_s('new-post-caption')?.value || '').trim();
+}
 
 if (!title) {
 console.warn('[submitNewPost] BLOCKED: title empty');
