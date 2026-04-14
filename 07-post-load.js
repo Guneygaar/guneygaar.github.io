@@ -661,6 +661,7 @@ function stopClientRealtime() {
     clearInterval(window._clientPollTimer);
     window._clientPollTimer = null;
   }
+  window._supabaseClient = null;
 }
 
 // -----------------------------------------------------------------

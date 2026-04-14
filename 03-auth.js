@@ -65,7 +65,7 @@ async function refreshSession() {
   var lockTs = parseInt(localStorage.getItem('_srtd_refresh_lock') || '0', 10);
   if (lockTs && (Date.now() - lockTs) < 10000) {
     // Another tab is refreshing — wait for its result
-    return new Promise(function(resolve) {
+    _refreshInProgress = new Promise(function(resolve) {
       var oldToken = localStorage.getItem('sb_access_token') || '';
       var attempts = 0;
       var pollId = setInterval(function() {
@@ -76,11 +76,17 @@ async function refreshSession() {
           resolve({ token: current });
         } else if (attempts >= 33) { // ~10 seconds at 300ms
           clearInterval(pollId);
-          // Other tab may have crashed — fall through to own refresh
-          _doRefresh(refreshToken).then(resolve);
+          // Other tab may have crashed — fall through to own refresh.
+          // Re-read sb_refresh_token from storage in case the other tab
+          // rotated it successfully before dying — never use the stale
+          // captured value.
+          var _freshToken = localStorage.getItem('sb_refresh_token') || refreshToken;
+          _doRefresh(_freshToken).then(resolve);
         }
       }, 300);
     });
+    _refreshInProgress = _refreshInProgress.finally(function() { _refreshInProgress = null; });
+    return _refreshInProgress;
   }
 
   _refreshInProgress = _doRefresh(refreshToken);
@@ -137,6 +143,15 @@ async function _doRefresh(refreshToken) {
     if (data.access_token) {
       localStorage.setItem('sb_access_token', data.access_token);
       if (data.refresh_token) localStorage.setItem('sb_refresh_token', data.refresh_token);
+      if (window._supabaseClient &&
+          window._supabaseClient.realtime &&
+          typeof window._supabaseClient.realtime.setAuth === 'function') {
+        try {
+          window._supabaseClient.realtime.setAuth(data.access_token);
+        } catch(e) {
+          console.warn('[auth] realtime setAuth failed', e);
+        }
+      }
       return { token: data.access_token };
     }
     return { error: 'server' };
@@ -164,7 +179,10 @@ if (!window._visibilityRefreshBound) {
 
     var refreshToken = localStorage.getItem('sb_refresh_token');
     if (!refreshToken) return;
-
+    try {
+      var _t = localStorage.getItem('sb_access_token');
+      if (_t && JSON.parse(atob(_t.split('.')[1])).exp*1000-Date.now() > 600000) return;
+    } catch(e) {}
     var result = await refreshSession();
     if (result && result.error === 'auth_expired') {
       _clearSessionAndLogin();
