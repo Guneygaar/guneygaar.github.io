@@ -472,6 +472,31 @@ _npsCheckValid();
 startDraftAutosave();
 if (typeof _initPostAssetInput === 'function') _initPostAssetInput();
 
+// Populate owner dropdown dynamically from user_roles
+(async function() {
+  try {
+    var _ownerSel = document.getElementById('new-post-owner');
+    if (!_ownerSel) return;
+    var _members = await apiFetch(
+      '/user_roles?role=neq.client&select=name,role,email' +
+      '&order=name.asc',
+      {}, { allowLogout: false }
+    );
+    if (!Array.isArray(_members)) return;
+    _ownerSel.innerHTML = '<option value="">Assign to...</option>';
+    _members.forEach(function(m) {
+      if (!m || !m.name || !m.role) return;
+      var _canonRole = m.role.charAt(0).toUpperCase() +
+                       m.role.slice(1).toLowerCase();
+      if (_canonRole === 'Client') return;
+      var opt = document.createElement('option');
+      opt.value = _canonRole;
+      opt.textContent = m.name;
+      _ownerSel.appendChild(opt);
+    });
+  } catch (_e) {}
+})();
+
 var captionEl = document.getElementById('new-post-caption');
 if (captionEl) {
   captionEl.style.height = 'auto';
@@ -491,6 +516,10 @@ var captionEl = document.getElementById('new-post-caption');
 if (captionEl) captionEl.value = '';
 _newPostAssetFiles = [];
 if (typeof clearPostAsset === 'function') clearPostAsset();
+
+var _ownerSel = document.getElementById('new-post-owner');
+if (_ownerSel) _ownerSel.innerHTML =
+  '<option value="">Assign to...</option>';
 
 document.getElementById('new-post-overlay').style.display = 'none';
 var nav = document.getElementById('bottom-nav');

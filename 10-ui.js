@@ -761,7 +761,7 @@ function renderNotifications(name, role) {
       ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
       : '';
 
-    var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done') ? ' data-is-brief="1"' : '';
+    var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done' || n.type === 'assign') ? ' data-is-brief="1"' : '';
     // notif-live-card retained as a marker class on published rows so the
     // tap delegate still finds them via closest('.notif-item, .notif-live-card').
     var liveMarker = isPublished ? ' notif-live-card' : '';
