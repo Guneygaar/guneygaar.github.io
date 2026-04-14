@@ -377,12 +377,15 @@ window._openBriefSheet = async function(postId) {
     }
   }
   // Check if the current user is the specific creative assigned
-  // to THIS brief — compare by name, never by role (role === 'creative'
-  // matched every creative and made the Create Post button appear for
-  // everyone in the old flow).
-  var _userName = (window.AppState.user.name || '').toLowerCase();
+  // to THIS brief — compare effective ROLE against post.owner (both
+  // canonical DB role strings). PR #843 moved posts.owner to the
+  // Title-Case role so the DB CHECK constraint passes; comparing by
+  // name broke the Create Post button for every creative. Comparing
+  // by role scales to any current or future creative automatically.
+  var _userRole = (window.AppState.user.effectiveRole || '').toLowerCase();
+  var _assigneeRole = (post.owner || '').toLowerCase();
   var _isAssignedCreative = _isCreativeRole && _isAssigned &&
-    _assigneeName.toLowerCase() === _userName;
+    _userRole === _assigneeRole;
   var _hasLinkedPost = !!(post.linked_post_id);
   var linkedPost = null;
   if (_hasLinkedPost) {
@@ -734,9 +737,34 @@ window._briefFetchTeamMembers = function() {
   // SELECT name, role FROM user_roles WHERE role != 'client' ORDER BY name
   return apiFetch('/user_roles?role=neq.Client&select=name,role,email&order=name.asc', { method: 'GET' })
     .then(function(rows) {
-      var list = Array.isArray(rows) ? rows.filter(function(r) { return r && r.name; }) : [];
-      window._briefTeamMembersCache = list;
-      return list;
+      var members = Array.isArray(rows) ? rows.filter(function(r) { return r && r.name; }) : [];
+      // Merge profiles.display_name over user_roles.name so the dropdown
+      // shows the human-friendly display name when present. Graceful
+      // fallback: if the profiles fetch fails, we still resolve with the
+      // user_roles names — the dropdown never blocks.
+      return new Promise(function(resolve) {
+        apiFetch('/profiles?select=email,display_name', { method: 'GET' })
+          .then(function(profileRows) {
+            if (!Array.isArray(profileRows)) return;
+            var profileMap = {};
+            profileRows.forEach(function(p) {
+              if (p && p.email && p.display_name) {
+                profileMap[p.email.toLowerCase()] = p.display_name;
+              }
+            });
+            members.forEach(function(m) {
+              if (m.email) {
+                var dn = profileMap[m.email.toLowerCase()];
+                if (dn) m.name = dn;
+              }
+            });
+          })
+          .catch(function() { /* graceful fallback */ })
+          .finally(function() {
+            window._briefTeamMembersCache = members;
+            resolve(members);
+          });
+      });
     });
 };
 
@@ -762,7 +790,7 @@ window._briefShowAssignDropdown = function(postId, isReassign) {
         var name = m.name || m.email || '';
         var memberRole = (m.role || '').toLowerCase();
         var initial = (name.charAt(0) || '?').toUpperCase();
-        html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(m.role || '') + '\',' + isReassign + ')" ' +
+        html += '<button onclick="_assignBrief(\'' + esc(postId) + '\',\'' + esc(m.role || '') + '\',\'' + esc(m.name || m.email || '') + '\',' + isReassign + ')" ' +
           'style="display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;' +
           'background:#0d0d12;border:none;border-bottom:1px solid #191924;cursor:pointer;">' +
           ((typeof renderAvatar === 'function') ? renderAvatar(m.email || name, memberRole || 'creative', 28) : '<div style="width:28px;height:28px;border-radius:50%;background:#9b87f526;border:1px solid #9b87f54d;display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:#9b87f5;">' + esc(initial) + '</div>') +
@@ -794,15 +822,16 @@ window._briefShowAssignDropdown = function(postId, isReassign) {
 //   only for display (toast, logActivity, notification message).
 // On success an in-app notification row is inserted with
 // user_role='Creative' and the person's name embedded in the message.
-window._assignBrief = function(postId, ownerName, isReassign) {
+window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
   var direction = (document.getElementById('brief-direction-' + postId) || {}).value || '';
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
 
   var actorName = window.AppState.user.email || window.AppState.user.name || 'Unknown';
   var actorRole = window.AppState.user.effectiveRole || 'Admin';
-  var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + ownerName;
-  var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + ownerName;
+  var _labelWho = displayName || ownerRole;
+  var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + _labelWho;
+  var toastMsg = (isReassign ? 'Reassigned to ' : 'Assigned to ') + _labelWho;
   var nowISO = new Date().toISOString();
 
   // Assign notification is handled by the notify-stage edge function
@@ -829,13 +858,13 @@ window._assignBrief = function(postId, ownerName, isReassign) {
     apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
       method: 'PATCH',
       body: JSON.stringify({
-        assigned_to: ownerName,
+        assigned_to: displayName || ownerRole,
         status: 'assigned'
       })
     }).then(function() {
       // Mutate the in-memory request stub so the brief sheet reopen
       // reflects the new assignee without waiting for a poll.
-      post.assigned_to = ownerName;
+      post.assigned_to = displayName || ownerRole;
       post._requestStatus = 'assigned';
       logActivity({
         post_id: postId,
@@ -855,7 +884,7 @@ window._assignBrief = function(postId, ownerName, isReassign) {
   // Legacy brief-stage post flow — posts.owner stays a ROLE string
   // (posts_owner_check only allows Creative/Servicing/Client/Admin).
   // The person's name is preserved only for display + notification.
-  var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerName) || 'Creative') : 'Creative';
+  var dbOwner = (typeof normalizeRole === 'function') ? (normalizeRole(ownerRole) || 'Creative') : 'Creative';
   var _validOwners = ['Creative','Servicing','Admin','Client'];
   if (_validOwners.indexOf(dbOwner) === -1) {
     window.logError && window.logError(
@@ -882,7 +911,7 @@ window._assignBrief = function(postId, ownerName, isReassign) {
     // Persist the display name on the in-memory row so the reopen
     // shows the individual (dbOwner only carries the role).
     post.owner = dbOwner;
-    post.assigned_to = ownerName;
+    post.assigned_to = displayName || ownerRole;
     post.client_feedback = updatedFeedback;
     logActivity({
       post_id: postId,
