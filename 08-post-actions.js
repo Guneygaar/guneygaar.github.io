@@ -132,7 +132,7 @@ async function quickStage(postId, newStage) {
     const actor = resolveActor();
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: window.AppState.user.email || actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
     });
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
     // Apply server response
@@ -219,7 +219,7 @@ async function saveAdminEdit() {
   }
   const btn = _ae('ae-save-btn');
   if (btn) btn.disabled = true;
-  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, updated_at: new Date().toISOString() };
+  const _payload = { title, owner: owner||null, content_pillar: sanitizePillar(pillar)||null, location: location||null, stage: toDbStage(stage)||null, target_date: date||null, updated_at: new Date().toISOString(), updated_by: resolveActor() };
   // Defensive: remove any invalid field names that must never reach DB
   delete _payload.post_link;
   delete _payload.linkedin_url;
@@ -268,7 +268,7 @@ async function clientApprove(postId, btn) {
       // scheduled -> owner remains unchanged (per ownership rules)
       var rows = await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: 'Client' }),
+        body: JSON.stringify({ stage: 'scheduled', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
       });
       // Apply server response - same pattern as quickStage
       if (Array.isArray(rows) && rows[0]) {
@@ -320,7 +320,7 @@ async function clientAcknowledge(postId) {
     try {
       await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
         method: 'PATCH',
-        body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString() }),
+        body: JSON.stringify({ stage: 'in_production', updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
       });
       await logActivity({ post_id: postId, actor: window.AppState.user.email || 'Client', actor_role: 'Client', action: 'Acknowledged  -  sending via WhatsApp' });
       var _ackPost = getPostById(postId);
@@ -476,7 +476,7 @@ async function flagIssue(postId) {
   try {
     await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ client_feedback: `! ${msg}`, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ client_feedback: `! ${msg}`, updated_at: new Date().toISOString(), updated_by: resolveActor() }),
     });
     await logActivity({ post_id: postId, actor: window.AppState.user.email || window.AppState.user.role, actor_role: window.AppState.user.role, action: `Issue flagged: ${msg.substring(0,80)}` });
     showToast('Issue flagged  -  team has been notified', 'success');
@@ -533,7 +533,8 @@ function _confirmPublish(postId) {
   var payload = {
     stage: 'published',
     status_changed_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    updated_by: resolveActor()
   };
   if (url) payload.linkedin_link = url;
 
@@ -629,7 +630,7 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
 
     const rows = await apiFetch(`/posts?post_id=eq.${encodeURIComponent(postId)}`, {
       method: 'PATCH',
-      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: window.AppState.user.email || actor }),
+      body: JSON.stringify({ stage: toDbStage(newStage), updated_at: new Date().toISOString(), status_changed_at: new Date().toISOString(), updated_by: resolveActor() }),
     });
 
     console.log('[PCS] DB WRITE SUCCESS:', postId, newStage, Date.now());
@@ -737,7 +738,7 @@ async function updatePost(postId, field, value) {
 
   // Convert stage value to DB format before sending
   const wireValue = (dbField === 'stage') ? toDbStage(value) : (value || null);
-  const _writePayload = { [dbField]: wireValue, updated_at: new Date().toISOString() };
+  const _writePayload = { [dbField]: wireValue, updated_at: new Date().toISOString(), updated_by: resolveActor() };
   console.log('FINAL PAYLOAD:', JSON.stringify(_writePayload, null, 2));
 
   try {
