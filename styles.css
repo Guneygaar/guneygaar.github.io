@@ -7521,3 +7521,154 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   white-space: pre-wrap;
   border-radius: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   PR 2 — Sorted AI inside PCS (Writer + QC + Chat, Admin only)
+   All colours follow CLAUDE.md §4 "NO rgba() — use 8-digit hex"
+   (rgba spec values in the PR description were converted to
+   their exact 8-digit hex equivalents at write time).
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── AI Draft button in cap actions row ─── */
+.pcs-ai-draft-btn {
+  flex: 1;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #9b87f5;
+  background: #9B87F50F;
+  border: 1px solid #9B87F52E;
+  padding: 13px 0;
+  cursor: pointer;
+  text-align: center;
+  transition: background .12s, border-color .12s;
+}
+.pcs-ai-draft-btn--active {
+  background: #9B87F524;
+  border-color: #9B87F552;
+}
+.pcs-ai-draft-btn:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
+/* ─── AI Options (3 draft options) ─── */
+.pcs-ai-opts-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 8px;
+}
+.pcs-ai-opt {
+  background: #0c0c11;
+  border: 1px solid #18181f;
+  padding: 12px 14px;
+  cursor: pointer;
+  position: relative;
+  transition: background .1s;
+}
+.pcs-ai-opt--sel {
+  background: #9B87F50D;
+  border-color: #9B87F533;
+}
+.pcs-ai-opt-n {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #9b87f5;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: space-between;
+}
+.pcs-ai-opt-tag { font-size: 7px; color: #2e2e3a; }
+.pcs-ai-opt--sel .pcs-ai-opt-tag { color: #9b87f5; }
+.pcs-ai-opt-txt { font-size: 13px; color: #B8B8C0; line-height: 1.55; }
+.pcs-ai-sel-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  border: 1px solid #2e2e3a;
+  position: absolute; top: 12px; right: 12px;
+}
+.pcs-ai-opt--sel .pcs-ai-sel-dot { background: #9b87f5; border-color: #9b87f5; }
+
+/* ─── AI Section (QC + Chat) ─── */
+.pcs-ai-section { padding: 6px 16px 4px; }
+
+.pcs-qc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  background: #3ECF8E08;
+  border: 1px solid #3ECF8E1A;
+  cursor: pointer;
+  margin-bottom: 6px;
+  transition: background .12s;
+}
+.pcs-qc-btn:disabled { opacity: .5; cursor: default; }
+.pcs-qc-left { display: flex; align-items: center; gap: 7px; }
+.pcs-qc-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+  color: #3ECF8E99;
+}
+.pcs-qc-sub { font-size: 11px; color: #606078; margin-top: 1px; }
+.pcs-qc-arr { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: #2e2e3a; }
+.pcs-qc-result {
+  background: #0c0c11; border: 1px solid #18181f;
+  padding: 11px 12px; margin-bottom: 6px;
+}
+.pcs-qc-rh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+.pcs-qc-rs-lbl {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+  letter-spacing: .08em; text-transform: uppercase; color: #F6A623;
+}
+.pcs-qc-rt { font-family: 'IBM Plex Mono', monospace; font-size: 8px; color: #2e2e3a; }
+.pcs-qc-body { font-size: 12px; color: #B8B8C0; line-height: 1.55; white-space: pre-wrap; }
+.pcs-qc-error { font-size: 12px; color: #FF4B4B; padding: 4px 0; }
+.pcs-qc-dis {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #2e2e3a; background: none; border: none; cursor: pointer;
+  padding: 4px 0; margin-top: 3px; display: block;
+}
+
+.pcs-chat-hd {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: #2e2e3a; margin-bottom: 5px;
+}
+.pcs-chat-thread {
+  background: #0c0c11; border: 1px solid #18181f;
+  padding: 9px 11px; margin-bottom: 5px;
+  max-height: 140px; overflow-y: auto;
+}
+.pcs-chat-msg { margin-bottom: 7px; }
+.pcs-chat-msg:last-child { margin-bottom: 0; }
+.pcs-chat-who-you {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #606078; margin-bottom: 2px;
+}
+.pcs-chat-who-claude {
+  font-family: 'IBM Plex Mono', monospace; font-size: 8px;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: #9b87f5; margin-bottom: 2px;
+}
+.pcs-chat-txt { font-size: 12px; color: #B8B8C0; line-height: 1.55; }
+.pcs-chat-thinking { opacity: .4; }
+.pcs-chat-row { display: flex; }
+.pcs-chat-input {
+  flex: 1; background: #0c0c11; border: 1px solid #323244; border-right: none;
+  padding: 8px 11px; font-family: 'DM Sans', sans-serif;
+  font-size: 12px; color: #F0F0F2; outline: none;
+}
+.pcs-chat-input::placeholder { color: #191924; }
+.pcs-chat-send {
+  padding: 8px 12px; background: none; border: 1px solid #323244;
+  cursor: pointer; font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
+  color: #9b87f5; white-space: nowrap;
+}
