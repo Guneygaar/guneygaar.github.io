@@ -3,8 +3,8 @@ main = "src/index.js"
 compatibility_date = "2026-04-14"
 
 [[r2_buckets]]
-binding     = "SORTED_IMAGES"
-bucket_name = "sorted-images"
+binding     = "AI_ASSETS"
+bucket_name = "sorted-ai"
 
 # Secrets provisioned separately via `wrangler secret put`:
 # ANTHROPIC_API_KEY
