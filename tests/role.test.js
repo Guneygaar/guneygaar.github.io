@@ -2,15 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
-// Load 03-auth.js and extract _normaliseRole + normalizeRole
+// Load 03-auth.js and extract normalizeRole (canonical helper).
+// PR #860 deleted the dead _normaliseRole helper (which mapped person
+// names to person names); all role canonicalisation now flows through
+// window.normalizeRole and the role-based helpers below.
 const authSrc = readFileSync(resolve(__dirname, '..', '03-auth.js'), 'utf8');
-
-function loadNormaliseRole() {
-  const match = authSrc.match(/function _normaliseRole\(r\)\s*\{[\s\S]*?\n\}/);
-  if (!match) throw new Error('Could not find _normaliseRole function');
-  const fn = new Function(match[0] + '\n return _normaliseRole;');
-  return fn();
-}
 
 function loadNormalizeRole() {
   const match = authSrc.match(/function normalizeRole\(r\)\s*\{[\s\S]*?\n\}/);
@@ -19,107 +15,62 @@ function loadNormalizeRole() {
   return fn();
 }
 
-const _normaliseRole = loadNormaliseRole();
 const normalizeRole = loadNormalizeRole();
 
-// Role detection helpers — inline pure logic matching codebase patterns
-function isPranav(role) {
-  var r = (role || '').toLowerCase();
-  return r === 'creative' || r === 'pranav';
+// Role detection helpers — inline pure logic matching codebase patterns.
+// Sorted is a scalable SaaS product; all role checks are role-based and
+// must not contain hardcoded person names.
+function isCreativeRole(role) {
+  return (role || '').toLowerCase() === 'creative';
 }
 
-function isChitra(role) {
-  var r = (role || '').toLowerCase();
-  return r === 'servicing' || r === 'chitra';
+function isServicingRole(role) {
+  return (role || '').toLowerCase() === 'servicing';
 }
 
 function isClient(role) {
   return (role || '').toLowerCase() === 'client';
 }
 
-// _normaliseRole
-describe('_normaliseRole', () => {
-  it("'admin' -> 'Admin'", () => {
-    expect(_normaliseRole('admin')).toBe('Admin');
-  });
-
-  it("'ADMIN' -> 'Admin'", () => {
-    expect(_normaliseRole('ADMIN')).toBe('Admin');
-  });
-
-  it("'creative' -> 'Creative'", () => {
-    expect(_normaliseRole('creative')).toBe('Creative');
-  });
-
-  it("'pranav' -> 'Pranav'", () => {
-    expect(_normaliseRole('pranav')).toBe('Pranav');
-  });
-
-  it("'servicing' -> 'Servicing'", () => {
-    expect(_normaliseRole('servicing')).toBe('Servicing');
-  });
-
-  it("'chitra' -> 'Chitra'", () => {
-    expect(_normaliseRole('chitra')).toBe('Chitra');
-  });
-
-  it("'client' -> 'Client'", () => {
-    expect(_normaliseRole('client')).toBe('Client');
-  });
-
-  it("null/undefined -> 'Admin' (default)", () => {
-    expect(_normaliseRole(null)).toBe('Admin');
-    expect(_normaliseRole(undefined)).toBe('Admin');
-  });
-});
-
-// isPranav
-describe('isPranav', () => {
+// isCreativeRole
+describe('isCreativeRole', () => {
   it("'creative' -> true", () => {
-    expect(isPranav('creative')).toBe(true);
-  });
-
-  it("'pranav' -> true", () => {
-    expect(isPranav('pranav')).toBe(true);
+    expect(isCreativeRole('creative')).toBe(true);
   });
 
   it("'Creative' -> true (case insensitive)", () => {
-    expect(isPranav('Creative')).toBe(true);
+    expect(isCreativeRole('Creative')).toBe(true);
   });
 
   it("'admin' -> false", () => {
-    expect(isPranav('admin')).toBe(false);
+    expect(isCreativeRole('admin')).toBe(false);
   });
 
   it("'client' -> false", () => {
-    expect(isPranav('client')).toBe(false);
+    expect(isCreativeRole('client')).toBe(false);
   });
 
   it("'servicing' -> false", () => {
-    expect(isPranav('servicing')).toBe(false);
+    expect(isCreativeRole('servicing')).toBe(false);
   });
 });
 
-// isChitra
-describe('isChitra', () => {
+// isServicingRole
+describe('isServicingRole', () => {
   it("'servicing' -> true", () => {
-    expect(isChitra('servicing')).toBe(true);
-  });
-
-  it("'chitra' -> true", () => {
-    expect(isChitra('chitra')).toBe(true);
+    expect(isServicingRole('servicing')).toBe(true);
   });
 
   it("'Servicing' -> true", () => {
-    expect(isChitra('Servicing')).toBe(true);
+    expect(isServicingRole('Servicing')).toBe(true);
   });
 
   it("'admin' -> false", () => {
-    expect(isChitra('admin')).toBe(false);
+    expect(isServicingRole('admin')).toBe(false);
   });
 
   it("'creative' -> false", () => {
-    expect(isChitra('creative')).toBe(false);
+    expect(isServicingRole('creative')).toBe(false);
   });
 });
 
@@ -138,7 +89,7 @@ describe('isClient', () => {
   });
 });
 
-// normalizeRole — maps person names to canonical DB roles
+// normalizeRole — maps lowercase role strings to canonical Title-Case DB roles
 describe('normalizeRole', () => {
   it("null -> null", () => {
     expect(normalizeRole(null)).toBe(null);
