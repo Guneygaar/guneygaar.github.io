@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-14 (caption-hashtag-entity-fix: client-side `_hashtagHtml` hashtag regex now uses `(?<!&)(#[a-zA-Z]\w*)` so `#39` inside `&#39;` HTML entities is no longer wrapped in a hashtag span — fixes apostrophes/quotes rendering as `&#39;` in client captions). Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-15 (pcs-topbar-admin-delete: PCS topbar right zone now renders an admin-only red trash icon (`.pc-icon-btn.danger`, 15×15 SVG) BEFORE the existing WhatsApp icon. The delete icon is gated on `_pcsRole === 'admin'` and calls `window.pcsConfirmDelete()` which routes to the pre-existing `pcsDoDelete()` confirm-sheet flow at `actions/pcs.js:2120-2165`. This wires up the previously-orphaned PCS delete path — `deletePost()` + `#ae-delete-btn` in the Admin Edit modal are still orphaned but no longer the only delete entry point. Zero CSS / HTML / schema changes — reuses `.pc-icon-btn.danger` (styles.css:3151-3166) and the existing `#pcs-topbar-right` flex container (`gap:6px`, `align-items:center`) inline-styled at index.html:950. Change site: `actions/pcs.js:801-810`.) Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -220,7 +220,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 22 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 21 scripts). Current: `?v=20260414k`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 23 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 22 scripts). Current: `?v=20260415a`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
