@@ -208,6 +208,10 @@ async function loadPosts(fromPoll) {
             created_at: r.created_at || '',
             updated_at: r.created_at || '',
             assigned_to: r.assigned_to || null,
+            total_posts:           r.total_posts || 1,
+            completed_posts:       r.completed_posts || 0,
+            first_post_created_at: r.first_post_created_at || null,
+            brief_id:              r.id || null,
             _requestStatus: r.status || 'pending',
             _isRequest: true
           };
@@ -306,6 +310,10 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
             created_at: r.created_at || '',
             updated_at: r.created_at || '',
             assigned_to: r.assigned_to || null,
+            total_posts:           r.total_posts || 1,
+            completed_posts:       r.completed_posts || 0,
+            first_post_created_at: r.first_post_created_at || null,
+            brief_id:              r.id || null,
             _requestStatus: r.status || 'pending',
             _isRequest: true
           });

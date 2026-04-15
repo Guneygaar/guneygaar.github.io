@@ -612,6 +612,9 @@ stage: 'in_production',
 target_date: date || null,
 format: formatVal,
 drive_link: driveLinkVal,
+brief_id: (window._activeBriefPostId &&
+  window._activeBriefPostId.indexOf('REQ-') === 0)
+  ? window._activeBriefPostId : null,
 };
 if (captionVal) payload.caption = captionVal;
 // Defensive: remove any invalid field names that must never reach DB
@@ -706,43 +709,52 @@ if (window._activeBriefPostId) {
   }
 
   if (_bid && _bid.toString().indexOf('REQ-') === 0) {
-    // This brief came from a request row, not a posts row. The old
-    // /posts PATCH matched zero rows and left the request orphaned
-    // at status='assigned' forever. Close the request instead.
-    // NOTE: requests table has no updated_at or linked_post_id
-    // columns — only `status` is safe to PATCH here.
+    // This brief came from a request row, not a posts row. The brief
+    // is now a campaign container — increment completed_posts on each
+    // create and only flip status to 'closed' once completed_posts
+    // catches up to total_posts. first_post_created_at gets stamped
+    // on the first create only.
+    var _bsRows = await apiFetch(
+      '/requests?id=eq.' + encodeURIComponent(_bid) +
+      '&select=total_posts,completed_posts,' +
+      'first_post_created_at&limit=1',
+      {}, { allowLogout: false }
+    );
+    var _bs = (Array.isArray(_bsRows) && _bsRows[0])
+      ? _bsRows[0] : {};
+    var _newCompleted = (_bs.completed_posts || 0) + 1;
+    var _newTotal     = _bs.total_posts || 1;
+    var _isFullyDone  = _newCompleted >= _newTotal;
+    var _nowISO       = new Date().toISOString();
 
-    // Guard: check the request is not already closed before
-    // creating another post from it.
-    try {
-      var _guardRows = await apiFetch(
-        '/requests?id=eq.' + encodeURIComponent(_bid) +
-        '&select=status&limit=1',
-        {}, { allowLogout: false }
-      );
-      if (Array.isArray(_guardRows) && _guardRows[0] &&
-          _guardRows[0].status === 'closed') {
-        // Brief already has a post created from it.
-        // Do not create a duplicate. Show a warning and abort.
-        showToast && showToast(
-          'This brief already has a post created from it.',
-          'warning'
-        );
-        window._activeBriefPostId = null;
-        window._briefImportedImages = null;
-        return;
-      }
-    } catch (_guardErr) {}
+    var _briefPatch = {
+      completed_posts: _newCompleted,
+      status: _isFullyDone ? 'closed' : 'assigned'
+    };
+    if (!_bs.first_post_created_at) {
+      _briefPatch.first_post_created_at = _nowISO;
+    }
 
-    apiFetch('/requests?id=eq.' + encodeURIComponent(_bid), {
-      method: 'PATCH',
-      body: JSON.stringify({
-        status: 'closed'
-      })
-    }).catch(function(err) {
-      console.warn('[post-create] close request failed', err);
-      window.logError && window.logError(err && err.message, err && err.stack, 'close-request-on-convert');
-    });
+    await apiFetch(
+      '/requests?id=eq.' + encodeURIComponent(_bid),
+      {
+        method: 'PATCH',
+        body: JSON.stringify(_briefPatch)
+      },
+      { allowLogout: false }
+    );
+
+    if (_isFullyDone) {
+      showToast && showToast(
+        'Brief complete — all ' + _newTotal + ' posts created');
+    } else {
+      showToast && showToast(
+        _newCompleted + ' of ' + _newTotal +
+        ' posts created from this brief');
+    }
+
+    window._activeBriefPostId    = null;
+    window._briefImportedImages  = null;
   } else {
     // Legacy flow: brief was a posts row. Original PATCH unchanged.
     apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {

@@ -431,6 +431,27 @@ window._openBriefSheet = async function(postId) {
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9500;' +
     'background:#0a0a0f;overflow-y:auto;font-family:\'DM Sans\',sans-serif;';
 
+  // Campaign progress (multi-post briefs). The progress block only
+  // renders when the brief has more than one slot or at least one
+  // post has been created from it; single-post briefs stay clean.
+  var _totalPosts = post.total_posts || 1;
+  var _donePosts  = post.completed_posts || 0;
+  var _progressHtml = '';
+  if (_totalPosts > 1 || _donePosts > 0) {
+    var _pct = Math.round((_donePosts / _totalPosts) * 100);
+    _progressHtml =
+      '<div class="brief-progress-wrap">' +
+        '<div class="brief-progress-bar">' +
+          '<div class="brief-progress-fill" style="width:' +
+            _pct + '%"></div>' +
+        '</div>' +
+        '<div class="brief-progress-label">' +
+          _donePosts + ' of ' + _totalPosts + ' posts created' +
+          (_pct === 100 ? ' &middot; Complete' : ' &middot; ' + _pct + '%') +
+        '</div>' +
+      '</div>';
+  }
+
   // --- Build action buttons for the sticky footer ---
   var _footerActions = (function() {
     var _viewPostBtn = (_hasLinkedPost && linkedPost) ?
@@ -483,10 +504,23 @@ window._openBriefSheet = async function(postId) {
       return _viewPostBtn +
         (_canAssign ? _reopenBtn : '');
     }
-    // STATE: has linked post (post already created)
+    // STATE: has linked post (post already created). For multi-post
+    // campaign briefs, expose a Create Another Post button until
+    // completed_posts catches up to total_posts.
     if (_hasLinkedPost && linkedPost) {
-      return _viewPostBtn +
-        (_canAssign ? _closeBtn : '');
+      var _remaining = Math.max(0,
+        (post.total_posts || 1) - (post.completed_posts || 0));
+      var _html = _viewPostBtn;
+      if (_remaining > 0 && _canAssign) {
+        _html +=
+          '<button class="brief-create-more-btn" ' +
+          'onclick="window._createPostFromBrief(\'' +
+          esc(postId) + '\')">' +
+          '+ Create Post (' + _remaining + ' remaining)' +
+          '</button>';
+      }
+      if (_canAssign) _html += _closeBtn;
+      return _html;
     }
     // STATE: assigned, no linked post yet
     // Create Post button visibility (Fix C):
@@ -544,6 +578,17 @@ window._openBriefSheet = async function(postId) {
         'padding:8px 0 10px;outline:none;resize:none;line-height:1.7;' +
         'caret-color:#C8A84B;"></textarea>' +
         '</div>' +
+        '<div class="brief-total-posts-wrap">' +
+          '<div class="brief-field-label">Posts in this brief</div>' +
+          '<div class="brief-total-posts-row">' +
+            '<button class="brief-count-btn" onclick="window.' +
+              '_briefAdjustTotal(\'' + esc(postId) + '\',-1)">&minus;</button>' +
+            '<span class="brief-count-val" id="brief-total-val-' +
+              esc(postId) + '">' + (post.total_posts || 1) + '</span>' +
+            '<button class="brief-count-btn" onclick="window.' +
+              '_briefAdjustTotal(\'' + esc(postId) + '\',1)">+</button>' +
+          '</div>' +
+        '</div>' +
         '<button id="brief-assign-trigger-' + postId + '" ' +
         'onclick="_briefShowAssignDropdown(\'' + postId + '\',false)" ' +
         'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
@@ -596,6 +641,9 @@ window._openBriefSheet = async function(postId) {
     '</span>' +
     '</div>' +
     '</div>' +
+
+    // Campaign progress (only when total_posts > 1 or any completed)
+    _progressHtml +
 
     // Brief Done status banner
     (_isBriefDone ?
@@ -758,6 +806,16 @@ window._openBriefSheet = async function(postId) {
   });
 }
 
+// Adjust the in-DOM total_posts counter on the unassigned brief
+// footer. Only mutates the <span> text — the DB write happens later
+// in _assignBrief which reads the current span value at PATCH time.
+window._briefAdjustTotal = function(postId, delta) {
+  var el = document.getElementById('brief-total-val-' + postId);
+  if (!el) return;
+  var next = Math.max(1, (parseInt(el.textContent) || 1) + delta);
+  el.textContent = next;
+};
+
 // Fetch team members (non-client roles) from user_roles and show
 // assignment dropdown. Uses window._briefTeamMembersCache so the
 // result is re-used across renders and re-opens within a session.
@@ -888,17 +946,26 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
     // posts row is created later when the creative (or admin) taps
     // Create Post and fills out the new post form.
     // NOTE: requests table has no updated_at column — do not include it.
+    // Read the in-DOM total_posts counter (set by _briefAdjustTotal
+    // before the user tapped Assign) and persist it on the request so
+    // the brief becomes a campaign container for N posts.
+    var _totalEl = document.getElementById('brief-total-val-' + postId);
+    var _totalPosts = _totalEl
+      ? (parseInt(_totalEl.textContent) || 1)
+      : (post.total_posts || 1);
     apiFetch('/requests?id=eq.' + encodeURIComponent(postId), {
       method: 'PATCH',
       body: JSON.stringify({
         assigned_to: displayName || ownerRole,
-        status: 'assigned'
+        status: 'assigned',
+        total_posts: _totalPosts
       })
     }).then(function() {
       // Mutate the in-memory request stub so the brief sheet reopen
       // reflects the new assignee without waiting for a poll.
       post.assigned_to = displayName || ownerRole;
       post._requestStatus = 'assigned';
+      post.total_posts = _totalPosts;
       logActivity({
         post_id: postId,
         actor: actorName,
