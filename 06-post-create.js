@@ -486,16 +486,19 @@ var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = 'none';
 document.body.style.overflow = 'hidden';
 
-// PR 4 — Gmail import: show only for Admin when ai_email_briefs
-// is enabled in workspace_settings. Initial state on every open
-// is "button visible, list/processing hidden, no option picked".
+// PR 4 — Gmail import: show for Admin + Servicing. The Worker
+// (srtd-ai-worker, checkWorkspaceEnabled) enforces the
+// workspace_settings.ai_email_briefs flag server-side with a 403,
+// so the frontend gate is role-only — any workspace-level check
+// here would race loadWorkspaceSettings() and flicker on cold
+// loads (see PR #864). Initial state on every open is "button
+// visible if role allows, list/processing hidden, no option picked".
 var gmailWrap = document.getElementById('nps-gmail-wrap');
 var orDivider = document.getElementById('nps-or-divider');
 var _npsRole = ((window.AppState && window.AppState.user && window.AppState.user.effectiveRole) || '').toLowerCase();
-var _npsIsAdmin = _npsRole === 'admin';
-var _npsAiEnabled = !!(window.AppState && window.AppState.workspace && window.AppState.workspace.ai_email_briefs);
-if (gmailWrap) gmailWrap.style.display = (_npsIsAdmin && _npsAiEnabled) ? 'block' : 'none';
-if (orDivider) orDivider.style.display = (_npsIsAdmin && _npsAiEnabled) ? 'flex' : 'none';
+var _npsCanImport = _npsRole === 'admin' || _npsRole === 'servicing';
+if (gmailWrap) gmailWrap.style.display = _npsCanImport ? 'block' : 'none';
+if (orDivider) orDivider.style.display = _npsCanImport ? 'flex' : 'none';
 window._npsGmailImported  = false;
 window._npsSelectedOptIdx = 0;
 
