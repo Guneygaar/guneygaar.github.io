@@ -54,7 +54,13 @@ function _flushClickBuffer() {
   }
 }
 
-setInterval(_flushClickBuffer, 5000);
+// Click-log flush interval bumped 5 000 → 30 000 ms as part of the
+// redundant-API-calls audit. The 5 s cadence was originally chosen
+// when click_log was hosted in a separate worker; now that it's a
+// PostgREST round trip we want far fewer POSTs during active use.
+// The beforeunload keepalive below guarantees no data loss on tab
+// close, so extending the idle cadence is safe.
+setInterval(_flushClickBuffer, 30000);
 
 window.addEventListener('beforeunload', function() {
   if (!window._clickBuffer.length) return;
@@ -457,7 +463,10 @@ async function loadNotifications() {
     }
 
     renderNotifications(currentName, _notifRole);
-    updateNotifBadge();
+    // Badge count is already in _notifData (the `read` field comes
+    // back in the SELECT above), so recompute locally instead of
+    // firing a second GET /notifications?read=eq.false round trip.
+    _recomputeBadgeLocal();
   } catch(e) {
     console.error('loadNotifications error:', e);
     window.logError && window.logError(e && e.message, e && e.stack, 'load-notifications');
@@ -1127,7 +1136,9 @@ async function _notifSubmitReply(sendBtn) {
 async function markNotifRead(id) {
   try {
     _notifData = _notifData.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; });
-    updateNotifBadge();
+    // _notifData was updated on the line above; recompute the badge
+    // locally instead of round-tripping GET /notifications.
+    _recomputeBadgeLocal();
     await apiFetch('/notifications?id=eq.' + id, {
       method: 'PATCH',
       body: JSON.stringify({ read: true }),
@@ -1153,7 +1164,9 @@ async function deleteNotification(id) {
         if (el.parentNode) el.parentNode.removeChild(el);
       }, 320);
     }
-    updateNotifBadge();
+    // _notifData was filtered above, so recompute the badge locally
+    // instead of a redundant GET /notifications round trip.
+    _recomputeBadgeLocal();
     await apiFetch('/notifications?id=eq.' + encodeURIComponent(id), {
       method: 'DELETE'
     });
@@ -1171,7 +1184,12 @@ async function markAllNotificationsRead() {
     _notifRole = _notifRole.charAt(0).toUpperCase() + _notifRole.slice(1).toLowerCase();
     var currentName = resolveActor() || 'there';
     renderNotifications(currentName, _notifRole);
-    updateNotifBadge();
+    // _notifData is now all-read, so _recomputeBadgeLocal will write
+    // count=0 to the four badge spans via _setBadgeCount. This
+    // replaces both the old updateNotifBadge() GET round trip AND
+    // the manual "hide all four" forEach that was running
+    // immediately after it.
+    _recomputeBadgeLocal();
     var readEls = document.querySelectorAll(
       '#panel-updates .notif-item:not(.read)');
     readEls.forEach(function(el) {
@@ -1184,11 +1202,6 @@ async function markAllNotificationsRead() {
     liveEls.forEach(function(el) {
       var dot = el.querySelector('.notif-unread-dot');
       if (dot) dot.style.display = 'none';
-    });
-    ['notif-bell-badge','notif-pipeline-badge',
-     'notif-lib-badge','notif-ins-badge'].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (el) el.style.display = 'none';
     });
     // Chip counts are rebuilt by renderNotifications above;
     // belt-and-braces hide every count span in case render was skipped.
@@ -1207,6 +1220,37 @@ async function markAllNotificationsRead() {
   }
 }
 
+// Writes the unread count to all four notification badge spans.
+// Extracted from updateNotifBadge so both the REST-backed fallback
+// path and the local-recompute fast path share one DOM writer.
+function _setBadgeCount(count) {
+  var show = count > 0;
+  var countStr = count > 9 ? '9+' : String(count);
+  [
+    'notif-bell-badge',
+    'notif-pipeline-badge',
+    'notif-lib-badge',
+    'notif-ins-badge'
+  ].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = countStr;
+    el.style.display = show ? 'flex' : 'none';
+  });
+}
+
+// Local badge recompute. Every caller of updateNotifBadge that already
+// has _notifData in memory should use this helper instead — it avoids
+// a redundant GET /notifications?read=eq.false round trip because the
+// source of truth (the read flag) is already sitting on the client.
+function _recomputeBadgeLocal() {
+  if (!Array.isArray(window._notifData)) return;
+  var count = window._notifData.filter(function(n) {
+    return !n.read;
+  }).length;
+  _setBadgeCount(count);
+}
+
 function updateNotifBadge() {
   if (!localStorage.getItem('sb_access_token')) return;
   var role = (window.AppState.user.effectiveRole || 'Admin');
@@ -1220,20 +1264,7 @@ function updateNotifBadge() {
   apiFetch(_badgeUrl, {}, { allowLogout: false })
   .then(function(rows) {
     var count = Array.isArray(rows) ? rows.length : 0;
-    var show = count > 0;
-    var countStr = count > 9 ? '9+' : String(count);
-
-    [
-      'notif-bell-badge',
-      'notif-pipeline-badge',
-      'notif-lib-badge',
-      'notif-ins-badge'
-    ].forEach(function(id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = countStr;
-      el.style.display = show ? 'flex' : 'none';
-    });
+    _setBadgeCount(count);
   }).catch(function(err){ console.error('[10-ui] updateNotifBadge', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'update-notif-badge'); });
 }
 
