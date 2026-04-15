@@ -91,8 +91,13 @@ describe('Notification badge', function() {
     expect(body).toContain('AppState.user.effectiveRole');
   });
 
-  it('updateNotifBadge updates all 4 badge element IDs', function() {
-    var match = uiSrc.match(/function updateNotifBadge\(\)[\s\S]*?\.catch/);
+  it('_setBadgeCount updates all 4 badge element IDs', function() {
+    // The DOM writer was extracted from updateNotifBadge into a
+    // shared helper (_setBadgeCount) so both the REST-backed fallback
+    // AND the local-recompute fast path use the same code. Assert the
+    // helper still touches all four badge spans.
+    var match = uiSrc.match(/function _setBadgeCount\(count\)[\s\S]*?\n\}/);
+    expect(match).not.toBeNull();
     var body = match[0];
     var expectedIds = [
       'notif-bell-badge',
@@ -106,9 +111,25 @@ describe('Notification badge', function() {
   });
 
   it('badge shows 9+ for counts above 9', function() {
-    var match = uiSrc.match(/function updateNotifBadge\(\)[\s\S]*?\.catch/);
+    // 9+ cap lives in _setBadgeCount now (extracted from
+    // updateNotifBadge).
+    var match = uiSrc.match(/function _setBadgeCount\(count\)[\s\S]*?\n\}/);
+    expect(match).not.toBeNull();
     var body = match[0];
     expect(body).toContain("'9+'");
+  });
+
+  it('_recomputeBadgeLocal filters _notifData for unread count', function() {
+    // Local-recompute fast path: every mark-read caller and every
+    // realtime handler avoids the redundant GET /notifications round
+    // trip by deriving the badge from _notifData (which already has
+    // the `read` field from the loadNotifications SELECT).
+    var match = uiSrc.match(/function _recomputeBadgeLocal\(\)[\s\S]*?\n\}/);
+    expect(match).not.toBeNull();
+    var body = match[0];
+    expect(body).toContain('window._notifData');
+    expect(body).toContain('!n.read');
+    expect(body).toContain('_setBadgeCount');
   });
 
   it('periodic badge refresh interval is set on AppState.timers', function() {
@@ -263,10 +284,17 @@ describe('Mark as read', function() {
     expect(mapIdx).toBeLessThan(apiIdx);
   });
 
-  it('markNotifRead calls updateNotifBadge', function() {
+  it('markNotifRead calls _recomputeBadgeLocal (local fast path)', function() {
+    // Badge refresh was a redundant GET /notifications round trip on
+    // every mark-read — _notifData.map() already flipped the row's
+    // `read` field on the line above, so a local recompute gives the
+    // correct count without hitting the server.
     var match = uiSrc.match(/function markNotifRead\(id\)[\s\S]*?catch/);
     var body = match[0];
-    expect(body).toContain('updateNotifBadge()');
+    expect(body).toContain('_recomputeBadgeLocal()');
+    // Guard against regressions: the REST-backed path must not come
+    // back into this caller.
+    expect(body).not.toContain('updateNotifBadge()');
   });
 
   it('markAllNotificationsRead patches all unread for current role', function() {
@@ -278,14 +306,32 @@ describe('Mark as read', function() {
     expect(body).toContain("method: 'PATCH'");
   });
 
-  it('markAllNotificationsRead hides all 4 badge elements', function() {
+  it('markAllNotificationsRead hides all 4 badge elements via _recomputeBadgeLocal', function() {
+    // After the redundant-API audit, markAllNotificationsRead flips
+    // every _notifData row to read=true and then calls
+    // _recomputeBadgeLocal(), which writes count=0 to the four badge
+    // spans through _setBadgeCount (assertion below). The old manual
+    // forEach that duplicated the hide loop was removed — it was
+    // running immediately after the REST badge refetch, so both the
+    // fetch AND the duplicated DOM writes are now gone.
     var match = uiSrc.match(/function markAllNotificationsRead\(\)[\s\S]*?catch\(e\)/);
     var body = match[0];
-    expect(body).toContain('notif-bell-badge');
-    expect(body).toContain('notif-pipeline-badge');
-    expect(body).toContain('notif-lib-badge');
-    expect(body).toContain('notif-ins-badge');
-    expect(body).toContain("display = 'none'");
+    expect(body).toContain('_recomputeBadgeLocal()');
+    // The manual badge-hide forEach MUST be gone — it was the
+    // duplicate that the audit flagged. Assert the function body no
+    // longer references the four badge IDs directly (they live in
+    // _setBadgeCount now). The nchip-count-* belt-and-braces loop
+    // is unrelated and stays.
+    expect(body).not.toContain('notif-bell-badge');
+    expect(body).not.toContain('notif-pipeline-badge');
+    expect(body).not.toContain('notif-lib-badge');
+    expect(body).not.toContain('notif-ins-badge');
+    // And _setBadgeCount (called transitively) still references the
+    // four badge IDs, so the four-spans guarantee survives.
+    var helper = uiSrc.match(/function _setBadgeCount\(count\)[\s\S]*?\n\}/);
+    var helperBody = helper[0];
+    ['notif-bell-badge','notif-pipeline-badge','notif-lib-badge','notif-ins-badge']
+      .forEach(function(id) { expect(helperBody).toContain(id); });
   });
 
 });

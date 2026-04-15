@@ -600,9 +600,33 @@ window._clientRealtimeRefresh = _clientRealtimeRefresh;
 function _onClientNotificationInsert(payload) {
   // Incremental path: Realtime dropped a brand-new Client notification
   // row into our lap, so we can bump the badge without round-tripping
-  // to the REST endpoint. updateNotifBadge() also runs as a safety net.
-  if (typeof updateNotifBadge === 'function') {
-    try { updateNotifBadge(); } catch(e) { console.warn('[client-realtime] updateNotifBadge', e); }
+  // to the REST endpoint. Push payload.new into _notifData (so the
+  // next loadNotifications() render picks it up) and then recompute
+  // the badge locally from the updated array. Previously this handler
+  // called updateNotifBadge() which fired a full GET /notifications
+  // on every incoming realtime event — under active comment volume
+  // that was the single biggest source of unnecessary REST traffic
+  // for Client users.
+  try {
+    if (payload && payload.new) {
+      if (!Array.isArray(window._notifData)) window._notifData = [];
+      // Dedupe by id — the REST poll fallback + realtime could both
+      // deliver the same row on rare reconnect windows.
+      var _pid = payload.new.id;
+      var _exists = false;
+      for (var i = 0; i < window._notifData.length; i++) {
+        if (window._notifData[i] && window._notifData[i].id === _pid) {
+          _exists = true;
+          break;
+        }
+      }
+      if (!_exists) window._notifData.unshift(payload.new);
+    }
+    if (typeof _recomputeBadgeLocal === 'function') {
+      _recomputeBadgeLocal();
+    }
+  } catch (e) {
+    console.warn('[client-realtime] notification insert', e);
   }
 }
 
@@ -760,12 +784,30 @@ window._agencyRealtimeRefresh = _agencyRealtimeRefresh;
 
 function _onAgencyNotificationInsert(payload) {
   // Incremental notification badge: a brand-new row landed for this
-  // agency user, so bump the badge without a /notifications GET. The
-  // REST-backed updateNotifBadge() call also acts as a safety net in
-  // case the Realtime payload arrives out of order with the read flag.
-  if (typeof updateNotifBadge === 'function') {
-    try { updateNotifBadge(); }
-    catch(e) { console.warn('[agency-realtime] updateNotifBadge', e); }
+  // agency user, so bump the badge without a /notifications GET.
+  // Push payload.new into _notifData (so a subsequent bell-open
+  // render picks it up) and then recompute the badge locally. The
+  // previous implementation called updateNotifBadge() which fired
+  // a full GET /notifications per event — the biggest single source
+  // of redundant REST traffic under active comment volume.
+  try {
+    if (payload && payload.new) {
+      if (!Array.isArray(window._notifData)) window._notifData = [];
+      var _pid = payload.new.id;
+      var _exists = false;
+      for (var i = 0; i < window._notifData.length; i++) {
+        if (window._notifData[i] && window._notifData[i].id === _pid) {
+          _exists = true;
+          break;
+        }
+      }
+      if (!_exists) window._notifData.unshift(payload.new);
+    }
+    if (typeof _recomputeBadgeLocal === 'function') {
+      _recomputeBadgeLocal();
+    }
+  } catch (e) {
+    console.warn('[agency-realtime] notification insert', e);
   }
 }
 
