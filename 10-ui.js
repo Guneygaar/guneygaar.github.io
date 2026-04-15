@@ -391,15 +391,16 @@ function _notifActorClass(actor) {
   var role = (typeof getRoleFor === 'function') ? getRoleFor(actor) : '';
   if (!role) {
     var a = (actor || '').toLowerCase();
-    if (a === 'manisha' || a === 'shivangini' || a === 'client') role = 'client';
-    else if (a === 'chitra' || a === 'servicing') role = 'servicing';
-    else if (a === 'pranav' || a === 'creative') role = 'creative';
-    else if (a === 'shubham' || a === 'admin') role = 'admin';
+    if (a === 'client') role = 'client';
+    else if (a === 'servicing') role = 'servicing';
+    else if (a === 'creative') role = 'creative';
+    else if (a === 'admin') role = 'admin';
+    else role = (typeof getRoleFor === 'function' && getRoleFor(a)) || 'admin';
   }
   if (role === 'client')    return 'nav-client';
-  if (role === 'servicing') return 'nav-chitra';
-  if (role === 'creative')  return 'nav-pranav';
-  if (role === 'admin')     return 'nav-shubham';
+  if (role === 'servicing') return 'nav-servicing';
+  if (role === 'creative')  return 'nav-creative';
+  if (role === 'admin')     return 'nav-admin';
   return 'nav-system';
 }
 
@@ -413,20 +414,6 @@ function _notifChipMatch(filter, n, mentionSet) {
   if (filter === 'moves')    return _NOTIF_MOVES_TYPES.indexOf(n.type) !== -1;
   return true;
 }
-
-var roleDisplayMap = {
-  'Admin':      { name: 'Shubham', label: 'Admin - Sorted' },
-  'admin':      { name: 'Shubham', label: 'Admin - Sorted' },
-  'shubham':    { name: 'Shubham', label: 'Admin - Sorted' },
-  'Servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
-  'servicing':  { name: 'Chitra',  label: 'Servicing - Dispatch' },
-  'chitra':     { name: 'Chitra',  label: 'Servicing - Dispatch' },
-  'Creative':   { name: 'Pranav',  label: 'Creative - Production' },
-  'creative':   { name: 'Pranav',  label: 'Creative - Production' },
-  'pranav':     { name: 'Pranav',  label: 'Creative - Production' },
-  'Client':     { name: '',        label: 'Client - Sorted' },
-  'client':     { name: '',        label: 'Client - Sorted' }
-};
 
 async function loadNotifications() {
   if (!localStorage.getItem('sb_access_token')) return;
@@ -849,15 +836,16 @@ function _notifThreadAvClass(author, authorRole) {
   if (!role) {
     var a = (author || '').toLowerCase();
     var r = (authorRole || '').toLowerCase();
-    if (a === 'manisha' || a === 'shivangini' || r === 'client') role = 'client';
-    else if (a === 'chitra' || r === 'servicing') role = 'servicing';
-    else if (a === 'pranav' || r === 'creative') role = 'creative';
-    else if (a === 'shubham' || r === 'admin') role = 'admin';
+    if (r === 'client') role = 'client';
+    else if (r === 'servicing') role = 'servicing';
+    else if (r === 'creative') role = 'creative';
+    else if (r === 'admin') role = 'admin';
+    else role = (typeof getRoleFor === 'function' && getRoleFor(a)) || 'admin';
   }
   if (role === 'client')    return 'nav-client';
-  if (role === 'servicing') return 'nav-chitra';
-  if (role === 'creative')  return 'nav-pranav';
-  if (role === 'admin')     return 'nav-shubham';
+  if (role === 'servicing') return 'nav-servicing';
+  if (role === 'creative')  return 'nav-creative';
+  if (role === 'admin')     return 'nav-admin';
   return 'nav-system';
 }
 
@@ -1859,7 +1847,7 @@ function openAssignTaskFromFab() {
     showToast('Open a post first');
     return;
   }
-  const assignee = prompt('Assign to (Pranav / Chitra)');
+  const assignee = prompt('Assign to (Creative / Servicing)');
   if (!assignee) return;
   const text = prompt('Task description');
   if (!text) return;
@@ -1949,7 +1937,9 @@ async function _nrsSubmit() {
   if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
   try {
     var postId = 'POST-' + Date.now();
-    var actor = resolveActor() || 'Shubham';
+    var actor = resolveActor() ||
+      (window.AppState && window.AppState.user &&
+       window.AppState.user.effectiveRole) || 'Admin';
     var body = {
       post_id:       postId,
       title:         brief.substring(0, 80),
@@ -2280,8 +2270,8 @@ function openPipelineFilter() {
     {val:'in_production',label:'Production'}
   ]);
   _buildPFChips('pf-owner-chips', 'owner', [
-    {val:'all',label:'All'}, {val:'chitra',label:'Chitra'},
-    {val:'pranav',label:'Pranav'}, {val:'client',label:'Client'}
+    {val:'all',label:'All'}, {val:'servicing',label:'Servicing'},
+    {val:'creative',label:'Creative'}, {val:'client',label:'Client'}
   ]);
   _buildPFChips('pf-urgency-chips', 'urgency', [
     {val:'all',label:'All'}, {val:'overdue',label:'Overdue'},
@@ -2316,8 +2306,8 @@ function _pfChip(key, val) {
      {val:'scheduled',label:'Scheduled'},{val:'ready',label:'Ready'},
      {val:'in_production',label:'Production'}]);
   if (key === 'owner') _buildPFChips('pf-owner-chips', 'owner',
-    [{val:'all',label:'All'},{val:'chitra',label:'Chitra'},
-     {val:'pranav',label:'Pranav'},{val:'client',label:'Client'}]);
+    [{val:'all',label:'All'},{val:'servicing',label:'Servicing'},
+     {val:'creative',label:'Creative'},{val:'client',label:'Client'}]);
   if (key === 'urgency') _buildPFChips('pf-urgency-chips', 'urgency',
     [{val:'all',label:'All'},{val:'overdue',label:'Overdue'},
      {val:'week',label:'Due this week'}]);

@@ -4908,8 +4908,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   height:2px; background:transparent;
   transition:background 0.25s; flex-shrink:0;
 }
-.nps-color-strip.owner-pranav { background:var(--amber); }
-.nps-color-strip.owner-chitra { background:var(--green); }
+.nps-color-strip.owner-pranav,
+.nps-color-strip.owner-creative { background:var(--amber); }
+.nps-color-strip.owner-chitra,
+.nps-color-strip.owner-servicing { background:var(--green); }
 .nps-color-strip.owner-client { background:var(--red); }
 .nps-hdr {
   display: flex;

@@ -140,16 +140,11 @@ describe('_notifTypeClass', function() {
 // _notifActorClass — avatar CSS mapping (nav-* palette)
 // ---------------------------------------------------------------
 describe('_notifActorClass', function() {
-  it('maps names to correct CSS classes', function() {
-    expect(helpers._notifActorClass('Manisha')).toBe('nav-client');
-    expect(helpers._notifActorClass('Shivangini')).toBe('nav-client');
+  it('maps canonical role strings to correct CSS classes', function() {
     expect(helpers._notifActorClass('Client')).toBe('nav-client');
-    expect(helpers._notifActorClass('Chitra')).toBe('nav-chitra');
-    expect(helpers._notifActorClass('Servicing')).toBe('nav-chitra');
-    expect(helpers._notifActorClass('Pranav')).toBe('nav-pranav');
-    expect(helpers._notifActorClass('Creative')).toBe('nav-pranav');
-    expect(helpers._notifActorClass('Shubham')).toBe('nav-shubham');
-    expect(helpers._notifActorClass('Admin')).toBe('nav-shubham');
+    expect(helpers._notifActorClass('Servicing')).toBe('nav-servicing');
+    expect(helpers._notifActorClass('Creative')).toBe('nav-creative');
+    expect(helpers._notifActorClass('Admin')).toBe('nav-admin');
   });
   it('returns nav-system for missing actor', function() {
     expect(helpers._notifActorClass('')).toBe('nav-system');
@@ -157,8 +152,8 @@ describe('_notifActorClass', function() {
     expect(helpers._notifActorClass(undefined)).toBe('nav-system');
   });
   it('is case-insensitive', function() {
-    expect(helpers._notifActorClass('CHITRA')).toBe('nav-chitra');
-    expect(helpers._notifActorClass('chitra')).toBe('nav-chitra');
+    expect(helpers._notifActorClass('SERVICING')).toBe('nav-servicing');
+    expect(helpers._notifActorClass('servicing')).toBe('nav-servicing');
   });
 });
 
