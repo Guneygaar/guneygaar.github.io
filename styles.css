@@ -3126,6 +3126,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .pc-scroll-body::-webkit-scrollbar { display: none; }
 
+.pcs-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 150;
+  background: #080808;
+}
+
 /*  FIX 2: Topbar  X left, trash right  */
 .pc-topbar {
   display: flex;
@@ -7162,6 +7169,16 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   background: none; border: none; padding: 4px;
   cursor: pointer; display: flex; align-items: center;
 }
+
+/* Topbar raw icon button — shared by delete and WA */
+.pcs-topbar-icon {
+  background: none; border: none; padding: 4px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: #6B7280;
+  transition: color 0.15s;
+}
+.pcs-topbar-icon svg { width: 17px; height: 17px; }
+.pcs-topbar-icon.danger:hover { color: #FF4B4B; }
 
 /* Caption action buttons */
 .pcs-cap-actions {
