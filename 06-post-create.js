@@ -311,9 +311,11 @@ window._npsSelectEmail = async function(messageId, subject) {
     var optsWrap = document.getElementById('nps-caption-opts');
     if (textarea) textarea.style.display = 'none';
     if (optsWrap) {
-      document.getElementById('nps-opt-txt-1').textContent = data.copy_option_1 || '';
-      document.getElementById('nps-opt-txt-2').textContent = data.copy_option_2 || '';
-      document.getElementById('nps-opt-txt-3').textContent = data.copy_option_3 || '';
+      window._npsRenderOptions([
+        data.copy_option_1 || '',
+        data.copy_option_2 || '',
+        data.copy_option_3 || ''
+      ]);
       optsWrap.style.display = 'flex';
       // Default pick: option 1.
       window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
@@ -368,6 +370,60 @@ window._npsSelectEmail = async function(messageId, subject) {
   }
 };
 
+// Hook preview: show only the first 10 words of a caption option.
+// The rest is mounted in a sibling `.nps-opt-full` div (hidden by
+// default) which `_npsToggleExpand` flips on/off. `submitNewPost`
+// and `_npsRefine` always read the FULL caption from `.nps-opt-full`
+// so the hook truncation is purely a display concern.
+function _npsGetHook(text) {
+  if (!text) return '';
+  var words = String(text).trim().split(/\s+/);
+  if (words.length <= 10) return String(text);
+  return words.slice(0, 10).join(' ') + '...';
+}
+
+// Populate the 3 existing caption option cards with hook/full/expand
+// structure. `opts` is an array of up to 3 full caption strings.
+// Each `#nps-opt-txt-N` container is treated as a mount point; its
+// innerHTML is fully replaced on every render so repeat calls from
+// Gmail import and refine keep the DOM in sync with the latest text.
+window._npsRenderOptions = function(opts) {
+  var list = opts || [];
+  for (var i = 0; i < 3; i++) {
+    var slot = document.getElementById('nps-opt-txt-' + (i + 1));
+    if (!slot) continue;
+    var full = (list[i] || '') + '';
+    slot.innerHTML =
+      '<div class="nps-opt-hook">' + esc(_npsGetHook(full)) + '</div>' +
+      '<div class="nps-opt-full" style="display:none">' + esc(full) + '</div>' +
+      '<button class="nps-opt-expand" type="button"' +
+        ' onclick="event.stopPropagation(); window._npsToggleExpand(this)">' +
+        'Read more' +
+      '</button>';
+    var card = document.getElementById('nps-cap-opt-' + (i + 1));
+    if (card) card.setAttribute('data-expanded', 'false');
+  }
+};
+
+window._npsToggleExpand = function(btn) {
+  var card = btn.closest('.nps-opt-card');
+  if (!card) return;
+  var full = card.querySelector('.nps-opt-full');
+  var hook = card.querySelector('.nps-opt-hook');
+  var expanded = card.getAttribute('data-expanded') === 'true';
+  if (expanded) {
+    if (full) full.style.display = 'none';
+    if (hook) hook.style.display = 'block';
+    btn.textContent = 'Read more';
+    card.setAttribute('data-expanded', 'false');
+  } else {
+    if (full) full.style.display = 'block';
+    if (hook) hook.style.display = 'none';
+    btn.textContent = 'Show less';
+    card.setAttribute('data-expanded', 'true');
+  }
+};
+
 window._npsPickOpt = function(el) {
   if (!el) return;
   document.querySelectorAll('.nps-cap-opt').forEach(function(o) {
@@ -389,10 +445,21 @@ window._npsRefine = async function() {
 
   if (sendBtn) { sendBtn.textContent = '...'; sendBtn.disabled = true; }
 
+  // Read the FULL caption text from each `.nps-opt-full` sibling so
+  // the refine payload carries the complete caption, not the 10-word
+  // hook preview. Falls back to the container textContent if the
+  // options haven't been rendered through `_npsRenderOptions` yet.
+  function _npsReadFullOpt(idx) {
+    var slot = document.getElementById('nps-opt-txt-' + idx);
+    if (!slot) return '';
+    var fullEl = slot.querySelector('.nps-opt-full');
+    if (fullEl) return fullEl.textContent || '';
+    return slot.textContent || '';
+  }
   var currentOpts = [
-    document.getElementById('nps-opt-txt-1') ? (document.getElementById('nps-opt-txt-1').textContent || '') : '',
-    document.getElementById('nps-opt-txt-2') ? (document.getElementById('nps-opt-txt-2').textContent || '') : '',
-    document.getElementById('nps-opt-txt-3') ? (document.getElementById('nps-opt-txt-3').textContent || '') : ''
+    _npsReadFullOpt(1),
+    _npsReadFullOpt(2),
+    _npsReadFullOpt(3)
   ];
 
   try {
@@ -426,9 +493,14 @@ window._npsRefine = async function() {
       try {
         var clean = data.content.replace(/```json|```/g, '').trim();
         var parsed = JSON.parse(clean);
-        if (parsed.copy_option_1) document.getElementById('nps-opt-txt-1').textContent = parsed.copy_option_1;
-        if (parsed.copy_option_2) document.getElementById('nps-opt-txt-2').textContent = parsed.copy_option_2;
-        if (parsed.copy_option_3) document.getElementById('nps-opt-txt-3').textContent = parsed.copy_option_3;
+        // Re-render through `_npsRenderOptions` so the refined
+        // copies come back as hook previews instead of full text.
+        // Keep any option that the refine call didn't return.
+        window._npsRenderOptions([
+          parsed.copy_option_1 || currentOpts[0],
+          parsed.copy_option_2 || currentOpts[1],
+          parsed.copy_option_3 || currentOpts[2]
+        ]);
         // Re-select option 1 after replacement so the submit path
         // always points at a fresh option.
         window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
@@ -610,8 +682,15 @@ const postLink = (_s('new-post-link')?.value || '').trim();
 // to manual entry.
 var captionVal = '';
 if (window._npsGmailImported && window._npsSelectedOptIdx > 0) {
-  var selectedOptEl = document.getElementById('nps-opt-txt-' + window._npsSelectedOptIdx);
-  captionVal = selectedOptEl ? (selectedOptEl.textContent || '').trim() : '';
+  // Read the FULL caption from the hidden `.nps-opt-full` sibling,
+  // NOT the visible hook preview. Falls back to the container text
+  // if the options haven't been rendered through `_npsRenderOptions`
+  // yet (defensive — shouldn't happen in the imported flow).
+  var selectedSlot = document.getElementById('nps-opt-txt-' + window._npsSelectedOptIdx);
+  if (selectedSlot) {
+    var selectedFull = selectedSlot.querySelector('.nps-opt-full');
+    captionVal = (selectedFull ? (selectedFull.textContent || '') : (selectedSlot.textContent || '')).trim();
+  }
 }
 if (!captionVal) {
   captionVal = (_s('new-post-caption')?.value || '').trim();
