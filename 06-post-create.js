@@ -521,6 +521,8 @@ var _ownerSel = document.getElementById('new-post-owner');
 if (_ownerSel) _ownerSel.innerHTML =
   '<option value="">Assign to...</option>';
 
+window._briefImportedImages = null;
+
 document.getElementById('new-post-overlay').style.display = 'none';
 var nav = document.getElementById('bottom-nav');
 if (nav) nav.style.display = '';
@@ -640,6 +642,13 @@ if (_newPostAssetFiles.length && typeof uploadPostAsset === 'function') {
   }
 }
 
+// If no new files uploaded but brief images exist, use those
+if ((!payload.images || payload.images.length === 0) &&
+    Array.isArray(window._briefImportedImages) &&
+    window._briefImportedImages.length > 0) {
+  payload.images = window._briefImportedImages.slice();
+}
+
 console.log('[submitNewPost] VALIDATION PASSED');
 console.log('FINAL PAYLOAD:', JSON.stringify(payload, null, 2));
 
@@ -702,6 +711,29 @@ if (window._activeBriefPostId) {
     // at status='assigned' forever. Close the request instead.
     // NOTE: requests table has no updated_at or linked_post_id
     // columns — only `status` is safe to PATCH here.
+
+    // Guard: check the request is not already closed before
+    // creating another post from it.
+    try {
+      var _guardRows = await apiFetch(
+        '/requests?id=eq.' + encodeURIComponent(_bid) +
+        '&select=status&limit=1',
+        {}, { allowLogout: false }
+      );
+      if (Array.isArray(_guardRows) && _guardRows[0] &&
+          _guardRows[0].status === 'closed') {
+        // Brief already has a post created from it.
+        // Do not create a duplicate. Show a warning and abort.
+        showToast && showToast(
+          'This brief already has a post created from it.',
+          'warning'
+        );
+        window._activeBriefPostId = null;
+        window._briefImportedImages = null;
+        return;
+      }
+    } catch (_guardErr) {}
+
     apiFetch('/requests?id=eq.' + encodeURIComponent(_bid), {
       method: 'PATCH',
       body: JSON.stringify({

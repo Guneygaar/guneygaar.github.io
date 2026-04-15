@@ -494,6 +494,7 @@ window._openBriefSheet = async function(postId) {
     //   • Other roles → hide (read-only)
     var _createPostBtn =
       '<button onclick="_createPostFromBrief(\'' + postId + '\')" ' +
+      'data-brief-id="' + esc(postId) + '" ' +
       'style="display:flex;align-items:center;justify-content:center;gap:6px;' +
       'background:#0e0e0e;border:1px solid #C8A84B;border-radius:10px;' +
       'padding:13px 20px;width:100%;font-family:\'IBM Plex Mono\',monospace;' +
@@ -1201,6 +1202,35 @@ window._createPostFromBrief = function(briefPostId) {
     if (ownerEl) {
       ownerEl.value = 'Creative';
       ownerEl.dispatchEvent(new Event('change'));
+    }
+
+    // Transfer brief reference images to the new post form
+    if (Array.isArray(brief.images) && brief.images.length > 0) {
+      try {
+        window._newPostAssetFiles = window._newPostAssetFiles || [];
+        // Store the existing image URLs so the submit handler
+        // can include them in payload.images without re-upload.
+        // We inject them as a special property the submit handler
+        // already reads.
+        window._briefImportedImages = brief.images.slice();
+
+        // Show a visual indicator in the form that images are
+        // pre-loaded from the brief.
+        var _previewWrap = document.getElementById('new-post-asset-preview');
+        if (_previewWrap) {
+          _previewWrap.innerHTML = '';
+          brief.images.forEach(function(url) {
+            if (!url) return;
+            var _thumb = document.createElement('div');
+            _thumb.style.cssText = 'position:relative;display:inline-block;margin:4px';
+            _thumb.innerHTML = '<img src="' + url + '" style="width:56px;height:56px;object-fit:cover;border:1px solid #323244">' +
+              '<span style="position:absolute;top:2px;left:2px;background:#1a1a24;font-family:IBM Plex Mono,monospace;font-size:6px;color:#9b87f5;padding:1px 3px;letter-spacing:.06em;text-transform:uppercase">brief</span>';
+            _previewWrap.appendChild(_thumb);
+          });
+        }
+      } catch (_imgErr) {}
+    } else {
+      window._briefImportedImages = null;
     }
 
     // Trigger validation so Create Post button enables
