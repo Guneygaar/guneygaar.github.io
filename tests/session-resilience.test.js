@@ -95,11 +95,34 @@ describe('LAYER 2 — Cross-tab refresh lock', function() {
     expect(match[0]).toContain("localStorage.getItem('_srtd_refresh_lock')");
   });
 
-  it('13. _doRefresh sets lock before fetch and removes in finally', function() {
-    var match = authSrc.match(/async function _doRefresh[\s\S]*?finally[\s\S]*?\}/);
-    expect(match).toBeTruthy();
-    expect(match[0]).toContain("localStorage.setItem('_srtd_refresh_lock'");
-    expect(match[0]).toContain("localStorage.removeItem('_srtd_refresh_lock')");
+  it('13. refreshSession sets lock before _doRefresh call and removes in finally', function() {
+    // The cross-tab lock SET / REMOVE now lives in refreshSession — in
+    // the SAME synchronous block as the lockTs read above — so two tabs
+    // can't both observe an empty lock slot before either sets it. The
+    // prior architecture had the set inside _doRefresh, after a `fetch`
+    // await, which left a narrow race window.
+    //
+    // Slice out the "own refresh" branch — everything after the cross-tab
+    // wait block's `return _refreshInProgress;` line through the function
+    // end. The cross-tab wait branch above has its own `.finally()` that
+    // we must not confuse with the own-refresh finally.
+    var full = authSrc.match(/async function refreshSession[\s\S]*?\n\}/);
+    expect(full).toBeTruthy();
+    var ownBranch = full[0].split('return _refreshInProgress;').pop();
+    expect(ownBranch).toContain("localStorage.setItem('_srtd_refresh_lock'");
+    expect(ownBranch).toContain("localStorage.removeItem('_srtd_refresh_lock')");
+    // Verify the SET happens BEFORE `_doRefresh(refreshToken)` is invoked.
+    var setIdx = ownBranch.indexOf("localStorage.setItem('_srtd_refresh_lock'");
+    var callIdx = ownBranch.indexOf('_doRefresh(refreshToken)');
+    expect(setIdx).toBeGreaterThan(-1);
+    expect(callIdx).toBeGreaterThan(-1);
+    expect(setIdx).toBeLessThan(callIdx);
+    // Verify the REMOVE sits inside a `} finally {` block (syntactic,
+    // not the word "finally" inside a nearby comment) so it always clears.
+    var finallyIdx = ownBranch.indexOf('} finally {');
+    expect(finallyIdx).toBeGreaterThan(callIdx);
+    var removeIdx = ownBranch.indexOf("localStorage.removeItem('_srtd_refresh_lock')");
+    expect(removeIdx).toBeGreaterThan(finallyIdx);
   });
 
   it('14. cross-tab lock polls for new token at 300ms intervals', function() {

@@ -276,10 +276,17 @@ async function loadPosts(fromPoll) {
 
 async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
   const reqId = _newPostsRequest();
-  // Background polls pass fromPoll=true so apiFetch won't force logout on
-  // transient 401s. User-initiated loads (first render, tab switch) leave
-  // it unset so a truly dead session still re-routes to the login overlay.
-  var _apiMeta = fromPoll ? { allowLogout: false } : undefined;
+  // ALWAYS thread { allowLogout: false } through every apiFetch in this
+  // function — both background polls AND first-render / user-initiated
+  // loads. Rationale: activateRole() fires loadPostsForClient, fetchProfiles,
+  // updateLastActive in parallel (no await). If any one of them gets a
+  // transient 401 and triggers _clearSessionAndLogin(), the OTHER parallel
+  // chains then read an empty sb_access_token and cascade into additional
+  // 401s. The visibilitychange handler and the 50-min proactive refresh
+  // timer are the only paths that should ever evict the user. This single
+  // line is the root cause of the 187 "Supabase 401: session expired"
+  // error_log rows seen April 5-15, all Client role.
+  var _apiMeta = { allowLogout: false };
   try {
     const allowedStages =
       'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';

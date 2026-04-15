@@ -42,14 +42,18 @@ async function _startRouter() {
     var savedEmail = localStorage.getItem('hinglish_email');
     if (savedEmail) window.AppState.user.email = savedEmail;
     if (savedRole) window.AppState.user.effectiveRole = savedRole;
-    // Try to refresh the session silently first
+    // Try to refresh the session silently first.
+    //
+    // NOTE: activateRole() already calls fetchProfiles() internally on
+    // every branch (client, agency, admin, preview). The duplicate
+    // fetchProfiles() calls that used to live in this function after
+    // activateRole() were firing /profiles and /user_roles TWICE on
+    // every session resume — removed now that activateRole() owns the
+    // profile-cache warmup for all paths.
     if (refreshToken) {
       const result = await refreshSession();
       if (result && result.token) {
         activateRole(savedRole);
-        if (typeof fetchProfiles === 'function') {
-          try { fetchProfiles(); } catch(e) { console.warn('[router] fetchProfiles error:', e); }
-        }
         window._authReady = true;
         return;
       }
@@ -62,9 +66,6 @@ async function _startRouter() {
       // Network/server error — keep tokens, try with stale token
       if (savedToken) {
         activateRole(savedRole);
-        if (typeof fetchProfiles === 'function') {
-          try { fetchProfiles(); } catch(e) { console.warn('[router] fetchProfiles error:', e); }
-        }
         window._authReady = true;
         return;
       }
@@ -76,9 +77,6 @@ async function _startRouter() {
     }
     if (savedToken) {
       activateRole(savedRole);
-      if (typeof fetchProfiles === 'function') {
-        try { fetchProfiles(); } catch(e) { console.warn('[router] fetchProfiles error:', e); }
-      }
       window._authReady = true;
       return;
     }

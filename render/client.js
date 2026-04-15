@@ -1549,7 +1549,11 @@ console.log('LOADED:', 'render/client.js');
       window._clientMentionRoster = [];
       return Promise.resolve(window._clientMentionRoster);
     }
-    window._clientMentionRosterPromise = window.apiFetch('/user_roles?select=name,email,role')
+    // allowLogout:false — the roster fetch runs in background while the
+    // client overlay is rendering. A transient 401 must not evict the
+    // user. The visibilitychange handler and the 50-min proactive refresh
+    // timer are the only paths that should ever trigger logout.
+    window._clientMentionRosterPromise = window.apiFetch('/user_roles?select=name,email,role', {}, { allowLogout: false })
       .then(function(rows) {
         if (Array.isArray(rows)) {
           window._clientMentionRoster = rows.filter(function(r) { return r && (r.name || r.email); });
