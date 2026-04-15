@@ -341,13 +341,11 @@ function getHeaderFromMsg(msg, name) {
 }
 
 // Normalise the "From" header into a short sender label.
-// Hardcoded detection for the two known client names so the
-// list chip reads cleanly; otherwise take whatever sits before
-// the `<email>` bracket.
+// Gmail "From" values look like `Display Name <user@domain>` —
+// split on `<` and trim to get the display name. No client name
+// hardcoding: any new client works on day one.
 function normaliseSender(fromRaw) {
   if (!fromRaw) return 'Client';
-  if (fromRaw.indexOf('Manisha') !== -1) return 'Manisha';
-  if (fromRaw.indexOf('Shivangini') !== -1) return 'Shivangini';
   return (fromRaw.split('<')[0].trim() || fromRaw);
 }
 
