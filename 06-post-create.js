@@ -232,7 +232,15 @@ window._npsShowEmailList = async function() {
           '<span class="nps-email-time">' + dateStr + '</span>' +
         '</div>' +
         '<div class="nps-email-subject">' + ((email.subject || '') + '').replace(/</g, '&lt;') + '</div>' +
-        '<div class="nps-email-preview">' + ((email.snippet || '') + '').replace(/</g, '&lt;') + '</div>';
+        '<div class="nps-email-preview">' + ((email.snippet || '') + '').replace(/</g, '&lt;') + '</div>' +
+        (email.message_count && email.message_count > 1 ?
+          '<div class="nps-email-thread-count">' +
+            email.message_count + ' messages in thread</div>'
+          : '');
+      // Closure captures `email` per iteration. email.id holds the
+      // gmail thread id (handleGmailList now returns one row per
+      // thread, keyed by thread.id), so `window._npsSelectEmail`
+      // ships it as thread_id on the Worker call.
       div.onclick = function() { window._npsSelectEmail(email.id, email.subject); };
       items.appendChild(div);
     });
@@ -262,12 +270,30 @@ window._npsSelectEmail = async function(messageId, subject) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AI-Secret': cfg.secret },
       body: JSON.stringify({
-        message_id:   messageId,
+        // messageId is now a thread id — see closure note in
+        // _npsShowEmailList. The Worker accepts thread_id and
+        // still falls back to message_id for any stale cache.
+        thread_id:    messageId,
         workspace_id: 'default',
         created_by:   (window.AppState.user && window.AppState.user.email) || ''
       })
     });
     var data = await res.json();
+
+    // Stash total_posts for campaign tracking before any early
+    // return. Cleared in closeNewPostModal.
+    window._npsGmailTotalPosts = (data && data.total_posts) || 1;
+
+    // Show total posts indicator if > 1 (replaces the "reading
+    // brief" copy). Done before we hide the processing row.
+    if (data && data.total_posts && data.total_posts > 1) {
+      var _procTxt = document.getElementById('nps-proc-txt');
+      if (_procTxt) {
+        _procTxt.textContent = data.total_posts +
+          ' posts identified in this brief';
+        _procTxt.style.color = '#9b87f5';
+      }
+    }
 
     if (proc) proc.style.display = 'none';
 
@@ -332,7 +358,13 @@ window._npsSelectEmail = async function(messageId, subject) {
     _npsCheckValid();
   } catch (e) {
     if (proc) proc.style.display = 'none';
-    if (typeof showToast === 'function') showToast('Error reading brief', 'error');
+    // Never silently swallow — always log to error_log.
+    window.logError && window.logError(
+      e && e.message, e && e.stack, 'gmail-brief-import'
+    );
+    if (typeof showToast === 'function') {
+      showToast('Error reading brief. Try again.', 'error');
+    }
   }
 };
 
@@ -532,8 +564,9 @@ window.AppState.ui.modalOpen = false;
 // PR 4 — Gmail import: tear down every per-open UI shim so the
 // next open starts clean (button label, option wrap, processing
 // row, email list, AI tags).
-window._npsGmailImported  = false;
-window._npsSelectedOptIdx = 0;
+window._npsGmailImported   = false;
+window._npsSelectedOptIdx  = 0;
+window._npsGmailTotalPosts = null;
 var captionOpts = document.getElementById('nps-caption-opts');
 if (captionOpts) captionOpts.style.display = 'none';
 var captionTextarea = document.getElementById('new-post-caption');
@@ -734,11 +767,17 @@ if (window._activeBriefPostId) {
       }
     } catch (_guardErr) {}
 
+    // Gmail multi-post briefs: ship total_posts to the request row
+    // so campaign tracking knows how many posts make up the brief.
+    // Only injected when set by _npsSelectEmail — regular requests
+    // close with the same {status:'closed'} body as before.
+    var _briefPatch = { status: 'closed' };
+    if (window._npsGmailTotalPosts && window._npsGmailTotalPosts > 1) {
+      _briefPatch.total_posts = window._npsGmailTotalPosts;
+    }
     apiFetch('/requests?id=eq.' + encodeURIComponent(_bid), {
       method: 'PATCH',
-      body: JSON.stringify({
-        status: 'closed'
-      })
+      body: JSON.stringify(_briefPatch)
     }).catch(function(err) {
       console.warn('[post-create] close request failed', err);
       window.logError && window.logError(err && err.message, err && err.stack, 'close-request-on-convert');
