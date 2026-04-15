@@ -116,8 +116,8 @@ var val = document.getElementById('new-post-owner').value;
 var strip = document.getElementById('nps-color-strip');
 if (!strip) return;
 strip.className = 'nps-color-strip';
-if (val === 'Creative') strip.classList.add('owner-pranav');
-if (val === 'Servicing') strip.classList.add('owner-chitra');
+if (val === 'Creative') strip.classList.add('owner-creative');
+if (val === 'Servicing') strip.classList.add('owner-servicing');
 if (val === 'Client') strip.classList.add('owner-client');
 _npsCheckValid();
 }
@@ -346,7 +346,7 @@ window._npsSelectEmail = async function(messageId, subject) {
         if (textarea2) textarea2.style.display = '';
         if (opts2)     opts2.style.display = 'none';
         if (title) title.textContent = '\u2726 Import from Gmail';
-        if (sub)   sub.textContent = 'Check for briefs from Manisha or Shivangini';
+        if (sub)   sub.textContent = 'Check for briefs from your clients';
         if (arr)   arr.style.display = '';
         gmailBtnReimport.onclick = window._npsShowEmailList;
         document.querySelectorAll('.nps-ai-tag').forEach(function(el) { el.style.display = 'none'; });
@@ -577,7 +577,7 @@ if (gmailBtn) {
   var s = document.getElementById('nps-gmail-sub');
   var a = document.getElementById('nps-gmail-arr');
   if (t) t.textContent = '\u2726 Import from Gmail';
-  if (s) s.textContent = 'Check for briefs from Manisha or Shivangini';
+  if (s) s.textContent = 'Check for briefs from your clients';
   if (a) a.style.display = '';
 }
 var emailList = document.getElementById('nps-email-list');
