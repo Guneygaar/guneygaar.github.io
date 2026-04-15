@@ -8243,6 +8243,34 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .nps-cap-opt-tag { color: #333; }
 .nps-cap-opt--sel .nps-cap-opt-tag { color: #9b87f5; }
 .nps-cap-opt-txt { font-size: 13px; color: #B8B8C0; line-height: 1.5; }
+.nps-opt-hook {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #F0F0F2;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.nps-opt-full {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #B8B8C0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-bottom: 6px;
+}
+.nps-opt-expand {
+  background: none;
+  border: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #9b87f5;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 2px;
+}
 .nps-cap-sel-dot {
   width: 7px; height: 7px; border-radius: 50%;
   border: 1px solid #333;

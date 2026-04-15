@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260414u">
+ <link rel="stylesheet" href="styles.css?v=20260414v">
 
 </head>
 <body>
@@ -622,19 +622,25 @@
 
         <!-- AI caption options — shown after Gmail import, hidden by default -->
         <div id="nps-caption-opts" style="display:none;flex-direction:column;gap:1px;margin-top:6px">
-          <div class="nps-cap-opt" id="nps-cap-opt-1" data-idx="1" onclick="window._npsPickOpt(this)">
+          <div class="nps-cap-opt" id="nps-cap-opt-1" data-idx="1" data-expanded="false" onclick="window._npsPickOpt(this)">
             <div class="nps-cap-opt-n">Option 01 <span class="nps-cap-opt-tag">Tap to select</span></div>
-            <div class="nps-cap-opt-txt" id="nps-opt-txt-1"></div>
+            <div class="nps-opt-hook" id="nps-opt-hook-1"></div>
+            <div class="nps-opt-full" id="nps-opt-txt-1" style="display:none"></div>
+            <button class="nps-opt-expand" type="button" onclick="event.stopPropagation(); window._npsToggleExpand(this)">Read more</button>
             <div class="nps-cap-sel-dot"></div>
           </div>
-          <div class="nps-cap-opt" id="nps-cap-opt-2" data-idx="2" onclick="window._npsPickOpt(this)">
+          <div class="nps-cap-opt" id="nps-cap-opt-2" data-idx="2" data-expanded="false" onclick="window._npsPickOpt(this)">
             <div class="nps-cap-opt-n">Option 02 <span class="nps-cap-opt-tag">Tap to select</span></div>
-            <div class="nps-cap-opt-txt" id="nps-opt-txt-2"></div>
+            <div class="nps-opt-hook" id="nps-opt-hook-2"></div>
+            <div class="nps-opt-full" id="nps-opt-txt-2" style="display:none"></div>
+            <button class="nps-opt-expand" type="button" onclick="event.stopPropagation(); window._npsToggleExpand(this)">Read more</button>
             <div class="nps-cap-sel-dot"></div>
           </div>
-          <div class="nps-cap-opt" id="nps-cap-opt-3" data-idx="3" onclick="window._npsPickOpt(this)">
+          <div class="nps-cap-opt" id="nps-cap-opt-3" data-idx="3" data-expanded="false" onclick="window._npsPickOpt(this)">
             <div class="nps-cap-opt-n">Option 03 <span class="nps-cap-opt-tag">Tap to select</span></div>
-            <div class="nps-cap-opt-txt" id="nps-opt-txt-3"></div>
+            <div class="nps-opt-hook" id="nps-opt-hook-3"></div>
+            <div class="nps-opt-full" id="nps-opt-txt-3" style="display:none"></div>
+            <button class="nps-opt-expand" type="button" onclick="event.stopPropagation(); window._npsToggleExpand(this)">Read more</button>
             <div class="nps-cap-sel-dot"></div>
           </div>
           <!-- Refine bar -->
@@ -1156,29 +1162,29 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260414u"></script>
-<script src="00-appstate-compat.js?v=20260414u"></script>
-<script src="01-config.js?v=20260414u" defer></script>
-<script src="02-session.js?v=20260414u" defer></script>
-<script src="utils.js?v=20260414u" defer></script>
-<script src="12-profiles.js?v=20260414u" defer></script>
-<script src="03-auth.js?v=20260414u" defer></script>
-<script src="05-api.js?v=20260414u" defer></script>
-<script src="10-ui.js?v=20260414u" defer></script>
+<script src="00-appstate.js?v=20260414v"></script>
+<script src="00-appstate-compat.js?v=20260414v"></script>
+<script src="01-config.js?v=20260414v" defer></script>
+<script src="02-session.js?v=20260414v" defer></script>
+<script src="utils.js?v=20260414v" defer></script>
+<script src="12-profiles.js?v=20260414v" defer></script>
+<script src="03-auth.js?v=20260414v" defer></script>
+<script src="05-api.js?v=20260414v" defer></script>
+<script src="10-ui.js?v=20260414v" defer></script>
 
-<script src="06-post-create.js?v=20260414u" defer></script>
-<script defer src="render/dashboard.js?v=20260414u"></script>
-<script defer src="render/client.js?v=20260414u"></script>
-<script defer src="render/pipeline.js?v=20260414u"></script>
-<script defer src="render/brief.js?v=20260414u"></script>
-<script defer src="actions/pcs.js?v=20260414u"></script>
-<script defer src="actions/pcs-longpress.js?v=20260414u"></script>
-<script src="ai-config.js?v=20260414u" defer></script>
-<script src="07-post-load.js?v=20260414u" defer></script>
-<script src="08-post-actions.js?v=20260414u" defer></script>
-<script src="09-library.js?v=20260414u" defer></script>
-<script src="09-approval.js?v=20260414u" defer></script>
-<script src="04-router.js?v=20260414u" defer></script>
+<script src="06-post-create.js?v=20260414v" defer></script>
+<script defer src="render/dashboard.js?v=20260414v"></script>
+<script defer src="render/client.js?v=20260414v"></script>
+<script defer src="render/pipeline.js?v=20260414v"></script>
+<script defer src="render/brief.js?v=20260414v"></script>
+<script defer src="actions/pcs.js?v=20260414v"></script>
+<script defer src="actions/pcs-longpress.js?v=20260414v"></script>
+<script src="ai-config.js?v=20260414v" defer></script>
+<script src="07-post-load.js?v=20260414v" defer></script>
+<script src="08-post-actions.js?v=20260414v" defer></script>
+<script src="09-library.js?v=20260414v" defer></script>
+<script src="09-approval.js?v=20260414v" defer></script>
+<script src="04-router.js?v=20260414v" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

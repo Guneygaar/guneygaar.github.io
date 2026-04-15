@@ -311,9 +311,13 @@ window._npsSelectEmail = async function(messageId, subject) {
     var optsWrap = document.getElementById('nps-caption-opts');
     if (textarea) textarea.style.display = 'none';
     if (optsWrap) {
-      document.getElementById('nps-opt-txt-1').textContent = data.copy_option_1 || '';
-      document.getElementById('nps-opt-txt-2').textContent = data.copy_option_2 || '';
-      document.getElementById('nps-opt-txt-3').textContent = data.copy_option_3 || '';
+      // Seed each card with full text + 10-word hook preview.
+      // _npsSetCaptionOption resets the card to the collapsed
+      // "Read more" state and hides the expand button on short
+      // captions.
+      _npsSetCaptionOption(1, data.copy_option_1 || '');
+      _npsSetCaptionOption(2, data.copy_option_2 || '');
+      _npsSetCaptionOption(3, data.copy_option_3 || '');
       optsWrap.style.display = 'flex';
       // Default pick: option 1.
       window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
@@ -365,6 +369,71 @@ window._npsSelectEmail = async function(messageId, subject) {
     if (typeof showToast === 'function') {
       showToast('Error reading brief. Try again.', 'error');
     }
+  }
+};
+
+// Extract the first 10 words of a caption as a "hook" preview.
+// Ten-word cap matches the opening of a LinkedIn carousel where
+// anything past the first ~12 words is truncated by the platform,
+// so the hook is exactly the text the user needs to judge a
+// caption on before tapping Read more.
+function _npsGetHook(text) {
+  if (!text) return '';
+  var words = text.trim().split(/\s+/);
+  if (words.length <= 10) return text;
+  return words.slice(0, 10).join(' ') + '...';
+}
+
+// Seed one option card with a fresh caption: full text into the
+// hidden .nps-opt-full div (which still carries the legacy
+// #nps-opt-txt-N id so submitNewPost can keep reading it), hook
+// into .nps-opt-hook, reset expanded state to collapsed, and
+// hide the expand button when the caption is 10 words or fewer
+// (nothing to reveal).
+function _npsSetCaptionOption(idx, text) {
+  var fullEl = document.getElementById('nps-opt-txt-' + idx);
+  var hookEl = document.getElementById('nps-opt-hook-' + idx);
+  var cardEl = document.getElementById('nps-cap-opt-' + idx);
+  var safeText = text || '';
+  if (fullEl) {
+    fullEl.textContent = safeText;
+    fullEl.style.display = 'none';
+  }
+  if (hookEl) {
+    hookEl.textContent = _npsGetHook(safeText);
+    hookEl.style.display = 'block';
+  }
+  if (cardEl) {
+    cardEl.setAttribute('data-expanded', 'false');
+    var btn = cardEl.querySelector('.nps-opt-expand');
+    if (btn) {
+      btn.textContent = 'Read more';
+      var wordCount = safeText.trim() ? safeText.trim().split(/\s+/).length : 0;
+      btn.style.display = (wordCount > 10) ? '' : 'none';
+    }
+  }
+}
+
+// Toggle hook / full text on one option card. Wired from the
+// inline onclick on each .nps-opt-expand button; the inline
+// handler also runs event.stopPropagation() so the card's own
+// onclick (which calls _npsPickOpt) does not fire as well.
+window._npsToggleExpand = function(btn) {
+  var card = btn.closest('.nps-cap-opt');
+  if (!card) return;
+  var full = card.querySelector('.nps-opt-full');
+  var hook = card.querySelector('.nps-opt-hook');
+  var expanded = card.getAttribute('data-expanded') === 'true';
+  if (expanded) {
+    if (full) full.style.display = 'none';
+    if (hook) hook.style.display = 'block';
+    btn.textContent = 'Read more';
+    card.setAttribute('data-expanded', 'false');
+  } else {
+    if (full) full.style.display = 'block';
+    if (hook) hook.style.display = 'none';
+    btn.textContent = 'Show less';
+    card.setAttribute('data-expanded', 'true');
   }
 };
 
@@ -426,9 +495,12 @@ window._npsRefine = async function() {
       try {
         var clean = data.content.replace(/```json|```/g, '').trim();
         var parsed = JSON.parse(clean);
-        if (parsed.copy_option_1) document.getElementById('nps-opt-txt-1').textContent = parsed.copy_option_1;
-        if (parsed.copy_option_2) document.getElementById('nps-opt-txt-2').textContent = parsed.copy_option_2;
-        if (parsed.copy_option_3) document.getElementById('nps-opt-txt-3').textContent = parsed.copy_option_3;
+        // Re-seed each card through the hook+full helper so the
+        // refined captions start collapsed to the 10-word preview
+        // and the expand state is reset across all three.
+        if (parsed.copy_option_1) _npsSetCaptionOption(1, parsed.copy_option_1);
+        if (parsed.copy_option_2) _npsSetCaptionOption(2, parsed.copy_option_2);
+        if (parsed.copy_option_3) _npsSetCaptionOption(3, parsed.copy_option_3);
         // Re-select option 1 after replacement so the submit path
         // always points at a fresh option.
         window._npsPickOpt(document.getElementById('nps-cap-opt-1'));
