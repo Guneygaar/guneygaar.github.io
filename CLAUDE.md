@@ -1,6 +1,6 @@
 # CLAUDE.md — Sorted (srtd.io)
 
-Last updated: 2026-04-15 (pcs-topbar-admin-delete: PCS topbar right zone now renders an admin-only red trash icon (`.pc-icon-btn.danger`, 15×15 SVG) BEFORE the existing WhatsApp icon. The delete icon is gated on `_pcsRole === 'admin'` and calls `window.pcsConfirmDelete()` which routes to the pre-existing `pcsDoDelete()` confirm-sheet flow at `actions/pcs.js:2120-2165`. This wires up the previously-orphaned PCS delete path — `deletePost()` + `#ae-delete-btn` in the Admin Edit modal are still orphaned but no longer the only delete entry point. Zero CSS / HTML / schema changes — reuses `.pc-icon-btn.danger` (styles.css:3151-3166) and the existing `#pcs-topbar-right` flex container (`gap:6px`, `align-items:center`) inline-styled at index.html:950. Change site: `actions/pcs.js:801-810`.) Full history: `CLAUDE-archive-20260411.md`.
+Last updated: 2026-04-15 (pcs-topbar-symmetry-sticky-header: two surgical UX fixes. (1) PCS topbar right zone: delete + WhatsApp icons now share one raw-icon class `.pcs-topbar-icon` (styles.css:7166-7174, borderless, 17×17 SVG, `#6B7280` idle ink, hover color transition). `.danger` modifier on `.pcs-topbar-icon` turns the delete icon red on hover. Both buttons drop their prior bordered-circle / asymmetric-size look — they now render as identical raw glyphs. `.pcs-topbar-wa` rule stays in place as dead code to avoid breaking any external selector. Change site: `actions/pcs.js:801-810` (class swap + WA SVG width/height 18→17). (2) New `.pcs-sticky-header` wrapper around `#pcs-topbar-title`, `#pcs-chips-row`, `#pcs-tab-bar` in the PCS sheet (index.html:961-973). CSS rule at styles.css:3128-3133: `position:sticky; top:0; z-index:150; background:#080808`. Keeps title + meta chips + tab bar pinned to the top of the PCS scroll container while the user scrolls comments inside either the Client or Internal tab panes — the tab bar no longer disappears off-screen mid-conversation. z-index 150 sits below `.pc-topbar` (200) so the stage pill dropdown still overlays correctly. No JS logic changes — `_renderPCS` still writes to the same element IDs. Zero schema changes.) Full history: `CLAUDE-archive-20260411.md`.
 
 ## 1 — WHAT IS SORTED
 
@@ -220,7 +220,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 23 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 22 scripts). Current: `?v=20260415a`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 23 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 22 scripts). Current: `?v=20260415b`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
