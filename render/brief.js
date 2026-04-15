@@ -335,9 +335,8 @@ window._openBriefSheet = async function(postId) {
 
   var _role = (window.AppState.user.effectiveRole || '').toLowerCase();
   var _isClient = _role === 'client';
-  var _isCreativeRole = _role === 'creative' || _role === 'pranav';
-  var _canAssign = _role === 'admin' || _role === 'servicing' || _role === 'chitra' || _role === 'shubham';
-  var _isChitra = _canAssign;
+  var _isCreativeRole = _role === 'creative';
+  var _canAssign = _role === 'admin' || _role === 'servicing';
   var _isBriefDone = (post.stage || '') === 'brief_done';
   var sentTime = '';
   if (post.status_changed_at && post.status_changed_at !== 'null') {
@@ -354,7 +353,7 @@ window._openBriefSheet = async function(postId) {
 
   var rawComments = post.client_feedback || post.description || '';
   var contentType = '';
-  var chitraNote = '';
+  var briefDirectionNote = '';
   var briefText = '';
 
   if (post._isRequest) {
@@ -371,10 +370,14 @@ window._openBriefSheet = async function(postId) {
     briefText = rawComments;
     briefText = briefText.replace(/^\[URGENT\]\s*/, '').trim();
 
-    var chitraMatch = briefText.match(/\[CHITRA NOTE\]([\s\S]*)/i);
-    if (chitraMatch) {
-      chitraNote = chitraMatch[1].trim();
-      briefText = briefText.replace(/\[CHITRA NOTE\][\s\S]*/i, '').trim();
+    var directionMatch = briefText.match(
+      /\[(?:CHITRA NOTE|BRIEF NOTE)\]([\s\S]*)/i
+    );
+    if (directionMatch) {
+      briefDirectionNote = directionMatch[1].trim();
+      briefText = briefText.replace(
+        /\[(?:CHITRA NOTE|BRIEF NOTE)\][\s\S]*/i, ''
+      ).trim();
     }
   }
 
@@ -399,8 +402,8 @@ window._openBriefSheet = async function(postId) {
       _assigneeName = _assignedToName;
     } else {
       _isAssigned =
-        (_ownerLower !== '' && _ownerLower !== 'servicing' && _ownerLower !== 'chitra' &&
-         _ownerLower !== 'admin' && _ownerLower !== 'shubham' && _ownerLower !== 'client') &&
+        (_ownerLower !== '' && _ownerLower !== 'servicing' &&
+         _ownerLower !== 'admin' && _ownerLower !== 'client') &&
         !_isBriefDone;
       _assigneeName = _isAssigned ? (post.owner || '') : '';
     }
@@ -478,12 +481,12 @@ window._openBriefSheet = async function(postId) {
     // STATE: brief_done
     if (_isBriefDone) {
       return _viewPostBtn +
-        (_isChitra ? _reopenBtn : '');
+        (_canAssign ? _reopenBtn : '');
     }
     // STATE: has linked post (post already created)
     if (_hasLinkedPost && linkedPost) {
       return _viewPostBtn +
-        (_isChitra ? _closeBtn : '');
+        (_canAssign ? _closeBtn : '');
     }
     // STATE: assigned, no linked post yet
     // Create Post button visibility (Fix C):
@@ -654,15 +657,15 @@ window._openBriefSheet = async function(postId) {
       '</a>'
       : '') +
 
-    // Chitra Note (hidden from client)
-    (!_isClient && chitraNote ?
+    // Direction note from Servicing (hidden from client)
+    (!_isClient && briefDirectionNote ?
       '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #1e1e2e;">' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:600;' +
       'letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:#555566;margin-bottom:8px;">Direction from Chitra</div>' +
+      'color:#555566;margin-bottom:8px;">Direction from Servicing</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:14px;' +
       'color:#8E8E93;line-height:1.65;font-style:italic;">' +
-      esc(chitraNote) + '</div>' +
+      esc(briefDirectionNote) + '</div>' +
       '</div>'
       : '') +
 
@@ -951,7 +954,7 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
   }
   var updatedFeedback = (post.client_feedback || '');
   if (direction.trim()) {
-    updatedFeedback += '\n\n[CHITRA NOTE] ' + direction.trim();
+    updatedFeedback += '\n\n[BRIEF NOTE] ' + direction.trim();
   }
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
@@ -1190,10 +1193,10 @@ window._createPostFromBrief = function(briefPostId) {
       titleEl.dispatchEvent(new Event('input'));
     }
     if (captionEl && (brief.client_feedback || brief.description)) {
-      // Strip [CHITRA NOTE] and [URGENT] from brief text
+      // Strip [BRIEF NOTE]/[CHITRA NOTE] and [URGENT] from brief text
       var cleanBrief = (brief.client_feedback || brief.description || '')
         .replace(/\[URGENT\]\s*/g, '')
-        .replace(/\[CHITRA NOTE\][^]*/gi, '')
+        .replace(/\[(?:CHITRA NOTE|BRIEF NOTE)\][^]*/gi, '')
         .trim();
       captionEl.value = cleanBrief;
       captionEl.style.height = 'auto';

@@ -785,11 +785,9 @@ window._renderPCS = function(postId) {
   console.log('[PCS] _renderPCS READING:', id, 'stage=' + post.stage, 'stageLC=' + stageLC, Date.now());
   var isPublished = stageLC === 'published';
   var _pcsRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavPCS = _pcsRole === 'creative' ||
-    _pcsRole === 'pranav' ||
-    (window.AppState.user.email || '').toLowerCase().includes('pranav');
-  var canEdit = _pcsRole !== 'client' && !_isPranavPCS;
-  var canEditCreative = _isPranavPCS;
+  var _isCreativePCS = _pcsRole === 'creative';
+  var canEdit = _pcsRole !== 'client' && !_isCreativePCS;
+  var canEditCreative = _isCreativePCS;
   var dateValue   = post.targetDate || '';
   var isAdmin = _pcsRole === 'admin';
   var canManage = canEdit || canEditCreative;

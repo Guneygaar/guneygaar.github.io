@@ -38,10 +38,8 @@ window.closePipelineSearch = function() {
 // -- Pipeline critical header line --
 window.updatePipelineCritical = function(posts) {
   var _critRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavCrit = _critRole === 'creative' ||
-    _critRole === 'pranav' ||
-    (window.AppState.user.email||'').toLowerCase().includes('pranav');
-  if (_isPranavCrit) {
+  var _isCreativeCrit = _critRole === 'creative';
+  if (_isCreativeCrit) {
     var el = document.getElementById('pipeline-critical');
     if (el) el.style.display = 'none';
     return;
@@ -364,8 +362,8 @@ window.buildPipelineCard = function(p, listKey) {
     if (!rightHtml) {
       var ownerColors = {
         'client': 'var(--c-red)',
-        'chitra': 'var(--c-cyan)',
-        'pranav': 'var(--c-purple)'
+        'servicing': 'var(--c-cyan)',
+        'creative': 'var(--c-purple)'
       };
       var ownerKey = (p.owner || '').toLowerCase();
       var ownerColor = ownerColors[ownerKey] || '#666';
@@ -401,14 +399,12 @@ window.buildPipelineCard = function(p, listKey) {
 window.updatePipelineChipCounts = function() {
   var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
   var _chipRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavChip = _chipRole === 'creative' ||
-    _chipRole === 'pranav' ||
-    (window.AppState.user.email||'').toLowerCase().includes('pranav');
-  var _isChitraChip = _chipRole === 'servicing' && !_isPranavChip;
+  var _isCreativeChip = _chipRole === 'creative';
+  var _isServicingChip = _chipRole === 'servicing' && !_isCreativeChip;
   var chipPosts = posts.filter(function(p) {
     var s = p.stage || '';
     if (s === 'published' || s === 'parked' || s === 'rejected') return false;
-    if (_isPranavChip) {
+    if (_isCreativeChip) {
       var owner = (p.owner || '').toLowerCase();
       var isMine = owner === 'creative';
       return (s === 'brief' || s === 'in_production' || s === 'ready') && isMine;
@@ -448,8 +444,8 @@ window.updatePipelineChipCounts = function() {
     var count = stageCounts[stage] || 0;
     chip.style.display = count > 0 ? 'flex' : 'none';
   });
-  if (_isPranavChip) {
-    // Hide chips Pranav doesn't need
+  if (_isCreativeChip) {
+    // Hide chips the Creative role doesn't need
     ['awaiting_approval','awaiting_brand_input',
      'scheduled'].forEach(function(stage) {
       var chip = document.querySelector(
@@ -463,7 +459,7 @@ window.updatePipelineChipCounts = function() {
       if (chip) chip.style.display = '';
     });
   } else {
-    // Restore all chips for non-Pranav roles
+    // Restore all chips for non-Creative roles
     // (existing zero-count hiding logic handles this)
     ['awaiting_approval','awaiting_brand_input',
      'scheduled','brief','in_production','ready'].forEach(
@@ -661,11 +657,9 @@ window.updatePipelineNarrative = function(posts) {
   if (!el) el = wrapEl;
 
   var _narrRole = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavNarr = _narrRole === 'creative' ||
-    _narrRole === 'pranav' ||
-    (window.AppState.user.email||'').toLowerCase().includes('pranav');
+  var _isCreativeNarr = _narrRole === 'creative';
 
-  if (_isPranavNarr) {
+  if (_isCreativeNarr) {
     var narrEl = document.getElementById('pipeline-narrative-text')
       || document.getElementById('pipeline-narrative');
     if (narrEl) {
@@ -799,12 +793,12 @@ window.updatePipelineNarrative = function(posts) {
     return;
   }
 
-  // PRIORITY 5: Pranav idle 3+ days
-  var pranavPosts = allP.filter(function(p) {
+  // PRIORITY 5: Creative team idle 3+ days
+  var creativePosts = allP.filter(function(p) {
     return (p.owner||'').toLowerCase() === 'creative';
   });
-  if (pranavPosts.length) {
-    var last = pranavPosts.sort(function(a,b) {
+  if (creativePosts.length) {
+    var last = creativePosts.sort(function(a,b) {
       return new Date(b.updated_at||b.updatedAt) -
              new Date(a.updated_at||a.updatedAt);
     })[0];
@@ -813,7 +807,7 @@ window.updatePipelineNarrative = function(posts) {
       / 86400000);
     if (idle >= 3) {
       setText(
-        'Pranav idle \u00b7 ' + idle + ' days',
+        'Creative team idle \u00b7 ' + idle + ' days',
         'var(--c-amber)',
         'all'
       );
@@ -878,21 +872,19 @@ window._renderPipelineInner = function() {
   var source = stageFiltered;
   if (window._activePerson === 'client') {
     source = stageFiltered.filter(function(p) { return p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (window._activePerson === 'chitra') {
+  } else if (window._activePerson === 'servicing') {
     source = stageFiltered.filter(function(p) { return p.stage === 'ready' || p.stage === 'awaiting_approval' || p.stage === 'awaiting_brand_input'; });
-  } else if (window._activePerson === 'pranav') {
+  } else if (window._activePerson === 'creative') {
     source = stageFiltered.filter(function(p) { return p.stage === 'in_production'; });
   }
 
   // -- ROLE-BASED PIPELINE FILTERING --
   var _rolePL = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var _isPranavPL = _rolePL === 'creative' ||
-    _rolePL === 'pranav' ||
-    (window.AppState.user.email || '').toLowerCase().includes('pranav');
-  var _isChitraPL = _rolePL === 'servicing' && !_isPranavPL;
-  var _isAdminPL = !_isClient && !_isPranavPL && !_isChitraPL;
+  var _isCreativePL = _rolePL === 'creative';
+  var _isServicingPL = _rolePL === 'servicing' && !_isCreativePL;
+  var _isAdminPL = !_isClient && !_isCreativePL && !_isServicingPL;
 
-  if (_isPranavPL) {
+  if (_isCreativePL) {
     source = source.filter(function(p) {
       var stage = p.stage || '';
       var owner = (p.owner || '').toLowerCase();
@@ -906,8 +898,8 @@ window._renderPipelineInner = function() {
     });
   }
 
-  if (_isChitraPL) {
-    var _chitraStages = [
+  if (_isServicingPL) {
+    var _servicingStages = [
       'brief',
       'awaiting_approval',
       'awaiting_brand_input',
@@ -916,7 +908,7 @@ window._renderPipelineInner = function() {
     ];
     source = source.filter(function(p) {
       var stage = p.stage || '';
-      if (!_chitraStages.includes(stage)) return false;
+      if (!_servicingStages.includes(stage)) return false;
       if (stage === 'brief') {
         return (p.owner || '').toLowerCase() === 'servicing';
       }
@@ -948,12 +940,11 @@ window._renderPipelineInner = function() {
 
   const grouped = {};
   source.forEach(p => { const s = p.stage || 'Unknown'; if (!grouped[s]) grouped[s] = []; grouped[s].push(p); });
-  // Pranav only sees briefs assigned to him
+  // Creative role only sees briefs assigned to them
   if (grouped['brief']) {
     var _roleBF = (window.AppState.user.effectiveRole || '').toLowerCase();
-    var _isPranavBF = _roleBF === 'creative' ||
-      (window.AppState.user.email || '').toLowerCase().includes('pranav');
-    if (_isPranavBF) {
+    var _isCreativeBF = _roleBF === 'creative';
+    if (_isCreativeBF) {
       grouped['brief'] = (grouped['brief'] || []).filter(function(p) {
         return (p.owner || '').toLowerCase() === 'creative';
       });

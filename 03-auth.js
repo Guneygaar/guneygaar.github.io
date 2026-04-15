@@ -16,19 +16,6 @@ function normalizeRole(r) {
 }
 window.normalizeRole = normalizeRole;
 
-function _normaliseRole(r) {
-  if (!r) return 'Admin';
-  var map = {
-    'admin': 'Admin',
-    'servicing': 'Servicing',
-    'creative': 'Creative',
-    'client': 'Client',
-    'pranav': 'Pranav',
-    'chitra': 'Chitra'
-  };
-  return map[r.toLowerCase()] || r;
-}
-
 let _refreshInProgress = null;
 
 // -- Cross-tab token sync: pick up tokens saved by other tabs --
@@ -410,8 +397,8 @@ function activateRole(role) {
 
   var rolePreview = localStorage.getItem('pcs_role_preview');
   if (rolePreview && rolePreview !== 'Admin') {
-    window.AppState.user.effectiveRole = _normaliseRole(rolePreview);
-    window.AppState.user.role = _normaliseRole(rolePreview);
+    window.AppState.user.effectiveRole = normalizeRole(rolePreview) || 'Admin';
+    window.AppState.user.role = normalizeRole(rolePreview) || 'Admin';
     _buildUserMenu();
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
@@ -422,8 +409,8 @@ function activateRole(role) {
 
   // Client DB role takes absolute priority - real clients always go to client portal
   if ((role || '').toLowerCase() === 'client') {
-    window.AppState.user.role = _normaliseRole('Client');
-    window.AppState.user.effectiveRole = _normaliseRole('Client');
+    window.AppState.user.role = 'Client';
+    window.AppState.user.effectiveRole = 'Client';
     var fab = document.getElementById('fab');
     var fab2 = document.getElementById('main-fab-btn');
     var nav = document.getElementById('bottom-nav');
@@ -453,9 +440,9 @@ function activateRole(role) {
   // Resolve effectiveRole: Admin can preview other roles via localStorage
   if (role === 'Admin') {
     const preview = localStorage.getItem('pcs_role_preview');
-    window.AppState.user.effectiveRole = _normaliseRole((preview && preview !== 'Admin') ? preview : 'Admin');
+    window.AppState.user.effectiveRole = normalizeRole((preview && preview !== 'Admin') ? preview : 'Admin') || 'Admin';
   } else {
-    window.AppState.user.effectiveRole = _normaliseRole(role);
+    window.AppState.user.effectiveRole = normalizeRole(role) || 'Admin';
   }
   const overlay = document.getElementById('login-overlay');
   if (overlay) overlay.classList.add('hidden');

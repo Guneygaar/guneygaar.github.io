@@ -525,7 +525,9 @@ function _confirmPublish(postId) {
     window.AppState.posts.setAll(_next_408);
     await logActivity({
       post_id: postId,
-      actor: window.AppState.user.email || window.AppState.user.name || 'Shubham',
+      actor: window.AppState.user.email ||
+        window.AppState.user.name ||
+        window.AppState.user.effectiveRole || 'Admin',
       actor_role: window.AppState.user.effectiveRole || 'Admin',
       action: 'published',
       old_stage: _pubOldStage,
