@@ -68,7 +68,13 @@ async function refreshSession() {
           // rotated it successfully before dying — never use the stale
           // captured value.
           var _freshToken = localStorage.getItem('sb_refresh_token') || refreshToken;
-          _doRefresh(_freshToken).then(resolve);
+          // Set the lock BEFORE starting our own refresh so concurrent
+          // tabs waiting on this same lock slot see it immediately.
+          localStorage.setItem('_srtd_refresh_lock', String(Date.now()));
+          _doRefresh(_freshToken).then(function(r) {
+            localStorage.removeItem('_srtd_refresh_lock');
+            resolve(r);
+          });
         }
       }, 300);
     });
@@ -76,17 +82,24 @@ async function refreshSession() {
     return _refreshInProgress;
   }
 
+  // Close the race window: SET the cross-tab lock in the SAME synchronous
+  // block as the lockTs read above, BEFORE any await. If the set were
+  // inside _doRefresh (after `await`), two tabs could both read lockTs as
+  // empty and both call _doRefresh with the same refresh_token, triggering
+  // Supabase's refresh-token-reuse revocation. Removing the lock lives in
+  // the finally below so it always clears regardless of success/throw.
+  localStorage.setItem('_srtd_refresh_lock', String(Date.now()));
   _refreshInProgress = _doRefresh(refreshToken);
   try {
     return await _refreshInProgress;
   } finally {
     _refreshInProgress = null;
+    localStorage.removeItem('_srtd_refresh_lock');
   }
 }
 
 async function _doRefresh(refreshToken) {
   try {
-    localStorage.setItem('_srtd_refresh_lock', String(Date.now()));
     var res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
@@ -151,9 +164,9 @@ async function _doRefresh(refreshToken) {
     console.error('[auth] refreshSession failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'refresh-session');
     return { error: 'network' };
-  } finally {
-    localStorage.removeItem('_srtd_refresh_lock');
   }
+  // Lock set + removal moved to refreshSession() so both operations
+  // happen in the same synchronous block as the lockTs read.
 }
 
 // -- LAYER 3: visibilitychange — refresh token when app regains focus --
@@ -400,6 +413,16 @@ function activateRole(role) {
     window.AppState.user.effectiveRole = normalizeRole(rolePreview) || 'Admin';
     window.AppState.user.role = normalizeRole(rolePreview) || 'Admin';
     _buildUserMenu();
+    // Preview branch handles its own fetchProfiles/updateLastActive so
+    // 04-router.js can drop its duplicate post-activateRole call. Without
+    // these lines, the preview branch would return without populating the
+    // profiles cache, breaking avatar rendering across the dashboard.
+    if (typeof fetchProfiles === 'function') {
+      try { fetchProfiles(); } catch(e) { console.warn('[auth] fetchProfiles error:', e); }
+    }
+    if (typeof updateLastActive === 'function') {
+      try { updateLastActive(); } catch(e) { console.warn('[auth] updateLastActive error:', e); }
+    }
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
     return;

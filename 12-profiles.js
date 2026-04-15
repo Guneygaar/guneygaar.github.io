@@ -10,7 +10,12 @@ window._profilesCache = null;
 
 async function fetchProfiles() {
   try {
-    var rows = await apiFetch('/profiles?select=email,display_name,username,title,avatar_url,status,scratchpad,notification_email,notification_digest,notification_client_comments,notification_whatsapp');
+    // allowLogout:false — fetchProfiles runs in parallel with
+    // loadPostsForClient and updateLastActive from activateRole(). A
+    // transient 401 on any of them must NOT trigger _clearSessionAndLogin
+    // and cascade-evict the other parallel chains. Only user-initiated
+    // actions get the default allowLogout:true behaviour.
+    var rows = await apiFetch('/profiles?select=email,display_name,username,title,avatar_url,status,scratchpad,notification_email,notification_digest,notification_client_comments,notification_whatsapp', {}, { allowLogout: false });
     var cache = {};
     if (Array.isArray(rows)) {
       for (var i = 0; i < rows.length; i++) {
@@ -22,7 +27,7 @@ async function fetchProfiles() {
     }
     window._profilesCache = cache;
     try {
-      var rolesRes = await apiFetch('/user_roles?select=email,role,name');
+      var rolesRes = await apiFetch('/user_roles?select=email,role,name', {}, { allowLogout: false });
       if (Array.isArray(rolesRes)) {
         var nrc = {};
         for (var j = 0; j < rolesRes.length; j++) {
@@ -134,10 +139,13 @@ function getProfileByEmail(nameOrEmail) {
 function updateLastActive() {
   var email = window.AppState && window.AppState.user && window.AppState.user.email;
   if (!email) return;
+  // allowLogout:false — updateLastActive runs in parallel with
+  // loadPostsForClient and fetchProfiles from activateRole(). See the
+  // long-form rationale above fetchProfiles().
   apiFetch('/profiles?email=eq.' + encodeURIComponent(email), {
     method: 'PATCH',
     body: JSON.stringify({ last_active_at: new Date().toISOString(), status: 'online' })
-  }).catch(function(err) {
+  }, { allowLogout: false }).catch(function(err) {
     console.error('[profiles] updateLastActive failed:', err);
   });
 }
