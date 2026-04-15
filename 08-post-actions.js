@@ -534,6 +534,24 @@ function _confirmPublish(postId) {
       new_stage: 'published'
     });
     // Stage change notification is handled by the notify-stage edge function.
+    // Campaign tracking: stamp last_post_published_at on the parent
+    // brief request so the campaign card knows when the most recent
+    // post in the series went live. Fire-and-forget — never blocks.
+    var _pubPost = (window.AppState.posts.all || [])
+      .find(function(p) { return p.post_id === postId; });
+    if (_pubPost && _pubPost.brief_id) {
+      apiFetch(
+        '/requests?id=eq.' +
+          encodeURIComponent(_pubPost.brief_id),
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            last_post_published_at: new Date().toISOString()
+          })
+        },
+        { allowLogout: false }
+      ).catch(function() {});
+    }
     showToast('Published', 'success');
     if (typeof _removePublishSheet === 'function') _removePublishSheet();
     if (typeof closePCS === 'function') closePCS();
@@ -608,6 +626,23 @@ async function _executeStageChangeAsync(post, postId, newStage, previousStage) {
     }
     _clearSaveTimeout(post);
     post._isSaving = false;
+
+    // Campaign tracking: when this stage change moved a post into
+    // 'published' and the post belongs to a brief campaign, stamp
+    // last_post_published_at on the parent request. Fire-and-forget.
+    if (newStage === 'published' && post && post.brief_id) {
+      apiFetch(
+        '/requests?id=eq.' +
+          encodeURIComponent(post.brief_id),
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            last_post_published_at: new Date().toISOString()
+          })
+        },
+        { allowLogout: false }
+      ).catch(function() {});
+    }
 
     // FINAL TRUTH RENDER
     _renderPCS(postId);
