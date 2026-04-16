@@ -2935,10 +2935,26 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
-  var _mentionMatches = message.match(/@([a-zA-Z0-9_]+)/g) || [];
-  var _mentioned = _mentionMatches.map(function(m) {
-    return m.slice(1);
-  });
+  // Roster-aware mention extraction: match against known roster names
+  // first so multi-word or dot-containing names resolve correctly.
+  // Falls back to regex for manually-typed @mentions not from the picker.
+  var _mentioned = [];
+  if (_pcsRoster && _pcsRoster.length) {
+    var _lowerMsg = message.toLowerCase();
+    _pcsRoster.forEach(function(m) {
+      if (!m.name) return;
+      var _atName = '@' + m.name.toLowerCase();
+      if (_lowerMsg.indexOf(_atName) !== -1) {
+        _mentioned.push(m.name);
+      }
+    });
+  }
+  if (_mentioned.length === 0) {
+    var _mentionMatches = message.match(/@([a-zA-Z0-9_]+)/g) || [];
+    _mentioned = _mentionMatches.map(function(m) {
+      return m.slice(1);
+    });
+  }
 
   var _imgs = (visibility === 'all' && !isTask)
     ? window._pcsClientImgs.slice()
@@ -3139,7 +3155,10 @@ var _pcsRoster = null;
 var _pcsRosterPromise = null;
 
 function _fetchPcsRoster() {
-  if (_pcsRoster) return Promise.resolve(_pcsRoster);
+  if (_pcsRoster && _pcsRoster._ts &&
+      (Date.now() - _pcsRoster._ts) < 300000) {
+    return Promise.resolve(_pcsRoster);
+  }
   if (_pcsRosterPromise) return _pcsRosterPromise;
   _pcsRosterPromise = window.apiFetch(
     '/user_roles?select=name,role,email&order=name.asc',
@@ -3150,14 +3169,30 @@ function _fetchPcsRoster() {
           .map(function(r) {
             var safeRole = r.role
               ? String(r.role) : 'client';
+            var _rosterName = (r.name && r.name.trim()) ? r.name.trim() : '';
+            if (!_rosterName && r.email && typeof getDisplayName === 'function') {
+              var _dn = getDisplayName(r.email);
+              if (_dn && _dn !== r.email && _dn !== 'Unknown') _rosterName = _dn;
+            }
+            if (!_rosterName && r.email) {
+              _rosterName = r.email.split('@')[0]
+                .split(/[._-]/)
+                .filter(Boolean)
+                .map(function(p) {
+                  return p.charAt(0).toUpperCase() +
+                         p.slice(1).toLowerCase();
+                }).join(' ');
+            }
             return {
-              name: r.name || r.email.split('@')[0],
+              name: _rosterName || '?',
               role: safeRole.charAt(0).toUpperCase() +
                     safeRole.slice(1).toLowerCase(),
               email: r.email || ''
             };
           })
       : [];
+    _pcsRoster._ts = Date.now();
+    window._pcsRosterData = _pcsRoster;
     _pcsRosterPromise = null;
     return _pcsRoster;
   }).catch(function() {
