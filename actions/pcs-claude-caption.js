@@ -11,7 +11,8 @@ window._captionWS = {
   sessionCost: 0,
   postId: null,
   mode: null,
-  _rewriteComments: null
+  _rewriteComments: null,
+  correctionsPrompt: ''
 };
 
 var _CW_USD_TO_INR = 100;
@@ -58,6 +59,7 @@ window.openCaptionWorkspace = async function(mode, context) {
 
   _cwUpdateSessionMeter();
   _cwFetchCostTotals();
+  if (!isResume) _cwLoadCorrections();
   _cwRenderThread();
 
   if (!isResume) {
@@ -78,7 +80,11 @@ window.openCaptionWorkspace = async function(mode, context) {
       var thread = document.getElementById('cw-thread');
       if (thread) { thread.insertAdjacentHTML('beforeend', _cwTypingHtml()); _cwScrollToBottom(); }
       var featureTag = 'chat';
-      var result = await _callSrtdAI(featureTag, ws.messages.map(function(m) { return { role: m.role, content: m.content }; }), ws.postId);
+      var rwApiMsgs = ws.messages.map(function(m) { return { role: m.role, content: m.content }; });
+      if (ws.correctionsPrompt && rwApiMsgs.length > 0) {
+        rwApiMsgs[0] = { role: rwApiMsgs[0].role, content: rwApiMsgs[0].content + ws.correctionsPrompt };
+      }
+      var result = await _callSrtdAI(featureTag, rwApiMsgs, ws.postId);
       var typingEl = thread && thread.querySelector('.cw-typing');
       if (typingEl) typingEl.remove();
       if (result && result.success) {
@@ -152,7 +158,12 @@ window.sendCaptionMessage = async function(text) {
 
   var featureTag = ws.mode === 'qc' ? 'qc' : ws.mode === 'write' ? 'writer' : 'chat';
 
-  var result = await _callSrtdAI(featureTag, ws.messages, ws.postId);
+  var apiMessages = ws.messages.map(function(m) { return { role: m.role, content: m.content }; });
+  if (ws.correctionsPrompt && apiMessages.length > 0) {
+    apiMessages[0] = { role: apiMessages[0].role, content: apiMessages[0].content + ws.correctionsPrompt };
+  }
+
+  var result = await _callSrtdAI(featureTag, apiMessages, ws.postId);
 
   var typingEl = thread && thread.querySelector('.cw-typing');
   if (typingEl) typingEl.remove();
@@ -180,6 +191,15 @@ function _cwRenderThread() {
   var html = '';
   var draftNum = 0;
 
+  var post = ws.postId ? (window.AppState.posts.all || []).find(function(p) { return (p.post_id || p.id) === ws.postId; }) : null;
+  var captionText = post ? post.caption : '';
+  html += '<div class="cw-caption-block">' +
+    '<div class="cw-caption-lbl">Current caption</div>' +
+    (captionText
+      ? '<div class="cw-caption-text">' + _cwEsc(captionText) + '</div>'
+      : '<div class="cw-caption-text empty">No caption yet</div>') +
+  '</div>';
+
   var commentsRendered = false;
   for (var i = 0; i < ws.messages.length; i++) {
     var m = ws.messages[i];
@@ -202,7 +222,8 @@ function _cwRenderThread() {
             costLabel +
           '</div>' +
           '<div class="cw-draft-body" ' + (isLatest ? 'contenteditable="true"' : '') +
-            ' data-draft="' + draftNum + '">' +
+            ' data-draft="' + draftNum + '"' +
+            ' data-original="' + _cwEsc(m.content).replace(/"/g, '&quot;') + '">' +
             _cwEsc(m.content).replace(/\n/g, '<br>') +
           '</div>' +
           (isLatest
@@ -276,9 +297,16 @@ function _cwBuildCommentsBlock(comments) {
 
 window._cwHandleChip = function(chipType, draftNum) {
   if (chipType === 'use') {
-    var drafts = document.querySelectorAll('.cw-draft-body[data-draft="' + draftNum + '"]');
-    var text = drafts.length ? drafts[drafts.length - 1].innerText.trim() : '';
-    if (text) window._cwApplyDraft(text);
+    var draftEl = document.querySelector('.cw-draft-body[data-draft="' + draftNum + '"][contenteditable="true"]');
+    if (!draftEl) {
+      var allDrafts = document.querySelectorAll('.cw-draft-body[data-draft="' + draftNum + '"]');
+      draftEl = allDrafts.length ? allDrafts[allDrafts.length - 1] : null;
+    }
+    var text = draftEl ? draftEl.innerText.trim() : '';
+    if (!text) return;
+    var original = draftEl ? (draftEl.getAttribute('data-original') || '') : '';
+    _cwCaptureCorrection(original, text);
+    window._cwApplyDraft(text);
     return;
   }
   var label = chipType.charAt(0).toUpperCase() + chipType.slice(1);
@@ -324,6 +352,85 @@ window._cwApplyDraft = async function(text) {
     if (typeof showToast === 'function') showToast('Failed to update caption', 'error');
   }
 };
+
+// ─── AI memory: edit correction capture ─────────────────
+
+function _cwNormalize(s) {
+  return (s || '').trim().replace(/\s+/g, ' ');
+}
+
+function _cwCharDiff(a, b) {
+  var count = 0;
+  var len = Math.max(a.length, b.length);
+  for (var i = 0; i < len; i++) {
+    if (a.charAt(i) !== b.charAt(i)) count++;
+  }
+  return count + Math.abs(a.length - b.length);
+}
+
+function _cwCaptureCorrection(original, edited) {
+  try {
+    var normOrig = _cwNormalize(original);
+    var normEdit = _cwNormalize(edited);
+    if (normOrig === normEdit) return;
+    if (normEdit.length < 10) return;
+    if (_cwCharDiff(normOrig, normEdit) < 5) return;
+
+    var payload = {
+      workspace_id: 'default',
+      type: 'edit_correction',
+      content: JSON.stringify({
+        original: original.slice(0, 500),
+        edited: edited.slice(0, 500)
+      }),
+      post_id: window._captionWS.postId || null
+    };
+
+    apiFetch('/ai_memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    }).catch(function(err) {
+      console.warn('[cw] correction save failed:', err && err.message);
+    });
+  } catch (e) {
+    console.warn('[cw] correction capture error:', e && e.message);
+  }
+}
+
+// ─── AI memory: load corrections into prompt ────────────
+
+async function _cwLoadCorrections() {
+  try {
+    var rows = await apiFetch(
+      '/ai_memory?type=eq.edit_correction&workspace_id=eq.default&order=created_at.desc&limit=10&select=content'
+    );
+    if (!Array.isArray(rows) || rows.length === 0) {
+      window._captionWS.correctionsPrompt = '';
+      return;
+    }
+    var lines = [];
+    rows.forEach(function(r) {
+      try {
+        var c = typeof r.content === 'string' ? JSON.parse(r.content) : r.content;
+        if (c && c.original && c.edited) {
+          var origPreview = c.original.length > 100 ? c.original.slice(0, 100) + '...' : c.original;
+          var editPreview = c.edited.length > 100 ? c.edited.slice(0, 100) + '...' : c.edited;
+          lines.push('- User changed: "' + origPreview + '" \u2192 "' + editPreview + '"');
+        }
+      } catch (_) {}
+    });
+    if (lines.length > 0) {
+      window._captionWS.correctionsPrompt =
+        '\n\nSTYLE CORRECTIONS FROM THIS USER (apply these patterns to all future drafts):\n' +
+        lines.join('\n');
+    } else {
+      window._captionWS.correctionsPrompt = '';
+    }
+  } catch (e) {
+    window._captionWS.correctionsPrompt = '';
+  }
+}
 
 // ─── cost totals ─────────────────────────────────────────────
 
@@ -373,6 +480,17 @@ async function _cwFetchCostTotals() {
     }
     if (e.target && e.target.id === 'cw-back') {
       window.closeCaptionWorkspace();
+    }
+    if (e.target && e.target.dataset && e.target.dataset.action === 'cw-qc') {
+      var ws = window._captionWS;
+      var post = ws.postId ? (window.AppState.posts.all || []).find(function(p) { return (p.post_id || p.id) === ws.postId; }) : null;
+      var cap = post ? post.caption : '';
+      if (!cap) { if (typeof showToast === 'function') showToast('No caption to QC', 'error'); return; }
+      window.sendCaptionMessage('QC this LinkedIn caption against the brand guide. Caption:\n\n' + cap + '\n\nReturn a structured verdict with PASS or FLAG for each check.');
+    }
+    if (e.target && e.target.dataset && e.target.dataset.action === 'cw-ask') {
+      var cwInput = document.getElementById('cw-input');
+      if (cwInput) cwInput.focus();
     }
   });
   document.addEventListener('keydown', function(e) {

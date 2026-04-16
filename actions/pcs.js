@@ -248,67 +248,8 @@ window._pcsAiChat = async function(id) {
 
 function _pcsBuildAiZoneHtml(rawId, commentCount) {
   var id = esc(rawId);
-  var showQC = !!(window.AppState.workspace && window.AppState.workspace.ai_qc);
-  var showChat = !!(window.AppState.workspace && window.AppState.workspace.ai_chat);
-
-  var ICON_QC = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
-  var ICON_CHAT = '<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-  var ICON_SPARK = '<svg viewBox="0 0 24 24" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg>';
-
-  var dotsMenuHtml = '';
-  if (showQC) {
-    dotsMenuHtml += '<div class="pcs-dots-menu-item" onclick="window._pcsOpenQcSheet(\'' + id + '\')">' +
-      ICON_QC +
-      '<span class="pcs-dots-menu-item-lbl">QC Brand Guide</span>' +
-    '</div>';
-  }
-  if (showChat) {
-    dotsMenuHtml += '<div class="pcs-dots-menu-item" onclick="window._pcsOpenChatSheet(\'' + id + '\')">' +
-      ICON_CHAT +
-      '<span class="pcs-dots-menu-item-lbl">Ask Claude</span>' +
-    '</div>';
-  }
 
   return '<div class="pcs-zone-ai" id="pcs-zone-ai-' + id + '">' +
-    // Header row
-    '<div class="pcs-zone-ai-header">' +
-      '<span class="pcs-zone-ai-label">\u2726 AI</span>' +
-      '<div class="pcs-zone-ai-dots-wrap">' +
-        '<button class="pcs-zone-ai-dots" onclick="window._pcsToggleDotsMenu(\'' + id + '\')" aria-label="AI menu">' +
-          '<span></span><span></span><span></span>' +
-        '</button>' +
-        '<div class="pcs-dots-menu" id="pcs-dots-menu-' + id + '">' +
-          dotsMenuHtml +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-    // QC sheet (hidden by default; slides in from dots menu)
-    (showQC ?
-      '<div class="pcs-qc-sheet" id="pcs-qc-sheet-' + id + '">' +
-        '<div class="pcs-qc-sheet-row">' +
-          '<button class="pcs-qc-sheet-btn" onclick="window._pcsRunQC(\'' + id + '\', this)">' +
-            '<div class="pcs-qc-sheet-text">' +
-              '<div class="pcs-qc-lbl">QC against Brand Guide</div>' +
-              '<div class="pcs-qc-sub">Check tone, voice and brand language</div>' +
-            '</div>' +
-            '<span class="pcs-qc-arr">\u2192</span>' +
-          '</button>' +
-          '<button class="pcs-qc-sheet-close" onclick="window._pcsCloseQcSheet(\'' + id + '\')" aria-label="Close">\u2715</button>' +
-        '</div>' +
-        '<div class="pcs-qc-result" id="pcs-qc-result-' + id + '" style="display:none"></div>' +
-      '</div>'
-    : '') +
-    // Chat sheet (hidden by default; slides in from dots menu)
-    (showChat ?
-      '<div class="pcs-chat-sheet" id="pcs-chat-sheet-' + id + '">' +
-        '<div class="pcs-chat-thread" id="pcs-chat-thread-' + id + '"></div>' +
-        '<div class="pcs-chat-row">' +
-          '<input class="pcs-chat-input" id="pcs-chat-input-' + id + '" type="text" placeholder="Rewrite, shorten, add a hook...">' +
-          '<button class="pcs-chat-send" onclick="window._pcsAiChat(\'' + id + '\')">Send</button>' +
-          '<button class="pcs-chat-sheet-close" onclick="window._pcsCloseChatSheet(\'' + id + '\')" aria-label="Close">\u2715</button>' +
-        '</div>' +
-      '</div>'
-    : '') +
     // Single "Edit with Claude" / "Continue conversation" entry point
     (function() {
       var _ws = window._captionWS;
@@ -341,61 +282,12 @@ function _pcsBuildAiZoneHtml(rawId, commentCount) {
   '</div>';
 }
 
-// --- Dots menu (open/close + outside-click) ---
-window._pcsToggleDotsMenu = function(id) {
-  var menu = document.getElementById('pcs-dots-menu-' + id);
-  if (!menu) return;
-  var isOpen = menu.classList.contains('open');
-  // Always close any open menus first
-  document.querySelectorAll('.pcs-dots-menu.open').forEach(function(m) { m.classList.remove('open'); });
-  if (!isOpen) {
-    menu.classList.add('open');
-    // Install a one-shot outside-click handler (deferred so the click
-    // that opened the menu does not immediately close it)
-    setTimeout(function() {
-      var handler = function(e) {
-        if (!menu.contains(e.target) && !e.target.closest('.pcs-zone-ai-dots')) {
-          menu.classList.remove('open');
-          document.removeEventListener('click', handler, true);
-        }
-      };
-      document.addEventListener('click', handler, true);
-    }, 0);
-  }
-};
-
-// --- QC / Chat sheet mutex: only one open at a time ---
-window._pcsOpenQcSheet = function(id) {
-  var qc = document.getElementById('pcs-qc-sheet-' + id);
-  var ch = document.getElementById('pcs-chat-sheet-' + id);
-  if (ch) ch.style.display = 'none';
-  if (qc) qc.style.display = 'block';
-  var menu = document.getElementById('pcs-dots-menu-' + id);
-  if (menu) menu.classList.remove('open');
-};
-
-window._pcsCloseQcSheet = function(id) {
-  var qc = document.getElementById('pcs-qc-sheet-' + id);
-  if (qc) qc.style.display = 'none';
-  var result = document.getElementById('pcs-qc-result-' + id);
-  if (result) result.style.display = 'none';
-};
-
-window._pcsOpenChatSheet = function(id) {
-  var qc = document.getElementById('pcs-qc-sheet-' + id);
-  var ch = document.getElementById('pcs-chat-sheet-' + id);
-  if (qc) qc.style.display = 'none';
-  if (ch) ch.style.display = 'block';
-  var menu = document.getElementById('pcs-dots-menu-' + id);
-  if (menu) menu.classList.remove('open');
-  var input = document.getElementById('pcs-chat-input-' + id);
-  if (input) { try { input.focus(); } catch (_) {} }
-};
-
-window._pcsCloseChatSheet = function(id) {
-  var ch = document.getElementById('pcs-chat-sheet-' + id);
-  if (ch) ch.style.display = 'none';
-};
+// Legacy sheet stubs — kept as no-ops in case any external path still calls them.
+window._pcsToggleDotsMenu = function() {};
+window._pcsOpenQcSheet = function() {};
+window._pcsCloseQcSheet = function() {};
+window._pcsOpenChatSheet = function() {};
+window._pcsCloseChatSheet = function() {};
 
 // --- Manual zone dim/undim mutex ---
 function _pcsDimManualZone(on) {

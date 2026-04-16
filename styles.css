@@ -8442,6 +8442,64 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 4px 4px 0;
 }
 
+/* Quick action chips above input */
+.cw-quick-chips {
+  display: flex;
+  gap: 6px;
+  padding-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cw-quick-chips::-webkit-scrollbar { display: none; }
+.cw-qchip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  padding: 5px 9px;
+  background: transparent;
+  border: 1px solid #5A3A2C;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+/* Caption preview block at top of thread */
+.cw-caption-block {
+  background: #252320;
+  border: 1px solid #3A3632;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+.cw-caption-lbl {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7A7670;
+  margin-bottom: 6px;
+}
+.cw-caption-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #B1ADA1;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  max-height: 150px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.cw-caption-text::-webkit-scrollbar { display: none; }
+.cw-caption-text.empty {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #4A4640;
+  letter-spacing: 0.06em;
+}
+
 /* Comment block (rewrite mode) */
 .cw-comments-block {
   background: #201E1A;
@@ -8737,6 +8795,16 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 /* "Edit with Claude" entry button (caption tab) */
+@keyframes claude-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 #C15F3C00;
+    border-color: #5A3A2C;
+  }
+  50% {
+    box-shadow: 0 0 12px 2px #C15F3C26;
+    border-color: #C15F3C;
+  }
+}
 .pcs-claude-entry {
   margin: 6px 16px 8px;
   padding: 14px;
@@ -8748,8 +8816,14 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   display: flex;
   align-items: center;
   gap: 12px;
+  animation: claude-glow 3s ease-in-out infinite;
 }
-.pcs-claude-entry:active { background: #2A1A10; }
+.pcs-claude-entry:active {
+  animation: none;
+  background: #2A1A10;
+  border-color: #C15F3C;
+  box-shadow: 0 0 12px 2px #C15F3C33;
+}
 .pcs-ce-icon {
   width: 32px;
   height: 32px;
