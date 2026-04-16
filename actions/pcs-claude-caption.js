@@ -241,7 +241,7 @@ function _cwRenderThread() {
   }
 
   if (!ws.messages.length) {
-    html = '<div class="cw-empty">' +
+    html += '<div class="cw-empty">' +
       '<div class="cw-empty-icon">\u2726</div>' +
       '<div class="cw-empty-text">Ask anything about this caption, or let Claude write one for you.</div>' +
     '</div>';
@@ -480,17 +480,6 @@ async function _cwFetchCostTotals() {
     }
     if (e.target && e.target.id === 'cw-back') {
       window.closeCaptionWorkspace();
-    }
-    if (e.target && e.target.dataset && e.target.dataset.action === 'cw-qc') {
-      var ws = window._captionWS;
-      var post = ws.postId ? (window.AppState.posts.all || []).find(function(p) { return (p.post_id || p.id) === ws.postId; }) : null;
-      var cap = post ? post.caption : '';
-      if (!cap) { if (typeof showToast === 'function') showToast('No caption to QC', 'error'); return; }
-      window.sendCaptionMessage('QC this LinkedIn caption against the brand guide. Caption:\n\n' + cap + '\n\nReturn a structured verdict with PASS or FLAG for each check.');
-    }
-    if (e.target && e.target.dataset && e.target.dataset.action === 'cw-ask') {
-      var cwInput = document.getElementById('cw-input');
-      if (cwInput) cwInput.focus();
     }
   });
   document.addEventListener('keydown', function(e) {
