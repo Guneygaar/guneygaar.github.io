@@ -2816,20 +2816,39 @@ window._saveCaptionEdit = async function(postId) {
   var btnRow  = document.getElementById('pcs-caption-btnrow');
   if (!ta) return;
 
+  var post = (typeof getPostById === 'function')
+    ? getPostById(postId)
+    : window.AppState.posts.all.find(function(p) {
+        return (typeof getPostId === 'function'
+          ? getPostId(p)
+          : p.post_id) === postId;
+      });
+  if (!post) return;
+  if (post._isSaving) return;
+
   var newCaption = ta.value.trim();
   var oldCaption = (textEl && (textEl.dataset.raw || textEl.textContent)) || '';
 
   return window.guardAction('save-caption-' + postId, async function() {
 
+  post._isSaving = true;
+  if (typeof _startSaveTimeout === 'function') {
+    _startSaveTimeout(post, postId);
+  }
+
   try {
     await apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
-      body: JSON.stringify({ caption: newCaption, updated_by: resolveActor() })
+      body: JSON.stringify({ caption: newCaption, updated_by: resolveActor(), updated_at: new Date().toISOString() })
     });
   } catch (err) {
     console.error('[pcs] save caption failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-caption');
     showToast && showToast('Failed to save caption — try again', 'error');
+    if (typeof _clearSaveTimeout === 'function') {
+      _clearSaveTimeout(post);
+    }
+    post._isSaving = false;
     return;
   }
 
@@ -2850,19 +2869,20 @@ window._saveCaptionEdit = async function(postId) {
     window.logError && window.logError(err && err.message, err && err.stack, 'pcs-audit-log');
   }
 
-  // Update posts in memory so reopening the card shows the new caption
-  var _found_1746 = false;
-  var _next_1746 = window.AppState.posts.all.map(function(p) {
-    if (getPostId(p) === postId) {
-      _found_1746 = true;
-      return Object.assign({}, p, { caption: newCaption });
-    }
-    return p;
-  });
-  if (!_found_1746 && window._appStateDevMode) {
-    console.warn('[AppState] Post not found', postId);
+  if (typeof _clearSaveTimeout === 'function') {
+    _clearSaveTimeout(post);
   }
-  window.AppState.posts.setAll(_next_1746);
+  post._isSaving = false;
+
+  // Update post in memory — in-place mutation keeps AppState.pcs.post in sync
+  Object.assign(post, {
+    caption: newCaption,
+    updated_at: new Date().toISOString()
+  });
+
+  if (typeof showToast === 'function') {
+    showToast('Caption saved', 'success');
+  }
 
   if (textEl) {
     textEl.textContent  = newCaption || 'No copy yet';
