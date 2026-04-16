@@ -83,7 +83,12 @@ function getDisplayName(emailOrName) {
   }
   if (key.indexOf('@') >= 0) {
     var local = key.split('@')[0];
-    return local.charAt(0).toUpperCase() + local.slice(1);
+    return local.split(/[._-]/)
+      .filter(Boolean)
+      .map(function(p) {
+        return p.charAt(0).toUpperCase() +
+               p.slice(1).toLowerCase();
+      }).join(' ');
   }
   return emailOrName;
 }

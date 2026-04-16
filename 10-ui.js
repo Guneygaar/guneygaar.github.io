@@ -1072,13 +1072,27 @@ async function _notifSubmitReply(sendBtn) {
                 (window.AppState.user && window.AppState.user.role) || 'Admin';
   var authorRole = effRole.charAt(0).toUpperCase() + effRole.slice(1).toLowerCase();
 
-  // Parse any @mentions (very loose — matches the client/pcs parsers)
+  // Roster-aware mention extraction: match against known roster names
+  // first (from either client or PCS roster), fall back to regex.
   var mentioned = [];
-  var mRe = /@([A-Za-z][A-Za-z0-9_\-\s]*)/g;
-  var m;
-  while ((m = mRe.exec(msg)) !== null) {
-    var raw = (m[1] || '').trim();
-    if (raw) mentioned.push(raw);
+  var _notifRoster = window._clientMentionRoster || window._pcsRosterData || null;
+  if (_notifRoster && _notifRoster.length) {
+    var _lowerMsg = msg.toLowerCase();
+    _notifRoster.forEach(function(m) {
+      var _rn = m.name || '';
+      if (!_rn) return;
+      if (_lowerMsg.indexOf('@' + _rn.toLowerCase()) !== -1) {
+        mentioned.push(_rn);
+      }
+    });
+  }
+  if (mentioned.length === 0) {
+    var mRe = /@([A-Za-z][A-Za-z0-9_\-\s]*)/g;
+    var m;
+    while ((m = mRe.exec(msg)) !== null) {
+      var raw = (m[1] || '').trim();
+      if (raw) mentioned.push(raw);
+    }
   }
 
   var payload = {

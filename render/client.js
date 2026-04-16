@@ -951,7 +951,7 @@ console.log('LOADED:', 'render/client.js');
 
     var previewHtml = '';
     if (latestAgency) {
-      var authorName = latestAgency.author || '';
+      var authorName = (typeof getDisplayName === 'function') ? getDisplayName(latestAgency.author) : (latestAgency.author || '');
       var initial = (authorName.charAt(0) || '?').toUpperCase();
       var msg = String(latestAgency.message || '').replace(/\s+/g, ' ').trim();
       var avStyle = 'width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:8px;font-weight:700;background:#22D3EE18;color:#22D3EE;border:1px solid #22D3EE30;flex-shrink:0;';
@@ -1170,7 +1170,8 @@ console.log('LOADED:', 'render/client.js');
     var text = document.getElementById(
       'client-reply-text-' + postId
     );
-    if (text) text.textContent = 'Replying to ' + author;
+    var _replyDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
+    if (text) text.textContent = 'Replying to ' + _replyDisplay;
     if (indicator) indicator.style.display = 'flex';
     var input = document.getElementById('comment-input-' + postId);
     if (input) input.focus();
