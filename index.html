@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260416h">
+ <link rel="stylesheet" href="styles.css?v=20260416i">
 
 </head>
 <body>
@@ -992,6 +992,14 @@
       <!-- Tab pane: Client -->
       <div id="pcs-pane-client" class="pcs-tab-pane" style="display:none;flex:1;flex-direction:column;overflow:hidden">
         <span id="pcs-comments-count" style="display:none">0</span>
+        <div id="pcs-select-strip" class="pcs-select-strip" style="display:none" data-action="pcs-enter-select">
+          <div class="pcs-ss-left">
+            <span class="pcs-ss-icon">&#x2726;</span>
+            <span class="pcs-ss-text">Select comments to rewrite caption</span>
+          </div>
+          <span class="pcs-ss-arr">&rarr;</span>
+          <button class="pcs-ss-cancel" data-action="pcs-exit-select">Cancel</button>
+        </div>
         <div id="pcs-comments-list" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 16px;scrollbar-width:none;min-height:0"></div>
         <div class="pcs-ibar-wrap client">
           <div id="pcs-client-img-previews"></div>
@@ -1008,6 +1016,10 @@
           <div class="pcs-ibar-hint">Client + Agency · Visible to all</div>
           <input type="file" id="pcs-client-img-input" accept="image/*" multiple style="display:none" onchange="window._pcsHandleCommentImg&&_pcsHandleCommentImg('client')">
           <button id="pcs-task-btn-client" style="display:none" onclick="window.submitPcsComment&&submitPcsComment(document.getElementById('pcs-post-id')?document.getElementById('pcs-post-id').value:'',document.getElementById('pcs-comment-input')?document.getElementById('pcs-comment-input').value:'','all',true,false)"></button>
+        </div>
+        <div id="pcs-rewrite-bar" class="pcs-rewrite-bar">
+          <button id="pcs-rewrite-send" class="pcs-rw-send" disabled>&#x2726; Select comments first</button>
+          <div class="pcs-rw-hint">Selected comments become Claude's context</div>
         </div>
       </div>
 
@@ -1236,31 +1248,32 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260416h"></script>
-<script src="00-appstate-compat.js?v=20260416h"></script>
-<script src="01-config.js?v=20260416h" defer></script>
-<script src="02-session.js?v=20260416h" defer></script>
-<script src="utils.js?v=20260416h" defer></script>
-<script src="12-profiles.js?v=20260416h" defer></script>
-<script src="03-auth.js?v=20260416h" defer></script>
-<script src="05-api.js?v=20260416h" defer></script>
-<script src="10-ui.js?v=20260416h" defer></script>
+<script src="00-appstate.js?v=20260416i"></script>
+<script src="00-appstate-compat.js?v=20260416i"></script>
+<script src="01-config.js?v=20260416i" defer></script>
+<script src="02-session.js?v=20260416i" defer></script>
+<script src="utils.js?v=20260416i" defer></script>
+<script src="12-profiles.js?v=20260416i" defer></script>
+<script src="03-auth.js?v=20260416i" defer></script>
+<script src="05-api.js?v=20260416i" defer></script>
+<script src="10-ui.js?v=20260416i" defer></script>
 
-<script src="06-post-create.js?v=20260416h" defer></script>
-<script defer src="render/dashboard.js?v=20260416h"></script>
-<script defer src="render/client.js?v=20260416h"></script>
-<script defer src="render/pipeline.js?v=20260416h"></script>
-<script defer src="render/brief.js?v=20260416h"></script>
-<script defer src="actions/pcs.js?v=20260416h"></script>
-<script defer src="actions/pcs-longpress.js?v=20260416h"></script>
-<script defer src="actions/pcs-claude-caption.js?v=20260416h"></script>
-<script defer src="actions/pcs-polish.js?v=20260416h"></script>
-<script src="ai-config.js?v=20260416h" defer></script>
-<script src="07-post-load.js?v=20260416h" defer></script>
-<script src="08-post-actions.js?v=20260416h" defer></script>
-<script src="09-library.js?v=20260416h" defer></script>
-<script src="09-approval.js?v=20260416h" defer></script>
-<script src="04-router.js?v=20260416h" defer></script>
+<script src="06-post-create.js?v=20260416i" defer></script>
+<script defer src="render/dashboard.js?v=20260416i"></script>
+<script defer src="render/client.js?v=20260416i"></script>
+<script defer src="render/pipeline.js?v=20260416i"></script>
+<script defer src="render/brief.js?v=20260416i"></script>
+<script defer src="actions/pcs.js?v=20260416i"></script>
+<script defer src="actions/pcs-longpress.js?v=20260416i"></script>
+<script defer src="actions/pcs-claude-caption.js?v=20260416i"></script>
+<script defer src="actions/pcs-polish.js?v=20260416i"></script>
+<script defer src="actions/pcs-select.js?v=20260416i"></script>
+<script src="ai-config.js?v=20260416i" defer></script>
+<script src="07-post-load.js?v=20260416i" defer></script>
+<script src="08-post-actions.js?v=20260416i" defer></script>
+<script src="09-library.js?v=20260416i" defer></script>
+<script src="09-approval.js?v=20260416i" defer></script>
+<script src="04-router.js?v=20260416i" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

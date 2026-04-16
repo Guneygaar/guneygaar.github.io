@@ -8736,6 +8736,175 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   cursor: pointer;
 }
 
+/* "Edit with Claude" entry button (caption tab) */
+.pcs-claude-entry {
+  margin: 6px 16px 8px;
+  padding: 14px;
+  background: linear-gradient(180deg, #1E1610 0%, #120C08 100%);
+  border: 1px solid #5A3A2C;
+  border-left: 3px solid #C15F3C;
+  border-radius: 0 10px 10px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pcs-claude-entry:active { background: #2A1A10; }
+.pcs-ce-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2A1A12;
+  border: 1px solid #5A3A2C;
+  border-radius: 8px;
+  color: #C15F3C;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.pcs-ce-text { flex: 1; }
+.pcs-ce-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  font-weight: 600;
+}
+.pcs-ce-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: #7A7670;
+  margin-top: 2px;
+}
+.pcs-ce-arr {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #5A3A2C;
+}
+
+/* Comment selection strip + mode (client tab) */
+.pcs-select-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, #1E1610 0%, #0A0804 100%);
+  border-bottom: 1px solid #3A2E14;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.pcs-select-strip:active { background: #2A1A10; }
+.pcs-ss-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pcs-ss-icon { color: #C15F3C; font-size: 12px; }
+.pcs-ss-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  font-weight: 600;
+}
+.pcs-ss-arr {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: #5A3A2C;
+}
+.pcs-select-strip.pcs-ss-active {
+  cursor: default;
+}
+.pcs-select-strip.pcs-ss-active .pcs-ss-text {
+  color: #B8B8C0;
+}
+.pcs-select-strip.pcs-ss-active .pcs-ss-text em {
+  color: #C15F3C;
+  font-style: normal;
+  font-weight: 700;
+}
+.pcs-ss-cancel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8E8E93;
+  background: none;
+  border: 1px solid #2A2A35;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: none;
+}
+.pcs-ss-active .pcs-ss-cancel { display: block; }
+.pcs-ss-active .pcs-ss-arr { display: none; }
+
+.pcs-sel-check {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid #5A3A2C;
+  border-radius: 5px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 4px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.pcs-sel-on .pcs-sel-check {
+  background: #C15F3C;
+  border-color: #C15F3C;
+}
+.pcs-sel-on .pcs-sel-check::after {
+  content: '\2713';
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pcs-sel-on { background: #1A1208; }
+.pcs-sel-off { opacity: 0.35; }
+
+.pcs-rewrite-bar {
+  display: none;
+  flex-shrink: 0;
+  padding: 10px 14px 14px;
+  background: #000;
+  border-top: 1px solid #3A2E14;
+}
+.pcs-rw-send {
+  width: 100%;
+  padding: 14px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(180deg, #D46840 0%, #B85430 100%);
+  border: none;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 #FFA06440;
+}
+.pcs-rw-send:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+.pcs-rw-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4A4640;
+  text-align: center;
+  padding: 6px 4px 0;
+}
+
 /* ═══════════════════════════════════════════════════════════
    PR 4 — Gmail import in New Post form (Admin only).
    Zero rgba() — 8-digit hex throughout, per CLAUDE.md §4.
