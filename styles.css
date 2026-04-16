@@ -8177,6 +8177,272 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Done button is NEVER dimmed — always active */
 
 /* ═══════════════════════════════════════════════════════════
+   Caption Claude Workspace — warm dark theme
+   ═══════════════════════════════════════════════════════════ */
+#caption-workspace-overlay {
+  font-family: 'DM Sans', sans-serif;
+}
+#cw-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #201E1A;
+  border-bottom: 1px solid #3A3632;
+  flex-shrink: 0;
+}
+#cw-back {
+  background: none;
+  border: none;
+  color: #9b87f5;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .04em;
+  cursor: pointer;
+  padding: 6px 0;
+}
+#cw-cost-meter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #7A7670;
+}
+#cw-session-cost {
+  color: #F6A623;
+  font-weight: 600;
+  font-size: 11px;
+}
+#cw-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #201E1A;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #B1ADA1;
+  border-bottom: 1px solid #3A3632;
+  flex-shrink: 0;
+}
+#cw-context-title {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #F4F3EE;
+  font-size: 11px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 600;
+}
+#cw-totals {
+  display: flex;
+  gap: 10px;
+  font-size: 8px;
+  color: #7A7670;
+  flex-shrink: 0;
+}
+#cw-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: none;
+  min-height: 0;
+}
+#cw-thread::-webkit-scrollbar { display: none; }
+
+.cw-msg { display: flex; }
+.cw-msg-user { justify-content: flex-end; }
+.cw-msg-bubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  background: #252320;
+  border: 1px solid #3A3632;
+  border-radius: 16px 16px 4px 16px;
+  font-size: 13px;
+  color: #F4F3EE;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.cw-msg-claude { flex-direction: column; }
+.cw-draft {
+  background: #201810;
+  border: 1px solid #5A3A2C;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.cw-draft-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #3A3220;
+}
+.cw-draft-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #C15F3C;
+}
+.cw-draft-body {
+  padding: 12px 14px;
+  font-size: 14px;
+  color: #F4F3EE;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  outline: none;
+  min-height: 40px;
+}
+.cw-draft-body:focus {
+  border-left: 2px solid #C15F3C;
+  padding-left: 12px;
+}
+.cw-draft-body[contenteditable="true"] {
+  cursor: text;
+}
+.cw-draft-hint {
+  padding: 0 14px 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  color: #4A4640;
+  letter-spacing: .06em;
+}
+.cw-chips {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid #3A3220;
+  flex-wrap: wrap;
+}
+.cw-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  background: none;
+  border: 1px solid #5A3A2C;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.cw-chip:active { opacity: .7; }
+.cw-chip-dim {
+  color: #4A4640;
+  border-color: #3A3632;
+  cursor: default;
+}
+.cw-chip-use {
+  color: #F4F3EE;
+  background: linear-gradient(180deg, #D46840, #B85430);
+  border: none;
+  font-weight: 600;
+}
+
+.cw-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+}
+.cw-empty-icon { font-size: 24px; color: #C15F3C; opacity: .4; }
+.cw-empty-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: #7A7670;
+  text-align: center;
+  line-height: 1.7;
+  letter-spacing: .04em;
+}
+
+.cw-typing {
+  display: flex;
+  gap: 4px;
+  padding: 12px 14px;
+}
+.cw-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C15F3C;
+  animation: cwDotPulse 1.4s infinite;
+}
+.cw-typing-dot:nth-child(2) { animation-delay: .2s; }
+.cw-typing-dot:nth-child(3) { animation-delay: .4s; }
+@keyframes cwDotPulse {
+  0%, 80%, 100% { opacity: .2; }
+  40% { opacity: 1; }
+}
+
+#cw-input-wrap {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  background: #1A1816;
+  border-top: 1px solid #3A3632;
+}
+#cw-input-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 14px;
+  background: #201C18;
+  border: 1px solid #5A3A2C;
+}
+#cw-input {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #F4F3EE;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.4;
+  padding: 4px 0;
+  resize: none;
+  max-height: 100px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+#cw-input::-webkit-scrollbar { display: none; }
+#cw-input::placeholder { color: #4A4640; }
+#cw-send {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  color: #F4F3EE;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.55;
+  background: linear-gradient(180deg, #D46840, #B85430);
+  transition: opacity .15s;
+}
+#cw-send:active { transform: translateY(1px); }
+#cw-input-hint {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  color: #4A4640;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 4px 4px 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
    PR 4 — Gmail import in New Post form (Admin only).
    Zero rgba() — 8-digit hex throughout, per CLAUDE.md §4.
    ═══════════════════════════════════════════════════════════ */

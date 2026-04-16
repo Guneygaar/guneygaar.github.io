@@ -207,70 +207,9 @@ async function _callSrtdAI(feature, messages, postId) {
 window._pcsAiWrite = async function(id) {
   var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
   if (!post) return;
-
-  var wrap = document.getElementById('pcs-write-opts-' + id);
-  var writeBtn = document.getElementById('pcs-write-btn-' + id);
-  if (!wrap || !writeBtn) return;
-
-  // Toggle off if already open
-  if (wrap.style.display === 'block') {
-    wrap.style.display = 'none';
-    wrap.innerHTML = '';
-    _pcsDimManualZone(false);
-    return;
+  if (typeof openCaptionWorkspace === 'function') {
+    openCaptionWorkspace('write', { postId: id, caption: post.caption, title: post.title });
   }
-
-  // Loading state inside the write-opts wrap
-  wrap.innerHTML = '<div class="pcs-write-loading">\u2726 Generating options\u2026</div>';
-  wrap.style.display = 'block';
-  _pcsDimManualZone(true);
-
-  var brief = post.title || '';
-  var pillar = post.content_pillar || '';
-  var messages = [{
-    role: 'user',
-    content: 'Write 3 LinkedIn caption options for this post.\n\nTitle: ' + brief +
-      '\nContent pillar: ' + pillar +
-      (post.caption ? '\nExisting draft: ' + post.caption : '')
-  }];
-
-  var result = await _callSrtdAI('writer', messages, id);
-
-  if (!result.success) {
-    wrap.innerHTML = '<div class="pcs-write-error">Error \u2014 tap Write to retry</div>';
-    return;
-  }
-
-  // Parse 3 options from response (numbered "1." / "2." / "3." or "Option 01" etc.)
-  var raw = result.content || '';
-  var opts = [];
-  var lines = raw.split('\n');
-  var current = '';
-  lines.forEach(function(line) {
-    if (/^(option\s*0?[123]|[123][.):])/i.test(line.trim())) {
-      if (current.trim()) opts.push(current.trim());
-      current = line.replace(/^(option\s*0?[123]|[123][.):]\s*)/i, '').trim();
-    } else {
-      current += (current ? '\n' : '') + line;
-    }
-  });
-  if (current.trim()) opts.push(current.trim());
-  while (opts.length < 3) opts.push(raw);
-  opts = opts.slice(0, 3);
-
-  var optsHtml = '';
-  opts.forEach(function(txt, i) {
-    optsHtml += '<div class="pcs-write-opt" data-idx="' + i + '" onclick="window._pcsPickWriteOpt(this, \'' + esc(id) + '\')">' +
-      '<div class="pcs-ai-opt-n">Option 0' + (i + 1) + ' <span class="pcs-ai-opt-tag">Tap to select</span></div>' +
-      '<div class="pcs-ai-opt-txt">' + txt.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
-      '<div class="pcs-ai-sel-dot"></div>' +
-    '</div>';
-  });
-  optsHtml +=
-    '<button class="pcs-write-use-btn" onclick="window._pcsUseWriteSelection(\'' + esc(id) + '\')">Use selected</button>' +
-    '<button class="pcs-write-collapse" onclick="window._pcsCollapseWrite(\'' + esc(id) + '\')">\u2715 Collapse</button>';
-
-  wrap.innerHTML = optsHtml;
 };
 
 // --- Legacy PR 2 option picker (kept for any external caller) ---
@@ -288,85 +227,19 @@ window._pcsPickAiOpt = function(el, id) {
 window._pcsRunQC = async function(id, btn) {
   var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
   if (!post || !post.caption) {
-    var subNoCap = btn.querySelector('.pcs-qc-sub');
-    if (subNoCap) subNoCap.textContent = 'No caption to check';
+    if (btn) { var subNoCap = btn.querySelector('.pcs-qc-sub'); if (subNoCap) subNoCap.textContent = 'No caption to check'; }
     return;
   }
-
-  // Zone 1 sheet uses .pcs-qc-lbl; fall back to legacy .pcs-qc-title for any
-  // path that still renders the old button shape.
-  var titleEl = btn.querySelector('.pcs-qc-lbl') || btn.querySelector('.pcs-qc-title');
-  var subEl   = btn.querySelector('.pcs-qc-sub');
-  if (titleEl) titleEl.textContent = 'Checking...';
-  btn.disabled = true;
-
-  var messages = [{ role: 'user', content: 'Check this LinkedIn caption:\n\n' + post.caption }];
-  var result = await _callSrtdAI('qc', messages, id);
-
-  if (titleEl) titleEl.textContent = 'QC against Brand Guide';
-  if (subEl)   subEl.textContent   = 'Check tone, voice and brand language';
-  btn.disabled = false;
-
-  var resultDiv = document.getElementById('pcs-qc-result-' + id);
-  if (!resultDiv) return;
-
-  if (!result.success) {
-    resultDiv.innerHTML = '<div class="pcs-qc-error">QC failed. Try again.</div>';
-    resultDiv.style.display = 'block';
-    return;
+  if (typeof openCaptionWorkspace === 'function') {
+    openCaptionWorkspace('qc', { postId: id, caption: post.caption, title: post.title });
   }
-
-  resultDiv.innerHTML =
-    '<div class="pcs-qc-rh">' +
-      '<span class="pcs-qc-rs-lbl">Brand QC Result</span>' +
-      '<span class="pcs-qc-rt">Just now</span>' +
-    '</div>' +
-    '<div class="pcs-qc-body">' +
-      (result.content || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') +
-    '</div>' +
-    '<button class="pcs-qc-dis" onclick="document.getElementById(\'pcs-qc-result-' + id + '\').style.display=\'none\'">Dismiss</button>';
-  resultDiv.style.display = 'block';
 };
 
 window._pcsAiChat = async function(id) {
-  var input = document.getElementById('pcs-chat-input-' + id);
-  var thread = document.getElementById('pcs-chat-thread-' + id);
-  if (!input || !thread) return;
-  var val = input.value.trim();
-  if (!val) return;
-
   var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
-  var capContext = post && post.caption ? 'Current caption:\n' + post.caption + '\n\n' : '';
-
-  thread.innerHTML += '<div class="pcs-chat-msg">' +
-      '<div class="pcs-chat-who-you">You</div>' +
-      '<div class="pcs-chat-txt">' + val.replace(/</g, '&lt;') + '</div>' +
-    '</div>';
-  input.value = '';
-
-  var thinkingId = 'thinking-' + Date.now();
-  thread.innerHTML += '<div id="' + thinkingId + '" class="pcs-chat-msg">' +
-      '<div class="pcs-chat-who-claude">Claude</div>' +
-      '<div class="pcs-chat-txt pcs-chat-thinking">...</div>' +
-    '</div>';
-  thread.scrollTop = 99999;
-
-  var messages = [{ role: 'user', content: capContext + val }];
-  var result = await _callSrtdAI('chat', messages, id);
-
-  var thinking = document.getElementById(thinkingId);
-  if (thinking) {
-    var thinkingTxt = thinking.querySelector('.pcs-chat-txt');
-    if (result.success) {
-      if (thinkingTxt) {
-        thinkingTxt.textContent = result.content || '';
-        thinkingTxt.classList.remove('pcs-chat-thinking');
-      }
-    } else {
-      if (thinkingTxt) thinkingTxt.textContent = 'Error. Try again.';
-    }
+  if (typeof openCaptionWorkspace === 'function') {
+    openCaptionWorkspace('chat', { postId: id, caption: post ? post.caption : '', title: post ? post.title : '' });
   }
-  thread.scrollTop = 99999;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -436,15 +309,35 @@ function _pcsBuildAiZoneHtml(rawId, commentCount) {
         '</div>' +
       '</div>'
     : '') +
-    // Rewrite from comments button (always visible in Zone 1)
-    '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window._pcsRewriteFromComments(\'' + id + '\')">' +
-      '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
-      '<div class="pcs-rw-text">' +
-        '<div class="pcs-rw-title">\u2726 Rewrite from comments</div>' +
-        '<div class="pcs-rw-sub">' + commentCount + ' comment' + (commentCount === 1 ? '' : 's') + ' on this post</div>' +
-      '</div>' +
-      '<span class="pcs-rw-arr">\u2192</span>' +
-    '</button>' +
+    // Primary button: "Continue conversation" if session exists, else "Rewrite from comments"
+    (function() {
+      var _ws = window._captionWS;
+      var _hasSession = _ws && _ws.messages && _ws.messages.length > 0 && _ws.postId === rawId;
+      if (_hasSession) {
+        var _draftCount = _ws.messages.filter(function(m) { return m.role === 'assistant'; }).length;
+        var _lastDraft = '';
+        for (var _mi = _ws.messages.length - 1; _mi >= 0; _mi--) {
+          if (_ws.messages[_mi].role === 'assistant') { _lastDraft = _ws.messages[_mi].content || ''; break; }
+        }
+        var _preview = _lastDraft.length > 30 ? _lastDraft.slice(0, 30) + '\u2026' : _lastDraft;
+        return '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window.openCaptionWorkspace(\'resume\',{postId:\'' + id + '\',title:getTitle(getPostById(\'' + id + '\'))})">' +
+          '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
+          '<div class="pcs-rw-text">' +
+            '<div class="pcs-rw-title">\u2726 Continue conversation</div>' +
+            '<div class="pcs-rw-sub">Draft ' + _draftCount + ' \u00B7 ' + esc(_preview) + '</div>' +
+          '</div>' +
+          '<span class="pcs-rw-arr">\u2192</span>' +
+        '</button>';
+      }
+      return '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window._pcsRewriteFromComments(\'' + id + '\')">' +
+        '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
+        '<div class="pcs-rw-text">' +
+          '<div class="pcs-rw-title">\u2726 Rewrite from comments</div>' +
+          '<div class="pcs-rw-sub">' + commentCount + ' comment' + (commentCount === 1 ? '' : 's') + ' on this post</div>' +
+        '</div>' +
+        '<span class="pcs-rw-arr">\u2192</span>' +
+      '</button>';
+    })() +
     // Rewrite result panel (hidden by default, expands inline)
     '<div class="pcs-rewrite-result" id="pcs-rewrite-result-' + id + '">' +
       '<div class="pcs-rwr-flags"></div>' +
@@ -463,14 +356,27 @@ function _pcsBuildAiZoneHtml(rawId, commentCount) {
         '<button class="pcs-refine-cancel" onclick="window._pcsRefineCancel(\'' + id + '\')">\u2715 Cancel</button>' +
       '</div>' +
     '</div>' +
-    // Write fresh options button (always visible below rewrite section)
-    '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._pcsAiWrite(\'' + id + '\')">' +
-      '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
-      '<div class="pcs-rw-text">' +
-        '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Write fresh options</div>' +
-      '</div>' +
-      '<span class="pcs-rw-arr">\u2192</span>' +
-    '</button>' +
+    // Secondary button: "Start fresh" if session exists, else "Write fresh options"
+    (function() {
+      var _ws2 = window._captionWS;
+      var _hasSession2 = _ws2 && _ws2.messages && _ws2.messages.length > 0 && _ws2.postId === rawId;
+      if (_hasSession2) {
+        return '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._captionWS.messages=[];window._captionWS.sessionCost=0;window._pcsAiWrite(\'' + id + '\')">' +
+          '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
+          '<div class="pcs-rw-text">' +
+            '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Start fresh</div>' +
+          '</div>' +
+          '<span class="pcs-rw-arr">\u2192</span>' +
+        '</button>';
+      }
+      return '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._pcsAiWrite(\'' + id + '\')">' +
+        '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
+        '<div class="pcs-rw-text">' +
+          '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Write fresh options</div>' +
+        '</div>' +
+        '<span class="pcs-rw-arr">\u2192</span>' +
+      '</button>';
+    })() +
     // Write options panel (populated lazily by _pcsAiWrite)
     '<div class="pcs-write-opts" id="pcs-write-opts-' + id + '"></div>' +
   '</div>';
@@ -604,107 +510,30 @@ window._pcsRefineCancel = function(id) {
 };
 
 window._pcsRefineSend = async function(id) {
-  var input = document.getElementById('pcs-refine-input-' + id);
-  if (!input) return;
-  var instruction = (input.value || '').trim();
-  if (!instruction) return;
-
-  var result = document.getElementById('pcs-rewrite-result-' + id);
-  if (!result) return;
-  var currentCaption = result.dataset.newCaption || '';
-
-  // Close refine row immediately and show a thinking state in the caption
-  var capEl = result.querySelector('.pcs-rwr-caption');
-  if (capEl) capEl.textContent = 'Refining\u2026';
-  window._pcsRefineCancel(id);
-
-  var messages = [{
-    role: 'user',
-    content: 'Current caption:\n' + currentCaption + '\n\nRefinement instruction:\n' + instruction + '\n\nReturn ONLY the revised caption, no preamble.'
-  }];
-  var response = await _callSrtdAI('chat', messages, id);
-
-  if (!response.success) {
-    if (capEl) capEl.textContent = currentCaption;
-    if (typeof showToast === 'function') showToast('Refine failed, try again', 'error');
-    return;
+  var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
+  if (typeof openCaptionWorkspace === 'function') {
+    openCaptionWorkspace('chat', { postId: id, caption: post ? post.caption : '', title: post ? post.title : '' });
   }
-
-  var revised = (response.content || '').trim();
-  result.dataset.newCaption = revised;
-  if (capEl) capEl.textContent = revised;
 };
 
 window._pcsRewriteFromComments = async function(id) {
   var post = (window.AppState.posts.all || []).find(function(p) { return p.post_id === id; });
   if (!post) return;
 
-  var rewriteResult = document.getElementById('pcs-rewrite-result-' + id);
-  var rewriteBtn = document.getElementById('pcs-rewrite-btn-' + id);
-  if (!rewriteResult || !rewriteBtn) return;
-
-  // Idempotent: if the result panel is already open, do nothing
-  if (rewriteResult.style.display === 'block') return;
-
-  // Collect visible client comments from the DOM
   var commentEls = document.querySelectorAll('#pcs-pane-client .pcs-comment-text');
-  var commentTexts = [];
+  var comments = [];
   commentEls.forEach(function(el) {
     var text = el.textContent.trim();
-    if (text && text !== 'This message was deleted.') commentTexts.push(text);
-  });
-  var commentContext = commentTexts.length
-    ? 'Client comments on this post:\n' + commentTexts.slice(0, 15).join('\n---\n')
-    : 'No comments yet.';
-
-  // Update button state
-  var titleEl = rewriteBtn.querySelector('.pcs-rw-title');
-  var subEl = rewriteBtn.querySelector('.pcs-rw-sub');
-  if (titleEl) titleEl.textContent = '\u2726 Reading comments\u2026';
-  if (subEl) subEl.textContent = 'Analysing ' + commentTexts.length + ' comments...';
-
-  var messages = [{
-    role: 'user',
-    content: 'Current caption:\n' + (post.caption || '') + '\n\n' + commentContext + '\n\nRewrite the caption addressing the client feedback. Return: 1) A brief list of what you changed and why (one line per change, prefix with CHANGE:). 2) Then the full revised caption. Separate them with ---'
-  }];
-
-  var result = await _callSrtdAI('chat', messages, id);
-
-  if (!result.success) {
-    if (titleEl) titleEl.textContent = '\u2726 Rewrite from comments';
-    if (subEl) subEl.textContent = 'Error \u2014 tap to retry';
-    return;
-  }
-
-  if (titleEl) titleEl.textContent = '\u2726 Rewrite ready';
-  if (subEl) subEl.textContent = 'Based on ' + commentTexts.length + ' comments';
-
-  // Parse response: split on ---
-  var parts = (result.content || '').split('---');
-  var changesRaw = parts[0] || '';
-  var newCaption = (parts[1] || result.content || '').trim();
-
-  // Build flags HTML from CHANGE: lines
-  var flagsHtml = '';
-  changesRaw.split('\n').forEach(function(line) {
-    var clean = line.replace(/^CHANGE:\s*/i, '').trim();
-    if (clean) {
-      flagsHtml += '<div class="pcs-rwr-flag"><div class="pcs-rwr-flag-txt">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></div>';
+    if (text && text !== 'This message was deleted.') {
+      var item = el.closest('.pcs-comment-item');
+      var authorEl = item && item.querySelector('.pcs-comment-author');
+      comments.push({ author: authorEl ? authorEl.textContent : 'Unknown', text: text });
     }
   });
 
-  var flagsEl = rewriteResult.querySelector('.pcs-rwr-flags');
-  if (flagsEl) flagsEl.innerHTML = flagsHtml;
-
-  var capEl2 = rewriteResult.querySelector('.pcs-rwr-caption');
-  if (capEl2) capEl2.textContent = newCaption;
-
-  // Store new caption for Apply
-  rewriteResult.dataset.newCaption = newCaption;
-  rewriteResult.style.display = 'block';
-
-  // Dim manual zone
-  _pcsDimManualZone(true);
+  if (typeof openCaptionWorkspace === 'function') {
+    openCaptionWorkspace('rewrite', { postId: id, caption: post.caption, title: post.title, comments: comments });
+  }
 };
 
 // --- Write fresh options (Zone 1 version) ---
