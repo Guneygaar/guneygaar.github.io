@@ -12,7 +12,8 @@ window._captionWS = {
   postId: null,
   mode: null,
   _rewriteComments: null,
-  correctionsPrompt: ''
+  correctionsPrompt: '',
+  memoryPrompt: ''
 };
 
 var _CW_USD_TO_INR = 100;
@@ -59,7 +60,7 @@ window.openCaptionWorkspace = async function(mode, context) {
 
   _cwUpdateSessionMeter();
   _cwFetchCostTotals();
-  if (!isResume) _cwLoadCorrections();
+  if (!isResume) _cwLoadMemory();
   _cwRenderThread();
 
   if (!isResume) {
@@ -84,7 +85,8 @@ window.openCaptionWorkspace = async function(mode, context) {
       if (ws.correctionsPrompt && rwApiMsgs.length > 0) {
         rwApiMsgs[0] = { role: rwApiMsgs[0].role, content: rwApiMsgs[0].content + ws.correctionsPrompt };
       }
-      var result = await _callSrtdAI(featureTag, rwApiMsgs, ws.postId);
+      var rwAiOpts = ws.memoryPrompt ? { memory_context: ws.memoryPrompt } : undefined;
+      var result = await _callSrtdAI(featureTag, rwApiMsgs, ws.postId, rwAiOpts);
       var typingEl = thread && thread.querySelector('.cw-typing');
       if (typingEl) typingEl.remove();
       if (result && result.success) {
@@ -163,7 +165,8 @@ window.sendCaptionMessage = async function(text) {
     apiMessages[0] = { role: apiMessages[0].role, content: apiMessages[0].content + ws.correctionsPrompt };
   }
 
-  var result = await _callSrtdAI(featureTag, apiMessages, ws.postId);
+  var aiOpts = ws.memoryPrompt ? { memory_context: ws.memoryPrompt } : undefined;
+  var result = await _callSrtdAI(featureTag, apiMessages, ws.postId, aiOpts);
 
   var typingEl = thread && thread.querySelector('.cw-typing');
   if (typingEl) typingEl.remove();
@@ -398,36 +401,57 @@ function _cwCaptureCorrection(original, edited) {
   }
 }
 
-// ─── AI memory: load corrections into prompt ────────────
+// ─── AI memory: load all memory types into prompt ───────
 
-async function _cwLoadCorrections() {
+async function _cwLoadMemory() {
   try {
     var rows = await apiFetch(
-      '/ai_memory?type=eq.edit_correction&workspace_id=eq.default&order=created_at.desc&limit=10&select=content'
+      '/ai_memory?workspace_id=eq.default&order=created_at.desc&limit=30&select=type,content'
     );
     if (!Array.isArray(rows) || rows.length === 0) {
+      window._captionWS.memoryPrompt = '';
       window._captionWS.correctionsPrompt = '';
       return;
     }
-    var lines = [];
+
+    var style = [];
+    var client = [];
+    var corrections = [];
+
     rows.forEach(function(r) {
       try {
-        var c = typeof r.content === 'string' ? JSON.parse(r.content) : r.content;
-        if (c && c.original && c.edited) {
-          var origPreview = c.original.length > 100 ? c.original.slice(0, 100) + '...' : c.original;
-          var editPreview = c.edited.length > 100 ? c.edited.slice(0, 100) + '...' : c.edited;
-          lines.push('- User changed: "' + origPreview + '" \u2192 "' + editPreview + '"');
+        if (r.type === 'style_dna') {
+          style.push(typeof r.content === 'string' ? r.content : JSON.stringify(r.content));
+        } else if (r.type === 'client_pattern') {
+          client.push(typeof r.content === 'string' ? r.content : JSON.stringify(r.content));
+        } else if (r.type === 'edit_correction') {
+          var c = typeof r.content === 'string' ? JSON.parse(r.content) : r.content;
+          if (c && c.original && c.edited) {
+            var origP = c.original.length > 100 ? c.original.slice(0, 100) + '...' : c.original;
+            var editP = c.edited.length > 100 ? c.edited.slice(0, 100) + '...' : c.edited;
+            corrections.push('- Changed: "' + origP + '" \u2192 "' + editP + '"');
+          }
         }
       } catch (_) {}
     });
-    if (lines.length > 0) {
-      window._captionWS.correctionsPrompt =
-        '\n\nSTYLE CORRECTIONS FROM THIS USER (apply these patterns to all future drafts):\n' +
-        lines.join('\n');
-    } else {
-      window._captionWS.correctionsPrompt = '';
+
+    var blocks = [];
+    if (style.length > 0) {
+      blocks.push('WRITING STYLE FOR THIS BRAND:\n' + style.join('\n'));
     }
+    if (client.length > 0) {
+      blocks.push('CLIENT FEEDBACK PATTERNS (never repeat these mistakes):\n' + client.join('\n'));
+    }
+    if (corrections.length > 0) {
+      blocks.push('STYLE CORRECTIONS FROM USER EDITS:\n' + corrections.join('\n'));
+    }
+
+    window._captionWS.memoryPrompt = blocks.length > 0 ? blocks.join('\n\n') : '';
+    window._captionWS.correctionsPrompt = corrections.length > 0
+      ? '\n\nSTYLE CORRECTIONS FROM THIS USER (apply these patterns to all future drafts):\n' + corrections.join('\n')
+      : '';
   } catch (e) {
+    window._captionWS.memoryPrompt = '';
     window._captionWS.correctionsPrompt = '';
   }
 }

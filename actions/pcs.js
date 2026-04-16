@@ -179,23 +179,25 @@ window.forcePCSReset = function() {
 // PR-1 ai-config.js script failed to ship.
 // ═══════════════════════════════════════════════════════════════
 
-async function _callSrtdAI(feature, messages, postId) {
+async function _callSrtdAI(feature, messages, postId, opts) {
   var cfg = window.AI_CONFIG;
   if (!cfg || !cfg.workerUrl) return { success: false, error: 'AI not configured' };
   try {
+    var payload = {
+      feature: feature,
+      messages: messages,
+      post_id: postId || null,
+      workspace_id: 'default',
+      created_by: (window.AppState.user.email || '')
+    };
+    if (opts && opts.memory_context) payload.memory_context = opts.memory_context;
     var res = await fetch(cfg.workerUrl + '/ai/complete', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-AI-Secret': cfg.secret
       },
-      body: JSON.stringify({
-        feature: feature,
-        messages: messages,
-        post_id: postId || null,
-        workspace_id: 'default',
-        created_by: (window.AppState.user.email || '')
-      })
+      body: JSON.stringify(payload)
     });
     var data = await res.json();
     return data;
