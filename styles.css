@@ -8442,6 +8442,85 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 4px 4px 0;
 }
 
+/* Comment block (rewrite mode) */
+.cw-comments-block {
+  background: #201E1A;
+  border: 1px solid #3A3632;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 4px;
+}
+.cw-comments-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.cw-cmt-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #2A2622;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.cw-cmt-item:last-of-type { border-bottom: none; }
+.cw-cmt-item.cw-cmt-hidden { display: none; }
+.cw-cmt-author {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cw-cmt-client { color: #FF4B4B; }
+.cw-cmt-servicing { color: #22D3EE; }
+.cw-cmt-creative { color: #9b87f5; }
+.cw-cmt-admin { color: #C8A84B; }
+.cw-cmt-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #B1ADA1;
+  line-height: 1.45;
+}
+.cw-cmt-more {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px 0 2px;
+  display: block;
+  width: 100%;
+}
+
+/* Stacked cost totals */
+.cw-tot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.cw-tot-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7A7670;
+}
+.cw-tot-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: #B1ADA1;
+  letter-spacing: 0.02em;
+}
+
 /* ═══════════════════════════════════════════════════════════
    PR 4 — Gmail import in New Post form (Admin only).
    Zero rgba() — 8-digit hex throughout, per CLAUDE.md §4.

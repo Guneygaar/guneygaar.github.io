@@ -10,7 +10,8 @@ window._captionWS = {
   messages: [],
   sessionCost: 0,
   postId: null,
-  mode: null
+  mode: null,
+  _rewriteComments: null
 };
 
 var _CW_USD_TO_INR = 100;
@@ -24,8 +25,8 @@ function _cwCalcINR(inputTokens, outputTokens) {
 
 function _cwFormatINR(v) {
   if (v < 1) return '\u20B9' + v.toFixed(2);
-  if (v < 100) return '\u20B9' + v.toFixed(2);
-  return '\u20B9' + Math.round(v);
+  if (v < 1000) return '\u20B9' + Math.round(v);
+  return '\u20B9' + Math.round(v).toLocaleString('en-IN');
 }
 
 // ─── open workspace ──────────────────────────────────────────
@@ -42,6 +43,7 @@ window.openCaptionWorkspace = async function(mode, context) {
     ws.sessionCost = 0;
     ws.postId = context.postId || null;
     ws.mode = mode;
+    ws._rewriteComments = null;
   }
   ws.isOpen = true;
 
@@ -60,13 +62,37 @@ window.openCaptionWorkspace = async function(mode, context) {
 
   if (!isResume) {
     if (mode === 'rewrite') {
-      var commentList = (context.comments || []).map(function(c) {
-        return (c.author || 'Unknown') + ': ' + (c.text || c.message || '');
+      ws._rewriteComments = (context.comments || []).map(function(c) {
+        return { author: c.author || 'Unknown', role: (c.role || c.author_role || 'client').toLowerCase(), text: c.text || c.message || '' };
+      });
+      var commentList = ws._rewriteComments.map(function(c) {
+        return c.author + ': ' + c.text;
       }).join('\n');
-      var msg = 'Current caption:\n' + (context.caption || '(empty)') +
+      var apiMsg = 'Current caption:\n' + (context.caption || '(empty)') +
         '\n\nHere are the comments on this post:\n' + (commentList || 'No comments yet.') +
         '\n\nRewrite the caption addressing the feedback. Return ONLY the revised caption.';
-      window.sendCaptionMessage(msg);
+      var displayMsg = 'Rewrite the caption addressing the feedback above.';
+      ws.messages.push({ role: 'user', content: apiMsg, _display: displayMsg });
+      _cwRenderThread();
+      _cwScrollToBottom();
+      var thread = document.getElementById('cw-thread');
+      if (thread) { thread.insertAdjacentHTML('beforeend', _cwTypingHtml()); _cwScrollToBottom(); }
+      var featureTag = 'chat';
+      var result = await _callSrtdAI(featureTag, ws.messages.map(function(m) { return { role: m.role, content: m.content }; }), ws.postId);
+      var typingEl = thread && thread.querySelector('.cw-typing');
+      if (typingEl) typingEl.remove();
+      if (result && result.success) {
+        ws.messages.push({ role: 'assistant', content: result.content || '' });
+        var inTok = result.input_tokens || (result.usage && result.usage.input) || 0;
+        var outTok = result.output_tokens || (result.usage && result.usage.output) || 0;
+        ws.sessionCost += _cwCalcINR(inTok, outTok);
+        _cwUpdateSessionMeter();
+      } else {
+        ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
+      }
+      _cwRenderThread();
+      _cwScrollToBottom();
+      return;
     } else if (mode === 'write') {
       var msg2 = 'Generate 3 alternative caption options for this post: ' +
         (context.title || '') + '.' +
@@ -154,11 +180,17 @@ function _cwRenderThread() {
   var html = '';
   var draftNum = 0;
 
+  var commentsRendered = false;
   for (var i = 0; i < ws.messages.length; i++) {
     var m = ws.messages[i];
     if (m.role === 'user') {
+      if (!commentsRendered && ws._rewriteComments && ws._rewriteComments.length > 0 && i === 0) {
+        html += _cwBuildCommentsBlock(ws._rewriteComments);
+        commentsRendered = true;
+      }
+      var displayText = m._display || m.content;
       html += '<div class="cw-msg cw-msg-user"><div class="cw-msg-bubble">' +
-        _cwEsc(m.content).replace(/\n/g, '<br>') + '</div></div>';
+        _cwEsc(displayText).replace(/\n/g, '<br>') + '</div></div>';
     } else if (m.role === 'assistant') {
       draftNum++;
       var isLatest = (i === ws.messages.length - 1);
@@ -215,6 +247,29 @@ function _cwEsc(s) {
 function _cwScrollToBottom() {
   var thread = document.getElementById('cw-thread');
   if (thread) setTimeout(function() { thread.scrollTop = thread.scrollHeight; }, 50);
+}
+
+// ─── comment block builder ───────────────────────────────────
+
+function _cwBuildCommentsBlock(comments) {
+  var SHOW = 4;
+  var roleMap = { client: 'client', servicing: 'servicing', admin: 'admin', creative: 'creative' };
+  var html = '<div class="cw-comments-block">' +
+    '<div class="cw-comments-header">\u2726 ' + comments.length + ' COMMENT' + (comments.length === 1 ? '' : 'S') + ' LOADED</div>';
+  for (var i = 0; i < comments.length; i++) {
+    var c = comments[i];
+    var cls = roleMap[c.role] || 'client';
+    var label = (c.role || 'client').charAt(0).toUpperCase() + (c.role || 'client').slice(1);
+    html += '<div class="cw-cmt-item' + (i >= SHOW ? ' cw-cmt-hidden' : '') + '">' +
+      '<span class="cw-cmt-author cw-cmt-' + cls + '">' + _cwEsc(label) + '</span>' +
+      '<span class="cw-cmt-text">' + _cwEsc(c.text) + '</span>' +
+    '</div>';
+  }
+  if (comments.length > SHOW) {
+    html += '<button class="cw-cmt-more" onclick="this.parentNode.querySelectorAll(\'.cw-cmt-hidden\').forEach(function(e){e.classList.remove(\'cw-cmt-hidden\')});this.remove()">Show ' + (comments.length - SHOW) + ' more \u2193</button>';
+  }
+  html += '</div>';
+  return html;
 }
 
 // ─── chip handler ────────────────────────────────────────────
@@ -297,8 +352,8 @@ async function _cwFetchCostTotals() {
 
     var todayEl = document.getElementById('cw-today-cost');
     var monthEl = document.getElementById('cw-month-cost');
-    if (todayEl) todayEl.textContent = _cwFormatINR(todayUSD * _CW_USD_TO_INR) + ' today';
-    if (monthEl) monthEl.textContent = _cwFormatINR(monthUSD * _CW_USD_TO_INR) + ' this month';
+    if (todayEl) todayEl.textContent = _cwFormatINR(todayUSD * _CW_USD_TO_INR);
+    if (monthEl) monthEl.textContent = _cwFormatINR(monthUSD * _CW_USD_TO_INR);
   } catch (e) {
     // non-critical
   }
