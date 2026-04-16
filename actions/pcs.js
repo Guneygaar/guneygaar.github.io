@@ -309,7 +309,7 @@ function _pcsBuildAiZoneHtml(rawId, commentCount) {
         '</div>' +
       '</div>'
     : '') +
-    // Primary button: "Continue conversation" if session exists, else "Rewrite from comments"
+    // Single "Edit with Claude" / "Continue conversation" entry point
     (function() {
       var _ws = window._captionWS;
       var _hasSession = _ws && _ws.messages && _ws.messages.length > 0 && _ws.postId === rawId;
@@ -320,65 +320,24 @@ function _pcsBuildAiZoneHtml(rawId, commentCount) {
           if (_ws.messages[_mi].role === 'assistant') { _lastDraft = _ws.messages[_mi].content || ''; break; }
         }
         var _preview = _lastDraft.length > 30 ? _lastDraft.slice(0, 30) + '\u2026' : _lastDraft;
-        return '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window.openCaptionWorkspace(\'resume\',{postId:\'' + id + '\',title:getTitle(getPostById(\'' + id + '\'))})">' +
-          '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
-          '<div class="pcs-rw-text">' +
-            '<div class="pcs-rw-title">\u2726 Continue conversation</div>' +
-            '<div class="pcs-rw-sub">Draft ' + _draftCount + ' \u00B7 ' + esc(_preview) + '</div>' +
+        return '<div class="pcs-claude-entry" onclick="window.openCaptionWorkspace(\'resume\',{postId:\'' + id + '\',title:getTitle(getPostById(\'' + id + '\'))})">' +
+          '<div class="pcs-ce-icon">\u2726</div>' +
+          '<div class="pcs-ce-text">' +
+            '<div class="pcs-ce-title">Continue conversation</div>' +
+            '<div class="pcs-ce-sub">Draft ' + _draftCount + ' \u00B7 ' + esc(_preview) + '</div>' +
           '</div>' +
-          '<span class="pcs-rw-arr">\u2192</span>' +
-        '</button>';
+          '<span class="pcs-ce-arr">\u2192</span>' +
+        '</div>';
       }
-      return '<button class="pcs-rewrite-btn" id="pcs-rewrite-btn-' + id + '" onclick="window._pcsRewriteFromComments(\'' + id + '\')">' +
-        '<div class="pcs-rw-icon">' + ICON_SPARK + '</div>' +
-        '<div class="pcs-rw-text">' +
-          '<div class="pcs-rw-title">\u2726 Rewrite from comments</div>' +
-          '<div class="pcs-rw-sub">' + commentCount + ' comment' + (commentCount === 1 ? '' : 's') + ' on this post</div>' +
+      return '<div class="pcs-claude-entry" onclick="window.openCaptionWorkspace(\'chat\',{postId:\'' + id + '\',caption:(getPostById(\'' + id + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + id + '\'))})">' +
+        '<div class="pcs-ce-icon">\u2726</div>' +
+        '<div class="pcs-ce-text">' +
+          '<div class="pcs-ce-title">Edit with Claude</div>' +
+          '<div class="pcs-ce-sub">Open workspace with this caption</div>' +
         '</div>' +
-        '<span class="pcs-rw-arr">\u2192</span>' +
-      '</button>';
+        '<span class="pcs-ce-arr">\u2192</span>' +
+      '</div>';
     })() +
-    // Rewrite result panel (hidden by default, expands inline)
-    '<div class="pcs-rewrite-result" id="pcs-rewrite-result-' + id + '">' +
-      '<div class="pcs-rwr-flags"></div>' +
-      '<div class="pcs-rwr-sep"></div>' +
-      '<div class="pcs-rwr-caption"></div>' +
-      '<div class="pcs-rwr-actions">' +
-        '<button class="pcs-rwr-apply" onclick="window._pcsApplyRewrite(\'' + id + '\')">Apply to caption</button>' +
-        '<button class="pcs-rwr-btn" onclick="window._pcsOpenRefine(\'' + id + '\')">Refine</button>' +
-        '<button class="pcs-rwr-btn-close" onclick="window._pcsDismissRewrite(\'' + id + '\')" aria-label="Dismiss">\u2715</button>' +
-      '</div>' +
-      '<div class="pcs-refine-wrap" id="pcs-refine-wrap-' + id + '">' +
-        '<div class="pcs-refine-row">' +
-          '<input class="pcs-refine-input" id="pcs-refine-input-' + id + '" type="text" placeholder="Tell Claude what to change...">' +
-          '<button class="pcs-refine-send" onclick="window._pcsRefineSend(\'' + id + '\')">Send</button>' +
-        '</div>' +
-        '<button class="pcs-refine-cancel" onclick="window._pcsRefineCancel(\'' + id + '\')">\u2715 Cancel</button>' +
-      '</div>' +
-    '</div>' +
-    // Secondary button: "Start fresh" if session exists, else "Write fresh options"
-    (function() {
-      var _ws2 = window._captionWS;
-      var _hasSession2 = _ws2 && _ws2.messages && _ws2.messages.length > 0 && _ws2.postId === rawId;
-      if (_hasSession2) {
-        return '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._captionWS.messages=[];window._captionWS.sessionCost=0;window._pcsAiWrite(\'' + id + '\')">' +
-          '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
-          '<div class="pcs-rw-text">' +
-            '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Start fresh</div>' +
-          '</div>' +
-          '<span class="pcs-rw-arr">\u2192</span>' +
-        '</button>';
-      }
-      return '<button class="pcs-write-btn" id="pcs-write-btn-' + id + '" onclick="window._pcsAiWrite(\'' + id + '\')">' +
-        '<div class="pcs-rw-icon pcs-rw-icon--dim">' + ICON_SPARK + '</div>' +
-        '<div class="pcs-rw-text">' +
-          '<div class="pcs-rw-title pcs-rw-title--dim">\u2726 Write fresh options</div>' +
-        '</div>' +
-        '<span class="pcs-rw-arr">\u2192</span>' +
-      '</button>';
-    })() +
-    // Write options panel (populated lazily by _pcsAiWrite)
-    '<div class="pcs-write-opts" id="pcs-write-opts-' + id + '"></div>' +
   '</div>';
 }
 
@@ -812,6 +771,8 @@ window._pcsTabSwitch = function(tab) {
   if (pCaption) pCaption.style.display = tab === 'caption' ? '' : 'none';
   if (pClient) pClient.style.display = tab === 'client' ? '' : 'none';
   if (pInternal) pInternal.style.display = tab === 'internal' ? '' : 'none';
+  if (tab === 'client' && typeof _updateSelectStripVisibility === 'function') _updateSelectStripVisibility();
+  if (tab !== 'client' && typeof exitCommentSelectMode === 'function' && window._commentSelectMode && window._commentSelectMode.active) exitCommentSelectMode();
 }
 
 // -- Photo grid builder (LinkedIn style, responsive to count) --
