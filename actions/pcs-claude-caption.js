@@ -13,7 +13,7 @@ window._captionWS = {
   mode: null
 };
 
-var _CW_USD_TO_INR = 84;
+var _CW_USD_TO_INR = 100;
 
 // ─── cost helpers ────────────────────────────────────────────
 
