@@ -173,8 +173,7 @@ window._updateSelectStripVisibility = function() {
   var strip = document.getElementById('pcs-select-strip');
   if (!strip) return;
   var role = (window.AppState.user.effectiveRole || '').toLowerCase();
-  var aiEnabled = !!(window.AppState.workspace && window.AppState.workspace.ai_chat);
-  strip.style.display = (role === 'admin' || aiEnabled) ? 'flex' : 'none';
+  strip.style.display = (role === 'admin') ? 'flex' : 'none';
 };
 
 // ─── event wiring ────────────────────────────────────────────
