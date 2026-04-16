@@ -381,6 +381,19 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
       // Initial load path: render unconditionally and seed fingerprint
       window._lastClientFp = _clientPostsFingerprint(window.AppState.posts.all);
       renderClientView();
+      // Deep-link: open the right overlay for ?open=POST_ID after
+      // client initial posts load. Mirrors the agency drain in
+      // renderAll() which is unreachable for client (client early-
+      // return at line ~1080 exits before the drain at ~1121).
+      if (window._pendingOpenPost) {
+        var _pid_dl = window._pendingOpenPost;
+        window._pendingOpenPost = null;
+        var _dlPost = (typeof getPostById === 'function')
+          ? getPostById(_pid_dl) : null;
+        if (_dlPost && typeof window._openClientPostOverlay === 'function') {
+          window._openClientPostOverlay(_pid_dl);
+        }
+      }
     }
   } catch (err) {
     window.logError && window.logError(err && err.message, err && err.stack, 'load-posts-client');
