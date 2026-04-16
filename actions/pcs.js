@@ -1350,7 +1350,7 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #323244;">' +
     (post.caption ?
       '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
-      'font-size:13px;color:#888;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
+      'font-size:13px;color:#B8B8C0;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
       'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
       'max-height:200px;overflow:hidden;' +
       '-webkit-mask-image:linear-gradient(to bottom,black 160px,transparent 198px);' +
@@ -1366,7 +1366,7 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
       'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
       'padding:6px 0 0 0;">See More</button>'
       :
-      '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#333;letter-spacing:0.06em;">No copy yet</div>'
+      '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#4A4A5A;letter-spacing:0.06em;">No copy yet</div>'
     ) + '</div>';
 }
 
