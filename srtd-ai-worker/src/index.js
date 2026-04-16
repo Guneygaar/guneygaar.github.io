@@ -224,7 +224,8 @@ async function handleComplete(request, env) {
     }
 
     const feature     = body && body.feature;
-    const messages    = body && body.messages;
+    const rawMessages = body && body.messages;
+    const rawPrompt   = body && body.prompt;
     const postId      = (body && body.post_id) || null;
     const workspaceId = (body && body.workspace_id) || 'default';
     const createdBy   = (body && body.created_by) || '';
@@ -232,7 +233,14 @@ async function handleComplete(request, env) {
     if (!feature || !FEATURE_FLAGS[feature]) {
       return errorResponse('Invalid or missing feature', 400);
     }
-    if (!Array.isArray(messages) || messages.length === 0) {
+
+    // Backward compat: accept `prompt` string or `messages` array
+    const messages = Array.isArray(rawMessages) && rawMessages.length > 0
+      ? rawMessages
+      : (typeof rawPrompt === 'string' && rawPrompt.length > 0)
+        ? [{ role: 'user', content: rawPrompt }]
+        : null;
+    if (!messages) {
       return errorResponse('Invalid or missing messages', 400);
     }
 
@@ -269,6 +277,8 @@ async function handleComplete(request, env) {
     return jsonResponse({
       success: true,
       content: responseText,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
       usage: { input: inputTokens, output: outputTokens }
     });
   } catch (err) {
