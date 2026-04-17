@@ -473,15 +473,16 @@ async function loadNotifications() {
   }
 }
 
+
 // v6 design — visual-only rewrite. Data fetch, click routing, mark-read,
 // and delete paths are untouched. Structural class names + source
 // patterns preserved for unit tests (notif-item, notif-live-card,
 // nchip-count-*, grouped-comment keys, response-time snippet).
 function renderNotifications(name, role) {
-  var notifs = _notifData;
+  var ctx = window._notifBuildContext();
+  var notifs = ctx.notifs;
   // Expand-in-place state — persisted across innerHTML rebuilds.
-  if (!window._notifExpandedSet) window._notifExpandedSet = new Set();
-  var _expandedSet = window._notifExpandedSet;
+  var _expandedSet = ctx._expandedSet;
   var effectiveR = window.AppState.user.effectiveRole || window.AppState.user.role || role || 'Admin';
   var titleRole = effectiveR.charAt(0).toUpperCase() + effectiveR.slice(1).toLowerCase();
   var roleLabelEl = document.getElementById('notif-role-label');
@@ -491,37 +492,7 @@ function renderNotifications(name, role) {
   var nameEl = document.getElementById('notif-name');
   if (nameEl) nameEl.textContent = displayName;
 
-  var posts = (window.AppState.posts && window.AppState.posts.all) || [];
-  function postFor(pid) {
-    if (!pid) return null;
-    for (var i = 0; i < posts.length; i++) { if (posts[i].post_id === pid) return posts[i]; }
-    return null;
-  }
-
-  // Mentions detection from batch-fetched comments
-  var currentUserName = (window.AppState.user && (window.AppState.user.name || window.AppState.user.email)) || window.currentUserName || '';
-  var mentionPostIds = new Set();
-  var commentsArr = window._notifComments || [];
-  if (currentUserName) {
-    commentsArr.forEach(function(c) {
-      if (Array.isArray(c.mentioned_users)) {
-        c.mentioned_users.forEach(function(u) {
-          if (u && u.toLowerCase() === currentUserName.toLowerCase()) mentionPostIds.add(c.post_id);
-        });
-      }
-    });
-  }
-
-  // Pre-compute a map of post_id → non-resolved comment count. Used by
-  // `_buildItem` to drive the expand chip (visibility + label).
-  // Decoupled from the notification-grouping bucket count so any post
-  // with 2+ visible comments gets a chip regardless of how the
-  // notifications happen to be split across (post, actor, day) keys.
-  var _threadCountMap = {};
-  commentsArr.forEach(function(c) {
-    if (!c || c.resolved === true || !c.post_id) return;
-    _threadCountMap[c.post_id] = (_threadCountMap[c.post_id] || 0) + 1;
-  });
+  var mentionPostIds = ctx.mentionPostIds;
 
   // Tab counts
   var allCount     = notifs.length;
@@ -609,218 +580,7 @@ function renderNotifications(name, role) {
     else groups.earlier.push(n);
   });
 
-  // Meta-row SVG icons. The WhatsApp glyph is the real brand phone icon
-  // (single `fill="currentColor"` path) so the button inherits its
-  // color from `.notif-mi-btn` + `.notif-mi-btn.wa:hover`.
-  var WA_ICON = '<svg viewBox="0 0 32 32" fill="currentColor" stroke="none" width="16" height="16" aria-hidden="true">' +
-    '<path d="M16.003 0C7.184 0 .008 7.176.008 15.995a15.88 15.88 0 002.138 7.99L0 32l8.2-2.151a15.963 15.963 0 007.803 1.987h.007c8.814 0 15.99-7.176 15.994-15.995 0-4.27-1.664-8.285-4.687-11.307A15.843 15.843 0 0016.003 0zm0 29.153h-.005a13.29 13.29 0 01-6.772-1.852l-.485-.288-5.025 1.318 1.343-4.898-.316-.503a13.19 13.19 0 01-2.032-7.037c.003-7.328 5.966-13.29 13.296-13.29a13.2 13.2 0 019.395 3.895 13.198 13.198 0 013.89 9.404c-.004 7.328-5.967 13.29-13.289 13.29zm7.293-9.955c-.4-.2-2.365-1.167-2.732-1.3-.366-.133-.633-.2-.9.2-.266.4-1.033 1.3-1.266 1.566-.233.267-.466.3-.866.1-.4-.2-1.688-.622-3.215-1.984-1.188-1.06-1.99-2.37-2.224-2.77-.234-.4-.025-.615.175-.815.18-.18.4-.466.6-.7.2-.233.267-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.9-2.167-1.232-2.967-.325-.78-.655-.673-.9-.686-.233-.012-.5-.014-.766-.014a1.47 1.47 0 00-1.066.5c-.366.4-1.4 1.367-1.4 3.334 0 1.966 1.433 3.866 1.633 4.132.2.267 2.821 4.307 6.833 6.04.955.412 1.7.658 2.281.842.958.305 1.83.262 2.52.159.77-.115 2.365-.967 2.698-1.9.333-.934.333-1.734.233-1.9-.1-.167-.366-.267-.766-.466z"/>' +
-    '</svg>';
-  var TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true">' +
-    '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>' +
-    '</svg>';
-
-  function _buildItem(n) {
-    var post = postFor(n.post_id);
-    var postHasImage = !!(post && Array.isArray(post.images) && post.images[0]);
-    var postThumb = postHasImage ? post.images[0] : '';
-    var postTitle = '';
-    if (post && post.title) {
-      postTitle = post.title;
-    } else if (n.message) {
-      var msgLower = (n.message || '').toLowerCase();
-      var pubIdx = msgLower.indexOf('published ');
-      if (pubIdx !== -1) {
-        postTitle = n.message.slice(pubIdx + 10).trim();
-      } else {
-        var liveIdx = msgLower.indexOf(' is now live');
-        if (liveIdx !== -1) {
-          postTitle = n.message.slice(0, liveIdx).trim();
-        } else {
-          postTitle = n.message;
-        }
-      }
-    }
-    var actor = n.actor || '';
-    // Resolve raw actor (which may be an email for older notifications
-    // written before the display-name fix) to a clean display name via
-    // the profiles cache. Falls back to the raw string when the helper
-    // is unavailable or the cache hasn't loaded yet.
-    var actorDisplay = (typeof getDisplayName === 'function' && actor) ? getDisplayName(actor) : actor;
-    var avClass = _notifActorClass(actor);
-    var initial = actorDisplay ? actorDisplay.charAt(0).toUpperCase() : '?';
-    var ts = _notifRelTime(n.created_at);
-
-    // Response time for approval-resolved notifications
-    var respTimeHtml = '';
-    if (n.post_id && n.type === 'scheduled') {
-      var sentRow = _notifData.find(function(x) {
-        return x.post_id === n.post_id && x.type === 'awaiting_approval';
-      });
-      if (sentRow && sentRow.created_at && n.created_at) {
-        var diffMs = new Date(n.created_at) - new Date(sentRow.created_at);
-        if (diffMs > 0) {
-          var diffMin = Math.floor(diffMs / 60000);
-          if (diffMin < 60) {
-            respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + diffMin + ' min</span>';
-          } else {
-            respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + Math.floor(diffMin / 60) + ' hr</span>';
-          }
-        }
-      }
-    }
-
-    var isMention = n.type === 'comment' && n.post_id && mentionPostIds.has(n.post_id);
-    var tClass = _notifTypeClass(n, isMention);
-    var isPublished = n.type === 'published';
-    var groupCount = n._groupCount || 1;
-
-    // Action text (published has its own label above the main line)
-    var actionText;
-    if (isPublished) {
-      actionText = 'published ' + (postTitle || 'post');
-    } else if (groupCount > 1) {
-      actionText = 'left ' + groupCount + ' comments on ' + (postTitle || 'post');
-    } else {
-      actionText = _notifActionText(n);
-    }
-
-    // Comment preview — no quotes, no italics, ellipsized in CSS
-    var previewHtml = '';
-    if (n.type === 'comment') {
-      var latest = null;
-      var list = window._notifComments || [];
-      for (var i = 0; i < list.length; i++) {
-        if (list[i].post_id === n.post_id) { latest = list[i]; break; }
-      }
-      if (latest && latest.message) {
-        var msgPrev = latest.message.length > 80
-          ? latest.message.slice(0, 80) + '...'
-          : latest.message;
-        previewHtml = '<div class="notif-preview">' + esc(msgPrev) +
-          (groupCount > 1 ? '<span class="notif-more">+' + (groupCount - 1) + ' more</span>' : '') +
-          '</div>';
-      }
-    }
-
-    // Expand chip — any post with at least one non-resolved comment
-    // gets an expand chip so the inline reply drawer is reachable
-    // from the first inbound comment (v7: single-comment drawer).
-    // `_threadCountMap[post_id]` drives visibility and the label.
-    var postThreadCount = (n.post_id && _threadCountMap[n.post_id]) || 0;
-    var isExpandable = (n.type === 'comment' || n.type === 'mention') && postThreadCount >= 1;
-    var isExpanded = isExpandable && _expandedSet.has(n.id);
-    var expandChipHtml = '';
-    if (isExpandable) {
-      var chipLabel = postThreadCount === 1
-        ? '1 comment'
-        : postThreadCount + ' comments';
-      expandChipHtml =
-        '<button class="expand-chip" data-action="notif-expand"' +
-          ' data-notif-id="' + esc(n.id || '') + '" aria-label="Expand thread">' +
-          '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
-            '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
-          '</svg>' +
-          '<span class="expand-chip-count">' + esc(chipLabel) + '</span>' +
-        '</button>';
-    }
-
-    // LinkedIn link (published rows only).
-    var linkedinHtml = '';
-    if (isPublished && post && post.linkedin_link) {
-      linkedinHtml =
-        '<a class="notif-li-link" href="' + esc(post.linkedin_link) + '" target="_blank" rel="noopener"' +
-        ' onclick="event.stopPropagation();">LINKEDIN \u2192</a>';
-    }
-
-    // v7 footer-meta row — holds the expand chip and LinkedIn link
-    // underneath the body copy. WA + trash have moved to the stacked
-    // right column (.notif-actions-col) under the thumbnail.
-    var footerMetaHtml = '';
-    if (isExpandable || linkedinHtml) {
-      footerMetaHtml = '<div class="notif-footer-meta">' +
-        (isExpandable ? expandChipHtml : '') +
-        linkedinHtml +
-        '</div>';
-    }
-
-    // Stacked right column — thumbnail (always rendered as a fixed
-    // 60x60 slot; the <img> hides itself if src is missing so the
-    // action buttons stay vertically aligned) and the WA + trash
-    // cluster underneath, constrained to 60px width.
-    var waBtn = n.post_id
-      ? '<button class="notif-mi-btn wa" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '" aria-label="Share on WhatsApp">' + WA_ICON + '</button>'
-      : '';
-    var delBtn = '<button class="notif-mi-btn delete" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '" aria-label="Delete">' + TRASH_ICON + '</button>';
-
-    var thumbInner = postHasImage
-      ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
-      : '';
-    var rightColHtml = '<div class="notif-item-right">' +
-        '<div class="notif-thumb-wrap">' + thumbInner + '</div>' +
-        '<div class="notif-actions-col">' + waBtn + delBtn + '</div>' +
-      '</div>';
-
-    var pubLabel = isPublished
-      ? '<div class="notif-pub-label">\u2713 PUBLISHED</div>'
-      : '';
-
-    // Headline — bolds the post title portion of the action text when
-    // detectable, otherwise renders the action text plain. Keeps the
-    // "left N comments on …" grouping template intact so tests still
-    // match on the source strings.
-    var headlineInner;
-    if (postTitle && actionText && actionText.length > postTitle.length &&
-        actionText.slice(actionText.length - postTitle.length).toLowerCase() === postTitle.toLowerCase()) {
-      var prefix = actionText.slice(0, actionText.length - postTitle.length);
-      headlineInner = esc(prefix) + '<strong>' + esc(postTitle) + '</strong>';
-    } else {
-      headlineInner = esc(actionText);
-    }
-
-    var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done' || n.type === 'assign') ? ' data-is-brief="1"' : '';
-    // notif-live-card retained as a marker class on published rows so the
-    // tap delegate still finds them via closest('.notif-item, .notif-live-card').
-    var liveMarker = isPublished ? ' notif-live-card' : '';
-    var expandableAttr = isExpandable ? ' data-expandable="1"' : '';
-    var expandedClass = isExpanded ? ' expanded' : '';
-    var unreadClass = n.read ? ' read' : ' unread';
-
-    // Thread drawer — always emitted as a collapsed `<div class="thread-drawer">`
-    // for expandable rows, pre-populated with the current thread HTML if the
-    // notification is currently in _notifExpandedSet. CSS max-height:0 keeps
-    // it hidden until .notif-item.expanded flips it open.
-    var threadDrawerHtml = '';
-    if (isExpandable) {
-      var innerHtml = isExpanded ? _notifBuildThreadHtml(n, post, postTitle) : '';
-      threadDrawerHtml = '<div class="thread-drawer">' + innerHtml + '</div>';
-    }
-
-    return '<div class="notif-item ' + tClass + liveMarker + unreadClass + expandedClass + '"' +
-      ' role="button" tabindex="0"' +
-      ' data-notif-id="' + esc(n.id || '') + '"' +
-      ' data-post-id="' + esc(n.post_id || '') + '"' +
-      ' data-notif-type="' + esc(n.type || '') + '"' +
-      expandableAttr +
-      isBriefAttr + '>' +
-      '<div class="notif-item-row">' +
-        (typeof renderAvatar === 'function' ? renderAvatar(actor, getRoleFor(actor), 36, { classes: 'notif-av' }) : '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>') +
-        '<div class="notif-body">' +
-          pubLabel +
-          '<div class="notif-top-line">' +
-            '<span class="notif-author">' + esc(actorDisplay) + '</span>' +
-            '<span class="notif-top-line-sep">\xB7</span>' +
-            '<span class="notif-date">' + esc(ts) + '</span>' +
-            respTimeHtml +
-          '</div>' +
-          '<div class="notif-headline">' + headlineInner + '</div>' +
-          previewHtml +
-          footerMetaHtml +
-        '</div>' +
-        rightColHtml +
-      '</div>' +
-      threadDrawerHtml +
-    '</div>';
-  }
+  function _buildItem(n) { return window._notifBuildItem(n, ctx); }
 
   // Date-group headers carry a right-aligned count pill — "N new" when
   // the bucket has unread items, otherwise "N items". The inner
@@ -860,6 +620,249 @@ function renderNotifications(name, role) {
   html += '<div class="notif-foot">That\u2019s everything</div>';
   scroll.innerHTML = html;
 }
+
+// Meta-row SVG icons. The WhatsApp glyph is the real brand phone icon
+// (single `fill="currentColor"` path) so the button inherits its
+// color from `.notif-mi-btn` + `.notif-mi-btn.wa:hover`. Hoisted to
+// module scope so `window._notifBuildItem` can emit the same markup
+// during realtime live-insert without rebuilding the full renderer.
+var _NOTIF_WA_ICON = '<svg viewBox="0 0 32 32" fill="currentColor" stroke="none" width="16" height="16" aria-hidden="true">' +
+  '<path d="M16.003 0C7.184 0 .008 7.176.008 15.995a15.88 15.88 0 002.138 7.99L0 32l8.2-2.151a15.963 15.963 0 007.803 1.987h.007c8.814 0 15.99-7.176 15.994-15.995 0-4.27-1.664-8.285-4.687-11.307A15.843 15.843 0 0016.003 0zm0 29.153h-.005a13.29 13.29 0 01-6.772-1.852l-.485-.288-5.025 1.318 1.343-4.898-.316-.503a13.19 13.19 0 01-2.032-7.037c.003-7.328 5.966-13.29 13.296-13.29a13.2 13.2 0 019.395 3.895 13.198 13.198 0 013.89 9.404c-.004 7.328-5.967 13.29-13.289 13.29zm7.293-9.955c-.4-.2-2.365-1.167-2.732-1.3-.366-.133-.633-.2-.9.2-.266.4-1.033 1.3-1.266 1.566-.233.267-.466.3-.866.1-.4-.2-1.688-.622-3.215-1.984-1.188-1.06-1.99-2.37-2.224-2.77-.234-.4-.025-.615.175-.815.18-.18.4-.466.6-.7.2-.233.267-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.9-2.167-1.232-2.967-.325-.78-.655-.673-.9-.686-.233-.012-.5-.014-.766-.014a1.47 1.47 0 00-1.066.5c-.366.4-1.4 1.367-1.4 3.334 0 1.966 1.433 3.866 1.633 4.132.2.267 2.821 4.307 6.833 6.04.955.412 1.7.658 2.281.842.958.305 1.83.262 2.52.159.77-.115 2.365-.967 2.698-1.9.333-.934.333-1.734.233-1.9-.1-.167-.366-.267-.766-.466z"/>' +
+  '</svg>';
+var _NOTIF_TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true">' +
+  '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>' +
+  '</svg>';
+
+// Build a fresh rendering context from current global state — used by
+// `renderNotifications` to share its pre-computed derivations across
+// the per-item emits, and by `window._notifLiveInsert` to build a
+// single new item without re-running the full renderer.
+window._notifBuildContext = function _notifBuildContext() {
+  var posts = (window.AppState && window.AppState.posts && window.AppState.posts.all) || [];
+  var notifs = Array.isArray(window._notifData) ? window._notifData : (_notifData || []);
+  var comments = window._notifComments || [];
+  var currentUserName = (window.AppState && window.AppState.user &&
+    (window.AppState.user.name || window.AppState.user.email)) || window.currentUserName || '';
+
+  var mentionPostIds = new Set();
+  if (currentUserName) {
+    comments.forEach(function(c) {
+      if (Array.isArray(c.mentioned_users)) {
+        c.mentioned_users.forEach(function(u) {
+          if (u && u.toLowerCase() === currentUserName.toLowerCase()) mentionPostIds.add(c.post_id);
+        });
+      }
+    });
+  }
+
+  var _threadCountMap = {};
+  comments.forEach(function(c) {
+    if (!c || c.resolved === true || !c.post_id) return;
+    _threadCountMap[c.post_id] = (_threadCountMap[c.post_id] || 0) + 1;
+  });
+
+  function postFor(pid) {
+    if (!pid) return null;
+    for (var i = 0; i < posts.length; i++) { if (posts[i].post_id === pid) return posts[i]; }
+    return null;
+  }
+
+  if (!window._notifExpandedSet) window._notifExpandedSet = new Set();
+
+  return {
+    posts: posts,
+    notifs: notifs,
+    comments: comments,
+    postFor: postFor,
+    mentionPostIds: mentionPostIds,
+    _threadCountMap: _threadCountMap,
+    _expandedSet: window._notifExpandedSet,
+    _notifData: notifs
+  };
+};
+
+// Render a single notification row to an HTML string. Module-scope
+// rewrite of the old `_buildItem` closure so it can be called from
+// the live-insert path without going through the full
+// `renderNotifications` pipeline. Every dependency is read off the
+// passed context object; pass `window._notifBuildContext()` to get
+// a fresh one. Keep the function BODY in lock-step with
+// `renderNotifications`' per-item emit — tests assert source
+// patterns against this markup.
+window._notifBuildItem = function _notifBuildItem(n, ctx) {
+  ctx = ctx || window._notifBuildContext();
+  var post = ctx.postFor(n.post_id);
+  var postHasImage = !!(post && Array.isArray(post.images) && post.images[0]);
+  var postThumb = postHasImage ? post.images[0] : '';
+  var postTitle = '';
+  if (post && post.title) {
+    postTitle = post.title;
+  } else if (n.message) {
+    var msgLower = (n.message || '').toLowerCase();
+    var pubIdx = msgLower.indexOf('published ');
+    if (pubIdx !== -1) {
+      postTitle = n.message.slice(pubIdx + 10).trim();
+    } else {
+      var liveIdx = msgLower.indexOf(' is now live');
+      if (liveIdx !== -1) {
+        postTitle = n.message.slice(0, liveIdx).trim();
+      } else {
+        postTitle = n.message;
+      }
+    }
+  }
+  var actor = n.actor || '';
+  var actorDisplay = (typeof getDisplayName === 'function' && actor) ? getDisplayName(actor) : actor;
+  var avClass = _notifActorClass(actor);
+  var initial = actorDisplay ? actorDisplay.charAt(0).toUpperCase() : '?';
+  var ts = _notifRelTime(n.created_at);
+
+  var respTimeHtml = '';
+  if (n.post_id && n.type === 'scheduled') {
+    var sentRow = ctx._notifData.find(function(x) {
+      return x.post_id === n.post_id && x.type === 'awaiting_approval';
+    });
+    if (sentRow && sentRow.created_at && n.created_at) {
+      var diffMs = new Date(n.created_at) - new Date(sentRow.created_at);
+      if (diffMs > 0) {
+        var diffMin = Math.floor(diffMs / 60000);
+        if (diffMin < 60) {
+          respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + diffMin + ' min</span>';
+        } else {
+          respTimeHtml = '<span class="notif-resp-time"> \xB7 replied in ' + Math.floor(diffMin / 60) + ' hr</span>';
+        }
+      }
+    }
+  }
+
+  var isMention = n.type === 'comment' && n.post_id && ctx.mentionPostIds.has(n.post_id);
+  var tClass = _notifTypeClass(n, isMention);
+  var isPublished = n.type === 'published';
+  var groupCount = n._groupCount || 1;
+
+  var actionText;
+  if (isPublished) {
+    actionText = 'published ' + (postTitle || 'post');
+  } else if (groupCount > 1) {
+    actionText = 'left ' + groupCount + ' comments on ' + (postTitle || 'post');
+  } else {
+    actionText = _notifActionText(n);
+  }
+
+  var previewHtml = '';
+  if (n.type === 'comment') {
+    var latest = null;
+    var list = ctx.comments;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].post_id === n.post_id) { latest = list[i]; break; }
+    }
+    if (latest && latest.message) {
+      var msgPrev = latest.message.length > 80
+        ? latest.message.slice(0, 80) + '...'
+        : latest.message;
+      previewHtml = '<div class="notif-preview">' + esc(msgPrev) +
+        (groupCount > 1 ? '<span class="notif-more">+' + (groupCount - 1) + ' more</span>' : '') +
+        '</div>';
+    }
+  }
+
+  var postThreadCount = (n.post_id && ctx._threadCountMap[n.post_id]) || 0;
+  var isExpandable = (n.type === 'comment' || n.type === 'mention') && postThreadCount >= 1;
+  var isExpanded = isExpandable && ctx._expandedSet.has(n.id);
+  var expandChipHtml = '';
+  if (isExpandable) {
+    var chipLabel = postThreadCount === 1
+      ? '1 comment'
+      : postThreadCount + ' comments';
+    expandChipHtml =
+      '<button class="expand-chip" data-action="notif-expand"' +
+        ' data-notif-id="' + esc(n.id || '') + '" aria-label="Expand thread">' +
+        '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
+          '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
+        '</svg>' +
+        '<span class="expand-chip-count">' + esc(chipLabel) + '</span>' +
+      '</button>';
+  }
+
+  var linkedinHtml = '';
+  if (isPublished && post && post.linkedin_link) {
+    linkedinHtml =
+      '<a class="notif-li-link" href="' + esc(post.linkedin_link) + '" target="_blank" rel="noopener"' +
+      ' onclick="event.stopPropagation();">LINKEDIN \u2192</a>';
+  }
+
+  var footerMetaHtml = '';
+  if (isExpandable || linkedinHtml) {
+    footerMetaHtml = '<div class="notif-footer-meta">' +
+      (isExpandable ? expandChipHtml : '') +
+      linkedinHtml +
+      '</div>';
+  }
+
+  var waBtn = n.post_id
+    ? '<button class="notif-mi-btn wa" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '" aria-label="Share on WhatsApp">' + _NOTIF_WA_ICON + '</button>'
+    : '';
+  var delBtn = '<button class="notif-mi-btn delete" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '" aria-label="Delete">' + _NOTIF_TRASH_ICON + '</button>';
+
+  var thumbInner = postHasImage
+    ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
+    : '';
+  var rightColHtml = '<div class="notif-item-right">' +
+      '<div class="notif-thumb-wrap">' + thumbInner + '</div>' +
+      '<div class="notif-actions-col">' + waBtn + delBtn + '</div>' +
+    '</div>';
+
+  var pubLabel = isPublished
+    ? '<div class="notif-pub-label">\u2713 PUBLISHED</div>'
+    : '';
+
+  var headlineInner;
+  if (postTitle && actionText && actionText.length > postTitle.length &&
+      actionText.slice(actionText.length - postTitle.length).toLowerCase() === postTitle.toLowerCase()) {
+    var prefix = actionText.slice(0, actionText.length - postTitle.length);
+    headlineInner = esc(prefix) + '<strong>' + esc(postTitle) + '</strong>';
+  } else {
+    headlineInner = esc(actionText);
+  }
+
+  var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done' || n.type === 'assign') ? ' data-is-brief="1"' : '';
+  var liveMarker = isPublished ? ' notif-live-card' : '';
+  var expandableAttr = isExpandable ? ' data-expandable="1"' : '';
+  var expandedClass = isExpanded ? ' expanded' : '';
+  var unreadClass = n.read ? ' read' : ' unread';
+
+  var threadDrawerHtml = '';
+  if (isExpandable) {
+    var innerHtml = isExpanded ? _notifBuildThreadHtml(n, post, postTitle) : '';
+    threadDrawerHtml = '<div class="thread-drawer">' + innerHtml + '</div>';
+  }
+
+  return '<div class="notif-item ' + tClass + liveMarker + unreadClass + expandedClass + '"' +
+    ' role="button" tabindex="0"' +
+    ' data-notif-id="' + esc(n.id || '') + '"' +
+    ' data-post-id="' + esc(n.post_id || '') + '"' +
+    ' data-notif-type="' + esc(n.type || '') + '"' +
+    expandableAttr +
+    isBriefAttr + '>' +
+    '<div class="notif-item-row">' +
+      (typeof renderAvatar === 'function' ? renderAvatar(actor, getRoleFor(actor), 36, { classes: 'notif-av' }) : '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>') +
+      '<div class="notif-body">' +
+        pubLabel +
+        '<div class="notif-top-line">' +
+          '<span class="notif-author">' + esc(actorDisplay) + '</span>' +
+          '<span class="notif-top-line-sep">\xB7</span>' +
+          '<span class="notif-date">' + esc(ts) + '</span>' +
+          respTimeHtml +
+        '</div>' +
+        '<div class="notif-headline">' + headlineInner + '</div>' +
+        previewHtml +
+        footerMetaHtml +
+      '</div>' +
+      rightColHtml +
+    '</div>' +
+    threadDrawerHtml +
+  '</div>';
+};
 
 // ===================================================================
 // EXPAND-IN-PLACE THREAD VIEW
@@ -1008,7 +1011,7 @@ function _notifBuildThreadHtml(n, post, postTitle) {
 }
 
 // Render a single thread message (mini avatar + header + body).
-function _notifThreadMsgHtml(c) {
+function _notifThreadMsgHtml(c, opts) {
   var author = c.author || '';
   var authorRole = c.author_role || '';
   var avClass = _notifThreadAvClass(author, authorRole);
@@ -1018,7 +1021,11 @@ function _notifThreadMsgHtml(c) {
   var roleTag = authorRole
     ? '<span class="thread-role">' + esc(authorRole) + '</span>'
     : '';
-  return '<div class="thread-msg">' +
+  // Optimistic rows (client-side only, no real id yet) carry
+  // `data-optimistic="1"` so a later realtime echo with the real id
+  // can replace the attribute instead of double-inserting.
+  var optAttr = (opts && opts.optimistic) ? ' data-optimistic="1"' : '';
+  return '<div class="thread-msg" data-msg-id="' + esc(c.id || '') + '"' + optAttr + '>' +
       (typeof renderAvatar === 'function' ? renderAvatar(author, getRoleFor(authorRole || author), 18, { classes: 'thread-av', fontSize: '7px' }) : '<div class="thread-av ' + avClass + '">' + esc(initial) + '</div>') +
       '<div class="thread-content">' +
         '<div class="thread-header">' +
@@ -1192,6 +1199,7 @@ async function _notifSubmitReply(sendBtn) {
       body: JSON.stringify(payload)
     });
     var created = Array.isArray(resp) && resp[0] ? resp[0] : null;
+    var isOptimistic = !created;
     var row = created || Object.assign({}, payload, {
       id: 'tmp-' + Date.now(),
       created_at: new Date().toISOString()
@@ -1206,7 +1214,11 @@ async function _notifSubmitReply(sendBtn) {
     if (msgsBox) {
       var empty = msgsBox.querySelector('.thread-empty');
       if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
-      msgsBox.insertAdjacentHTML('beforeend', _notifThreadMsgHtml(row));
+      // Optimistic branch: emit with data-optimistic="1" so a later
+      // realtime echo with the real id can replace this row's
+      // data-msg-id in place (see window._notifLiveDrawerInsert dedup).
+      msgsBox.insertAdjacentHTML('beforeend',
+        _notifThreadMsgHtml(row, { optimistic: isOptimistic }));
     }
     ta.value = '';
     ta.style.height = 'auto';
@@ -1222,6 +1234,227 @@ async function _notifSubmitReply(sendBtn) {
     ta.focus();
   }
 }
+
+// ===================================================================
+// REALTIME LIVE-INSERT HELPERS
+// ===================================================================
+// These are invoked from the postgres_changes callbacks in
+// 07-post-load.js (see `_onAgencyNotificationInsert` /
+// `_onClientNotificationInsert` and the post_comments INSERT branch).
+// All three helpers are no-ops when the panel is closed or the tab
+// is backgrounded, so the realtime code path stays safe to call
+// unconditionally.
+// ===================================================================
+
+var _notifLiveQueue = [];
+var _notifLiveDraining = false;
+var _NOTIF_SCROLL_NEWCHIP_THRESHOLD = 80;   // px past top before chip surfaces
+var _NOTIF_STAGGER_MS = 110;                 // delay between queued inserts
+var _NOTIF_ANIM_CLEANUP_MS = 700;            // match 0.6s keyframe + buffer
+
+function _notifPanelIsOpen() {
+  var overlay = document.getElementById('notif-overlay');
+  if (!overlay) return false;
+  return overlay.style.display !== 'none' && overlay.style.display !== '';
+}
+
+function _drainNotifLiveQueue() {
+  if (_notifLiveQueue.length === 0) {
+    _notifLiveDraining = false;
+    return;
+  }
+  _notifLiveDraining = true;
+  var n = _notifLiveQueue.shift();
+  try { _insertLiveNotif(n); } catch (e) {
+    console.warn('[notif-live] insert failed', e);
+  }
+  setTimeout(_drainNotifLiveQueue, _NOTIF_STAGGER_MS);
+}
+
+function _insertLiveNotif(notif) {
+  var scrollEl = document.getElementById('notif-list-scroll');
+  if (!scrollEl) return;
+
+  // Scrolled past the top? Surface the "↑ N new" chip and insert the
+  // row silently (no scroll jump, no animation — the chip is the cue).
+  if (scrollEl.scrollTop > _NOTIF_SCROLL_NEWCHIP_THRESHOLD) {
+    _bumpNewChip();
+    _insertLiveNotifSilent(notif, scrollEl);
+    return;
+  }
+
+  var ctx = window._notifBuildContext();
+  var html = window._notifBuildItem(notif, ctx);
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html.trim();
+  var newItem = tmp.firstElementChild;
+  if (!newItem) return;
+  newItem.classList.add('notif-item--just-arrived');
+
+  var todayHeader = scrollEl.querySelector('.notif-group-header.ngh-first');
+  if (todayHeader) {
+    todayHeader.insertAdjacentElement('afterend', newItem);
+  } else {
+    // No "Today" group yet — synthesize one so the arrival has a
+    // date bucket. Keep the label class names in sync with
+    // `_buildGroupHeader` in renderNotifications.
+    var headerHtml = '<div class="notif-group-header ngh-first">' +
+      '<span class="notif-group-label notif-day-label">Today</span>' +
+      '<span class="notif-group-count">1 new</span></div>';
+    scrollEl.insertAdjacentHTML('afterbegin', headerHtml);
+    var newHeader = scrollEl.firstElementChild;
+    if (newHeader) newHeader.insertAdjacentElement('afterend', newItem);
+    else scrollEl.insertAdjacentElement('afterbegin', newItem);
+  }
+
+  setTimeout(function() {
+    newItem.classList.remove('notif-item--just-arrived');
+  }, _NOTIF_ANIM_CLEANUP_MS);
+}
+
+function _insertLiveNotifSilent(notif, scrollEl) {
+  var ctx = window._notifBuildContext();
+  var html = window._notifBuildItem(notif, ctx);
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html.trim();
+  var newItem = tmp.firstElementChild;
+  if (!newItem) return;
+  var todayHeader = scrollEl.querySelector('.notif-group-header.ngh-first');
+  if (todayHeader) {
+    todayHeader.insertAdjacentElement('afterend', newItem);
+  } else {
+    scrollEl.insertAdjacentElement('afterbegin', newItem);
+  }
+}
+
+window._notifLiveInsert = function(notif) {
+  if (!notif || !notif.id) return;
+  if (document.hidden) return;
+  if (!_notifPanelIsOpen()) return;
+  if (document.querySelector('[data-notif-id="' + CSS.escape(String(notif.id)) + '"]')) return;
+  _notifLiveQueue.push(notif);
+  if (!_notifLiveDraining) _drainNotifLiveQueue();
+};
+
+// ── Live drawer insert — a new post_comments INSERT arrives.
+// Dedups against optimistic rows (own reply just sent), bumps the
+// expand chip count on ALL matching cards, and appends the new
+// message node with a subtle blue flash when the drawer is open.
+window._notifLiveDrawerInsert = function(comment) {
+  if (!comment || !comment.id || !comment.post_id) return;
+  var postId = comment.post_id;
+
+  // Update the _notifComments cache so loadNotifications's next
+  // rebuild (on panel reopen) sees the row — and the cached
+  // _notifThreadCache for this post is busted so a re-expand
+  // rebuilds from the fresh data.
+  if (!Array.isArray(window._notifComments)) window._notifComments = [];
+  var already = false;
+  for (var i = 0; i < window._notifComments.length; i++) {
+    if (window._notifComments[i] && window._notifComments[i].id === comment.id) {
+      already = true; break;
+    }
+  }
+  if (!already) window._notifComments.push(comment);
+  if (window._notifThreadCache) delete window._notifThreadCache[postId];
+
+  // Bump the expand chip count on every visible card for this post
+  // so the user sees the thread grew even when the drawer is closed.
+  var anyItems = document.querySelectorAll(
+    '.notif-item[data-post-id="' + CSS.escape(String(postId)) + '"]');
+  for (var j = 0; j < anyItems.length; j++) {
+    var chipCount = anyItems[j].querySelector('.expand-chip-count');
+    if (!chipCount) continue;
+    var raw = chipCount.textContent || '';
+    var num = parseInt(raw, 10);
+    if (isNaN(num)) num = 0;
+    var nextNum = num + (already ? 0 : 1);
+    chipCount.textContent = nextNum === 1 ? '1 comment' : nextNum + ' comments';
+  }
+
+  // If no drawer is open on this post, we're done — the cache
+  // invalidation above ensures the next expand reads fresh data.
+  var expandedItem = document.querySelector(
+    '.notif-item.expanded[data-post-id="' + CSS.escape(String(postId)) + '"]');
+  if (!expandedItem) return;
+  var msgsBox = expandedItem.querySelector('.thread-msgs');
+  if (!msgsBox) return;
+
+  // Self-echo dedup: real id already rendered → skip.
+  if (msgsBox.querySelector('[data-msg-id="' + CSS.escape(String(comment.id)) + '"]')) return;
+
+  // Optimistic-row reconciliation: if an optimistic row exists
+  // with matching author + (roughly) matching text, promote it to
+  // the real id instead of double-inserting.
+  var optRows = msgsBox.querySelectorAll('[data-optimistic="1"]');
+  for (var k = 0; k < optRows.length; k++) {
+    var optRow = optRows[k];
+    var optAuthor = (optRow.querySelector('.thread-author') || {}).textContent || '';
+    var optMsg = (optRow.querySelector('.thread-message') || {}).textContent || '';
+    var incomingAuthor = (typeof getDisplayName === 'function' ? getDisplayName(comment.author) : comment.author) || '';
+    if (optAuthor.trim() === incomingAuthor.trim() &&
+        optMsg.trim() === (comment.message || '').trim()) {
+      optRow.setAttribute('data-msg-id', comment.id);
+      optRow.removeAttribute('data-optimistic');
+      return;
+    }
+  }
+
+  // Drop the "No comments yet." placeholder when promoting to a
+  // populated drawer — mirrors `_notifSubmitReply` exactly.
+  var emptyEl = msgsBox.querySelector('.thread-empty');
+  if (emptyEl && emptyEl.parentNode) emptyEl.parentNode.removeChild(emptyEl);
+
+  if (typeof _notifThreadMsgHtml !== 'function') return;
+  msgsBox.insertAdjacentHTML('beforeend', _notifThreadMsgHtml(comment));
+  var added = msgsBox.lastElementChild;
+  if (added) {
+    added.classList.add('thread-msg--just-arrived');
+    setTimeout(function() {
+      added.classList.remove('thread-msg--just-arrived');
+    }, _NOTIF_ANIM_CLEANUP_MS);
+  }
+};
+
+// ── Floating "↑ N new" chip. Renders inside #notif-overlay (fixed
+// position) and increments its own count in place when additional
+// arrivals land while the user is still scrolled down.
+var _notifNewChipCount = 0;
+
+function _bumpNewChip() {
+  _notifNewChipCount += 1;
+  var chip = document.getElementById('notif-new-chip');
+  if (!chip) {
+    var overlay = document.getElementById('notif-overlay');
+    if (!overlay) return;
+    chip = document.createElement('button');
+    chip.id = 'notif-new-chip';
+    chip.className = 'notif-new-chip';
+    chip.type = 'button';
+    chip.setAttribute('aria-label', 'Jump to new notifications');
+    chip.innerHTML =
+      '<span class="chip-arrow" aria-hidden="true">\u2191</span>' +
+      '<span class="chip-count">' + _notifNewChipCount + '</span> new';
+    chip.addEventListener('click', _dismissNewChip);
+    overlay.appendChild(chip);
+  } else {
+    var countEl = chip.querySelector('.chip-count');
+    if (countEl) countEl.textContent = _notifNewChipCount;
+  }
+  chip.classList.add('visible');
+}
+
+function _dismissNewChip() {
+  var chip = document.getElementById('notif-new-chip');
+  var scrollEl = document.getElementById('notif-list-scroll');
+  if (scrollEl) {
+    try { scrollEl.scrollTo({ top: 0, behavior: 'smooth' }); }
+    catch (e) { scrollEl.scrollTop = 0; }
+  }
+  if (chip) chip.classList.remove('visible');
+  _notifNewChipCount = 0;
+}
+window._dismissNewChip = _dismissNewChip;
 
 async function markNotifRead(id) {
   try {
@@ -2296,10 +2529,31 @@ function openNotifications() {
     document.body.appendChild(overlay);
     overlay.appendChild(panel);
   }
+  // One-shot scroll listener — dismisses the floating "↑ N new" chip
+  // when the user scrolls back up manually (so arrival of new items
+  // while they're already at the top flows through the slide-in
+  // animation path, not the chip path). Guarded by _notifScrollWired
+  // mirroring the existing _notifTapWired / _chipsWired pattern.
+  if (!panel._notifScrollWired) {
+    panel._notifScrollWired = true;
+    var _scrollEl = document.getElementById('notif-list-scroll');
+    if (_scrollEl) {
+      _scrollEl.addEventListener('scroll', function() {
+        if (_scrollEl.scrollTop < 30 && _notifNewChipCount > 0) {
+          _dismissNewChip();
+        }
+      }, { passive: true });
+    }
+  }
   overlay.style.display = 'flex';
   panel.style.cssText = 'width:100%;max-width:480px;height:100%;overflow:hidden;background:#000000;display:flex;flex-direction:column;';
   document.body.style.overflow = 'hidden';
   window.AppState.ui.modalOpen = true;
+  // Reset the floating chip on every open — arrivals from a previous
+  // session shouldn't preload the counter.
+  _notifNewChipCount = 0;
+  var _prevChip = document.getElementById('notif-new-chip');
+  if (_prevChip) _prevChip.classList.remove('visible');
   loadNotifications();
 }
 
@@ -2308,6 +2562,13 @@ function closeNotifications() {
   if (overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
   window.AppState.ui.modalOpen = false;
+  // Flush realtime live-insert state — any queued items would land in
+  // a closed overlay and sit as stale DOM if we left them pending.
+  _notifLiveQueue.length = 0;
+  _notifLiveDraining = false;
+  _notifNewChipCount = 0;
+  var _chip = document.getElementById('notif-new-chip');
+  if (_chip) _chip.classList.remove('visible');
   _drainDeferredRender();
 }
 
