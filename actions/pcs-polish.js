@@ -14,27 +14,69 @@ window._polishState = {
   postId: null
 };
 
+// Scoped lookup for the notification thread drawer's reply input —
+// it lives on `.notif-item.expanded .reply-input` (no unique ID, the
+// expanded card is the scope). Returns null when no drawer is open.
+function _polishFindNotifInput() {
+  return document.querySelector('.notif-item.expanded .reply-input');
+}
+function _polishFindNotifExpandedItem() {
+  return document.querySelector('.notif-item.expanded');
+}
+
 window.openPolishModal = async function(zone) {
   var st = window._polishState;
-  var inputId = zone === 'notes' ? 'pcs-note-input' : 'pcs-comment-input';
-  var input = document.getElementById(inputId);
-  if (!input || !input.value.trim()) return;
+  var input;
 
-  st.rawText = input.value.trim();
-  st.zone = zone;
-  st.polishedText = '';
-  st.isOpen = true;
+  if (zone === 'notif') {
+    // Defensive admin check — the button is only rendered for Admin
+    // in `_buildItem`, but a cached page shouldn't let a downgraded
+    // user trigger the modal either.
+    var _role = window.AppState && window.AppState.user && window.AppState.user.effectiveRole;
+    if (_role !== 'Admin') {
+      console.warn('Polish requires admin role');
+      return;
+    }
+    input = _polishFindNotifInput();
+    if (!input || !input.value.trim()) {
+      if (typeof window.showToast === 'function')
+        window.showToast('Type a draft first, then tap \u2726', 'error');
+      return;
+    }
+    var expandedItem = _polishFindNotifExpandedItem();
+    var notifPostId = expandedItem ? expandedItem.getAttribute('data-post-id') : null;
+    if (!notifPostId) {
+      if (typeof window.showToast === 'function')
+        window.showToast('Open a comment thread first', 'error');
+      return;
+    }
+    st.rawText = input.value.trim();
+    st.zone = 'notif';
+    st.polishedText = '';
+    st.isOpen = true;
+    st.postId = notifPostId;
+    st.replyTo = null;
+  } else {
+    var inputId = zone === 'notes' ? 'pcs-note-input' : 'pcs-comment-input';
+    input = document.getElementById(inputId);
+    if (!input || !input.value.trim()) return;
 
-  var postIdEl = document.getElementById('pcs-post-id');
-  st.postId = postIdEl ? postIdEl.value : null;
+    st.rawText = input.value.trim();
+    st.zone = zone;
+    st.polishedText = '';
+    st.isOpen = true;
 
-  var replyTagId = zone === 'notes' ? 'pcs-note-reply-tag' : 'pcs-client-reply-tag';
-  var replyNameId = zone === 'notes' ? 'pcs-note-reply-name' : 'pcs-client-reply-name';
-  var replyTag = document.getElementById(replyTagId);
-  var replyName = document.getElementById(replyNameId);
-  st.replyTo = (replyTag && replyTag.style.display !== 'none' && replyName && replyName.textContent)
-    ? { author: replyName.textContent }
-    : null;
+    var postIdEl = document.getElementById('pcs-post-id');
+    st.postId = postIdEl ? postIdEl.value : null;
+
+    var replyTagId = zone === 'notes' ? 'pcs-note-reply-tag' : 'pcs-client-reply-tag';
+    var replyNameId = zone === 'notes' ? 'pcs-note-reply-name' : 'pcs-client-reply-name';
+    var replyTag = document.getElementById(replyTagId);
+    var replyName = document.getElementById(replyNameId);
+    st.replyTo = (replyTag && replyTag.style.display !== 'none' && replyName && replyName.textContent)
+      ? { author: replyName.textContent }
+      : null;
+  }
 
   var overlay = document.getElementById('pcs-polish-overlay');
   if (!overlay) return;
@@ -110,6 +152,25 @@ window.sendPolished = function() {
   var resultEl = document.getElementById('polish-result');
   var finalText = resultEl ? resultEl.innerText.trim() : st.polishedText;
   if (!finalText) return;
+
+  // Notification-zone flow is scoped to the currently-expanded
+  // `.notif-item` — the textarea has no unique ID, so we pump the
+  // polished text into the class-scoped input and click its own
+  // `.reply-send` button, which runs `_notifSubmitReply` (10-ui.js)
+  // and POSTs to `/post_comments` instead of the PCS submission path.
+  if (st.zone === 'notif') {
+    var notifInput = _polishFindNotifInput();
+    if (!notifInput) return;
+    notifInput.value = finalText;
+    // Fire `input` so `_notifReplyInputResize` enables `.reply-send.active`.
+    notifInput.dispatchEvent(new Event('input', { bubbles: true }));
+    window.closePolishModal();
+    setTimeout(function() {
+      var sendBtn = document.querySelector('.notif-item.expanded .reply-send');
+      if (sendBtn) sendBtn.click();
+    }, 100);
+    return;
+  }
 
   var inputId = st.zone === 'notes' ? 'pcs-note-input' : 'pcs-comment-input';
   var input = document.getElementById(inputId);

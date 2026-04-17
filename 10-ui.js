@@ -934,13 +934,32 @@ function _notifBuildThreadHtml(n, post, postTitle) {
   // Reply pill (round send button inside a rounded input) + shared
   // footer row that puts "VISIBLE TO ALL" on the left and the
   // "Open full post →" link on the right.
+  //
+  // Polish Reply ✦ button — Admin-only. Inserted between the textarea
+  // and the circular send button inside `.reply-pill`. An eyebrow
+  // line above the pill nudges the user to tap it. Non-admin users
+  // see the pill WITHOUT either element, matching the pre-Polish
+  // layout exactly.
   var replyPlaceholder = 'Comment on ' + (postTitle || 'post') + '\u2026';
+  var _canPolish = !!(window.AppState && window.AppState.user &&
+                      window.AppState.user.effectiveRole === 'Admin');
+  var polishHintHtml = _canPolish
+    ? '<div class="polish-pre-hint">\u2726 Tap to polish your draft</div>'
+    : '';
+  var polishBtnHtml = _canPolish
+    ? '<button class="reply-polish" data-action="notif-polish"' +
+        ' data-post-id="' + esc(postId) + '"' +
+        ' data-notif-id="' + esc(n.id || '') + '"' +
+        ' aria-label="Polish with Claude" type="button">\u2726</button>'
+    : '';
   var replyHtml =
     '<div class="reply-zone">' +
+      polishHintHtml +
       '<div class="reply-pill">' +
         '<textarea class="reply-input" rows="1"' +
           ' data-post-id="' + esc(postId) + '"' +
           ' placeholder="' + esc(replyPlaceholder) + '"></textarea>' +
+        polishBtnHtml +
         '<button class="reply-send" data-action="notif-reply-send"' +
           ' data-post-id="' + esc(postId) + '"' +
           ' data-notif-id="' + esc(n.id || '') + '" aria-label="Send reply">' +
@@ -2106,6 +2125,7 @@ function openNotifications() {
       var expandBtn = e.target.closest('.expand-chip');
       var replyInput = e.target.closest('.reply-input');
       var replySend = e.target.closest('.reply-send');
+      var replyPolish = e.target.closest('.reply-polish, [data-action="notif-polish"]');
       // Both the footer "Open full post ->" link and the top-of-drawer
       // "View all N comments" overflow link route through the same
       // open-post handler below.
@@ -2117,6 +2137,22 @@ function openNotifications() {
       if (replySend) {                       // submit the reply
         e.stopPropagation();
         _notifSubmitReply(replySend);
+        return;
+      }
+      if (replyPolish) {                     // Polish Reply ✦ (admin-only)
+        e.preventDefault();
+        e.stopPropagation();
+        // Defensive double-check — the button is only rendered for
+        // Admin in `_buildItem`, but a stale page shouldn't let a
+        // downgraded user invoke the modal.
+        if (!window.AppState || !window.AppState.user ||
+            window.AppState.user.effectiveRole !== 'Admin') {
+          console.warn('Polish requires admin role');
+          return;
+        }
+        if (typeof window.openPolishModal === 'function') {
+          window.openPolishModal('notif');
+        }
         return;
       }
       if (threadOpen) {                      // "Open full post ->" link
