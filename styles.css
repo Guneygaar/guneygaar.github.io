@@ -4224,9 +4224,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .notif-mi-btn.wa:hover     { color: #22D87F; }
 .notif-mi-btn.delete:hover { color: #FF4B4B; }
+/* Explicit sizing rules — override the inline width/height on the
+   SVG so the brand WhatsApp glyph (fill-based) and the trash icon
+   (stroke-based) each get the right rendering treatment. */
 .notif-mi-btn svg {
   display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
   pointer-events: none;
+}
+.notif-mi-btn.wa svg {
+  fill: currentColor;
+  stroke: none;
+  width: 16px;
+  height: 16px;
 }
 .notif-item.unread .notif-mi-btn { color: #2A3A5A; }
 .notif-item.unread .notif-mi-btn:hover {
@@ -4312,15 +4326,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-item { flex-direction: column; }
 
 /* Expanded card — keeps the blue highlight when expanded. */
+/* Expanded card — flips to jet black so the drawer reads as a neutral
+   conversation surface, not an ongoing unread state. The glowing blue
+   dot is also suppressed on expand since tapping = marking read. */
 .notif-item.expanded {
-  background: var(--unread-bg);
+  background: var(--notif-bg);
   padding: 14px 20px 0;
   margin-bottom: 8px;
   border-left: none;
   border-radius: 0;
 }
-.notif-item.expanded:hover { background: var(--unread-bg); }
-.notif-item.unread.expanded { background: var(--unread-bg); }
+.notif-item.expanded::before { display: none; }
+.notif-item.expanded:hover { background: var(--notif-bg); }
+.notif-item.unread.expanded { background: var(--notif-bg); }
 
 /* ── EXPAND CHIP ── */
 .expand-chip {
@@ -4376,7 +4394,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 1;
   margin-top: 12px;
   padding: 14px 0 16px;
-  border-top: 1px solid var(--unread-border);
+  border-top: 1px solid var(--notif-line);
 }
 /* .thread-area is now a transparent passthrough — no inner box. */
 .thread-area {
@@ -4472,11 +4490,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── REPLY ZONE — pill input + share row ── */
+/* Neutral borders (--notif-line) since the drawer sits on a jet-black
+   expanded card, not the blue unread block anymore. */
 .reply-zone,
 .thread-reply {
   margin-top: 14px;
   padding-top: 14px;
-  border-top: 1px solid var(--unread-border);
+  border-top: 1px solid var(--notif-line);
 }
 .reply-pill,
 .reply-row {
@@ -4485,7 +4505,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   gap: 6px;
   padding: 6px 6px 6px 14px;
   background: #FFFFFF08;              /* rgba(255,255,255,0.03) */
-  border: 1px solid var(--unread-border);
+  border: 1px solid var(--notif-line);
   border-radius: 22px;
   transition: border-color 0.2s ease;
 }

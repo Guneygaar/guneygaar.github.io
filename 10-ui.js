@@ -934,7 +934,7 @@ function _notifBuildThreadHtml(n, post, postTitle) {
   // Reply pill (round send button inside a rounded input) + shared
   // footer row that puts "VISIBLE TO ALL" on the left and the
   // "Open full post →" link on the right.
-  var replyPlaceholder = 'Reply to ' + (postTitle || 'post') + '\u2026';
+  var replyPlaceholder = 'Comment on ' + (postTitle || 'post') + '\u2026';
   var replyHtml =
     '<div class="reply-zone">' +
       '<div class="reply-pill">' +
@@ -1013,6 +1013,15 @@ function _notifToggleExpand(item) {
   }
 
   // Expand — mount the thread drawer content if it hasn't been built yet.
+  // Strip .unread BEFORE flipping .expanded so the 0.3s background
+  // transition on `.notif-item` drives the blue → jet black fade in a
+  // single animation pass (instead of two competing transitions from
+  // the click handler firing markNotifRead in parallel).
+  if (item.classList.contains('unread')) {
+    item.classList.remove('unread');
+    item.classList.add('read');
+    markNotifRead(notifId);
+  }
   set.add(notifId);
   var drawer = item.querySelector(':scope > .thread-drawer');
   if (drawer && !drawer.innerHTML) {
