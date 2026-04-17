@@ -8307,6 +8307,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .cw-draft-body[contenteditable="true"] {
   cursor: text;
 }
+.cw-caption-output {
+  border-left: 2px solid #C15F3C;
+  padding-left: 10px;
+  margin: 8px 0;
+}
 .cw-draft-hint {
   padding: 0 14px 6px;
   font-family: 'IBM Plex Mono', monospace;

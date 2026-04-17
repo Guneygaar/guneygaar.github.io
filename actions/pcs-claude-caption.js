@@ -121,9 +121,7 @@ window.openCaptionWorkspace = async function(mode, context) {
       var msg3 = 'QC this LinkedIn caption against the brand guide. Caption:\n\n' +
         (context.caption || '(no caption)') +
         '\n\nReturn a structured verdict with PASS or FLAG for each check. ' +
-        'When doing QC: First list all checks as PASS or FLAG lines. ' +
-        'Then write "---" on its own line. ' +
-        'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.';
+        'If you are providing a corrected caption, wrap ONLY that corrected caption in <caption>...</caption> tags at the end.';
       window.sendCaptionMessage(msg3);
     }
     // 'chat' mode: user types first message
@@ -239,8 +237,9 @@ function _cwRenderThread() {
           '</div>' +
           '<div class="cw-draft-body" ' + (isLatest ? 'contenteditable="true"' : '') +
             ' data-draft="' + draftNum + '"' +
+            ' data-raw="' + _cwEsc(m.content).replace(/"/g, '&quot;') + '"' +
             ' data-original="' + _cwEsc(m.content).replace(/"/g, '&quot;') + '">' +
-            _cwEsc(m.content).replace(/\n/g, '<br>') +
+            _cwFormatAssistantHtml(m.content) +
           '</div>' +
           (isLatest
             ? '<div class="cw-draft-hint">Tap to edit before using</div>'
@@ -281,6 +280,25 @@ function _cwEsc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function _cwFormatAssistantHtml(raw) {
+  var src = raw || '';
+  var hasTag = /<caption>[\s\S]*?<\/caption>/i.test(src);
+  if (hasTag) {
+    var out = '';
+    var lastIdx = 0;
+    var re = /<caption>([\s\S]*?)<\/caption>/gi;
+    var mm;
+    while ((mm = re.exec(src)) !== null) {
+      out += _cwEsc(src.slice(lastIdx, mm.index)).replace(/\n/g, '<br>');
+      out += '<div class="cw-caption-output">' + _cwEsc(mm[1]).replace(/\n/g, '<br>') + '</div>';
+      lastIdx = mm.index + mm[0].length;
+    }
+    out += _cwEsc(src.slice(lastIdx)).replace(/\n/g, '<br>');
+    return out;
+  }
+  return _cwEsc(src).replace(/\n/g, '<br>');
+}
+
 function _cwScrollToBottom() {
   var thread = document.getElementById('cw-thread');
   if (thread) setTimeout(function() { thread.scrollTop = thread.scrollHeight; }, 50);
@@ -309,17 +327,28 @@ function _cwBuildCommentsBlock(comments) {
   return html;
 }
 
-// ─── caption extraction (strip QC analysis) ─────────────────
+// ─── caption extraction (tag-based with legacy fallback) ────
 
 function _cwExtractCaption(fullText) {
   var text = fullText || '';
+
+  var tagRegex = /<caption>([\s\S]*?)<\/caption>/gi;
+  var matches = [];
+  var m;
+  while ((m = tagRegex.exec(text)) !== null) {
+    matches.push(m[1]);
+  }
+
+  if (matches.length > 0) {
+    return matches[matches.length - 1].trim();
+  }
 
   var sepIdx = text.lastIndexOf('\n---\n');
   if (sepIdx !== -1) {
     text = text.substring(sepIdx + 5);
   }
 
-  text = text.replace(/^\s*\*{0,2}(REVISED|UPDATED|REWRITTEN|NEW|CORRECTED|HERE'S THE|HERE IS THE)[\s\w]*:?\*{0,2}\s*\n/i, '');
+  text = text.replace(/^\s*\*{0,2}(REVISED|UPDATED|REWRITTEN|NEW|CORRECTED|HERE'S THE|HERE IS THE|FINAL)[\s\w]*:?\*{0,2}\s*\n/i, '');
 
   var footerPatterns = [
     /\n\s*\*{0,2}(Key improvements|Key changes|Changes made|What I changed|Summary of changes|Summary|Notes|Improvements|Changes|What changed|Edits made|Revisions)[\s:]*\*{0,2}\s*\n[\s\S]*/i,
@@ -332,9 +361,7 @@ function _cwExtractCaption(fullText) {
 
   text = text.replace(/\*\*/g, '');
 
-  text = text.trim();
-
-  return text;
+  return text.trim();
 }
 
 // ─── chip handler ────────────────────────────────────────────
@@ -346,8 +373,16 @@ window._cwHandleChip = function(chipType, draftNum) {
       var allDrafts = document.querySelectorAll('.cw-draft-body[data-draft="' + draftNum + '"]');
       draftEl = allDrafts.length ? allDrafts[allDrafts.length - 1] : null;
     }
-    var rawText = draftEl ? draftEl.innerText.trim() : '';
-    if (!rawText) return;
+    var rawSource = draftEl ? (draftEl.getAttribute('data-raw') || '') : '';
+    var rawText = rawSource || (draftEl ? draftEl.innerText : '');
+    if (!rawText || !rawText.trim()) return;
+
+    var hasTag = /<caption>[\s\S]*?<\/caption>/i.test(rawSource);
+    if (!hasTag && draftEl) {
+      var edited = draftEl.innerText;
+      if (edited && edited.trim()) rawText = edited;
+    }
+
     var text = _cwExtractCaption(rawText);
     if (!text) return;
     var original = draftEl ? (draftEl.getAttribute('data-original') || '') : '';

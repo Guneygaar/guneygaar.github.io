@@ -144,9 +144,18 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
   const mem = memoryContext || '';
   const hasMem = mem.length > 100;
 
-  const captionOutputRule = 'When rewriting or revising a caption, return ONLY the caption text. '
-    + 'No headers like "Revised caption:". No footer analysis like "Key improvements:". '
-    + 'No markdown bold. Just the caption, exactly as it should appear on LinkedIn.';
+  const captionOutputRule = 'CRITICAL OUTPUT FORMAT: Whenever you produce a caption the user might apply to their post, '
+    + 'wrap the final caption in <caption>...</caption> tags. The caption inside these tags must be publishable-ready text only: '
+    + 'no headers, no labels like "Revised caption:", no analysis, no markdown, no commentary. '
+    + 'Any analysis, reasoning, or explanation must appear OUTSIDE the tags (before or after them). '
+    + 'If you are only analyzing without producing a new caption (pure QC pass), do not emit any <caption> tags.';
+
+  const writerTagRule = 'For 3 options: Wrap each option in its own tags: '
+    + '<caption>option 1 text</caption> then <caption>option 2 text</caption> then <caption>option 3 text</caption>. '
+    + 'Separate options by numbering OUTSIDE the tags (e.g., "1." before the first tag).';
+
+  const qcTagRule = 'For QC: First list your analysis (PASS/FLAG lines). '
+    + 'Then if you are providing a corrected version, wrap ONLY the corrected caption in <caption>...</caption> tags.';
 
   if (feature === 'writer') {
     if (hasMem) {
@@ -154,7 +163,8 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
         + mem + '\n\n'
         + 'Here are 5 high-performing posts for voice reference:\n\n' + ctx
         + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.'
-        + '\n\n' + captionOutputRule;
+        + '\n\n' + captionOutputRule
+        + '\n\n' + writerTagRule;
     }
     return 'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL), a sugarcane biorefinery. '
       + 'Write in their established voice. Here are 20 approved posts for reference:\n\n'
@@ -162,16 +172,16 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
       + '\n\nBrand guide:\n'
       + bg
       + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.'
-      + '\n\n' + captionOutputRule;
+      + '\n\n' + captionOutputRule
+      + '\n\n' + writerTagRule;
   }
   if (feature === 'qc') {
     if (hasMem) {
       return 'You are a brand quality controller for GBL.\n\n'
         + mem
         + '\n\nCheck the provided copy against these rules. Return PASS or FLAG for each item. Be specific. Be brief.'
-        + '\n\nWhen doing QC: First list all checks as PASS or FLAG lines. Then write "---" on its own line. '
-        + 'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.'
-        + '\n\n' + captionOutputRule;
+        + '\n\n' + captionOutputRule
+        + '\n\n' + qcTagRule;
     }
     return 'You are a brand quality controller for GBL. Check the provided copy against the brand voice and approved posts. '
       + 'Here are 20 approved posts:\n\n'
@@ -179,9 +189,8 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
       + '\n\nBrand guide:\n'
       + bg
       + '\n\nReturn a structured verdict: PASS or FLAG for each item checked. Be specific. Be brief.'
-      + '\n\nWhen doing QC: First list all checks as PASS or FLAG lines. Then write "---" on its own line. '
-      + 'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.'
-      + '\n\n' + captionOutputRule;
+      + '\n\n' + captionOutputRule
+      + '\n\n' + qcTagRule;
   }
   if (feature === 'chat') {
     if (hasMem) {
