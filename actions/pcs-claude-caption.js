@@ -314,58 +314,27 @@ function _cwBuildCommentsBlock(comments) {
 function _cwExtractCaption(fullText) {
   var text = fullText || '';
 
-  var separatorIdx = text.lastIndexOf('\n---\n');
-  if (separatorIdx !== -1) {
-    return text.substring(separatorIdx + 5).trim();
+  var sepIdx = text.lastIndexOf('\n---\n');
+  if (sepIdx !== -1) {
+    text = text.substring(sepIdx + 5);
   }
 
-  var lines = text.split('\n');
-  var captionStart = -1;
-  var skipPatterns = [
-    /^(PASS|FLAG|CHECK|NOTE|ISSUE|VERDICT|ANALYSIS|QC|REVIEW)[\s:]/i,
-    /^(Here is|Here's|Updated|Revised|Rewritten|New) (the |your |an )?(updated |revised |rewritten |new )?(caption|copy|version|draft)/i,
-    /^(Brand guide|Word count|Hashtag|Hook|Structure|Formatting|Length)/i,
-    /^[-\u2022\u2713\u2717\u2192\u25CF]/,
-    /^\d+\.\s*(PASS|FLAG|CHECK)/i
+  text = text.replace(/^\s*\*{0,2}(REVISED|UPDATED|REWRITTEN|NEW|CORRECTED|HERE'S THE|HERE IS THE)[\s\w]*:?\*{0,2}\s*\n/i, '');
+
+  var footerPatterns = [
+    /\n\s*\*{0,2}(Key improvements|Key changes|Changes made|What I changed|Summary of changes|Summary|Notes|Improvements|Changes|What changed|Edits made|Revisions)[\s:]*\*{0,2}\s*\n[\s\S]*/i,
+    /\n\s*\*{0,2}(Here'?s? what I|I'?ve? made the following|The main changes|I'?ve? (?:updated|revised|changed|improved))[\s\S]*/i
   ];
 
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (line === '') continue;
-
-    var isAnalysis = false;
-    for (var p = 0; p < skipPatterns.length; p++) {
-      if (skipPatterns[p].test(line)) {
-        isAnalysis = true;
-        break;
-      }
-    }
-
-    if (!isAnalysis && captionStart === -1) {
-      var prevWasAnalysis = false;
-      for (var j = i - 1; j >= 0; j--) {
-        var prevLine = lines[j].trim();
-        if (prevLine === '') continue;
-        for (var p2 = 0; p2 < skipPatterns.length; p2++) {
-          if (skipPatterns[p2].test(prevLine)) {
-            prevWasAnalysis = true;
-            break;
-          }
-        }
-        break;
-      }
-
-      if (prevWasAnalysis || i === 0) {
-        captionStart = i;
-      }
-    }
+  for (var i = 0; i < footerPatterns.length; i++) {
+    text = text.replace(footerPatterns[i], '');
   }
 
-  if (captionStart > 0) {
-    return lines.slice(captionStart).join('\n').trim();
-  }
+  text = text.replace(/\*\*/g, '');
 
-  return text.trim();
+  text = text.trim();
+
+  return text;
 }
 
 // ─── chip handler ────────────────────────────────────────────
