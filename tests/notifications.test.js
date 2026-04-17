@@ -230,10 +230,12 @@ describe('Client request notification', function() {
     expect(block).toContain('actor:');
   });
 
-  it('client request notification uses AppState.user.name', function() {
+  it('client request notification resolves actor via getDisplayName', function() {
     var idx = actionsSrc.indexOf("'new_request'");
-    var block = actionsSrc.substring(idx - 200, idx + 300);
-    expect(block).toContain('AppState.user.name');
+    var block = actionsSrc.substring(idx - 300, idx + 300);
+    // Post-PR #903: actor resolves to profile.display_name via
+    // getDisplayName(email); AppState.user.name is the fallback.
+    expect(block).toMatch(/getDisplayName|AppState\.user\.name/);
   });
 
   it('client request notification includes read:false', function() {

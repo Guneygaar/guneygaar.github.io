@@ -1470,8 +1470,9 @@ window.loadPcsComments = async function(postId) {
         '</div>';
       }
       var _resolvedSvg = '<svg width="12" height="12" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:3px"><circle cx="9" cy="9" r="7" fill="none" stroke="#3ECF8E" stroke-width="1.5"/><polyline points="6,9 8.5,11.5 12.5,6.5" fill="none" stroke="#3ECF8E" stroke-width="1.5"/></svg>';
+      var _resolvedDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.resolved_by) : c.resolved_by;
       var _resolvedLabel = (c.resolved && c.resolved_by)
-        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(c.resolved_by) + '</div>'
+        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(_resolvedDisplay) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
@@ -1484,11 +1485,12 @@ window.loadPcsComments = async function(postId) {
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
+      var _replyToDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.reply_to_author) : c.reply_to_author;
       return '<div class="pcs-comment-item" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
         '<div class="pcs-cmt-mid">' +
           (c.reply_to && c.reply_to_author ?
-            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
+            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(_replyToDisplay) + '</span></div>'
             : '') +
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
@@ -1612,8 +1614,9 @@ window.loadPcsComments = async function(postId) {
         '</div>';
       }
       var _resolvedSvg = '<svg width="12" height="12" viewBox="0 0 18 18" style="vertical-align:middle;margin-right:3px"><circle cx="9" cy="9" r="7" fill="none" stroke="#3ECF8E" stroke-width="1.5"/><polyline points="6,9 8.5,11.5 12.5,6.5" fill="none" stroke="#3ECF8E" stroke-width="1.5"/></svg>';
+      var _resolvedDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.resolved_by) : c.resolved_by;
       var _resolvedLabel = (c.resolved && c.resolved_by)
-        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(c.resolved_by) + '</div>'
+        ? '<div class="pcs-resolved-label">' + _resolvedSvg + 'Resolved by ' + esc(_resolvedDisplay) + '</div>'
         : '';
       var _escapedMsg = esc(c.message).replace(/'/g, '&#39;');
       var _cReactions = (window._pcsReactions && window._pcsReactions[c.id]) || [];
@@ -1626,12 +1629,13 @@ window.loadPcsComments = async function(postId) {
         ? '<span class="pcs-react-count">' + _reactCount + '</span>'
         : '';
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
+      var _replyToDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.reply_to_author) : c.reply_to_author;
       return '<div class="pcs-note-item' +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
         '<div class="pcs-cmt-mid">' +
           (c.reply_to && c.reply_to_author ?
-            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(c.reply_to_author) + '</span></div>'
+            '<div class="pcs-cmt-reply-tag">&#8629; <span class="pcs-reply-name">' + esc(_replyToDisplay) + '</span></div>'
             : '') +
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
@@ -2654,7 +2658,10 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   });
   var _realPostId = _post ? _post.post_id : postId;
   var _title = _post ? (_post.title || postId) : postId;
-  var _author = window.AppState.user.email || window.AppState.user.name || 'Team';
+  var _emailKey = window.AppState.user.email || '';
+  var _author = (typeof getDisplayName === 'function' && _emailKey)
+    ? getDisplayName(_emailKey)
+    : (window.AppState.user.name || _emailKey || 'Team');
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
@@ -3334,7 +3341,8 @@ window._pcsSetReply = function(zone, commentId, author, message) {
   var tag = document.getElementById(tagId);
   var nameEl = document.getElementById(nameId);
   if (tag && nameEl) {
-    nameEl.textContent = author + ' \u00B7';
+    var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
+    nameEl.textContent = _authorDisplay + ' \u00B7';
     tag.style.display = 'inline-flex';
   }
 
