@@ -575,6 +575,9 @@ function _initSupabaseRealtimeClient() {
       try { window._supabaseClient.realtime.setAuth(token); }
       catch(e) { console.warn('[realtime] setAuth failed', e); }
     }
+    // Seed the liveness watchdog so a fresh socket is not considered stale
+    // in its first 3-minute window before any postgres_changes arrives.
+    window._realtimeLastEventAt = Date.now();
   } catch (err) {
     console.error('[realtime] createClient failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'realtime-create-client');
@@ -584,6 +587,67 @@ function _initSupabaseRealtimeClient() {
   return window._supabaseClient;
 }
 window._initSupabaseRealtimeClient = _initSupabaseRealtimeClient;
+
+// -----------------------------------------------------------------
+// Realtime liveness watchdog
+// -----------------------------------------------------------------
+// Supabase Realtime does NOT move a channel into 'errored' when the
+// bound JWT expires; it keeps the Phoenix socket in 'joined' and
+// silently stops relaying postgres_changes. Both visibilitychange
+// reconnect guards (client + agency) treat state='joined' as healthy,
+// so a stale-but-joined channel is invisible to them. The 10 s agency
+// poll and 20 s notifBadge timer both short-circuit on channel
+// presence, so the legacy safety nets are dormant exactly when the
+// socket has gone silent.
+//
+// This watchdog stamps window._realtimeLastEventAt on every
+// postgres_changes callback. Every 60 s it checks whether the active
+// channel claims 'joined' but has not seen an event in > 180 s. If so
+// it tears the channel down and rebuilds it, then issues one catch-up
+// fetch so the UI reflects anything missed during the stale window.
+// Hidden tabs skip the check; backgrounded tabs re-arm on the next
+// visibility change.
+function _startRealtimeLivenessWatchdog() {
+  if (window._realtimeLivenessTimer) clearInterval(window._realtimeLivenessTimer);
+  window._realtimeLivenessTimer = setInterval(function() {
+    if (document.visibilityState !== 'visible') return;
+    var isClient = (window.AppState &&
+                    window.AppState.user &&
+                    window.AppState.user.effectiveRole === 'Client');
+    var channel = isClient ? window._clientRealtimeChannel
+                           : window._agencyRealtimeChannel;
+    if (!channel) return;
+    if (channel.state !== 'joined') return;
+    var last = window._realtimeLastEventAt || 0;
+    if (Date.now() - last <= 180000) return;
+    console.warn('[realtime] stale channel detected, reconnecting');
+    // Prevent an immediate re-trigger on the next tick while the rebuild
+    // is in flight and before the first catch-up event arrives.
+    window._realtimeLastEventAt = Date.now();
+    try {
+      if (isClient) {
+        if (typeof stopClientRealtime === 'function') stopClientRealtime();
+        if (typeof startClientRealtime === 'function') startClientRealtime();
+        if (typeof loadPostsForClient === 'function') loadPostsForClient(true, true);
+      } else {
+        if (typeof stopAgencyRealtime === 'function') stopAgencyRealtime();
+        if (typeof startAgencyRealtime === 'function') startAgencyRealtime();
+        if (typeof loadPosts === 'function') loadPosts(true);
+      }
+    } catch(e) {
+      console.warn('[realtime] watchdog rebuild threw', e);
+    }
+  }, 60000);
+}
+window._startRealtimeLivenessWatchdog = _startRealtimeLivenessWatchdog;
+
+function _stopRealtimeLivenessWatchdog() {
+  if (window._realtimeLivenessTimer) {
+    clearInterval(window._realtimeLivenessTimer);
+    window._realtimeLivenessTimer = null;
+  }
+}
+window._stopRealtimeLivenessWatchdog = _stopRealtimeLivenessWatchdog;
 
 // Debounced refresh — collapses rapid-fire INSERT/UPDATE events into
 // a single loadPostsForClient() call. 400 ms window chosen so a burst
@@ -654,16 +718,16 @@ function startClientRealtime() {
     var channel = sb.channel('srtd-client')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
-        function(payload) { _clientRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _clientRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'requests' },
-        function(payload) { _clientRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _clientRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'post_comments' },
-        function(payload) { _clientRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _clientRealtimeRefresh(); })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.Client' },
-        function(payload) { _onClientNotificationInsert(payload); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _onClientNotificationInsert(payload); })
       .subscribe(function(status, err) {
         if (err) {
           console.warn('[client-realtime] subscribe error', status, err);
@@ -676,6 +740,13 @@ function startClientRealtime() {
   } catch (err) {
     console.error('[client-realtime] startClientRealtime failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'client-realtime-start');
+  }
+
+  // Arm the 60 s liveness watchdog. Idempotent — a second call clears
+  // and re-installs the interval so focus-driven reconnects stay on one
+  // timer.
+  if (typeof _startRealtimeLivenessWatchdog === 'function') {
+    _startRealtimeLivenessWatchdog();
   }
 
   // Visibility-driven reconnect: when the tab returns to focus, verify
@@ -701,6 +772,9 @@ function startClientRealtime() {
 }
 
 function stopClientRealtime() {
+  if (typeof _stopRealtimeLivenessWatchdog === 'function') {
+    _stopRealtimeLivenessWatchdog();
+  }
   if (window._clientRealtimeDebounce) {
     clearTimeout(window._clientRealtimeDebounce);
     window._clientRealtimeDebounce = null;
@@ -848,16 +922,16 @@ function startAgencyRealtime() {
     var channel = sb.channel('srtd-agency')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
-        function(payload) { _agencyRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _agencyRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'requests' },
-        function(payload) { _agencyRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _agencyRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'post_comments' },
-        function(payload) { _agencyRealtimeRefresh(); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _agencyRealtimeRefresh(); })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.' + _roleTc },
-        function(payload) { _onAgencyNotificationInsert(payload); })
+        function(payload) { window._realtimeLastEventAt = Date.now(); _onAgencyNotificationInsert(payload); })
       .subscribe(function(status, err) {
         if (err) {
           console.warn('[agency-realtime] subscribe error', status, err);
@@ -870,6 +944,12 @@ function startAgencyRealtime() {
   } catch (err) {
     console.error('[agency-realtime] startAgencyRealtime failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'agency-realtime-start');
+  }
+
+  // Arm the 60 s liveness watchdog. Idempotent — shared with the client
+  // channel via window._realtimeLivenessTimer.
+  if (typeof _startRealtimeLivenessWatchdog === 'function') {
+    _startRealtimeLivenessWatchdog();
   }
 
   // Visibility-driven reconnect: when the tab returns to focus, verify
@@ -896,6 +976,9 @@ function startAgencyRealtime() {
 window.startAgencyRealtime = startAgencyRealtime;
 
 function stopAgencyRealtime() {
+  if (typeof _stopRealtimeLivenessWatchdog === 'function') {
+    _stopRealtimeLivenessWatchdog();
+  }
   if (window._agencyRealtimeDebounce) {
     clearTimeout(window._agencyRealtimeDebounce);
     window._agencyRealtimeDebounce = null;
