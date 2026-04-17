@@ -146,9 +146,15 @@ window.submitSelectedComments = function() {
       var textEl = item.querySelector('.pcs-comment-text');
       var authorEl = item.querySelector('.pcs-comment-author');
       if (textEl) {
+        var authorAttr = item.getAttribute('data-author') || '';
+        var authorText = authorEl ? authorEl.textContent : 'Unknown';
+        var resolvedRole = '';
+        if (typeof getRoleFor === 'function') {
+          resolvedRole = getRoleFor(authorAttr) || getRoleFor(authorText) || '';
+        }
         selectedComments.push({
-          author: authorEl ? authorEl.textContent : 'Unknown',
-          role: 'client',
+          author: authorText,
+          role: (resolvedRole || 'client').toLowerCase(),
           text: textEl.textContent.trim()
         });
       }
