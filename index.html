@@ -391,16 +391,15 @@
 
     <div class="notif-topbar">
       <div class="notif-topbar-row1">
-        <div class="notif-role-label" id="notif-role-label">ADMIN &middot; SORTED</div>
+        <div class="notif-title">Notifications</div>
         <div class="notif-topbar-actions">
           <button class="notif-topbar-btn" data-action="mark-all-read">Mark read</button>
           <span class="notif-topbar-sep">|</span>
           <button class="notif-topbar-btn" data-action="close-notifications">Close</button>
         </div>
       </div>
-      <div class="notif-topbar-row2">
-        <div class="notif-hey">Hey, <span id="notif-name">there</span></div>
-      </div>
+      <span id="notif-role-label" style="display:none" aria-hidden="true"></span>
+      <span id="notif-name" style="display:none" aria-hidden="true">there</span>
       <div class="notif-chips" id="notif-chips">
         <button class="notif-chip active" data-filter="all">All<span class="notif-chip-count" id="nchip-count-all"></span></button>
         <button class="notif-chip" data-filter="mentions">Mentions<span class="notif-chip-count" id="nchip-count-mentions"></span></button>

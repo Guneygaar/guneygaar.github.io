@@ -3820,13 +3820,39 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* ── NOTIFICATION PANEL OVERLAY ── */
 /* ===================================================
-   NOTIFICATION PANEL — v6 redesign
+   NOTIFICATION PANEL — v7 redesign
+   Jet-black palette unified with PCS. Unread items render as a
+   full-row electric blue block with a glowing blue dot on the
+   left edge; tap triggers a 0.3s CSS transition that fades the
+   blue back to transparent as .unread is removed by JS.
+   CLAUDE.md §4 forbids rgba() — every translucent value below is
+   expressed as 8-digit hex (#RRGGBBAA).
    =================================================== */
 #notif-overlay {
+  /* Jet black palette — unified */
+  --notif-bg: #000000;
+  --notif-line: #1A1A20;
+  --notif-line-soft: #141418;
+  --notif-bg-elevated: #141418;
+
+  /* Electric blue unread state */
+  --unread-bg: #0E1A35;
+  --unread-bg-hover: #14224A;
+  --unread-border: #1E3A6E;
+  --unread-dot: #3B82F6;
+  --unread-dot-glow: #3B82F680;       /* rgba(59,130,246,0.50) */
+
+  /* Text hierarchy */
+  --text-loud: #F0F0F2;
+  --text-bright: #E4E4E8;
+  --text: #B8B8C0;
+  --text-soft: #78787E;
+  --text-whisper: #3A3A42;
+
   position: fixed;
   inset: 0;
   z-index: 1300;
-  background: #0a0a0f;
+  background: var(--notif-bg);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -3837,7 +3863,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   max-width: 480px;
   height: 100%;
   overflow: hidden;
-  background: #0e0e16;
+  background: var(--notif-bg);
   display: flex;
   flex-direction: column;
   -webkit-font-smoothing: antialiased;
@@ -3848,22 +3874,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 /* ── HEADER ── */
 .notif-topbar {
   flex-shrink: 0;
-  padding: 18px 18px 0;
+  padding: 22px 20px 0;
 }
 .notif-topbar-row1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
-.notif-role-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  font-weight: 500;
-  letter-spacing: 1.5px;
-  color: #545460;
-  text-transform: uppercase;
-}
+/* Legacy role-label (ADMIN · SORTED eyebrow) kept hidden — tests
+   still reference the element but the redesign removes the eyebrow. */
+.notif-role-label { display: none; }
 .notif-topbar-actions {
   display: flex;
   align-items: center;
@@ -3873,40 +3894,47 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   font-weight: 500;
-  color: #545460;
+  color: var(--text-soft);
   background: none;
   border: none;
   padding: 2px 0;
   cursor: pointer;
   text-transform: none;
 }
-.notif-topbar-btn:hover { color: #9090A0; }
+.notif-topbar-btn:hover { color: var(--text); }
 .notif-topbar-sep {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #222230;
+  color: var(--text-whisper);
   user-select: none;
 }
 
 .notif-topbar-row2 {
   margin-bottom: 14px;
 }
+.notif-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-loud);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+/* .notif-hey kept as an alias of .notif-title for any cached markup. */
 .notif-hey {
   font-family: 'DM Sans', sans-serif;
   font-size: 22px;
   font-weight: 700;
-  color: #E8E8F0;
-  line-height: 1.1;
+  color: var(--text-loud);
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
-.notif-hey span { color: #C8A84B; }
-
-/* Legacy header button classes (no longer rendered, kept harmless) */
-.notif-close-btn, .mark-all-btn { display: none; }
+.notif-hey span { color: var(--text-loud); }
 
 /* ── FILTER TABS (text, no chips) ── */
 .notif-chips {
   display: flex;
-  border-bottom: 1px solid #18182A;
+  border-bottom: 1px solid var(--notif-line);
   padding: 0 0 8px 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -3921,23 +3949,25 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-weight: 500;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #545460;
+  color: var(--text-soft);
   background: none;
   border: none;
-  padding: 0;
+  border-bottom: 1.5px solid transparent;
+  padding: 4px 0;
   margin-right: 20px;
   cursor: pointer;
   white-space: nowrap;
+  min-height: 28px;
 }
+/* Active tab: same weight + same color as inactive — underline only. */
 .notif-chip.active {
-  font-weight: 700;
-  color: #E0E0EC;
+  border-bottom-color: var(--text-loud);
 }
 .notif-chip-count {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  color: #333340;
+  color: var(--text-whisper);
   margin-left: 4px;
 }
 .notif-chip.active .notif-chip-count { color: #C8A84B; }
@@ -3960,9 +3990,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-size: 8px;
   font-weight: 500;
   letter-spacing: 1.6px;
-  color: #545460;
+  color: var(--text-soft);
   text-transform: uppercase;
-  padding: 18px 18px 8px;
+  padding: 18px 20px 8px;
 }
 .notif-day-label.ndl-first { padding-top: 14px; }
 
@@ -3971,22 +4001,50 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 11px 18px;
-  border-bottom: 1px solid #14141E;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--notif-line-soft);
   cursor: pointer;
   background: transparent;
+  transition: background 0.3s ease, border-color 0.3s ease;
+  min-height: 44px;
 }
-/* Read and unread items are visually identical — the ONLY difference
-   is the 5px gold dot (.nnew-dot) that unread items render inline
-   before the actor name. No background swap, no opacity change,
-   no color differences. Zero read-state CSS overrides. */
+/* Read state matches the base state — no visual change. */
 .notif-item.read { background: transparent; }
+.notif-item:hover,
+.notif-item.read:hover {
+  background: #FFFFFF05;              /* rgba(255,255,255,0.02) */
+}
+
+/* Unread: full-row electric blue + glowing blue dot on the left edge. */
+.notif-item.unread {
+  background: var(--unread-bg);
+  border-bottom-color: #1E3A6E4D;     /* rgba(30,58,110,0.30) */
+}
+.notif-item.unread:hover {
+  background: var(--unread-bg-hover);
+}
+.notif-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--unread-dot);
+  box-shadow: 0 0 10px var(--unread-dot-glow);
+  pointer-events: none;
+}
+.notif-item.unread .notif-headline { color: var(--text-loud); }
+.notif-item.unread .notif-preview  { color: var(--text); }
+.notif-item.unread .notif-author   { color: var(--text-bright); }
 
 /* ── AVATAR ── */
 .notif-av {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
@@ -4019,42 +4077,64 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-transform: uppercase;
 }
 
-/* ── MAIN TEXT ── */
+/* ── TOP LINE — actor · timestamp ── */
+.notif-top-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 4px;
+}
+.notif-author {
+  font-weight: 500;
+  color: var(--text);
+}
+.notif-top-line-sep { color: var(--text-whisper); }
+.notif-date {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── HEADLINE — action verb + bolded post title ── */
+.notif-headline {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: var(--text-bright);
+  margin-bottom: 5px;
+}
+.notif-headline strong {
+  font-weight: 700;
+  color: var(--text-loud);
+}
+
+/* ── LEGACY .notif-text kept for any stale markup path — same visual
+   role as the new .notif-headline so the fallback still reads right. */
 .notif-text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-bright);
+}
+.notif-text strong { font-weight: 700; color: var(--text-loud); }
+
+/* ── COMMENT PREVIEW — 2-line clamp ── */
+.notif-preview {
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   font-weight: 500;
+  color: var(--text-soft);
   line-height: 1.45;
-  color: #B2B2B7;
-}
-.notif-text strong {
-  font-weight: 700;
-  color: #FFFFFF;
-}
-
-/* Inline unread gold dot — the ONLY unread indicator on the card. */
-.nnew-dot {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #C8A84B;
-  margin-right: 5px;
-  vertical-align: middle;
-}
-
-/* ── COMMENT PREVIEW ── */
-.notif-preview {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  font-style: normal;
-  color: #92929B;
-  line-height: 1.4;
-  margin-top: 3px;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 .notif-more {
   font-family: 'IBM Plex Mono', monospace;
@@ -4065,66 +4145,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   font-style: normal;
 }
 
-/* ── META ROW ── */
-/* Meta row — flex with gap:10px between the timestamp, the optional
-   expand chip, and the `.meta-actions` icon cluster. `.meta-actions`
-   carries `margin-left: auto` so the WA+trash unit is always pushed
-   to the right edge of the row. No dot separators anywhere. */
-.notif-meta {
+/* ── FOOTER META — thread count pill ── */
+.notif-footer-meta {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 4px;
-}
-.notif-time {
+  margin-top: 8px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  font-weight: 500;
-  color: #545460;
-  white-space: nowrap;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
-/* .notif-meta-sep left defined but no longer emitted anywhere — kept
-   as a no-op class so any stale HTML cache doesn't break layout. */
-.notif-meta-sep { display: none; }
+.notif-thread-count { color: #C8A84B; font-weight: 500; }
 
-/* `.meta-actions` groups the WhatsApp + trash buttons tight together
-   (2px internal gap) and floats them to the right of the row via
-   `margin-left: auto`. */
-.meta-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-}
-
-/* Meta-row icon buttons — 28x28 tap target centered around the small
-   SVG, with a 6px rounded-square hover background for feedback.
-   Child SVGs use `pointer-events: none` so every click resolves to
-   the button and `closest('.notif-mi-btn')` stays reliable in the
-   panel delegate skip list. */
-.notif-mi-btn {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #3A3A4C;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.notif-mi-btn:hover {
-  background: #FFFFFF0A;     /* rgba(255,255,255,0.04) */
-  color: #5A5A70;
-}
-.notif-mi-btn svg {
-  display: block;
-  pointer-events: none;
-}
 .notif-li-link {
   font-size: 9px;
   font-weight: 700;
@@ -4136,18 +4169,91 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .notif-li-link:hover { color: #3B8DE3; }
 
-/* Response time (inline pill kept for tests) */
+/* Response time — inline pill kept for tests. */
 .notif-resp-time { color: #3ECF8E; font-size: 11px; margin-left: 4px; }
 
-/* ── THUMBNAIL (only rendered when post has an image) ── */
-.notif-thumb-wrap { flex-shrink: 0; }
-.notif-thumb {
-  width: 44px;
-  height: 44px;
-  object-fit: cover;
-  background: #14141E;
+/* ── RIGHT COLUMN — thumb + stacked actions ── */
+.notif-item-right {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+.notif-thumb-wrap {
+  width: 60px;
+  height: 60px;
   border-radius: 6px;
+  overflow: hidden;
+  background: var(--notif-bg-elevated);
+  border: 1px solid var(--notif-line);
+}
+.notif-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
   display: block;
+}
+.notif-actions-col {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  width: 60px;
+}
+
+/* Action buttons — 28x28 tap target (inside a 60px row). */
+.notif-mi-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-whisper);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.notif-mi-btn:hover {
+  background: #FFFFFF0F;              /* rgba(255,255,255,0.06) */
+  color: var(--text-soft);
+}
+.notif-mi-btn.wa:hover     { color: #22D87F; }
+.notif-mi-btn.delete:hover { color: #FF4B4B; }
+.notif-mi-btn svg {
+  display: block;
+  pointer-events: none;
+}
+.notif-item.unread .notif-mi-btn { color: #2A3A5A; }
+.notif-item.unread .notif-mi-btn:hover {
+  background: #3B82F626;              /* rgba(59,130,246,0.15) */
+}
+
+/* Legacy .notif-meta kept as a hidden wrapper for any stale markup
+   path; the v7 tree puts timestamp into .notif-top-line and actions
+   into .notif-actions-col so this row is no longer emitted. */
+.notif-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.notif-time {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+.meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
 }
 
 /* ── EMPTY STATE ── */
@@ -4166,19 +4272,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: #222230;
+  color: var(--text-whisper);
   margin-bottom: 4px;
 }
 .notif-empty-title {
   font-family: 'DM Sans', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #222230;
+  color: var(--text-whisper);
 }
 .notif-empty-sub {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
-  color: #222230;
+  color: var(--text-whisper);
   letter-spacing: .12em;
 }
 
@@ -4186,7 +4292,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .notif-foot {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #222230;
+  color: var(--text-whisper);
   letter-spacing: 1.2px;
   text-transform: uppercase;
   text-align: center;
@@ -4194,60 +4300,51 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 /* ===================================================
-   EXPAND-IN-PLACE THREAD VIEW (v6.2)
+   EXPAND-IN-PLACE THREAD VIEW (v7)
    =================================================== */
-/* CLAUDE.md §4 forbids rgba() — every translucent colour in this
-   section is the 8-digit hex equivalent of the design spec's rgba(). */
 
-/* The .notif-item wrapper now carries its row content inside
-   .notif-item-row so the thread drawer can slot in directly below
-   without breaking the flex row layout. */
 .notif-item-row {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 .notif-item { flex-direction: column; }
 
-/* Expanded card — slightly lighter background, 3px gold left border,
-   rounded outer corners, 8px bottom gap before the next card. The
-   thread-area's own padding handles the drawer's interior spacing
-   so `.notif-item.expanded` carries zero padding-bottom. */
+/* Expanded card — keeps the blue highlight when expanded. */
 .notif-item.expanded {
-  background: #16161F;
-  border-left: 3px solid #C8A84B4D;    /* rgba(200,168,75,0.30) */
-  border-radius: 10px;
-  padding-left: 15px;   /* 18 - 3 so text still lines up */
-  padding-bottom: 0;
+  background: var(--unread-bg);
+  padding: 14px 20px 0;
   margin-bottom: 8px;
+  border-left: none;
+  border-radius: 0;
 }
-.notif-item.expanded:hover { background: #16161F; }
-.notif-item.expanded .notif-item-row { padding-right: 2px; }
+.notif-item.expanded:hover { background: var(--unread-bg); }
+.notif-item.unread.expanded { background: var(--unread-bg); }
 
 /* ── EXPAND CHIP ── */
-/* Collapsed state — tiny gold-tinted pill in the meta row. */
 .expand-chip {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  height: 18px;
-  padding: 1px 6px;
-  margin: -8px 0;           /* match the meta-icon negative margin */
-  background: #C8A84B14;    /* rgba(200,168,75,0.08) */
-  border: 1px solid #C8A84B1A; /* rgba(200,168,75,0.10) */
-  color: #C8A84B80;         /* rgba(200,168,75,0.50) */
+  height: 20px;
+  padding: 2px 6px;
+  background: #C8A84B14;              /* rgba(200,168,75,0.08) */
+  border: 1px solid #C8A84B1A;        /* rgba(200,168,75,0.10) */
+  color: #C8A84B80;                   /* rgba(200,168,75,0.50) */
   border-radius: 4px;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
 .expand-chip:hover {
-  background: #C8A84B24;    /* rgba(200,168,75,0.14) */
-  color: #C8A84BCC;         /* rgba(200,168,75,0.80) */
+  background: #C8A84B24;              /* rgba(200,168,75,0.14) */
+  color: #C8A84BCC;                   /* rgba(200,168,75,0.80) */
 }
 .expand-chip-arrow {
   display: block;
@@ -4257,44 +4354,42 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .expand-chip-count { pointer-events: none; }
 .expand-chip svg { pointer-events: none; }
 
-/* Expanded state — flipped triangle + filled gold, count hidden. */
 .notif-item.expanded .expand-chip {
-  background: #C8A84B1F;    /* rgba(200,168,75,0.12) */
+  background: #C8A84B1F;              /* rgba(200,168,75,0.12) */
   color: #C8A84B;
-  border-color: #C8A84B33;  /* rgba(200,168,75,0.20) */
+  border-color: #C8A84B33;            /* rgba(200,168,75,0.20) */
 }
 .notif-item.expanded .expand-chip-arrow { transform: rotate(90deg); }
 .notif-item.expanded .expand-chip-count { display: none; }
 
 /* ── THREAD DRAWER ── */
-/* Collapsed: max-height 0 + opacity 0; opened by .notif-item.expanded.
-   Using max-height + opacity keeps the transition smooth. */
 .thread-drawer {
   max-height: 0;
   overflow: hidden;
   opacity: 0;
   transition: max-height 0.3s ease, opacity 0.2s ease;
   margin: 0;
+  width: 100%;
 }
 .notif-item.expanded .thread-drawer {
-  /* 3000px fits any realistic thread (capped at 5 visible messages +
-     reply row + footer link + View-all link) without clipping, while
-     still animating the collapse/expand transition. */
   max-height: 3000px;
   opacity: 1;
-  margin-top: 8px;
+  margin-top: 12px;
+  padding: 14px 0 16px;
+  border-top: 1px solid var(--unread-border);
 }
+/* .thread-area is now a transparent passthrough — no inner box. */
 .thread-area {
-  background: #1C1926;
-  border: 1px solid #C8A84B1F;      /* rgba(200,168,75,0.12) */
-  border-radius: 8px;
-  padding: 6px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
 }
 .thread-overflow {
   font-size: 10px;
   color: #C8A84B;
   text-align: center;
-  padding: 2px 0 4px;
+  padding: 2px 0 6px;
   font-weight: 500;
   cursor: pointer;
 }
@@ -4304,36 +4399,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
 }
 
-/* ── THREAD MESSAGE ── */
-/* Ultra-compact: 18px avatars, 10px author, 7px role pill,
-   8px timestamp, 11px message body. Deliberately smaller than the
-   notification card typography so the drawer reads as a nested
-   conversation. */
+/* ── THREAD MESSAGE (v7 — bigger, more readable) ── */
 .thread-msg {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  padding: 4px 0;
-  border-bottom: 1px solid #FFFFFF0A; /* rgba(255,255,255,0.04) */
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--notif-line);
 }
 .thread-msg:last-of-type { border-bottom: none; }
 .thread-av {
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 7px;
+  font-size: 11px;
   font-weight: 700;
-  color: #000000D9;                   /* rgba(0,0,0,0.85) — dark ink on the light avatar fill */
+  color: #FFFFFF;
   border: none;
-  margin-top: 2px;
+  margin-top: 1px;
 }
-.thread-av.nav-system {
-  background: #666666;
-}
+.thread-av.nav-system { background: #666666; }
 .thread-content {
   flex: 1;
   min-width: 0;
@@ -4341,124 +4430,155 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .thread-header {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 .thread-author {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
-  color: #FFFFFFBF;                   /* rgba(255,255,255,0.75) */
+  color: var(--text-loud);
 }
 .thread-role {
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
-  font-weight: 600;
-  padding: 0 4px;
-  border-radius: 2px;
-  background: #FFFFFF12;              /* rgba(255,255,255,0.07) */
-  color: #FFFFFF4D;                   /* rgba(255,255,255,0.30) */
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  color: var(--text-whisper);
+  padding: 2px 5px;
+  background: #FFFFFF0A;              /* rgba(255,255,255,0.04) */
+  border-radius: 2px;
+  font-weight: 600;
 }
 .thread-time {
-  font-size: 8px;
-  color: #FFFFFF33;                   /* rgba(255,255,255,0.20) */
+  font-size: 9px;
+  color: var(--text-whisper);
   margin-left: auto;
-  font-family: 'DM Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   white-space: nowrap;
 }
 .thread-message {
-  font-size: 11px;
-  color: #FFFFFFA6;                   /* rgba(255,255,255,0.65) */
-  line-height: 1.3;
-  margin-top: 1px;
+  font-size: 12.5px;
+  color: var(--text);
+  line-height: 1.5;
+  margin-top: 3px;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 .thread-empty {
   font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  color: #FFFFFF40;
-  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text-whisper);
+  padding: 10px 0;
   text-align: center;
 }
 
-/* ── REPLY INPUT ── */
+/* ── REPLY ZONE — pill input + share row ── */
+.reply-zone,
 .thread-reply {
-  border-top: 1px solid #C8A84B1A;    /* rgba(200,168,75,0.10) */
-  padding: 6px 0 4px;
-  margin-top: 4px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--unread-border);
 }
+.reply-pill,
 .reply-row {
   display: flex;
-  gap: 6px;
   align-items: flex-end;
+  gap: 6px;
+  padding: 6px 6px 6px 14px;
+  background: #FFFFFF08;              /* rgba(255,255,255,0.03) */
+  border: 1px solid var(--unread-border);
+  border-radius: 22px;
+  transition: border-color 0.2s ease;
 }
+.reply-pill:focus-within,
+.reply-row:focus-within { border-color: #C15F3C; }
+
 .reply-input {
   flex: 1;
-  background: #FFFFFF0A;              /* rgba(255,255,255,0.04) */
-  border: 1px solid #FFFFFF14;        /* rgba(255,255,255,0.08) */
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 11px;
-  font-family: 'DM Sans', sans-serif;
-  color: #FFFFFFE6;                   /* rgba(255,255,255,0.90) */
-  outline: none;
-  resize: none;
-  min-height: 32px;
-  max-height: 60px;
-  line-height: 1.3;
-  -webkit-appearance: none;
-  transition: border-color 0.2s ease;
-  overflow-y: auto;
-}
-.reply-input::placeholder { color: #FFFFFF26; } /* rgba(255,255,255,0.15) */
-.reply-input:focus { border-color: #C8A84B4D; } /* rgba(200,168,75,0.30) */
-.reply-input:disabled { opacity: 0.6; }
-.reply-send {
-  width: 30px;
-  height: 30px;
-  border-radius: 6px;
+  background: none;
   border: none;
-  background: #FFFFFF0D;              /* rgba(255,255,255,0.05) */
+  outline: none;
+  color: var(--text-loud);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 6px 0;
+  resize: none;
+  min-height: 20px;
+  line-height: 1.4;
+  -webkit-appearance: none;
+  overflow-y: auto;
+  max-height: 120px;
+}
+.reply-input::placeholder { color: var(--text-whisper); }
+.reply-input:disabled { opacity: 0.6; }
+
+.reply-send {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--text-loud);
+  color: #000000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s ease;
+  font-weight: 700;
+  transition: background 0.2s ease, transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  opacity: 0.4;
 }
+.reply-send.active { opacity: 1; }
 .reply-send svg {
   width: 14px;
   height: 14px;
-  color: #FFFFFF26;                   /* rgba(255,255,255,0.15) — empty state */
+  color: #000000;
   display: block;
   pointer-events: none;
 }
-.reply-send.active {
-  background: #C8A84B1F;              /* rgba(200,168,75,0.12) */
-}
-.reply-send.active svg {
-  color: #C8A84B;
-}
 .reply-send:disabled { opacity: 0.5; cursor: default; }
-.reply-label {
+
+/* ── REPLY FOOTER — visibility label LEFT + "Open full post" RIGHT ── */
+.reply-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 8px;
+}
+.reply-visibility {
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
-  color: #FFFFFF1F;                   /* rgba(255,255,255,0.12) */
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-whisper);
+}
+/* Legacy reply-label (standalone row) — now styled as part of the
+   merged reply-footer-row so any stale markup still reads right. */
+.reply-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: var(--text-whisper);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   margin-top: 3px;
 }
 
-/* ── THREAD FOOTER (Open full post link) ── */
+/* ── THREAD FOOTER / OPEN FULL POST ── */
 .thread-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: 3px 0 2px;
+  display: none;  /* v7 moves Open full post into .reply-footer-row */
 }
 .thread-open-post {
-  font-size: 10px;
-  color: #C8A84B;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
   font-weight: 500;
+  color: #C8A84B;
+  background: none;
+  border: none;
+  padding: 0;
   cursor: pointer;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 .thread-open-post:hover { color: #E4C666; }
 

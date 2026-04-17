@@ -294,8 +294,8 @@ describe('markAllNotificationsRead (source)', function() {
 describe('openNotifications overlay (source)', function() {
   var body = uiSrc.match(/function openNotifications\(\)[\s\S]*?\n\}/)[0];
 
-  it('overlay uses solid background #0a0a0f (not rgba)', function() {
-    expect(body).toContain('background:#0a0a0f');
+  it('overlay uses solid jet-black background (#000000, not rgba)', function() {
+    expect(body).toContain('background:#000000');
     expect(body).not.toContain('rgba(0,0,0,0.75)');
   });
   it('overlay aligns items stretch + panel is flex column 100%', function() {
