@@ -144,44 +144,58 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
   const mem = memoryContext || '';
   const hasMem = mem.length > 100;
 
+  const captionOutputRule = 'When rewriting or revising a caption, return ONLY the caption text. '
+    + 'No headers like "Revised caption:". No footer analysis like "Key improvements:". '
+    + 'No markdown bold. Just the caption, exactly as it should appear on LinkedIn.';
+
   if (feature === 'writer') {
     if (hasMem) {
       return 'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL), a sugarcane biorefinery.\n\n'
         + mem + '\n\n'
         + 'Here are 5 high-performing posts for voice reference:\n\n' + ctx
-        + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.';
+        + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.'
+        + '\n\n' + captionOutputRule;
     }
     return 'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL), a sugarcane biorefinery. '
       + 'Write in their established voice. Here are 20 approved posts for reference:\n\n'
       + ctx
       + '\n\nBrand guide:\n'
       + bg
-      + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.';
+      + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.'
+      + '\n\n' + captionOutputRule;
   }
   if (feature === 'qc') {
     if (hasMem) {
       return 'You are a brand quality controller for GBL.\n\n'
         + mem
-        + '\n\nCheck the provided copy against these rules. Return PASS or FLAG for each item. Be specific. Be brief.';
+        + '\n\nCheck the provided copy against these rules. Return PASS or FLAG for each item. Be specific. Be brief.'
+        + '\n\nWhen doing QC: First list all checks as PASS or FLAG lines. Then write "---" on its own line. '
+        + 'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.'
+        + '\n\n' + captionOutputRule;
     }
     return 'You are a brand quality controller for GBL. Check the provided copy against the brand voice and approved posts. '
       + 'Here are 20 approved posts:\n\n'
       + ctx
       + '\n\nBrand guide:\n'
       + bg
-      + '\n\nReturn a structured verdict: PASS or FLAG for each item checked. Be specific. Be brief.';
+      + '\n\nReturn a structured verdict: PASS or FLAG for each item checked. Be specific. Be brief.'
+      + '\n\nWhen doing QC: First list all checks as PASS or FLAG lines. Then write "---" on its own line. '
+      + 'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.'
+      + '\n\n' + captionOutputRule;
   }
   if (feature === 'chat') {
     if (hasMem) {
       return 'You are a copy editor for GBL LinkedIn content.\n\n'
         + mem
-        + '\n\nHelp the user improve the copy. Be direct and brief.';
+        + '\n\nHelp the user improve the copy. Be direct and brief.'
+        + '\n\n' + captionOutputRule;
     }
     return 'You are a copy editor helping refine LinkedIn content for GBL. Here are 20 approved posts for reference:\n\n'
       + ctx
       + '\n\nBrand guide:\n'
       + bg
-      + '\n\nHelp the user improve the copy. Be direct and brief.';
+      + '\n\nHelp the user improve the copy. Be direct and brief.'
+      + '\n\n' + captionOutputRule;
   }
   if (feature === 'email_brief') {
     return 'You are a content strategist. Read the email below and identify every distinct post brief it contains. '
