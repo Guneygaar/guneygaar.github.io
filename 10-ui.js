@@ -2465,6 +2465,7 @@ if (!window._routerBound) {
         case 'lib-view':     return guardAction('lib-view-' + actionEl.dataset.view, () => libSetView(actionEl.dataset.view, actionEl));
         case 'nrs-urg':      return guardAction('nrs-urg-' + actionEl.dataset.urgency, () => nrsSetUrg(actionEl, actionEl.dataset.urgency));
         case 'ins-main-tab': return guardAction('ins-main-tab-' + actionEl.dataset.tab, () => insSetMainTab(actionEl.dataset.tab, actionEl));
+        case 'open-notifications':  return guardAction('open-notifications', () => openNotifications());
         case 'close-notifications': return guardAction('close-notifications', () => closeNotifications());
         case 'mark-all-read':       return guardAction('mark-all-read', () => markAllNotificationsRead());
         case 'notif-wa':

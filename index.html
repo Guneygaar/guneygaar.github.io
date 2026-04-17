@@ -56,7 +56,7 @@
 <title>Sorted</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260417e">
+ <link rel="stylesheet" href="styles.css?v=20260417f">
 
 </head>
 <body>
@@ -158,7 +158,7 @@
     </div>
     <div class="app-header-right">
       <!-- Bell icon -->
-      <button class="app-icon-btn" id="notif-bell" onclick="openNotifications()" title="Notifications" style="position:relative">
+      <button class="app-icon-btn" id="notif-bell" data-action="open-notifications" title="Notifications" style="position:relative">
         <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
         <span class="nav-badge" id="notif-bell-badge" style="display:none"></span>
       </button>
@@ -305,7 +305,7 @@
         <button onclick="openPipelineFilter()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;">
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
         </button>
-        <button onclick="openNotifications()" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;position:relative;">
+        <button data-action="open-notifications" style="width:36px;height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:none;border:none;position:relative;">
           <svg width="16" height="16" fill="none" stroke="#666" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span id="notif-pipeline-badge" style="position:absolute;top:10px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--c-red);border:1px solid #080808;display:none;"></span>
         </button>
@@ -1248,32 +1248,32 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260417e"></script>
-<script src="00-appstate-compat.js?v=20260417e"></script>
-<script src="01-config.js?v=20260417e" defer></script>
-<script src="02-session.js?v=20260417e" defer></script>
-<script src="utils.js?v=20260417e" defer></script>
-<script src="12-profiles.js?v=20260417e" defer></script>
-<script src="03-auth.js?v=20260417e" defer></script>
-<script src="05-api.js?v=20260417e" defer></script>
-<script src="10-ui.js?v=20260417e" defer></script>
+<script src="00-appstate.js?v=20260417f"></script>
+<script src="00-appstate-compat.js?v=20260417f"></script>
+<script src="01-config.js?v=20260417f" defer></script>
+<script src="02-session.js?v=20260417f" defer></script>
+<script src="utils.js?v=20260417f" defer></script>
+<script src="12-profiles.js?v=20260417f" defer></script>
+<script src="03-auth.js?v=20260417f" defer></script>
+<script src="05-api.js?v=20260417f" defer></script>
+<script src="10-ui.js?v=20260417f" defer></script>
 
-<script src="06-post-create.js?v=20260417e" defer></script>
-<script defer src="render/dashboard.js?v=20260417e"></script>
-<script defer src="render/client.js?v=20260417e"></script>
-<script defer src="render/pipeline.js?v=20260417e"></script>
-<script defer src="render/brief.js?v=20260417e"></script>
-<script defer src="actions/pcs.js?v=20260417e"></script>
-<script defer src="actions/pcs-longpress.js?v=20260417e"></script>
-<script defer src="actions/pcs-claude-caption.js?v=20260417e"></script>
-<script defer src="actions/pcs-polish.js?v=20260417e"></script>
-<script defer src="actions/pcs-select.js?v=20260417e"></script>
-<script src="ai-config.js?v=20260417e" defer></script>
-<script src="07-post-load.js?v=20260417e" defer></script>
-<script src="08-post-actions.js?v=20260417e" defer></script>
-<script src="09-library.js?v=20260417e" defer></script>
-<script src="09-approval.js?v=20260417e" defer></script>
-<script src="04-router.js?v=20260417e" defer></script>
+<script src="06-post-create.js?v=20260417f" defer></script>
+<script defer src="render/dashboard.js?v=20260417f"></script>
+<script defer src="render/client.js?v=20260417f"></script>
+<script defer src="render/pipeline.js?v=20260417f"></script>
+<script defer src="render/brief.js?v=20260417f"></script>
+<script defer src="actions/pcs.js?v=20260417f"></script>
+<script defer src="actions/pcs-longpress.js?v=20260417f"></script>
+<script defer src="actions/pcs-claude-caption.js?v=20260417f"></script>
+<script defer src="actions/pcs-polish.js?v=20260417f"></script>
+<script defer src="actions/pcs-select.js?v=20260417f"></script>
+<script src="ai-config.js?v=20260417f" defer></script>
+<script src="07-post-load.js?v=20260417f" defer></script>
+<script src="08-post-actions.js?v=20260417f" defer></script>
+<script src="09-library.js?v=20260417f" defer></script>
+<script src="09-approval.js?v=20260417f" defer></script>
+<script src="04-router.js?v=20260417f" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1309,7 +1309,7 @@ window.setPcsVisibility = function(el, vis) {
       <button class="lib-icon-btn" id="lib-search-btn" onclick="libToggleSearch()">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/></svg>
       </button>
-      <button class="lib-icon-btn" onclick="openNotifications()" title="Notifications" style="position:relative">
+      <button class="lib-icon-btn" data-action="open-notifications" title="Notifications" style="position:relative">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
         <span class="nav-badge" id="notif-lib-badge" style="display:none"></span>
       </button>
@@ -1444,7 +1444,7 @@ window.setPcsVisibility = function(el, vis) {
           0010.607 0z"/></svg>
       </button>
       <button class="hdr-icon"
-        onclick="openNotifications()" title="Notifications" style="position:relative">
+        data-action="open-notifications" title="Notifications" style="position:relative">
         <svg width="17" height="17" fill="none"
           stroke="currentColor" stroke-width="1.5"
           viewBox="0 0 24 24"><path
