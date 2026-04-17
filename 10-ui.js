@@ -173,6 +173,235 @@ function showToast(msg, type = 'success') {
   t._timer = setTimeout(() => t.classList.remove('active'), 3200);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// CLAUDE COMPOSER HELPERS (20260417o)
+// Shared across the three reply composer locations:
+//   - agency PCS (actions/pcs.js, index.html)
+//   - client portal (render/client.js)
+//   - notification thread drawer (10-ui.js)
+// Mounts quote-bar / polish-preview / composer together so each
+// location can stay on its existing reply state contract while
+// sharing the visual shell.
+// ═══════════════════════════════════════════════════════════════
+
+// Textarea auto-expand — no max-height clamp. Caller owns the element;
+// we just attach an input listener (guarded against double-wiring).
+window.attachAutoExpand = function(el) {
+  if (!el || el._claudeAutoExpandWired) return;
+  el._claudeAutoExpandWired = true;
+  var _resize = function() {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+  el.addEventListener('input', _resize);
+  // Run once so min-height is honoured on initial paint.
+  requestAnimationFrame(_resize);
+  el._claudeAutoExpandResize = _resize;
+};
+
+// Sync composer root classes — `.has-text` toggles sparkle visibility,
+// `.claude-send.dim` toggles the send-button dim state. Callers invoke
+// this after any textarea mutation (typing, polish replace, clear).
+window._claudeSyncComposerState = function(root) {
+  if (!root) return;
+  var ta = root.querySelector('.claude-textarea');
+  var send = root.querySelector('.claude-send');
+  var hasText = !!(ta && ta.value && ta.value.trim().length > 0);
+  root.classList.toggle('has-text', hasText);
+  if (send) {
+    if (hasText) send.classList.remove('dim');
+    else send.classList.add('dim');
+  }
+};
+
+// Polish via srtd-ai worker. Returns a Promise resolving to the
+// polished text. Rejects on failure. Reuses the same fetch pattern as
+// actions/pcs.js `_callSrtdAI()` so behavior is identical.
+window._claudePolish = function(text, postId) {
+  var cfg = window.AI_CONFIG;
+  if (!cfg || !cfg.workerUrl) {
+    return Promise.reject(new Error('AI not configured'));
+  }
+  var raw = (text || '').trim();
+  if (!raw) return Promise.reject(new Error('Empty text'));
+  var systemPrompt =
+    'You are polishing a short comment that one colleague is writing ' +
+    'to another in an agency/client collaboration tool. Make it ' +
+    'clearer, warmer, and more professional while preserving the ' +
+    "user's meaning and tone. Keep it concise - typically no longer " +
+    'than the original. No greetings unless the user wrote one. ' +
+    'No sign-offs. Return ONLY the polished text, no preamble, no ' +
+    'commentary, no quotes around it.';
+  var payload = {
+    feature: 'chat',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: raw }
+    ],
+    post_id: postId || null,
+    workspace_id: 'default',
+    created_by: (window.AppState && window.AppState.user && window.AppState.user.email) || ''
+  };
+  return fetch(cfg.workerUrl + '/ai/complete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-AI-Secret': cfg.secret
+    },
+    body: JSON.stringify(payload)
+  }).then(function(res) {
+    return res.json();
+  }).then(function(data) {
+    if (data && data.success && data.content) {
+      // Strip surrounding quotes if the model added any.
+      var out = String(data.content).trim().replace(/^["']+|["']+$/g, '');
+      return out;
+    }
+    throw new Error((data && data.error) || 'Polish failed');
+  });
+};
+
+// Build the HTML for a quote-bar (above composer when replying).
+// Caller owns the set/clear lifecycle — this just returns a fragment.
+window._claudeQuoteBarHtml = function(authorLabel, snippet, onClearAttr) {
+  var _esc = function(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+    });
+  };
+  var _snip = String(snippet || '');
+  if (_snip.length > 80) _snip = _snip.slice(0, 80).trim() + '\u2026';
+  return '<div class="claude-quote-bar">' +
+    '<div class="claude-quote-content">' +
+      '<div class="claude-quote-who">' + _esc(authorLabel) + '</div>' +
+      '<div class="claude-quote-snippet">' + _esc(_snip) + '</div>' +
+    '</div>' +
+    '<button type="button" class="claude-quote-x" aria-label="Cancel reply"' +
+      (onClearAttr ? ' ' + onClearAttr : '') + '>\u2715</button>' +
+  '</div>';
+};
+
+// Build the HTML for the textarea overlay (italic "polishing" hint +
+// animated dots). Rendered inline, shown only when the composer root
+// has the `.is-polishing` class.
+window._claudePolishingOverlayHtml = function() {
+  return '<div class="claude-polishing-overlay">' +
+    '<span>polishing</span>' +
+    '<span class="claude-polishing-dots"><span></span><span></span><span></span></span>' +
+  '</div>';
+};
+
+// Build + inject the polish-preview card into a composer root.
+window._claudeMountPolishPreview = function(root, polishedText, originalText) {
+  if (!root) return;
+  var existing = root.querySelector(':scope > .claude-polish-preview');
+  if (existing) existing.remove();
+  var _esc = function(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+    });
+  };
+  var orig = String(originalText || '').replace(/\s+/g, ' ').trim();
+  if (orig.length > 90) orig = orig.slice(0, 90) + '\u2026';
+  var card = document.createElement('div');
+  card.className = 'claude-polish-preview';
+  card.innerHTML =
+    '<div class="claude-polish-header">' +
+      '<span class="claude-polish-label">\u2726 Polished</span>' +
+      '<span class="claude-polish-actions">' +
+        '<button type="button" class="claude-polish-btn keep" data-claude-polish="keep">Keep mine</button>' +
+        '<button type="button" class="claude-polish-btn use" data-claude-polish="use">Use this</button>' +
+      '</span>' +
+    '</div>' +
+    '<div class="claude-polish-body">' + _esc(polishedText) + '</div>' +
+    '<div class="claude-polish-compare">from \u00b7 ' + _esc(orig) + '</div>';
+  // Store polished text on the root for the "Use this" handler.
+  root._claudePolishedText = String(polishedText || '');
+  var composer = root.querySelector(':scope > .claude-composer');
+  if (composer) root.insertBefore(card, composer);
+  else root.appendChild(card);
+  root.classList.add('has-polish');
+};
+
+window._claudeDismissPolishPreview = function(root) {
+  if (!root) return;
+  var existing = root.querySelector(':scope > .claude-polish-preview');
+  if (existing) existing.remove();
+  root.classList.remove('has-polish');
+  root._claudePolishedText = '';
+};
+
+// Orchestrator — wire the sparkle + polish-preview actions on a given
+// composer root. Idempotent (guarded against double-wiring). Callers
+// pass { postIdFn } so the poll receives the current post id at click
+// time rather than at wire time.
+window._claudeWireComposer = function(root, opts) {
+  if (!root || root._claudeWired) return;
+  root._claudeWired = true;
+  opts = opts || {};
+  var ta = root.querySelector('.claude-textarea');
+  if (ta) window.attachAutoExpand(ta);
+  // has-text / send dim state — update on every input.
+  if (ta) {
+    ta.addEventListener('input', function() {
+      window._claudeSyncComposerState(root);
+    });
+    window._claudeSyncComposerState(root);
+  }
+  // Delegated click handler inside the composer root — sparkle,
+  // polish-preview buttons.
+  root.addEventListener('click', function(e) {
+    var sparkle = e.target.closest('.claude-sparkle');
+    var polishBtn = e.target.closest('[data-claude-polish]');
+    if (sparkle) {
+      e.preventDefault();
+      e.stopPropagation();
+      var ta2 = root.querySelector('.claude-textarea');
+      if (!ta2) return;
+      var text = (ta2.value || '').trim();
+      if (!text) return;
+      if (root.classList.contains('is-polishing')) return;
+      root.classList.add('is-polishing');
+      ta2.setAttribute('readonly', 'readonly');
+      var pid = typeof opts.postIdFn === 'function' ? opts.postIdFn() : null;
+      window._claudePolish(text, pid).then(function(polished) {
+        root.classList.remove('is-polishing');
+        ta2.removeAttribute('readonly');
+        if (polished && polished !== text) {
+          window._claudeMountPolishPreview(root, polished, text);
+        } else {
+          if (typeof window.showToast === 'function') {
+            window.showToast('No changes suggested.', 'success');
+          }
+        }
+      }).catch(function(err) {
+        root.classList.remove('is-polishing');
+        ta2.removeAttribute('readonly');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Polish failed — try again.', 'error');
+        }
+        window.logError && window.logError(err && err.message, err && err.stack, 'claude-polish');
+      });
+      return;
+    }
+    if (polishBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      var action = polishBtn.getAttribute('data-claude-polish');
+      var ta3 = root.querySelector('.claude-textarea');
+      if (action === 'use' && ta3 && root._claudePolishedText) {
+        ta3.value = root._claudePolishedText;
+        ta3.dispatchEvent(new Event('input', { bubbles: true }));
+        if (ta3._claudeAutoExpandResize) ta3._claudeAutoExpandResize();
+        window._claudeSyncComposerState(root);
+      }
+      window._claudeDismissPolishPreview(root);
+      if (ta3) ta3.focus();
+      return;
+    }
+  });
+};
+
 // -- Theme -------------------------------------
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
@@ -956,40 +1185,36 @@ function _notifBuildThreadHtml(n, post, postTitle) {
     });
   }
 
-  // Reply pill (round send button inside a rounded input) + shared
-  // footer row that puts "VISIBLE TO ALL" on the left and the
-  // "Open full post →" link on the right.
-  //
-  // Polish Reply ✦ button — Admin-only. Inserted between the textarea
-  // and the circular send button inside `.reply-pill`. An eyebrow
-  // line above the pill nudges the user to tap it. Non-admin users
-  // see the pill WITHOUT either element, matching the pre-Polish
-  // layout exactly.
+  // Claude composer — same two-container pattern as PCS / client
+  // feed. Notif drawer currently never captures a reply target (the
+  // original `reply_to` was hardcoded null), so the quote-bar stays
+  // unmounted by default. The sparkle + send + textarea classes keep
+  // their legacy hooks (`.reply-input`, `.reply-send`) so the
+  // existing action-router delegate in `_wireEvents` still resolves
+  // without churn.
   var replyPlaceholder = 'Comment on ' + (postTitle || 'post') + '\u2026';
-  var _canPolish = !!(window.AppState && window.AppState.user &&
-                      window.AppState.user.effectiveRole === 'Admin');
-  var polishHintHtml = _canPolish
-    ? '<div class="polish-pre-hint">\u2726 Tap to polish your draft</div>'
-    : '';
-  var polishBtnHtml = _canPolish
-    ? '<button class="reply-polish" data-action="notif-polish"' +
-        ' data-post-id="' + esc(postId) + '"' +
-        ' data-notif-id="' + esc(n.id || '') + '"' +
-        ' aria-label="Polish with Claude" type="button">\u2726</button>'
-    : '';
+  var composerId = 'notif-composer-root-' + esc(postId);
   var replyHtml =
     '<div class="reply-zone">' +
-      polishHintHtml +
-      '<div class="reply-pill">' +
-        '<textarea class="reply-input" rows="1"' +
-          ' data-post-id="' + esc(postId) + '"' +
-          ' placeholder="' + esc(replyPlaceholder) + '"></textarea>' +
-        polishBtnHtml +
-        '<button class="reply-send" data-action="notif-reply-send"' +
-          ' data-post-id="' + esc(postId) + '"' +
-          ' data-notif-id="' + esc(n.id || '') + '" aria-label="Send reply">' +
-          _NOTIF_SEND_SVG +
-        '</button>' +
+      '<div class="claude-composer-root" id="' + composerId + '"' +
+        ' data-post-id="' + esc(postId) + '"' +
+        ' data-notif-id="' + esc(n.id || '') + '">' +
+        '<div class="claude-composer">' +
+          '<div class="claude-textarea-wrap">' +
+            '<textarea class="claude-textarea reply-input" rows="1"' +
+              ' data-post-id="' + esc(postId) + '"' +
+              ' placeholder="' + esc(replyPlaceholder) + '"></textarea>' +
+            '<div class="claude-polishing-overlay"><span>polishing</span>' +
+            '<span class="claude-polishing-dots"><span></span><span></span><span></span></span></div>' +
+          '</div>' +
+          '<button type="button" class="claude-sparkle" aria-label="Polish with Claude">\u2726</button>' +
+          '<button type="button" class="claude-send reply-send dim"' +
+            ' data-action="notif-reply-send"' +
+            ' data-post-id="' + esc(postId) + '"' +
+            ' data-notif-id="' + esc(n.id || '') + '" aria-label="Send reply">' +
+            _NOTIF_SEND_SVG +
+          '</button>' +
+        '</div>' +
       '</div>' +
       '<div class="reply-footer-row">' +
         '<span class="reply-visibility">Visible to all</span>' +
@@ -1091,27 +1316,15 @@ function _notifToggleExpand(item) {
     });
   }
 
-  // Auto-resize wiring for the reply textarea.
-  var ta = item.querySelector('.reply-input');
-  if (ta) {
-    ta.addEventListener('input', _notifReplyInputResize);
+  // Wire the Claude composer root — handles auto-expand, sparkle
+  // polish flow, and composer dim/has-text state. Idempotent.
+  var composerRoot = item.querySelector('.claude-composer-root');
+  if (composerRoot && typeof window._claudeWireComposer === 'function') {
+    var _pid = composerRoot.getAttribute('data-post-id');
+    window._claudeWireComposer(composerRoot, {
+      postIdFn: function() { return _pid; }
+    });
   }
-}
-
-// Grow the reply textarea up to its CSS max-height as the user types,
-// and flip .active on the sibling send button once there is any text.
-function _notifReplyInputResize(e) {
-  var ta = e.currentTarget || e.target;
-  if (!ta) return;
-  ta.style.height = 'auto';
-  var next = Math.min(ta.scrollHeight, 80);
-  ta.style.height = next + 'px';
-  var row = ta.parentNode;
-  if (!row) return;
-  var btn = row.querySelector('.reply-send');
-  if (!btn) return;
-  if (ta.value && ta.value.trim().length > 0) btn.classList.add('active');
-  else btn.classList.remove('active');
 }
 
 // Submit a reply from the thread drawer. Posts to /post_comments with
@@ -1221,7 +1434,15 @@ async function _notifSubmitReply(sendBtn) {
     }
     ta.value = '';
     ta.style.height = 'auto';
-    sendBtn.classList.remove('active');
+    // Keep the Claude composer's has-text / dim state in sync after
+    // the textarea is cleared.
+    var _composerRoot = ta.closest('.claude-composer-root');
+    if (_composerRoot && typeof window._claudeSyncComposerState === 'function') {
+      window._claudeSyncComposerState(_composerRoot);
+      if (typeof window._claudeDismissPolishPreview === 'function') {
+        window._claudeDismissPolishPreview(_composerRoot);
+      }
+    }
   } catch (err) {
     console.error('[notif-reply] POST failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'notif-reply');
@@ -2375,11 +2596,16 @@ function openNotifications() {
       // Expand-in-place thread view — the expand chip, the reply input,
       // the send button, individual thread messages, and the "Open full
       // post" link all live inside a .notif-item and would otherwise be
-      // swallowed by the item delegate below.
+      // swallowed by the item delegate below. The Claude sparkle +
+      // polish-preview buttons are handled by the composer's own
+      // delegated listener (`_claudeWireComposer`) — we just guard
+      // against the panel delegate swallowing them.
       var expandBtn = e.target.closest('.expand-chip');
-      var replyInput = e.target.closest('.reply-input');
+      var replyInput = e.target.closest('.reply-input, .claude-textarea');
       var replySend = e.target.closest('.reply-send');
-      var replyPolish = e.target.closest('.reply-polish, [data-action="notif-polish"]');
+      var claudeInComposer = e.target.closest(
+        '.claude-sparkle, .claude-polish-preview, .claude-plus, .claude-quote-bar, .claude-polishing-overlay'
+      );
       // Both the footer "Open full post ->" link and the top-of-drawer
       // "View all N comments" overflow link route through the same
       // open-post handler below.
@@ -2393,20 +2619,11 @@ function openNotifications() {
         _notifSubmitReply(replySend);
         return;
       }
-      if (replyPolish) {                     // Polish Reply ✦ (admin-only)
-        e.preventDefault();
+      if (claudeInComposer) {                // sparkle / polish preview /
+        // plus / quote-bar — handled by the composer's own delegated
+        // listener. Stop the outer panel delegate from treating the
+        // click as a card tap and collapsing the drawer.
         e.stopPropagation();
-        // Defensive double-check — the button is only rendered for
-        // Admin in `_buildItem`, but a stale page shouldn't let a
-        // downgraded user invoke the modal.
-        if (!window.AppState || !window.AppState.user ||
-            window.AppState.user.effectiveRole !== 'Admin') {
-          console.warn('Polish requires admin role');
-          return;
-        }
-        if (typeof window.openPolishModal === 'function') {
-          window.openPolishModal('notif');
-        }
         return;
       }
       if (threadOpen) {                      // "Open full post ->" link

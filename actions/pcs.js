@@ -3327,24 +3327,52 @@ window._pcsTogglePlusMenu = function(btn, zone) {
   }, 10);
 };
 
+// Helper — return the Claude composer root for a PCS zone.
+function _pcsComposerRoot(zone) {
+  var id = zone === 'client' ? 'pcs-composer-root-client' : 'pcs-composer-root-note';
+  return document.getElementById(id);
+}
+
+// Mount / unmount the Claude quote-bar for a PCS zone. The quote-bar
+// sits above the composer; adding `.has-quote-bar` on the root flips
+// border-radius so the two pieces connect visually.
+function _pcsMountQuoteBar(zone, author, snippet) {
+  var root = _pcsComposerRoot(zone);
+  if (!root) return;
+  var existing = root.querySelector(':scope > .claude-quote-bar');
+  if (existing) existing.remove();
+  var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
+  var _onClick = "onclick=\"window._pcsClearReply('" + zone + "')\"";
+  var html = (typeof window._claudeQuoteBarHtml === 'function')
+    ? window._claudeQuoteBarHtml(_authorDisplay, snippet || '', _onClick)
+    : '';
+  if (!html) return;
+  var firstChild = root.firstChild;
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  var bar = tmp.firstChild;
+  root.insertBefore(bar, firstChild);
+  root.classList.add('has-quote-bar');
+}
+
+function _pcsUnmountQuoteBar(zone) {
+  var root = _pcsComposerRoot(zone);
+  if (!root) return;
+  var existing = root.querySelector(':scope > .claude-quote-bar');
+  if (existing) existing.remove();
+  root.classList.remove('has-quote-bar');
+}
+
 window._pcsSetReply = function(zone, commentId, author, message) {
   window._pcsReplyTo = commentId;
   window._pcsReplyToAuthor = author;
+  window._pcsReplySnippet = message || '';
   var inputId = zone === 'client'
     ? 'pcs-comment-input'
     : 'pcs-note-input';
   var input = document.getElementById(inputId);
 
-  // Show reply tag inside input pill
-  var tagId = zone === 'client' ? 'pcs-client-reply-tag' : 'pcs-note-reply-tag';
-  var nameId = zone === 'client' ? 'pcs-client-reply-name' : 'pcs-note-reply-name';
-  var tag = document.getElementById(tagId);
-  var nameEl = document.getElementById(nameId);
-  if (tag && nameEl) {
-    var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
-    nameEl.textContent = _authorDisplay + ' \u00B7';
-    tag.style.display = 'inline-flex';
-  }
+  _pcsMountQuoteBar(zone, author, message);
 
   document.querySelectorAll(
     '.pcs-comment-item, .pcs-note-item'
@@ -3364,19 +3392,17 @@ window._pcsSetReply = function(zone, commentId, author, message) {
     input.value = '@' + author + ' ';
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
+    // Trigger input event so the composer root updates has-text + dim state.
+    input.dispatchEvent(new Event('input', { bubbles: true }));
   }
 };
 
 window._pcsClearReply = function(zone) {
   window._pcsReplyTo = null;
   window._pcsReplyToAuthor = null;
+  window._pcsReplySnippet = '';
 
-  // Hide reply tag
-  var tagId = zone === 'client' ? 'pcs-client-reply-tag' : 'pcs-note-reply-tag';
-  var tag = document.getElementById(tagId);
-  if (tag) {
-    tag.style.display = 'none';
-  }
+  _pcsUnmountQuoteBar(zone);
 
   document.querySelectorAll('.pcs-comment-replying-to')
     .forEach(function(el) {
@@ -3385,9 +3411,45 @@ window._pcsClearReply = function(zone) {
   var inp = document.getElementById(zone === 'client' ? 'pcs-comment-input' : 'pcs-note-input');
   if (inp) {
     inp.value = '';
+    inp.dispatchEvent(new Event('input', { bubbles: true }));
     inp.focus();
   }
+  // Drop any stale polish preview card too.
+  var root = _pcsComposerRoot(zone);
+  if (root && typeof window._claudeDismissPolishPreview === 'function') {
+    window._claudeDismissPolishPreview(root);
+  }
 };
+
+// Wire the Claude composer(s) on first load — idempotent, safe to
+// call multiple times (guarded by `root._claudeWired` inside
+// `_claudeWireComposer`). We also have to wire on openPCS because
+// each PCS session reuses the same DOM nodes but users may re-enter
+// after logout/login cycles.
+(function _pcsWireComposers() {
+  function _wire() {
+    var zones = ['client', 'note'];
+    zones.forEach(function(z) {
+      var root = _pcsComposerRoot(z);
+      if (!root) return;
+      if (typeof window._claudeWireComposer === 'function') {
+        window._claudeWireComposer(root, {
+          postIdFn: function() {
+            var el = document.getElementById('pcs-post-id');
+            return el ? el.value : null;
+          }
+        });
+      }
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _wire);
+  } else {
+    _wire();
+  }
+  // Also expose a re-wire hook so openPCS can call it defensively.
+  window._pcsWireClaudeComposers = _wire;
+})();
 
 window._pcsCopyComment = function(message) {
   if (navigator.clipboard) {

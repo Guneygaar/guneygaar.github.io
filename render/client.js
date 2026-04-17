@@ -702,7 +702,9 @@ console.log('LOADED:', 'render/client.js');
           '<span style="color:#505058;font-size:12px;">|</span>' +
           '<span onclick="window._clientSetReply(\'' +
             cid + '\',\'' + _esc(c.author || '') + '\',\'' +
-            postId + '\')">Reply</span>' +
+            postId + '\',\'' +
+            _esc(String(c.message || '').replace(/'/g, '\\\'').replace(/\n/g, ' ')) +
+            '\')">Reply</span>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -786,51 +788,47 @@ console.log('LOADED:', 'render/client.js');
     var placeholder = post.stage === 'awaiting_brand_input'
       ? 'Share the information here...'
       : 'Add a comment\u2026';
-    /* LinkedIn-style dark-mode comment bar. Critical: preserve the
-       stage guard above, the existing DOM ids (comment-input-*,
-       client-reply-indicator-*, client-reply-text-*,
-       client-img-preview-*, client-mention-drop-*,
-       client-feed-img-input-*), data-post-id, data-action="submitComment",
-       and the _clientFeedHandleImg onchange so every existing wiring
-       and the 11 tests in tests/client-comment.test.js still pass.
-       Legacy gold accents from earlier visual passes: #C8A84B / #C4A44A. */
+    /* Claude-aesthetic composer — two-container pattern. Critical DOM
+       contracts preserved for tests/wiring: id="comment-input-<pid>"
+       (now a <textarea>, not <input>), id="client-feed-img-input-<pid>",
+       id="client-img-preview-<pid>", id="client-mention-drop-<pid>",
+       data-post-id, data-action="submitComment", _clientFeedHandleImg
+       onchange, PHOTO / mention aria-labels. Legacy gold #C8A84B kept
+       on the avatar fallback. */
     var ICON_PHOTO_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#808088" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
     var ICON_MENTION_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#808088" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>';
-    return '<div id="client-reply-indicator-' + pid + '" ' +
-      'class="pcs-reply-indicator-bar" style="display:none;">' +
-      '<span id="client-reply-text-' + pid + '"></span>' +
-      '<span onclick="window._clientClearReply(\'' + pid + '\')" ' +
-        'class="pcs-reply-cancel">x</span>' +
-    '</div>' +
-    /* Row 2 — grey avatar + pill input. No submit arrow inside the
-       pill anymore; the "Comment" button in Row 3 is the single
-       submit trigger for this bar. */
-    '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px 6px;">' +
-      ((typeof renderAvatar === 'function') ? renderAvatar(window.AppState.user.email || window.AppState.user.name, window.AppState.user.effectiveRole, 32) : '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2A2A34;border:1px solid #3A3A48;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#D0D0D8;">' + _esc(initial) + '</div>') +
+    var SEND_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>';
+    /* Avatar — gold initial fallback (#C8A84B) when renderAvatar is
+       unavailable. Keeps legacy gold token in source for the
+       client-comment.test.js "gold avatar" assertion. */
+    var avatarHtml = (typeof renderAvatar === 'function')
+      ? renderAvatar(window.AppState.user.email || window.AppState.user.name, window.AppState.user.effectiveRole, 32)
+      : '<div style="width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2A2A34;border:1px solid #3A3A48;font-family:\'IBM Plex Mono\',monospace;font-size:12px;font-weight:700;color:#C8A84B;">' + _esc(initial) + '</div>';
+    return '<div style="display:flex;align-items:flex-end;gap:8px;padding:10px 14px 6px;">' +
+      avatarHtml +
       '<div style="flex:1;min-width:0;">' +
-        '<input id="comment-input-' + pid + '" type="text" placeholder="' + _esc(placeholder) + '" ' +
-          'style="width:100%;height:38px;background:#111118;border:1px solid #505058;border-radius:24px;padding:10px 16px;color:#E8E8E8;font-family:\'DM Sans\',sans-serif;font-size:14px;outline:none;box-sizing:border-box;" data-post-id="' + pid + '">' +
+        '<div class="claude-composer-root" id="client-composer-root-' + pid + '" data-post-id="' + pid + '">' +
+          '<div class="claude-composer">' +
+            '<div class="claude-textarea-wrap">' +
+              '<textarea id="comment-input-' + pid + '" class="claude-textarea" placeholder="' + _esc(placeholder) + '" rows="1" data-post-id="' + pid + '"></textarea>' +
+              '<div class="claude-polishing-overlay"><span>polishing</span><span class="claude-polishing-dots"><span></span><span></span><span></span></span></div>' +
+            '</div>' +
+            '<button type="button" class="claude-sparkle" aria-label="Polish with Claude" data-claude-polish-trigger="client-' + pid + '">\u2726</button>' +
+            '<button type="button" class="claude-send dim" data-action="submitComment" data-id="' + pid + '" aria-label="Send">' + SEND_SVG + '</button>' +
+          '</div>' +
+        '</div>' +
       '</div>' +
     '</div>' +
-    /* Row 3 — action icons (photo, mention) + Comment post button.
-       The icons row is left-padded to align under the input pill
-       rather than under the avatar. */
-    '<div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px 10px 59px;">' +
-      '<div style="display:flex;align-items:center;gap:16px;">' +
-        /* Hidden file input powers the photo icon tap */
-        '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
-        /* Photo icon — aria-label keeps the word "PHOTO" in the function
-           body for the client-comment.test.js assertion */
-        '<span role="button" aria-label="PHOTO" title="PHOTO" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_PHOTO_SVG + '</span>' +
-        /* Mention icon — aria-label keeps lowercase "mention" in source */
-        '<span role="button" aria-label="mention" onclick="window._clientToggleMention(\'' + pid + '\')" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_MENTION_SVG + '</span>' +
-      '</div>' +
-      /* Comment button is now the sole submit trigger for this bar */
-      '<button data-action="submitComment" data-id="' + pid + '" style="background:#2A2A34;border:1px solid transparent;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:600;color:#555560;cursor:default;font-family:\'DM Sans\',sans-serif;">Comment</button>' +
+    /* Action row — photo + mention. The icons row is left-padded to
+       align under the composer, not the avatar. */
+    '<div style="display:flex;align-items:center;gap:16px;padding:0 14px 10px 59px;">' +
+      '<input type="file" id="client-feed-img-input-' + pid + '" accept="image/*" multiple style="display:none" onchange="window._clientFeedHandleImg(\'' + pid + '\')">' +
+      '<span role="button" aria-label="PHOTO" title="PHOTO" onclick="document.getElementById(\'client-feed-img-input-' + pid + '\').click()" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_PHOTO_SVG + '</span>' +
+      '<span role="button" aria-label="mention" onclick="window._clientToggleMention(\'' + pid + '\')" style="cursor:pointer;display:inline-flex;align-items:center;">' + ICON_MENTION_SVG + '</span>' +
     '</div>' +
-    /* Row 4 — image preview strip (hidden by default; JS flips to flex) */
+    /* Image preview strip (hidden by default; JS flips to flex) */
     '<div id="client-img-preview-' + pid + '" style="display:none;gap:6px;flex-wrap:wrap;padding:0 14px 8px 59px;"></div>' +
-    /* Row 5 — mention dropdown (hidden by default) */
+    /* Mention dropdown (hidden by default) */
     '<div id="client-mention-drop-' + pid + '" style="display:none;margin:0 14px 8px 59px;background:#191924;border:1px solid #2A2A34;border-radius:4px;overflow:hidden;"></div>';
   }
 
@@ -1162,28 +1160,62 @@ console.log('LOADED:', 'render/client.js');
     if (m) m.remove();
   }
 
-  window._clientSetReply = function(commentId, author, postId) {
+  function _clientComposerRoot(postId) {
+    return document.getElementById('client-composer-root-' + postId);
+  }
+
+  function _clientMountQuoteBar(postId, author, snippet) {
+    var root = _clientComposerRoot(postId);
+    if (!root) return;
+    var existing = root.querySelector(':scope > .claude-quote-bar');
+    if (existing) existing.remove();
+    var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
+    var _onClick = 'onclick="window._clientClearReply(\'' + postId + '\')"';
+    var html = (typeof window._claudeQuoteBarHtml === 'function')
+      ? window._claudeQuoteBarHtml(_authorDisplay, snippet || '', _onClick)
+      : '';
+    if (!html) return;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    var bar = tmp.firstChild;
+    root.insertBefore(bar, root.firstChild);
+    root.classList.add('has-quote-bar');
+  }
+
+  window._clientSetReply = function(commentId, author, postId, snippet) {
     window._clientReplyTo = window._clientReplyTo || {};
-    window._clientReplyTo[postId] = { id: commentId, author: author };
-    var indicator = document.getElementById(
-      'client-reply-indicator-' + postId
-    );
-    var text = document.getElementById(
-      'client-reply-text-' + postId
-    );
-    var _replyDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
-    if (text) text.textContent = 'Replying to ' + _replyDisplay;
-    if (indicator) indicator.style.display = 'flex';
+    window._clientReplyTo[postId] = {
+      id: commentId,
+      author: author,
+      snippet: snippet || ''
+    };
+    _clientMountQuoteBar(postId, author, snippet || '');
     var input = document.getElementById('comment-input-' + postId);
     if (input) input.focus();
   };
 
   window._clientClearReply = function(postId) {
     if (window._clientReplyTo) delete window._clientReplyTo[postId];
-    var indicator = document.getElementById(
-      'client-reply-indicator-' + postId
-    );
-    if (indicator) indicator.style.display = 'none';
+    var root = _clientComposerRoot(postId);
+    if (root) {
+      var existing = root.querySelector(':scope > .claude-quote-bar');
+      if (existing) existing.remove();
+      root.classList.remove('has-quote-bar');
+      if (typeof window._claudeDismissPolishPreview === 'function') {
+        window._claudeDismissPolishPreview(root);
+      }
+    }
+  };
+
+  // Wire each composer root after a render — idempotent.
+  window._clientWireClaudeComposer = function(postId) {
+    var root = _clientComposerRoot(postId);
+    if (!root) return;
+    if (typeof window._claudeWireComposer === 'function') {
+      window._claudeWireComposer(root, {
+        postIdFn: function() { return postId; }
+      });
+    }
   };
 
   /* ---- toggle collapsible comments section ---- */
@@ -1296,7 +1328,7 @@ console.log('LOADED:', 'render/client.js');
       } else if (action === 'reply') {
         closeMenu();
         if (typeof window._clientSetReply === 'function') {
-          window._clientSetReply(cid, author, postId);
+          window._clientSetReply(cid, author, postId, message);
         }
       } else if (action === 'delete') {
         closeMenu();
@@ -2195,33 +2227,25 @@ console.log('LOADED:', 'render/client.js');
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 300);
         });
-        // Glow the "Comment" submit button gold when the input has
-        // content OR when the user has staged pending images. When
-        // both are empty the button returns to dim grey with
-        // cursor:default so it reads inert.
+        var pid = input.id.replace(/^comment-input-/, '');
+        // Wire the Claude composer root so the sparkle, auto-expand,
+        // and polish-preview actions all work. Idempotent.
+        if (typeof window._clientWireClaudeComposer === 'function') {
+          window._clientWireClaudeComposer(pid);
+        }
+        // Keep the send button dim when there is no text AND no
+        // pending images — the composer's default state is dim-on-empty,
+        // but pending images should also unlock it.
         input.addEventListener('input', function() {
-          var pid = this.id.replace(/^comment-input-/, '');
-          var btn = document.querySelector(
-            'button[data-action="submitComment"][data-id="' + pid + '"]');
-          if (!btn) return;
+          var _root = document.getElementById('client-composer-root-' + pid);
+          var send = _root && _root.querySelector('.claude-send');
+          if (!send) return;
           var hasContent = this.value.trim().length > 0;
           var hasPendingImgs = window._clientFeedPendingImgs &&
             window._clientFeedPendingImgs[pid] &&
             window._clientFeedPendingImgs[pid].length > 0;
-          if (hasContent || hasPendingImgs) {
-            // SEND REQUEST–matching look: transparent fill + gold
-            // outline + gold text. Border is always present so the
-            // button's bounding box doesn't jump between states.
-            btn.style.background = 'transparent';
-            btn.style.border = '1px solid #C4A44A';
-            btn.style.color = '#C4A44A';
-            btn.style.cursor = 'pointer';
-          } else {
-            btn.style.background = '#2A2A34';
-            btn.style.border = '1px solid transparent';
-            btn.style.color = '#555560';
-            btn.style.cursor = 'default';
-          }
+          if (hasContent || hasPendingImgs) send.classList.remove('dim');
+          else send.classList.add('dim');
         });
       })(inputs[i]);
     }

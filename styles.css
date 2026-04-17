@@ -32,6 +32,26 @@
   --tab-h:    44px;
   --strip-h:  44px;
 
+  /* Claude composer design tokens (reply composer redesign) */
+  --claude-surface: #1A1713;
+  --claude-surface-2: #231E18;
+  --claude-surface-3: #2D271F;
+  --claude-border: #2A241D;
+  --claude-border-strong: #3A3228;
+  --claude-ink: #F5EFE5;
+  --claude-ink-2: #C8BEAE;
+  --claude-ink-3: #8F8676;
+  --claude-ink-4: #5A5348;
+  --claude-clay: #E89B7F;
+  --claude-clay-bg: #E89B7F1A;
+  --claude-clay-border: #E89B7F47;
+  --claude-ai: #E3B56A;
+  --claude-ai-bg: #E3B56A1A;
+  --claude-ai-bg-strong: #E3B56A2E;
+  --claude-ai-border: #E3B56A4D;
+  --claude-primary: #F5EFE5;
+  --claude-primary-ink: #1A1713;
+
   /*  PCS MODAL LAYOUT CONTRACT  */
 
   /* Modal geometry */
@@ -4540,119 +4560,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-align: center;
 }
 
-/* ── REPLY ZONE — pill input + share row ── */
-/* Neutral borders (--notif-line) since the drawer sits on a jet-black
-   expanded card, not the blue unread block anymore. */
+/* ── REPLY ZONE — wraps the Claude composer inside thread drawer ── */
 .reply-zone,
 .thread-reply {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px solid var(--notif-line);
 }
-.reply-pill,
-.reply-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  padding: 6px 6px 6px 14px;
-  background: #FFFFFF08;              /* rgba(255,255,255,0.03) */
-  border: 1px solid var(--notif-line);
-  border-radius: 22px;
-  transition: border-color 0.2s ease;
-}
-.reply-pill:focus-within,
-.reply-row:focus-within { border-color: #C15F3C; }
-
-.reply-input {
-  flex: 1;
-  background: none;
-  border: none;
-  outline: none;
-  color: var(--text-loud);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  padding: 6px 0;
-  resize: none;
-  min-height: 20px;
-  line-height: 1.4;
-  -webkit-appearance: none;
-  overflow-y: auto;
-  max-height: 120px;
-}
-.reply-input::placeholder { color: var(--text-whisper); }
-.reply-input:disabled { opacity: 0.6; }
-
-/* ── POLISH REPLY — terracotta ✦ button + eyebrow nudge ── */
-/* Admin-only. Emitted by `_notifBuildThreadHtml` between the textarea
-   and `.reply-send` when `effectiveRole === 'Admin'`. A subtle
-   terracotta glow pulses at 2.5s to signal tap-to-polish without
-   dominating the drawer. Non-admin users never see these elements. */
-.polish-pre-hint {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #C15F3C;
-  font-weight: 600;
-  padding: 0 8px;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.reply-polish {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid #5A3A2C;
-  background: linear-gradient(180deg, #2A1A12 0%, #1A0E08 100%);
-  color: #C15F3C;
-  font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: transform 0.15s ease, box-shadow 0.3s ease;
-  animation: polish-glow 2.5s ease-in-out infinite;
-  -webkit-tap-highlight-color: transparent;
-}
-.reply-polish:active { transform: scale(0.92); }
-.reply-polish:hover {
-  animation: none;
-  box-shadow: 0 0 16px 3px #C15F3C59;   /* rgba(193,95,60,0.35) */
-}
-@keyframes polish-glow {
-  0%, 100% { box-shadow: 0 0 0 0 #C15F3C00; }      /* rgba(193,95,60,0) */
-  50%      { box-shadow: 0 0 14px 2px #C15F3C40; } /* rgba(193,95,60,0.25) */
-}
-
-.reply-send {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: var(--text-loud);
-  color: #000000;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-weight: 700;
-  transition: background 0.2s ease, transform 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  opacity: 0.4;
-}
-.reply-send.active { opacity: 1; }
-.reply-send svg {
-  width: 14px;
-  height: 14px;
-  color: #000000;
-  display: block;
-  pointer-events: none;
-}
-.reply-send:disabled { opacity: 0.5; cursor: default; }
 
 /* ── REPLY FOOTER — visibility label LEFT + "Open full post" RIGHT ── */
 .reply-footer-row {
@@ -6895,32 +6809,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-top: 1px solid #1F1F27;
 }
 
-/* Reply tag inside input pill */
-.pcs-reply-tag {
-  display: none;
-  align-items: center;
-  gap: 4px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  color: #C8A84B;
-  white-space: nowrap;
-  padding-right: 4px;
-  flex-shrink: 0;
-}
-.pcs-reply-tag-x {
-  background: none;
-  border: none;
-  color: #8E8E93;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 0 2px;
-  line-height: 1;
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+/* Legacy reply-tag (now unused — Claude quote-bar replaces it). Kept
+   as no-op display:none so any stale DOM referencing these IDs stays
+   invisible instead of leaking visible. */
+.pcs-reply-tag { display: none; }
+.pcs-reply-tag-x { display: none; }
 
 .pcs-comment-actions {
   display: flex;
@@ -6992,25 +6885,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #808090;
 }
 
-.pcs-reply-indicator-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 14px;
-  background: #9B87F514;
-  border-top: 1px solid #9B87F526;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: #9b87f5;
-  letter-spacing: 0.06em;
-}
-
-.pcs-reply-cancel {
-  cursor: pointer;
-  color: #8E8E93;
-  font-size: 11px;
-  padding: 0 4px;
-}
+/* Legacy client reply indicator (now unused — Claude quote-bar
+   replaces it). Hidden to avoid leaking any stale markup. */
+.pcs-reply-indicator-bar { display: none; }
+.pcs-reply-cancel { display: none; }
 
 .pcs-comment-replying-to {
   background: #9B87F514;
@@ -7391,11 +7269,11 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-wa-btn:active { transform: translateY(1px); box-shadow: 0 1px 3px #00000080; }
 
-/* Pill input bar */
+/* PCS input-bar wrap — outer container for Claude composer */
 .pcs-ibar-wrap {
   flex-shrink: 0;
-  padding: 8px 14px;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  padding: 10px 14px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid;
 }
 .pcs-ibar-wrap.client {
@@ -7404,58 +7282,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-ibar-wrap.notes {
   background: #000000; border-top-color: #1F1810;
 }
-.pcs-ibar-pill {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 6px 6px 14px;
-  border-radius: 24px; border: 1px solid;
-  margin-bottom: 6px;
-}
-.pcs-ibar-wrap.client .pcs-ibar-pill {
-  background: #0f0f1a; border-color: #1c1c28;
-}
-.pcs-ibar-wrap.notes .pcs-ibar-pill {
-  background: #0F0A04; border-color: #2E2410;
-}
-.pcs-ibar-plus {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: none; color: #fff; font-size: 20px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; line-height: 1;
-}
-.pcs-ibar-wrap.client .pcs-ibar-plus {
-  background: linear-gradient(180deg,#2a2a3a,#1a1a28);
-}
-.pcs-ibar-wrap.notes .pcs-ibar-plus {
-  background: linear-gradient(180deg,#2a2208,#1a1408);
-}
-.pcs-ibar-input {
-  flex: 1; background: none; border: none;
-  font-size: 14px; color: #F0F0F2; outline: none;
-  font-family: 'DM Sans', sans-serif;
-  line-height: 1.4; padding: 4px 0;
-  resize: none; max-height: 100px; overflow-y: auto;
-  scrollbar-width: none;
-}
-.pcs-ibar-input::-webkit-scrollbar { display: none; }
-.pcs-ibar-input::placeholder { color: #4A4A5A; }
-.pcs-ibar-send {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: none; color: #000; font-size: 15px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; opacity: 0.55;
-  transition: transform .1s, opacity .15s;
-}
-.pcs-ibar-send:active { transform: translateY(1px); }
-.pcs-ibar-wrap.client .pcs-ibar-send {
-  background: linear-gradient(180deg,#d4b050,#b8922e);
-}
-.pcs-ibar-wrap.notes .pcs-ibar-send {
-  background: linear-gradient(180deg,#fdb030,#e09218);
-}
 .pcs-ibar-hint {
   font-family: 'IBM Plex Mono', monospace; font-size: 7px;
   color: #4A4A5A; letter-spacing: .06em;
-  text-transform: uppercase; padding-left: 4px;
+  text-transform: uppercase; padding: 6px 4px 0;
 }
 
 /* Chip dropdown */
@@ -9122,20 +8952,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   text-align: center;
 }
 
-.pcs-ibar-polish {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid #5A3A2C;
-  background: linear-gradient(180deg, #2A1A12 0%, #1A0E08 100%);
-  color: #C15F3C;
-  font-size: 13px;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  cursor: pointer;
-}
+/* Legacy inline polish button (replaced by Claude sparkle) */
+.pcs-ibar-polish { display: none; }
 
 /* "Edit with Claude" entry button (caption tab) */
 @keyframes claude-glow {
@@ -9534,4 +9352,377 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 13px 0;
   cursor: pointer;
   text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CLAUDE REPLY COMPOSER (20260417o)
+   Shared styling for the reply composer across three locations:
+   agency PCS, client portal, and notification thread drawer.
+   Two-container pattern: quote-bar on top, composer below (and an
+   optional AI polish preview card between them when a polish has
+   been generated). The three pieces connect visually into a single
+   rounded shape via conditional border-radius rules on the root.
+   ═══════════════════════════════════════════════════════════════ */
+
+.claude-composer-root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Quote-bar — sits above the composer when replying to a comment. */
+.claude-quote-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  padding: 12px 14px 12px 20px;
+  background: var(--claude-surface);
+  border: 1px solid var(--claude-border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+}
+.claude-quote-bar::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--claude-clay);
+}
+.claude-quote-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.claude-quote-who {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--claude-clay);
+  line-height: 1.2;
+}
+.claude-quote-snippet {
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--claude-ink-2);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.claude-quote-x {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--claude-ink-3);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.claude-quote-x:hover,
+.claude-quote-x:active {
+  background: var(--claude-surface-2);
+  color: var(--claude-ink);
+}
+
+/* Polish preview card — sits between quote-bar and composer when
+   Claude has generated a polished version of the draft. The border
+   shape connects it to whatever's above and below. */
+.claude-polish-preview {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--claude-ai-border);
+  border-top: none;
+  border-bottom: 1px solid var(--claude-border);
+  background: var(--claude-surface);
+  animation: claude-polish-in 0.22s ease-out;
+}
+@keyframes claude-polish-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.claude-polish-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px 10px 16px;
+  background: var(--claude-ai-bg);
+}
+.claude-polish-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--claude-ai);
+  font-weight: 400;
+}
+.claude-polish-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.claude-polish-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+.claude-polish-btn:active { transform: scale(0.97); }
+.claude-polish-btn.keep {
+  background: transparent;
+  border: 1px solid var(--claude-border-strong);
+  color: var(--claude-ink-2);
+}
+.claude-polish-btn.keep:hover { background: var(--claude-surface-2); }
+.claude-polish-btn.use {
+  background: var(--claude-ink);
+  border: 1px solid var(--claude-ink);
+  color: var(--claude-primary-ink);
+}
+.claude-polish-btn.use:hover { background: var(--claude-ink-2); }
+.claude-polish-body {
+  padding: 14px 16px;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--claude-ink);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.claude-polish-compare {
+  border-top: 1px dashed var(--claude-border);
+  padding: 8px 16px 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--claude-ink-3);
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Composer pill — always visible. Connects to quote-bar/preview
+   above via conditional border-radius. */
+.claude-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--claude-surface);
+  border: 1px solid var(--claude-border);
+  border-radius: 20px;
+  transition: border-color 0.2s ease;
+}
+.claude-composer-root.has-quote-bar .claude-composer,
+.claude-composer-root.has-polish .claude-composer {
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+}
+.claude-composer-root.has-quote-bar.has-polish .claude-polish-preview {
+  border-radius: 0;
+}
+.claude-composer-root:not(.has-quote-bar).has-polish .claude-polish-preview {
+  border-top: 1px solid var(--claude-ai-border);
+  border-radius: 20px 20px 0 0;
+}
+.claude-composer:focus-within { border-color: var(--claude-border-strong); }
+.claude-composer-root.has-quote-bar .claude-composer:focus-within,
+.claude-composer-root.has-polish .claude-composer:focus-within { border-top: none; }
+
+.claude-plus {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--claude-border);
+  background: transparent;
+  color: var(--claude-ink-2);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.claude-plus:hover,
+.claude-plus:active {
+  background: var(--claude-surface-2);
+  color: var(--claude-ink);
+}
+
+.claude-textarea-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+.claude-textarea {
+  flex: 1;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--claude-ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 6px 0;
+  resize: none;
+  min-height: 34px;
+  overflow: hidden;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+.claude-textarea::placeholder { color: var(--claude-ink-4); }
+.claude-textarea:disabled { opacity: 0.75; }
+
+/* Loading state — replaces textarea content visually with a
+   Fraunces italic "polishing" + animated amber dots. */
+.claude-polishing-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  padding: 6px 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--claude-ai);
+  background: var(--claude-surface);
+}
+.claude-composer-root.is-polishing .claude-polishing-overlay { display: flex; }
+.claude-composer-root.is-polishing .claude-textarea {
+  visibility: hidden;
+}
+.claude-polishing-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+.claude-polishing-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--claude-ai);
+  animation: claude-dot-pulse 1.1s ease-in-out infinite;
+}
+.claude-polishing-dots span:nth-child(2) { animation-delay: 0.16s; }
+.claude-polishing-dots span:nth-child(3) { animation-delay: 0.32s; }
+@keyframes claude-dot-pulse {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40%           { opacity: 1;   transform: translateY(-2px); }
+}
+
+/* Sparkle — AI polish trigger. Hidden when textarea is empty,
+   visible with a soft glow when there's text to polish. */
+.claude-sparkle {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--claude-ai-border);
+  background: var(--claude-ai-bg);
+  color: var(--claude-ai);
+  font-size: 15px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease, background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 0 6px #E3B56A40);
+}
+.claude-composer-root.has-text .claude-sparkle {
+  display: flex;
+  opacity: 1;
+  transform: scale(1);
+}
+.claude-sparkle:hover,
+.claude-sparkle:active { background: var(--claude-ai-bg-strong); }
+.claude-composer-root.is-polishing .claude-sparkle {
+  background: var(--claude-ai-bg-strong);
+}
+.claude-sparkle::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid var(--claude-ai-border);
+  opacity: 0;
+  animation: claude-sparkle-ring 2s ease-out infinite;
+  pointer-events: none;
+}
+.claude-composer-root.is-polishing .claude-sparkle::after {
+  animation-duration: 1.2s;
+}
+@keyframes claude-sparkle-ring {
+  0%   { transform: scale(1);    opacity: 0.55; }
+  70%  { transform: scale(1.35); opacity: 0; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* Send button — cream fill on dark. */
+.claude-send {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: var(--claude-primary);
+  color: var(--claude-primary-ink);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.12s ease, background 0.15s ease, opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.claude-send:hover { transform: translateY(-1px); }
+.claude-send:active { transform: translateY(0); }
+.claude-send svg { width: 16px; height: 16px; pointer-events: none; }
+.claude-send.dim {
+  background: var(--claude-surface-2);
+  color: var(--claude-ink-4);
+  cursor: default;
+}
+.claude-send.dim:hover { transform: none; }
+.claude-send:disabled { opacity: 0.7; cursor: default; }
+
+/* Mobile — 430px viewport. Keep generous tap targets. */
+@media (max-width: 430px) {
+  .claude-quote-bar { padding: 10px 12px 10px 18px; }
+  .claude-composer  { padding: 10px 12px; gap: 8px; }
+  .claude-polish-body { padding: 12px 14px; font-size: 14px; }
+  .claude-polish-header { padding: 9px 12px 9px 14px; }
+  .claude-polish-compare { padding: 8px 14px 10px; }
 }
