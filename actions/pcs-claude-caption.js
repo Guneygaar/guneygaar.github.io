@@ -13,10 +13,19 @@ window._captionWS = {
   mode: null,
   _rewriteComments: null,
   correctionsPrompt: '',
-  memoryPrompt: ''
+  memoryPrompt: '',
+  caption: ''
 };
 
 var _CW_USD_TO_INR = 100;
+
+function _cwBuildAiOpts() {
+  var ws = window._captionWS;
+  var mem = ws.memoryPrompt || '';
+  var cap = ws.caption || '';
+  var combined = mem + (cap ? (mem ? '\n\n' : '') + 'CURRENT CAPTION:\n' + cap : '');
+  return combined ? { memory_context: combined } : undefined;
+}
 
 // ─── cost helpers ────────────────────────────────────────────
 
@@ -46,6 +55,7 @@ window.openCaptionWorkspace = async function(mode, context) {
     ws.postId = context.postId || null;
     ws.mode = mode;
     ws._rewriteComments = null;
+    ws.caption = context.caption || '';
   }
   ws.isOpen = true;
 
@@ -85,7 +95,7 @@ window.openCaptionWorkspace = async function(mode, context) {
       if (ws.correctionsPrompt && rwApiMsgs.length > 0) {
         rwApiMsgs[0] = { role: rwApiMsgs[0].role, content: rwApiMsgs[0].content + ws.correctionsPrompt };
       }
-      var rwAiOpts = ws.memoryPrompt ? { memory_context: ws.memoryPrompt } : undefined;
+      var rwAiOpts = _cwBuildAiOpts();
       var result = await _callSrtdAI(featureTag, rwApiMsgs, ws.postId, rwAiOpts);
       var typingEl = thread && thread.querySelector('.cw-typing');
       if (typingEl) typingEl.remove();
@@ -110,7 +120,10 @@ window.openCaptionWorkspace = async function(mode, context) {
     } else if (mode === 'qc') {
       var msg3 = 'QC this LinkedIn caption against the brand guide. Caption:\n\n' +
         (context.caption || '(no caption)') +
-        '\n\nReturn a structured verdict with PASS or FLAG for each check.';
+        '\n\nReturn a structured verdict with PASS or FLAG for each check. ' +
+        'When doing QC: First list all checks as PASS or FLAG lines. ' +
+        'Then write "---" on its own line. ' +
+        'Then write ONLY the corrected caption text after the separator. Nothing else after the caption.';
       window.sendCaptionMessage(msg3);
     }
     // 'chat' mode: user types first message
@@ -165,7 +178,7 @@ window.sendCaptionMessage = async function(text) {
     apiMessages[0] = { role: apiMessages[0].role, content: apiMessages[0].content + ws.correctionsPrompt };
   }
 
-  var aiOpts = ws.memoryPrompt ? { memory_context: ws.memoryPrompt } : undefined;
+  var aiOpts = _cwBuildAiOpts();
   var result = await _callSrtdAI(featureTag, apiMessages, ws.postId, aiOpts);
 
   var typingEl = thread && thread.querySelector('.cw-typing');
@@ -296,6 +309,65 @@ function _cwBuildCommentsBlock(comments) {
   return html;
 }
 
+// ─── caption extraction (strip QC analysis) ─────────────────
+
+function _cwExtractCaption(fullText) {
+  var text = fullText || '';
+
+  var separatorIdx = text.lastIndexOf('\n---\n');
+  if (separatorIdx !== -1) {
+    return text.substring(separatorIdx + 5).trim();
+  }
+
+  var lines = text.split('\n');
+  var captionStart = -1;
+  var skipPatterns = [
+    /^(PASS|FLAG|CHECK|NOTE|ISSUE|VERDICT|ANALYSIS|QC|REVIEW)[\s:]/i,
+    /^(Here is|Here's|Updated|Revised|Rewritten|New) (the |your |an )?(updated |revised |rewritten |new )?(caption|copy|version|draft)/i,
+    /^(Brand guide|Word count|Hashtag|Hook|Structure|Formatting|Length)/i,
+    /^[-\u2022\u2713\u2717\u2192\u25CF]/,
+    /^\d+\.\s*(PASS|FLAG|CHECK)/i
+  ];
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (line === '') continue;
+
+    var isAnalysis = false;
+    for (var p = 0; p < skipPatterns.length; p++) {
+      if (skipPatterns[p].test(line)) {
+        isAnalysis = true;
+        break;
+      }
+    }
+
+    if (!isAnalysis && captionStart === -1) {
+      var prevWasAnalysis = false;
+      for (var j = i - 1; j >= 0; j--) {
+        var prevLine = lines[j].trim();
+        if (prevLine === '') continue;
+        for (var p2 = 0; p2 < skipPatterns.length; p2++) {
+          if (skipPatterns[p2].test(prevLine)) {
+            prevWasAnalysis = true;
+            break;
+          }
+        }
+        break;
+      }
+
+      if (prevWasAnalysis || i === 0) {
+        captionStart = i;
+      }
+    }
+  }
+
+  if (captionStart > 0) {
+    return lines.slice(captionStart).join('\n').trim();
+  }
+
+  return text.trim();
+}
+
 // ─── chip handler ────────────────────────────────────────────
 
 window._cwHandleChip = function(chipType, draftNum) {
@@ -305,7 +377,9 @@ window._cwHandleChip = function(chipType, draftNum) {
       var allDrafts = document.querySelectorAll('.cw-draft-body[data-draft="' + draftNum + '"]');
       draftEl = allDrafts.length ? allDrafts[allDrafts.length - 1] : null;
     }
-    var text = draftEl ? draftEl.innerText.trim() : '';
+    var rawText = draftEl ? draftEl.innerText.trim() : '';
+    if (!rawText) return;
+    var text = _cwExtractCaption(rawText);
     if (!text) return;
     var original = draftEl ? (draftEl.getAttribute('data-original') || '') : '';
     _cwCaptureCorrection(original, text);
@@ -345,9 +419,10 @@ window._cwApplyDraft = async function(text) {
     Object.assign(post, { caption: text, updated_at: new Date().toISOString() });
     if (typeof _clearSaveTimeout === 'function') _clearSaveTimeout(post);
     post._isSaving = false;
-    window.closeCaptionWorkspace();
-    if (typeof _renderPCS === 'function') _renderPCS(postId);
+    ws.caption = text;
     if (typeof showToast === 'function') showToast('Caption updated', 'success');
+    if (typeof _renderPCS === 'function') _renderPCS(postId);
+    setTimeout(function() { window.closeCaptionWorkspace(); }, 500);
   } catch (err) {
     if (typeof _clearSaveTimeout === 'function') _clearSaveTimeout(post);
     post._isSaving = false;
