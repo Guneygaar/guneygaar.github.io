@@ -822,18 +822,40 @@ function renderNotifications(name, role) {
     '</div>';
   }
 
+  // Date-group headers carry a right-aligned count pill — "N new" when
+  // the bucket has unread items, otherwise "N items". The inner
+  // `.notif-day-label` span is preserved so source-pattern unit tests
+  // keep matching on the legacy class name.
+  function _buildGroupHeader(label, items, isFirst) {
+    if (!items || items.length === 0) return '';
+    var unreadCount = 0;
+    for (var i = 0; i < items.length; i++) { if (!items[i].read) unreadCount++; }
+    var countText = unreadCount > 0
+      ? unreadCount + ' new'
+      : items.length + (items.length === 1 ? ' item' : ' items');
+    var firstCls = isFirst ? ' ngh-first' : '';
+    return '<div class="notif-group-header' + firstCls + '">' +
+      '<span class="notif-group-label notif-day-label">' + label + '</span>' +
+      '<span class="notif-group-count">' + countText + '</span>' +
+    '</div>';
+  }
+
   var html = '';
+  var _isFirstGroup = true;
   if (groups.today.length > 0) {
-    html += '<div class="notif-day-label ndl-first">Today</div>';
+    html += _buildGroupHeader('Today', groups.today, _isFirstGroup);
     groups.today.forEach(function(n) { html += _buildItem(n); });
+    _isFirstGroup = false;
   }
   if (groups.yesterday.length > 0) {
-    html += '<div class="notif-day-label">Yesterday</div>';
+    html += _buildGroupHeader('Yesterday', groups.yesterday, _isFirstGroup);
     groups.yesterday.forEach(function(n) { html += _buildItem(n); });
+    _isFirstGroup = false;
   }
   if (groups.earlier.length > 0) {
-    html += '<div class="notif-day-label">Earlier</div>';
+    html += _buildGroupHeader('Earlier', groups.earlier, _isFirstGroup);
     groups.earlier.forEach(function(n) { html += _buildItem(n); });
+    _isFirstGroup = false;
   }
   html += '<div class="notif-foot">That\u2019s everything</div>';
   scroll.innerHTML = html;

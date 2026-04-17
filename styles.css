@@ -3831,23 +3831,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 #notif-overlay {
   /* Jet black palette — unified */
   --notif-bg: #000000;
-  --notif-line: #1A1A20;
-  --notif-line-soft: #141418;
+  --notif-line: #1F1F27;
+  --notif-line-soft: #17171D;
   --notif-bg-elevated: #141418;
 
-  /* Electric blue unread state */
-  --unread-bg: #0E1A35;
-  --unread-bg-hover: #14224A;
-  --unread-border: #1E3A6E;
+  /* Linear-style unread — dot only, no background tint */
   --unread-dot: #3B82F6;
-  --unread-dot-glow: #3B82F680;       /* rgba(59,130,246,0.50) */
 
-  /* Text hierarchy */
+  /* Text hierarchy (lifted tokens — text-soft/whisper raised for
+     legibility against the jet-black surface; text-ghost is reserved
+     for empty-state copy where we want the text to nearly disappear). */
   --text-loud: #F0F0F2;
   --text-bright: #E4E4E8;
   --text: #B8B8C0;
-  --text-soft: #78787E;
-  --text-whisper: #3A3A42;
+  --text-soft: #8E8E96;
+  --text-whisper: #5A5A62;
+  --text-ghost: #3A3A42;
 
   position: fixed;
   inset: 0;
@@ -3984,85 +3983,118 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .notif-scroll::-webkit-scrollbar { display: none; }
 
-/* ── DAY LABEL ── */
-.notif-day-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: 1.6px;
-  color: var(--text-soft);
-  text-transform: uppercase;
-  padding: 18px 20px 8px;
+/* ── DATE GROUP HEADER — v7.2 ── */
+/* Replaces the old mono caps day label with a DM Sans 11px bold
+   header + a small count pill on the right ("N new" if the group
+   has unread items, "N items" otherwise). The old .notif-day-label
+   class is retained as an inner span so stale markup + unit tests
+   (notif-render.test.js looks for `notif-day-label` in source)
+   still match. */
+.notif-group-header {
+  padding: 22px 20px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
-.notif-day-label.ndl-first { padding-top: 14px; }
+.notif-group-header.ngh-first,
+.notif-group-header:first-child { padding-top: 16px; }
+.notif-group-label,
+.notif-day-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.notif-group-count {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--text-whisper);
+  text-transform: uppercase;
+}
 
 /* ── NOTIFICATION ITEM ── */
+/* Linear-style unread — no background tint. The unread state is
+   communicated by a small blue dot on the left edge + a quieter
+   text hierarchy shift (author loud + bold, headline loud,
+   preview lifted). Read items get the dimmer hierarchy. */
 .notif-item {
   position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   padding: 14px 20px;
   border-bottom: 1px solid var(--notif-line-soft);
   cursor: pointer;
   background: transparent;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: background 0.3s ease;
   min-height: 44px;
 }
-/* Read state matches the base state — no visual change. */
 .notif-item.read { background: transparent; }
 .notif-item:hover,
 .notif-item.read:hover {
   background: #FFFFFF05;              /* rgba(255,255,255,0.02) */
 }
 
-/* Unread: full-row electric blue + glowing blue dot on the left edge. */
-.notif-item.unread {
-  background: var(--unread-bg);
-  border-bottom-color: #1E3A6E4D;     /* rgba(30,58,110,0.30) */
-}
-.notif-item.unread:hover {
-  background: var(--unread-bg-hover);
-}
+/* Read hierarchy (default) — everything a notch quieter than unread. */
+.notif-item .notif-author   { color: var(--text-soft); }
+.notif-item .notif-headline { color: var(--text); }
+.notif-item .notif-headline strong { color: var(--text-bright); }
+.notif-item .notif-preview  { color: var(--text-whisper); }
+
+/* Unread: just the blue dot + loud text. No background, no border tint. */
 .notif-item.unread::before {
   content: '';
   position: absolute;
-  left: 7px;
+  left: 8px;
   top: 50%;
   transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--unread-dot);
-  box-shadow: 0 0 10px var(--unread-dot-glow);
   pointer-events: none;
 }
+.notif-item.unread .notif-author {
+  color: var(--text-loud);
+  font-weight: 600;
+}
 .notif-item.unread .notif-headline { color: var(--text-loud); }
+.notif-item.unread .notif-headline strong { color: var(--text-loud); }
 .notif-item.unread .notif-preview  { color: var(--text); }
-.notif-item.unread .notif-author   { color: var(--text-bright); }
 
-/* ── AVATAR ── */
+/* ── AVATAR — 40x40 with a subtle white ring to lift it off the
+   jet-black surface without a hard border line. */
 .notif-av {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #FFFFFF;
   border: none;
   align-self: flex-start;
-  margin-top: 1px;
+  margin-top: 2px;
+  box-shadow: 0 0 0 1px #FFFFFF0D;     /* rgba(255,255,255,0.05) */
 }
 .nav-manisha, .nav-client    { background: #FF4B4B; border: none; color: #FFFFFF; }
 .nav-chitra,  .nav-servicing { background: #22D3EE; border: none; color: #FFFFFF; }
 .nav-pranav,  .nav-creative  { background: #9b87f5; border: none; color: #FFFFFF; }
 .nav-admin,   .nav-shubham   { background: #C8A84B; border: none; color: #FFFFFF; }
 .nav-system                  { background: #555566; border: none; color: #FFFFFF; }
+.notif-av.nav-system {
+  background: var(--notif-bg-elevated);
+  color: var(--text-soft);
+  box-shadow: 0 0 0 1px var(--notif-line);
+}
 
 /* ── BODY ── */
 .notif-body { flex: 1; min-width: 0; }
@@ -4182,16 +4214,17 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-self: flex-start;
 }
 .notif-thumb-wrap {
-  width: 60px;
-  height: 60px;
-  border-radius: 6px;
+  width: 68px;
+  height: 68px;
+  border-radius: 8px;
   overflow: hidden;
   background: var(--notif-bg-elevated);
   border: 1px solid var(--notif-line);
+  box-shadow: 0 2px 8px #0000004D;     /* rgba(0,0,0,0.30) — soft drop */
 }
 .notif-thumb {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   object-fit: cover;
   display: block;
 }
@@ -4199,13 +4232,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
   gap: 2px;
   justify-content: center;
-  width: 60px;
+  width: 68px;
 }
 
-/* Action buttons — 28x28 tap target (inside a 60px row). */
+/* Action buttons — 30x30 tap target (inside a 68px row). */
 .notif-mi-btn {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   background: none;
   border: none;
@@ -4242,10 +4275,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 16px;
   height: 16px;
 }
-.notif-item.unread .notif-mi-btn { color: #2A3A5A; }
-.notif-item.unread .notif-mi-btn:hover {
-  background: #3B82F626;              /* rgba(59,130,246,0.15) */
-}
+/* Action buttons stay consistent across read/unread states in the
+   Linear-style redesign — no blue-tint override on unread. */
 
 /* Legacy .notif-meta kept as a hidden wrapper for any stale markup
    path; the v7 tree puts timestamp into .notif-top-line and actions
@@ -4417,64 +4448,84 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   flex-direction: column;
 }
 
-/* ── THREAD MESSAGE (v7 — bigger, more readable) ── */
+/* ── THREAD MESSAGE (v7.2 — bumped typography for legibility) ── */
 .thread-msg {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 10px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--notif-line);
 }
 .thread-msg:last-of-type { border-bottom: none; }
 .thread-av {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #FFFFFF;
   border: none;
   margin-top: 1px;
+  box-shadow: 0 0 0 1px #FFFFFF0D;     /* rgba(255,255,255,0.05) */
 }
 .thread-av.nav-system { background: #666666; }
 .thread-content {
   flex: 1;
   min-width: 0;
 }
+/* .thread-header — legacy; .thread-head is the v7.2 layout with
+   left-aligned author+role and an auto-justified timestamp. Both
+   emit the same semantic block; keep the old rule as a no-op
+   layout so stale cached markup still reads right. */
 .thread-header {
   display: flex;
   align-items: center;
   gap: 6px;
 }
+.thread-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.thread-head-left {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
 .thread-author {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-loud);
 }
 .thread-role {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 7px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-whisper);
-  padding: 2px 5px;
-  background: #FFFFFF0A;              /* rgba(255,255,255,0.04) */
-  border-radius: 2px;
+  color: var(--text-soft);
+  padding: 2px 6px;
+  background: #FFFFFF0F;              /* rgba(255,255,255,0.06) */
+  border-radius: 3px;
   font-weight: 600;
 }
 .thread-time {
-  font-size: 9px;
-  color: var(--text-whisper);
-  margin-left: auto;
   font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  margin-left: auto;
   white-space: nowrap;
 }
-.thread-message {
-  font-size: 12.5px;
+.thread-message,
+.thread-text {
+  font-size: 13px;
   color: var(--text);
   line-height: 1.5;
   margin-top: 3px;
