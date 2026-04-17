@@ -98,7 +98,6 @@ function _briefCommentRowHtml(c) {
   try {
     if (typeof getDisplayName === 'function') displayName = getDisplayName(author);
   } catch (_) {}
-  var colors = _briefRoleColor(role);
   var timeStr = _briefFormatCommentTime(c.created_at);
   return '<div class="brief-cmt-row" data-cmt-id="' + esc(c.id || '') + '" ' +
     'style="display:flex;gap:10px;padding:10px 0;' +
@@ -109,13 +108,6 @@ function _briefCommentRowHtml(c) {
     'flex-wrap:wrap;">' +
     '<span style="font-family:\'DM Sans\',sans-serif;font-size:13px;' +
     'font-weight:700;color:#FFFFFF;">' + esc(displayName) + '</span>' +
-    (role ?
-      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
-      'font-weight:600;letter-spacing:0.1em;text-transform:uppercase;' +
-      'padding:2px 6px;border-radius:4px;background:' + colors.bg + ';' +
-      'border:1px solid ' + colors.border + ';color:' + colors.text + ';">' +
-      esc(role) + '</span>'
-      : '') +
     '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'color:#777788;letter-spacing:0.04em;">' + esc(timeStr) + '</span>' +
     '</div>' +
@@ -918,7 +910,10 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
   var post = (typeof getPostById === 'function') ? getPostById(postId) : null;
   if (!post) return;
 
-  var actorName = window.AppState.user.email || window.AppState.user.name || 'Unknown';
+  var _emailKey = window.AppState.user.email || '';
+  var actorName = (typeof getDisplayName === 'function' && _emailKey)
+    ? getDisplayName(_emailKey)
+    : (window.AppState.user.name || _emailKey || 'Unknown');
   var actorRole = window.AppState.user.effectiveRole || 'Admin';
   var _labelWho = displayName || ownerRole;
   var actionLabel = (isReassign ? 'Brief reassigned to ' : 'Brief assigned to ') + _labelWho;
@@ -983,13 +978,10 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
           user_role: _assigneeRole,
           post_id:   postId,
           type:      'assign',
-          message:   (window.AppState.user.name ||
-                      window.AppState.user.email ||
-                      'Someone') +
+          message:   actorName +
                      ' assigned you a brief: "' +
                      (post.title || 'Untitled') + '"',
-          actor:     (window.AppState.user.name ||
-                      window.currentUserName || 'Admin'),
+          actor:     actorName,
           read:      false
         })
       }).catch(function(err) {
@@ -1056,13 +1048,10 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
         user_role: _assigneeRole,
         post_id:   postId,
         type:      'assign',
-        message:   (window.AppState.user.name ||
-                    window.AppState.user.email ||
-                    'Someone') +
+        message:   actorName +
                    ' assigned you a brief: "' +
                    (post.title || 'Untitled') + '"',
-        actor:     (window.AppState.user.name ||
-                    window.currentUserName || 'Admin'),
+        actor:     actorName,
         read:      false
       })
     }).catch(function(err) {

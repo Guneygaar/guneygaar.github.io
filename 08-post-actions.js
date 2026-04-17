@@ -388,14 +388,17 @@ async function submitClientRequest() {
     });
     console.log('[REQUEST] API SUCCESS');
     await logActivity({ post_id: reqId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    var _reqActor = (typeof getDisplayName === 'function' && email)
+      ? getDisplayName(email)
+      : (window.AppState.user.name || window.currentUserName || email || 'Client');
     apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
         user_role: 'Servicing',
         post_id: reqId,
         type: 'new_request',
-        message: (window.AppState.user.name || 'Client') + ' submitted a new request: ' + _reqTitle,
-        actor: window.AppState.user.name || window.currentUserName || 'Client',
+        message: _reqActor + ' submitted a new request: ' + _reqTitle,
+        actor: _reqActor,
         read: false
       })
     }).catch(function(err){ console.error('[post-actions] notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'notification-post'); });
@@ -405,8 +408,8 @@ async function submitClientRequest() {
         user_role: 'Admin',
         post_id: reqId,
         type: 'new_request',
-        message: (window.AppState.user.name || 'Client') + ' submitted a new request: ' + _reqTitle,
-        actor: window.AppState.user.name || window.currentUserName || 'Client',
+        message: _reqActor + ' submitted a new request: ' + _reqTitle,
+        actor: _reqActor,
         read: false
       })
     }).catch(function(err){ console.error('[post-actions] admin notification', err); window.logError && window.logError(err&&err.message, err&&err.stack, 'notification-admin-req'); });

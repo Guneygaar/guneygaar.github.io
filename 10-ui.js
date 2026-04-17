@@ -1018,9 +1018,6 @@ function _notifThreadMsgHtml(c, opts) {
   var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(author) : author;
   var initial = _authorDisplay ? _authorDisplay.charAt(0).toUpperCase() : '?';
   var ts = _notifRelTime(c.created_at);
-  var roleTag = authorRole
-    ? '<span class="thread-role">' + esc(authorRole) + '</span>'
-    : '';
   // Optimistic rows (client-side only, no real id yet) carry
   // `data-optimistic="1"` so a later realtime echo with the real id
   // can replace the attribute instead of double-inserting.
@@ -1030,7 +1027,6 @@ function _notifThreadMsgHtml(c, opts) {
       '<div class="thread-content">' +
         '<div class="thread-header">' +
           '<span class="thread-author">' + esc(_authorDisplay) + '</span>' +
-          roleTag +
           '<span class="thread-time">' + esc(ts) + '</span>' +
         '</div>' +
         '<div class="thread-message">' + esc(c.message || '') + '</div>' +
@@ -1150,7 +1146,10 @@ async function _notifSubmitReply(sendBtn) {
   var notifMatch = _notifData.find(function(x) { return x.id === notifId; });
   var postTitle = (post && post.title) || (notifMatch && notifMatch.message) || postId;
 
-  var authorName = (window.AppState.user && window.AppState.user.email) || (window.AppState.user && window.AppState.user.name) || 'Unknown';
+  var _emailKey = (window.AppState.user && window.AppState.user.email) || '';
+  var authorName = (typeof getDisplayName === 'function' && _emailKey)
+    ? getDisplayName(_emailKey)
+    : ((window.AppState.user && window.AppState.user.name) || _emailKey || 'Unknown');
   var effRole = (window.AppState.user && window.AppState.user.effectiveRole) ||
                 (window.AppState.user && window.AppState.user.role) || 'Admin';
   var authorRole = effRole.charAt(0).toUpperCase() + effRole.slice(1).toLowerCase();

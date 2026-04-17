@@ -643,7 +643,6 @@ console.log('LOADED:', 'render/client.js');
       '</div>';
     }
     var _authorDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.author) : (c.author || '?');
-    var roleLabel = _esc((c.author_role || '').toUpperCase());
     var ts = _relativeTime(c.created_at);
     var avatarHtml = (typeof renderAvatar === 'function')
       ? renderAvatar(c.author, c.author_role, avSize || 32)
@@ -688,7 +687,6 @@ console.log('LOADED:', 'render/client.js');
         replyTagHtml +
         '<div style="display:flex;align-items:center;flex-wrap:nowrap;gap:6px;">' +
           '<span style="font-family:\'DM Sans\',sans-serif;font-weight:700;font-size:14px;color:#FFFFFF;">' + _esc(_authorDisplay) + '</span>' +
-          '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;font-weight:600;text-transform:uppercase;color:#A0A0B0;">' + roleLabel + '</span>' +
           dotsBtnHtml +
         '</div>' +
         '<div class="client-comment-time" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#909098;margin-top:1px;">' + ts + editedLabel + '</div>' +
@@ -735,7 +733,10 @@ console.log('LOADED:', 'render/client.js');
       html += _singleCommentHtml(parent);
       var replies = replyMap[parent.id] || [];
       if (!replies.length) continue;
-      var parentAuthor = parent.author || '';
+      var parentAuthorRaw = parent.author || '';
+      var parentAuthor = (typeof getDisplayName === 'function' && parentAuthorRaw)
+        ? getDisplayName(parentAuthorRaw)
+        : parentAuthorRaw;
       if (replies.length === 1) {
         html += _singleCommentHtml(replies[0], { isReply: true, parentAuthor: parentAuthor });
       } else if (replies.length === 2) {
@@ -1650,8 +1651,10 @@ console.log('LOADED:', 'render/client.js');
     var savedValue = input.value;
     input.value = '';
 
-    var authorName = window.AppState.user.email || window.AppState.user.name || 'Client';
-    var displayName = (typeof getDisplayName === 'function') ? getDisplayName(authorName) : (window.AppState.user.displayName || window.AppState.user.name || 'Client');
+    var _emailKey = window.AppState.user.email || '';
+    var authorName = (typeof getDisplayName === 'function' && _emailKey)
+      ? getDisplayName(_emailKey)
+      : (window.AppState.user.name || _emailKey || 'Client');
     var _mentioned = _parseMentions(message);
     var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
