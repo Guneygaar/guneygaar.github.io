@@ -107,6 +107,7 @@ window.openCaptionWorkspace = async function(mode, context) {
         var outTok = result.output_tokens || (result.usage && result.usage.output) || 0;
         ws.sessionCost += _cwCalcINR(inTok, outTok);
         _cwUpdateSessionMeter();
+        setTimeout(function() { _cwFetchCostTotals(); }, 800);
       } else {
         ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
       }
@@ -206,6 +207,7 @@ window.sendCaptionMessage = async function(text) {
     var costINR = _cwCalcINR(inTok, outTok);
     ws.sessionCost += costINR;
     _cwUpdateSessionMeter();
+    setTimeout(function() { _cwFetchCostTotals(); }, 800);
   } else {
     ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
   }
