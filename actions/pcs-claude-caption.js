@@ -432,7 +432,7 @@ window._cwApplyDraft = async function(text) {
   if (typeof _startSaveTimeout === 'function') _startSaveTimeout(post, postId);
 
   try {
-    await apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
+    await withRetry(function() { return apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({
@@ -440,7 +440,7 @@ window._cwApplyDraft = async function(text) {
         updated_at: new Date().toISOString(),
         updated_by: window.AppState.user.email || ''
       })
-    });
+    }); });
     Object.assign(post, { caption: text, updated_at: new Date().toISOString() });
     if (typeof _clearSaveTimeout === 'function') _clearSaveTimeout(post);
     post._isSaving = false;

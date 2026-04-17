@@ -100,6 +100,36 @@ async function apiFetch(path, options = {}, meta) {
   return text ? JSON.parse(text) : [];
 }
 
+// withRetry — thin one-shot recovery wrapper for transient Supabase
+// auth/network hiccups ahead of the Mumbai region migration. On the
+// FIRST failure, inspects the error message; if transient (401,
+// session expired, Failed to fetch, Load failed, NetworkError, or a
+// post-refresh "server"/"network" classification surfaced by apiFetch),
+// forces ONE explicit refreshSession() and replays fn exactly once. If
+// that refresh itself hit a 500 (server) or network blip, waits 500ms
+// and retries the refresh once before replaying fn. On final failure,
+// rethrows — the caller's existing try/catch or .catch() path still
+// logs to error_log unchanged.
+async function withRetry(fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    const msg = (err && err.message) || '';
+    const transient =
+      /401|session expired|Failed to fetch|Load failed|NetworkError|refresh server|refresh network/i
+        .test(msg);
+    if (!transient) throw err;
+    let r = null;
+    try { r = await refreshSession(); } catch (e) { /* swallow */ }
+    if (r && (r.error === 'server' || r.error === 'network')) {
+      await new Promise(function(res) { setTimeout(res, 500); });
+      try { r = await refreshSession(); } catch (e) { /* swallow */ }
+    }
+    return await fn();
+  }
+}
+window.withRetry = withRetry;
+
 function normalise(rows) {
   if (!Array.isArray(rows)) return [];
   return rows.map(r => ({
@@ -180,11 +210,11 @@ async function uploadPostAsset(file, postId) {
 // app degrades gracefully if workspace_settings is unreachable.
 async function loadWorkspaceSettings() {
   try {
-    const rows = await apiFetch(
+    const rows = await withRetry(function() { return apiFetch(
       '/workspace_settings?workspace_id=eq.default&select=*&limit=1',
       {},
       { allowLogout: false }
-    );
+    ); });
     window.AppState.workspace = (Array.isArray(rows) && rows[0]) ? rows[0] : {};
   } catch (err) {
     window.AppState.workspace = window.AppState.workspace || {};
