@@ -609,14 +609,14 @@ function renderNotifications(name, role) {
     else groups.earlier.push(n);
   });
 
-  // Meta-row SVG icons (inline so color can differ per unread/read via CSS)
-  var WA_ICON = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
-    '<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="currentColor"/>' +
-    '<path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.108-1.14l-.288-.173-2.98.78.795-2.903-.19-.3A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" fill="currentColor"/>' +
+  // Meta-row SVG icons. The WhatsApp glyph is the real brand phone icon
+  // (single `fill="currentColor"` path) so the button inherits its
+  // color from `.notif-mi-btn` + `.notif-mi-btn.wa:hover`.
+  var WA_ICON = '<svg viewBox="0 0 32 32" fill="currentColor" stroke="none" width="16" height="16" aria-hidden="true">' +
+    '<path d="M16.003 0C7.184 0 .008 7.176.008 15.995a15.88 15.88 0 002.138 7.99L0 32l8.2-2.151a15.963 15.963 0 007.803 1.987h.007c8.814 0 15.99-7.176 15.994-15.995 0-4.27-1.664-8.285-4.687-11.307A15.843 15.843 0 0016.003 0zm0 29.153h-.005a13.29 13.29 0 01-6.772-1.852l-.485-.288-5.025 1.318 1.343-4.898-.316-.503a13.19 13.19 0 01-2.032-7.037c.003-7.328 5.966-13.29 13.296-13.29a13.2 13.2 0 019.395 3.895 13.198 13.198 0 013.89 9.404c-.004 7.328-5.967 13.29-13.289 13.29zm7.293-9.955c-.4-.2-2.365-1.167-2.732-1.3-.366-.133-.633-.2-.9.2-.266.4-1.033 1.3-1.266 1.566-.233.267-.466.3-.866.1-.4-.2-1.688-.622-3.215-1.984-1.188-1.06-1.99-2.37-2.224-2.77-.234-.4-.025-.615.175-.815.18-.18.4-.466.6-.7.2-.233.267-.4.4-.666.133-.267.066-.5-.033-.7-.1-.2-.9-2.167-1.232-2.967-.325-.78-.655-.673-.9-.686-.233-.012-.5-.014-.766-.014a1.47 1.47 0 00-1.066.5c-.366.4-1.4 1.367-1.4 3.334 0 1.966 1.433 3.866 1.633 4.132.2.267 2.821 4.307 6.833 6.04.955.412 1.7.658 2.281.842.958.305 1.83.262 2.52.159.77-.115 2.365-.967 2.698-1.9.333-.934.333-1.734.233-1.9-.1-.167-.366-.267-.766-.466z"/>' +
     '</svg>';
-  var TRASH_ICON = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<polyline points="3 6 5 6 21 6"/>' +
-    '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+  var TRASH_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true">' +
+    '<path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>' +
     '</svg>';
 
   function _buildItem(n) {
@@ -702,60 +702,80 @@ function renderNotifications(name, role) {
       }
     }
 
-    // Expand chip — only for grouped comment notifications (>1 comment).
-    // Expand chip — gated on `_threadCountMap[post_id]` so any comment
-    // or mention notif whose post has 2+ non-resolved comments gets a
-    // chip regardless of how the notifications were grouped. Label
-    // shows the full thread count, not the grouping bucket count.
+    // Expand chip — any post with at least one non-resolved comment
+    // gets an expand chip so the inline reply drawer is reachable
+    // from the first inbound comment (v7: single-comment drawer).
+    // `_threadCountMap[post_id]` drives visibility and the label.
     var postThreadCount = (n.post_id && _threadCountMap[n.post_id]) || 0;
-    var isExpandable = (n.type === 'comment' || n.type === 'mention') && postThreadCount > 1;
+    var isExpandable = (n.type === 'comment' || n.type === 'mention') && postThreadCount >= 1;
     var isExpanded = isExpandable && _expandedSet.has(n.id);
     var expandChipHtml = '';
     if (isExpandable) {
+      var chipLabel = postThreadCount === 1
+        ? '1 comment'
+        : postThreadCount + ' comments';
       expandChipHtml =
         '<button class="expand-chip" data-action="notif-expand"' +
           ' data-notif-id="' + esc(n.id || '') + '" aria-label="Expand thread">' +
           '<svg class="expand-chip-arrow" width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true">' +
             '<path d="M2 1l4 3-4 3z" fill="currentColor"/>' +
           '</svg>' +
-          '<span class="expand-chip-count">' + postThreadCount + '</span>' +
+          '<span class="expand-chip-count">' + esc(chipLabel) + '</span>' +
         '</button>';
     }
 
-    // Meta row — time [chip] [auto-push] <meta-actions>WA trash</meta-actions> [LinkedIn]
-    // The `.meta-actions` wrapper groups the icon buttons tight
-    // together (2px internal gap) and gets `margin-left: auto` via
-    // CSS so it always sits on the right edge of the row. The flex
-    // `gap: 10px` on `.notif-meta` handles the spacing between the
-    // timestamp, optional expand chip, and the meta-actions unit.
-    // No dot separators anywhere.
+    // LinkedIn link (published rows only).
     var linkedinHtml = '';
     if (isPublished && post && post.linkedin_link) {
       linkedinHtml =
         '<a class="notif-li-link" href="' + esc(post.linkedin_link) + '" target="_blank" rel="noopener"' +
         ' onclick="event.stopPropagation();">LINKEDIN \u2192</a>';
     }
-    var waBtn = n.post_id
-      ? '<button class="notif-mi-btn" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '" aria-label="Share on WhatsApp">' + WA_ICON + '</button>'
-      : '';
-    var delBtn = '<button class="notif-mi-btn" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '" aria-label="Delete">' + TRASH_ICON + '</button>';
 
-    var metaRow = '<div class="notif-meta">' +
-      '<span class="notif-time">' + esc(ts) + '</span>' +
-      linkedinHtml +
-      (isExpandable ? expandChipHtml : '') +
-      '<div class="meta-actions">' + waBtn + delBtn + '</div>' +
+    // v7 footer-meta row — holds the expand chip and LinkedIn link
+    // underneath the body copy. WA + trash have moved to the stacked
+    // right column (.notif-actions-col) under the thumbnail.
+    var footerMetaHtml = '';
+    if (isExpandable || linkedinHtml) {
+      footerMetaHtml = '<div class="notif-footer-meta">' +
+        (isExpandable ? expandChipHtml : '') +
+        linkedinHtml +
+        '</div>';
+    }
+
+    // Stacked right column — thumbnail (always rendered as a fixed
+    // 60x60 slot; the <img> hides itself if src is missing so the
+    // action buttons stay vertically aligned) and the WA + trash
+    // cluster underneath, constrained to 60px width.
+    var waBtn = n.post_id
+      ? '<button class="notif-mi-btn wa" data-action="notif-wa" data-post-id="' + esc(n.post_id) + '" aria-label="Share on WhatsApp">' + WA_ICON + '</button>'
+      : '';
+    var delBtn = '<button class="notif-mi-btn delete" data-action="notif-delete" data-notif-id="' + esc(n.id || '') + '" aria-label="Delete">' + TRASH_ICON + '</button>';
+
+    var thumbInner = postHasImage
+      ? '<img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'">'
+      : '';
+    var rightColHtml = '<div class="notif-item-right">' +
+        '<div class="notif-thumb-wrap">' + thumbInner + '</div>' +
+        '<div class="notif-actions-col">' + waBtn + delBtn + '</div>' +
       '</div>';
 
     var pubLabel = isPublished
       ? '<div class="notif-pub-label">\u2713 PUBLISHED</div>'
       : '';
 
-    var unreadDot = n.read ? '' : '<span class="nnew-dot" aria-hidden="true"></span>';
-
-    var thumbHtml = postHasImage
-      ? '<div class="notif-thumb-wrap"><img class="notif-thumb" src="' + esc(postThumb) + '" onerror="this.style.display=\'none\'"></div>'
-      : '';
+    // Headline — bolds the post title portion of the action text when
+    // detectable, otherwise renders the action text plain. Keeps the
+    // "left N comments on …" grouping template intact so tests still
+    // match on the source strings.
+    var headlineInner;
+    if (postTitle && actionText && actionText.length > postTitle.length &&
+        actionText.slice(actionText.length - postTitle.length).toLowerCase() === postTitle.toLowerCase()) {
+      var prefix = actionText.slice(0, actionText.length - postTitle.length);
+      headlineInner = esc(prefix) + '<strong>' + esc(postTitle) + '</strong>';
+    } else {
+      headlineInner = esc(actionText);
+    }
 
     var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done' || n.type === 'assign') ? ' data-is-brief="1"' : '';
     // notif-live-card retained as a marker class on published rows so the
@@ -763,6 +783,7 @@ function renderNotifications(name, role) {
     var liveMarker = isPublished ? ' notif-live-card' : '';
     var expandableAttr = isExpandable ? ' data-expandable="1"' : '';
     var expandedClass = isExpanded ? ' expanded' : '';
+    var unreadClass = n.read ? ' read' : ' unread';
 
     // Thread drawer — always emitted as a collapsed `<div class="thread-drawer">`
     // for expandable rows, pre-populated with the current thread HTML if the
@@ -774,25 +795,28 @@ function renderNotifications(name, role) {
       threadDrawerHtml = '<div class="thread-drawer">' + innerHtml + '</div>';
     }
 
-    return '<div class="notif-item ' + tClass + liveMarker + (n.read ? ' read' : '') + expandedClass + '"' +
+    return '<div class="notif-item ' + tClass + liveMarker + unreadClass + expandedClass + '"' +
+      ' role="button" tabindex="0"' +
       ' data-notif-id="' + esc(n.id || '') + '"' +
       ' data-post-id="' + esc(n.post_id || '') + '"' +
       ' data-notif-type="' + esc(n.type || '') + '"' +
       expandableAttr +
       isBriefAttr + '>' +
       '<div class="notif-item-row">' +
-        (typeof renderAvatar === 'function' ? renderAvatar(actor, getRoleFor(actor), 32, { classes: 'notif-av' }) : '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>') +
+        (typeof renderAvatar === 'function' ? renderAvatar(actor, getRoleFor(actor), 36, { classes: 'notif-av' }) : '<div class="notif-av ' + avClass + '">' + esc(initial) + '</div>') +
         '<div class="notif-body">' +
           pubLabel +
-          '<div class="notif-text">' +
-            unreadDot +
-            '<strong>' + esc(actorDisplay) + '</strong> ' + esc(actionText) +
+          '<div class="notif-top-line">' +
+            '<span class="notif-author">' + esc(actorDisplay) + '</span>' +
+            '<span class="notif-top-line-sep">\xB7</span>' +
+            '<span class="notif-date">' + esc(ts) + '</span>' +
             respTimeHtml +
           '</div>' +
+          '<div class="notif-headline">' + headlineInner + '</div>' +
           previewHtml +
-          metaRow +
+          footerMetaHtml +
         '</div>' +
-        thumbHtml +
+        rightColHtml +
       '</div>' +
       threadDrawerHtml +
     '</div>';
@@ -907,11 +931,13 @@ function _notifBuildThreadHtml(n, post, postTitle) {
     });
   }
 
-  // Reply input row + "Open full post" footer link.
+  // Reply pill (round send button inside a rounded input) + shared
+  // footer row that puts "VISIBLE TO ALL" on the left and the
+  // "Open full post →" link on the right.
   var replyPlaceholder = 'Reply to ' + (postTitle || 'post') + '\u2026';
   var replyHtml =
-    '<div class="thread-reply">' +
-      '<div class="reply-row">' +
+    '<div class="reply-zone">' +
+      '<div class="reply-pill">' +
         '<textarea class="reply-input" rows="1"' +
           ' data-post-id="' + esc(postId) + '"' +
           ' placeholder="' + esc(replyPlaceholder) + '"></textarea>' +
@@ -921,12 +947,12 @@ function _notifBuildThreadHtml(n, post, postTitle) {
           _NOTIF_SEND_SVG +
         '</button>' +
       '</div>' +
-      '<div class="reply-label">Posts as comment \xB7 visible to all</div>' +
-    '</div>' +
-    '<div class="thread-footer">' +
-      '<a class="thread-open-post" data-action="notif-open-post"' +
-        ' data-post-id="' + esc(postId) + '"' +
-        ' data-notif-id="' + esc(n.id || '') + '" href="#">Open full post \u2192</a>' +
+      '<div class="reply-footer-row">' +
+        '<span class="reply-visibility">Visible to all</span>' +
+        '<a class="thread-open-post" data-action="notif-open-post"' +
+          ' data-post-id="' + esc(postId) + '"' +
+          ' data-notif-id="' + esc(n.id || '') + '" href="#">Open full post \u2192</a>' +
+      '</div>' +
     '</div>';
 
   var html =
@@ -1150,8 +1176,15 @@ async function _notifSubmitReply(sendBtn) {
 async function markNotifRead(id) {
   try {
     _notifData = _notifData.map(function(n) { return n.id === id ? Object.assign({}, n, { read: true }) : n; });
-    // _notifData was updated on the line above; recompute the badge
-    // locally instead of round-tripping GET /notifications.
+    // Optimistic DOM flip — remove .unread on the matching card so the
+    // blue block fades out via the 0.3s CSS transition on .notif-item.
+    var _readEl = document.querySelector('[data-notif-id="' + id + '"]');
+    if (_readEl) {
+      _readEl.classList.remove('unread');
+      _readEl.classList.add('read');
+    }
+    // _notifData was updated above; recompute the badge locally
+    // instead of round-tripping GET /notifications.
     _recomputeBadgeLocal();
     await apiFetch('/notifications?id=eq.' + id, {
       method: 'PATCH',
@@ -1204,18 +1237,15 @@ async function markAllNotificationsRead() {
     // the manual "hide all four" forEach that was running
     // immediately after it.
     _recomputeBadgeLocal();
-    var readEls = document.querySelectorAll(
-      '#panel-updates .notif-item:not(.read)');
-    readEls.forEach(function(el) {
+    // Flip every visible card to read-state: remove .unread (fades the
+    // blue block out via the CSS transition on .notif-item) and add
+    // .read so any read-specific styling kicks in.
+    var unreadEls = document.querySelectorAll(
+      '#panel-updates .notif-item.unread,' +
+      ' #panel-updates .notif-live-card.unread');
+    unreadEls.forEach(function(el) {
+      el.classList.remove('unread');
       el.classList.add('read');
-      var dot = el.querySelector('.notif-unread-dot');
-      if (dot && dot.parentNode) dot.parentNode.removeChild(dot);
-    });
-    var liveEls = document.querySelectorAll(
-      '#panel-updates .notif-live-card');
-    liveEls.forEach(function(el) {
-      var dot = el.querySelector('.notif-unread-dot');
-      if (dot) dot.style.display = 'none';
     });
     // Chip counts are rebuilt by renderNotifications above;
     // belt-and-braces hide every count span in case render was skipped.
@@ -2039,9 +2069,6 @@ function openNotifications() {
         var _tPid = thumbItem.getAttribute('data-post-id');
         var _tNotifId = thumbItem.getAttribute('data-notif-id');
         if (_tNotifId) markNotifRead(_tNotifId);
-        thumbItem.classList.add('read');
-        var _tDot = thumbItem.querySelector('.nnew-dot');
-        if (_tDot) _tDot.style.display = 'none';
         if (!_tPid) return;
         var _tIsBrief = thumbItem.getAttribute('data-is-brief') === '1' ||
           thumbItem.getAttribute('data-notif-type') === 'new_request';
@@ -2117,9 +2144,6 @@ function openNotifications() {
         if (!_chipItem.classList.contains('expanded')) {
           var _nid = _chipItem.getAttribute('data-notif-id');
           if (_nid) markNotifRead(_nid);
-          _chipItem.classList.add('read');
-          var _cDot = _chipItem.querySelector('.nnew-dot');
-          if (_cDot) _cDot.style.display = 'none';
         }
         _notifToggleExpand(_chipItem);
         return;
@@ -2149,19 +2173,12 @@ function openNotifications() {
       if (isExpandable && (notifType === 'comment' || notifType === 'mention') && !isBrief) {
         if (!item.classList.contains('expanded')) {
           if (notifId) markNotifRead(notifId);
-          item.classList.add('read');
-          var _bDot = item.querySelector('.nnew-dot');
-          if (_bDot) _bDot.style.display = 'none';
         }
         _notifToggleExpand(item);
         return;
       }
 
       if (notifId) markNotifRead(notifId);
-      // Instant visual mark-as-read
-      item.classList.add('read');
-      var _tapDot = item.querySelector('.notif-unread-dot');
-      if (_tapDot) _tapDot.style.display = 'none';
       if (!pid) return;
       window._notifOpenedPCS = true;
       closeNotifications();
@@ -2207,13 +2224,13 @@ function openNotifications() {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'notif-overlay';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:1300;background:#0a0a0f;display:flex;align-items:stretch;justify-content:center;';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:1300;background:#000000;display:flex;align-items:stretch;justify-content:center;';
     overlay.onclick = function(e) { if (e.target === overlay) closeNotifications(); };
     document.body.appendChild(overlay);
     overlay.appendChild(panel);
   }
   overlay.style.display = 'flex';
-  panel.style.cssText = 'width:100%;max-width:480px;height:100%;overflow:hidden;background:#0e0e16;display:flex;flex-direction:column;';
+  panel.style.cssText = 'width:100%;max-width:480px;height:100%;overflow:hidden;background:#000000;display:flex;flex-direction:column;';
   document.body.style.overflow = 'hidden';
   window.AppState.ui.modalOpen = true;
   loadNotifications();
