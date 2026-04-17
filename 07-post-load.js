@@ -702,6 +702,11 @@ function _onClientNotificationInsert(payload) {
     if (typeof _recomputeBadgeLocal === 'function') {
       _recomputeBadgeLocal();
     }
+    // Live slide-in when the panel is open + visible. 10-ui.js
+    // guards internally on document.hidden / panel-open / dedup-by-id.
+    if (payload && payload.new && typeof window._notifLiveInsert === 'function') {
+      window._notifLiveInsert(payload.new);
+    }
   } catch (e) {
     console.warn('[client-realtime] notification insert', e);
   }
@@ -724,7 +729,18 @@ function startClientRealtime() {
         function(payload) { window._realtimeLastEventAt = Date.now(); _clientRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'post_comments' },
-        function(payload) { window._realtimeLastEventAt = Date.now(); _clientRealtimeRefresh(); })
+        function(payload) {
+          window._realtimeLastEventAt = Date.now();
+          // INSERT branch: surface the new comment live inside any open
+          // notification thread drawer on this post. Idempotent + scoped
+          // to the open drawer only; the debounced posts refresh below
+          // still fires so client-feed comment counts stay in sync.
+          if (payload && payload.eventType === 'INSERT' && payload.new &&
+              typeof window._notifLiveDrawerInsert === 'function') {
+            window._notifLiveDrawerInsert(payload.new);
+          }
+          _clientRealtimeRefresh();
+        })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.Client' },
         function(payload) { window._realtimeLastEventAt = Date.now(); _onClientNotificationInsert(payload); })
@@ -893,6 +909,11 @@ function _onAgencyNotificationInsert(payload) {
     if (typeof _recomputeBadgeLocal === 'function') {
       _recomputeBadgeLocal();
     }
+    // Live slide-in when the panel is open + visible. 10-ui.js
+    // guards internally on document.hidden / panel-open / dedup-by-id.
+    if (payload && payload.new && typeof window._notifLiveInsert === 'function') {
+      window._notifLiveInsert(payload.new);
+    }
   } catch (e) {
     console.warn('[agency-realtime] notification insert', e);
   }
@@ -928,7 +949,18 @@ function startAgencyRealtime() {
         function(payload) { window._realtimeLastEventAt = Date.now(); _agencyRealtimeRefresh(); })
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'post_comments' },
-        function(payload) { window._realtimeLastEventAt = Date.now(); _agencyRealtimeRefresh(); })
+        function(payload) {
+          window._realtimeLastEventAt = Date.now();
+          // INSERT branch: surface the new comment live inside any open
+          // notification thread drawer on this post. Debounced agency
+          // posts refresh still fires unchanged so pipeline / dashboard
+          // comment counts stay in sync.
+          if (payload && payload.eventType === 'INSERT' && payload.new &&
+              typeof window._notifLiveDrawerInsert === 'function') {
+            window._notifLiveDrawerInsert(payload.new);
+          }
+          _agencyRealtimeRefresh();
+        })
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.' + _roleTc },
         function(payload) { window._realtimeLastEventAt = Date.now(); _onAgencyNotificationInsert(payload); })

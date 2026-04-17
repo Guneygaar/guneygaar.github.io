@@ -4698,6 +4698,79 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .thread-open-post:hover { color: #E4C666; }
 
+/* ── REALTIME LIVE-INSERT ANIMATIONS (v7.3) ── */
+/* New notifications arrive with a subtle blue flash that fades to
+   the neutral jet-black surface. The blue tint echoes the unread
+   dot color so the arrival cue reads as "this is fresh" without
+   adding a persistent highlight to the row.
+   Translucent rgba() kept inline here because CSS `@keyframes` only
+   accept literal colour values, not var() references — so the 8-digit
+   hex convention still applies everywhere else. */
+@keyframes notif-slide-in {
+  0%   { opacity: 0; transform: translateY(-12px); background: #3B82F614; }
+  60%  { opacity: 1; transform: translateY(0);    background: #3B82F60A; }
+  100% { opacity: 1; transform: translateY(0);    background: transparent; }
+}
+.notif-item--just-arrived {
+  animation: notif-slide-in 0.6s ease-out;
+}
+
+@keyframes thread-msg-arrive {
+  0%   { opacity: 0; transform: translateY(-4px); background: #3B82F61A; }
+  70%  { opacity: 1; transform: translateY(0);    background: #3B82F60A; }
+  100% { opacity: 1; transform: translateY(0);    background: transparent; }
+}
+.thread-msg--just-arrived {
+  animation: thread-msg-arrive 0.6s ease-out;
+}
+
+/* ── FLOATING "↑ N NEW" CHIP ── */
+/* Surfaces when a realtime arrival lands while the user is scrolled
+   past the top of the list. Tapping it jumps to the top and
+   dismisses. Positioned inside #notif-overlay (which is position:
+   fixed), centered horizontally below the tabs row. */
+.notif-new-chip {
+  position: absolute;
+  top: 118px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #F0F0F2;
+  background: #3B82F6;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px #3B82F666;    /* rgba(59,130,246,0.40) */
+  cursor: pointer;
+  z-index: 10;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  -webkit-tap-highlight-color: transparent;
+}
+.notif-new-chip.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.notif-new-chip .chip-arrow {
+  display: inline-block;
+  margin-right: 4px;
+}
+.notif-new-chip .chip-count {
+  margin-right: 3px;
+}
+.notif-new-chip:hover { background: #2563EB; }
+.notif-new-chip:active {
+  transform: translateX(-50%) translateY(0) scale(0.96);
+}
+
 /* PCS back-to-notifications button */
 .pcs-back-notif-btn {
   font-family: 'IBM Plex Mono', monospace;
