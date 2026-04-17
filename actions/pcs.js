@@ -2431,14 +2431,17 @@ window._pcsLbDownload = function() {
 })();
 
 window._startCaptionEdit = function(postId) {
+  if (document.getElementById('pcs-caption-textarea')) return;
   var textEl  = document.getElementById('pcs-caption-text');
-  var editBtn = document.getElementById('pcs-caption-edit-btn');
   if (!textEl) return;
 
   var currentText = textEl.dataset.raw || textEl.textContent || '';
 
   textEl.style.display = 'none';
-  if (editBtn) editBtn.style.display = 'none';
+  var seeMore = document.getElementById('pcs-caption-see-more');
+  if (seeMore) seeMore.style.display = 'none';
+  var zoneManual = document.querySelector('#pcs-pane-caption .pcs-zone-manual');
+  if (zoneManual) zoneManual.style.display = 'none';
 
   var ta = document.createElement('textarea');
   ta.id = 'pcs-caption-textarea';
@@ -2472,31 +2475,31 @@ window._startCaptionEdit = function(postId) {
     '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'color:#3ECF8E;border:1px dotted #3ECF8E66;' +
-    'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
+    'background:transparent;padding:14px 20px;min-height:44px;cursor:pointer;">SAVE</button>' +
     '<button onclick="_cancelCaptionEdit()" ' +
     'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
     'color:#8E8E93;border:1px dotted #FFFFFF26;' +
-    'background:transparent;padding:6px 12px;cursor:pointer;' +
-    'margin-left:6px;">CANCEL</button>';
+    'background:transparent;padding:14px 20px;min-height:44px;cursor:pointer;">CANCEL</button>';
   ta.parentNode.insertBefore(btnRow, ta.nextSibling);
   ta.focus();
 }
 
 window._cancelCaptionEdit = function() {
   var textEl  = document.getElementById('pcs-caption-text');
-  var editBtn = document.getElementById('pcs-caption-edit-btn');
   var ta      = document.getElementById('pcs-caption-textarea');
   var btnRow  = document.getElementById('pcs-caption-btnrow');
   if (textEl)  textEl.style.display = '';
-  if (editBtn) editBtn.style.display = '';
   if (ta)      ta.remove();
   if (btnRow)  btnRow.remove();
+  var seeMore = document.getElementById('pcs-caption-see-more');
+  if (seeMore) seeMore.style.display = '';
+  var zoneManual = document.querySelector('#pcs-pane-caption .pcs-zone-manual');
+  if (zoneManual) zoneManual.style.display = '';
 }
 
 window._saveCaptionEdit = async function(postId) {
   var ta      = document.getElementById('pcs-caption-textarea');
   var textEl  = document.getElementById('pcs-caption-text');
-  var editBtn = document.getElementById('pcs-caption-edit-btn');
   var btnRow  = document.getElementById('pcs-caption-btnrow');
   if (!ta) return;
 
@@ -2587,9 +2590,12 @@ window._saveCaptionEdit = async function(postId) {
     }
     textEl.style.display = '';
   }
-  if (editBtn) editBtn.style.display = '';
   if (ta)      ta.remove();
   if (btnRow)  btnRow.remove();
+  var seeMore = document.getElementById('pcs-caption-see-more');
+  if (seeMore) seeMore.style.display = '';
+  var zoneManual = document.querySelector('#pcs-pane-caption .pcs-zone-manual');
+  if (zoneManual) zoneManual.style.display = '';
   });
 }
 
