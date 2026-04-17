@@ -7,10 +7,10 @@ console.log("LOADED:", "07-post-load.js");
 window._activityLogs = [];
 async function _fetchActivityLogs() {
   try {
-    var data = await apiFetch(
+    var data = await withRetry(function() { return apiFetch(
       '/activity_log?select=post_id,new_stage,created_at' +
       '&order=created_at.desc&limit=500'
-    );
+    ); });
     window._activityLogs = Array.isArray(data) ? data : [];
   } catch(e) {
     console.error('[post-load] fetchActivityLogs failed', e);
@@ -186,7 +186,7 @@ async function loadPosts(fromPoll) {
     const isDraftFilter = (window.AppState.user.effectiveRole === 'Admin')
       ? ''
       : '&is_draft=eq.false';
-    const data = await apiFetch('/posts?select=*' + isDraftFilter + '&order=id.desc', {}, _apiMeta);
+    const data = await withRetry(function() { return apiFetch('/posts?select=*' + isDraftFilter + '&order=id.desc', {}, _apiMeta); });
     if (!_commitPostsResult(reqId, 'network')) return;
     // Fetch pending requests and merge as brief-stage entries
     var reqData = [];
@@ -290,12 +290,12 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
   try {
     const allowedStages =
       'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
-    var data  = await apiFetch(
+    var data  = await withRetry(function() { return apiFetch(
       '/posts?stage=in.(' + allowedStages +
       ')&is_draft=eq.false&select=*&order=created_at.desc',
       {},
       _apiMeta
-    );
+    ); });
     if (!_commitPostsResult(reqId, 'network')) return;
 
     // Fetch pending requests for client view (shows as brief cards)
@@ -334,12 +334,12 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
     var postIds = data.map(function(p) { return p.post_id || p.id; }).filter(Boolean);
     if (postIds.length) {
       try {
-        var comments = await apiFetch(
+        var comments = await withRetry(function() { return apiFetch(
           '/post_comments?post_id=in.(' + postIds.join(',') +
           ')&order=created_at.asc',
           {},
           _apiMeta
-        );
+        ); });
         if (Array.isArray(comments)) {
           data.forEach(function(p) {
             var pid = p.post_id || p.id;
@@ -476,7 +476,7 @@ function startRealtime() {
       return;
     }
     try {
-      const data  = await apiFetch('/posts?select=*&order=created_at.desc', {}, { allowLogout: false });
+      const data  = await withRetry(function() { return apiFetch('/posts?select=*&order=created_at.desc', {}, { allowLogout: false }); });
       const fresh = normalise(data);
       if (_postsFingerprint(fresh) !== _postsFingerprint(window.AppState.posts.all)) {
         mergePosts(fresh);
@@ -994,7 +994,7 @@ window.stopAgencyRealtime = stopAgencyRealtime;
 
 async function loadTasks() {
   try {
-    const data = await apiFetch('/tasks?order=created_at.desc&limit=50');
+    const data = await withRetry(function() { return apiFetch('/tasks?order=created_at.desc&limit=50'); });
     allTasks = Array.isArray(data) ? data : [];
   } catch (e) { console.error('[post-load] loadTasks failed', e); window.logError && window.logError(e && e.message, e && e.stack, 'load-tasks'); allTasks = []; }
   renderTaskBanner();
@@ -2333,10 +2333,10 @@ async function _updateStreakLines() {
   try {
     var today = new Date();
 
-    var logs = await apiFetch(
+    var logs = await withRetry(function() { return apiFetch(
       '/activity_log?select=actor,created_at,action,new_stage,old_stage' +
       '&order=created_at.desc&limit=200'
-    );
+    ); });
     if (!Array.isArray(logs)) return;
 
     logs = logs.map(function(l) {

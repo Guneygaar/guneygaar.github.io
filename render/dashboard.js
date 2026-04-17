@@ -929,10 +929,10 @@ async function _updateStreakLines() {
   try {
     var today = new Date();
 
-    var logs = await apiFetch(
+    var logs = await withRetry(function() { return apiFetch(
       '/activity_log?select=actor,created_at,action,new_stage,old_stage' +
       '&order=created_at.desc&limit=200'
-    );
+    ); });
     if (!Array.isArray(logs)) return;
 
     logs = logs.map(function(l) {

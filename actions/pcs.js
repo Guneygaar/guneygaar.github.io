@@ -320,11 +320,11 @@ window._pcsApplyRewrite = function(id) {
   // Persist the new caption through the existing API surface
   (async function() {
     try {
-      await apiFetch('/posts?post_id=eq.' + encodeURIComponent(id), {
+      await withRetry(function() { return apiFetch('/posts?post_id=eq.' + encodeURIComponent(id), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
         body: JSON.stringify({ caption: newCaption, updated_at: new Date().toISOString() })
-      });
+      }); });
       post.caption = newCaption;
       window._pcsDismissRewrite(id);
       if (typeof _renderPCS === 'function') _renderPCS(id);
@@ -1312,18 +1312,18 @@ window.loadPcsComments = async function(postId) {
   var _name = window.AppState.user.name || '';
 
   try {
-    var rows = await apiFetch(
+    var rows = await withRetry(function() { return apiFetch(
       '/post_comments?post_id=eq.' +
       encodeURIComponent(postId) +
       '&order=created_at.asc&limit=100'
-    );
+    ); });
     if (!Array.isArray(rows)) rows = [];
 
-    var internalData = await apiFetch(
+    var internalData = await withRetry(function() { return apiFetch(
       '/internal_notes?post_id=eq.' +
       encodeURIComponent(postId) +
       '&order=created_at.asc&limit=100'
-    );
+    ); });
     if (!Array.isArray(internalData)) internalData = [];
 
     // Fetch reactions for this post
@@ -2537,10 +2537,10 @@ window._saveCaptionEdit = async function(postId) {
   }
 
   try {
-    await apiFetch('/posts?post_id=eq.' + postId, {
+    await withRetry(function() { return apiFetch('/posts?post_id=eq.' + postId, {
       method: 'PATCH',
       body: JSON.stringify({ caption: newCaption, updated_by: resolveActor(), updated_at: new Date().toISOString() })
-    });
+    }); });
   } catch (err) {
     console.error('[pcs] save caption failed', err);
     window.logError && window.logError(err && err.message, err && err.stack, 'pcs-save-caption');

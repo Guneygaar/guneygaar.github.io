@@ -1275,7 +1275,7 @@ function updateNotifBadge() {
     encodeURIComponent(_badgeRole) + '&select=id';
   if (_badgeActor) _badgeUrl += '&actor=neq.' + encodeURIComponent(_badgeActor);
 
-  apiFetch(_badgeUrl, {}, { allowLogout: false })
+  withRetry(function() { return apiFetch(_badgeUrl, {}, { allowLogout: false }); })
   .then(function(rows) {
     var count = Array.isArray(rows) ? rows.length : 0;
     _setBadgeCount(count);
