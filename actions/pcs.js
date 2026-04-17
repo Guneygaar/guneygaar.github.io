@@ -50,6 +50,13 @@ window.openPCS = function(postId, listKey) {
   window._pcs.idx     = idx >= 0 ? idx : 0;
   window._pcs.postId  = postId;
 
+  // Point AppState.pcs.post at the SAME object reference in posts.all
+  // so Object.assign mutations from mergePosts/poll refresh flow through
+  // (see CLAUDE.md §4 "AppState shape"). Consumers like submitSelectedComments
+  // (actions/pcs-select.js) and the drive-link handler (10-ui.js) read this.
+  var _openPost = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  window.AppState.pcs.post = _openPost || null;
+
   var overlay = document.getElementById('pcs-overlay');
   if (!overlay) return;
   var screen = document.getElementById('pcs-screen');
@@ -150,6 +157,7 @@ window.forcePCSReset = function() {
 
   // 6. Clear PCS context
   window._pcs.postId = null;
+  window.AppState.pcs.post = null;
   window.AppState.pcs.openedFrom = null;
 
   // 7. Flush any deferred background renders
@@ -459,6 +467,11 @@ window._renderPCS = function(postId) {
   // 1. Fetch post
   var post = getPostById(postId);
   if (!post) { closePCS(); return; }
+
+  // Keep AppState.pcs.post in sync on every render — realtime/poll refresh
+  // calls _renderPCS directly while PCS is open, so we re-point at the
+  // (same-reference) post row on each pass.
+  window.AppState.pcs.post = post;
 
   // 2. Compute derived state
   var id          = getPostId(post);
