@@ -16,7 +16,12 @@ window._captionWS = {
   _rewriteComments: null,
   correctionsPrompt: '',
   memoryPrompt: '',
-  caption: ''
+  caption: '',
+  // Detached mode — used by Create Post ⤢ expand. No post exists yet,
+  // so Use-this routes through onUseCallback instead of PATCHing /posts.
+  isDetached: false,
+  onUseCallback: null,
+  onCloseCallback: null
 };
 
 var _CW_USD_TO_INR = 100;
@@ -50,6 +55,9 @@ window.openCaptionWorkspace = async function(mode, context) {
 
   var ws = window._captionWS;
   var isResume = mode === 'resume' && ws.messages.length > 0;
+  // Detached mode — Create Post ⤢ opens with postId: null and routes
+  // "Use this" back through onUse instead of PATCHing /posts.
+  var isDetached = context && context.postId === null;
 
   if (!isResume) {
     ws.messages = [];
@@ -57,7 +65,12 @@ window.openCaptionWorkspace = async function(mode, context) {
     ws.postId = context.postId || null;
     ws.mode = mode;
     ws._rewriteComments = null;
-    ws.caption = context.caption || '';
+    // In detached mode the caller passes initialCaption; fall back to
+    // the legacy .caption key for all post-scoped callers.
+    ws.caption = (isDetached ? (context.initialCaption || '') : (context.caption || ''));
+    ws.isDetached = !!isDetached;
+    ws.onUseCallback = (typeof context.onUse === 'function') ? context.onUse : null;
+    ws.onCloseCallback = (typeof context.onClose === 'function') ? context.onClose : null;
   }
   ws.isOpen = true;
 
@@ -68,7 +81,13 @@ window.openCaptionWorkspace = async function(mode, context) {
   overlay.style.transform = 'translateY(0)';
 
   var titleEl = document.getElementById('cw-context-title');
-  if (titleEl) titleEl.textContent = context.title || 'Untitled post';
+  if (titleEl) {
+    var hdrTitle = context.title;
+    if (isDetached && !hdrTitle && context.syntheticContext) {
+      hdrTitle = context.syntheticContext.title || '';
+    }
+    titleEl.textContent = hdrTitle || (isDetached ? 'New post \u2014 no title yet' : 'Untitled post');
+  }
 
   _cwUpdateSessionMeter();
   _cwFetchCostTotals();
@@ -146,7 +165,15 @@ window.closeCaptionWorkspace = function() {
     overlay.style.display = 'none';
     overlay.style.transition = '';
   }, 290);
-  window._captionWS.isOpen = false;
+  var ws = window._captionWS;
+  ws.isOpen = false;
+  var onClose = ws.onCloseCallback;
+  ws.onCloseCallback = null;
+  ws.onUseCallback = null;
+  ws.isDetached = false;
+  if (typeof onClose === 'function') {
+    try { onClose(); } catch (e) {}
+  }
 };
 
 // ─── send message ────────────────────────────────────────────
@@ -424,6 +451,20 @@ window._cwHandleChip = function(chipType, draftNum) {
 
 window._cwApplyDraft = async function(text) {
   var ws = window._captionWS;
+  // Detached mode — no post exists yet. Hand the caption back via the
+  // onUse callback and close. Skip the PATCH /posts path entirely.
+  if (ws.isDetached) {
+    var cb = ws.onUseCallback;
+    ws.caption = text;
+    if (typeof cb === 'function') {
+      try { cb(text); } catch (e) {
+        window.logError && window.logError(e && e.message, e && e.stack, 'cw-apply-draft-detached');
+      }
+    }
+    if (typeof showToast === 'function') showToast('Caption added', 'success');
+    window.closeCaptionWorkspace();
+    return;
+  }
   var post = (window.AppState.posts.all || []).find(function(p) {
     return (p.post_id || p.id) === ws.postId;
   });
@@ -714,3 +755,8 @@ async function _cwFetchCostTotals() {
     }
   });
 })();
+
+// Expose cost helpers so external callers (Create Post cost chip)
+// format consistently with the workspace meter.
+window._cwFormatINR = _cwFormatINR;
+window._cwCalcINR = _cwCalcINR;
