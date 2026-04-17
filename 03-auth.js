@@ -115,6 +115,20 @@ async function _doRefresh(refreshToken) {
       var storedAccess = localStorage.getItem('sb_access_token');
       if (storedAccess) {
         console.warn('[auth] refresh returned 400 (token-reuse race), using stored sb_access_token');
+        // Symmetric with the success branch below: push the (peer-rotated)
+        // token onto this tab's Realtime WebSocket. Without this, the tab
+        // that lost the rotation race keeps its Phoenix socket bound to the
+        // JWT it was constructed with; that JWT expires, postgres_changes
+        // stop arriving silently (state stays 'joined'), and the UI freezes.
+        if (window._supabaseClient &&
+            window._supabaseClient.realtime &&
+            typeof window._supabaseClient.realtime.setAuth === 'function') {
+          try {
+            window._supabaseClient.realtime.setAuth(storedAccess);
+          } catch(e) {
+            console.warn('[auth] realtime setAuth failed (400-race)', e);
+          }
+        }
         return { token: storedAccess };
       }
       return { error: 'auth_expired' };

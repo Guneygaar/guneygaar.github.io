@@ -143,6 +143,7 @@ window.AppState = {
 - **Notification badge gate.** `AppState.timers.notifBadgeTimer` (10-ui.js, 20 s cadence, preserved for the defensive-guards test) short-circuits when `window._agencyRealtimeChannel` is set, in addition to the Client guard from PR #826. Cadence is unchanged at 20 000 ms so the `notifications.test.js` regex `AppState\.timers\.notifBadgeTimer\s*=\s*setInterval[\s\S]*?,\s*20000` still matches. Falls through to the REST badge call only if the agency Realtime channel never established.
 - **`stopRealtime()` cascades** to both `stopAgencyRealtime()` and `stopClientRealtime()` on logout / `_clearSessionAndLogin`. Both realtime teardown calls are idempotent.
 - **Required Supabase setup:** the four ALTER PUBLICATION commands are the same as the client Realtime PR — already applied on the database. No new ALTER TABLE needed for this PR.
+- **Realtime liveness:** `window._realtimeLastEventAt` stamped on every postgres_changes event; 60 s watchdog triggers `stopRealtime` + `startRealtime` + catch-up fetch if `channel.state='joined'` but no event in 180 s.
 
 ### Agency drain-stash contract (`_postsPollStash` in 07-post-load.js)
 - Writers: `_agencyRealtimeRefresh()` modal-open branch (Realtime path, primary), the 10 s `startRealtime()` poll fallback modal-open branch (legacy path, only active when Realtime dropped).
