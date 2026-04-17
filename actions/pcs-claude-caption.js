@@ -9,6 +9,8 @@ window._captionWS = {
   isOpen: false,
   messages: [],
   sessionCost: 0,
+  todayCostINR: 0,
+  monthCostINR: 0,
   postId: null,
   mode: null,
   _rewriteComments: null,
@@ -105,9 +107,11 @@ window.openCaptionWorkspace = async function(mode, context) {
         ws.messages.push({ role: 'assistant', content: result.content || '' });
         var inTok = result.input_tokens || (result.usage && result.usage.input) || 0;
         var outTok = result.output_tokens || (result.usage && result.usage.output) || 0;
-        ws.sessionCost += _cwCalcINR(inTok, outTok);
-        _cwUpdateSessionMeter();
-        setTimeout(function() { _cwFetchCostTotals(); }, 800);
+        var rwCostINR = _cwCalcINR(inTok, outTok);
+        ws.sessionCost += rwCostINR;
+        ws.todayCostINR += rwCostINR;
+        ws.monthCostINR += rwCostINR;
+        _cwUpdateMeters();
       } else {
         ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
       }
@@ -206,8 +210,9 @@ window.sendCaptionMessage = async function(text) {
     var outTok = result.output_tokens || (result.usage && result.usage.output) || 0;
     var costINR = _cwCalcINR(inTok, outTok);
     ws.sessionCost += costINR;
-    _cwUpdateSessionMeter();
-    setTimeout(function() { _cwFetchCostTotals(); }, 800);
+    ws.todayCostINR += costINR;
+    ws.monthCostINR += costINR;
+    _cwUpdateMeters();
   } else {
     ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
   }
@@ -637,6 +642,16 @@ function _cwUpdateSessionMeter() {
   if (el) el.textContent = _cwFormatINR(window._captionWS.sessionCost);
 }
 
+function _cwUpdateMeters() {
+  var ws = window._captionWS;
+  var sEl = document.getElementById('cw-session-cost');
+  var tEl = document.getElementById('cw-today-cost');
+  var mEl = document.getElementById('cw-month-cost');
+  if (sEl) sEl.textContent = _cwFormatINR(ws.sessionCost);
+  if (tEl) tEl.textContent = _cwFormatINR(ws.todayCostINR);
+  if (mEl) mEl.textContent = _cwFormatINR(ws.monthCostINR);
+}
+
 async function _cwFetchCostTotals() {
   try {
     var now = new Date();
@@ -655,10 +670,9 @@ async function _cwFetchCostTotals() {
     if (Array.isArray(todayRows)) todayRows.forEach(function(r) { todayUSD += (r.cost_usd || 0); });
     if (Array.isArray(monthRows)) monthRows.forEach(function(r) { monthUSD += (r.cost_usd || 0); });
 
-    var todayEl = document.getElementById('cw-today-cost');
-    var monthEl = document.getElementById('cw-month-cost');
-    if (todayEl) todayEl.textContent = _cwFormatINR(todayUSD * _CW_USD_TO_INR);
-    if (monthEl) monthEl.textContent = _cwFormatINR(monthUSD * _CW_USD_TO_INR);
+    window._captionWS.todayCostINR = todayUSD * _CW_USD_TO_INR;
+    window._captionWS.monthCostINR = monthUSD * _CW_USD_TO_INR;
+    _cwUpdateMeters();
   } catch (e) {
     // non-critical
   }
