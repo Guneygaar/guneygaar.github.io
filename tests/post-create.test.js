@@ -112,3 +112,81 @@ describe('PCS — _buildDriveLinkCard', function() {
     expect(htmlSrc).toContain('id="pcs-drive-link-wrap"');
   });
 });
+
+describe('Create Post Caption — ⤢ expand + session cost + word counter', function() {
+
+  var captionSrc = readFileSync(resolve(__dirname, '..', 'actions', 'pcs-claude-caption.js'), 'utf8');
+  var cssSrc = readFileSync(resolve(__dirname, '..', 'styles.css'), 'utf8');
+
+  it('14. 06-post-create.js wires expand button + detached open helpers', function() {
+    expect(src).toContain('_npcOpenWorkspace');
+    expect(src).toContain('_npcUpdateWordMeter');
+    expect(src).toContain('_npcRefreshCostChip');
+    expect(src).toContain('npc-expand-btn');
+    expect(src).toContain('onUse:');
+  });
+
+  it('15. submitNewPost fires post_id=is.null ai_usage stamp PATCH', function() {
+    expect(src).toContain('post_id=is.null');
+    expect(src).toContain('/ai_usage?post_id=is.null');
+  });
+
+  it('16. saveDraft + loadDraft round-trip caption', function() {
+    // Anchor on function boundaries by name — both functions sit between
+    // the 'function saveDraft' / 'function loadDraft' lines and the next
+    // 'function ' declaration. This avoids nested-brace regex pitfalls.
+    var saveStart = src.indexOf('function saveDraft()');
+    var saveEnd = src.indexOf('function loadDraft()');
+    var loadStart = saveEnd;
+    var loadEnd = src.indexOf('function clearDraft()');
+    expect(saveStart).toBeGreaterThan(-1);
+    expect(saveEnd).toBeGreaterThan(saveStart);
+    expect(loadEnd).toBeGreaterThan(loadStart);
+    var saveBody = src.slice(saveStart, saveEnd);
+    var loadBody = src.slice(loadStart, loadEnd);
+    expect(saveBody).toContain("'new-post-caption'");
+    expect(saveBody).toContain('caption:');
+    expect(loadBody).toContain("'new-post-caption'");
+    expect(loadBody).toContain('d.caption');
+  });
+
+  it('17. no .cp-* caption class regression (client-portal namespace)', function() {
+    expect(src).not.toContain('cp-caption');
+  });
+
+  it('18. no ₹85 multiplier regression — USD→INR stays at ×100', function() {
+    expect(src).not.toContain('* 85');
+    expect(src).not.toContain('× 85');
+    expect(captionSrc).toContain('_CW_USD_TO_INR = 100');
+    expect(captionSrc).not.toContain('_CW_USD_TO_INR = 85');
+  });
+
+  it('19. no unauthorized font regressions (Source Serif / JetBrains Mono)', function() {
+    expect(src).not.toContain('Source Serif');
+    expect(src).not.toContain('JetBrains Mono');
+    expect(cssSrc).not.toContain('Source Serif');
+    expect(cssSrc).not.toContain('JetBrains Mono');
+  });
+
+  it('20. Caption Workspace supports detached mode (isDetached + callbacks)', function() {
+    expect(captionSrc).toContain('isDetached');
+    expect(captionSrc).toContain('onUseCallback');
+    expect(captionSrc).toContain('onCloseCallback');
+  });
+
+  it('21. index.html has ⤢ expand button + word meter + cost chip', function() {
+    expect(htmlSrc).toContain('id="npc-expand-btn"');
+    expect(htmlSrc).toContain('id="npc-word-meter"');
+    expect(htmlSrc).toContain('id="npc-cost-chip"');
+    expect(htmlSrc).toContain('npc-caption-wrap');
+  });
+
+  it('22. .npc-* CSS block exists + no rgba() + Fraunces 500 on caption body', function() {
+    var npcStart = cssSrc.indexOf('.npc-caption-wrap');
+    expect(npcStart).toBeGreaterThan(-1);
+    var npcBlock = cssSrc.slice(npcStart);
+    expect(npcBlock).not.toMatch(/rgba\(/);
+    expect(npcBlock).toContain("'Fraunces'");
+    expect(npcBlock).toContain("font-weight: 500");
+  });
+});

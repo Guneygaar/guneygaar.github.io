@@ -22,6 +22,11 @@ const DRAFT_KEY = 'hinglish_new_post_draft';
 let _draftTimer = null;
 let _draftDebounce = null;
 
+// Session window for stamping detached ai_usage rows onto the new post_id
+// after submit. Captured at modal open, cleared at close/submit.
+var _npcSessionStart = null;
+var _npcSessionEmail = null;
+
 // PR 4 — Gmail import state. Mirrored onto window.* so handlers
 // wired via inline onclick can read/write them.
 var _npsSelectedOptIdx = 0;   // 1 | 2 | 3 — which AI caption option is picked
@@ -44,6 +49,7 @@ stage:    document.getElementById('new-post-stage')?.value    || '',
 date:     document.getElementById('new-post-date')?.value     || '',
 postLink: document.getElementById('new-post-link')?.value     || '',
 format:   document.getElementById('new-post-format')?.value   || '',
+caption:  document.getElementById('new-post-caption')?.value  || '',
 savedAt:  Date.now(),
 };
 
@@ -77,6 +83,9 @@ if (_el('new-post-date'))     _el('new-post-date').value     = d.date     || '';
 
 if (_el('new-post-link'))     _el('new-post-link').value     = d.postLink || '';
 if (_el('new-post-format'))   _el('new-post-format').value   = d.format   || '';
+if (_el('new-post-caption') && typeof d.caption === 'string') {
+  _el('new-post-caption').value = d.caption;
+}
 
 showDraftStatus('Draft restored');
 _npsOwnerChange();
@@ -610,6 +619,12 @@ if (captionEl) {
   captionEl.style.height = captionEl.scrollHeight + 'px';
 }
 
+_npcSessionStart = new Date().toISOString();
+_npcSessionEmail = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+_npcWireCaption();
+_npcUpdateWordMeter();
+_npcRefreshCostChip();
+
 setTimeout(() => document.getElementById('new-post-title')?.focus(), 60);
 }
 
@@ -660,6 +675,10 @@ if (emailList) emailList.style.display = 'none';
 var proc = document.getElementById('nps-gmail-processing');
 if (proc) proc.style.display = 'none';
 document.querySelectorAll('.nps-ai-tag').forEach(function(el) { el.style.display = 'none'; });
+
+_npcSessionStart = null;
+_npcSessionEmail = null;
+// Do NOT clear window._captionWS.sessionCost here — the workspace owns its own lifecycle.
 
 _drainDeferredRender();
 }
@@ -771,6 +790,25 @@ body: JSON.stringify(payload)
 });
 
 console.log('[submitNewPost] API SUCCESS');
+
+// Stamp any null-post_id ai_usage rows from this Create Post session
+// onto the newly created post. Fire-and-forget — must not block submit.
+// If it fails, the rows stay null-post_id (still counted globally).
+if (_npcSessionStart && _npcSessionEmail && payload && payload.post_id) {
+  var _stampPath = '/ai_usage?post_id=is.null&created_by=eq.' +
+    encodeURIComponent(_npcSessionEmail) +
+    '&created_at=gte.' + encodeURIComponent(_npcSessionStart);
+  apiFetch(_stampPath, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify({ post_id: payload.post_id })
+  }).catch(function(err) {
+    if (window.logError) window.logError(err && err.message, err && err.stack, 'npc-ai-usage-stamp');
+  });
+}
 
 var _newPostTitle = payload.title || '';
 var _newPostImage = (Array.isArray(payload.images) && payload.images.length) ? payload.images[0] : '';
@@ -958,3 +996,86 @@ function clearPostAsset() {
   _renderNewPostAssetGrid();
 }
 window.clearPostAsset = clearPostAsset;
+
+// ═══════════════════════════════════════════════════════════════
+// Caption Workspace bridge — inline caption stays MANUAL ONLY.
+// The ⤢ button opens the full workspace with postId: null; any
+// "Use this" tap inside the workspace routes back via onUse into
+// the textarea instead of PATCHing /posts.
+// ═══════════════════════════════════════════════════════════════
+function _npcWireCaption() {
+  var ta = document.getElementById('new-post-caption');
+  if (ta && !ta._npcWired) {
+    ta._npcWired = true;
+    // Additive: keep captionWire.oninput (saveDraftDebounced + autogrow) intact.
+    ta.addEventListener('input', function() { _npcUpdateWordMeter(); });
+  }
+  var expandBtn = document.getElementById('npc-expand-btn');
+  if (expandBtn && !expandBtn._npcWired) {
+    expandBtn._npcWired = true;
+    expandBtn.addEventListener('click', _npcOpenWorkspace);
+  }
+}
+
+function _npcUpdateWordMeter() {
+  var ta = document.getElementById('new-post-caption');
+  var meter = document.getElementById('npc-word-meter');
+  if (!ta || !meter) return;
+  var words = (ta.value.trim().match(/\S+/g) || []).length;
+  var countEl = meter.querySelector('.npc-wc-count');
+  if (countEl) countEl.textContent = words;
+  meter.classList.remove('green', 'amber', 'red');
+  if (words >= 80 && words <= 100) meter.classList.add('green');
+  else if (words > 100 && words <= 125) meter.classList.add('amber');
+  else if (words > 125) meter.classList.add('red');
+}
+
+function _npcOpenWorkspace() {
+  var ta = document.getElementById('new-post-caption');
+  if (!ta) return;
+  if (typeof window.openCaptionWorkspace !== 'function') {
+    if (typeof showToast === 'function') showToast('Caption Workspace unavailable', 'error');
+    return;
+  }
+  var currentCaption = ta.value || '';
+  var mode = currentCaption.trim().length === 0 ? 'write' : 'chat';
+  window.openCaptionWorkspace(mode, {
+    postId: null,
+    initialCaption: currentCaption,
+    title: (document.getElementById('new-post-title') || {}).value || 'New post — no title yet',
+    syntheticContext: {
+      title: (document.getElementById('new-post-title') || {}).value || '',
+      content_pillar: (document.getElementById('new-post-pillar') || {}).value || '',
+      location: (document.getElementById('new-post-location') || {}).value || '',
+      internal_notes: (document.getElementById('new-post-comments') || {}).value || ''
+    },
+    onUse: function(newCaption) {
+      ta.value = newCaption;
+      // Kick the existing oninput (auto-grow + saveDraftDebounced).
+      var evt = new Event('input', { bubbles: true });
+      ta.dispatchEvent(evt);
+      _npcUpdateWordMeter();
+      _npcRefreshCostChip();
+    },
+    onClose: function() { _npcRefreshCostChip(); }
+  });
+}
+
+function _npcRefreshCostChip() {
+  var chip = document.getElementById('npc-cost-chip');
+  if (!chip) return;
+  var sessionCost = (window._captionWS && typeof window._captionWS.sessionCost === 'number')
+    ? window._captionWS.sessionCost
+    : 0;
+  var fmt = (typeof window._cwFormatINR === 'function') ? window._cwFormatINR : _npcFallbackFormatINR;
+  var amountEl = chip.querySelector('.npc-amount');
+  if (amountEl) amountEl.textContent = fmt(sessionCost);
+  if (sessionCost > 0) chip.classList.add('active');
+  else chip.classList.remove('active');
+}
+
+function _npcFallbackFormatINR(inr) {
+  if (!inr || inr < 1) return '\u20B90';
+  if (inr < 1000) return '\u20B9' + Math.round(inr);
+  return '\u20B9' + Math.round(inr).toLocaleString('en-IN');
+}

@@ -68,7 +68,7 @@ Root:
 - `03-auth.js` — magic link, OTP, refreshSession (typed errors, 400-is-token-reuse recovery), cross-tab refresh lock, visibilitychange refresh, normalizeRole, single canonical `window._tokenRefreshTimer` (50-min proactive refresh, installed at top of activateRole, torn down in logout / _clearSessionAndLogin)
 - `04-router.js` — routing, deep-link handling (must be LAST script)
 - `05-api.js` — apiFetch (no-cache headers, 401 retry), uploadPostAsset, logActivity, normalise
-- `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed
+- `06-post-create.js` — new post form, asset input, WhatsApp KV preview seed. Caption field (`.npc-caption-wrap` + `#new-post-caption`): inline textarea is manual-only; ⤢ `#npc-expand-btn` opens `openCaptionWorkspace(mode, {postId:null, initialCaption, onUse, onClose})` in detached mode, routing "Use this" back into the textarea via `onUse` instead of PATCHing `/posts`. Word meter `#npc-word-meter` colors 80–100 green / 101–125 amber / 126+ red; cost chip `#npc-cost-chip` reads `window._captionWS.sessionCost` formatted via `window._cwFormatINR` (×100 unchanged). `saveDraft`/`loadDraft` round-trip caption. On submit, fire-and-forget PATCH to `/ai_usage?post_id=is.null&created_by=X&created_at=gte.Y` stamps this session's detached ai_usage rows with the new `post_id`.
 - `07-post-load.js` — loadPosts(fromPoll), loadPostsForClient(skipRenderIfUnchanged, fromPoll), mergePosts, startRealtime (installs agency Realtime then wires a 10s polling fallback gated on `window._agencyRealtimeChannel`), startAgencyRealtime/stopAgencyRealtime (agency Supabase Realtime WebSocket — 4 postgres_changes listeners, replaces the 10s poll + the 20s notifBadgeTimer for agency users), _agencyRealtimeRefresh (400 ms debounced loadPosts(true), stashes into _postsPollStash when a modal is open), _onAgencyNotificationInsert, startClientRealtime/stopClientRealtime (client Supabase Realtime WebSocket — 4 postgres_changes listeners, no polling), _initSupabaseRealtimeClient (shared by agency + client), _clientRealtimeRefresh (400 ms debounced loadPostsForClient), _onClientNotificationInsert, _postsFingerprint, _clientPostsFingerprint, _drainPollStash, _renderBackgroundViews, bottom sheets, _cardClickDelegate
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
@@ -221,7 +221,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 26 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 25 scripts). Current: `?v=20260416o`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 26 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 25 scripts). Current: `?v=20260417p`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
