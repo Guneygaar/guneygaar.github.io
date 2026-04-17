@@ -8312,6 +8312,35 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding-left: 10px;
   margin: 8px 0;
 }
+.cw-memorized {
+  text-align: center;
+  padding: 14px 16px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #C15F3C;
+  background: linear-gradient(180deg, #1E1610 0%, #1A1816 100%);
+  border: 1px solid #5A3A2C;
+  border-radius: 8px;
+  margin: 6px 0;
+  font-weight: 600;
+  animation: memorized-pulse 2s ease-out;
+}
+@keyframes memorized-pulse {
+  0% {
+    box-shadow: 0 0 0 0 #C15F3C66;
+    transform: scale(0.98);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px #C15F3C40;
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 #C15F3C00;
+    transform: scale(1);
+  }
+}
 .cw-draft-hint {
   padding: 0 14px 6px;
   font-family: 'IBM Plex Mono', monospace;

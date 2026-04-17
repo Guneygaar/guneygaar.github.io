@@ -91,7 +91,9 @@ window.openCaptionWorkspace = async function(mode, context) {
       var thread = document.getElementById('cw-thread');
       if (thread) { thread.insertAdjacentHTML('beforeend', _cwTypingHtml()); _cwScrollToBottom(); }
       var featureTag = 'chat';
-      var rwApiMsgs = ws.messages.map(function(m) { return { role: m.role, content: m.content }; });
+      var rwApiMsgs = ws.messages
+        .filter(function(m) { return m.role === 'user' || m.role === 'assistant'; })
+        .map(function(m) { return { role: m.role, content: m.content }; });
       if (ws.correctionsPrompt && rwApiMsgs.length > 0) {
         rwApiMsgs[0] = { role: rwApiMsgs[0].role, content: rwApiMsgs[0].content + ws.correctionsPrompt };
       }
@@ -144,11 +146,24 @@ window.closeCaptionWorkspace = function() {
 
 // ─── send message ────────────────────────────────────────────
 
+var _CW_MEMORY_REGEX = /^(memoris[ez]e|remember(?:\s+this)?|never\s+forget|always(?:\s+do)?|never(?:\s+do)?|from\s+now\s+on|henceforth|make\s+sure(?:\s+you)?|going\s+forward|(?:new\s+)?rule|note|important)\s*:\s*([\s\S]+)$/i;
+
 window.sendCaptionMessage = async function(text) {
   if (!text || !text.trim()) return;
   var ws = window._captionWS;
 
-  ws.messages.push({ role: 'user', content: text.trim() });
+  var trimmed = text.trim();
+  var match = trimmed.match(_CW_MEMORY_REGEX);
+  if (match) {
+    var trigger = match[1];
+    var instruction = match[2].trim();
+    if (instruction.length > 3) {
+      _cwSaveMemory(trigger, instruction);
+      return;
+    }
+  }
+
+  ws.messages.push({ role: 'user', content: trimmed });
   _cwRenderThread();
   _cwScrollToBottom();
 
@@ -171,7 +186,9 @@ window.sendCaptionMessage = async function(text) {
 
   var featureTag = ws.mode === 'qc' ? 'qc' : ws.mode === 'write' ? 'writer' : 'chat';
 
-  var apiMessages = ws.messages.map(function(m) { return { role: m.role, content: m.content }; });
+  var apiMessages = ws.messages
+    .filter(function(m) { return m.role === 'user' || m.role === 'assistant'; })
+    .map(function(m) { return { role: m.role, content: m.content }; });
   if (ws.correctionsPrompt && apiMessages.length > 0) {
     apiMessages[0] = { role: apiMessages[0].role, content: apiMessages[0].content + ws.correctionsPrompt };
   }
@@ -225,6 +242,8 @@ function _cwRenderThread() {
       var displayText = m._display || m.content;
       html += '<div class="cw-msg cw-msg-user"><div class="cw-msg-bubble">' +
         _cwEsc(displayText).replace(/\n/g, '<br>') + '</div></div>';
+    } else if (m.role === 'memory') {
+      html += '<div class="cw-memorized">' + _cwEsc(m.content) + '</div>';
     } else if (m.role === 'assistant') {
       draftNum++;
       var isLatest = (i === ws.messages.length - 1);
@@ -480,12 +499,48 @@ function _cwCaptureCorrection(original, edited) {
   }
 }
 
+// ─── AI memory: explicit user instruction capture ──────
+
+function _cwSaveMemory(trigger, instruction) {
+  var ws = window._captionWS;
+
+  ws.messages.push({ role: 'user', content: trigger + ': ' + instruction });
+  ws.messages.push({ role: 'memory', content: '\u2726 Locked in. Claude will follow this rule in every future session.' });
+
+  apiFetch('/ai_memory', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({
+      workspace_id: 'default',
+      type: 'user_instruction',
+      content: instruction,
+      post_id: ws.postId || null
+    })
+  }).catch(function(err) {
+    console.warn('[cw] memory save failed:', err && err.message);
+  });
+
+  ws.memoryPrompt = 'USER INSTRUCTION (highest priority, NEVER violate): ' + instruction
+    + (ws.memoryPrompt ? '\n\n' + ws.memoryPrompt : '');
+
+  _cwRenderThread();
+  _cwScrollToBottom();
+
+  var input = document.getElementById('cw-input');
+  if (input) {
+    input.value = '';
+    input.style.height = 'auto';
+  }
+  var btn = document.getElementById('cw-send');
+  if (btn) btn.style.opacity = '0.55';
+}
+
 // ─── AI memory: load all memory types into prompt ───────
 
 async function _cwLoadMemory() {
   try {
     var rows = await apiFetch(
-      '/ai_memory?workspace_id=eq.default&order=created_at.desc&limit=30&select=type,content'
+      '/ai_memory?workspace_id=eq.default&order=created_at.desc&limit=50&select=type,content'
     );
     if (!Array.isArray(rows) || rows.length === 0) {
       window._captionWS.memoryPrompt = '';
@@ -493,16 +548,36 @@ async function _cwLoadMemory() {
       return;
     }
 
-    var style = [];
-    var client = [];
+    var instructions = [];
+    var zeroTolerance = [];
+    var brandSummary = [];
+    var clientPattern = [];
+    var clientPatternAuto = [];
+    var styleDna = [];
+    var companyIdentity = [];
+    var productKnowledge = [];
     var corrections = [];
+
+    function _str(c) { return typeof c === 'string' ? c : JSON.stringify(c); }
 
     rows.forEach(function(r) {
       try {
-        if (r.type === 'style_dna') {
-          style.push(typeof r.content === 'string' ? r.content : JSON.stringify(r.content));
+        var s = _str(r.content);
+        if (r.type === 'user_instruction') {
+          instructions.push('- ' + s);
+        } else if (r.type === 'brand_guide_summary') {
+          if (s.indexOf('ZERO TOLERANCE') !== -1) zeroTolerance.push(s);
+          else brandSummary.push(s);
         } else if (r.type === 'client_pattern') {
-          client.push(typeof r.content === 'string' ? r.content : JSON.stringify(r.content));
+          clientPattern.push(s);
+        } else if (r.type === 'client_pattern_auto') {
+          clientPatternAuto.push(s);
+        } else if (r.type === 'style_dna') {
+          styleDna.push(s);
+        } else if (r.type === 'company_identity') {
+          companyIdentity.push(s);
+        } else if (r.type === 'product_knowledge') {
+          productKnowledge.push(s);
         } else if (r.type === 'edit_correction') {
           var c = typeof r.content === 'string' ? JSON.parse(r.content) : r.content;
           if (c && c.original && c.edited) {
@@ -515,14 +590,32 @@ async function _cwLoadMemory() {
     });
 
     var blocks = [];
-    if (style.length > 0) {
-      blocks.push('WRITING STYLE FOR THIS BRAND:\n' + style.join('\n'));
+    if (instructions.length > 0) {
+      blocks.push('USER INSTRUCTIONS \u2014 NEVER VIOLATE THESE. These are direct commands from the user.\n' + instructions.join('\n'));
     }
-    if (client.length > 0) {
-      blocks.push('CLIENT FEEDBACK PATTERNS (never repeat these mistakes):\n' + client.join('\n'));
+    if (zeroTolerance.length > 0) {
+      blocks.push('ZERO TOLERANCE RULES:\n' + zeroTolerance.join('\n'));
+    }
+    if (brandSummary.length > 0) {
+      blocks.push('BRAND GUIDE:\n' + brandSummary.join('\n'));
+    }
+    if (clientPattern.length > 0) {
+      blocks.push('CLIENT FEEDBACK PATTERNS (never repeat these mistakes):\n' + clientPattern.join('\n'));
+    }
+    if (clientPatternAuto.length > 0) {
+      blocks.push('CLIENT FEEDBACK PATTERNS (auto-detected):\n' + clientPatternAuto.join('\n'));
+    }
+    if (styleDna.length > 0) {
+      blocks.push('WRITING STYLE FOR THIS BRAND:\n' + styleDna.join('\n'));
+    }
+    if (companyIdentity.length > 0) {
+      blocks.push('COMPANY IDENTITY:\n' + companyIdentity.join('\n'));
+    }
+    if (productKnowledge.length > 0) {
+      blocks.push('PRODUCT KNOWLEDGE:\n' + productKnowledge.join('\n'));
     }
     if (corrections.length > 0) {
-      blocks.push('STYLE CORRECTIONS FROM USER EDITS:\n' + corrections.join('\n'));
+      blocks.push('STYLE PREFERENCES (learned from user edits):\n' + corrections.join('\n'));
     }
 
     window._captionWS.memoryPrompt = blocks.length > 0 ? blocks.join('\n\n') : '';
