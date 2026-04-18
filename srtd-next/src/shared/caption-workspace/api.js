@@ -93,9 +93,9 @@ export async function fetchTodayMonthCosts(createdBy) {
   }
 
   const [todayUsd, monthUsd] = await Promise.all([_sum(midnight), _sum(monthStart)]);
-  // Worker reports USD; convert × 100 to INR to match session meter.
-  out.todayCostINR = todayUsd * 100;
-  out.monthCostINR = monthUsd * 100;
+  // Worker reports USD; convert × 83 to INR (matches calcCostINR).
+  out.todayCostINR = todayUsd * 83;
+  out.monthCostINR = monthUsd * 83;
   return out;
 }
 
