@@ -37,8 +37,15 @@ Quick reference for every component built under `srtd-next/src/`. Source of trut
 | `purple` | `--c-purple` | `#6B4FD9` | `#9B87F5` |
 | `green / green-deep` | success / gradient | `#1FA66E` / `#147A4F` | `#3ECF8E` / `#2AA670` |
 | `red` | error | `#D83838` | `#FF4B4B` |
-| `role-servicing` | Chitra | `#0891A0` | `#22D3EE` |
-| `role-admin` | Shubham | `#8E7A2E` | `#C8A84B` |
+| `role-servicing` | `--c-role-servicing` | `#0891A0` | `#22D3EE` |
+| `role-admin` | `--c-role-admin` | `#8E7A2E` | `#C8A84B` |
+| `role-creative` | `--c-role-creative` | `#3E7196` | `#6FA8C9` |
+| `role-client` | `--c-role-client` | `#A85C3C` | `#D48B6E` |
+| `stage-brief` | `--c-stage-brief` | `#6A5AA0` | `#9E8FC7` |
+| `stage-production` | `--c-stage-production` | `#3E7196` | `#6FA5C4` |
+| `stage-ready` | `--c-stage-ready` | `#6B7E9A` | `#A3B2C7` |
+| `stage-input` | `--c-stage-input` | `#A85C3C` | `#D48B6E` |
+| `stage-scheduled` | `--c-stage-scheduled` | `#6E9068` | `#A8BFA3` |
 
 Light-mode values are darker/deeper so accents remain legible against the warm-paper background. Dark-mode values are lifted from the vanilla styles.css warm-ink palette exactly.
 
@@ -87,6 +94,9 @@ All gradient stops resolve to `var(--c-*)`, so the gradient itself flips palette
 - **Chip.** `className="btn-chip"` (component class). `btn-chip-dim` (disabled) · `btn-chip-primary` (filled terracotta).
 - **Input pill.** `bg-bg-pill rounded-pill flex items-center gap-2 px-4 py-2` + textarea (`border-0 bg-transparent font-serif`).
 - **Meter pill / Brief pin.** Small rounded-pill with icon + label; collapsed ~36px tall; tap expands to full card.
+- **Overlay primitive.** Use `<Overlay onClose={fn} zIndex={1501}>` from core/ui. Backdrop + slide-up + Escape-to-close + body-scroll lock built in.
+- **Avatar primitive.** Use `<Avatar name role size />` from core/ui. Sizes: sm/md. Role auto-tints. Falls back to 'unknown' style for null-email comments.
+- **WhatsAppIcon.** Custom brand SVG in core/ui. Inherits currentColor - use text-soft default + hover:text-green for consistency with icon row. Do not force brand green as default color.
 
 ## Rules
 

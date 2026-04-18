@@ -1,18 +1,15 @@
 import React, { useEffect } from 'react';
 import { useAppState } from './core/stores/appState.js';
 import { useFlowState } from './flows/create-post/flowStore.js';
+import { usePcsFlowState } from './flows/pcs/flowStore.js';
 import { CreatePost } from './flows/create-post/CreatePost.jsx';
+import { PCS } from './flows/pcs/PCS.jsx';
 import { CaptionWorkspace } from './shared/caption-workspace/CaptionWorkspace.jsx';
-
-// Root React tree. Hydrates AppState on mount, then conditionally
-// renders active flows based on each flow's isOpen state. Shared
-// overlays (CaptionWorkspace) mount unconditionally and gate their
-// own visibility from their store — so they can float over any
-// flow without the flow component needing to know about them.
 
 export default function App() {
   const syncFromWindow = useAppState(s => s.syncFromWindow);
   const createPostOpen = useFlowState(s => s.isOpen);
+  const pcsOpen = usePcsFlowState(s => s.isOpen);
 
   useEffect(() => {
     syncFromWindow();
@@ -21,6 +18,7 @@ export default function App() {
   return (
     <>
       {createPostOpen && <CreatePost />}
+      {pcsOpen && <PCS />}
       <CaptionWorkspace />
     </>
   );
