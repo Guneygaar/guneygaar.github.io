@@ -7,14 +7,56 @@ export function PhotosField() {
   const photos = useFormState(s => s.form.photos);
   const update = useFormState(s => s.update);
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    const readers = files.slice(0, 20 - photos.length).map(f => new Promise((res) => {
+    const remaining = 20 - photos.length;
+    const accepted = files.slice(0, remaining);
+
+    // Stage 1: show local previews immediately
+    const previews = await Promise.all(accepted.map(f => new Promise((res) => {
       const r = new FileReader();
-      r.onload = ev => res({ name: f.name, url: ev.target.result });
+      r.onload = ev => res({
+        name: f.name,
+        url: ev.target.result,        // data URL for instant preview
+        uploading: true,
+        _file: f                       // keep original for compress+upload
+      });
       r.readAsDataURL(f);
-    }));
-    Promise.all(readers).then(results => update('photos', [...photos, ...results]));
+    })));
+
+    const updatedPhotos = [...photos, ...previews];
+    update('photos', updatedPhotos);
+
+    // Stage 2: compress + upload each file, replace data URL with R2 URL
+    const { compressImage, generateFilename } = window.SortedReact.utils;
+    const { uploadToR2 } = window.SortedReact.bridges;
+
+    for (let i = 0; i < previews.length; i++) {
+      const idx = photos.length + i;
+      const preview = previews[i];
+      try {
+        const blob = await compressImage(preview._file, {
+          maxDim: 1200,
+          quality: 0.82,
+          mimeType: 'image/jpeg'
+        });
+        const filename = generateFilename('jpg');
+        const r2Url = await uploadToR2(filename, blob);
+        // Read current photos state and replace by index
+        const current = useFormState.getState().form.photos.slice();
+        if (current[idx]) {
+          current[idx] = { name: preview.name, url: r2Url, uploading: false };
+          update('photos', current);
+        }
+      } catch (err) {
+        console.error('[photos] upload failed:', err);
+        const current = useFormState.getState().form.photos.slice();
+        if (current[idx]) {
+          current[idx] = { ...current[idx], uploading: false, error: err.message };
+          update('photos', current);
+        }
+      }
+    }
   };
 
   const removePhoto = (idx) => update('photos', photos.filter((_, i) => i !== idx));
@@ -52,6 +94,17 @@ export function PhotosField() {
                 position: 'absolute', inset: 0,
                 width: '100%', height: '100%', objectFit: 'cover'
               }} />
+              {p.uploading && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: '#00000099',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: tokens.mono, fontSize: 9, letterSpacing: '0.14em',
+                  textTransform: 'uppercase', color: tokens.textLoud
+                }}>
+                  Uploading...
+                </div>
+              )}
               <button
                 onClick={() => removePhoto(i)}
                 aria-label="Remove photo"
