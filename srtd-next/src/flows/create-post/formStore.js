@@ -38,6 +38,7 @@ function initialForm() {
     format: 'Photo',
     location: '',
     targetDate: new Date().toISOString().split('T')[0],
+    brief: '',
     caption: '',
     photos: [],
     driveLink: '',
