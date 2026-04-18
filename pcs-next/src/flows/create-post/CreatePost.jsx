@@ -11,10 +11,14 @@ import { PhotosField } from './components/PhotosField.jsx';
 import { DriveLinkField } from './components/DriveLinkField.jsx';
 import { NotesField } from './components/NotesField.jsx';
 import { Footer } from './components/Footer.jsx';
+import { PasteSheet } from './components/PasteSheet.jsx';
+import { GmailSheet } from './components/GmailSheet.jsx';
 
 export function CreatePost() {
   const form = useFormState(s => s.form);
   const importOpen = useFormState(s => s.importOpen);
+  const pasteSheetOpen = useFormState(s => s.pasteSheetOpen);
+  const gmailSheetOpen = useFormState(s => s.gmailSheetOpen);
   const toast = useFormState(s => s.toast);
   const closeAllDropdowns = useFormState(s => s.closeAllDropdowns);
   const close = useFlowState(s => s.close);
@@ -28,12 +32,18 @@ export function CreatePost() {
     return () => document.removeEventListener('click', onDocClick);
   }, [closeAllDropdowns]);
 
-  // Escape key closes modal
+  // Escape key closes modal — but if a child sheet (Paste / Gmail)
+  // is open, let the sheet swallow Esc first (it will toggle its own
+  // state and we stay open).
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (pasteSheetOpen || gmailSheetOpen) return;
+      close();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [close]);
+  }, [close, pasteSheetOpen, gmailSheetOpen]);
 
   // Progress hairline calculation
   const progress = useMemo(() => {
@@ -57,9 +67,12 @@ export function CreatePost() {
         }}
       />
 
-      {/* Modal */}
+      {/* Modal. NO onClick stopPropagation: the backdrop is a
+          sibling (not parent) so modal clicks don't hit it, and
+          letting clicks bubble to `document` is required for the
+          outside-click handler at :23-29 to close any open
+          dropdown. Fixed in B5 — was the 6-dropdown stale-open bug. */}
       <div
-        onClick={e => e.stopPropagation()}
         style={{
           position: 'fixed',
           top: 0, left: '50%',
@@ -114,7 +127,7 @@ export function CreatePost() {
           transform: 'translateX(-50%)',
           background: tokens.ink2, border: `1px solid ${tokens.claudeBorder}`,
           padding: '12px 18px', maxWidth: 380,
-          boxShadow: '0 20px 40px #000000CC', zIndex: 1600
+          boxShadow: '0 20px 40px #000000CC', zIndex: 1800
         }}>
           <div style={{ fontFamily: tokens.serif, fontSize: 14, color: tokens.textLoud, fontWeight: 500 }}>
             {toast.msg}
@@ -126,6 +139,10 @@ export function CreatePost() {
           )}
         </div>
       )}
+
+      {/* Import brief sheets — render above the modal at z-index 1700/1701. */}
+      {pasteSheetOpen && <PasteSheet />}
+      {gmailSheetOpen && <GmailSheet />}
     </ErrorBoundary>
   );
 }

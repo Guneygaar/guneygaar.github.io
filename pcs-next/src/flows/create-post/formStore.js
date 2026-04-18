@@ -61,6 +61,12 @@ export const useFormState = create((set, get) => ({
   sessionCalls: 0,
   sessionStart: new Date().toISOString(),
 
+  // B5 import-brief sheets. Independent of the dropdown panel
+  // state (importOpen) — closing the Import pill dropdown opens
+  // one of these sheets.
+  pasteSheetOpen: false,
+  gmailSheetOpen: false,
+
   update: (field, value) => {
     set(s => ({ form: { ...s.form, [field]: value } }));
     _saveDraftDebounced(get().form);
@@ -72,7 +78,9 @@ export const useFormState = create((set, get) => ({
     submitting: false, toast: null,
     sessionStart: new Date().toISOString(),
     sessionCost: 0,
-    sessionCalls: 0
+    sessionCalls: 0,
+    pasteSheetOpen: false,
+    gmailSheetOpen: false
   }),
   closeAllDropdowns: () => set({
     importOpen: false, ownerOpen: false, stageOpen: false,
