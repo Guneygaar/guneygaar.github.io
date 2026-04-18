@@ -5,6 +5,7 @@ import { usePcsFlowState } from './flows/pcs/flowStore.js';
 import { CreatePost } from './flows/create-post/CreatePost.jsx';
 import { PCS } from './flows/pcs/PCS.jsx';
 import { CaptionWorkspace } from './shared/caption-workspace/CaptionWorkspace.jsx';
+import { Toast } from './core/ui/Toast.jsx';
 
 export default function App() {
   const syncFromWindow = useAppState(s => s.syncFromWindow);
@@ -20,6 +21,7 @@ export default function App() {
       {createPostOpen && <CreatePost />}
       {pcsOpen && <PCS />}
       <CaptionWorkspace />
+      <Toast />
     </>
   );
 }

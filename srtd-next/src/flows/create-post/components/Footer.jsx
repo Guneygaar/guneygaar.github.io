@@ -50,49 +50,55 @@ export function Footer() {
     logClick('create_post_clear_form');
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!canSubmit) return;
     if (!user || !user.email) {
       toast('Not signed in - cannot create post', 'error');
       return;
     }
 
-    setUI({ submitting: true });
-
+    // 1. Build payload synchronously. This is the only step that
+    //    can surface a user-fixable error (unknown stage label) so
+    //    we keep it gated on a try/catch and abort close if it
+    //    throws.
+    let payload;
     try {
-      const payload = buildPostPayload(form, user.email, {
+      payload = buildPostPayload(form, user.email, {
         aiOrigin: sessionCalls > 0
       });
-
-      // Create the post
-      const created = await createPost(payload);
-
-      // Extract post_id from response (either single row or array)
-      const postId = Array.isArray(created) && created.length > 0
-        ? created[0].post_id
-        : (created && created.post_id) || payload.post_id;
-
-      // Stamp ai_usage rows from this session with the new post_id
-      if (sessionCalls > 0) {
-        await stampPostId({
-          postId,
-          createdBy: user.email,
-          sessionStart
-        });
-      }
-
-      clearDraft();
-      toast('Post created', 'success');
-      logClick('create_post_submit_react', { post_id: postId }, true, { post_id: postId });
-      resetForm();
-      close();
     } catch (err) {
-      console.error('[create-post] submit failed:', err);
+      console.error('[create-post] payload build failed:', err);
       toast(`Post creation failed: ${err.message || 'unknown error'}`, 'error');
       logClick('create_post_submit_react', {}, false, { error: err && err.message });
       logError(err, { action: 'create-post-submit-react' });
-      setUI({ submitting: false });
+      return;
     }
+
+    // 2. Optimistic close — the form feels instant. Realtime (or
+    //    the next /posts poll) will surface the row for every
+    //    other viewer; the admin sees the toast and trusts.
+    const finalCost = useFormState.getState().sessionCost || 0;
+    clearDraft();
+    toast('Post created', 'success', { cost: finalCost });
+    logClick('create_post_submit_react', { post_id: payload.post_id }, true, { post_id: payload.post_id });
+    resetForm();
+    close();
+
+    // 3. Background write. Do NOT await.
+    createPost(payload).then((created) => {
+      const postId = Array.isArray(created) && created.length > 0
+        ? created[0].post_id
+        : (created && created.post_id) || payload.post_id;
+      if (postId && sessionCalls > 0) {
+        stampPostId({ postId, createdBy: user.email, sessionStart })
+          .catch(() => { /* non-critical */ });
+      }
+    }).catch((err) => {
+      console.error('[create-post] background insert failed:', err);
+      toast('Post may not have saved — please check pipeline', 'error');
+      logClick('create_post_submit_react_bg', {}, false, { error: err && err.message });
+      logError(err, { action: 'create-post-submit-react-bg' });
+    });
   };
 
   return (

@@ -60,25 +60,39 @@ export function CaptionField() {
   }, [wordCount]);
 
   const handleOpenWorkspace = () => {
+    const form = useFormState.getState().form;
+    const initial = (form.caption || '').trim();
+
+    // Compose a brief from whatever the user has typed so far so
+    // store.open auto-fires angles. Brief field (new Section 05)
+    // is the primary source; title / internal notes / caption
+    // append as supporting context.
+    const briefParts = [];
+    if (form.brief && form.brief.trim())                 briefParts.push(form.brief.trim());
+    if (form.title && form.title.trim())                 briefParts.push(form.title.trim());
+    if (form.internalNotes && form.internalNotes.trim()) briefParts.push(form.internalNotes.trim());
+    if (form.caption && form.caption.trim())             briefParts.push(form.caption.trim());
+    const brief = briefParts.join('\n\n').trim();
+
     console.log('[react/caption] ⤢ tapped', {
-      mode: (caption || '').trim() ? 'chat' : 'write',
+      hasBrief: !!brief,
+      briefLen: brief.length,
       vanillaAvailable: typeof window.openCaptionWorkspace === 'function',
-      isAdmin: useIsAdmin.getState ? undefined : 'hook-scoped'
+      isAdmin
     });
 
-    const initial = (caption || '').trim();
-    const mode = initial ? 'chat' : 'write';
-    logClick('caption_workspace_open', { mode, isAdmin });
+    logClick('caption_workspace_open', { hasBrief: !!brief, isAdmin });
 
-    openCaptionWorkspace(mode, {
+    openCaptionWorkspace('write', {
       postId: null,  // detached mode — no post exists yet
       initialCaption: initial,
       syntheticContext: {
         source: 'create-post-react',
-        pillar: useFormState.getState().form.pillar || null,
-        location: useFormState.getState().form.location || null,
-        format: useFormState.getState().form.format || null,
-        title: useFormState.getState().form.title || null
+        pillar: form.pillar || null,
+        location: form.location || null,
+        format: form.format || null,
+        title: form.title || '',
+        brief
       },
       onUse: (text) => {
         if (typeof text !== 'string' || !text.trim()) return;
@@ -115,7 +129,7 @@ export function CaptionField() {
             fontFamily: tokens.mono, fontSize: 9.5, letterSpacing: '0.18em',
             textTransform: 'uppercase', color: tokens.textWhisper
           }}>
-            <span style={{ color: tokens.claude, fontWeight: 500 }}>05</span>
+            <span style={{ color: tokens.claude, fontWeight: 500 }}>06</span>
             <span style={{ color: tokens.textSoft }}>Copy</span>
             <span style={{ color: tokens.textGhost, marginLeft: 10, letterSpacing: '0.14em' }}>Goes to client</span>
           </div>

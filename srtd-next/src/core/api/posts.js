@@ -5,6 +5,10 @@
 import { apiFetch } from './client.js';
 import { STAGE_UI_TO_DB, PILLAR_UI_TO_DB, isCanvaUrl } from '../mappings.js';
 
+// Supabase posts_owner_check allows exactly these title-cased roles.
+// Map defensively in case the form sends lowercase / mixed case.
+const OWNER_MAP = { creative: 'Creative', servicing: 'Servicing', client: 'Client', admin: 'Admin' };
+
 /**
  * Build a /posts INSERT payload from form state.
  * Returns a plain object ready to JSON.stringify into the body.
@@ -20,12 +24,14 @@ export function buildPostPayload(form, createdBy, options = {}) {
   }
 
   const isCanva = isCanvaUrl(form.driveLink);
+  const rawOwner = form.owner || '';
+  const ownerDB = OWNER_MAP[rawOwner.toLowerCase()] || rawOwner;
 
   return {
     post_id:        options.postId || `POST-${Date.now()}`,
     title:          (form.title || '').trim(),
     stage:          stageDB,
-    owner:          form.owner,
+    owner:          ownerDB,
     content_pillar: form.pillar ? (PILLAR_UI_TO_DB[form.pillar] || form.pillar.toLowerCase()) : null,
     location:       form.location || null,
     target_date:    form.targetDate || null,
@@ -36,7 +42,7 @@ export function buildPostPayload(form, createdBy, options = {}) {
     canva_link:     isCanva ? form.driveLink : null,
     images:         (form.photos && form.photos.length > 0)
                       ? form.photos.map(p => p.url)
-                      : null,
+                      : [],
     is_draft:       options.isDraft === true,
     ai_origin:      options.aiOrigin === true,
     brief_id:       options.briefId || null,

@@ -19,7 +19,7 @@ const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzA2NjkxNCwiZXhwIjoyMDU4NjQyOTE0fQ.mhMGDExFm3pVFmB24gzBGwIuXHHBB2B88FVqnmM5JQkw';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
-const ANTHROPIC_MAX_TOKENS = 1500;
+const ANTHROPIC_MAX_TOKENS = 3000;
 
 // Sonnet 4 pricing (per 1M tokens): input $3, output $15.
 const PRICE_INPUT_PER_MTOK = 3;
@@ -35,7 +35,8 @@ const FEATURE_FLAGS = {
   writer:      'ai_writer',
   qc:          'ai_qc',
   chat:        'ai_chat',
-  email_brief: 'ai_email_briefs'
+  email_brief: 'ai_email_briefs',
+  angles:      'ai_writer'
 };
 
 // ─── helpers ─────────────────────────────────────────────────
@@ -176,21 +177,14 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
       + '\n\n' + writerTagRule;
   }
   if (feature === 'qc') {
-    if (hasMem) {
-      return 'You are a brand quality controller for GBL.\n\n'
-        + mem
-        + '\n\nCheck the provided copy against these rules. Return PASS or FLAG for each item. Be specific. Be brief.'
-        + '\n\n' + captionOutputRule
-        + '\n\n' + qcTagRule;
-    }
-    return 'You are a brand quality controller for GBL. Check the provided copy against the brand voice and approved posts. '
-      + 'Here are 20 approved posts:\n\n'
-      + ctx
-      + '\n\nBrand guide:\n'
-      + bg
-      + '\n\nReturn a structured verdict: PASS or FLAG for each item checked. Be specific. Be brief.'
-      + '\n\n' + captionOutputRule
-      + '\n\n' + qcTagRule;
+    return 'You are a senior LinkedIn copy editor. Return ONLY valid JSON, no markdown, no preamble. '
+      + 'Schema: { "items": [ { "title": string, "text": string, "verdict": "PASS" | "FLAG" } ] }. '
+      + 'Evaluate every dimension requested. Nothing outside the JSON object.';
+  }
+  if (feature === 'angles') {
+    return 'You are a creative strategist. Return ONLY valid JSON, no markdown, no preamble. '
+      + 'Schema: { "angles": [ { "title": string, "hook": string } ] } — exactly 3 items. '
+      + 'Nothing outside the JSON object.';
   }
   if (feature === 'chat') {
     if (hasMem) {
@@ -219,7 +213,19 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
 
 // ─── Anthropic call ──────────────────────────────────────────
 
-async function callAnthropic(env, systemPrompt, messages) {
+async function callAnthropic(env, systemPrompt, messages, feature) {
+  const useWebSearch = feature !== 'email_brief';
+
+  const requestBody = {
+    model: ANTHROPIC_MODEL,
+    max_tokens: ANTHROPIC_MAX_TOKENS,
+    system: systemPrompt,
+    messages: messages
+  };
+  if (useWebSearch) {
+    requestBody.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+  }
+
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -227,12 +233,7 @@ async function callAnthropic(env, systemPrompt, messages) {
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json'
     },
-    body: JSON.stringify({
-      model: ANTHROPIC_MODEL,
-      max_tokens: ANTHROPIC_MAX_TOKENS,
-      system: systemPrompt,
-      messages: messages
-    })
+    body: JSON.stringify(requestBody)
   });
   if (!res.ok) {
     const txt = await res.text().catch(function() { return ''; });
@@ -240,14 +241,6 @@ async function callAnthropic(env, systemPrompt, messages) {
     throw new Error('anthropic ' + res.status + ': ' + txt.slice(0, 500));
   }
   return res.json();
-}
-
-// ─── fire-and-forget usage logger ────────────────────────────
-
-function logUsage(payload) {
-  supabasePost('/ai_usage', payload).catch(function(err) {
-    console.error('[srtd-ai] ai_usage log failed:', err && err.message);
-  });
 }
 
 // ─── route handlers ──────────────────────────────────────────
@@ -317,26 +310,36 @@ async function handleComplete(request, env) {
       ? systemPrompt + '\n\n' + systemExtras
       : systemPrompt;
 
-    const anthropicRes = await callAnthropic(env, combinedSystem, userAsstMessages);
+    const anthropicRes = await callAnthropic(env, combinedSystem, userAsstMessages, feature);
 
     const contentBlocks = anthropicRes && anthropicRes.content;
-    const responseText  = (Array.isArray(contentBlocks) && contentBlocks[0] && contentBlocks[0].text)
-      ? contentBlocks[0].text
+    const responseText  = Array.isArray(contentBlocks)
+      ? contentBlocks
+          .filter(b => b.type === 'text')
+          .map(b => b.text || '')
+          .join('\n\n')
+          .trim()
       : '';
     const usage         = (anthropicRes && anthropicRes.usage) || {};
     const inputTokens   = Number(usage.input_tokens)  || 0;
     const outputTokens  = Number(usage.output_tokens) || 0;
 
-    // Fire-and-forget: never block the response on the log write.
-    logUsage({
-      workspace_id:  workspaceId,
-      post_id:       postId,
-      feature:       feature,
-      tokens_input:  inputTokens,
-      tokens_output: outputTokens,
-      cost_usd:      calcCostUsd(inputTokens, outputTokens),
-      created_by:    createdBy
-    });
+    // Awaited usage log — every completion must leave a billing
+    // footprint. Failure is logged to Worker logs but never
+    // bubbles up to the caller.
+    try {
+      await supabasePost('/ai_usage', {
+        workspace_id:  workspaceId,
+        post_id:       postId,
+        feature:       feature,
+        tokens_input:  inputTokens,
+        tokens_output: outputTokens,
+        cost_usd:      calcCostUsd(inputTokens, outputTokens),
+        created_by:    createdBy
+      });
+    } catch (logErr) {
+      console.error('[srtd-ai] ai_usage log failed:', logErr && logErr.message);
+    }
 
     return jsonResponse({
       success: true,
@@ -629,7 +632,7 @@ async function handleGmailBrief(request, env) {
                threadContext
     }];
 
-    const anthropicRes = await callAnthropic(env, systemPrompt, messages);
+    const anthropicRes = await callAnthropic(env, systemPrompt, messages, 'email_brief');
     const rawText = (anthropicRes.content && anthropicRes.content[0] && anthropicRes.content[0].text) || '';
 
     let parsed;
@@ -640,19 +643,24 @@ async function handleGmailBrief(request, env) {
       return errorResponse('Claude did not return valid JSON: ' + rawText.slice(0, 200), 500);
     }
 
-    // Fire-and-forget usage telemetry — never blocks the response.
+    // Awaited usage log — every completion must leave a billing
+    // footprint. Failure is logged but not surfaced to the caller.
     const usage = anthropicRes.usage || {};
     const inputTokens  = Number(usage.input_tokens)  || 0;
     const outputTokens = Number(usage.output_tokens) || 0;
-    logUsage({
-      workspace_id:  workspaceId,
-      post_id:       null,
-      feature:       'email_brief',
-      tokens_input:  inputTokens,
-      tokens_output: outputTokens,
-      cost_usd:      calcCostUsd(inputTokens, outputTokens),
-      created_by:    createdBy
-    });
+    try {
+      await supabasePost('/ai_usage', {
+        workspace_id:  workspaceId,
+        post_id:       null,
+        feature:       'email_brief',
+        tokens_input:  inputTokens,
+        tokens_output: outputTokens,
+        cost_usd:      calcCostUsd(inputTokens, outputTokens),
+        created_by:    createdBy
+      });
+    } catch (logErr) {
+      console.error('[srtd-ai] ai_usage log failed:', logErr && logErr.message);
+    }
 
     return jsonResponse({
       success:          true,

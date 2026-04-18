@@ -6,6 +6,7 @@ import { useFlowState } from './flowStore.js';
 import { Header } from './components/Header.jsx';
 import { TitleField } from './components/TitleField.jsx';
 import { SplitRows } from './components/SplitRows.jsx';
+import { BriefField } from './components/BriefField.jsx';
 import { CaptionField } from './components/CaptionField.jsx';
 import { PhotosField } from './components/PhotosField.jsx';
 import { DriveLinkField } from './components/DriveLinkField.jsx';
@@ -182,6 +183,7 @@ export function CreatePost() {
           }}>
             <TitleField />
             <SplitRows />
+            <BriefField />
             <CaptionField />
             <PhotosField />
             <DriveLinkField />
