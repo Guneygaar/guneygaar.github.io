@@ -52,3 +52,14 @@ export function splitOptions(raw) {
   const parts = String(raw).split(/\n\s*(?=[123]\.\s)/);
   return parts.map((p) => p.replace(/^\s*[123]\.\s*/, '').trim()).filter(Boolean);
 }
+
+// Strip markdown bold/italic/inline-code markers so assistant text
+// renders cleanly in the thread. Does not touch newlines or headings.
+export function stripMarkdown(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}

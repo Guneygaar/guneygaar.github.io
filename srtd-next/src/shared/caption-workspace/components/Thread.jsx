@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useCaptionWorkspaceStore } from '../store.js';
+import { stripMarkdown } from '../utils.js';
 import { AnglesCard } from './AnglesCard.jsx';
 import { DraftCard } from './DraftCard.jsx';
 import { ReviewBlock } from './ReviewBlock.jsx';
@@ -27,7 +28,7 @@ export function Thread() {
           return (
             <div key={m.id} className="flex justify-end">
               <div className="rounded-bubble bg-bg-pill border border-divider-soft px-3 py-2 font-sans text-[13px] text-text-loud max-w-[85%] whitespace-pre-wrap">
-                {m.content}
+                {stripMarkdown(m.content)}
               </div>
             </div>
           );
