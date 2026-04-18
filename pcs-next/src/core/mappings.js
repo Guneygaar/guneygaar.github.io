@@ -29,7 +29,33 @@ export const STAGE_DB_TO_UI = Object.fromEntries(
 export const OWNERS = ['Admin', 'Servicing', 'Creative', 'Client'];
 
 // Format is free text in DB; these are the UI-curated options
-export const FORMATS = ['Photo', 'Carousel', 'Video', 'Creative'];
+export const FORMATS = ['Photo', 'Carousel', 'Video', 'Creative', 'Text'];
+
+// Content pillars used by GBL client. Stored lowercase in DB,
+// displayed as Title Case in the UI.
+export const PILLARS = [
+  'Announcements',
+  'Events',
+  'Growth',
+  'Inclusivity',
+  'Innovation',
+  'Leadership',
+  'Sustainability'
+];
+
+// UI label → DB value (lowercase)
+export const PILLAR_UI_TO_DB = Object.fromEntries(
+  PILLARS.map(p => [p, p.toLowerCase()])
+);
+
+// GBL operational locations. Stored as-is in DB.
+export const LOCATIONS = [
+  'Mumbai',
+  'Sakarwadi',
+  'Sameerwadi',
+  'Press',
+  'Other'
+];
 
 // Helper: is a URL a Canva link? (routing drive_link vs canva_link)
 export function isCanvaUrl(url) {

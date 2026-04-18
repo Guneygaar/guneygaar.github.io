@@ -2,6 +2,11 @@ import React from 'react';
 import { Chip, Dropdown } from '../../../core/ui/index.js';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
+import {
+  PILLARS as PILLAR_LABELS,
+  FORMATS as FORMAT_LABELS,
+  LOCATIONS as LOCATION_LABELS
+} from '../../../core/mappings.js';
 
 const OWNERS = [
   { label: 'Admin', color: tokens.claude },
@@ -23,21 +28,36 @@ const STAGES = [
   { label: 'Rejected', color: tokens.red }
 ];
 
-const PILLARS = [
-  { label: 'Leadership', color: tokens.good },
-  { label: 'Product', color: tokens.claude },
-  { label: 'Industry', color: tokens.warn },
-  { label: 'Culture', color: '#8B9CC9' }
+// Pillar chips use a consistent earthy palette, one color per
+// pillar. Ordering matches core/mappings.PILLARS so the color
+// per pillar stays stable across the app.
+const PILLAR_COLORS = [
+  tokens.claude,      // Announcements
+  tokens.warn,        // Events
+  tokens.good,        // Growth
+  '#8B9CC9',          // Inclusivity
+  tokens.ownerChitra, // Innovation
+  tokens.ownerPranav, // Leadership
+  tokens.good         // Sustainability
 ];
+const PILLARS = PILLAR_LABELS.map((label, i) => ({
+  label,
+  color: PILLAR_COLORS[i] || tokens.claude
+}));
 
-const FORMATS = [
-  { label: 'Photo', color: tokens.good },
-  { label: 'Carousel', color: tokens.claude },
-  { label: 'Video', color: tokens.warn },
-  { label: 'Creative', color: '#8B9CC9' }
-];
+const FORMAT_COLORS = {
+  Photo:    tokens.good,
+  Carousel: tokens.claude,
+  Video:    tokens.warn,
+  Creative: '#8B9CC9',
+  Text:     tokens.textSoft
+};
+const FORMATS = FORMAT_LABELS.map(label => ({
+  label,
+  color: FORMAT_COLORS[label] || tokens.claude
+}));
 
-const LOCATIONS = ['Mumbai', 'Delhi', 'Bengaluru', 'Chennai', 'Pune', 'Ahmedabad'];
+const LOCATIONS = LOCATION_LABELS;
 
 function Cell({ isFirst, children }) {
   const [hovered, setHovered] = React.useState(false);

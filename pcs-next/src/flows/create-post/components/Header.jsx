@@ -85,7 +85,7 @@ export function Header() {
                 return (
                   <button key={i}
                     onClick={() => {
-                      setToast({ msg: `${src.label} selected`, sub: 'B3 wires this up' });
+                      setToast({ msg: `${src.label} selected`, sub: 'Import wiring ships in a later PR' });
                       setUI({ importOpen: false });
                       setTimeout(() => useFormState.getState().clearToast(), 1800);
                     }}
