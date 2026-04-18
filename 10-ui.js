@@ -217,6 +217,12 @@ window._claudeSyncComposerState = function(root) {
 // Polish via srtd-ai worker. Returns a Promise resolving to the
 // polished text. Rejects on failure. Reuses the same fetch pattern as
 // actions/pcs.js `_callSrtdAI()` so behavior is identical.
+//
+// B5.5a.1: Anthropic 400s on role:'system' inside messages[]. We
+// now prepend the polish system prompt into the user content and
+// send messages: [{role:'user', …}] only. The Worker's 'chat'
+// feature system prompt still runs; this user-content preface adds
+// specificity. .catch surfaces failures as a toast + logError.
 window._claudePolish = function(text, postId) {
   var cfg = window.AI_CONFIG;
   if (!cfg || !cfg.workerUrl) {
@@ -232,11 +238,11 @@ window._claudePolish = function(text, postId) {
     'than the original. No greetings unless the user wrote one. ' +
     'No sign-offs. Return ONLY the polished text, no preamble, no ' +
     'commentary, no quotes around it.';
+  var userContent = systemPrompt + '\n\n---\n\nText to polish:\n' + raw;
   var payload = {
     feature: 'chat',
     messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: raw }
+      { role: 'user', content: userContent }
     ],
     post_id: postId || null,
     workspace_id: 'default',
@@ -258,6 +264,14 @@ window._claudePolish = function(text, postId) {
       return out;
     }
     throw new Error((data && data.error) || 'Polish failed');
+  }).catch(function(err) {
+    if (typeof showToast === 'function') {
+      showToast('Polish failed — check error log', 'error');
+    }
+    if (typeof window.logError === 'function') {
+      window.logError((err && err.message) || String(err), (err && err.stack) || '', 'claude-polish');
+    }
+    throw err;
   });
 };
 

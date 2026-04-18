@@ -67,6 +67,11 @@ export const useFormState = create((set, get) => ({
   pasteSheetOpen: false,
   gmailSheetOpen: false,
 
+  // B5.5a.1 draft-restore banner state. createPostFlow.open() sets
+  // pendingDraft instead of auto-populating the form, so the user
+  // chooses Restore/Start fresh explicitly.
+  pendingDraft: null,
+
   update: (field, value) => {
     set(s => ({ form: { ...s.form, [field]: value } }));
     _saveDraftDebounced(get().form);
@@ -89,5 +94,18 @@ export const useFormState = create((set, get) => ({
   setUI: (partial) => set(partial),
   setSessionCost: (n) => set({ sessionCost: n }),
   setToast: (toast) => set({ toast }),
-  clearToast: () => set({ toast: null })
+  clearToast: () => set({ toast: null }),
+
+  acceptDraft: () => {
+    const d = get().pendingDraft;
+    if (d && typeof d === 'object') {
+      set({ form: d, pendingDraft: null });
+    } else {
+      set({ pendingDraft: null });
+    }
+  },
+  dismissDraft: () => {
+    clearDraft();
+    set({ pendingDraft: null });
+  }
 }));

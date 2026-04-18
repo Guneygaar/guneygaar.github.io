@@ -4,6 +4,7 @@ import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useAppState } from '../../../core/stores/appState.js';
 import { listEmails, fetchBrief } from '../../../core/bridges/gmail.js';
+import { logClick, logError } from '../../../core/bridges/logging.js';
 
 // Gmail brief import sheet (admin-only, gated upstream in Header.jsx).
 // Stages:
@@ -45,8 +46,18 @@ export function GmailSheet() {
     setEmails([]);
     setPhase('list');
     listEmails({ workspace_id: 'default' })
-      .then(list => { if (!cancelled) setEmails(list || []); })
-      .catch(err => { if (!cancelled) { setError(err.message || 'Failed to load emails'); setPhase('error'); } });
+      .then(list => {
+        if (cancelled) return;
+        setEmails(list || []);
+        logClick('gmail_sheet_list_fetch', { count: (list || []).length });
+      })
+      .catch(err => {
+        if (cancelled) return;
+        setError(err.message || 'Failed to load emails');
+        setPhase('error');
+        logClick('gmail_sheet_list_fetch', {}, false, { error: err && err.message });
+        logError(err, { action: 'gmail-sheet-list' });
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -56,20 +67,25 @@ export function GmailSheet() {
   };
 
   const handlePick = (email) => {
+    const threadId = email.thread_id || email.id;
     setPickedSubject(email.subject || '');
     setPhase('brief');
     setError(null);
     fetchBrief({
-      thread_id: email.thread_id || email.id,
+      thread_id: threadId,
       workspace_id: 'default',
       created_by: (user && user.email) || ''
     }).then(data => {
       if (!data || !data.success) {
-        setError((data && data.error) || 'Claude could not read the brief');
+        const errMsg = (data && data.error) || 'Claude could not read the brief';
+        setError(errMsg);
         setPhase('error');
+        logClick('gmail_sheet_fetch_brief', { thread_id: threadId }, false, { error: errMsg });
+        logError(new Error(errMsg), { action: 'gmail-sheet-brief' });
         return;
       }
       setBrief(data);
+      logClick('gmail_sheet_fetch_brief', { thread_id: threadId, total_posts: data.total_posts });
       const hasTitle = !!(form.title && form.title.trim());
       const hasCaption = !!(form.caption && form.caption.trim());
       const hasNotes = !!(form.internalNotes && form.internalNotes.trim());
@@ -81,7 +97,18 @@ export function GmailSheet() {
     }).catch(err => {
       setError(err.message || 'Failed to read brief');
       setPhase('error');
+      logClick('gmail_sheet_fetch_brief', { thread_id: threadId }, false, { error: err && err.message });
+      logError(err, { action: 'gmail-sheet-brief' });
     });
+  };
+
+  // Map the Worker's lowercase pillar back to the Title Case UI label
+  // so the Pillar dropdown highlights the correct option.
+  const _pillarToUi = (raw) => {
+    if (!raw || typeof raw !== 'string') return null;
+    const s = raw.trim().toLowerCase();
+    if (!s) return null;
+    return s.charAt(0).toUpperCase() + s.slice(1);
   };
 
   function applyBrief(data, mode /* 'replace' | 'append-notes' */) {
@@ -93,6 +120,17 @@ export function GmailSheet() {
       if (title) update('title', title);
       if (caption) update('caption', caption);
       if (notes) update('internalNotes', notes);
+
+      // B5.5a.1: Worker now returns pillar / target_date / location /
+      // format. Only overwrite when Claude gave us a value (null means
+      // "unclear from brief" — leave existing form value alone).
+      const pillarUi = _pillarToUi(data.content_pillar);
+      if (pillarUi) update('pillar', pillarUi);
+      if (typeof data.target_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.target_date)) {
+        update('targetDate', data.target_date);
+      }
+      if (data.location && typeof data.location === 'string') update('location', data.location);
+      if (data.format && typeof data.format === 'string') update('format', data.format);
     } else {
       // Append Notes Only — never touch title/caption if the user
       // already filled them; just concat notes with a separator.
@@ -119,8 +157,16 @@ export function GmailSheet() {
     setEmails([]);
     setPhase('list');
     listEmails({ workspace_id: 'default' })
-      .then(list => setEmails(list || []))
-      .catch(err => { setError(err.message || 'Failed'); setPhase('error'); });
+      .then(list => {
+        setEmails(list || []);
+        logClick('gmail_sheet_list_fetch', { count: (list || []).length, retry: true });
+      })
+      .catch(err => {
+        setError(err.message || 'Failed');
+        setPhase('error');
+        logClick('gmail_sheet_list_fetch', { retry: true }, false, { error: err && err.message });
+        logError(err, { action: 'gmail-sheet-list-retry' });
+      });
   };
 
   return (

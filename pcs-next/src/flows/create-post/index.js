@@ -4,6 +4,18 @@
 import { useFlowState } from './flowStore.js';
 import { useFormState, loadDraft } from './formStore.js';
 import { useAppState } from '../../core/stores/appState.js';
+import { logClick } from '../../core/bridges/logging.js';
+
+function _hasMeaningfulDraft(d) {
+  if (!d || typeof d !== 'object') return false;
+  const fields = ['title', 'pillar', 'location', 'caption', 'driveLink', 'internalNotes'];
+  for (const k of fields) {
+    const v = d[k];
+    if (typeof v === 'string' && v.trim()) return true;
+  }
+  if (Array.isArray(d.photos) && d.photos.length > 0) return true;
+  return false;
+}
 
 export const createPostFlow = {
   open() {
@@ -14,25 +26,18 @@ export const createPostFlow = {
     // even when the user is signed in.
     useAppState.getState().syncFromWindow();
 
-    // B4: hydrate from draft if present, else reset to initial.
-    // Cancel/Esc/backdrop close do NOT clear the draft, so the
-    // user's in-flight typing survives accidental dismissal.
+    // B5.5a.1: reset the form first, then stash any saved draft
+    // into `pendingDraft`. CreatePost.jsx renders a banner letting
+    // the user Restore / Start fresh. This avoids the surprise of
+    // re-opening the modal and seeing stale data without warning.
     const draft = loadDraft();
-    if (draft && typeof draft === 'object') {
-      useFormState.setState({
-        form: draft,
-        importOpen: false, ownerOpen: false, stageOpen: false,
-        pillarOpen: false, formatOpen: false, locationOpen: false,
-        submitting: false, toast: null,
-        sessionStart: new Date().toISOString(),
-        sessionCost: 0,
-        sessionCalls: 0,
-        pasteSheetOpen: false,
-        gmailSheetOpen: false
-      });
-    } else {
-      useFormState.getState().reset();
+    const hasDraft = _hasMeaningfulDraft(draft);
+    useFormState.getState().reset();
+    if (hasDraft) {
+      useFormState.setState({ pendingDraft: draft });
     }
+
+    logClick('fab_tap_react', { hadDraft: hasDraft });
 
     useFlowState.getState().open();
   },

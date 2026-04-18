@@ -3,6 +3,7 @@ import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useIsAdmin } from '../../../core/stores/appState.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
+import { logClick } from '../../../core/bridges/logging.js';
 
 // Full-screen paste sheet. Stacks above the Create Post modal at
 // z-index 1700 (scrim 1700, panel 1701) so it clears the modal's
@@ -47,6 +48,8 @@ export function PasteSheet() {
     const trimmed = (text || '').trim();
     if (!trimmed) return;
 
+    logClick('paste_sheet_use', { admin: isAdmin, textLength: trimmed.length });
+
     // Non-admin: append to internal notes (unchanged from B5).
     if (!isAdmin) {
       const existing = (currentNotes || '').trim();
@@ -84,8 +87,10 @@ export function PasteSheet() {
       onUse: (generated) => {
         if (typeof generated !== 'string' || !generated.trim()) return;
         const existingCaption = (useFormState.getState().form.caption || '').trim();
-        if (existingCaption && !window.confirm('Replace existing caption with generated version?')) {
-          return;
+        if (existingCaption) {
+          const accepted = window.confirm('Replace existing caption with generated version?');
+          logClick('caption_overwrite_confirm', { accepted, source: 'paste' });
+          if (!accepted) return;
         }
         useFormState.getState().update('caption', generated);
       },

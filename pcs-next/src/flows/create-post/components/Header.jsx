@@ -4,6 +4,7 @@ import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
 import { useIsAdmin } from '../../../core/stores/appState.js';
+import { logClick } from '../../../core/bridges/logging.js';
 
 // Import sources. `admin: true` means admin-only (filtered out of
 // the list for non-admins — the pill itself stays visible because
@@ -26,6 +27,7 @@ export function Header() {
   const sources = isAdmin ? IMPORT_SOURCES : IMPORT_SOURCES.filter(s => !s.admin);
 
   const handleSourceClick = (src) => {
+    logClick('import_option_tap', { kind: src.kind, isAdmin });
     if (src.kind === 'paste') {
       setUI({ importOpen: false, pasteSheetOpen: true });
     } else if (src.kind === 'gmail') {
@@ -56,7 +58,12 @@ export function Header() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ position: 'relative' }} data-dropdown>
           <button
-            onClick={(e) => { e.stopPropagation(); setUI({ importOpen: !importOpen }); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const next = !importOpen;
+              if (next) logClick('import_open', { isAdmin });
+              setUI({ importOpen: next });
+            }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 7,
               padding: '7px 12px',
