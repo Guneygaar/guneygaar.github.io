@@ -1,6 +1,6 @@
 import React from 'react';
 import { tokens } from '../../../core/tokens.js';
-import { useFormState } from '../formStore.js';
+import { useFormState, clearDraft } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
 import { useAppState } from '../../../core/stores/appState.js';
 import { buildPostPayload, createPost } from '../../../core/api/posts.js';
@@ -54,6 +54,7 @@ export function Footer() {
         });
       }
 
+      clearDraft();
       toast('Post created', 'success');
       resetForm();
       close();

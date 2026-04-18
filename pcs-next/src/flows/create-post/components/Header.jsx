@@ -3,6 +3,7 @@ import { FileText, Mail, ClipboardPaste, Upload } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
+import { useIsAdmin } from '../../../core/stores/appState.js';
 
 const IMPORT_SOURCES = [
   { label: 'Sorted briefs', hint: 'Briefs your team logged in-app', icon: FileText, badge: '3 new' },
@@ -16,6 +17,7 @@ export function Header() {
   const setUI = useFormState(s => s.setUI);
   const setToast = useFormState(s => s.setToast);
   const close = useFlowState(s => s.close);
+  const isAdmin = useIsAdmin();
 
   return (
     <div style={{
@@ -34,6 +36,7 @@ export function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {isAdmin && (
         <div style={{ position: 'relative' }} data-dropdown>
           <button
             onClick={(e) => { e.stopPropagation(); setUI({ importOpen: !importOpen }); }}
@@ -141,6 +144,7 @@ export function Header() {
             </div>
           )}
         </div>
+        )}
 
         <button
           aria-label="Close"
