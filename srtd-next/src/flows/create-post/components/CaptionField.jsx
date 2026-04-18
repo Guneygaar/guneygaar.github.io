@@ -92,15 +92,13 @@ export function CaptionField() {
       },
       onClose: () => {
         try {
-          var ws = window._captionWS;
-          if (ws) {
-            useFormState.getState().setUI({
-              sessionCost: typeof ws.sessionCost === 'number' ? ws.sessionCost : 0,
-              sessionCalls: Array.isArray(ws.messages)
-                ? ws.messages.filter(m => m && m.role === 'assistant').length
-                : 0
-            });
+          let finalCost = 0;
+          if (typeof window.SortedReact?.bridges?.getSessionCost === 'function') {
+            finalCost = window.SortedReact.bridges.getSessionCost();
+          } else if (window._captionWS && typeof window._captionWS.sessionCost === 'number') {
+            finalCost = window._captionWS.sessionCost;
           }
+          useFormState.getState().setUI({ sessionCost: finalCost });
         } catch (e) {
           // ignore
         }
