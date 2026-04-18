@@ -48,7 +48,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
         )}
 
         <div className={`font-serif text-lg leading-[1.5] text-text-loud whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
-          {renderRichText(comment.message)}
+          {renderRichText(comment.message, userRoles)}
         </div>
         {!expanded && comment.message && comment.message.length > 180 && (
           <button onClick={() => setExpanded(true)} className="font-mono text-sm text-terracotta tracking-wide uppercase mt-1 font-semibold bg-transparent border-0 cursor-pointer p-0">
@@ -90,13 +90,13 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
         )}
 
         <div className="flex items-center gap-4 mt-2">
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-45 cursor-not-allowed" title="Ships PR 2">
+          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
             <Heart size={12} /><span>Like</span>
           </span>
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-45 cursor-not-allowed" title="Ships PR 2">
+          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
             <Reply size={12} /><span>Reply</span>
           </span>
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-45 cursor-not-allowed" title="Ships PR 2">
+          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
             <Check size={12} /><span>{comment.resolved ? 'Unresolve' : 'Resolve'}</span>
           </span>
         </div>
