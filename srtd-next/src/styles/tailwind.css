@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Light + Dark palettes bound to CSS custom props. Tailwind
+   utilities resolve via var(--c-*) (see tailwind.config.js).
+   Default = light (warm paper); @media prefers-color-scheme:dark
+   flips to warm ink (matches vanilla exactly). No runtime toggle
+   in v1 — system preference only. */
+@layer base {
+  :root {
+    /* LIGHT (warm paper) */
+    --c-bg:             #FAF8F3;
+    --c-bg-2:           #F4F0E8;
+    --c-bg-3:           #EBE6DC;
+    --c-bg-draft:       #F7EDE0;
+    --c-bg-pill:        #F0E8DB;
+    --c-bg-memo:        #F7EDE0;
+    --c-border-neutral: #D8D2C4;
+    --c-border-warm:    #C9B89C;
+    --c-divider-warm:   #D8C8AC;
+    --c-divider-soft:   #E3DCCC;
+    --c-text-loud:      #1A1816;
+    --c-text-mid:       #4A4640;
+    --c-text-soft:      #7A7670;
+    --c-text-dim:       #A8A498;
+    --c-terracotta:     #B85430;
+    --c-terracotta-1:   #C15F3C;
+    --c-terracotta-2:   #9E4526;
+    --c-amber:          #C8841A;
+    --c-purple:         #6B4FD9;
+    --c-green:          #1FA66E;
+    --c-green-deep:     #147A4F;
+    --c-red:            #D83838;
+    --c-role-servicing: #0891A0;
+    --c-role-admin:     #8E7A2E;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* DARK (warm ink — matches vanilla) */
+      --c-bg:             #1A1816;
+      --c-bg-2:           #201E1A;
+      --c-bg-3:           #252320;
+      --c-bg-draft:       #201810;
+      --c-bg-pill:        #201C18;
+      --c-bg-memo:        #1E1610;
+      --c-border-neutral: #3A3632;
+      --c-border-warm:    #5A3A2C;
+      --c-divider-warm:   #3A3220;
+      --c-divider-soft:   #2A2622;
+      --c-text-loud:      #F4F3EE;
+      --c-text-mid:       #B1ADA1;
+      --c-text-soft:      #7A7670;
+      --c-text-dim:       #4A4640;
+      --c-terracotta:     #C15F3C;
+      --c-terracotta-1:   #D46840;
+      --c-terracotta-2:   #B85430;
+      --c-amber:          #F6A623;
+      --c-purple:         #9b87f5;
+      --c-green:          #3ECF8E;
+      --c-green-deep:     #2AA670;
+      --c-red:            #FF4B4B;
+      --c-role-servicing: #22D3EE;
+      --c-role-admin:     #C8A84B;
+    }
+  }
+}
+
+/* scrollbar-hide utility — reusable across sheets/threads */
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Component classes for repeated vanilla patterns. */
+@layer components {
+  .btn-chip {
+    @apply font-mono text-xs tracking-wide uppercase text-terracotta
+           border border-border-warm px-3 py-[7px] cursor-pointer
+           active:opacity-70 bg-transparent;
+  }
+  .btn-chip-dim {
+    @apply text-text-dim border-border-neutral cursor-default;
+  }
+  .btn-chip-primary {
+    @apply text-text-loud bg-terracotta-grad border-0 font-semibold;
+  }
+}

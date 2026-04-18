@@ -23,6 +23,8 @@ import { stampPostId } from './api/aiUsage.js';
 
 import { compressImage, generateFilename } from './utils/imageCompress.js';
 
+import * as theme from './theme/index.js';
+
 import * as ui from './ui/index.js';
 
 export const stores = { useAppState, useIsAdmin };
@@ -33,4 +35,4 @@ export const bridges = {
 export const api = { apiFetch, buildPostPayload, createPost, stampPostId };
 export const utils = { compressImage, generateFilename };
 
-export { tokens, mappings, ui };
+export { tokens, mappings, ui, theme };
