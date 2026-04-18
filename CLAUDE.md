@@ -56,7 +56,7 @@ NO `comments` column on posts. Never write to it.
 
 ## 3 — FILE MAP
 
-22 versioned resources (1 css + 21 js). `00-appstate.js` + `00-appstate-compat.js` have NO `defer`. `04-router.js` MUST be the LAST script. `actions/pcs-longpress.js` must load AFTER `actions/pcs.js`. `12-profiles.js` must load AFTER `utils.js` and BEFORE `03-auth.js`.
+27 versioned resources (1 css + 26 js). Includes `/pcs-next/dist/sorted-react.js` as of PR A4. `00-appstate.js` + `00-appstate-compat.js` have NO `defer`. `04-router.js` MUST be the LAST script. `actions/pcs-longpress.js` must load AFTER `actions/pcs.js`. `12-profiles.js` must load AFTER `utils.js` and BEFORE `03-auth.js`. The React bundle is loaded AFTER `ai-config.js` so future React code can read `window.AI_CONFIG`.
 
 Root:
 - `00-appstate.js` — AppState brain, logError, onerror, onunhandledrejection, guardAction, _sessionId
@@ -74,6 +74,8 @@ Root:
 - `09-approval.js` — client approval flow, submitApproval
 - `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
 - `10-ui.js` — toasts, notifications panel (v6 redesign — see §4 “Notification panel v6”), switchTab, Action Router, click telemetry flush
+- `ai-config.js` — defines `window.AI_CONFIG` (workerUrl, secret, model) — single source of truth for every AI feature
+- `/pcs-next/dist/sorted-react.js` — React runtime bundle (strangler-fig). IIFE, non-module, loads after `ai-config.js`. Feature flag `window.ENABLE_REACT_NEW_POST` gates consumption (off until PR B2). See §9.
 
 render/:
 - `render/dashboard.js` — dashboard, scoreboard, runway/stage sheets
@@ -84,6 +86,9 @@ render/:
 actions/:
 - `actions/pcs.js` — Post Card System full-page overlay. `toggleTaskResolve` writes/clears `resolved_at` timestamp alongside `resolved` + `resolved_by` on post_comments/internal_notes PATCH.
 - `actions/pcs-longpress.js` — long-press bottom sheet for PCS comments (wraps openPCS)
+- `actions/pcs-claude-caption.js` — Caption Claude Workspace full-screen overlay. Exposes `window.openCaptionWorkspace(mode, context)` and `window._captionWS`. Supports detached mode (`postId:null`) for the Create Post ⤢ flow.
+- `actions/pcs-polish.js` — reply polish widget for the PCS composer
+- `actions/pcs-select.js` — PCS selection/batch helpers
 
 Other: `index.html`, `styles.css`, `r2-upload-worker.js`, `wrangler.toml`, `package.json`, `vitest.config.js`, `playwright.config.js`, `rollback.sql`, `sql/`, `preview/`, `sorted-preview-worker/`, `mockups/`.
 
@@ -221,7 +226,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 26 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 25 scripts). Current: `?v=20260417p`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 27 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 26 scripts). Current: `?v=20260418b`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
@@ -231,3 +236,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 ## 8 — TESTS
 
 Unit: `npx vitest run` — 563/563 passing across 22 test files. E2E: `npx playwright test` — 9 specs (3 critical run in CI only on core-logic file changes). Smoke: `.github/workflows/smoke.yml` runs `live-smoke-schedule.spec.js` every 30 min against production. Required secrets: `SORTED_CLIENT_EMAIL`, `SORTED_ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `EXPECTED_VERSION`.
+
+## 9 — REACT MIGRATION (strangler-fig)
+
+`/pcs-next/` hosts the React runtime, vendor-isolated from the vanilla repo root. Feature flag: `window.ENABLE_REACT_NEW_POST` (default `false`, set inline before any deferred script runs). Load order: bundle ships after `ai-config.js` in `index.html`, with `?v=` bumped in lockstep with the other 26 versioned assets. Status after PR A4: probe bundle loads, feature flag defaults `false`, no FAB branching yet (PR B2 wires that). `/pcs-next/` has its own `package.json` + `node_modules/` isolated from root Vitest deps. Build: `cd pcs-next && npm run build` produces `dist/sorted-react.js` (IIFE, unminified); `dist/*.map` is gitignored.
