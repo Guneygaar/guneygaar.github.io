@@ -77,8 +77,9 @@ export function Footer() {
     // 2. Optimistic close — the form feels instant. Realtime (or
     //    the next /posts poll) will surface the row for every
     //    other viewer; the admin sees the toast and trusts.
+    const finalCost = useFormState.getState().sessionCost || 0;
     clearDraft();
-    toast('Post created', 'success');
+    toast('Post created', 'success', { cost: finalCost });
     logClick('create_post_submit_react', { post_id: payload.post_id }, true, { post_id: payload.post_id });
     resetForm();
     close();

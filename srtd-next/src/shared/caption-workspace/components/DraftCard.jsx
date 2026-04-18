@@ -40,6 +40,17 @@ export function DraftCard({ msg }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Flush the live contenteditable text to the store before
+  // triggering Use This — iOS tap-to-click doesn't always fire
+  // blur first, so without this the Use-this text can be one
+  // edit stale.
+  const handleUseThis = () => {
+    if (bodyRef.current) {
+      updateDraftContent(msg.id, bodyRef.current.innerText || '');
+    }
+    useThis(msg.id);
+  };
+
   return (
     <div
       className={
@@ -64,7 +75,7 @@ export function DraftCard({ msg }) {
         ref={bodyRef}
         contentEditable={!isFinalised}
         suppressContentEditableWarning
-        onBlur={() => updateDraftContent(msg.id, bodyRef.current?.textContent || '')}
+        onBlur={() => updateDraftContent(msg.id, bodyRef.current?.innerText || '')}
         className={
           'font-serif text-[15px] leading-relaxed whitespace-pre-wrap outline-none ' +
           (isFinalised ? 'text-text-loud' : 'text-text-loud border border-transparent hover:border-border-neutral focus:border-border-warm rounded-block px-2 py-1.5 -mx-2 -my-1.5 cursor-text')
@@ -90,13 +101,13 @@ export function DraftCard({ msg }) {
           </button>
           {allPass ? (
             <button
-              onClick={() => useThis(msg.id)}
+              onClick={handleUseThis}
               className="ml-auto flex items-center gap-1.5 rounded-chip px-3 py-[7px] font-mono text-xs font-semibold uppercase tracking-wide text-text-loud bg-green-grad">
               <Check size={12} strokeWidth={2.5} /> Use this
             </button>
           ) : isFinalised ? (
             <button
-              onClick={() => useThis(msg.id)}
+              onClick={handleUseThis}
               className="ml-auto flex items-center gap-1.5 rounded-chip px-3 py-[7px] font-mono text-xs font-semibold uppercase tracking-wide text-text-loud bg-terracotta-grad">
               <Check size={12} strokeWidth={2.5} /> Use this
             </button>
