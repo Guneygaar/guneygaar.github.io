@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Sparkles, Send } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 
 export function ComposerStub({ activeTab }) {
   const placeholder = activeTab === 'internal' ? 'Write an internal note...' : 'Write a comment...';
@@ -13,7 +13,7 @@ export function ComposerStub({ activeTab }) {
         <div className="w-8 h-8 flex items-center justify-center rounded-sm2 tint-amber border text-amber"><Sparkles size={14} /></div>
         <div className="px-3 py-1.5 rounded-sm2 bg-text-loud text-bg text-sm font-semibold tracking-tight inline-flex items-center gap-1.5">
           <span>Send</span>
-          <Send size={13} />
+          <span className="font-mono text-2xs opacity-50">{'\u2318\u21B5'}</span>
         </div>
       </div>
       <div className="flex gap-1.5 px-3 pb-2.5 font-mono text-2xs text-text-dim tracking-wide">

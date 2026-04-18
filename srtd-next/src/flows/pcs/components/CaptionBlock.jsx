@@ -2,7 +2,7 @@ import React from 'react';
 import { Pencil, Sparkles } from 'lucide-react';
 import { renderRichText, wordCount } from '../utils/mentions.jsx';
 
-export function CaptionBlock({ post, canEdit }) {
+export function CaptionBlock({ post, canEdit, userRoles }) {
   const caption = post?.caption || '';
   const wc = wordCount(caption);
   const over = wc > 125;
@@ -14,7 +14,7 @@ export function CaptionBlock({ post, canEdit }) {
         {caption && <span><span className={over ? 'text-amber' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
       <div className="px-3 pb-3 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap">
-        {caption ? renderRichText(caption) : <span className="text-text-soft italic">No copy yet</span>}
+        {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
       </div>
       {canEdit && (
         <div className="flex items-center justify-between px-3 pb-2.5 font-mono text-sm text-text-dim tracking-wide">

@@ -59,7 +59,7 @@ export function PCS() {
               <StageStrip post={post} canMove={canMove} />
               {!isClient && <PropertiesTable post={post} />}
               <LinkedInIndicator post={post} />
-              <CaptionBlock post={post} canEdit={canEdit} />
+              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
               <PhotoStrip post={post} canEdit={canEdit} />
               <LinkCards post={post} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
