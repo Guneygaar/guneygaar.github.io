@@ -3,7 +3,7 @@
 // check constraints on stage + owner.
 
 import { apiFetch } from './client.js';
-import { STAGE_UI_TO_DB, isCanvaUrl } from '../mappings.js';
+import { STAGE_UI_TO_DB, PILLAR_UI_TO_DB, isCanvaUrl } from '../mappings.js';
 
 /**
  * Build a /posts INSERT payload from form state.
@@ -26,7 +26,7 @@ export function buildPostPayload(form, createdBy, options = {}) {
     title:          (form.title || '').trim(),
     stage:          stageDB,
     owner:          form.owner,
-    content_pillar: form.pillar || null,
+    content_pillar: form.pillar ? (PILLAR_UI_TO_DB[form.pillar] || form.pillar.toLowerCase()) : null,
     location:       form.location || null,
     target_date:    form.targetDate || null,
     format:         form.format || null,
