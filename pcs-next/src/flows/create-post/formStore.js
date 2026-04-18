@@ -33,19 +33,24 @@ export const useFormState = create((set, get) => ({
   toast: null,
   sessionCost: 0,
   sessionCalls: 0,
+  sessionStart: new Date().toISOString(),
 
   update: (field, value) => set(s => ({ form: { ...s.form, [field]: value } })),
   reset: () => set({
     form: initialForm(),
     importOpen: false, ownerOpen: false, stageOpen: false,
     pillarOpen: false, formatOpen: false, locationOpen: false,
-    submitting: false, toast: null
+    submitting: false, toast: null,
+    sessionStart: new Date().toISOString(),
+    sessionCost: 0,
+    sessionCalls: 0
   }),
   closeAllDropdowns: () => set({
     importOpen: false, ownerOpen: false, stageOpen: false,
     pillarOpen: false, formatOpen: false, locationOpen: false
   }),
   setUI: (partial) => set(partial),
+  setSessionCost: (n) => set({ sessionCost: n }),
   setToast: (toast) => set({ toast }),
   clearToast: () => set({ toast: null })
 }));

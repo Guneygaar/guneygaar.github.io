@@ -4,18 +4,19 @@ import * as core from './core/index.js';
 import { createPostFlow } from './flows/create-post/index.js';
 
 if (typeof window !== 'undefined') {
-  console.log('[sorted-react] bundle loaded, v0.4.0');
+  console.log('[sorted-react] bundle loaded, v0.5.0');
 
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.4.0';
+  window.SortedReact.version   = '0.5.0';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;
   window.SortedReact.bridges   = core.bridges;
   window.SortedReact.api       = core.api;
   window.SortedReact.ui        = core.ui;
+  window.SortedReact.utils     = core.utils;
   window.SortedReact.flows     = {
     createPost: createPostFlow
   };

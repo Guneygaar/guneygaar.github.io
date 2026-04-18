@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
+import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 
 function formatINR(n) {
   if (!n || n < 1) return '₹0';
@@ -14,7 +15,26 @@ export function CaptionField() {
   const update = useFormState(s => s.update);
   const sessionCost = useFormState(s => s.sessionCost);
   const sessionCalls = useFormState(s => s.sessionCalls);
-  const setToast = useFormState(s => s.setToast);
+
+  // Poll window._captionWS.sessionCost every 600ms so the cost chip
+  // updates live during a workspace session (not just on close).
+  useEffect(() => {
+    const tick = () => {
+      try {
+        var live = 0;
+        if (typeof window.SortedReact?.bridges?.getSessionCost === 'function') {
+          live = window.SortedReact.bridges.getSessionCost();
+        } else if (window._captionWS && typeof window._captionWS.sessionCost === 'number') {
+          live = window._captionWS.sessionCost;
+        }
+        if (live !== sessionCost) {
+          useFormState.getState().setUI({ sessionCost: live });
+        }
+      } catch (e) { /* ignore */ }
+    };
+    const id = setInterval(tick, 600);
+    return () => clearInterval(id);
+  }, [sessionCost]);
 
   const wordCount = useMemo(() => {
     const m = (caption || '').trim().match(/\S+/g);
@@ -30,8 +50,40 @@ export function CaptionField() {
   }, [wordCount]);
 
   const handleOpenWorkspace = () => {
-    setToast({ msg: 'Caption Workspace', sub: 'B3 wires this up' });
-    setTimeout(() => useFormState.getState().clearToast(), 1800);
+    const initial = (caption || '').trim();
+    const mode = initial ? 'chat' : 'write';
+
+    openCaptionWorkspace(mode, {
+      postId: null,  // detached mode — no post exists yet
+      initialCaption: initial,
+      syntheticContext: {
+        source: 'create-post-react',
+        pillar: useFormState.getState().form.pillar || null,
+        location: useFormState.getState().form.location || null,
+        format: useFormState.getState().form.format || null,
+        title: useFormState.getState().form.title || null
+      },
+      onUse: (text) => {
+        if (typeof text === 'string') {
+          useFormState.getState().update('caption', text);
+        }
+      },
+      onClose: () => {
+        try {
+          var ws = window._captionWS;
+          if (ws) {
+            useFormState.getState().setUI({
+              sessionCost: typeof ws.sessionCost === 'number' ? ws.sessionCost : 0,
+              sessionCalls: Array.isArray(ws.messages)
+                ? ws.messages.filter(m => m && m.role === 'assistant').length
+                : 0
+            });
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    });
   };
 
   return (
