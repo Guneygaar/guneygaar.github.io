@@ -60,3 +60,14 @@ export async function createPost(payload) {
     body: JSON.stringify(payload)
   });
 }
+
+export async function getPostByPostId(postId) {
+  if (!postId) throw new Error('[sorted-react/posts] getPostByPostId: postId required');
+  const encoded = encodeURIComponent(postId);
+  const rows = await apiFetch(`/posts?post_id=eq.${encoded}&select=*,owner_user_id(id,name,email,role)&limit=1`, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  });
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0];
+}

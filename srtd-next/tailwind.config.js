@@ -46,6 +46,13 @@ export default {
         red:              'var(--c-red)',
         'role-servicing': 'var(--c-role-servicing)',
         'role-admin':     'var(--c-role-admin)',
+        'stage-brief':      'var(--c-stage-brief)',
+        'stage-production': 'var(--c-stage-production)',
+        'stage-ready':      'var(--c-stage-ready)',
+        'stage-input':      'var(--c-stage-input)',
+        'stage-scheduled':  'var(--c-stage-scheduled)',
+        'role-creative':    'var(--c-role-creative)',
+        'role-client':      'var(--c-role-client)',
       },
       fontFamily: {
         sans:  ['"DM Sans"', 'sans-serif'],

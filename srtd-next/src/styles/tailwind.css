@@ -34,6 +34,10 @@
     --c-red:            #D83838;
     --c-role-servicing: #0891A0;
     --c-role-admin:     #8E7A2E;
+    --c-stage-brief:#6A5AA0; --c-stage-production:#3E7196;
+    --c-stage-ready:#6B7E9A; --c-stage-input:#A85C3C;
+    --c-stage-scheduled:#6E9068;
+    --c-role-creative:#3E7196; --c-role-client:#A85C3C;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -63,6 +67,10 @@
       --c-red:            #FF4B4B;
       --c-role-servicing: #22D3EE;
       --c-role-admin:     #C8A84B;
+      --c-stage-brief:#9E8FC7; --c-stage-production:#6FA5C4;
+      --c-stage-ready:#A3B2C7; --c-stage-input:#D48B6E;
+      --c-stage-scheduled:#A8BFA3;
+      --c-role-creative:#6FA8C9; --c-role-client:#D48B6E;
     }
   }
 }
@@ -90,4 +98,14 @@
   .btn-chip-primary {
     @apply text-text-loud bg-terracotta-grad border-0 font-semibold;
   }
+
+  /* Opacity-tinted state chips. Tailwind 3 /opacity modifiers do not apply to
+     CSS var colors that resolve to hex values; color-mix() is used explicitly
+     so backgrounds + borders flip with prefers-color-scheme unchanged. */
+  .tint-amber   { background-color: color-mix(in srgb, var(--c-amber)  10%, transparent); border-color: color-mix(in srgb, var(--c-amber)  30%, transparent); }
+  .tint-green   { background-color: color-mix(in srgb, var(--c-green)  10%, transparent); border-color: color-mix(in srgb, var(--c-green)  20%, transparent); }
+  .tint-role-admin     { background-color: color-mix(in srgb, var(--c-role-admin)     20%, transparent); }
+  .tint-role-creative  { background-color: color-mix(in srgb, var(--c-role-creative)  20%, transparent); }
+  .tint-role-servicing { background-color: color-mix(in srgb, var(--c-role-servicing) 20%, transparent); }
+  .tint-role-client    { background-color: color-mix(in srgb, var(--c-role-client)    20%, transparent); }
 }
