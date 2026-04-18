@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 // ── Environment ─────────────────────────────────────────────
 const ADMIN_EMAIL   = process.env.SORTED_ADMIN_EMAIL;
 const CLIENT_EMAIL  = process.env.SORTED_CLIENT_EMAIL;
-const SUPABASE_URL  = 'https://vxokfscjzytpgdrmertk.supabase.co';
+const SUPABASE_URL  = 'https://ozptjplxbyswclolbxyn.supabase.co';
 const SUPABASE_KEY  = process.env.SORTED_SUPABASE_KEY;
 
 // ── Guard: skip entire suite if env vars missing ────────────
