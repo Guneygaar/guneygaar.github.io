@@ -226,7 +226,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 27 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 26 scripts). Current: `?v=20260418i`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 27 `?v=YYYYMMDDx` strings in `index.html` together (1 stylesheet + 26 scripts). Current: `?v=20260418j`. The Supabase JS SDK `<script>` tag sits ABOVE the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
@@ -239,4 +239,4 @@ Unit: `npx vitest run` — 563/563 passing across 22 test files. E2E: `npx playw
 
 ## 9 — REACT MIGRATION (strangler-fig)
 
-`/pcs-next/` hosts the React runtime, vendor-isolated from the vanilla repo root. Feature flag: `window.ENABLE_REACT_NEW_POST` (default `false`, set inline before any deferred script runs). Load order: bundle ships after `ai-config.js` in `index.html`, with `?v=` bumped in lockstep with the other 26 versioned assets. Status after PR A4: probe bundle loads, feature flag defaults `false`, no FAB branching yet (PR B2 wires that). `/pcs-next/` has its own `package.json` + `node_modules/` isolated from root Vitest deps. Build: `cd pcs-next && npm run build` produces `dist/sorted-react.js` (IIFE, unminified); `dist/*.map` is gitignored.
+`/pcs-next/` hosts the React runtime, vendor-isolated from the vanilla repo root. Feature flag: `window.ENABLE_REACT_NEW_POST` (inline in `index.html` before any deferred script runs). Load order: bundle ships after `ai-config.js` in `index.html`, with `?v=` bumped in lockstep with the other 26 versioned assets. `/pcs-next/` has its own `package.json` + `node_modules/` isolated from root Vitest deps. Build: `cd pcs-next && npm run build` produces `dist/sorted-react.js` (IIFE, esbuild-minified, React prod path via `process.env.NODE_ENV` define in `vite.config.js`); `dist/*.map` is gitignored. Status after B4: flag default flipped to `true`; Admin-only AI surfaces (⤢ Caption Workspace, cost chip, Import brief pill) gated by `useIsAdmin()` hook in `pcs-next/src/core/stores/appState.js`, exposed on `window.SortedReact.stores.useIsAdmin`; non-admins get a manual-only form with word counter intact. Draft persistence in `localStorage['sorted_create_post_draft_v1']` (React-specific key — does NOT collide with vanilla's `hinglish_new_post_draft`): debounced 800 ms save on every form.update, hydrated by `createPostFlow.open()`, cleared by Footer on submit success. Cancel/Esc/backdrop close do NOT clear the draft. 553/553 unit tests still pass; the vanilla `openNewPostModal()` path remains wired as a fallback in the FAB handler's AND-chain.

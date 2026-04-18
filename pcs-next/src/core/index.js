@@ -9,7 +9,7 @@
 import { tokens } from './tokens.js';
 import * as mappings from './mappings.js';
 
-import { useAppState } from './stores/appState.js';
+import { useAppState, useIsAdmin } from './stores/appState.js';
 
 import { toast } from './bridges/toast.js';
 import { getAIConfig } from './bridges/config.js';
@@ -24,7 +24,7 @@ import { compressImage, generateFilename } from './utils/imageCompress.js';
 
 import * as ui from './ui/index.js';
 
-export const stores = { useAppState };
+export const stores = { useAppState, useIsAdmin };
 export const bridges = { toast, getAIConfig, openCaptionWorkspace, getSessionCost, uploadToR2 };
 export const api = { apiFetch, buildPostPayload, createPost, stampPostId };
 export const utils = { compressImage, generateFilename };

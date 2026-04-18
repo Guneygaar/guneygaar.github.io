@@ -2,6 +2,7 @@ import React, { useMemo, useEffect } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
+import { useIsAdmin } from '../../../core/stores/appState.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 
 function formatINR(n) {
@@ -15,10 +16,14 @@ export function CaptionField() {
   const update = useFormState(s => s.update);
   const sessionCost = useFormState(s => s.sessionCost);
   const sessionCalls = useFormState(s => s.sessionCalls);
+  const isAdmin = useIsAdmin();
 
   // Poll window._captionWS.sessionCost every 600ms so the cost chip
   // updates live during a workspace session (not just on close).
+  // Admin-only — non-admins have no AI surfaces so the poll is a
+  // pointless timer. Early-return keeps the hook order stable.
   useEffect(() => {
+    if (!isAdmin) return;
     const tick = () => {
       try {
         var live = 0;
@@ -34,7 +39,7 @@ export function CaptionField() {
     };
     const id = setInterval(tick, 600);
     return () => clearInterval(id);
-  }, [sessionCost]);
+  }, [sessionCost, isAdmin]);
 
   const wordCount = useMemo(() => {
     const m = (caption || '').trim().match(/\S+/g);
@@ -114,24 +119,28 @@ export function CaptionField() {
                      wordState === 'red' ? tokens.danger : tokens.text
             }}>{wordCount}</span> / 80-100
           </div>
-          <button
-            onClick={handleOpenWorkspace}
-            aria-label="Open Caption Workspace"
-            style={{
-              width: 30, height: 30,
-              border: `1px solid ${tokens.line}`, background: 'transparent',
-              color: tokens.textSoft,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', padding: 0, transition: 'all 0.15s'
-            }}>
-            <Maximize2 size={13} strokeWidth={1.7} />
-          </button>
+          {isAdmin && (
+            <button
+              onClick={handleOpenWorkspace}
+              aria-label="Open Caption Workspace"
+              style={{
+                width: 30, height: 30,
+                border: `1px solid ${tokens.line}`, background: 'transparent',
+                color: tokens.textSoft,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', padding: 0, transition: 'all 0.15s'
+              }}>
+              <Maximize2 size={13} strokeWidth={1.7} />
+            </button>
+          )}
         </div>
       </div>
       <textarea
         value={caption}
         onChange={e => update('caption', e.target.value)}
-        placeholder="Write the LinkedIn caption, or tap the expand icon to use Claude..."
+        placeholder={isAdmin
+          ? "Write the LinkedIn caption, or tap the expand icon to use Claude..."
+          : "Write the LinkedIn caption..."}
         style={{
           width: '100%', background: 'transparent', border: 'none',
           borderTop: `1px solid ${tokens.line}`,
@@ -141,34 +150,36 @@ export function CaptionField() {
           minHeight: 140
         }}
       />
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          padding: '6px 10px',
-          border: `1px solid ${tokens.line}`,
-          fontFamily: tokens.mono, fontSize: 10.5, letterSpacing: '0.04em',
-          color: sessionCost > 0 ? tokens.text : tokens.textWhisper,
-          background: 'transparent'
-        }}>
-          <span style={{
-            width: 5, height: 5,
-            background: sessionCost > 0 ? tokens.claude : tokens.textGhost,
-            borderRadius: '50%'
-          }} />
-          <span style={{
-            color: sessionCost > 0 ? tokens.textLoud : 'inherit',
-            fontWeight: sessionCost > 0 ? 600 : 400
+      {isAdmin && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '6px 10px',
+            border: `1px solid ${tokens.line}`,
+            fontFamily: tokens.mono, fontSize: 10.5, letterSpacing: '0.04em',
+            color: sessionCost > 0 ? tokens.text : tokens.textWhisper,
+            background: 'transparent'
           }}>
-            {formatINR(sessionCost)}
-          </span>
-          {sessionCalls > 0 && (
-            <>
-              <span style={{ color: tokens.textGhost, margin: '0 2px' }}>·</span>
-              <span>{sessionCalls} call{sessionCalls === 1 ? '' : 's'}</span>
-            </>
-          )}
+            <span style={{
+              width: 5, height: 5,
+              background: sessionCost > 0 ? tokens.claude : tokens.textGhost,
+              borderRadius: '50%'
+            }} />
+            <span style={{
+              color: sessionCost > 0 ? tokens.textLoud : 'inherit',
+              fontWeight: sessionCost > 0 ? 600 : 400
+            }}>
+              {formatINR(sessionCost)}
+            </span>
+            {sessionCalls > 0 && (
+              <>
+                <span style={{ color: tokens.textGhost, margin: '0 2px' }}>·</span>
+                <span>{sessionCalls} call{sessionCalls === 1 ? '' : 's'}</span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

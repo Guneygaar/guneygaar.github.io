@@ -1,7 +1,33 @@
 // All Create Post form fields. Reset on open and on successful
-// submit. B4 will add loadDraft/saveDraft from localStorage.
+// submit. Draft persistence added in B4: every form.update triggers
+// a debounced save to localStorage (key sorted_create_post_draft_v1);
+// createPostFlow.open() hydrates from it; Footer.handleSubmit clears
+// it on success. Cancel/Esc/backdrop close do NOT clear the draft —
+// accidental taps shouldn't lose typed input.
 
 import { create } from 'zustand';
+
+const DRAFT_KEY = 'sorted_create_post_draft_v1';
+let _saveTimer = null;
+
+function _saveDraftDebounced(form) {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(form)); } catch (e) {}
+  }, 800);
+}
+
+export function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+export function clearDraft() {
+  clearTimeout(_saveTimer);
+  try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
+}
 
 function initialForm() {
   return {
@@ -35,7 +61,10 @@ export const useFormState = create((set, get) => ({
   sessionCalls: 0,
   sessionStart: new Date().toISOString(),
 
-  update: (field, value) => set(s => ({ form: { ...s.form, [field]: value } })),
+  update: (field, value) => {
+    set(s => ({ form: { ...s.form, [field]: value } }));
+    _saveDraftDebounced(get().form);
+  },
   reset: () => set({
     form: initialForm(),
     importOpen: false, ownerOpen: false, stageOpen: false,

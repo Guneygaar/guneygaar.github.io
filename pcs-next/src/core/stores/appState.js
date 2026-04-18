@@ -25,6 +25,16 @@ export const useAppState = create((set) => ({
   }
 }));
 
+// Admin predicate hook. AI affordances (Caption Workspace ⤢,
+// cost chip, Import brief) are Admin-only; manual fields work
+// for every role. Returns true when effectiveRole (or role, if
+// effectiveRole is not yet hydrated) is 'admin' (case-insensitive).
+export function useIsAdmin() {
+  return useAppState(s =>
+    (s.user?.effectiveRole || s.user?.role || '').toLowerCase() === 'admin'
+  );
+}
+
 // Install window bridge so vanilla code can notify React.
 if (typeof window !== 'undefined') {
   window.__syncAppStateToReact = () => {
