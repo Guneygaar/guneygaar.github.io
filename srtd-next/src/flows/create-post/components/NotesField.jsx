@@ -8,7 +8,7 @@ export function NotesField() {
   const update = useFormState(s => s.update);
 
   return (
-    <Field num="08" name="Internal Notes" optional="Brief · team-only">
+    <Field num="09" name="Internal Notes" optional="team-only · not shown to client">
       <textarea
         value={notes}
         onChange={e => update('internalNotes', e.target.value)}

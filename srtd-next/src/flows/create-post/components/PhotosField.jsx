@@ -64,7 +64,7 @@ export function PhotosField() {
   const optional = `Optional · Up to 20 · JPG / PNG${photos.length > 0 ? ` · ${photos.length} added` : ''}`;
 
   return (
-    <Field num="06" name="Photos" optional={optional}>
+    <Field num="07" name="Photos" optional={optional}>
       {photos.length === 0 ? (
         <label style={{
           display: 'block',
