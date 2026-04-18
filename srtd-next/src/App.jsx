@@ -3,6 +3,7 @@ import { useAppState } from './core/stores/appState.js';
 import { useFlowState } from './flows/create-post/flowStore.js';
 import { CreatePost } from './flows/create-post/CreatePost.jsx';
 import { CaptionWorkspace } from './shared/caption-workspace/CaptionWorkspace.jsx';
+import { Toast } from './core/ui/Toast.jsx';
 
 // Root React tree. Hydrates AppState on mount, then conditionally
 // renders active flows based on each flow's isOpen state. Shared
@@ -22,6 +23,7 @@ export default function App() {
     <>
       {createPostOpen && <CreatePost />}
       <CaptionWorkspace />
+      <Toast />
     </>
   );
 }

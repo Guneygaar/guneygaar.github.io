@@ -74,7 +74,7 @@ export function BriefField() {
   const canOpen = !!((brief && brief.trim()) || (form.title && form.title.trim()));
 
   return (
-    <Field num="05" name="Brief for Claude" optional="team-only · not shown to client">
+    <Field num="05" name="Brief" optional="team-only · not shown to client">
       <textarea
         value={brief}
         onChange={e => update('brief', e.target.value)}
