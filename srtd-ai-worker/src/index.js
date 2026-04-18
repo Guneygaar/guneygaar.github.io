@@ -35,7 +35,8 @@ const FEATURE_FLAGS = {
   writer:      'ai_writer',
   qc:          'ai_qc',
   chat:        'ai_chat',
-  email_brief: 'ai_email_briefs'
+  email_brief: 'ai_email_briefs',
+  angles:      'ai_writer'
 };
 
 // ─── helpers ─────────────────────────────────────────────────
@@ -176,21 +177,14 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
       + '\n\n' + writerTagRule;
   }
   if (feature === 'qc') {
-    if (hasMem) {
-      return 'You are a brand quality controller for GBL.\n\n'
-        + mem
-        + '\n\nCheck the provided copy against these rules. Return PASS or FLAG for each item. Be specific. Be brief.'
-        + '\n\n' + captionOutputRule
-        + '\n\n' + qcTagRule;
-    }
-    return 'You are a brand quality controller for GBL. Check the provided copy against the brand voice and approved posts. '
-      + 'Here are 20 approved posts:\n\n'
-      + ctx
-      + '\n\nBrand guide:\n'
-      + bg
-      + '\n\nReturn a structured verdict: PASS or FLAG for each item checked. Be specific. Be brief.'
-      + '\n\n' + captionOutputRule
-      + '\n\n' + qcTagRule;
+    return 'You are a senior LinkedIn copy editor. Return ONLY valid JSON, no markdown, no preamble. '
+      + 'Schema: { "items": [ { "title": string, "text": string, "verdict": "PASS" | "FLAG" } ] }. '
+      + 'Evaluate every dimension requested. Nothing outside the JSON object.';
+  }
+  if (feature === 'angles') {
+    return 'You are a creative strategist. Return ONLY valid JSON, no markdown, no preamble. '
+      + 'Schema: { "angles": [ { "title": string, "hook": string } ] } — exactly 3 items. '
+      + 'Nothing outside the JSON object.';
   }
   if (feature === 'chat') {
     if (hasMem) {
