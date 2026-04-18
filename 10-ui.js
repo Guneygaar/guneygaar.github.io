@@ -2799,6 +2799,17 @@ document.addEventListener('DOMContentLoaded', function() {
   var createPost = document.getElementById('fab-create-post');
   if (createPost) createPost.addEventListener('click', function() {
     closeFabMenu();
+    // React strangler-fig: route to React Create Post when flag
+    // is true and the React flow is fully mounted. Falls through
+    // to vanilla openNewPostModal() in every other case.
+    if (window.ENABLE_REACT_NEW_POST === true
+        && window.SortedReact
+        && window.SortedReact.flows
+        && window.SortedReact.flows.createPost
+        && typeof window.SortedReact.flows.createPost.open === 'function') {
+      window.SortedReact.flows.createPost.open();
+      return;
+    }
     if (typeof openNewPostModal === 'function') openNewPostModal();
   });
 
