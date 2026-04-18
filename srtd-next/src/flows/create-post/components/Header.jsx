@@ -56,6 +56,7 @@ export function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        {isAdmin && (
         <div style={{ position: 'relative' }} data-dropdown>
           <button
             onClick={(e) => {
@@ -167,6 +168,7 @@ export function Header() {
             </div>
           )}
         </div>
+        )}
 
         <button
           aria-label="Close"
