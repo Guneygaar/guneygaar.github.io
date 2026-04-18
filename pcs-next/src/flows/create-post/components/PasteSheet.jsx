@@ -1,18 +1,29 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
+import { useIsAdmin } from '../../../core/stores/appState.js';
+import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 
 // Full-screen paste sheet. Stacks above the Create Post modal at
 // z-index 1700 (scrim 1700, panel 1701) so it clears the modal's
-// 1501. Closes via ✕ or Cancel; commits via "Use this" which
-// appends the pasted text to form.internalNotes (never overwrites
-// silently — existing notes survive with a "\n\n---\n\n" separator).
+// 1501. Closes via ✕ or Cancel.
+//
+// B5.5a role split:
+//   - Non-admin: "Use this" appends pasted text to form.internalNotes
+//     with a "\n\n---\n\n" separator (unchanged from B5).
+//   - Admin: "Generate caption from brief" closes the paste sheet
+//     and opens Caption Workspace in write mode with the pasted
+//     text as syntheticContext.brief. Workspace generates 3
+//     captions; "Use this" in the Workspace flows back through
+//     onUse to update form.caption, with a confirm() prompt if
+//     the caption is already non-empty.
 
 export function PasteSheet() {
   const setUI = useFormState(s => s.setUI);
   const update = useFormState(s => s.update);
   const currentNotes = useFormState(s => s.form.internalNotes);
   const setToast = useFormState(s => s.setToast);
+  const isAdmin = useIsAdmin();
 
   const [text, setText] = useState('');
   const taRef = useRef(null);
@@ -35,14 +46,63 @@ export function PasteSheet() {
   const handleUse = () => {
     const trimmed = (text || '').trim();
     if (!trimmed) return;
-    const existing = (currentNotes || '').trim();
-    const combined = existing
-      ? existing + '\n\n---\n\n' + trimmed
-      : trimmed;
-    update('internalNotes', combined);
-    setToast({ msg: 'Pasted into Internal Notes', sub: existing ? 'Appended with separator' : null });
-    setTimeout(() => useFormState.getState().clearToast(), 1800);
+
+    // Non-admin: append to internal notes (unchanged from B5).
+    if (!isAdmin) {
+      const existing = (currentNotes || '').trim();
+      const combined = existing
+        ? existing + '\n\n---\n\n' + trimmed
+        : trimmed;
+      update('internalNotes', combined);
+      setToast({
+        msg: 'Pasted into Internal Notes',
+        sub: existing ? 'Appended with separator' : null
+      });
+      setTimeout(() => useFormState.getState().clearToast(), 1800);
+      close();
+      return;
+    }
+
+    // Admin: open Caption Workspace with the pasted text as brief.
+    // Vanilla handleCaptionWorkspace's write-mode (B5.5a) reads
+    // context.syntheticContext.brief and hands it straight to
+    // Claude. Close the paste sheet FIRST so the workspace overlay
+    // (z-index 9600) paints on top cleanly.
+    const form = useFormState.getState().form;
     close();
+    openCaptionWorkspace('write', {
+      postId: null,
+      initialCaption: '',
+      syntheticContext: {
+        source: 'create-post-paste',
+        brief: trimmed,
+        title:    form.title    || null,
+        pillar:   form.pillar   || null,
+        location: form.location || null,
+        format:   form.format   || null
+      },
+      onUse: (generated) => {
+        if (typeof generated !== 'string' || !generated.trim()) return;
+        const existingCaption = (useFormState.getState().form.caption || '').trim();
+        if (existingCaption && !window.confirm('Replace existing caption with generated version?')) {
+          return;
+        }
+        useFormState.getState().update('caption', generated);
+      },
+      onClose: () => {
+        try {
+          var ws = window._captionWS;
+          if (ws) {
+            useFormState.getState().setUI({
+              sessionCost: typeof ws.sessionCost === 'number' ? ws.sessionCost : 0,
+              sessionCalls: Array.isArray(ws.messages)
+                ? ws.messages.filter(m => m && m.role === 'assistant').length
+                : 0
+            });
+          }
+        } catch (e) { /* ignore */ }
+      }
+    });
   };
 
   const canUse = (text || '').trim().length > 0;
@@ -153,7 +213,7 @@ export function PasteSheet() {
               transition: 'all 0.15s'
             }}>
             <span style={{ fontFamily: tokens.serif, fontSize: 13, display: 'inline-block' }}>→</span>
-            Use this
+            {isAdmin ? 'Generate caption from brief' : 'Use this'}
           </button>
         </div>
       </div>
