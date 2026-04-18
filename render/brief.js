@@ -1233,8 +1233,16 @@ window._createPostFromBrief = function(briefPostId) {
   if (overlay) overlay.remove();
   document.body.style.overflow = '';
 
-  // Open new post form
-  if (typeof openNewPostModal === 'function') {
+  // Open new post form. React strangler-fig: route to React Create
+  // Post when the flag is true and the flow is mounted; fall back
+  // to vanilla openNewPostModal() otherwise.
+  if (window.ENABLE_REACT_NEW_POST === true
+      && window.SortedReact
+      && window.SortedReact.flows
+      && window.SortedReact.flows.createPost
+      && typeof window.SortedReact.flows.createPost.open === 'function') {
+    window.SortedReact.flows.createPost.open();
+  } else if (typeof openNewPostModal === 'function') {
     openNewPostModal();
   }
 
