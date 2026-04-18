@@ -71,7 +71,10 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
 
     // Hydrate memory, totals, synth-title, and angles in parallel.
     loadMemory().then((m) => set(m));
-    fetchTodayMonthCosts(createdBy).then((c) => set(c));
+    fetchTodayMonthCosts(createdBy).then((c) => set({
+      todayCost: c.todayCostINR || 0,
+      monthCost: c.monthCostINR || 0
+    }));
 
     if (brief) {
       // Synth a short title on first open.

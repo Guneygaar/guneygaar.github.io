@@ -3,7 +3,7 @@
 
 const PRICE_INPUT_PER_MTOK  = 3;
 const PRICE_OUTPUT_PER_MTOK = 15;
-const USD_TO_INR            = 100;
+const USD_TO_INR            = 83;
 
 export function calcCostINR(inputTokens, outputTokens) {
   const usd = (Number(inputTokens)  || 0) * PRICE_INPUT_PER_MTOK  / 1e6
