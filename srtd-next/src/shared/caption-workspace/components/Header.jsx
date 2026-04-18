@@ -35,7 +35,7 @@ export function Header() {
       onClick={onHeaderTap}
       className="border-b border-divider-soft bg-bg cursor-pointer select-none">
       {/* Row 1 */}
-      <div className="flex items-center gap-3 px-4 py-3">
+      <div className="flex flex-nowrap items-center gap-3 px-4 py-3">
         <button
           data-cw-no-toggle
           aria-label="Close workspace"
@@ -57,7 +57,7 @@ export function Header() {
           <div
             data-cw-no-toggle
             onClick={(e) => { e.stopPropagation(); toggleHeader(); }}
-            className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest cursor-pointer">
+            className="shrink-0 max-w-[160px] flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest cursor-pointer">
             <span className="flex flex-col items-end leading-tight">
               <span className="text-text-dim text-[8px]">Session</span>
               <span className="text-amber">{formatINR(sessionCost)}</span>
@@ -80,7 +80,7 @@ export function Header() {
               if (hasBrief) toggleHeader();
             }}
             className={
-              'flex items-center gap-1.5 rounded-pill border border-border-neutral px-2.5 py-1 ' +
+              'shrink-0 flex items-center gap-1.5 rounded-pill border border-border-neutral px-2.5 py-1 ' +
               'font-mono text-[10px] uppercase tracking-widest text-amber ' +
               (hasBrief ? 'cursor-pointer' : 'opacity-60 cursor-default')
             }>

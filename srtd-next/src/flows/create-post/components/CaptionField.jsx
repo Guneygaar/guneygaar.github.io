@@ -60,25 +60,36 @@ export function CaptionField() {
   }, [wordCount]);
 
   const handleOpenWorkspace = () => {
+    const form = useFormState.getState().form;
+    const initial = (form.caption || '').trim();
+
+    // Compose a brief from whatever the user has typed so far so
+    // store.open auto-fires angles. No brief → empty chat state.
+    const briefParts = [];
+    if (form.title && form.title.trim())                 briefParts.push(form.title.trim());
+    if (form.internalNotes && form.internalNotes.trim()) briefParts.push(form.internalNotes.trim());
+    if (form.caption && form.caption.trim())             briefParts.push(form.caption.trim());
+    const brief = briefParts.join('\n\n').trim();
+
     console.log('[react/caption] ⤢ tapped', {
-      mode: (caption || '').trim() ? 'chat' : 'write',
+      hasBrief: !!brief,
+      briefLen: brief.length,
       vanillaAvailable: typeof window.openCaptionWorkspace === 'function',
-      isAdmin: useIsAdmin.getState ? undefined : 'hook-scoped'
+      isAdmin
     });
 
-    const initial = (caption || '').trim();
-    const mode = initial ? 'chat' : 'write';
-    logClick('caption_workspace_open', { mode, isAdmin });
+    logClick('caption_workspace_open', { hasBrief: !!brief, isAdmin });
 
-    openCaptionWorkspace(mode, {
+    openCaptionWorkspace('write', {
       postId: null,  // detached mode — no post exists yet
       initialCaption: initial,
       syntheticContext: {
         source: 'create-post-react',
-        pillar: useFormState.getState().form.pillar || null,
-        location: useFormState.getState().form.location || null,
-        format: useFormState.getState().form.format || null,
-        title: useFormState.getState().form.title || null
+        pillar: form.pillar || null,
+        location: form.location || null,
+        format: form.format || null,
+        title: form.title || '',
+        brief
       },
       onUse: (text) => {
         if (typeof text !== 'string' || !text.trim()) return;
