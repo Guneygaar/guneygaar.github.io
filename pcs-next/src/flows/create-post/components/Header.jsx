@@ -1,15 +1,18 @@
 import React from 'react';
-import { FileText, Mail, ClipboardPaste, Upload } from 'lucide-react';
+import { Mail, ClipboardPaste, Upload } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
 import { useIsAdmin } from '../../../core/stores/appState.js';
 
+// Import sources. `admin: true` means admin-only (filtered out of
+// the list for non-admins — the pill itself stays visible because
+// Paste is available to every role). 'Sorted briefs' was removed
+// in B5 — the pipeline is the canonical brief → post path.
 const IMPORT_SOURCES = [
-  { label: 'Sorted briefs', hint: 'Briefs your team logged in-app', icon: FileText, badge: '3 new' },
-  { label: 'Gmail', hint: 'Unprocessed emails from clients', icon: Mail, badge: '2 new' },
-  { label: 'Paste link or text', hint: 'Article, URL, or raw notes', icon: ClipboardPaste },
-  { label: 'Upload a file', hint: 'PDF, Word doc, or text file', icon: Upload }
+  { label: 'Paste link or text', hint: 'Article, URL, or raw notes', icon: ClipboardPaste, admin: false, kind: 'paste' },
+  { label: 'Gmail',              hint: 'Unprocessed emails from clients', icon: Mail, badge: '2 new', admin: true, kind: 'gmail' },
+  { label: 'Upload a file',      hint: 'Coming soon', icon: Upload, admin: true, kind: 'upload-stub' }
 ];
 
 export function Header() {
@@ -18,6 +21,21 @@ export function Header() {
   const setToast = useFormState(s => s.setToast);
   const close = useFlowState(s => s.close);
   const isAdmin = useIsAdmin();
+
+  // Non-admins see only non-admin sources. As of B5: just Paste.
+  const sources = isAdmin ? IMPORT_SOURCES : IMPORT_SOURCES.filter(s => !s.admin);
+
+  const handleSourceClick = (src) => {
+    if (src.kind === 'paste') {
+      setUI({ importOpen: false, pasteSheetOpen: true });
+    } else if (src.kind === 'gmail') {
+      setUI({ importOpen: false, gmailSheetOpen: true });
+    } else if (src.kind === 'upload-stub') {
+      setToast({ msg: 'Upload — coming soon', sub: 'File parse endpoint pending Worker PR' });
+      setUI({ importOpen: false });
+      setTimeout(() => useFormState.getState().clearToast(), 2000);
+    }
+  };
 
   return (
     <div style={{
@@ -36,7 +54,6 @@ export function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        {isAdmin && (
         <div style={{ position: 'relative' }} data-dropdown>
           <button
             onClick={(e) => { e.stopPropagation(); setUI({ importOpen: !importOpen }); }}
@@ -83,20 +100,16 @@ export function Header() {
                   Where is it?
                 </div>
               </div>
-              {IMPORT_SOURCES.map((src, i) => {
+              {sources.map((src, i) => {
                 const Icon = src.icon;
                 return (
-                  <button key={i}
-                    onClick={() => {
-                      setToast({ msg: `${src.label} selected`, sub: 'Import wiring ships in a later PR' });
-                      setUI({ importOpen: false });
-                      setTimeout(() => useFormState.getState().clearToast(), 1800);
-                    }}
+                  <button key={src.kind}
+                    onClick={() => handleSourceClick(src)}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: 12,
                       width: '100%', padding: '12px 14px',
                       background: 'transparent', border: 'none',
-                      borderBottom: i < IMPORT_SOURCES.length - 1 ? `1px solid ${tokens.lineSoft}` : 'none',
+                      borderBottom: i < sources.length - 1 ? `1px solid ${tokens.lineSoft}` : 'none',
                       cursor: 'pointer', textAlign: 'left'
                     }}>
                     <div style={{
@@ -139,12 +152,14 @@ export function Header() {
                 display: 'flex', alignItems: 'center', gap: 8
               }}>
                 <span style={{ color: tokens.claude, fontSize: 11 }}>✦</span>
-                <span>Claude reads it and pre-fills <em style={{ fontStyle: 'italic', color: tokens.textWhisper }}>title, pillar, date, caption</em>.</span>
+                <span>{isAdmin
+                  ? <>Claude reads it and pre-fills <em style={{ fontStyle: 'italic', color: tokens.textWhisper }}>title, pillar, date, caption</em>.</>
+                  : <>Paste raw brief text into Internal Notes.</>
+                }</span>
               </div>
             </div>
           )}
         </div>
-        )}
 
         <button
           aria-label="Close"

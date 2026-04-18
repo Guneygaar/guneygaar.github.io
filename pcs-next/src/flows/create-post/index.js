@@ -26,7 +26,9 @@ export const createPostFlow = {
         submitting: false, toast: null,
         sessionStart: new Date().toISOString(),
         sessionCost: 0,
-        sessionCalls: 0
+        sessionCalls: 0,
+        pasteSheetOpen: false,
+        gmailSheetOpen: false
       });
     } else {
       useFormState.getState().reset();
