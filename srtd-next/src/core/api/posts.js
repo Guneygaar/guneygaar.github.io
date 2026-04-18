@@ -42,7 +42,7 @@ export function buildPostPayload(form, createdBy, options = {}) {
     canva_link:     isCanva ? form.driveLink : null,
     images:         (form.photos && form.photos.length > 0)
                       ? form.photos.map(p => p.url)
-                      : null,
+                      : [],
     is_draft:       options.isDraft === true,
     ai_origin:      options.aiOrigin === true,
     brief_id:       options.briefId || null,
