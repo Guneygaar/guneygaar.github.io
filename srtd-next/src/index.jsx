@@ -1,15 +1,16 @@
+import './styles/tailwind.css';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import * as core from './core/index.js';
 import { createPostFlow } from './flows/create-post/index.js';
 
 if (typeof window !== 'undefined') {
-  console.log('[sorted-react] bundle loaded, v0.8.0');
+  console.log('[sorted-react] bundle loaded, v0.8.1');
 
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.8.0';
+  window.SortedReact.version   = '0.8.1';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;
@@ -17,6 +18,7 @@ if (typeof window !== 'undefined') {
   window.SortedReact.api       = core.api;
   window.SortedReact.ui        = core.ui;
   window.SortedReact.utils     = core.utils;
+  window.SortedReact.theme     = core.theme;
   window.SortedReact.flows     = {
     createPost: createPostFlow
   };
