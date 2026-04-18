@@ -4,6 +4,7 @@ import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useIsAdmin } from '../../../core/stores/appState.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
+import { logClick } from '../../../core/bridges/logging.js';
 
 function formatINR(n) {
   if (!n || n < 1) return '₹0';
@@ -67,6 +68,7 @@ export function CaptionField() {
 
     const initial = (caption || '').trim();
     const mode = initial ? 'chat' : 'write';
+    logClick('caption_workspace_open', { mode, isAdmin });
 
     openCaptionWorkspace(mode, {
       postId: null,  // detached mode — no post exists yet
@@ -81,9 +83,10 @@ export function CaptionField() {
       onUse: (text) => {
         if (typeof text !== 'string' || !text.trim()) return;
         const existing = (useFormState.getState().form.caption || '').trim();
-        if (existing && existing !== text.trim()
-            && !window.confirm('Replace existing caption with generated version?')) {
-          return;
+        if (existing && existing !== text.trim()) {
+          const accepted = window.confirm('Replace existing caption with generated version?');
+          logClick('caption_overwrite_confirm', { accepted, source: 'workspace' });
+          if (!accepted) return;
         }
         useFormState.getState().update('caption', text);
       },

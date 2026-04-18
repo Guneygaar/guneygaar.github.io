@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trash2 } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState, clearDraft } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
@@ -6,6 +7,23 @@ import { useAppState } from '../../../core/stores/appState.js';
 import { buildPostPayload, createPost } from '../../../core/api/posts.js';
 import { stampPostId } from '../../../core/api/aiUsage.js';
 import { toast } from '../../../core/bridges/toast.js';
+import { logClick, logError } from '../../../core/bridges/logging.js';
+
+// Consider the form dirty when any user-writable field has content.
+// `owner`, `stage`, `format`, `targetDate` all have non-empty defaults;
+// treat those as clean unless they've been explicitly changed in a
+// follow-up PR (today they arrive populated from initialForm).
+function _isDirty(form) {
+  if (!form) return false;
+  if ((form.title || '').trim()) return true;
+  if ((form.caption || '').trim()) return true;
+  if ((form.internalNotes || '').trim()) return true;
+  if ((form.driveLink || '').trim()) return true;
+  if ((form.pillar || '').trim()) return true;
+  if ((form.location || '').trim()) return true;
+  if (Array.isArray(form.photos) && form.photos.length > 0) return true;
+  return false;
+}
 
 export function Footer() {
   const form = useFormState(s => s.form);
@@ -18,9 +36,18 @@ export function Footer() {
   const user = useAppState(s => s.user);
 
   const canSubmit = form.title.trim() && form.caption.trim() && !submitting;
+  const canClear = _isDirty(form) && !submitting;
 
   const handleCancel = () => {
     close();
+  };
+
+  const handleClear = () => {
+    if (!canClear) return;
+    if (!window.confirm('Clear all fields? This cannot be undone.')) return;
+    resetForm();
+    clearDraft();
+    logClick('create_post_clear_form');
   };
 
   const handleSubmit = async () => {
@@ -56,11 +83,14 @@ export function Footer() {
 
       clearDraft();
       toast('Post created', 'success');
+      logClick('create_post_submit_react', { post_id: postId }, true, { post_id: postId });
       resetForm();
       close();
     } catch (err) {
       console.error('[create-post] submit failed:', err);
       toast(`Post creation failed: ${err.message || 'unknown error'}`, 'error');
+      logClick('create_post_submit_react', {}, false, { error: err && err.message });
+      logError(err, { action: 'create-post-submit-react' });
       setUI({ submitting: false });
     }
   };
@@ -75,7 +105,7 @@ export function Footer() {
         onClick={handleCancel}
         disabled={submitting}
         style={{
-          flex: 1, padding: '16px 20px',
+          padding: '16px 18px',
           background: 'transparent', border: 'none',
           fontFamily: tokens.mono, fontSize: 11, fontWeight: 600,
           letterSpacing: '0.16em', textTransform: 'uppercase',
@@ -85,6 +115,24 @@ export function Footer() {
           transition: 'color 0.15s'
         }}>
         Cancel
+      </button>
+      <button
+        aria-label="Clear form"
+        onClick={handleClear}
+        disabled={!canClear}
+        style={{
+          padding: '16px 14px',
+          background: 'transparent', border: 'none', borderLeft: `1px solid ${tokens.lineSoft}`,
+          fontFamily: tokens.mono, fontSize: 10, fontWeight: 600,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: canClear ? tokens.textSoft : tokens.textGhost,
+          cursor: canClear ? 'pointer' : 'not-allowed',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          opacity: submitting ? 0.5 : 1,
+          transition: 'all 0.15s'
+        }}>
+        <Trash2 size={12} strokeWidth={1.7} />
+        Clear
       </button>
       <button
         onClick={handleSubmit}

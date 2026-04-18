@@ -302,7 +302,22 @@ async function handleComplete(request, env) {
 
     const systemPrompt    = buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext);
 
-    const anthropicRes = await callAnthropic(env, systemPrompt, messages);
+    // B5.5a.1 defensive filter: Anthropic 400s on any role other than
+    // 'user' or 'assistant' inside the messages array. If a legacy
+    // caller sends {role:'system', …} entries, append their content
+    // to the system prompt and strip them from the user-facing messages.
+    const systemExtras = messages
+      .filter(m => m && m.role === 'system')
+      .map(m => typeof m.content === 'string' ? m.content : '')
+      .filter(Boolean)
+      .join('\n\n');
+    const userAsstMessages = messages
+      .filter(m => m && (m.role === 'user' || m.role === 'assistant'));
+    const combinedSystem = systemExtras
+      ? systemPrompt + '\n\n' + systemExtras
+      : systemPrompt;
+
+    const anthropicRes = await callAnthropic(env, combinedSystem, userAsstMessages);
 
     const contentBlocks = anthropicRes && anthropicRes.content;
     const responseText  = (Array.isArray(contentBlocks) && contentBlocks[0] && contentBlocks[0].text)
@@ -599,6 +614,10 @@ async function handleGmailBrief(request, env) {
       '  copy_option_3 (string, full LinkedIn caption option 3)\n' +
       '  internal_notes (string, 1-2 lines: source + final agreed scope from thread, e.g. "Chemexpo brief. Final: 2 carousels of 5 products each (per Shivangini 14 Apr).")\n' +
       '  visual_direction (string, 1 line on visual style)\n' +
+      '  content_pillar (string | null, MUST be EXACTLY one of: announcements | events | growth | inclusivity | innovation | leadership | sustainability. Return null if unclear from brief.)\n' +
+      '  target_date (string | null, ISO YYYY-MM-DD if the brief explicitly mentions a date like "by 20 April" or "22 Apr 2026". Return null otherwise. Never invent a date.)\n' +
+      '  location (string | null, MUST be EXACTLY one of: Mumbai | Sakarwadi | Sameerwadi | Press | Other. Return null if unclear.)\n' +
+      '  format (string | null, MUST be EXACTLY one of: Photo | Carousel | Video | Creative | Text. Return null if unclear.)\n' +
       'Write 3 caption options in GBL voice. Base them on the FINAL agreed brief, not the original request.\n\n' +
       'Approved posts for voice reference:\n\n' + approvedContext +
       '\n\nBrand guide:\n' + brandGuide;
@@ -643,7 +662,11 @@ async function handleGmailBrief(request, env) {
       copy_option_2:    parsed.copy_option_2    || '',
       copy_option_3:    parsed.copy_option_3    || '',
       internal_notes:   parsed.internal_notes   || '',
-      visual_direction: parsed.visual_direction || ''
+      visual_direction: parsed.visual_direction || '',
+      content_pillar:   parsed.content_pillar   || null,
+      target_date:      parsed.target_date      || null,
+      location:         parsed.location         || null,
+      format:           parsed.format           || null
     });
   } catch (err) {
     return errorResponse((err && err.message) || 'unknown error', 500);

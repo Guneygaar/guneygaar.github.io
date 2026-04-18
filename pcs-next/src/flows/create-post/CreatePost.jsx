@@ -13,6 +13,7 @@ import { NotesField } from './components/NotesField.jsx';
 import { Footer } from './components/Footer.jsx';
 import { PasteSheet } from './components/PasteSheet.jsx';
 import { GmailSheet } from './components/GmailSheet.jsx';
+import { logClick } from '../../core/bridges/logging.js';
 
 export function CreatePost() {
   const form = useFormState(s => s.form);
@@ -20,6 +21,9 @@ export function CreatePost() {
   const pasteSheetOpen = useFormState(s => s.pasteSheetOpen);
   const gmailSheetOpen = useFormState(s => s.gmailSheetOpen);
   const toast = useFormState(s => s.toast);
+  const pendingDraft = useFormState(s => s.pendingDraft);
+  const acceptDraft = useFormState(s => s.acceptDraft);
+  const dismissDraft = useFormState(s => s.dismissDraft);
   const closeAllDropdowns = useFormState(s => s.closeAllDropdowns);
   const close = useFlowState(s => s.close);
 
@@ -101,6 +105,75 @@ export function CreatePost() {
         {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           <Header />
+
+          {/* B5.5a.1 draft restore banner — appears when open()
+              detected a non-empty localStorage draft. User picks
+              Restore / Start fresh / ✕ (same as Start fresh). */}
+          {pendingDraft && (
+            <div style={{
+              margin: '0 22px 6px',
+              padding: '12px 14px',
+              background: tokens.claudeSoft,
+              border: `1px solid ${tokens.claudeBorder}`,
+              borderRadius: 8,
+              display: 'flex', alignItems: 'center', gap: 12
+            }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontFamily: tokens.mono, fontSize: 9, letterSpacing: '0.2em',
+                  textTransform: 'uppercase', color: tokens.claude, marginBottom: 3
+                }}>
+                  ✦ Draft saved earlier
+                </div>
+                <div style={{
+                  fontFamily: tokens.serif, fontSize: 13.5, color: tokens.textLoud
+                }}>
+                  You have a saved draft from earlier
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  logClick('draft_banner_action', { choice: 'restore' });
+                  acceptDraft();
+                }}
+                style={{
+                  fontFamily: tokens.mono, fontSize: 10, fontWeight: 600,
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: tokens.claude, background: 'transparent',
+                  border: `1px solid ${tokens.claudeBorder}`,
+                  padding: '7px 11px', cursor: 'pointer', flexShrink: 0
+                }}>
+                Restore
+              </button>
+              <button
+                onClick={() => {
+                  logClick('draft_banner_action', { choice: 'fresh' });
+                  dismissDraft();
+                }}
+                style={{
+                  fontFamily: tokens.mono, fontSize: 10, fontWeight: 600,
+                  letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: tokens.textSoft, background: 'transparent',
+                  border: 'none', padding: '7px 6px', cursor: 'pointer', flexShrink: 0
+                }}>
+                Start fresh
+              </button>
+              <button
+                aria-label="Dismiss draft banner"
+                onClick={() => {
+                  logClick('draft_banner_action', { choice: 'fresh' });
+                  dismissDraft();
+                }}
+                style={{
+                  fontSize: 16, color: tokens.textWhisper,
+                  fontFamily: tokens.serif, fontWeight: 300,
+                  background: 'transparent', border: 'none', padding: 0,
+                  cursor: 'pointer', lineHeight: 1, flexShrink: 0
+                }}>
+                ✕
+              </button>
+            </div>
+          )}
 
           <div style={{
             opacity: importOpen ? 0.35 : 1,

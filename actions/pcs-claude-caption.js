@@ -255,6 +255,19 @@ window.sendCaptionMessage = async function(text) {
     _cwUpdateMeters();
   } else {
     ws.messages.push({ role: 'assistant', content: 'Error: ' + ((result && result.error) || 'Request failed. Try again.') });
+    // B5.5a.1: surface AI failures to the user + error_log so 400/500
+    // classes (e.g. Anthropic message-shape regressions) don't go
+    // silently unnoticed.
+    if (typeof showToast === 'function') {
+      showToast('Caption generation failed — check error log', 'error');
+    }
+    if (typeof window.logError === 'function') {
+      window.logError(
+        (result && result.error) || 'sendCaptionMessage !success',
+        '',
+        'caption-workspace-' + (ws.mode || 'chat')
+      );
+    }
   }
   _cwRenderThread();
   _cwScrollToBottom();
