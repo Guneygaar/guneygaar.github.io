@@ -4,6 +4,7 @@ import { stripMarkdown } from '../utils.js';
 import { AnglesCard } from './AnglesCard.jsx';
 import { DraftCard } from './DraftCard.jsx';
 import { ReviewBlock } from './ReviewBlock.jsx';
+import { OptionsCard } from './OptionsCard.jsx';
 import { Sparkles } from './icons.js';
 
 // Message thread. Auto-scrolls to bottom on new message. Handles
@@ -46,6 +47,7 @@ export function Thread() {
         if (type === 'angles')  return <AnglesCard  key={m.id} msg={m} />;
         if (type === 'draft')   return <DraftCard   key={m.id} msg={m} />;
         if (type === 'review')  return <ReviewBlock key={m.id} msg={m} />;
+        if (type === 'options') return <OptionsCard key={m.id} msg={m} />;
         return null;
       })}
 

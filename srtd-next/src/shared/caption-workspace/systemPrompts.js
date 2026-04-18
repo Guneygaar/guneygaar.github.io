@@ -64,6 +64,27 @@ export function buildRewritePrompt(draft, checkedFlags) {
   );
 }
 
+export function buildRewriteFromCommentsPrompt(caption, comments) {
+  const list = (comments || []).map(c => {
+    const name = c.author_name || c.author || 'Unknown';
+    const text = c.text || c.message || '';
+    return `${name}: ${text}`;
+  }).join('\n');
+  return 'Current caption:\n' + (caption || '(empty)') +
+    '\n\nHere are the comments on this post:\n' + (list || 'No comments yet.') +
+    '\n\nRewrite the caption addressing the feedback. Return ONLY the revised caption.';
+}
+
+export function buildVanillaWriteOptionsPrompt(brief, title, caption) {
+  if (brief && brief.trim()) {
+    return 'Here is the brief to write from:\n\n' + brief +
+      '\n\nWrite 3 caption options in GBL voice. Return exactly 3 numbered options. No preamble.';
+  }
+  return 'Generate 3 alternative caption options for this post: ' + (title || '') + '.' +
+    (caption ? '\nCurrent caption: ' + caption : '') +
+    '\n\nReturn exactly 3 numbered options. No preamble.';
+}
+
 export function buildTitleSynthPrompt(brief) {
   return (
     'Read this brief and return exactly 3-5 words that could title ' +

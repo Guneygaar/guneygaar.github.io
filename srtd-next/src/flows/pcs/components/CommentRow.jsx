@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Heart, Reply, Check, CircleDot } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { formatCommentTime } from '../utils/time.js';
@@ -7,9 +7,23 @@ import { displayNameFromEmail, roleFromEmail } from '../utils/users.js';
 import { getImageAttachments, getTaskAttachments } from '../utils/attachments.js';
 import { groupReactions } from '../utils/reactions.js';
 import { resolveParent } from '../utils/threading.js';
+import { addReaction, removeReaction } from '../../../core/api/reactions.js';
+import { resolveComment, unresolveComment } from '../../../core/api/comments.js';
+import { useAppState } from '../../../core/stores/appState.js';
+import { usePcsStore } from '../pcsStore.js';
+import { toast } from '../../../core/bridges/toast.js';
+import { logClick, logError } from '../../../core/bridges/logging.js';
+import { pcsFlow } from '../index.js';
 
-export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }) {
+const LIKE_EMOJI = '\u2661';
+
+export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
   const [expanded, setExpanded] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const currentRole = useAppState((s) => s.user?.role || '');
+  const isAdmin = String(currentRole).toLowerCase() === 'admin';
+  const lpTimer = useRef(null);
+  const lpFired = useRef(false);
 
   const authorName = comment.author ? (displayNameFromEmail(comment.author, userRoles) || 'Unknown') : 'Unknown';
   const roleKey = comment.author ? roleFromEmail(comment.author, userRoles, comment.author_role || 'creative') : 'unknown';
@@ -22,9 +36,71 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
   const imageAtts = getImageAttachments(comment.attachments);
   const taskAtts = getTaskAttachments(comment.attachments);
   const reactionGroups = groupReactions(reactions, comment.id, currentEmail);
+  const myLike = reactionGroups.find((g) => g.emoji === LIKE_EMOJI && g.mine);
+
+  async function toggleLike() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (myLike) {
+        await removeReaction(comment.id, LIKE_EMOJI, currentEmail);
+      } else {
+        await addReaction(comment.id, LIKE_EMOJI, currentEmail);
+      }
+      logClick('pcs_react_comment_like', { commentId: comment.id, on: !myLike });
+      if (isInternal) await pcsFlow.retryInternalNotes();
+      else await pcsFlow.retryComments();
+    } catch (err) {
+      logError(err, { context: 'pcs_react_comment_like' });
+      toast('Like failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleResolve() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      if (comment.resolved) {
+        await unresolveComment(comment.id);
+      } else {
+        await resolveComment(comment.id, currentEmail);
+      }
+      logClick('pcs_react_comment_resolve', { commentId: comment.id, on: !comment.resolved });
+      if (isInternal) await pcsFlow.retryInternalNotes();
+      else await pcsFlow.retryComments();
+    } catch (err) {
+      logError(err, { context: 'pcs_react_comment_resolve' });
+      toast('Resolve failed', 'error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startLP(e) {
+    if (e.target.closest('button, a, input, textarea')) return;
+    lpFired.current = false;
+    lpTimer.current = setTimeout(() => {
+      lpFired.current = true;
+      try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) { /* ignore */ }
+      onLongPress && onLongPress(comment, isInternal);
+    }, 500);
+  }
+  function cancelLP() {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }
 
   return (
-    <div className="flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm">
+    <div
+      className="flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm"
+      onTouchStart={startLP}
+      onTouchEnd={cancelLP}
+      onTouchMove={cancelLP}
+      onMouseDown={startLP}
+      onMouseUp={cancelLP}
+      onMouseLeave={cancelLP}
+      onContextMenu={(e) => { e.preventDefault(); onLongPress && onLongPress(comment, isInternal); }}>
       <Avatar name={authorName === 'Unknown' ? 'U' : authorName} role={roleKey} size="md" />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 mb-[3px] flex-wrap">
@@ -58,7 +134,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
 
         {imageAtts.length > 0 && (
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
-            {imageAtts.flatMap(a => a.urls).slice(0, 6).map((src, i) => (
+            {imageAtts.flatMap((a) => a.urls).slice(0, 6).map((src, i) => (
               <div key={i} className="w-16 h-16 rounded-sm2 bg-bg-2 bg-cover bg-center border border-divider-soft" style={{ backgroundImage: `url(${src})` }} />
             ))}
           </div>
@@ -80,7 +156,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
 
         {reactionGroups.length > 0 && (
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
-            {reactionGroups.map(g => (
+            {reactionGroups.map((g) => (
               <span key={g.emoji} className={`inline-flex items-center gap-1 px-1.5 py-[2px] rounded-sm2 bg-bg-2 border ${g.mine ? 'border-terracotta text-terracotta' : 'border-divider-soft text-text-mid'} text-sm`}>
                 <Heart size={10} className={g.mine ? 'text-terracotta' : ''} />
                 <span className="font-mono text-2xs text-text-dim">{g.count}</span>
@@ -90,15 +166,15 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail }
         )}
 
         <div className="flex items-center gap-4 mt-2">
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
-            <Heart size={12} /><span>Like</span>
-          </span>
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
+          <button onClick={toggleLike} disabled={busy} className={`inline-flex items-center gap-1 text-sm font-medium ${myLike ? 'text-terracotta' : 'text-text-soft hover:text-text-mid'} disabled:opacity-50`}>
+            <Heart size={12} /><span>{myLike ? 'Liked' : 'Like'}</span>
+          </button>
+          <button onClick={() => onReply && onReply(comment)} className="inline-flex items-center gap-1 text-sm text-text-soft hover:text-text-mid font-medium">
             <Reply size={12} /><span>Reply</span>
-          </span>
-          <span className="inline-flex items-center gap-1 text-sm text-text-soft font-medium opacity-30 cursor-not-allowed" title="Ships PR 2">
+          </button>
+          <button onClick={toggleResolve} disabled={busy} className={`inline-flex items-center gap-1 text-sm font-medium ${comment.resolved ? 'text-green' : 'text-text-soft hover:text-text-mid'} disabled:opacity-50`}>
             <Check size={12} /><span>{comment.resolved ? 'Unresolve' : 'Resolve'}</span>
-          </span>
+          </button>
         </div>
       </div>
     </div>
