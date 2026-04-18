@@ -138,10 +138,23 @@ window.openCaptionWorkspace = async function(mode, context) {
       _cwScrollToBottom();
       return;
     } else if (mode === 'write') {
-      var msg2 = 'Generate 3 alternative caption options for this post: ' +
-        (context.title || '') + '.' +
-        (context.caption ? '\nCurrent caption: ' + context.caption : '') +
-        '\n\nReturn exactly 3 numbered options. No preamble.';
+      // B5.5a: brief-aware write mode. If the caller (React Paste
+      // admin path) provides context.syntheticContext.brief, ask
+      // Claude to draft captions FROM that brief. If not, fall
+      // back to the pre-B5.5a prompt — the ⤢ from an empty caption
+      // still works unchanged for post-scoped and React-detached
+      // callers that don't pass a brief.
+      var brief = (context.syntheticContext && context.syntheticContext.brief) || '';
+      var msg2;
+      if (brief) {
+        msg2 = 'Here is the brief to write from:\n\n' + brief +
+          '\n\nWrite 3 caption options in GBL voice. Return exactly 3 numbered options. No preamble.';
+      } else {
+        msg2 = 'Generate 3 alternative caption options for this post: ' +
+          (context.title || '') + '.' +
+          (context.caption ? '\nCurrent caption: ' + context.caption : '') +
+          '\n\nReturn exactly 3 numbered options. No preamble.';
+      }
       window.sendCaptionMessage(msg2);
     } else if (mode === 'qc') {
       var msg3 = 'QC this LinkedIn caption against the brand guide. Caption:\n\n' +

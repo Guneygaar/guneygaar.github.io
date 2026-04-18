@@ -18,6 +18,10 @@ export function CaptionField() {
   const sessionCalls = useFormState(s => s.sessionCalls);
   const isAdmin = useIsAdmin();
 
+  // Log role state on render for diagnosing missing ⤢
+  // eslint-disable-next-line
+  if (typeof window !== 'undefined') window.__lastCaptionFieldIsAdmin = isAdmin;
+
   // Poll window._captionWS.sessionCost every 600ms so the cost chip
   // updates live during a workspace session (not just on close).
   // Admin-only — non-admins have no AI surfaces so the poll is a
@@ -55,6 +59,12 @@ export function CaptionField() {
   }, [wordCount]);
 
   const handleOpenWorkspace = () => {
+    console.log('[react/caption] ⤢ tapped', {
+      mode: (caption || '').trim() ? 'chat' : 'write',
+      vanillaAvailable: typeof window.openCaptionWorkspace === 'function',
+      isAdmin: useIsAdmin.getState ? undefined : 'hook-scoped'
+    });
+
     const initial = (caption || '').trim();
     const mode = initial ? 'chat' : 'write';
 
@@ -69,9 +79,13 @@ export function CaptionField() {
         title: useFormState.getState().form.title || null
       },
       onUse: (text) => {
-        if (typeof text === 'string') {
-          useFormState.getState().update('caption', text);
+        if (typeof text !== 'string' || !text.trim()) return;
+        const existing = (useFormState.getState().form.caption || '').trim();
+        if (existing && existing !== text.trim()
+            && !window.confirm('Replace existing caption with generated version?')) {
+          return;
         }
+        useFormState.getState().update('caption', text);
       },
       onClose: () => {
         try {
