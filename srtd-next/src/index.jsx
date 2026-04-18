@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import * as core from './core/index.js';
 import { createPostFlow } from './flows/create-post/index.js';
+import { pcsFlow } from './flows/pcs/index.js';
 
 if (typeof window !== 'undefined') {
   console.log('[sorted-react] bundle loaded, v0.9.0');
@@ -20,14 +21,12 @@ if (typeof window !== 'undefined') {
   window.SortedReact.utils     = core.utils;
   window.SortedReact.theme     = core.theme;
   window.SortedReact.flows     = {
-    createPost: createPostFlow
+    createPost: createPostFlow,
+    pcs: pcsFlow
   };
 
   const mountEl = document.getElementById('react-root-new-post');
   if (mountEl) {
-    // When a flow is active, ensure the host div is visible.
-    // The flow components render position:fixed overlays so the
-    // div itself just needs to exist and not be display:none.
     mountEl.style.display = 'block';
 
     try {
@@ -35,6 +34,13 @@ if (typeof window !== 'undefined') {
       root.render(<App />);
       window.SortedReact.mounted = true;
       console.log('[sorted-react] mounted, core + flows ready on window.SortedReact');
+
+      if (window.ENABLE_REACT_PCS === true && window.__pcsAutoOpenPostId) {
+        setTimeout(() => {
+          try { pcsFlow.open(window.__pcsAutoOpenPostId); }
+          catch (e) { console.error('[sorted-react/pcs] auto-open failed', e); }
+        }, 200);
+      }
     } catch (err) {
       console.error('[sorted-react] mount failed:', err);
       window.SortedReact.mounted = false;

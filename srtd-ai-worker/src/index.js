@@ -19,7 +19,7 @@ const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzA2NjkxNCwiZXhwIjoyMDU4NjQyOTE0fQ.mhMGDExFm3pVFmB24gzBGwIuXHHBB2B88FVqnmM5JQkw';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
-const ANTHROPIC_MAX_TOKENS = 1500;
+const ANTHROPIC_MAX_TOKENS = 3000;
 
 // Sonnet 4 pricing (per 1M tokens): input $3, output $15.
 const PRICE_INPUT_PER_MTOK = 3;

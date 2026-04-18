@@ -41,6 +41,13 @@ export const colors = {
   red:            cssVar('red'),
   roleServicing:  cssVar('role-servicing'),
   roleAdmin:      cssVar('role-admin'),
+  stageBrief:      cssVar('stage-brief'),
+  stageProduction: cssVar('stage-production'),
+  stageReady:      cssVar('stage-ready'),
+  stageInput:      cssVar('stage-input'),
+  stageScheduled:  cssVar('stage-scheduled'),
+  roleCreative:    cssVar('role-creative'),
+  roleClient:      cssVar('role-client'),
 };
 
 // Read a concrete hex value from the current theme. Usable in
