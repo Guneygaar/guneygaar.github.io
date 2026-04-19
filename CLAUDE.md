@@ -97,6 +97,13 @@ Other: `index.html`, `styles.css`, `r2-upload-worker.js`, `wrangler.toml`, `pack
 
 ## 4 — ARCHITECTURE RULES AND GOTCHAS
 
+### Cloudflare cache invariant — `index.html` must NEVER be cached
+- `index.html` is the cache-busting anchor for every versioned asset (the 28 `?v=YYYYMMDDx` strings). If Cloudflare serves a stale `index.html`, users get the OLD `?v=` query strings, and browsers happily hand back the OLD cached JS/CSS — deploys ship but no one sees them.
+- **Rule (set MANUALLY in Cloudflare dashboard — not in this repo):** dash.cloudflare.com → `srtd.io` → Caching → Cache Rules → Create rule → `URL Path` `equals` `/index.html` → Cache eligibility: **Bypass cache**. Save + Deploy.
+- Do NOT encode this rule in `wrangler.toml` or any Worker — the two Workers in this repo (`srtd-r2-upload`, `srtd-og-inject`) don't sit in front of `srtd.io/index.html`; the origin is GitHub Pages via Cloudflare's edge, so the rule lives at the zone level.
+- `.github/workflows/cloudflare-purge.yml` purges everything on every push to `main-/-root` as a belt-and-braces fallback, but the Cache Rule is the primary defence — purges race with user traffic, rules do not.
+- If the Cache Rule is ever removed by accident, users WILL see stale builds until they hard-refresh. Re-create it immediately.
+
 ### AppState shape (`00-appstate.js`)
 ```
 window.AppState = {
