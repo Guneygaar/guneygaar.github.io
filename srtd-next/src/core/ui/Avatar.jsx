@@ -25,7 +25,7 @@ export function Avatar({ name, role = 'creative', size = 'md', avatarUrl = null,
   if (avatarUrl && !failed) {
     return (
       <div className={baseCls}>
-        <img src={avatarUrl} alt={safeName} onError={() => setFailed(true)} className="w-full h-full object-cover" />
+        <img src={avatarUrl} alt={safeName} loading="eager" decoding="async" onError={() => setFailed(true)} className="w-full h-full object-cover" />
       </div>
     );
   }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
@@ -8,6 +8,7 @@ import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { ownerToRole, titleCase } from '../utils/stage.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
+import { FullScreenEditor } from './FullScreenEditor.jsx';
 
 const ROLE_TO_OWNER_LABEL = { admin: 'Admin', servicing: 'Servicing', creative: 'Creative', client: 'Client' };
 
@@ -38,30 +39,28 @@ export function OwnerSheet({ onClose }) {
   const currentId = (post && post.owner_user_id && (post.owner_user_id.id || post.owner_user_id)) || null;
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 bg-black/80" style={{ zIndex: 2500 }} />
-      <div className="fixed inset-x-0 bottom-0 bg-bg border-t border-divider-warm rounded-t-card animate-slide-up max-w-[430px] mx-auto" style={{ zIndex: 2501 }}>
-        <div className="flex items-center justify-between px-3 py-3 border-b border-divider-soft">
-          <div className="font-mono text-sm text-text-dim tracking-widest uppercase">Set owner</div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-text-soft" aria-label="Close"><X size={16} /></button>
-        </div>
-        <div className="p-2 pb-safe-b max-h-[60vh] overflow-y-auto">
-          {userRoles.map((u) => {
-            const role = ownerToRole(u.role);
-            const isCurrent = currentId === u.id;
-            return (
-              <button key={u.id} disabled={busy} onClick={() => pick(u)} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 hover:bg-bg-2 ${isCurrent ? 'bg-bg-2' : ''} disabled:opacity-50`}>
-                <Avatar name={u.display_name || u.name} role={role} size="md" avatarUrl={u.avatar_url} />
-                <div className="flex-1 text-left">
-                  <div className="text-sm text-text-loud">{u.name}</div>
-                  <div className="text-2xs text-text-soft">{titleCase(role)}</div>
-                </div>
-                {isCurrent && <Check size={14} className="text-terracotta" />}
-              </button>
-            );
-          })}
-        </div>
+    <FullScreenEditor title="Set owner" onClose={onClose} busy={busy}>
+      <div className="p-2">
+        {userRoles.map((u) => {
+          const role = ownerToRole(u.role);
+          const isCurrent = currentId === u.id;
+          return (
+            <button
+              key={u.id}
+              disabled={busy}
+              onClick={() => pick(u)}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-sm2 hover:bg-bg-2 ${isCurrent ? 'bg-bg-2' : ''} disabled:opacity-50`}
+            >
+              <Avatar name={u.display_name || u.name} role={role} size="lg" avatarUrl={u.avatar_url} />
+              <div className="flex-1 text-left">
+                <div className="text-lg text-text-loud">{u.display_name || u.name}</div>
+                <div className="font-mono text-2xs text-text-soft tracking-wide uppercase">{titleCase(role)}</div>
+              </div>
+              {isCurrent && <Check size={16} className="text-terracotta" />}
+            </button>
+          );
+        })}
       </div>
-    </>
+    </FullScreenEditor>
   );
 }
