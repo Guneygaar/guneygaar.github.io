@@ -1,0 +1,11 @@
+{
+  "name": "srtd-ai-worker",
+  "private": true,
+  "description": "Cloudflare Worker fronting Anthropic + R2 + Supabase for every AI feature in Sorted. Deploy tooling only — source lives in src/index.js.",
+  "scripts": {
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

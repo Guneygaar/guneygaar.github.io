@@ -1,0 +1,30 @@
+name: Deploy srtd-ai Worker
+
+on:
+  push:
+    branches: [main, main-/-root]
+    paths:
+      - 'srtd-ai-worker/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-srtd-ai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install worker deps
+        working-directory: srtd-ai-worker
+        run: npm install
+
+      - name: Deploy worker
+        working-directory: srtd-ai-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
