@@ -604,25 +604,12 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // f3) Zone 1 (AI) — Admin + AppState.workspace.ai_enabled only.
-  //     Injected into the dedicated #pcs-zone-ai-container (added to
-  //     index.html in this PR) which sits inside the #pcs-caption-scroll
-  //     wrapper, above the non-scrolling .pcs-zone-manual footer. The
-  //     container's innerHTML is rewritten on every render so there is
-  //     no per-post id-guard; cross-post accumulation is also handled
-  //     defensively by forcePCSReset() stripping every
-  //     [id^="pcs-ai-section-"] node on PCS close.
-  var aiZoneContainer = document.getElementById('pcs-zone-ai-container');
-  if (aiZoneContainer) {
-    if (isAdmin && window.AppState.workspace && window.AppState.workspace.ai_enabled) {
-      var _commentCount = Array.isArray(post.post_comments)
-        ? post.post_comments.filter(function(c) { return c && !c.deleted; }).length
-        : (typeof post._commentCount === 'number' ? post._commentCount : 0);
-      aiZoneContainer.innerHTML = _pcsBuildAiZoneHtml(id, _commentCount);
-    } else {
-      aiZoneContainer.innerHTML = '';
-    }
-  }
+  // f3) Zone 1 (AI card) — REMOVED. The legacy .pcs-claude-entry card
+  //     was replaced by the ✦ Claude chip in .pcs-cap-actions (see
+  //     pcs-cap-actions-container populate above). The scaffold
+  //     <div id="pcs-zone-ai-container"> remains in index.html so the
+  //     slot can be reused by a future AI surface; _pcsBuildAiZoneHtml
+  //     is kept as dead code in case we want the card back later.
 
   // g) Show comments section (compatibility)
   var commSection = document.getElementById('pcs-comments-section');
@@ -1328,8 +1315,7 @@ function _pcsEnsureCommentsHeader(list) {
     var filterBar = document.createElement('div');
     filterBar.className = 'pcs-filter-bar';
     filterBar.innerHTML =
-      '<span class="pcs-fchip pcs-fchip--on" data-filter="all">All</span>' +
-      '<span class="pcs-fchip" data-filter="client">Client</span>' +
+      '<span class="pcs-fchip pcs-fchip--on" data-filter="client">Client</span>' +
       '<span class="pcs-fchip" data-filter="internal">Internal</span>';
     filterBar.querySelectorAll('.pcs-fchip').forEach(function(chip) {
       chip.addEventListener('click', function() {
@@ -1337,14 +1323,31 @@ function _pcsEnsureCommentsHeader(list) {
         chip.classList.add('pcs-fchip--on');
         var f = chip.dataset.filter;
         document.querySelectorAll('.pcs-comment-item').forEach(function(el) {
-          el.style.display = (f === 'all' || f === 'client') ? '' : 'none';
+          el.style.display = (f === 'client') ? '' : 'none';
         });
         document.querySelectorAll('.pcs-note-item').forEach(function(el) {
-          el.style.display = (f === 'all' || f === 'internal') ? '' : 'none';
+          el.style.display = (f === 'internal') ? '' : 'none';
         });
+        var scroller = document.getElementById('pcs-scroll');
+        var targetId = (f === 'client') ? 'pcs-pane-client' : 'pcs-pane-internal';
+        var target = document.getElementById(targetId);
+        if (scroller && target) {
+          var top = target.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+          scroller.scrollTo({ top: top, behavior: 'smooth' });
+        }
       });
     });
     parent.insertBefore(filterBar, list);
+    // CHANGE 4: default state — Client chip selected, notes hidden on
+    // initial render (the Client chip already carries pcs-fchip--on in
+    // the innerHTML above; this is a defensive reassertion + hides
+    // every .pcs-note-item so only client comments show until the user
+    // taps Internal).
+    var clientChip = filterBar.querySelector('[data-filter="client"]');
+    if (clientChip) clientChip.classList.add('pcs-fchip--on');
+    document.querySelectorAll('.pcs-note-item').forEach(function(el) {
+      el.style.display = 'none';
+    });
   }
 }
 
@@ -1786,6 +1789,14 @@ window.loadPcsComments = async function(postId) {
 
     list.innerHTML = clientHtml;
 
+    // Reapply current filter state so fresh .pcs-comment-item nodes
+    // inherit the selected chip's visibility.
+    var _activeFchipC = document.querySelector('.pcs-fchip.pcs-fchip--on');
+    var _activeFilterC = _activeFchipC ? _activeFchipC.dataset.filter : 'client';
+    list.querySelectorAll('.pcs-comment-item').forEach(function(el) {
+      el.style.display = (_activeFilterC === 'client') ? '' : 'none';
+    });
+
     var countEl = document.getElementById('pcs-comments-count');
     if (countEl) {
       countEl.textContent = activeClientRows.length;
@@ -1830,6 +1841,15 @@ window.loadPcsComments = async function(postId) {
       }
 
       notesList.innerHTML = notesHtml;
+
+      // Reapply current filter state so fresh .pcs-note-item nodes
+      // inherit the selected chip's visibility (default: hidden when
+      // Client chip is active; visible when Internal chip is active).
+      var _activeFchip = document.querySelector('.pcs-fchip.pcs-fchip--on');
+      var _activeFilter = _activeFchip ? _activeFchip.dataset.filter : 'client';
+      notesList.querySelectorAll('.pcs-note-item').forEach(function(el) {
+        el.style.display = (_activeFilter === 'internal') ? '' : 'none';
+      });
 
       var notesCountEl = document.getElementById('pcs-notes-count');
       if (notesCountEl) {
