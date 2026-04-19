@@ -38,6 +38,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
   const parentDeleted = !!(comment.reply_to && (!parent || parent.deleted));
   const parentName = parent ? (displayNameFromEmail(parent.author, userRoles) || 'Unknown') : null;
 
+  console.log('[DEBUG-ATT]', comment.id, typeof comment.attachments, comment.attachments);
   const imageAtts = getImageAttachments(comment.attachments);
   const taskAtts = getTaskAttachments(comment.attachments);
   const reactionGroups = groupReactions(reactions, comment.id, currentName);
