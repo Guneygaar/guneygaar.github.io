@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import {
-  callSrtdAI, fetchTodayMonthCosts, loadMemory,
+  callSrtdAI, fetchTodayMonthCosts, fetchAnthropicMonthCost, loadMemory,
   saveUserInstruction, saveCorrection
 } from './api.js';
 import {
@@ -86,6 +86,12 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
       todayCost: c.todayCostINR || 0,
       monthCost: c.monthCostINR || 0
     }));
+    // Real org-wide Anthropic month spend overrides the ai_usage
+    // seed when the Admin API responds with a number. Null → keep
+    // the ai_usage estimate already set above.
+    fetchAnthropicMonthCost().then((inr) => {
+      if (inr != null) set({ monthCost: inr });
+    });
 
     if (brief) {
       // Synth a short title on first open.
@@ -463,6 +469,9 @@ function _openPcsMode(get, set, mode, opts) {
     todayCost: c.todayCostINR || 0,
     monthCost: c.monthCostINR || 0
   }));
+  fetchAnthropicMonthCost().then((inr) => {
+    if (inr != null) set({ monthCost: inr });
+  });
 
   if (mode === 'qc') {
     const caption = (opts && (opts.initialCaption || (opts.syntheticContext && opts.syntheticContext.caption))) || '';

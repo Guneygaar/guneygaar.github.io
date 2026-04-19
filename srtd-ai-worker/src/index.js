@@ -681,6 +681,84 @@ async function handleGmailBrief(request, env) {
   }
 }
 
+// ─── month cost (Anthropic Admin API) ────────────────────────
+//
+// Returns the real month-to-date spend from Anthropic's
+// organization cost report. Replaces the ai_usage monthCost seed
+// in the Caption Workspace meter so agency users see the true
+// org-wide figure (not just their own logged calls).
+//
+// Auth: X-AI-Secret (same as every other /ai route).
+// Failure modes (missing key, network, non-200, malformed body):
+//   all collapse to { success: true, month_cost_inr: null } so
+//   the meter keeps working off the ai_usage estimate.
+async function handleMonthCost(request, env) {
+  try {
+    if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
+      return errorResponse('Unauthorized', 401);
+    }
+    if (!env.ANTHROPIC_ADMIN_KEY) {
+      return jsonResponse({ success: true, month_cost_inr: null });
+    }
+
+    const now = new Date();
+    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const startingAt = firstOfMonth.toISOString().slice(0, 10) + 'T00:00:00Z';
+    const endingAt   = now.toISOString().slice(0, 10) + 'T23:59:59Z';
+
+    const url = 'https://api.anthropic.com/v1/organizations/cost_report'
+      + '?starting_at=' + encodeURIComponent(startingAt)
+      + '&ending_at='   + encodeURIComponent(endingAt);
+
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'anthropic-version': '2023-06-01',
+        'x-api-key': env.ANTHROPIC_ADMIN_KEY
+      }
+    });
+    if (!res.ok) {
+      return jsonResponse({ success: true, month_cost_inr: null });
+    }
+    const data = await res.json().catch(function() { return null; });
+    if (!data) return jsonResponse({ success: true, month_cost_inr: null });
+
+    // The cost_report endpoint returns an array of time-bucketed
+    // rows; each row carries a list of line items with cost figures.
+    // Walk every shape we've seen (`data`, `results`, `buckets`,
+    // `line_items`, `cost.amount`/`amount_usd`/`cost_usd`) and sum
+    // whatever numeric USD figure is present.
+    let totalUsd = 0;
+    const _num = function(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+    const _walk = function(node) {
+      if (!node) return;
+      if (Array.isArray(node)) { node.forEach(_walk); return; }
+      if (typeof node !== 'object') return;
+      // Common shapes: { cost_usd: 0.12 } | { amount_usd: 0.12 } |
+      // { cost: { amount: '0.12', currency: 'USD' } }.
+      if (node.cost_usd != null)   totalUsd += _num(node.cost_usd);
+      if (node.amount_usd != null) totalUsd += _num(node.amount_usd);
+      if (node.cost && typeof node.cost === 'object') {
+        const c = node.cost;
+        const currency = (c.currency || 'USD').toUpperCase();
+        if (currency === 'USD' && c.amount != null) totalUsd += _num(c.amount);
+      }
+      // Recurse into nested arrays that the Admin API has used
+      // historically (data / results / buckets / line_items).
+      if (Array.isArray(node.data))       _walk(node.data);
+      if (Array.isArray(node.results))    _walk(node.results);
+      if (Array.isArray(node.buckets))    _walk(node.buckets);
+      if (Array.isArray(node.line_items)) _walk(node.line_items);
+    };
+    _walk(data);
+
+    const monthCostInr = totalUsd * 83;
+    return jsonResponse({ success: true, month_cost_inr: monthCostInr });
+  } catch (err) {
+    return jsonResponse({ success: true, month_cost_inr: null });
+  }
+}
+
 // ─── entry point ─────────────────────────────────────────────
 
 export default {
@@ -696,6 +774,9 @@ export default {
     }
     if (request.method === 'POST' && url.pathname === '/ai/log') {
       return handleLog(request, env);
+    }
+    if (request.method === 'POST' && url.pathname === '/ai/month-cost') {
+      return handleMonthCost(request, env);
     }
     if (request.method === 'POST' && url.pathname === '/gmail/list') {
       return handleGmailList(request, env);
