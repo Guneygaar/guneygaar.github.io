@@ -225,6 +225,8 @@ Cloudflare Workers:
 
 ai_usage lifecycle invariant (`srtd-ai-worker/src/index.js`): every Anthropic call writes a `pending` row (with `estimated_cost_usd` from a `Math.ceil(promptChars/4) * USD_PER_INPUT_TOKEN` estimate) BEFORE firing, then PATCHes the row to `status='complete'` (with real `tokens_input`, `tokens_output`, `actual_cost_usd`, and `cost_usd` mirrored to `actual_cost_usd` for back-compat) on success or `status='failed'` on throw / non-200. INSERT failure logs to `console.error` and proceeds without a row id; UPDATE failure logs and still returns the response. `/ai/month-cost` is now a stub returning `{ success: true, month_cost_inr: null }` — month spend comes from the `ai_usage` table client-side.
 
+product_knowledge table = on-demand product specs fetched by product_name or aliases. Only loaded for writer + chat features. Never loaded for qc, angles, email_brief.
+
 R2: bucket `sorted-images`. CDN custom domain `images.srtd.io` (preferred). Legacy `pub-6a2a4aa8073d454ab9aeee69ef841635.r2.dev` still works.
 
 Email: Resend, FROM `hinglish@srtd.io`.
