@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pencil, Sparkles, Wand2, ShieldCheck, MessageSquareQuote } from 'lucide-react';
+import { Pencil, Wand2, ShieldCheck, MessageSquareQuote } from 'lucide-react';
 import { renderRichText, wordCount } from '../utils/mentions.jsx';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 import { patchPost } from '../../../core/api/posts.js';
@@ -19,6 +19,9 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
   const isAdmin = String(userRole).toLowerCase() === 'admin';
   const comments = usePcsStore((s) => s.comments);
   const [showWriteMenu, setShowWriteMenu] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const isShort = caption.length < 100;
+  const collapsed = !expanded && !isShort && !!caption;
 
   async function applyAiCaption(newText) {
     if (!newText || !post?.post_id) return;
@@ -75,9 +78,18 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
         <span>Caption</span>
         {caption && <span><span className={over ? 'text-amber' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
-      <div className="px-3 pb-3 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap">
+      <div className={`px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap ${collapsed ? 'line-clamp-2' : ''}`}>
         {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
       </div>
+      {collapsed && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="px-3 pb-2 font-mono text-xs text-terracotta tracking-widest uppercase font-semibold hover:opacity-80"
+        >
+          See more
+        </button>
+      )}
+      {!collapsed && caption && <div className="pb-2" />}
       {canEdit && (
         <div className="flex items-center gap-2 px-3 pb-2.5 font-mono text-sm text-text-dim tracking-wide flex-wrap">
           <button onClick={onEdit} className="font-sans text-sm text-text-mid inline-flex items-center gap-1.5 hover:text-text-loud">
@@ -115,12 +127,6 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
                 </>
               )}
             </>
-          )}
-          {caption && !over && (
-            <span className="ml-auto inline-flex items-center gap-1 text-text-dim">
-              <Sparkles size={11} className="text-amber" />
-              <span>within target length</span>
-            </span>
           )}
         </div>
       )}
