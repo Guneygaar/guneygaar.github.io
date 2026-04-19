@@ -44,6 +44,13 @@ export async function callSrtdAI(action, userPrompt, opts = {}) {
     created_by: opts.createdBy || ''
   };
   if (opts.memoryContext) body.memory_context = opts.memoryContext;
+  // File attachment pass-through: when the caller has uploaded a
+  // PDF/image via uploadFile(), the Worker fetches it from R2 and
+  // injects a document|image block into the first user message.
+  if (opts.fileKey) {
+    body.file_key = opts.fileKey;
+    if (opts.mediaType) body.media_type = opts.mediaType;
+  }
 
   try {
     const res = await fetch(cfg.workerUrl + '/ai/complete', {
@@ -61,6 +68,42 @@ export async function callSrtdAI(action, userPrompt, opts = {}) {
     return data;
   } catch (err) {
     return { success: false, error: (err && err.message) || 'network error' };
+  }
+}
+
+/**
+ * Upload a PDF or image to the srtd-ai Worker's /ai/upload route.
+ * Stores in R2 (sorted-ai bucket) and returns the R2 key + media
+ * type so a subsequent callSrtdAI() can pass { fileKey, mediaType }
+ * and have the file injected as a document|image block into the
+ * first user message.
+ *
+ * Returns { success, key, media_type, filename } on success.
+ * Returns null on any failure (HTTP error, network error, config
+ * missing). Caller is responsible for the user-facing toast.
+ */
+export async function uploadFile(file, opts = {}) {
+  const cfg = getAIConfig();
+  if (!cfg.workerUrl || !cfg.secret) return null;
+  if (!file) return null;
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('post_id',      opts.postId      || '');
+  form.append('workspace_id', opts.workspaceId || 'default');
+  form.append('created_by',   opts.createdBy   || '');
+
+  try {
+    const res = await fetch(cfg.workerUrl + '/ai/upload', {
+      method: 'POST',
+      headers: { 'X-AI-Secret': cfg.secret },
+      body: form
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data || data.success === false) return null;
+    return data;
+  } catch (e) {
+    return null;
   }
 }
 

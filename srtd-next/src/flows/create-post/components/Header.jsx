@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Mail, ClipboardPaste, Upload } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
 import { useIsAdmin } from '../../../core/stores/appState.js';
 import { logClick } from '../../../core/bridges/logging.js';
+import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
+import { uploadFile } from '../../../shared/caption-workspace/api.js';
 
 // Import sources. `admin: true` means admin-only (filtered out of
 // the list for non-admins — the pill itself stays visible because
@@ -13,7 +15,7 @@ import { logClick } from '../../../core/bridges/logging.js';
 const IMPORT_SOURCES = [
   { label: 'Paste link or text', hint: 'Article, URL, or raw notes', icon: ClipboardPaste, admin: false, kind: 'paste' },
   { label: 'Gmail',              hint: 'Unprocessed emails from clients', icon: Mail, badge: '2 new', admin: true, kind: 'gmail' },
-  { label: 'Upload a file',      hint: 'Coming soon', icon: Upload, admin: true, kind: 'upload-stub' }
+  { label: 'Upload a file',      hint: 'PDF or image — Claude will read it', icon: Upload, admin: true, kind: 'upload' }
 ];
 
 export function Header() {
@@ -22,9 +24,68 @@ export function Header() {
   const setToast = useFormState(s => s.setToast);
   const close = useFlowState(s => s.close);
   const isAdmin = useIsAdmin();
+  const fileInputRef = useRef(null);
 
   // Non-admins see only non-admin sources. As of B5: just Paste.
   const sources = isAdmin ? IMPORT_SOURCES : IMPORT_SOURCES.filter(s => !s.admin);
+
+  const handleFilePicked = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    // Reset the input value so picking the same file twice still fires change.
+    e.target.value = '';
+    if (!file) return;
+
+    logClick('upload_file_picked', { size: file.size, type: file.type });
+    setToast({ msg: 'Uploading…', sub: file.name });
+
+    const createdBy =
+      (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+    const result = await uploadFile(file, {
+      postId:      null,
+      workspaceId: 'default',
+      createdBy
+    });
+
+    if (!result || !result.key) {
+      logClick('upload_file_failed', { size: file.size, type: file.type });
+      setToast({ msg: 'Upload failed, please try again' });
+      setTimeout(() => useFormState.getState().clearToast(), 2400);
+      return;
+    }
+
+    logClick('upload_file_ok', { key: result.key, mediaType: result.media_type });
+    useFormState.getState().clearToast();
+
+    const form = useFormState.getState().form;
+    openCaptionWorkspace('write', {
+      postId: null,
+      initialCaption: '',
+      attachment: {
+        name:      result.filename || file.name,
+        size:      file.size,
+        type:      file.type,
+        key:       result.key,
+        mediaType: result.media_type || file.type
+      },
+      syntheticContext: {
+        source: 'create-post-upload',
+        title:    form.title    || null,
+        pillar:   form.pillar   || null,
+        location: form.location || null,
+        format:   form.format   || null
+      },
+      onUse: (generated) => {
+        if (typeof generated !== 'string' || !generated.trim()) return;
+        const existingCaption = (useFormState.getState().form.caption || '').trim();
+        if (existingCaption) {
+          const accepted = window.confirm('Replace existing caption with generated version?');
+          logClick('caption_overwrite_confirm', { accepted, source: 'upload' });
+          if (!accepted) return;
+        }
+        useFormState.getState().update('caption', generated);
+      }
+    });
+  };
 
   const handleSourceClick = (src) => {
     logClick('import_option_tap', { kind: src.kind, isAdmin });
@@ -32,10 +93,9 @@ export function Header() {
       setUI({ importOpen: false, pasteSheetOpen: true });
     } else if (src.kind === 'gmail') {
       setUI({ importOpen: false, gmailSheetOpen: true });
-    } else if (src.kind === 'upload-stub') {
-      setToast({ msg: 'Upload — coming soon', sub: 'File parse endpoint pending Worker PR' });
+    } else if (src.kind === 'upload') {
       setUI({ importOpen: false });
-      setTimeout(() => useFormState.getState().clearToast(), 2000);
+      if (fileInputRef.current) fileInputRef.current.click();
     }
   };
 
@@ -54,6 +114,14 @@ export function Header() {
       }}>
         New post
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,image/*"
+        style={{ display: 'none' }}
+        onChange={handleFilePicked}
+      />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         {isAdmin && (
