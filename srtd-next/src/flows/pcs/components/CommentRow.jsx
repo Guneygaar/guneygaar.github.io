@@ -3,7 +3,7 @@ import { Heart, Reply, Check, CircleDot } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { formatCommentTime } from '../utils/time.js';
 import { renderRichText } from '../utils/mentions.jsx';
-import { displayNameFromEmail, roleFromEmail } from '../utils/users.js';
+import { displayNameFromEmail, roleFromEmail, findUserRole } from '../utils/users.js';
 import { getImageAttachments, getTaskAttachments } from '../utils/attachments.js';
 import { groupReactions } from '../utils/reactions.js';
 import { resolveParent } from '../utils/threading.js';
@@ -25,8 +25,10 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
   const lpTimer = useRef(null);
   const lpFired = useRef(false);
 
-  const authorName = comment.author ? (displayNameFromEmail(comment.author, userRoles) || 'Unknown') : 'Unknown';
+  const userRecord = comment.author ? findUserRole(comment.author, userRoles) : null;
+  const authorName = comment.author ? ((userRecord && (userRecord.display_name || userRecord.name)) || 'Unknown') : 'Unknown';
   const roleKey = comment.author ? roleFromEmail(comment.author, userRoles, comment.author_role || 'creative') : 'unknown';
+  const avatarUrl = (userRecord && userRecord.avatar_url) || null;
   const time = formatCommentTime(comment.created_at);
 
   const { parent, hasGrandparent } = resolveParent(comment, byId);
@@ -101,7 +103,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
       onMouseUp={cancelLP}
       onMouseLeave={cancelLP}
       onContextMenu={(e) => { e.preventDefault(); onLongPress && onLongPress(comment, isInternal); }}>
-      <Avatar name={authorName === 'Unknown' ? 'U' : authorName} role={roleKey} size="md" />
+      <Avatar name={authorName === 'Unknown' ? 'U' : authorName} role={roleKey} size="md" avatarUrl={avatarUrl} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 mb-[3px] flex-wrap">
           <span className={`text-sm font-semibold tracking-tight ${authorName === 'Unknown' ? 'text-text-dim' : 'text-text-loud'}`}>{authorName}</span>
