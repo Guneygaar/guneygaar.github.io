@@ -10233,12 +10233,20 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 .pcs-section-sep {
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 11px;
+  opacity: 0.4;
 }
 .pcs-section-internal {
   font-family: var(--sans);
   font-size: 13px;
   font-weight: 500;
+  color: var(--text-muted);
+}
+.pcs-section-client-count,
+.pcs-section-internal-count {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 400;
   color: var(--text-muted);
 }
 .pcs-section-vis {

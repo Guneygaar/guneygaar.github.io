@@ -1358,10 +1358,14 @@ window._pcsSectionCounts = window._pcsSectionCounts || { client: 0, internal: 0 
 function _pcsUpdateSectionCount(client, internal) {
   if (client !== null && client !== undefined) window._pcsSectionCounts.client = client;
   if (internal !== null && internal !== undefined) window._pcsSectionCounts.internal = internal;
+  var clientCount = window._pcsSectionCounts.client;
+  var internalCount = window._pcsSectionCounts.internal;
   var cEl = document.getElementById('pcs-section-count');
-  var iEl = document.getElementById('pcs-section-internal');
-  if (cEl) cEl.textContent = window._pcsSectionCounts.client;
-  if (iEl) iEl.textContent = 'Internal ' + window._pcsSectionCounts.internal;
+  var cClientEl = document.getElementById('pcs-section-client-count');
+  var iEl = document.getElementById('pcs-section-internal-count');
+  if (cEl) cEl.textContent = clientCount;
+  if (cClientEl) cClientEl.textContent = clientCount + ' client';
+  if (iEl) iEl.textContent = internalCount + ' internal';
 }
 
 // Inject section header + filter chip bar above comments list, idempotent.
@@ -1372,11 +1376,12 @@ function _pcsEnsureCommentsHeader(list) {
     var header = document.createElement('div');
     header.className = 'pcs-comments-section-header';
     header.innerHTML =
-      '<span class="pcs-section-title">Comments</span>' +
-      '<span class="pcs-section-count" id="pcs-section-count">0</span>' +
+      '<span class="pcs-section-title">Comments <span class="pcs-section-count" id="pcs-section-count">0</span></span>' +
       '<span class="pcs-section-sep">\u00B7</span>' +
-      '<span class="pcs-section-internal" id="pcs-section-internal">Internal 0</span>' +
-      '<span class="pcs-section-vis">CLIENT + AGENCY</span>';
+      '<span class="pcs-section-client-count" id="pcs-section-client-count">0 client</span>' +
+      '<span class="pcs-section-sep">\u00B7</span>' +
+      '<span class="pcs-section-internal-count" id="pcs-section-internal-count">0 internal</span>' +
+      '<span class="pcs-section-vis">Client + Agency</span>';
     parent.insertBefore(header, list);
   }
   if (!parent.querySelector('.pcs-filter-bar')) {
@@ -1877,15 +1882,7 @@ window.loadPcsComments = async function(postId) {
     var clientHtml = _renderClientThread(activeClientRows, emptyClient);
 
     if (resolvedClientRows.length) {
-      clientHtml +=
-        '<details class="pcs-resolved-wrap">' +
-        '<summary class="pcs-resolved-summary">' +
-        '\u21B3 ' + resolvedClientRows.length +
-        ' Resolved Comment' +
-        (resolvedClientRows.length > 1 ? 's' : '') +
-        ' (click to expand)</summary>' +
-        _renderClientThread(resolvedClientRows, '') +
-        '</details>';
+      clientHtml += _renderClientThread(resolvedClientRows, '');
     }
 
     list.innerHTML = clientHtml;
@@ -1930,15 +1927,7 @@ window.loadPcsComments = async function(postId) {
       var notesHtml = _renderNoteThread(activeRows, emptyNotes);
 
       if (resolvedRows.length) {
-        notesHtml +=
-          '<details class="pcs-resolved-wrap">' +
-          '<summary class="pcs-resolved-summary">' +
-          '\u21B3 ' + resolvedRows.length +
-          ' Resolved Note' +
-          (resolvedRows.length > 1 ? 's' : '') +
-          ' (click to expand)</summary>' +
-          _renderNoteThread(resolvedRows, '') +
-          '</details>';
+        notesHtml += _renderNoteThread(resolvedRows, '');
       }
 
       notesList.innerHTML = notesHtml;
