@@ -24,6 +24,11 @@ const ANTHROPIC_MAX_TOKENS = 3000;
 // Sonnet 4 pricing (per 1M tokens): input $3, output $15.
 const PRICE_INPUT_PER_MTOK = 3;
 const PRICE_OUTPUT_PER_MTOK = 15;
+// Per-token USD constants for the pending → complete lifecycle.
+// Single source of truth used by both the pre-call estimate and
+// the post-call actual_cost_usd math in ai_usage.
+const USD_PER_INPUT_TOKEN  = PRICE_INPUT_PER_MTOK  / 1000000;
+const USD_PER_OUTPUT_TOKEN = PRICE_OUTPUT_PER_MTOK / 1000000;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -80,6 +85,78 @@ async function supabasePost(path, body) {
     },
     body: JSON.stringify(body)
   });
+}
+
+// ─── ai_usage lifecycle helpers ──────────────────────────────
+//
+// Every Anthropic call writes a `pending` row BEFORE the request
+// fires, then patches it to `complete` (with real token counts +
+// actual_cost_usd) or `failed` after the response. INSERT failures
+// must never block the Anthropic call — we log to console.error
+// and proceed without a row id. UPDATE failures after a successful
+// Anthropic call must also never hide the response from the user
+// — we log and return the answer anyway.
+async function insertPendingUsage(payload) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/ai_usage?select=id', {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const txt = await res.text().catch(function() { return ''; });
+      console.error('[srtd-ai] ai_usage pending insert failed:', res.status, txt.slice(0, 300));
+      return null;
+    }
+    const rows = await res.json().catch(function() { return null; });
+    if (Array.isArray(rows) && rows.length > 0 && rows[0] && rows[0].id) {
+      return rows[0].id;
+    }
+    return null;
+  } catch (e) {
+    console.error('[srtd-ai] ai_usage pending insert error:', e && e.message);
+    return null;
+  }
+}
+
+async function updateUsageRow(id, fields) {
+  if (!id) return;
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/ai_usage?id=eq.' + encodeURIComponent(id),
+      {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(fields)
+      }
+    );
+    if (!res.ok) {
+      const txt = await res.text().catch(function() { return ''; });
+      console.error('[srtd-ai] ai_usage update failed:', res.status, txt.slice(0, 300));
+    }
+  } catch (e) {
+    console.error('[srtd-ai] ai_usage update error:', e && e.message);
+  }
+}
+
+function buildPromptStringForEstimate(systemPrompt, messages) {
+  const sys = typeof systemPrompt === 'string' ? systemPrompt : '';
+  const msgText = (Array.isArray(messages) ? messages : []).map(function(m) {
+    if (!m) return '';
+    if (typeof m.content === 'string') return m.content;
+    try { return JSON.stringify(m.content || ''); } catch (e) { return ''; }
+  }).join('\n');
+  return sys + '\n' + msgText;
 }
 
 function calcCostUsd(inputTokens, outputTokens) {
@@ -310,7 +387,39 @@ async function handleComplete(request, env) {
       ? systemPrompt + '\n\n' + systemExtras
       : systemPrompt;
 
-    const anthropicRes = await callAnthropic(env, combinedSystem, userAsstMessages, feature);
+    // Pre-call estimate — input-only token approximation at the
+    // industry-standard 4 chars / token rule. Cheap upper bound that
+    // lets the Caption Workspace show a "spend so far" figure even
+    // before Anthropic responds. The pending row is the receipt that
+    // money is about to be spent; it's patched to complete/failed
+    // once the Anthropic call resolves.
+    const fullPromptString = buildPromptStringForEstimate(combinedSystem, userAsstMessages);
+    const estimatedInputTokens = Math.ceil(fullPromptString.length / 4);
+    const estimatedCostUsd = estimatedInputTokens * USD_PER_INPUT_TOKEN;
+
+    const usageId = await insertPendingUsage({
+      workspace_id:       workspaceId,
+      post_id:            postId,
+      feature:            feature,
+      created_by:         createdBy,
+      estimated_cost_usd: estimatedCostUsd,
+      actual_cost_usd:    null,
+      tokens_input:       null,
+      tokens_output:      null,
+      cost_usd:           null,
+      status:             'pending'
+    });
+
+    let anthropicRes;
+    try {
+      anthropicRes = await callAnthropic(env, combinedSystem, userAsstMessages, feature);
+    } catch (anthropicErr) {
+      // Anthropic threw or returned non-200 — mark row failed,
+      // then bubble the error up to the outer catch so the client
+      // gets the existing 500 response shape.
+      await updateUsageRow(usageId, { status: 'failed' });
+      throw anthropicErr;
+    }
 
     const contentBlocks = anthropicRes && anthropicRes.content;
     const responseText  = Array.isArray(contentBlocks)
@@ -323,23 +432,20 @@ async function handleComplete(request, env) {
     const usage         = (anthropicRes && anthropicRes.usage) || {};
     const inputTokens   = Number(usage.input_tokens)  || 0;
     const outputTokens  = Number(usage.output_tokens) || 0;
+    const actualCostUsd = (inputTokens * USD_PER_INPUT_TOKEN)
+                        + (outputTokens * USD_PER_OUTPUT_TOKEN);
 
-    // Awaited usage log — every completion must leave a billing
-    // footprint. Failure is logged to Worker logs but never
-    // bubbles up to the caller.
-    try {
-      await supabasePost('/ai_usage', {
-        workspace_id:  workspaceId,
-        post_id:       postId,
-        feature:       feature,
-        tokens_input:  inputTokens,
-        tokens_output: outputTokens,
-        cost_usd:      calcCostUsd(inputTokens, outputTokens),
-        created_by:    createdBy
-      });
-    } catch (logErr) {
-      console.error('[srtd-ai] ai_usage log failed:', logErr && logErr.message);
-    }
+    // Awaited PATCH — every completion must leave a billing
+    // footprint. Failure is logged to Worker logs (inside the
+    // helper) but never blocks the response: the user already got
+    // their answer and the money was already spent.
+    await updateUsageRow(usageId, {
+      tokens_input:    inputTokens,
+      tokens_output:   outputTokens,
+      actual_cost_usd: actualCostUsd,
+      cost_usd:        actualCostUsd,
+      status:          'complete'
+    });
 
     return jsonResponse({
       success: true,
@@ -632,7 +738,52 @@ async function handleGmailBrief(request, env) {
                threadContext
     }];
 
-    const anthropicRes = await callAnthropic(env, systemPrompt, messages, 'email_brief');
+    // Pending row before the Anthropic call — same lifecycle as
+    // /ai/complete. Estimate input tokens from the full prompt
+    // string so the meter has a figure to show before we know the
+    // real usage.
+    const fullPromptString = buildPromptStringForEstimate(systemPrompt, messages);
+    const estimatedInputTokens = Math.ceil(fullPromptString.length / 4);
+    const estimatedCostUsd = estimatedInputTokens * USD_PER_INPUT_TOKEN;
+
+    const usageId = await insertPendingUsage({
+      workspace_id:       workspaceId,
+      post_id:            null,
+      feature:            'email_brief',
+      created_by:         createdBy,
+      estimated_cost_usd: estimatedCostUsd,
+      actual_cost_usd:    null,
+      tokens_input:       null,
+      tokens_output:      null,
+      cost_usd:           null,
+      status:             'pending'
+    });
+
+    let anthropicRes;
+    try {
+      anthropicRes = await callAnthropic(env, systemPrompt, messages, 'email_brief');
+    } catch (anthropicErr) {
+      await updateUsageRow(usageId, { status: 'failed' });
+      throw anthropicErr;
+    }
+
+    // Anthropic responded successfully — patch the row to complete
+    // BEFORE the JSON parse step, so a malformed-JSON response from
+    // Claude still leaves a `complete` billing footprint (the call
+    // succeeded and money was spent regardless of parse outcome).
+    const usage = anthropicRes.usage || {};
+    const inputTokens  = Number(usage.input_tokens)  || 0;
+    const outputTokens = Number(usage.output_tokens) || 0;
+    const actualCostUsd = (inputTokens * USD_PER_INPUT_TOKEN)
+                        + (outputTokens * USD_PER_OUTPUT_TOKEN);
+    await updateUsageRow(usageId, {
+      tokens_input:    inputTokens,
+      tokens_output:   outputTokens,
+      actual_cost_usd: actualCostUsd,
+      cost_usd:        actualCostUsd,
+      status:          'complete'
+    });
+
     const rawText = (anthropicRes.content && anthropicRes.content[0] && anthropicRes.content[0].text) || '';
 
     let parsed;
@@ -641,25 +792,6 @@ async function handleGmailBrief(request, env) {
       parsed = JSON.parse(clean);
     } catch (e) {
       return errorResponse('Claude did not return valid JSON: ' + rawText.slice(0, 200), 500);
-    }
-
-    // Awaited usage log — every completion must leave a billing
-    // footprint. Failure is logged but not surfaced to the caller.
-    const usage = anthropicRes.usage || {};
-    const inputTokens  = Number(usage.input_tokens)  || 0;
-    const outputTokens = Number(usage.output_tokens) || 0;
-    try {
-      await supabasePost('/ai_usage', {
-        workspace_id:  workspaceId,
-        post_id:       null,
-        feature:       'email_brief',
-        tokens_input:  inputTokens,
-        tokens_output: outputTokens,
-        cost_usd:      calcCostUsd(inputTokens, outputTokens),
-        created_by:    createdBy
-      });
-    } catch (logErr) {
-      console.error('[srtd-ai] ai_usage log failed:', logErr && logErr.message);
     }
 
     return jsonResponse({
@@ -681,82 +813,21 @@ async function handleGmailBrief(request, env) {
   }
 }
 
-// ─── month cost (Anthropic Admin API) ────────────────────────
+// ─── month cost (stub) ───────────────────────────────────────
 //
-// Returns the real month-to-date spend from Anthropic's
-// organization cost report. Replaces the ai_usage monthCost seed
-// in the Caption Workspace meter so agency users see the true
-// org-wide figure (not just their own logged calls).
-//
-// Auth: X-AI-Secret (same as every other /ai route).
-// Failure modes (missing key, network, non-200, malformed body):
-//   all collapse to { success: true, month_cost_inr: null } so
-//   the meter keeps working off the ai_usage estimate.
+// Month-to-date spend is now sourced client-side from the
+// ai_usage table (status='complete' rows in the current month),
+// not from the Anthropic Admin API. This route stays mounted so
+// the React Caption Workspace's existing fetch doesn't 404, but
+// always returns null — the React side falls through to the
+// ai_usage query for the real figure. ANTHROPIC_ADMIN_KEY is no
+// longer read here; the secret stays provisioned in case a future
+// route needs it.
 async function handleMonthCost(request, env) {
-  try {
-    if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
-      return errorResponse('Unauthorized', 401);
-    }
-    if (!env.ANTHROPIC_ADMIN_KEY) {
-      return jsonResponse({ success: true, month_cost_inr: null });
-    }
-
-    const now = new Date();
-    const firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-    const startingAt = firstOfMonth.toISOString().slice(0, 10) + 'T00:00:00Z';
-    const endingAt   = now.toISOString().slice(0, 10) + 'T23:59:59Z';
-
-    const url = 'https://api.anthropic.com/v1/organizations/cost_report'
-      + '?starting_at=' + encodeURIComponent(startingAt)
-      + '&ending_at='   + encodeURIComponent(endingAt);
-
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'anthropic-version': '2023-06-01',
-        'x-api-key': env.ANTHROPIC_ADMIN_KEY
-      }
-    });
-    if (!res.ok) {
-      return jsonResponse({ success: true, month_cost_inr: null });
-    }
-    const data = await res.json().catch(function() { return null; });
-    if (!data) return jsonResponse({ success: true, month_cost_inr: null });
-
-    // The cost_report endpoint returns an array of time-bucketed
-    // rows; each row carries a list of line items with cost figures.
-    // Walk every shape we've seen (`data`, `results`, `buckets`,
-    // `line_items`, `cost.amount`/`amount_usd`/`cost_usd`) and sum
-    // whatever numeric USD figure is present.
-    let totalUsd = 0;
-    const _num = function(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-    const _walk = function(node) {
-      if (!node) return;
-      if (Array.isArray(node)) { node.forEach(_walk); return; }
-      if (typeof node !== 'object') return;
-      // Common shapes: { cost_usd: 0.12 } | { amount_usd: 0.12 } |
-      // { cost: { amount: '0.12', currency: 'USD' } }.
-      if (node.cost_usd != null)   totalUsd += _num(node.cost_usd);
-      if (node.amount_usd != null) totalUsd += _num(node.amount_usd);
-      if (node.cost && typeof node.cost === 'object') {
-        const c = node.cost;
-        const currency = (c.currency || 'USD').toUpperCase();
-        if (currency === 'USD' && c.amount != null) totalUsd += _num(c.amount);
-      }
-      // Recurse into nested arrays that the Admin API has used
-      // historically (data / results / buckets / line_items).
-      if (Array.isArray(node.data))       _walk(node.data);
-      if (Array.isArray(node.results))    _walk(node.results);
-      if (Array.isArray(node.buckets))    _walk(node.buckets);
-      if (Array.isArray(node.line_items)) _walk(node.line_items);
-    };
-    _walk(data);
-
-    const monthCostInr = totalUsd * 83;
-    return jsonResponse({ success: true, month_cost_inr: monthCostInr });
-  } catch (err) {
-    return jsonResponse({ success: true, month_cost_inr: null });
+  if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
+    return errorResponse('Unauthorized', 401);
   }
+  return jsonResponse({ success: true, month_cost_inr: null });
 }
 
 // ─── entry point ─────────────────────────────────────────────
