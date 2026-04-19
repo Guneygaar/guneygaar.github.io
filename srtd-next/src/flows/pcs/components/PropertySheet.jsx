@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
 import { useAppState } from '../../../core/stores/appState.js';
@@ -7,12 +7,15 @@ import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
+import { FullScreenEditor } from './FullScreenEditor.jsx';
 
 export function PropertySheet({ field, title, currentValue, options, inputType, placeholder, onClose, extraPatch, reseedOg }) {
   const post = usePcsStore((s) => s.post);
   const actor = useAppState((s) => s.user?.email || '');
   const [value, setValue] = useState(currentValue == null ? '' : String(currentValue));
   const [busy, setBusy] = useState(false);
+  const inputRef = useRef(null);
+  const isDate = inputType === 'date';
 
   async function save(newVal) {
     if (busy || !post) return;
@@ -33,37 +36,85 @@ export function PropertySheet({ field, title, currentValue, options, inputType, 
     }
   }
 
+  useEffect(() => {
+    if (!options && inputRef.current) {
+      if (inputType === 'date') return;
+      const t = setTimeout(() => {
+        if (!inputRef.current) return;
+        inputRef.current.focus();
+        if (inputType === 'text' || inputType === 'url') {
+          try { inputRef.current.select(); } catch (err) { /* ignore */ }
+        }
+      }, 100);
+      return () => clearTimeout(t);
+    }
+  }, [options, inputType]);
+
+  const showSave = !options;
+  const onSave = () => save(value.trim() || null);
+
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 bg-black/80" style={{ zIndex: 2500 }} />
-      <div className="fixed inset-x-0 bottom-0 bg-bg border-t border-divider-warm rounded-t-card animate-slide-up max-w-[430px] mx-auto" style={{ zIndex: 2501 }}>
-        <div className="flex items-center justify-between px-3 py-3 border-b border-divider-soft">
-          <div className="font-mono text-sm text-text-dim tracking-widest uppercase">{title}</div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-text-soft" aria-label="Close"><X size={16} /></button>
-        </div>
-        <div className="p-3 pb-safe-b space-y-2 max-h-[60vh] overflow-y-auto">
-          {options && options.map((opt) => {
+    <FullScreenEditor title={title} onClose={onClose} onSave={onSave} showSave={showSave && !isDate} busy={busy}>
+      {options ? (
+        <div className="p-3 space-y-1.5">
+          {options.map((opt) => {
             const selected = currentValue === opt.value;
             return (
-              <button key={String(opt.value)} disabled={busy} onClick={() => save(opt.value)} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 hover:bg-bg-2 ${selected ? 'bg-bg-2' : ''} disabled:opacity-50`}>
+              <button
+                key={String(opt.value)}
+                disabled={busy}
+                onClick={() => save(opt.value)}
+                className={`w-full flex items-center gap-2.5 px-3 py-3 rounded-sm2 hover:bg-bg-2 ${selected ? 'bg-bg-2' : ''} disabled:opacity-50`}
+              >
                 {opt.color && <span className="w-2.5 h-2.5 rounded-pill flex-shrink-0" style={{ backgroundColor: `var(--c-${opt.color})` }} />}
-                <span className="text-sm text-text-loud flex-1 text-left">{opt.label}</span>
-                {selected && <Check size={14} className="text-terracotta" />}
+                <span className="text-lg text-text-loud flex-1 text-left">{opt.label}</span>
+                {selected && <Check size={16} className="text-terracotta" />}
               </button>
             );
           })}
-          {!options && (
-            <>
-              {inputType === 'textarea' ? (
-                <textarea value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder} className="w-full min-h-[120px] px-3 py-2 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-sm font-serif" />
-              ) : (
-                <input type={inputType || 'text'} value={value} onChange={(e) => setValue(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-sm" />
-              )}
-              <button disabled={busy} onClick={() => save(value.trim() || null)} className="w-full px-3 py-2.5 rounded-sm2 bg-terracotta text-text-loud text-sm font-semibold disabled:opacity-50">Save</button>
-            </>
-          )}
         </div>
-      </div>
-    </>
+      ) : isDate ? (
+        <div className="p-4">
+          <label htmlFor="pcs-date-input" className="block font-mono text-2xs text-text-dim tracking-widest uppercase mb-2">Tap to pick date</label>
+          <input
+            id="pcs-date-input"
+            ref={inputRef}
+            type="date"
+            value={value || ''}
+            min="2020-01-01"
+            max="2035-12-31"
+            onChange={(e) => {
+              const v = e.target.value;
+              setValue(v);
+              if (v) save(v);
+            }}
+            className="block w-full px-4 py-5 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-lg"
+            style={{ minHeight: '56px', WebkitAppearance: 'none', appearance: 'none' }}
+          />
+          <div className="font-mono text-2xs text-text-soft tracking-widest uppercase mt-3">Picker opens on tap</div>
+        </div>
+      ) : inputType === 'textarea' ? (
+        <div className="p-3">
+          <textarea
+            ref={inputRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+            className="w-full min-h-[200px] px-3 py-3 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-lg font-serif"
+          />
+        </div>
+      ) : (
+        <div className="p-3">
+          <input
+            ref={inputRef}
+            type={inputType || 'text'}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+            className="w-full px-3 py-4 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-lg"
+          />
+        </div>
+      )}
+    </FullScreenEditor>
   );
 }

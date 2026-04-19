@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
 import { STAGE_LABELS, STAGE_TOKEN } from '../utils/stage.js';
 import { updatePostStage, patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
@@ -8,6 +7,7 @@ import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
+import { FullScreenEditor } from './FullScreenEditor.jsx';
 
 const TRANSITIONS = {
   brief_done:           { forward: ['in_production'], back: [], off: ['parked', 'rejected'] },
@@ -75,56 +75,55 @@ export function StageSheet({ post, onClose }) {
   }
 
   return (
-    <>
-      <div onClick={onClose} className="fixed inset-0 bg-black/80" style={{ zIndex: 2500 }} />
-      <div className="fixed inset-x-0 bottom-0 bg-bg border-t border-divider-warm rounded-t-card animate-slide-up max-w-[430px] mx-auto" style={{ zIndex: 2501 }}>
-        <div className="flex items-center justify-between px-3 py-3 border-b border-divider-soft">
-          <div className="font-mono text-sm text-text-dim tracking-widest uppercase">Move stage</div>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-text-soft" aria-label="Close"><X size={16} /></button>
-        </div>
-        <div className="p-3 space-y-4 pb-safe-b">
-          {post.stage === 'scheduled' && (
-            <div className="space-y-2">
-              <div className="font-mono text-2xs text-text-dim tracking-widest uppercase">Publish</div>
-              <input type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/posts/..." className="w-full px-3 py-2 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-sm" />
-              <button onClick={markPublished} disabled={busy} className="w-full px-3 py-2.5 rounded-sm2 bg-green text-text-loud text-sm font-semibold disabled:opacity-50">Mark live</button>
-            </div>
-          )}
-          {t.forward.length > 0 && (
-            <div>
-              <div className="font-mono text-2xs text-text-dim tracking-widest uppercase mb-2">Forward</div>
-              {t.forward.map((s) => (
-                <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
-                  <StageDot stage={s} />
-                  <span className="text-sm text-text-loud">{STAGE_LABELS[s]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {t.back.length > 0 && (
-            <div>
-              <div className="font-mono text-2xs text-text-dim tracking-widest uppercase mb-2">Back</div>
-              {t.back.map((s) => (
-                <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
-                  <StageDot stage={s} />
-                  <span className="text-sm text-text-loud">{STAGE_LABELS[s]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-          {t.off.length > 0 && (
-            <div>
-              <div className="font-mono text-2xs text-text-dim tracking-widest uppercase mb-2">Off-path</div>
-              {t.off.map((s) => (
-                <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
-                  <StageDot stage={s} />
-                  <span className="text-sm text-text-mid">{STAGE_LABELS[s]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+    <FullScreenEditor title="Move stage" onClose={onClose} busy={busy}>
+      <div className="p-3 space-y-6">
+        {post.stage === 'scheduled' && (
+          <div className="space-y-2">
+            <div className="font-mono text-2xs text-text-soft tracking-widest uppercase">Publish</div>
+            <input
+              type="url"
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
+              placeholder="https://linkedin.com/posts/..."
+              className="w-full px-3 py-4 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-lg"
+            />
+            <button onClick={markPublished} disabled={busy} className="w-full px-3 py-3 rounded-sm2 bg-green-grad text-text-loud text-lg font-semibold disabled:opacity-50">Mark live</button>
+          </div>
+        )}
+        {t.forward.length > 0 && (
+          <div>
+            <div className="font-mono text-2xs text-text-soft tracking-widest uppercase mb-2">Forward</div>
+            {t.forward.map((s) => (
+              <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-3 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
+                <StageDot stage={s} />
+                <span className="text-lg text-text-loud">{STAGE_LABELS[s]}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {t.back.length > 0 && (
+          <div>
+            <div className="font-mono text-2xs text-text-soft tracking-widest uppercase mb-2">Back</div>
+            {t.back.map((s) => (
+              <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-3 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
+                <StageDot stage={s} />
+                <span className="text-lg text-text-loud">{STAGE_LABELS[s]}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {t.off.length > 0 && (
+          <div>
+            <div className="font-mono text-2xs text-text-soft tracking-widest uppercase mb-2">Off-path</div>
+            {t.off.map((s) => (
+              <button key={s} disabled={busy} onClick={() => move(s)} className="w-full flex items-center gap-2.5 px-3 py-3 rounded-sm2 bg-bg-2 hover:bg-bg-3 mb-1.5 disabled:opacity-50">
+                <StageDot stage={s} />
+                <span className="text-lg text-text-mid">{STAGE_LABELS[s]}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-    </>
+    </FullScreenEditor>
   );
 }

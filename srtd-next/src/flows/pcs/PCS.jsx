@@ -94,13 +94,7 @@ export function PCS() {
           )}
           {post && (
             <>
-              <Topbar post={post} isAdmin={isAdmin} />
-              {canEdit && (
-                <div className="px-3 py-1.5 border-b border-divider-soft text-2xs text-text-soft inline-flex items-center gap-1.5 cursor-pointer hover:text-text-loud" onClick={() => setActiveSheet('title')}>
-                  <Pencil size={11} />
-                  <span>Edit title</span>
-                </div>
-              )}
+              <Topbar post={post} isAdmin={isAdmin} canEdit={canEdit} onEditTitle={() => setActiveSheet('title')} />
               <StageStrip post={post} canMove={canMove} onMove={() => setStageSheetOpen(true)} />
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
               <LinkedInIndicator post={post} />

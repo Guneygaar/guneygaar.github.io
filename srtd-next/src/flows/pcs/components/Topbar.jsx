@@ -9,7 +9,7 @@ import { logClick, logError } from '../../../core/bridges/logging.js';
 import { truncate } from '../utils/stage.js';
 import { deletePost } from '../../../core/api/posts.js';
 
-export function Topbar({ post, isAdmin }) {
+export function Topbar({ post, isAdmin, canEdit, onEditTitle }) {
   const hasCaption = !!(post?.caption && post.caption.trim().length > 0);
   const title = truncate(post?.title || 'Untitled', 80);
   const [busy, setBusy] = useState(false);
@@ -52,7 +52,13 @@ export function Topbar({ post, isAdmin }) {
       <button onClick={() => pcsFlow.close()} className="w-8 h-8 flex items-center justify-center text-text-soft hover:bg-bg-2 hover:text-text-mid rounded-sm2" aria-label="Close">
         <ArrowLeft size={16} />
       </button>
-      <div className="flex-1 min-w-0 text-[15px] font-medium text-text-loud tracking-tight truncate px-1">{title}</div>
+      <button
+        onClick={canEdit ? onEditTitle : undefined}
+        disabled={!canEdit}
+        className="flex-1 min-w-0 text-left text-[15px] font-medium text-text-loud tracking-tight truncate px-1 bg-transparent border-0 cursor-pointer disabled:cursor-default"
+      >
+        {title}
+      </button>
       <button onClick={onCopy} className="w-8 h-8 flex items-center justify-center rounded-sm2 text-text-soft hover:bg-bg-2 hover:text-text-mid" aria-label="Copy link">
         <Link2 size={16} />
       </button>
