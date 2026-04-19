@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Sparkles, X, Image as ImageIcon, AtSign } from 'lucide-react';
+import { Plus, Sparkles, X, AtSign, ImagePlus, Paperclip, CircleDot, FileText } from 'lucide-react';
 import { createComment, createInternalNote } from '../../../core/api/comments.js';
 import { useAppState } from '../../../core/stores/appState.js';
 import { usePcsStore } from '../pcsStore.js';
@@ -20,10 +20,13 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   const [polishing, setPolishing] = useState(false);
   const [sending, setSending] = useState(false);
   const [attachedImages, setAttachedImages] = useState([]);
-  const [showMenu, setShowMenu] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [taskAttachments, setTaskAttachments] = useState([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
   const taRef = useRef(null);
+  const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const isAgency = ['admin', 'creative', 'servicing'].includes(String(currentRole).toLowerCase());
@@ -82,7 +85,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
 
   function rejectPolish() { setPolishPreview(null); }
 
-  async function onPickFiles(e) {
+  async function onPickPhotos(e) {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
     if (files.length === 0) return;
@@ -100,8 +103,30 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
     }
   }
 
+  async function onPickFiles(e) {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length === 0) return;
+    try {
+      const next = [];
+      for (const f of files) {
+        const ext = (f.name.split('.').pop() || 'bin').toLowerCase();
+        const url = await uploadToR2(generateFilename(ext), f);
+        next.push({ name: f.name, url });
+      }
+      setAttachedFiles((prev) => [...prev, ...next]);
+    } catch (err) {
+      logError(err, { context: 'pcs_react_comment_file' });
+      toast('File upload failed', 'error');
+    }
+  }
+
+  function addTask() {
+    setTaskAttachments((prev) => [...prev, { type: 'task', assigned_to: null }]);
+  }
+
   async function onSend() {
-    if (sending || (!text.trim() && attachedImages.length === 0)) return;
+    if (sending || (!text.trim() && attachedImages.length === 0 && attachedFiles.length === 0 && taskAttachments.length === 0)) return;
     setSending(true);
     try {
       const mentioned = [];
@@ -115,7 +140,11 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         if (hit && !mentioned.includes(hit.email)) mentioned.push(hit.email);
       }
 
-      const attachments = attachedImages.length > 0 ? [{ type: 'images', urls: attachedImages }] : null;
+      const attachmentParts = [];
+      if (attachedImages.length > 0) attachmentParts.push({ type: 'images', urls: attachedImages });
+      if (attachedFiles.length > 0) attachmentParts.push({ type: 'files', files: attachedFiles });
+      taskAttachments.forEach((t) => attachmentParts.push(t));
+      const attachments = attachmentParts.length > 0 ? attachmentParts : null;
 
       const payload = {
         post_id: post.post_id,
@@ -136,9 +165,11 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         await createComment(payload);
       }
 
-      logClick('pcs_react_comment_send', { tab: activeTab, withImages: attachedImages.length > 0, replyTo: !!replyTo });
+      logClick('pcs_react_comment_send', { tab: activeTab, withImages: attachedImages.length > 0, withFiles: attachedFiles.length > 0, withTasks: taskAttachments.length > 0, replyTo: !!replyTo });
       setText('');
       setAttachedImages([]);
+      setAttachedFiles([]);
+      setTaskAttachments([]);
       setPolishPreview(null);
       if (onCancelReply) onCancelReply();
       if (isInternalTab) {
@@ -162,6 +193,21 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
     const q = mentionQuery.toLowerCase();
     return !q || (u.name && u.name.toLowerCase().includes(q)) || u.email.toLowerCase().includes(q);
   }).slice(0, 5) : [];
+
+  const sheetOption = (Icon, label, sub, onClick) => (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-3.5 w-full text-left hover:bg-bg-3 border-b border-divider-soft last:border-b-0"
+    >
+      <div className="w-9 h-9 rounded-card bg-bg-3 flex items-center justify-center flex-shrink-0">
+        <Icon size={18} className="text-text-mid" />
+      </div>
+      <div>
+        <div className="font-sans text-lg font-medium text-text-loud">{label}</div>
+        <div className="font-mono text-xs text-text-dim tracking-wide">{sub}</div>
+      </div>
+    </button>
+  );
 
   return (
     <div className="sticky bottom-0 bg-bg border-t border-divider-warm pb-safe-b">
@@ -194,6 +240,28 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
           ))}
         </div>
       )}
+      {attachedFiles.length > 0 && (
+        <div className="flex flex-col gap-1 px-3 pt-2">
+          {attachedFiles.map((f, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-bg-2 rounded-sm2 border border-divider-soft">
+              <FileText size={14} className="text-text-mid flex-shrink-0" />
+              <span className="text-sm text-text-mid truncate flex-1">{f.name}</span>
+              <button onClick={() => setAttachedFiles((prev) => prev.filter((_, idx) => idx !== i))} className="text-text-soft" aria-label="Remove attached file"><X size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
+      {taskAttachments.length > 0 && (
+        <div className="flex flex-col gap-1 px-3 pt-2">
+          {taskAttachments.map((_, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 bg-bg-2 rounded-sm2 border border-divider-soft">
+              <CircleDot size={14} className="text-amber flex-shrink-0" />
+              <span className="text-sm text-text-mid flex-1">Task</span>
+              <button onClick={() => setTaskAttachments((prev) => prev.filter((_, idx) => idx !== i))} className="text-text-soft" aria-label="Remove task"><X size={12} /></button>
+            </div>
+          ))}
+        </div>
+      )}
       {mentionOpen && matchingUsers.length > 0 && (
         <div className="absolute bottom-full left-0 right-0 max-w-[430px] mx-auto bg-bg border border-divider-warm rounded-t-card shadow-overlay">
           {matchingUsers.map((u) => (
@@ -205,19 +273,11 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         </div>
       )}
       <div className="flex items-end gap-2 px-3 py-2">
-        <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="w-8 h-8 flex items-center justify-center text-text-soft hover:bg-bg-2 rounded-sm2" aria-label="Add">
-            <Plus size={18} />
-          </button>
-          {showMenu && (
-            <div className="absolute bottom-full left-0 mb-1 bg-bg border border-divider-warm rounded-card shadow-overlay min-w-[160px]">
-              <button onClick={() => { fileInputRef.current?.click(); setShowMenu(false); }} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-bg-2 text-left text-sm">
-                <ImageIcon size={14} /><span>Add image</span>
-              </button>
-            </div>
-          )}
-          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
-        </div>
+        <button onClick={() => setSheetOpen(true)} className="w-8 h-8 flex items-center justify-center text-text-soft hover:bg-bg-2 rounded-sm2" aria-label="Add">
+          <Plus size={18} />
+        </button>
+        <input ref={photoInputRef} type="file" accept="image/*" multiple onChange={onPickPhotos} className="hidden" />
+        <input ref={fileInputRef} type="file" multiple onChange={onPickFiles} className="hidden" />
         <textarea
           ref={taRef}
           value={text}
@@ -232,16 +292,23 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
             <Sparkles size={14} />
           </button>
         )}
-        <button onClick={onSend} disabled={sending || (!text.trim() && attachedImages.length === 0)} className="px-3 py-1.5 rounded-sm2 bg-text-loud text-bg text-sm font-semibold tracking-tight inline-flex items-center gap-1.5 disabled:opacity-40">
+        <button onClick={onSend} disabled={sending || (!text.trim() && attachedImages.length === 0 && attachedFiles.length === 0 && taskAttachments.length === 0)} className="px-3 py-1.5 rounded-sm2 bg-text-loud text-bg text-sm font-semibold tracking-tight inline-flex items-center gap-1.5 disabled:opacity-40">
           <span>Send</span>
           <span className="font-mono text-2xs opacity-50">{'\u2318\u21B5'}</span>
         </button>
       </div>
-      <div className="flex gap-1.5 px-3 pb-2 font-mono text-2xs text-text-dim tracking-wide">
-        <span>{isInternalTab ? 'agency only' : 'client + agency'}</span>
-        <span className="w-[2px] h-[2px] bg-text-dim rounded-pill self-center" />
-        <span>{isInternalTab ? 'private' : 'visible to all'}</span>
-      </div>
+
+      {sheetOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/60 z-10" onClick={() => setSheetOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 bg-bg-2 border-t border-divider-warm rounded-t-[16px] z-20 pb-safe-b">
+            <div className="w-8 h-1 bg-border-neutral rounded-pill mx-auto mt-3 mb-2" />
+            {sheetOption(ImagePlus, 'Photo', 'Upload an image', () => { setSheetOpen(false); photoInputRef.current?.click(); })}
+            {sheetOption(Paperclip, 'File', 'Attach a document', () => { setSheetOpen(false); fileInputRef.current?.click(); })}
+            {sheetOption(CircleDot, 'Task', 'Assign an action item', () => { setSheetOpen(false); addTask(); })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

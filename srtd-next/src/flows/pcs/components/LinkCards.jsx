@@ -14,7 +14,8 @@ function LinkCard({ label, url, Icon }) {
   );
 }
 
-export function LinkCards({ post }) {
+export function LinkCards({ post, linkedinLink }) {
+  if (linkedinLink && String(linkedinLink).trim()) return null;
   const hasDrive = !!(post?.drive_link && post.drive_link.trim());
   const hasCanva = !!(post?.canva_link && post.canva_link.trim());
   if (!hasDrive && !hasCanva) return null;

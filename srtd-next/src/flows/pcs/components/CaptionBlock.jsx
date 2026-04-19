@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pencil, Wand2, ShieldCheck, MessageSquareQuote } from 'lucide-react';
+import { Pencil, Sparkles, ShieldCheck } from 'lucide-react';
 import { renderRichText, wordCount } from '../utils/mentions.jsx';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 import { patchPost } from '../../../core/api/posts.js';
@@ -18,10 +18,9 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
   const userRole = useAppState((s) => s.user?.role || '');
   const isAdmin = String(userRole).toLowerCase() === 'admin';
   const comments = usePcsStore((s) => s.comments);
-  const [showWriteMenu, setShowWriteMenu] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const isShort = caption.length < 100;
-  const collapsed = !expanded && !isShort && !!caption;
+  const showSeeMore = !expanded && caption.length > 100;
+  const collapsed = !expanded && caption.length > 100;
 
   async function applyAiCaption(newText) {
     if (!newText || !post?.post_id) return;
@@ -38,7 +37,6 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
   }
 
   function openWrite(mode) {
-    setShowWriteMenu(false);
     openCaptionWorkspace(mode, {
       postId: post.post_id,
       initialCaption: post.caption,
@@ -72,22 +70,29 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
     });
   }
 
+  function onClaude() {
+    if ((comments || []).length > 0) openRewrite();
+    else openWrite('write');
+  }
+
   return (
     <div className="border-b border-divider-warm">
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1 font-mono text-sm text-text-dim tracking-widest uppercase">
         <span>Caption</span>
         {caption && <span><span className={over ? 'text-amber' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
-      <div className={`px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap ${collapsed ? 'line-clamp-2' : ''}`}>
+      <div className={`px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap ${collapsed ? 'line-clamp-2 overflow-hidden' : ''}`}>
         {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
       </div>
-      {collapsed && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="px-3 pb-2 font-mono text-xs text-terracotta tracking-widest uppercase font-semibold hover:opacity-80"
-        >
-          See more
-        </button>
+      {showSeeMore && (
+        <div className="px-3 pb-2">
+          <button
+            onClick={() => setExpanded(true)}
+            className="font-mono text-xs text-terracotta tracking-widest uppercase font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0"
+          >
+            See more
+          </button>
+        </div>
       )}
       {!collapsed && caption && <div className="pb-2" />}
       {canEdit && (
@@ -100,32 +105,15 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
           {isAdmin && (
             <>
               <span className="text-text-dim">{'\u00B7'}</span>
-              <div className="relative">
-                <button onClick={() => setShowWriteMenu((v) => !v)} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                  <Wand2 size={12} />
-                  <span>Write</span>
-                </button>
-                {showWriteMenu && (
-                  <div className="absolute bottom-full left-0 mb-1 bg-bg border border-divider-warm rounded-card shadow-overlay min-w-[180px]" style={{ zIndex: 50 }}>
-                    <button onClick={() => openWrite('write')} className="w-full text-left px-3 py-2 text-sm text-text-loud hover:bg-bg-2">Angles + drafts</button>
-                    <button onClick={() => openWrite('write-options')} className="w-full text-left px-3 py-2 text-sm text-text-loud hover:bg-bg-2">3 options</button>
-                  </div>
-                )}
-              </div>
+              <button onClick={onClaude} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
+                <Sparkles size={12} />
+                <span>Claude</span>
+              </button>
               <span className="text-text-dim">{'\u00B7'}</span>
               <button onClick={openQc} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
                 <ShieldCheck size={12} />
                 <span>QC</span>
               </button>
-              {(comments || []).length > 0 && (
-                <>
-                  <span className="text-text-dim">{'\u00B7'}</span>
-                  <button onClick={openRewrite} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                    <MessageSquareQuote size={12} />
-                    <span>Rewrite</span>
-                  </button>
-                </>
-              )}
             </>
           )}
         </div>

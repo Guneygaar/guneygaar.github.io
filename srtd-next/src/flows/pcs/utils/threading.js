@@ -1,18 +1,20 @@
-// Filters out comments whose author is not in user_roles AND is not null.
-// Null-author comments render as Unknown. Ex-employee comments are hidden.
-// Builds a lookup for reply_to parent/grandparent collapse.
+// Returns ALL comments sorted by created_at asc as visible.
+// Threading/nesting is handled by CommentRow via resolveParent.
+// We do NOT suppress replies, ex-employee comments, or any other
+// rows from rendering — readers should see the full conversation.
 
-import { findUserRole } from './users.js';
-
-export function filterAndIndex(comments, userRoles) {
+export function filterAndIndex(comments) {
   if (!Array.isArray(comments)) return { visible: [], byId: new Map() };
-  const visible = comments.filter(c => {
-    if (!c) return false;
-    if (!c.author) return true;
-    return !!findUserRole(c.author, userRoles);
-  });
+  const visible = comments
+    .filter(Boolean)
+    .slice()
+    .sort((a, b) => {
+      const ta = new Date(a?.created_at || 0).getTime() || 0;
+      const tb = new Date(b?.created_at || 0).getTime() || 0;
+      return ta - tb;
+    });
   const byId = new Map();
-  for (const c of comments) { if (c && c.id) byId.set(c.id, c); }
+  for (const c of visible) { if (c && c.id) byId.set(c.id, c); }
   return { visible, byId };
 }
 

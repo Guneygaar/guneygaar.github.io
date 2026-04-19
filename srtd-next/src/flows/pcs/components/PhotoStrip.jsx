@@ -124,35 +124,50 @@ export function PhotoStrip({ post, canEdit }) {
 
   if (count === 0 && !canEdit) return null;
 
+  const AddTile = canEdit ? (
+    <button
+      onClick={() => fileInputRef.current?.click()}
+      disabled={busy}
+      className="flex-shrink-0 w-16 h-[280px] bg-bg-3 border border-dashed border-border-neutral flex flex-col items-center justify-center gap-1.5 text-text-dim cursor-pointer hover:bg-bg-2 disabled:opacity-50"
+      aria-label="Upload photo"
+    >
+      <Upload size={16} />
+      <span className="font-mono text-2xs tracking-widest uppercase">Add</span>
+    </button>
+  ) : null;
+
   return (
     <div className="border-b border-divider-warm">
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1 font-mono text-sm text-text-dim tracking-widest uppercase">
-        <span>Photos</span>
-        {canEdit && (
-          <button onClick={() => fileInputRef.current?.click()} disabled={busy} className="font-sans text-sm text-text-mid inline-flex items-center gap-1.5 hover:text-text-loud disabled:opacity-50">
-            <Upload size={12} />
-            <span>Upload</span>
-            <span className="font-mono text-2xs text-text-dim px-1 py-px border border-border-neutral rounded-sm2 bg-bg">U</span>
-          </button>
-        )}
-        <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
-      </div>
+      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
       {count === 0 ? (
-        <div className="px-3 py-8 font-mono text-sm text-text-dim tracking-widest uppercase text-center">No photos yet</div>
+        canEdit ? (
+          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
+            {AddTile}
+          </div>
+        ) : null
       ) : count === 1 ? (
-        <SingleImg src={imgs[0]} onClick={() => setLightIdx(0)} />
+        canEdit ? (
+          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
+            <button onClick={() => setLightIdx(0)} className="flex-1 min-w-0 bg-bg-2 flex items-center justify-center overflow-hidden cursor-pointer" aria-label="Photo 1" style={{ height: 280 }}>
+              <ThumbImg src={imgs[0]} />
+            </button>
+            {AddTile}
+          </div>
+        ) : (
+          <SingleImg src={imgs[0]} onClick={() => setLightIdx(0)} />
+        )
       ) : (
         <>
-          <div className="flex gap-px bg-divider-warm">
-            {imgs.slice(0, 4).map((src, i) => (
-              <button key={i} onClick={() => setLightIdx(i)} className="flex-1 aspect-square min-w-0 bg-bg-2 flex items-center justify-center overflow-hidden cursor-pointer" aria-label={`Photo ${i + 1}`}>
+          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
+            {imgs.map((src, i) => (
+              <button key={i} onClick={() => setLightIdx(i)} className="flex-shrink-0 w-[180px] h-[280px] bg-bg-2 flex items-center justify-center overflow-hidden cursor-pointer" aria-label={`Photo ${i + 1}`}>
                 <ThumbImg src={src} />
               </button>
             ))}
+            {AddTile}
           </div>
           <div className="flex items-center justify-between px-3 py-2 font-mono text-sm text-text-dim tracking-wide">
             <span>{count} IMAGES {'\u00B7'} HERO + {count - 1}</span>
-            {count > 4 && <span>+{count - 4} MORE</span>}
           </div>
         </>
       )}

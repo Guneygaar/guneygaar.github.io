@@ -19,7 +19,6 @@ import { PropertySheet } from './components/PropertySheet.jsx';
 import { OwnerSheet } from './components/OwnerSheet.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 import { FORMATS, PILLARS, LOCATIONS } from '../../core/mappings.js';
-import { Pencil } from 'lucide-react';
 
 const FORMAT_OPTIONS = FORMATS.map((f) => ({ value: f, label: f }));
 const PILLAR_OPTIONS = PILLARS.map((p) => ({ value: p.toLowerCase(), label: p }));
@@ -65,7 +64,6 @@ export function PCS() {
   const isAdmin = roleLc === 'admin';
   const isAgency = !isClient;
   const canEdit = isAgency;
-  const canMove = isAgency;
   const canSeeInternal = isAgency;
   const currentThread = activeTab === 'internal' ? internalNotes : comments;
   const currentError = activeTab === 'internal' ? notesError : commentsError;
@@ -94,31 +92,11 @@ export function PCS() {
           {post && (
             <>
               <Topbar post={post} isAdmin={isAdmin} canEdit={canEdit} onEditTitle={() => setActiveSheet('title')} />
+              <PhotoStrip post={post} canEdit={canEdit} />
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
               <LinkedInIndicator post={post} />
-              <PhotoStrip post={post} canEdit={canEdit} />
+              <LinkCards post={post} linkedinLink={post.linkedin_link} />
               <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} onEdit={() => setActiveSheet('caption')} />
-              <LinkCards post={post} />
-              {canEdit && (
-                <div className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-2 border-b border-divider-warm font-mono text-2xs text-text-dim tracking-wide uppercase">
-                  <button onClick={() => setActiveSheet('drive')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Drive</button>
-                  <button onClick={() => setActiveSheet('canva')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Canva</button>
-                  {!isClient && <button onClick={() => setActiveSheet('internal_notes')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Internal notes</button>}
-                  <button onClick={() => setActiveSheet('client_feedback')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Client feedback</button>
-                </div>
-              )}
-              <div className="flex items-center gap-2 px-3 pt-3 pb-1">
-                <span className="font-sans text-lg font-bold text-text-loud">Comments</span>
-                <span className="font-sans text-lg font-bold text-terracotta">{comments.length + (canSeeInternal ? internalNotes.length : 0)}</span>
-                <span className="text-text-dim text-base opacity-40">·</span>
-                <span className="font-sans text-base text-text-soft">{comments.length} client</span>
-                {canSeeInternal && (
-                  <>
-                    <span className="text-text-dim text-base opacity-40">·</span>
-                    <span className="font-sans text-base text-text-soft">{internalNotes.length} internal</span>
-                  </>
-                )}
-              </div>
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
               <div className="flex-1">
