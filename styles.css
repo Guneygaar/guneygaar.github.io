@@ -7383,23 +7383,30 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   border-color: #FF4B4B4D;
   color: var(--red);
 }
+.pcs-cap-btn--ai {
+  background: #E3B56A14;
+  border-color: #E3B56A38;
+  color: #E3B56A;
+}
 
-/* Done button (CHANGE 2: clean pill) */
-.pcs-close-btn {
-  display: block;
-  width: calc(100% - 32px);
-  margin: 8px 16px 12px;
-  padding: 12px;
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--text2);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+/* Caption header inline edit icon (CHANGE 1: pen) */
+.pcs-caption-edit-icon {
+  background: none;
+  border: none;
+  padding: 2px 4px;
   cursor: pointer;
-  text-align: center;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.pcs-caption-edit-icon:active { color: var(--text); }
+
+/* Done button — hidden in single-scroll mode; the topbar X is the
+   only exit. (CHANGE 4) */
+.pcs-close-btn {
+  display: none !important;
 }
 
 /* FIX 5: Pane overflow */

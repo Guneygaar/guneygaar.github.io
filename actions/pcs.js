@@ -595,7 +595,7 @@ window._renderPCS = function(postId) {
     if (canManage) {
       capActionsContainer.innerHTML =
         '<div class="pcs-cap-actions">' +
-        '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
+        '<button class="pcs-cap-btn pcs-cap-btn--ai" onclick="window.openCaptionWorkspace(\'chat\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})">\u2726 Claude</button>' +
         '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
         (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
         '</div>';
@@ -810,7 +810,7 @@ function _buildChipsRow(post, canEdit, canEditCreative, id) {
     var ownerLC = (post.owner || '').toLowerCase();
     if (ownerLC === 'servicing') ownerColor = ' pcs-mv--cyan';
     else if (ownerLC === 'creative') ownerColor = ' pcs-mv--purple';
-    else if (ownerLC === 'client') ownerColor = ' pcs-mv--red';
+    else if (ownerLC === 'client') ownerColor = ' pcs-mv--amber';
     items.push('<span class="pcs-mv' + ownerColor + '"' +
       (canEdit ? ' onclick="event.stopPropagation();window._pcsChipDrop(this,\'owner\',\'' + esc(id) + '\')"' : '') +
       '>' + esc(typeof formatOwner === 'function' ? formatOwner(post.owner) : post.owner) +
@@ -1045,12 +1045,16 @@ window._pcsDateChange = function(postId, dateValue) {
 // -- Caption section builder --
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
+  var canManage = canEdit || canEditCreative;
   var captionTrim = (post.caption || '').trim();
   var wc = captionTrim ? captionTrim.split(/\s+/).filter(Boolean).length : 0;
   var needsClamp = captionTrim.length > 100;
   var headerRow = '<div class="pcs-caption-header-row">' +
     '<span class="pcs-caption-label">Caption</span>' +
+    '<div style="display:flex;align-items:center;gap:10px;">' +
     (post.caption ? '<span class="pcs-caption-wc">' + wc + ' word' + (wc === 1 ? '' : 's') + '</span>' : '') +
+    (canManage ? '<button class="pcs-caption-edit-icon" onclick="window._startCaptionEdit(\'' + esc(id) + '\')" title="Edit caption"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' : '') +
+    '</div>' +
   '</div>';
   return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #323244;">' +
     headerRow +
@@ -2502,8 +2506,8 @@ window._startCaptionEdit = function(postId) {
   textEl.style.display = 'none';
   var seeMore = document.getElementById('pcs-caption-see-more');
   if (seeMore) seeMore.style.display = 'none';
-  var zoneManual = document.querySelector('#pcs-pane-caption .pcs-zone-manual');
-  if (zoneManual) zoneManual.style.display = 'none';
+  var editIcon = document.querySelector('#pcs-caption-section .pcs-caption-edit-icon');
+  if (editIcon) editIcon.style.display = 'none';
 
   var ta = document.createElement('textarea');
   ta.id = 'pcs-caption-textarea';
@@ -2532,8 +2536,8 @@ window._cancelCaptionEdit = function() {
   if (btnRow)  btnRow.remove();
   var seeMore = document.getElementById('pcs-caption-see-more');
   if (seeMore) seeMore.style.display = '';
-  var zoneManual = document.querySelector('#pcs-pane-caption .pcs-zone-manual');
-  if (zoneManual) zoneManual.style.display = '';
+  var editIcon = document.querySelector('#pcs-caption-section .pcs-caption-edit-icon');
+  if (editIcon) editIcon.style.display = '';
 }
 
 window._saveCaptionEdit = async function(postId) {
