@@ -21,6 +21,7 @@ import { getAIConfig } from '../../core/bridges/config.js';
 function _featureForAction(action) {
   if (action === 'review') return 'qc';
   if (action === 'angles') return 'angles';
+  if (action === 'rewrite') return 'chat';
   return 'writer';
 }
 

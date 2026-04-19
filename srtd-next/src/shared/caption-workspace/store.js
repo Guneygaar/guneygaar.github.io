@@ -10,10 +10,12 @@ import {
 } from './api.js';
 import {
   buildAnglesPrompt, buildWritePrompt, buildRefinePrompt,
-  buildReviewPrompt, buildRewritePrompt, buildTitleSynthPrompt
+  buildReviewPrompt, buildRewritePrompt, buildTitleSynthPrompt,
+  buildRewriteFromCommentsPrompt, buildVanillaWriteOptionsPrompt
 } from './systemPrompts.js';
 import {
-  calcCostINR, parseJsonLoose, extractCaption, MEMORY_REGEX
+  calcCostINR, parseJsonLoose, extractCaption, MEMORY_REGEX,
+  splitOptions
 } from './utils.js';
 
 let _msgSeq = 0;
@@ -48,6 +50,15 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
 
   // ─── lifecycle ────────────────────────────────────────────
   open(mode, opts = {}) {
+    // PR 2: PCS-driven modes ('qc' | 'rewrite' | 'write-options')
+    // open the workspace with seed state then fire one async step
+    // through callSrtdAI/runReview so existing renderers handle the
+    // results without changes to Thread.jsx.
+    if (mode === 'qc' || mode === 'rewrite' || mode === 'write-options') {
+      _openPcsMode(get, set, mode, opts);
+      return;
+    }
+
     const brief = (opts.syntheticContext && opts.syntheticContext.brief) || '';
     const briefSource = brief ? (opts.syntheticContext.source || 'paste').replace('create-post-', '') : null;
     const createdBy =
@@ -397,11 +408,12 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
   },
 
   // ─── Use this ───────────────────────────────────────────
-  useThis(msgId) {
+  useThis(msgId, explicitText) {
     const st = get();
     const msg = st.messages.find((m) => m.id === msgId);
-    if (!msg || !msg.meta) return;
-    const text = msg.meta.content || msg.content || '';
+    const text = (typeof explicitText === 'string' && explicitText)
+      ? explicitText
+      : ((msg && msg.meta && msg.meta.content) || (msg && msg.content) || '');
     if (!text) return;
     const original = (st.context && st.context.initialCaption) || '';
     if (original && original.trim() !== text.trim()) {
@@ -428,6 +440,108 @@ function _addCost(get, set, r) {
     todayCost:   (Number(s.todayCost)   || 0) + inr,
     monthCost:   (Number(s.monthCost)   || 0) + inr
   }));
+}
+
+// PR 2: PCS-driven open() variants. Seeded synchronously, AI call
+// fires async then either pushes a draft / options message or
+// auto-runs the QC review on the seeded starter draft.
+function _openPcsMode(get, set, mode, opts) {
+  const createdBy =
+    (typeof window !== 'undefined' && window.AppState && window.AppState.user && window.AppState.user.email) || '';
+  set({
+    ..._initialState(),
+    isOpen: true,
+    mode,
+    context: opts || {},
+    postId: (opts && opts.postId) || null,
+    onUseCallback: (opts && typeof opts.onUse === 'function') ? opts.onUse : null,
+    onCloseCallback: (opts && typeof opts.onClose === 'function') ? opts.onClose : null,
+    createdBy
+  });
+  loadMemory().then((m) => set(m));
+  fetchTodayMonthCosts(createdBy).then((c) => set({
+    todayCost: c.todayCostINR || 0,
+    monthCost: c.monthCostINR || 0
+  }));
+
+  if (mode === 'qc') {
+    const caption = (opts && (opts.initialCaption || (opts.syntheticContext && opts.syntheticContext.caption))) || '';
+    const starterId = `starter_${Date.now()}_${++_msgSeq}`;
+    set((s) => ({
+      messages: [...s.messages, {
+        id: starterId,
+        role: 'assistant',
+        content: caption,
+        meta: { type: 'draft', fromAngle: 0, content: caption, finalised: true }
+      }]
+    }));
+    setTimeout(() => { try { get().runReview(starterId); } catch (e) { /* swallow */ } }, 50);
+    return;
+  }
+
+  if (mode === 'rewrite') {
+    const caption = (opts && opts.caption) || '';
+    const comments = (opts && Array.isArray(opts.comments)) ? opts.comments : [];
+    const prompt = buildRewriteFromCommentsPrompt(caption, comments);
+    const display = `Rewrite the caption addressing ${comments.length} comment(s).`;
+    set((s) => ({
+      messages: [
+        ...s.messages,
+        { id: `user_${Date.now()}_${++_msgSeq}`, role: 'user', content: display }
+      ],
+      isSending: true
+    }));
+    callSrtdAI('rewrite', prompt, { createdBy, postId: opts && opts.postId })
+      .then((r) => {
+        set({ isSending: false });
+        if (!r || !r.success) {
+          _pushErrorToast(get(), 'Rewrite failed - check error log');
+          return;
+        }
+        _addCost(get, set, r);
+        const text = extractCaption(r.content || '');
+        set((s) => ({
+          messages: [...s.messages, {
+            id: `draft_${Date.now()}_${++_msgSeq}`,
+            role: 'assistant',
+            content: text,
+            meta: { type: 'draft', fromAngle: 0, content: text }
+          }]
+        }));
+      })
+      .catch((err) => {
+        set({ isSending: false });
+        _pushErrorToast(get(), 'Rewrite failed - ' + (err && err.message || ''));
+      });
+    return;
+  }
+
+  if (mode === 'write-options') {
+    const sc = (opts && opts.syntheticContext) || {};
+    const prompt = buildVanillaWriteOptionsPrompt(sc.brief || '', sc.title || '', (opts && opts.initialCaption) || '');
+    set({ isSending: true });
+    callSrtdAI('write', prompt, { createdBy, postId: opts && opts.postId })
+      .then((r) => {
+        set({ isSending: false });
+        if (!r || !r.success) {
+          _pushErrorToast(get(), 'Write failed - check error log');
+          return;
+        }
+        _addCost(get, set, r);
+        const options = splitOptions(r.content || '');
+        set((s) => ({
+          messages: [...s.messages, {
+            id: `opts_${Date.now()}_${++_msgSeq}`,
+            role: 'assistant',
+            meta: { type: 'options', options }
+          }]
+        }));
+      })
+      .catch((err) => {
+        set({ isSending: false });
+        _pushErrorToast(get(), 'Write failed - ' + (err && err.message || ''));
+      });
+  }
 }
 
 function _pushErrorToast(_st, msg) {

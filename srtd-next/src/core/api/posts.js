@@ -71,3 +71,25 @@ export async function getPostByPostId(postId) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0];
 }
+
+export async function patchPost(postId, patch) {
+  if (!postId) throw new Error('patchPost: postId required');
+  const encoded = encodeURIComponent(postId);
+  const body = { ...patch, updated_at: new Date().toISOString() };
+  const rows = await apiFetch(`/posts?post_id=eq.${encoded}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+}
+
+export async function updatePostStage(postId, newStage, actor) {
+  return patchPost(postId, { stage: newStage, status_changed_at: new Date().toISOString(), updated_by: actor });
+}
+
+export async function deletePost(postId) {
+  if (!postId) throw new Error('deletePost: postId required');
+  const encoded = encodeURIComponent(postId);
+  return apiFetch(`/posts?post_id=eq.${encoded}`, { method: 'DELETE' });
+}
