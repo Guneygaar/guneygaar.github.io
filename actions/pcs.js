@@ -2310,25 +2310,14 @@ window._pcsDoReplace = function(postId) {
   if (editBtn) editBtn.style.display = 'none';
   var ta = document.createElement('textarea');
   ta.id = 'pcs-caption-textarea';
+  ta.className = 'pcs-caption-textarea';
   ta.value = '';
   ta.placeholder = 'Paste new caption here...';
-  ta.style.cssText = 'width:100%;min-height:80px;background:#111116;' +
-    'border:1px solid #3a3a4a;color:#FFFFFF;' +
-    'font-family:\'DM Sans\',sans-serif;font-size:13px;' +
-    'padding:12px;resize:vertical;';
   var btnRow = document.createElement('div');
   btnRow.id = 'pcs-caption-btnrow';
-  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
   btnRow.innerHTML =
-    '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-      'color:#3ECF8E;border:1px solid #3ECF8E;' +
-      'background:transparent;padding:6px 12px;cursor:pointer;">SAVE</button>' +
-    '<button onclick="_cancelCaptionEdit()" ' +
-      'style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;' +
-      'color:#8E8E93;border:1px solid #4a4a5a;' +
-      'background:transparent;padding:6px 12px;cursor:pointer;' +
-      'margin-left:6px;">CANCEL</button>';
+    '<button class="pcs-caption-save-btn" onclick="_saveCaptionEdit(\'' + postId + '\')">Save</button>' +
+    '<button class="pcs-caption-cancel-btn" onclick="_cancelCaptionEdit()">Cancel</button>';
   textEl.parentNode.insertBefore(ta, textEl.nextSibling);
   textEl.parentNode.insertBefore(btnRow, ta.nextSibling);
   ta.focus();
@@ -2518,24 +2507,8 @@ window._startCaptionEdit = function(postId) {
 
   var ta = document.createElement('textarea');
   ta.id = 'pcs-caption-textarea';
+  ta.className = 'pcs-caption-textarea';
   ta.value = currentText;
-  ta.style.cssText = [
-    'width:100%',
-    'background:transparent',
-    'border:none',
-    'border-bottom:1px solid #C8A84B4D',
-    'color:#e8e2d9',
-    'font-family:\'DM Sans\',sans-serif',
-    'font-size:14px',
-    'line-height:1.7',
-    'padding:8px 0 10px',
-    'outline:none',
-    'resize:none',
-    'overflow:hidden',
-    'min-height:120px',
-    'height:auto',
-    'caret-color:#C8A84B'
-  ].join(';');
   ta.oninput = function() { this.style.height='auto'; this.style.height=this.scrollHeight+'px'; };
   textEl.parentNode.insertBefore(ta, textEl.nextSibling);
   ta.style.height = 'auto';
@@ -2543,16 +2516,9 @@ window._startCaptionEdit = function(postId) {
 
   var btnRow = document.createElement('div');
   btnRow.id = 'pcs-caption-btnrow';
-  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
   btnRow.innerHTML =
-    '<button onclick="_saveCaptionEdit(\'' + postId + '\')" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'color:#3ECF8E;border:1px dotted #3ECF8E66;' +
-    'background:transparent;padding:14px 20px;min-height:44px;cursor:pointer;">SAVE</button>' +
-    '<button onclick="_cancelCaptionEdit()" ' +
-    'style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'color:#8E8E93;border:1px dotted #FFFFFF26;' +
-    'background:transparent;padding:14px 20px;min-height:44px;cursor:pointer;">CANCEL</button>';
+    '<button class="pcs-caption-save-btn" onclick="_saveCaptionEdit(\'' + postId + '\')">Save</button>' +
+    '<button class="pcs-caption-cancel-btn" onclick="_cancelCaptionEdit()">Cancel</button>';
   ta.parentNode.insertBefore(btnRow, ta.nextSibling);
   ta.focus();
 }
