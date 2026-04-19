@@ -6822,29 +6822,37 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-reply-tag { display: none; }
 .pcs-reply-tag-x { display: none; }
 
+/* CHANGE 8: comment actions — Like / Reply / Resolve inline, same weight, dot separators */
 .pcs-comment-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 5px;
+  gap: 4px;
+  margin-top: 6px;
 }
-
-.pcs-comment-actions .pcs-comment-reply-btn {
-  margin-top: 0;
-}
-
-.pcs-comment-resolve-btn {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: #8E8E93;
-  letter-spacing: .04em;
+.pcs-comment-act {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 0;
   background: none;
   border: none;
-  cursor: pointer;
-  padding: 0;
 }
-.pcs-comment-resolve-btn:active {
-  color: #AEAEB2;
+.pcs-comment-act:active { color: var(--text); }
+.pcs-comment-act-sep {
+  color: var(--text-muted);
+  font-size: 10px;
+  opacity: 0.4;
+}
+.pcs-comment-act.resolve,
+.pcs-comment-act.unresolve { color: var(--green); }
+.pcs-comment-act.like.pcs-reacted { color: var(--red); }
+
+/* Legacy classes kept for back-compat (still present on the buttons) */
+.pcs-comment-actions .pcs-comment-reply-btn,
+.pcs-comment-actions .pcs-comment-resolve-btn {
+  margin-top: 0;
 }
 
 .pcs-comment-action {
@@ -6855,11 +6863,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #8E8E93;
   cursor: pointer;
 }
-
 .pcs-comment-action:hover,
-.pcs-comment-action:active {
-  color: #AEAEB2;
-}
+.pcs-comment-action:active { color: #AEAEB2; }
 
 .pcs-comment-reply {
   margin-left: 0;
@@ -10004,6 +10009,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-caption-wc {
   font-family: var(--mono);
   font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
   color: var(--green);
   font-weight: 500;
 }
@@ -10051,24 +10058,48 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   margin-left: 6px;
 }
 
-/* CHANGE 6: comments section header */
+/* CHANGE 6 + 7: comments section header — "Comments N · Internal M"
+   with visibility label pushed right. */
 .pcs-comments-section-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px 18px 4px;
+  gap: 8px;
+  padding: 16px 16px 8px;
 }
 .pcs-section-title {
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
 }
 .pcs-section-count {
-  font-family: var(--mono);
-  font-size: 11px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 700;
   color: #C15F3C;
 }
+.pcs-section-sep {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.pcs-section-internal {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.pcs-section-vis {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* CHANGE 7: composer meta line removed — visibility moved to the
+   section header above. */
+.pcs-ibar-hint { display: none; }
 
 /* =========================================================================
    PCS Polish (20260419c): caption edit pill buttons + textarea class,

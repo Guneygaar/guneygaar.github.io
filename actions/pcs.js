@@ -1039,7 +1039,7 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   var headerRow = '<div class="pcs-caption-header-row">' +
     '<span class="pcs-caption-label">Caption</span>' +
     '<div style="display:flex;align-items:center;gap:10px;">' +
-    (post.caption ? '<span class="pcs-caption-wc">' + wc + ' word' + (wc === 1 ? '' : 's') + '</span>' : '') +
+    (post.caption ? '<span class="pcs-caption-wc">' + wc + ' / 125 words</span>' : '') +
     (canManage ? '<button class="pcs-caption-edit-icon" onclick="window._startCaptionEdit(\'' + esc(id) + '\')" title="Edit caption"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' : '') +
     '</div>' +
   '</div>';
@@ -1287,16 +1287,16 @@ window._saveLiUrlInline = function(postId) {
 }
 
 // -- PCS Comments --------------------------------------------------
-// Track latest counts so the combined "N client · M internal" label stays
-// in sync across the two async branches in loadPcsComments.
+// Track latest counts so the "Comments N · Internal M" header stays in
+// sync across the two async branches in loadPcsComments.
 window._pcsSectionCounts = window._pcsSectionCounts || { client: 0, internal: 0 };
 function _pcsUpdateSectionCount(client, internal) {
   if (client !== null && client !== undefined) window._pcsSectionCounts.client = client;
   if (internal !== null && internal !== undefined) window._pcsSectionCounts.internal = internal;
-  var el = document.getElementById('pcs-section-count');
-  if (el) {
-    el.textContent = window._pcsSectionCounts.client + ' client \u00B7 ' + window._pcsSectionCounts.internal + ' internal';
-  }
+  var cEl = document.getElementById('pcs-section-count');
+  var iEl = document.getElementById('pcs-section-internal');
+  if (cEl) cEl.textContent = window._pcsSectionCounts.client;
+  if (iEl) iEl.textContent = 'Internal ' + window._pcsSectionCounts.internal;
 }
 
 // Inject section header + filter chip bar above comments list, idempotent.
@@ -1308,7 +1308,10 @@ function _pcsEnsureCommentsHeader(list) {
     header.className = 'pcs-comments-section-header';
     header.innerHTML =
       '<span class="pcs-section-title">Comments</span>' +
-      '<span class="pcs-section-count" id="pcs-section-count">0 client &middot; 0 internal</span>';
+      '<span class="pcs-section-count" id="pcs-section-count">0</span>' +
+      '<span class="pcs-section-sep">\u00B7</span>' +
+      '<span class="pcs-section-internal" id="pcs-section-internal">Internal 0</span>' +
+      '<span class="pcs-section-vis">CLIENT + AGENCY</span>';
     parent.insertBefore(header, list);
   }
   if (!parent.querySelector('.pcs-filter-bar')) {
@@ -1558,13 +1561,16 @@ window.loadPcsComments = async function(postId) {
           _imgHtml +
           _resolvedLabel +
           '<div class="pcs-comment-actions">' +
-            '<span class="pcs-comment-reply-btn" ' +
+            '<button class="pcs-comment-act like' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' + (_myReact ? 'Liked' : 'Like') + (_reactCount > 0 ? ' ' + _reactCount : '') + '</button>' +
+            '<span class="pcs-comment-act-sep">\u00B7</span>' +
+            '<button class="pcs-comment-act pcs-comment-reply-btn reply" ' +
               'onclick="window._pcsSetReply(\'client\',\'' +
               esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-              _escapedMsg + '\')">Reply</span>' +
-            '<span class="pcs-comment-resolve-btn" ' +
+              _escapedMsg + '\')">Reply</button>' +
+            '<span class="pcs-comment-act-sep">\u00B7</span>' +
+            '<button class="pcs-comment-act pcs-comment-resolve-btn ' + (c.resolved ? 'unresolve' : 'resolve') + '" ' +
               'onclick="toggleTaskResolve(\'' + esc(c.id) + '\',\'' + esc(postId) + '\',false)">' +
-              _resolveBtnLabel + '</span>' +
+              _resolveBtnLabel + '</button>' +
           '</div>' +
         '</div>' +
         '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
@@ -1705,13 +1711,16 @@ window.loadPcsComments = async function(postId) {
           _imgHtml +
           _resolvedLabel +
           '<div class="pcs-comment-actions">' +
-            '<span class="pcs-comment-reply-btn" ' +
+            '<button class="pcs-comment-act like' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' + (_myReact ? 'Liked' : 'Like') + (_reactCount > 0 ? ' ' + _reactCount : '') + '</button>' +
+            '<span class="pcs-comment-act-sep">\u00B7</span>' +
+            '<button class="pcs-comment-act pcs-comment-reply-btn reply" ' +
               'onclick="window._pcsSetReply(\'note\',\'' +
               esc(c.id) + '\',\'' + esc(c.author) + '\',\'' +
-              _escapedMsg + '\')">Reply</span>' +
-            '<span class="pcs-comment-resolve-btn" ' +
+              _escapedMsg + '\')">Reply</button>' +
+            '<span class="pcs-comment-act-sep">\u00B7</span>' +
+            '<button class="pcs-comment-act pcs-comment-resolve-btn ' + (c.resolved ? 'unresolve' : 'resolve') + '" ' +
               'onclick="toggleTaskResolve(\'' + esc(c.id) + '\',\'' + esc(postId) + '\',true)">' +
-              _resolveBtnLabel + '</span>' +
+              _resolveBtnLabel + '</button>' +
           '</div>' +
         '</div>' +
         '<div class="pcs-cmt-rt pcs-comment-react' + (_myReact ? ' pcs-reacted' : '') + '" data-comment-id="' + esc(c.id) + '" onclick="window._pcsShowEmojiPicker(this)">' +
