@@ -105,7 +105,7 @@ export function PCS() {
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
               <LinkedInIndicator post={post} />
               <LinkCards post={post} linkedinLink={post.linkedin_link} />
-              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} onEdit={() => setActiveSheet('caption')} />
+              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
               <div className="flex-1">

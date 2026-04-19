@@ -10,7 +10,7 @@ import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 
-export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
+export function CaptionBlock({ post, canEdit, userRoles }) {
   const caption = post?.caption || '';
   const wc = wordCount(caption);
   const over = wc > 125;
@@ -19,6 +19,9 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
   const isAdmin = String(userRole).toLowerCase() === 'admin';
   const comments = usePcsStore((s) => s.comments);
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
   const showSeeMore = !expanded && caption.length > 100;
   const collapsed = !expanded && caption.length > 100;
 
@@ -34,6 +37,22 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
       logError(err, { context: 'pcs_react_caption_ai_apply' });
       toast('Save failed', 'error');
     }
+  }
+
+  async function handleSave() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await applyAiCaption(draft);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit() {
+    setDraft(caption);
+    setEditing(true);
   }
 
   function openWrite(mode) {
@@ -61,18 +80,20 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
     });
   }
 
-  function openRewrite() {
-    openCaptionWorkspace('rewrite', {
-      postId: post.post_id,
-      caption: post.caption,
-      comments: (comments || []).map((c) => ({ author: c.author, message: c.message })),
-      onUse: applyAiCaption
-    });
-  }
-
   function onClaude() {
-    if ((comments || []).length > 0) openRewrite();
-    else openWrite('write');
+    if ((comments || []).length > 0) {
+      openCaptionWorkspace('rewrite', {
+        postId: post.post_id,
+        caption: post.caption,
+        comments: (comments || []).map((c) => ({
+          author_name: c.author_name || (c.author ? c.author.split('@')[0] : 'Unknown'),
+          text: c.message || ''
+        })),
+        onUse: applyAiCaption
+      });
+    } else {
+      openWrite('write');
+    }
   }
 
   return (
@@ -81,42 +102,74 @@ export function CaptionBlock({ post, canEdit, userRoles, onEdit }) {
         <span>Caption</span>
         {caption && <span><span className={over ? 'text-amber' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
-      <div className={`px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap ${collapsed ? 'line-clamp-2 overflow-hidden' : ''}`}>
-        {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
-      </div>
-      {showSeeMore && (
-        <div className="px-3 pb-2">
-          <button
-            onClick={() => setExpanded(true)}
-            className="font-mono text-xs text-terracotta tracking-widest uppercase font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0"
+      {editing ? (
+        <div className="px-3 pb-3">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 min-h-[120px]"
+            autoFocus
+          />
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-green text-bg font-sans text-base font-semibold rounded-block disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-bg-3 border border-divider-soft text-text-mid font-sans text-base font-semibold rounded-block disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div
+            className="px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap"
+            style={collapsed ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'clip' } : undefined}
           >
-            See more
-          </button>
-        </div>
-      )}
-      {!collapsed && caption && <div className="pb-2" />}
-      {canEdit && (
-        <div className="flex items-center gap-2 px-3 pb-2.5 font-mono text-sm text-text-dim tracking-wide flex-wrap">
-          <button onClick={onEdit} className="font-sans text-sm text-text-mid inline-flex items-center gap-1.5 hover:text-text-loud">
-            <Pencil size={12} />
-            <span>Edit</span>
-            <span className="font-mono text-2xs text-text-dim px-1 py-px border border-border-neutral rounded-sm2 bg-bg">E</span>
-          </button>
-          {isAdmin && (
-            <>
-              <span className="text-text-dim">{'\u00B7'}</span>
-              <button onClick={onClaude} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                <Sparkles size={12} />
-                <span>Claude</span>
+            {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
+          </div>
+          {showSeeMore && (
+            <div className="px-3 pb-2">
+              <button
+                onClick={() => setExpanded(true)}
+                className="font-mono text-xs text-terracotta tracking-widest uppercase font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0"
+              >
+                See more
               </button>
-              <span className="text-text-dim">{'\u00B7'}</span>
-              <button onClick={openQc} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                <ShieldCheck size={12} />
-                <span>QC</span>
-              </button>
-            </>
+            </div>
           )}
-        </div>
+          {!collapsed && caption && <div className="pb-2" />}
+          {canEdit && (
+            <div className="flex items-center gap-2 px-3 pb-2.5 font-mono text-sm text-text-dim tracking-wide flex-wrap">
+              <button onClick={startEdit} className="font-sans text-sm text-text-mid inline-flex items-center gap-1.5 hover:text-text-loud">
+                <Pencil size={12} />
+                <span>Edit</span>
+                <span className="font-mono text-2xs text-text-dim px-1 py-px border border-border-neutral rounded-sm2 bg-bg">E</span>
+              </button>
+              {isAdmin && (
+                <>
+                  <span className="text-text-dim">{'\u00B7'}</span>
+                  <button onClick={onClaude} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
+                    <Sparkles size={12} />
+                    <span>Claude</span>
+                  </button>
+                  <span className="text-text-dim">{'\u00B7'}</span>
+                  <button onClick={openQc} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
+                    <ShieldCheck size={12} />
+                    <span>QC</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

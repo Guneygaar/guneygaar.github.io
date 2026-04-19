@@ -51,7 +51,7 @@ export function Topbar({ post, isAdmin, canMove, onMoveStage }) {
   }
 
   return (
-    <div className="sticky top-0 z-10 flex items-center gap-1.5 h-11 px-2.5 border-b border-divider-warm bg-bg/90 backdrop-blur-md">
+    <div className="sticky top-0 z-20 flex items-center gap-1.5 h-11 px-2.5 border-b border-divider-warm bg-bg">
       <button onClick={() => pcsFlow.close()} className="w-8 h-8 flex items-center justify-center text-text-soft hover:bg-bg-2 hover:text-text-mid rounded-sm2" aria-label="Close">
         <ArrowLeft size={16} />
       </button>
