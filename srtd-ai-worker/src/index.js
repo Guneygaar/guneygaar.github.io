@@ -8,6 +8,7 @@
 // Routes:
 //   OPTIONS *          → CORS preflight (204)
 //   POST    /ai/complete → main AI completion endpoint
+//   POST    /ai/upload   → multipart PDF/image upload to R2 (sorted-ai)
 //   POST    /ai/log      → lightweight standalone usage logger
 //   *                  → 404
 // ═══════════════════════════════════════════════════════════════
@@ -323,7 +324,9 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext, 
 // ─── Anthropic call ──────────────────────────────────────────
 
 async function callAnthropic(env, systemPrompt, messages, feature) {
-  const useWebSearch = feature !== 'email_brief';
+  // Web search is disabled across the board — re-enabling requires
+  // an explicit per-feature plan plus a cost review, not a one-line flip.
+  const useWebSearch = false;
 
   const requestBody = {
     model: ANTHROPIC_MODEL,
@@ -352,6 +355,177 @@ async function callAnthropic(env, systemPrompt, messages, feature) {
   return res.json();
 }
 
+// ─── file upload + file-block helpers ────────────────────────
+//
+// /ai/upload stores a PDF or image in the sorted-ai R2 bucket so
+// that a subsequent /ai/complete call can reference it by file_key.
+// The Caption Workspace flow is: user picks a file → POST
+// multipart to /ai/upload → returns { key, media_type, filename }
+// → the Workspace includes file_key + media_type in its next
+// /ai/complete body. The Worker then fetches the R2 object,
+// base64-encodes it, and injects it as a document|image block
+// into the first user message's content array.
+
+const UPLOAD_ALLOWED_MIME = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif'
+];
+const UPLOAD_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function sanitiseFilename(name) {
+  const base = String(name || 'file').toLowerCase().replace(/\s+/g, '-');
+  // Keep only alphanumeric, hyphen, dot — strip everything else.
+  const cleaned = base.replace(/[^a-z0-9.\-]/g, '');
+  return cleaned || 'file';
+}
+
+function arrayBufferToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  // 8 KB chunks to keep fromCharCode stack sane on large payloads.
+  const CHUNK = 0x2000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
+async function handleUpload(request, env) {
+  try {
+    if (request.headers.get('X-AI-Secret') !== env.AI_SECRET) {
+      return errorResponse('Unauthorized', 401);
+    }
+
+    let form;
+    try {
+      form = await request.formData();
+    } catch (e) {
+      return errorResponse('Invalid multipart body', 400);
+    }
+
+    const file        = form.get('file');
+    const postId      = (form.get('post_id')      || '').toString();
+    const workspaceId = (form.get('workspace_id') || '').toString();
+    const createdBy   = (form.get('created_by')   || '').toString();
+
+    if (!file || typeof file === 'string') {
+      return errorResponse('Missing file', 400);
+    }
+    if (!postId || !workspaceId) {
+      return errorResponse('Missing post_id or workspace_id', 400);
+    }
+
+    const mediaType = file.type || '';
+    if (UPLOAD_ALLOWED_MIME.indexOf(mediaType) === -1) {
+      return errorResponse('Unsupported file type', 415);
+    }
+    if (typeof file.size === 'number' && file.size > UPLOAD_MAX_BYTES) {
+      return errorResponse('File too large', 413);
+    }
+
+    const originalName = (file.name || 'file').toString();
+    const safeName     = sanitiseFilename(originalName);
+    const timestamp    = Date.now();
+    const key          = 'uploads/' + encodeURIComponent(workspaceId) + '/'
+                       + encodeURIComponent(postId) + '/'
+                       + timestamp + '-' + safeName;
+
+    const buf = await file.arrayBuffer();
+    // Defensive second size check — file.size can be absent on some
+    // multipart parsers; arrayBuffer() is the ground truth.
+    if (buf.byteLength > UPLOAD_MAX_BYTES) {
+      return errorResponse('File too large', 413);
+    }
+
+    try {
+      await env.AI_ASSETS.put(key, buf, {
+        httpMetadata: { contentType: mediaType },
+        customMetadata: {
+          post_id:      postId,
+          workspace_id: workspaceId,
+          created_by:   createdBy,
+          filename:     originalName
+        }
+      });
+    } catch (e) {
+      console.error('[srtd-ai] upload R2 put failed:', e && e.message);
+      return errorResponse('Upload failed', 500);
+    }
+
+    return jsonResponse({
+      success:    true,
+      key:        key,
+      media_type: mediaType,
+      filename:   originalName
+    });
+  } catch (err) {
+    return errorResponse((err && err.message) || 'unknown error', 500);
+  }
+}
+
+// Fetch an uploaded file from R2 and return the Anthropic content
+// block for it, or null if the fetch fails or media_type is unknown.
+// Never throws — a failed file fetch must not block the AI call.
+async function buildFileBlockFromR2(env, fileKey, mediaType) {
+  try {
+    if (!fileKey) return null;
+    const obj = await env.AI_ASSETS.get(fileKey);
+    if (!obj) {
+      console.error('[srtd-ai] file_key not found in R2:', fileKey);
+      return null;
+    }
+    const buf  = await obj.arrayBuffer();
+    const b64  = arrayBufferToBase64(buf);
+    // Prefer client-supplied media_type; fall back to R2 httpMetadata.
+    const mime = mediaType
+      || (obj.httpMetadata && obj.httpMetadata.contentType)
+      || '';
+    if (mime === 'application/pdf') {
+      return {
+        type: 'document',
+        source: { type: 'base64', media_type: 'application/pdf', data: b64 }
+      };
+    }
+    if (mime && mime.indexOf('image/') === 0) {
+      return {
+        type: 'image',
+        source: { type: 'base64', media_type: mime, data: b64 }
+      };
+    }
+    console.error('[srtd-ai] unsupported media_type for file block:', mime);
+    return null;
+  } catch (e) {
+    console.error('[srtd-ai] buildFileBlockFromR2 error:', e && e.message);
+    return null;
+  }
+}
+
+// Inject a file content block into the FIRST user message's content
+// array. Strings are upgraded to [{type:'text', text:...}, fileBlock]
+// so Anthropic accepts the mixed-content shape.
+function injectFileBlockIntoMessages(messages, fileBlock) {
+  if (!fileBlock || !Array.isArray(messages) || messages.length === 0) {
+    return messages;
+  }
+  const out = messages.slice();
+  const idx = out.findIndex(m => m && m.role === 'user');
+  if (idx === -1) return out;
+  const msg = out[idx];
+  let content;
+  if (typeof msg.content === 'string') {
+    content = [{ type: 'text', text: msg.content }, fileBlock];
+  } else if (Array.isArray(msg.content)) {
+    content = msg.content.concat([fileBlock]);
+  } else {
+    content = [fileBlock];
+  }
+  out[idx] = Object.assign({}, msg, { content: content });
+  return out;
+}
+
 // ─── route handlers ──────────────────────────────────────────
 
 async function handleComplete(request, env) {
@@ -374,6 +548,8 @@ async function handleComplete(request, env) {
     const workspaceId = (body && body.workspace_id) || 'default';
     const createdBy   = (body && body.created_by) || '';
     const productName = (body && body.product_name) || '';
+    const fileKey     = (body && body.file_key) || null;
+    const fileMediaType = (body && body.media_type) || '';
 
     if (!feature || !FEATURE_FLAGS[feature]) {
       return errorResponse('Invalid or missing feature', 400);
@@ -422,11 +598,23 @@ async function handleComplete(request, env) {
       .map(m => typeof m.content === 'string' ? m.content : '')
       .filter(Boolean)
       .join('\n\n');
-    const userAsstMessages = messages
+    let userAsstMessages = messages
       .filter(m => m && (m.role === 'user' || m.role === 'assistant'));
     const combinedSystem = systemExtras
       ? systemPrompt + '\n\n' + systemExtras
       : systemPrompt;
+
+    // File attachment: if the caller uploaded a PDF or image via
+    // /ai/upload and passed file_key back here, fetch from R2 and
+    // inject as a document/image content block into the first user
+    // message. A failed R2 fetch is logged and swallowed — the AI
+    // call proceeds without the attachment rather than blocking.
+    if (fileKey) {
+      const fileBlock = await buildFileBlockFromR2(env, fileKey, fileMediaType);
+      if (fileBlock) {
+        userAsstMessages = injectFileBlockIntoMessages(userAsstMessages, fileBlock);
+      }
+    }
 
     // Pre-call estimate — input-only token approximation at the
     // industry-standard 4 chars / token rule. Cheap upper bound that
@@ -448,6 +636,7 @@ async function handleComplete(request, env) {
       tokens_input:       null,
       tokens_output:      null,
       cost_usd:           null,
+      file_key:           fileKey,
       status:             'pending'
     });
 
@@ -883,6 +1072,9 @@ export default {
 
     if (request.method === 'POST' && url.pathname === '/ai/complete') {
       return handleComplete(request, env);
+    }
+    if (request.method === 'POST' && url.pathname === '/ai/upload') {
+      return handleUpload(request, env);
     }
     if (request.method === 'POST' && url.pathname === '/ai/log') {
       return handleLog(request, env);
