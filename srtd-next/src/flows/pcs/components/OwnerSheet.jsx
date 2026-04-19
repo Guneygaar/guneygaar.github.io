@@ -51,7 +51,7 @@ export function OwnerSheet({ onClose }) {
             const isCurrent = currentId === u.id;
             return (
               <button key={u.id} disabled={busy} onClick={() => pick(u)} className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-sm2 hover:bg-bg-2 ${isCurrent ? 'bg-bg-2' : ''} disabled:opacity-50`}>
-                <Avatar name={u.name} role={role} size="md" />
+                <Avatar name={u.display_name || u.name} role={role} size="md" avatarUrl={u.avatar_url} />
                 <div className="flex-1 text-left">
                   <div className="text-sm text-text-loud">{u.name}</div>
                   <div className="text-2xs text-text-soft">{titleCase(role)}</div>
