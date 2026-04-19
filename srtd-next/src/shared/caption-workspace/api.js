@@ -68,6 +68,11 @@ export async function callSrtdAI(action, userPrompt, opts = {}) {
  * Fetch today + month AI-usage totals for the signed-in user so the
  * header meter can show Session / Today / Month. Fire-and-forget —
  * swallow errors, return zeros on failure.
+ *
+ * Today still comes from ai_usage (per-user scope). Month is seeded
+ * from ai_usage for instant render, then overridden by the real
+ * org-wide Anthropic cost figure in store.open() once /ai/month-cost
+ * returns.
  */
 export async function fetchTodayMonthCosts(createdBy) {
   const out = { todayCostINR: 0, monthCostINR: 0 };
@@ -98,6 +103,34 @@ export async function fetchTodayMonthCosts(createdBy) {
   out.todayCostINR = todayUsd * 83;
   out.monthCostINR = monthUsd * 83;
   return out;
+}
+
+/**
+ * Fetch the real month-to-date Anthropic spend (org-wide) via the
+ * srtd-ai Worker's /ai/month-cost endpoint. Returns INR on success,
+ * null on any failure so the caller can fall back to the ai_usage
+ * estimate.
+ */
+export async function fetchAnthropicMonthCost() {
+  const cfg = getAIConfig();
+  if (!cfg.workerUrl || !cfg.secret) return null;
+  try {
+    const res = await fetch(cfg.workerUrl + '/ai/month-cost', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AI-Secret': cfg.secret
+      },
+      body: '{}'
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => null);
+    if (!data || data.success === false) return null;
+    const inr = Number(data.month_cost_inr);
+    return Number.isFinite(inr) ? inr : null;
+  } catch (e) {
+    return null;
+  }
 }
 
 /**
