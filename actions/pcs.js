@@ -1061,7 +1061,7 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
         '<button id="pcs-caption-see-more" class="pcs-caption-see-more" onclick="(function(b){var t=document.getElementById(\'pcs-caption-text\');if(t){t.classList.add(\'expanded\');}b.style.display=\'none\';})(this)">See More</button>'
         : '')
       :
-      '<div id="pcs-caption-text" class="pcs-caption-text expanded" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#4A4A5A;letter-spacing:0.06em;">No copy yet</div>'
+      '<div id="pcs-caption-text" class="pcs-caption-text expanded">No copy yet</div>'
     ) + '</div>';
 }
 
