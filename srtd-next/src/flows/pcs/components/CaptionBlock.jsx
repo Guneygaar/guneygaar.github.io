@@ -86,13 +86,18 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
         postId: post.post_id,
         caption: post.caption,
         comments: (comments || []).map((c) => ({
-          author_name: c.author_name || (c.author ? c.author.split('@')[0] : 'Unknown'),
+          author_name: c.author ? c.author.split('@')[0] : 'Unknown',
           text: c.message || ''
         })),
         onUse: applyAiCaption
       });
     } else {
-      openWrite('write');
+      openCaptionWorkspace('write', {
+        postId: post.post_id,
+        initialCaption: post.caption,
+        syntheticContext: { caption: post.caption, title: post.title, pillar: post.content_pillar, source: 'pcs' },
+        onUse: applyAiCaption
+      });
     }
   }
 
@@ -131,7 +136,13 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
         <>
           <div
             className="px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap"
-            style={collapsed ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'clip' } : undefined}
+            style={collapsed ? {
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'clip'
+            } : {}}
           >
             {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
           </div>
