@@ -42,7 +42,10 @@ export function PropertiesTable({ post, canEdit, onEdit }) {
     roleKey === 'admin' ? 'text-role-admin border-role-admin/30 bg-role-admin/5' : '';
 
   return (
-    <div className="flex gap-1.5 px-3 py-2.5 border-b border-divider-warm overflow-x-auto scrollbar-none">
+    <div
+      className="flex gap-1.5 px-3 py-2.5 border-b border-divider-warm overflow-x-auto overflow-y-hidden scrollbar-none"
+      style={{ touchAction: 'pan-x' }}
+    >
       {displayName && (
         <Chip canEdit={canEdit} onClick={open('owner')} className={ownerColorClass}>
           {displayName}
