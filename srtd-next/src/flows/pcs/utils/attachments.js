@@ -6,9 +6,17 @@ export function normalizeAttachments(att) {
 }
 
 export function getTaskAttachments(att) {
-  return normalizeAttachments(att).filter(a => a && a.type === 'task');
+  return normalizeAttachments(att).filter((a) => a && a.type === 'task');
 }
 
 export function getImageAttachments(att) {
-  return normalizeAttachments(att).filter(a => a && a.type === 'images' && Array.isArray(a.urls));
+  return normalizeAttachments(att).filter((a) => {
+    if (!a) return false;
+    if (a.type === 'images' && Array.isArray(a.urls) && a.urls.length > 0) return true;
+    if (a.type === 'image' && a.url) return true;
+    return false;
+  }).map((a) => ({
+    ...a,
+    urls: a.urls || [a.url]
+  }));
 }

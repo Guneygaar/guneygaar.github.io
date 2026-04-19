@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Upload, ImageOff, X, Trash2, Download, ImagePlus } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Upload, ImageOff, X, Trash2, Download, ImagePlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
 import { useAppState } from '../../../core/stores/appState.js';
@@ -57,6 +57,19 @@ export function PhotoStrip({ post, canEdit }) {
   const [busy, setBusy] = useState(false);
   const fileInputRef = useRef(null);
   const actor = useAppState((s) => s.user?.email || '');
+  const touchStartX = useRef(null);
+  const swipedRef = useRef(false);
+
+  useEffect(() => {
+    if (lightIdx === null) return;
+    const handler = (e) => {
+      if (e.key === 'ArrowRight') setLightIdx((i) => Math.min((i ?? 0) + 1, imgs.length - 1));
+      else if (e.key === 'ArrowLeft') setLightIdx((i) => Math.max((i ?? 0) - 1, 0));
+      else if (e.key === 'Escape') setLightIdx(null);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [lightIdx, imgs.length]);
 
   async function onPickFiles(e) {
     const files = Array.from(e.target.files || []);
@@ -185,7 +198,22 @@ export function PhotoStrip({ post, canEdit }) {
       )}
 
       {lightIdx !== null && (
-        <div className="fixed inset-0 z-[1600] bg-black/95 flex items-center justify-center" onClick={() => setLightIdx(null)}>
+        <div
+          className="fixed inset-0 z-[1600] bg-black/95 flex items-center justify-center"
+          onClick={() => {
+            if (swipedRef.current) { swipedRef.current = false; return; }
+            setLightIdx(null);
+          }}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current === null) return;
+            const delta = e.changedTouches[0].clientX - touchStartX.current;
+            touchStartX.current = null;
+            if (Math.abs(delta) < 50) return;
+            swipedRef.current = true;
+            if (delta < 0) setLightIdx((i) => Math.min((i ?? 0) + 1, imgs.length - 1));
+            else setLightIdx((i) => Math.max((i ?? 0) - 1, 0));
+          }}>
           <img src={imgs[lightIdx]} alt="" className="max-w-full max-h-full object-contain" />
           <button onClick={(e) => { e.stopPropagation(); setLightIdx(null); }} className="absolute top-4 right-4 w-10 h-10 rounded-pill bg-black/60 text-text-loud flex items-center justify-center" aria-label="Close">
             <X size={20} />
@@ -193,6 +221,26 @@ export function PhotoStrip({ post, canEdit }) {
           <button onClick={(e) => { e.stopPropagation(); downloadUrl(imgs[lightIdx]); }} className="absolute top-4 right-16 w-10 h-10 rounded-pill bg-black/60 text-text-loud flex items-center justify-center" aria-label="Download photo">
             <Download size={18} />
           </button>
+          {imgs.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightIdx((i) => Math.max((i ?? 0) - 1, 0)); }}
+                disabled={lightIdx === 0}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-pill bg-black/50 text-text-loud flex items-center justify-center disabled:opacity-30"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setLightIdx((i) => Math.min((i ?? 0) + 1, imgs.length - 1)); }}
+                disabled={lightIdx === imgs.length - 1}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-pill bg-black/50 text-text-loud flex items-center justify-center disabled:opacity-30"
+                aria-label="Next photo"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </>
+          )}
           {canEdit && (
             <button onClick={(e) => { e.stopPropagation(); removeAt(lightIdx); }} disabled={busy} className="absolute bottom-16 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-2 rounded-sm2 bg-black/60 text-red text-sm disabled:opacity-50" aria-label="Remove photo">
               <Trash2 size={14} />
