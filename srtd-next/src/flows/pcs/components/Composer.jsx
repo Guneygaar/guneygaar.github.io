@@ -141,7 +141,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
       }
 
       const attachmentParts = [];
-      if (attachedImages.length > 0) attachmentParts.push({ type: 'images', urls: attachedImages });
+      if (attachedImages.length > 0) attachmentParts.push({ type: 'image', urls: attachedImages });
       if (attachedFiles.length > 0) attachmentParts.push({ type: 'files', files: attachedFiles });
       taskAttachments.forEach((t) => attachmentParts.push(t));
       const attachments = attachmentParts.length > 0 ? attachmentParts : null;
@@ -212,12 +212,20 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   return (
     <div className="sticky bottom-0 bg-bg border-t border-divider-warm pb-safe-b">
       {replyTo && (
-        <div className="flex items-center gap-2 px-3 py-1.5 border-b border-divider-soft bg-bg-2">
-          <div className="flex-1 text-2xs text-text-soft">
-            <span className="text-terracotta font-semibold">Replying to {replyTo.authorName}</span>
-            <span className="block truncate">{replyTo.message}</span>
+        <div
+          className="flex items-start gap-2 mx-3 mt-2 mb-1 border-l-2 border-terracotta bg-bg-3"
+          style={{ padding: '10px 14px', borderRadius: 6 }}
+        >
+          <div className="flex-1 min-w-0">
+            <div className="text-terracotta font-semibold text-sm">Replying to {replyTo.authorName}</div>
+            <div
+              className="block truncate"
+              style={{ fontSize: '13px', opacity: 0.7, color: 'var(--c-text-mid)', marginTop: 2 }}
+            >
+              {replyTo.message}
+            </div>
           </div>
-          <button onClick={onCancelReply} className="w-6 h-6 flex items-center justify-center text-text-soft" aria-label="Cancel reply"><X size={14} /></button>
+          <button onClick={onCancelReply} className="w-6 h-6 flex items-center justify-center text-text-soft flex-shrink-0" aria-label="Cancel reply"><X size={14} /></button>
         </div>
       )}
       {polishPreview && (
@@ -292,7 +300,12 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
             <Sparkles size={14} />
           </button>
         )}
-        <button onClick={onSend} disabled={sending || (!text.trim() && attachedImages.length === 0 && attachedFiles.length === 0 && taskAttachments.length === 0)} className="px-3 py-1.5 rounded-sm2 bg-text-loud text-bg text-sm font-semibold tracking-tight inline-flex items-center gap-1.5 disabled:opacity-40">
+        <button
+          onClick={onSend}
+          disabled={sending || (!text.trim() && attachedImages.length === 0 && attachedFiles.length === 0 && taskAttachments.length === 0)}
+          className="px-3 py-1.5 rounded-sm2 text-sm font-semibold tracking-tight inline-flex items-center gap-1.5 disabled:opacity-40"
+          style={{ backgroundColor: '#ffffff', color: '#0a0a0a' }}
+        >
           <span>Send</span>
           <span className="font-mono text-2xs opacity-50">{'\u2318\u21B5'}</span>
         </button>

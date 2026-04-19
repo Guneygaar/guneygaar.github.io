@@ -23,11 +23,6 @@ function isOverdue(iso, stage) {
   return target < today.getTime();
 }
 
-function quickDateOffset(days) {
-  const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 function Chip({ onClick, canEdit, active, className = '', children }) {
   return (
     <button
@@ -230,36 +225,30 @@ export function PropertiesTable({ post, canEdit, userRoles }) {
 
       {drop && drop.which === 'target' && (
         <DropdownShell rect={drop.rect} onClose={() => setDrop(null)}>
-          <div className="py-1">
-            <OptionRow onClick={() => savePatch({ target_date: quickDateOffset(0) }, 'target_date', post.target_date, quickDateOffset(0))}>Today</OptionRow>
-            <OptionRow onClick={() => savePatch({ target_date: quickDateOffset(1) }, 'target_date', post.target_date, quickDateOffset(1))}>Tomorrow</OptionRow>
-            <OptionRow onClick={() => savePatch({ target_date: quickDateOffset(3) }, 'target_date', post.target_date, quickDateOffset(3))}>In 3 days</OptionRow>
-            <OptionRow onClick={() => savePatch({ target_date: quickDateOffset(7) }, 'target_date', post.target_date, quickDateOffset(7))}>Next week</OptionRow>
-            <div className="border-t border-divider-soft p-3">
-              <label htmlFor="pcs-quick-date" className="block font-mono text-2xs text-text-soft tracking-widest uppercase mb-1.5">Custom date</label>
-              <input
-                id="pcs-quick-date"
-                type="date"
-                defaultValue={post.target_date || ''}
-                min="2020-01-01"
-                max="2035-12-31"
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v) savePatch({ target_date: v }, 'target_date', post.target_date, v);
-                }}
-                className="w-full px-3 py-2 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-sm"
-                style={{ WebkitAppearance: 'none', appearance: 'none' }}
-              />
-              {post.target_date && (
-                <button
-                  type="button"
-                  onClick={() => savePatch({ target_date: null }, 'target_date', post.target_date, null)}
-                  className="mt-2 w-full px-3 py-1.5 rounded-sm2 border border-divider-soft text-2xs font-mono tracking-widest uppercase text-text-soft hover:text-text-mid"
-                >
-                  Clear date
-                </button>
-              )}
-            </div>
+          <div className="p-3">
+            <label htmlFor="pcs-quick-date" className="block font-mono text-2xs text-text-soft tracking-widest uppercase mb-1.5">Target date</label>
+            <input
+              id="pcs-quick-date"
+              type="date"
+              defaultValue={post.target_date || ''}
+              min="2020-01-01"
+              max="2035-12-31"
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) savePatch({ target_date: v }, 'target_date', post.target_date, v);
+              }}
+              className="w-full px-3 py-3 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-base"
+              style={{ WebkitAppearance: 'none', appearance: 'none', colorScheme: 'dark', minHeight: 56 }}
+            />
+            {post.target_date && (
+              <button
+                type="button"
+                onClick={() => savePatch({ target_date: null }, 'target_date', post.target_date, null)}
+                className="mt-2 w-full px-3 py-1.5 rounded-sm2 border border-divider-soft text-2xs font-mono tracking-widest uppercase text-text-soft hover:text-text-mid"
+              >
+                Clear date
+              </button>
+            )}
           </div>
         </DropdownShell>
       )}
