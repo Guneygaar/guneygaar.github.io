@@ -3,7 +3,7 @@ name: Auto Version Bump
 on:
   push:
     branches:
-      - main
+      - main-/-root
 
 jobs:
   bump-version:
@@ -17,7 +17,7 @@ jobs:
       - name: Bump ?v= strings in index.html
         run: |
           DATE=$(date +'%Y%m%d')
-          sed -i "s/?v=[0-9]*/?v=${DATE}1/g" index.html
+          sed -i "s/?v=[0-9A-Za-z]*/?v=${DATE}1/g" index.html
 
       - name: Commit and push if changed
         run: |
