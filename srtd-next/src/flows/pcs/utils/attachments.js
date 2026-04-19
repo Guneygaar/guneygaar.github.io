@@ -1,5 +1,13 @@
 export function normalizeAttachments(att) {
   if (!att) return [];
+  if (typeof att === 'string') {
+    try {
+      att = JSON.parse(att);
+    } catch (err) {
+      return [];
+    }
+    if (!att) return [];
+  }
   if (Array.isArray(att)) return att;
   if (typeof att === 'object') return [att];
   return [];
