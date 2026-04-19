@@ -6,13 +6,16 @@ import { copyToClipboard } from '../../../core/bridges/clipboard.js';
 import { openWhatsAppShare, buildShortUrl } from '../../../core/bridges/whatsapp.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
-import { truncate } from '../utils/stage.js';
+import { STAGE_LABELS, STAGE_TOKEN } from '../utils/stage.js';
 import { deletePost } from '../../../core/api/posts.js';
 
-export function Topbar({ post, isAdmin, canEdit, onEditTitle }) {
+export function Topbar({ post, isAdmin, canMove, onMoveStage }) {
   const hasCaption = !!(post?.caption && post.caption.trim().length > 0);
-  const title = truncate(post?.title || 'Untitled', 80);
   const [busy, setBusy] = useState(false);
+  const stage = post?.stage || 'in_production';
+  const stageLabel = STAGE_LABELS[stage] || stage;
+  const stageToken = STAGE_TOKEN[stage] || 'text-soft';
+  const stageColor = `var(--c-${stageToken})`;
 
   const onWa = () => {
     if (!post?.post_id) return;
@@ -53,12 +56,16 @@ export function Topbar({ post, isAdmin, canEdit, onEditTitle }) {
         <ArrowLeft size={16} />
       </button>
       <button
-        onClick={canEdit ? onEditTitle : undefined}
-        disabled={!canEdit}
-        className="flex-1 min-w-0 text-left text-[15px] font-medium text-text-loud tracking-tight truncate px-1 bg-transparent border-0 cursor-pointer disabled:cursor-default"
+        onClick={canMove ? onMoveStage : undefined}
+        disabled={!canMove}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-pill font-mono text-xs tracking-widest uppercase font-medium border bg-transparent disabled:cursor-default"
+        style={{ color: stageColor, borderColor: stageColor }}
+        aria-label="Move stage"
       >
-        {title}
+        <span className="w-1.5 h-1.5 rounded-pill" style={{ backgroundColor: stageColor }} />
+        <span>{stageLabel}</span>
       </button>
+      <span className="flex-1" />
       <button onClick={onCopy} className="w-8 h-8 flex items-center justify-center rounded-sm2 text-text-soft hover:bg-bg-2 hover:text-text-mid" aria-label="Copy link">
         <Link2 size={16} />
       </button>

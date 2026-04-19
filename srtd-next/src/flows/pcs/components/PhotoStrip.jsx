@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Upload, ImageOff, X, Trash2, Download } from 'lucide-react';
+import { Upload, ImageOff, X, Trash2, Download, ImagePlus } from 'lucide-react';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
 import { useAppState } from '../../../core/stores/appState.js';
@@ -141,9 +141,14 @@ export function PhotoStrip({ post, canEdit }) {
       <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
       {count === 0 ? (
         canEdit ? (
-          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
-            {AddTile}
-          </div>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={busy}
+            className="flex items-center gap-2 px-4 py-3 text-text-dim hover:text-text-mid w-full disabled:opacity-50"
+          >
+            <ImagePlus size={15} />
+            <span className="font-mono text-xs tracking-widest uppercase">Add photos</span>
+          </button>
         ) : null
       ) : count === 1 ? (
         canEdit ? (

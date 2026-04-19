@@ -64,6 +64,7 @@ export function PCS() {
   const isAdmin = roleLc === 'admin';
   const isAgency = !isClient;
   const canEdit = isAgency;
+  const canMove = isAgency;
   const canSeeInternal = isAgency;
   const currentThread = activeTab === 'internal' ? internalNotes : comments;
   const currentError = activeTab === 'internal' ? notesError : commentsError;
@@ -91,8 +92,16 @@ export function PCS() {
           )}
           {post && (
             <>
-              <Topbar post={post} isAdmin={isAdmin} canEdit={canEdit} onEditTitle={() => setActiveSheet('title')} />
+              <Topbar post={post} isAdmin={isAdmin} canMove={canMove} onMoveStage={() => setStageSheetOpen(true)} />
               <PhotoStrip post={post} canEdit={canEdit} />
+              <div className="px-4 pt-3 pb-1">
+                <h1
+                  onClick={canEdit ? () => setActiveSheet('title') : undefined}
+                  className={`font-serif text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-loud ${canEdit ? 'cursor-pointer' : ''}`}
+                >
+                  {post.title || 'Untitled'}
+                </h1>
+              </div>
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
               <LinkedInIndicator post={post} />
               <LinkCards post={post} linkedinLink={post.linkedin_link} />
