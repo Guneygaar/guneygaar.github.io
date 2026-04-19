@@ -671,13 +671,14 @@ window._pcsTabSwitch = function(tab) {
       if (tab === 'internal') t.classList.add('amber');
     }
   });
-  // Toggle panes
+  // Tab bar is hidden in single-scroll mode; keep chip state updates
+  // but never hide panes (all three are rendered in scroll order).
   var pCaption = document.getElementById('pcs-pane-caption');
   var pClient = document.getElementById('pcs-pane-client');
   var pInternal = document.getElementById('pcs-pane-internal');
-  if (pCaption) pCaption.style.display = tab === 'caption' ? '' : 'none';
-  if (pClient) pClient.style.display = tab === 'client' ? '' : 'none';
-  if (pInternal) pInternal.style.display = tab === 'internal' ? '' : 'none';
+  if (pCaption) pCaption.style.display = '';
+  if (pClient) pClient.style.display = '';
+  if (pInternal) pInternal.style.display = '';
   if (tab === 'client' && typeof _updateSelectStripVisibility === 'function') _updateSelectStripVisibility();
   if (tab !== 'client' && typeof exitCommentSelectMode === 'function' && window._commentSelectMode && window._commentSelectMode.active) exitCommentSelectMode();
 }
@@ -1044,26 +1045,23 @@ window._pcsDateChange = function(postId, dateValue) {
 // -- Caption section builder --
 function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   if (!post.caption && !canEdit && !canEditCreative) return '';
+  var captionTrim = (post.caption || '').trim();
+  var wc = captionTrim ? captionTrim.split(/\s+/).filter(Boolean).length : 0;
+  var needsClamp = captionTrim.length > 100;
+  var headerRow = '<div class="pcs-caption-header-row">' +
+    '<span class="pcs-caption-label">Caption</span>' +
+    (post.caption ? '<span class="pcs-caption-wc">' + wc + ' word' + (wc === 1 ? '' : 's') + '</span>' : '') +
+  '</div>';
   return '<div id="pcs-caption-section" style="padding:12px 14px 8px;border-bottom:1px solid #323244;">' +
+    headerRow +
     (post.caption ?
-      '<div id="pcs-caption-text" data-raw="' + esc(post.caption) + '" style="font-family:\'DM Sans\',sans-serif;' +
-      'font-size:13px;color:#B8B8C0;line-height:1.6;white-space:pre-wrap;word-wrap:break-word;' +
-      'overflow-wrap:break-word;word-break:break-word;max-width:100%;' +
-      'max-height:200px;overflow:hidden;' +
-      '-webkit-mask-image:linear-gradient(to bottom,black 160px,transparent 198px);' +
-      'mask-image:linear-gradient(to bottom,black 160px,transparent 198px);">' +
+      '<div id="pcs-caption-text" class="pcs-caption-text' + (needsClamp ? '' : ' expanded') + '" data-raw="' + esc(post.caption) + '">' +
       esc(post.caption) + '</div>' +
-      '<button id="pcs-caption-see-more" onclick="(function(){' +
-      'var t=document.getElementById(\'pcs-caption-text\');' +
-      'var b=document.getElementById(\'pcs-caption-see-more\');' +
-      'if(!t||!b)return;' +
-      'if(t.style.maxHeight===\'200px\'){t.style.maxHeight=\'none\';t.style.webkitMaskImage=\'none\';t.style.maskImage=\'none\';t.style.overflow=\'visible\';b.textContent=\'See Less\';}' +
-      'else{t.style.maxHeight=\'200px\';t.style.overflow=\'hidden\';t.style.webkitMaskImage=\'linear-gradient(to bottom,black 160px,transparent 198px)\';t.style.maskImage=\'linear-gradient(to bottom,black 160px,transparent 198px)\';b.textContent=\'See More\';}' +
-      '})()" style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.1em;' +
-      'text-transform:uppercase;color:#F6A623;background:transparent;border:none;cursor:pointer;' +
-      'padding:6px 0 0 0;">See More</button>'
+      (needsClamp ?
+        '<button id="pcs-caption-see-more" class="pcs-caption-see-more" onclick="(function(b){var t=document.getElementById(\'pcs-caption-text\');if(t){t.classList.add(\'expanded\');}b.style.display=\'none\';})(this)">See More</button>'
+        : '')
       :
-      '<div id="pcs-caption-text" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#4A4A5A;letter-spacing:0.06em;">No copy yet</div>'
+      '<div id="pcs-caption-text" class="pcs-caption-text expanded" style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;color:#4A4A5A;letter-spacing:0.06em;">No copy yet</div>'
     ) + '</div>';
 }
 
@@ -1298,11 +1296,62 @@ window._saveLiUrlInline = function(postId) {
 }
 
 // -- PCS Comments --------------------------------------------------
+// Track latest counts so the combined "N client · M internal" label stays
+// in sync across the two async branches in loadPcsComments.
+window._pcsSectionCounts = window._pcsSectionCounts || { client: 0, internal: 0 };
+function _pcsUpdateSectionCount(client, internal) {
+  if (client !== null && client !== undefined) window._pcsSectionCounts.client = client;
+  if (internal !== null && internal !== undefined) window._pcsSectionCounts.internal = internal;
+  var el = document.getElementById('pcs-section-count');
+  if (el) {
+    el.textContent = window._pcsSectionCounts.client + ' client \u00B7 ' + window._pcsSectionCounts.internal + ' internal';
+  }
+}
+
+// Inject section header + filter chip bar above comments list, idempotent.
+function _pcsEnsureCommentsHeader(list) {
+  if (!list || !list.parentNode) return;
+  var parent = list.parentNode;
+  if (!parent.querySelector('.pcs-comments-section-header')) {
+    var header = document.createElement('div');
+    header.className = 'pcs-comments-section-header';
+    header.innerHTML =
+      '<span class="pcs-section-title">Comments</span>' +
+      '<span class="pcs-section-count" id="pcs-section-count">0 client &middot; 0 internal</span>';
+    parent.insertBefore(header, list);
+  }
+  if (!parent.querySelector('.pcs-filter-bar')) {
+    var filterBar = document.createElement('div');
+    filterBar.className = 'pcs-filter-bar';
+    filterBar.innerHTML =
+      '<span class="pcs-fchip pcs-fchip--on" data-filter="all">All</span>' +
+      '<span class="pcs-fchip" data-filter="client">Client</span>' +
+      '<span class="pcs-fchip" data-filter="internal">Internal</span>';
+    filterBar.querySelectorAll('.pcs-fchip').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        filterBar.querySelectorAll('.pcs-fchip').forEach(function(c) { c.classList.remove('pcs-fchip--on'); });
+        chip.classList.add('pcs-fchip--on');
+        var f = chip.dataset.filter;
+        document.querySelectorAll('.pcs-comment-item').forEach(function(el) {
+          el.style.display = (f === 'all' || f === 'client') ? '' : 'none';
+        });
+        document.querySelectorAll('.pcs-note-item').forEach(function(el) {
+          el.style.display = (f === 'all' || f === 'internal') ? '' : 'none';
+        });
+      });
+    });
+    parent.insertBefore(filterBar, list);
+  }
+}
+
 window.loadPcsComments = async function(postId) {
   var section = document.getElementById('pcs-comments-section');
   var list = document.getElementById('pcs-comments-list');
   var notesList = document.getElementById('pcs-notes-list');
   if (!section || !list) return;
+
+  // Inject single-scroll section header + filter chip bar once per pane.
+  _pcsEnsureCommentsHeader(list);
 
   if (window._pcsCommentsLoading) return;
   window._pcsCommentsLoading = true;
@@ -1639,6 +1688,7 @@ window.loadPcsComments = async function(postId) {
             : '') +
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
+            '<span class="pcs-note-internal-badge">Internal</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
             _visTag +
           '</div>' +
@@ -1743,6 +1793,9 @@ window.loadPcsComments = async function(postId) {
       tabClientCount.textContent = clientRows.length > 0 ? clientRows.length : '';
     }
 
+    // Combined section-header count (single-scroll mode)
+    _pcsUpdateSectionCount(activeClientRows.length, null);
+
     if (notesList && _roleLower !== 'client') {
       var _activeVis = window._pcsNoteVisibility || 'all';
       var filteredNotes = _activeVis === 'all'
@@ -1784,6 +1837,9 @@ window.loadPcsComments = async function(postId) {
       if (tabNotesCount) {
         tabNotesCount.textContent = internalRows.length > 0 ? internalRows.length : '';
       }
+
+      // Combined section-header count (single-scroll mode)
+      _pcsUpdateSectionCount(null, activeRows.length);
 
       // Vis chips: keep static HTML, do not rebuild with counts
     }
