@@ -47,13 +47,7 @@ document.addEventListener('click', function(e) {
 });
 
 window.openPCS = function(postId, listKey) {
-  // Cancel any deferred forcePCSReset from a previous closePCS()  - 
-  // without this, a rapid close->open reopens the sheet, then the
-  // stale timer fires 300ms later and nukes it back to hidden.
   if (window._pcsCloseTimer) { clearTimeout(window._pcsCloseTimer); window._pcsCloseTimer = null; }
-
-  // Force-clean any stale PCS state from a previous session
-  forcePCSReset();
 
   var list = (listKey && window._postLists && _postLists[listKey])
     ? _postLists[listKey]
@@ -64,49 +58,26 @@ window.openPCS = function(postId, listKey) {
   window._pcs.idx     = idx >= 0 ? idx : 0;
   window._pcs.postId  = postId;
 
-  // Point AppState.pcs.post at the SAME object reference in posts.all
-  // so Object.assign mutations from mergePosts/poll refresh flow through
-  // (see CLAUDE.md §4 "AppState shape"). Consumers like submitSelectedComments
-  // (actions/pcs-select.js) and the drive-link handler (10-ui.js) read this.
   var _openPost = (typeof getPostById === 'function') ? getPostById(postId) : null;
+  window.AppState.pcs.postId = postId;
   window.AppState.pcs.post = _openPost || null;
-
-  var overlay = document.getElementById('pcs-overlay');
-  if (!overlay) return;
-  var screen = document.getElementById('pcs-screen');
-
-  // 1. Clear every inline style  -  no stale transform/transition/opacity
-  if (screen) {
-    screen.style.cssText = '';
-  }
-
-  // 2. Show the overlay WITHOUT .open  -  screen sits at translateY(100%)
-  //    via the base CSS rule, which is our desired starting position.
-  overlay.classList.remove('open');
-  overlay.style.display       = 'flex';
-  overlay.style.pointerEvents = '';
-
-  window.AppState.ui.modalOpen = true;
   window.AppState.pcs.open = true;
-  document.body.style.overflow = 'hidden';
+  window.AppState.ui.modalOpen = true;
 
-  try {
-    _renderPCS(postId);
-  } catch (err) {
-    console.error('[PCS] openPCS failed  -  cleaning up:', err);
-    forcePCSReset();
-    return;
+  var flows = window.SortedReact && window.SortedReact.flows;
+  var pcs = flows && flows.pcs;
+  if (pcs && typeof pcs.open === 'function') {
+    try { pcs.open(postId); return; }
+    catch (err) { console.error('[PCS] React flow open failed:', err); }
+  } else {
+    console.warn('[PCS] React flow not available yet, retrying in 150ms');
+    setTimeout(function() {
+      var f2 = window.SortedReact && window.SortedReact.flows && window.SortedReact.flows.pcs;
+      if (f2 && typeof f2.open === 'function') {
+        try { f2.open(postId); } catch (e) { console.error('[PCS] retry open failed:', e); }
+      }
+    }, 150);
   }
-
-  // 3. Force Safari to commit the current computed transform (translateY(100%))
-  //    before we add .open. Reading getComputedStyle().transform forces both
-  //    style resolution AND layout  -  more reliable than offsetHeight on
-  //    Mobile Safari, which can skip style recalc in some DOM states.
-  if (screen) { void getComputedStyle(screen).transform; }
-
-  // 4. Now add .open  -  CSS transition animates translateY(100%) -> translateY(0).
-  //    No inline transform needed. The CSS rules handle everything.
-  overlay.classList.add('open');
 }
 
 window.closePCS = function() {
