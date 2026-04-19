@@ -139,7 +139,14 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
         {imageAtts.length > 0 && (
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
             {imageAtts.flatMap((a) => a.urls).slice(0, 6).map((src, i) => (
-              <div key={i} className="w-16 h-16 rounded-sm2 bg-bg-2 bg-cover bg-center border border-divider-soft" style={{ backgroundImage: `url(${src})` }} />
+              <img
+                key={i}
+                src={src}
+                alt=""
+                onClick={() => { try { window.open(src, '_blank'); } catch (e) { /* ignore */ } }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                className="w-16 h-16 rounded-sm2 object-cover border border-divider-soft cursor-pointer block"
+              />
             ))}
           </div>
         )}

@@ -16,20 +16,13 @@ import { Composer } from './components/Composer.jsx';
 import { RetryBanner } from './components/RetryBanner.jsx';
 import { StageSheet } from './components/StageSheet.jsx';
 import { PropertySheet } from './components/PropertySheet.jsx';
-import { OwnerSheet } from './components/OwnerSheet.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
-import { FORMATS, PILLARS, LOCATIONS } from '../../core/mappings.js';
 
-const FORMAT_OPTIONS = FORMATS.map((f) => ({ value: f, label: f }));
-const PILLAR_OPTIONS = PILLARS.map((p) => ({ value: p.toLowerCase(), label: p }));
-const LOCATION_OPTIONS = LOCATIONS.map((l) => ({ value: l, label: l }));
-
-function fieldConfig(which, post) {
+// Fields still routed through the full-screen PropertySheet (title +
+// long text fields). Chip fields (owner/target/format/pillar/location)
+// moved to inline dropdowns owned by PropertiesTable itself.
+function fieldConfig(which) {
   switch (which) {
-    case 'target':         return { field: 'target_date', title: 'Target date', inputType: 'date', placeholder: 'YYYY-MM-DD' };
-    case 'format':         return { field: 'format', title: 'Format', options: FORMAT_OPTIONS, currentValue: post.format };
-    case 'pillar':         return { field: 'content_pillar', title: 'Content pillar', options: PILLAR_OPTIONS, currentValue: post.content_pillar };
-    case 'location':       return { field: 'location', title: 'Location', options: LOCATION_OPTIONS, currentValue: post.location };
     case 'title':          return { field: 'title', title: 'Title', inputType: 'text', placeholder: 'Post title', reseedOg: true };
     case 'drive':          return { field: 'drive_link', title: 'Drive link', inputType: 'url', placeholder: 'https://drive.google.com/...' };
     case 'canva':          return { field: 'canva_link', title: 'Canva link', inputType: 'url', placeholder: 'https://canva.com/...' };
@@ -102,7 +95,7 @@ export function PCS() {
                   {post.title || 'Untitled'}
                 </h1>
               </div>
-              {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
+              {!isClient && <PropertiesTable post={post} canEdit={canEdit} userRoles={userRoles} />}
               <LinkedInIndicator post={post} />
               <LinkCards post={post} linkedinLink={post.linkedin_link} />
               <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
@@ -132,18 +125,14 @@ export function PCS() {
         <StageSheet post={post} onClose={() => setStageSheetOpen(false)} />
       )}
 
-      {activeSheet === 'owner' && (
-        <OwnerSheet onClose={() => setActiveSheet(null)} />
-      )}
-
-      {activeSheet && activeSheet !== 'owner' && post && (() => {
-        const cfg = fieldConfig(activeSheet, post);
+      {activeSheet && post && (() => {
+        const cfg = fieldConfig(activeSheet);
         if (!cfg) return null;
         return (
           <PropertySheet
             field={cfg.field}
             title={cfg.title}
-            currentValue={cfg.currentValue !== undefined ? cfg.currentValue : post[cfg.field]}
+            currentValue={post[cfg.field]}
             options={cfg.options}
             inputType={cfg.inputType}
             placeholder={cfg.placeholder}
