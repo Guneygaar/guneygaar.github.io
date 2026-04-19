@@ -109,6 +109,21 @@ export function PCS() {
                   <button onClick={() => setActiveSheet('client_feedback')} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm2 hover:bg-bg-2"><Pencil size={10} /> Client feedback</button>
                 </div>
               )}
+              <div className="flex items-center gap-2 px-3 pt-3 pb-1">
+                <span className="font-sans text-lg font-bold text-text-loud">Comments</span>
+                <span className="font-sans text-lg font-bold text-terracotta">{comments.length + (canSeeInternal ? internalNotes.length : 0)}</span>
+                <span className="text-text-dim text-base opacity-40">·</span>
+                <span className="font-sans text-base text-text-soft">{comments.length} client</span>
+                {canSeeInternal && (
+                  <>
+                    <span className="text-text-dim text-base opacity-40">·</span>
+                    <span className="font-sans text-base text-text-soft">{internalNotes.length} internal</span>
+                  </>
+                )}
+                <span className="ml-auto font-mono text-2xs text-text-dim tracking-widest uppercase">
+                  {activeTab === 'internal' ? 'Agency Only' : 'Client + Agency'}
+                </span>
+              </div>
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
               <div className="flex-1">

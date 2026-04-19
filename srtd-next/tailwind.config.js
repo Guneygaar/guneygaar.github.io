@@ -116,5 +116,17 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    function scrollbarNone({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-none': {
+          '-ms-overflow-style': 'none',
+          'scrollbar-width': 'none',
+        },
+        '.scrollbar-none::-webkit-scrollbar': {
+          display: 'none',
+        },
+      });
+    },
+  ],
 };

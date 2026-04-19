@@ -97,6 +97,19 @@ export const pcsFlow = {
     if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
     usePcsFlowState.getState().close();
     usePcsStore.getState().reset();
+    if (typeof window !== 'undefined' && window.AppState) {
+      if (window.AppState.pcs) {
+        window.AppState.pcs.open = false;
+        window.AppState.pcs.postId = null;
+        window.AppState.pcs.post = null;
+      }
+      if (window.AppState.ui) {
+        window.AppState.ui.modalOpen = false;
+      }
+      if (typeof window._drainDeferredRender === 'function') {
+        try { window._drainDeferredRender(); } catch (e) {}
+      }
+    }
   },
   async retryComments() {
     const postId = usePcsFlowState.getState().postId;

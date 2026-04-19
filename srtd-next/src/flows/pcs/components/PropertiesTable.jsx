@@ -2,9 +2,6 @@ import React from 'react';
 import { ownerToRole, titleCase } from '../utils/stage.js';
 import { formatTargetDate, daysUntil } from '../utils/time.js';
 
-const DOT = '\u00B7';
-const DASH = '-';
-
 function isOverdue(iso, stage) {
   if (!iso) return false;
   if (stage === 'published' || stage === 'rejected' || stage === 'parked') return false;
@@ -14,13 +11,14 @@ function isOverdue(iso, stage) {
   return target < today.getTime();
 }
 
-function PropRow({ keyLabel, onClick, canEdit, children }) {
-  const cls = `flex items-center gap-3 px-3 py-2.5 border-b border-divider-soft last:border-b-0 min-h-[40px] ${canEdit ? 'cursor-pointer hover:bg-bg-2' : 'cursor-not-allowed'}`;
+function Chip({ onClick, canEdit, className = '', children }) {
   return (
-    <div className={cls} onClick={canEdit ? onClick : undefined} role={canEdit ? 'button' : undefined} tabIndex={canEdit ? 0 : undefined}>
-      <div className="font-mono text-sm text-text-dim tracking-wide uppercase w-[72px] flex-shrink-0">{keyLabel}</div>
-      <div className="flex-1 min-w-0 flex items-baseline gap-2 text-lg text-text-loud tracking-tight">{children}</div>
-    </div>
+    <button
+      onClick={canEdit ? onClick : undefined}
+      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-pill border font-sans text-base font-medium whitespace-nowrap flex-shrink-0 transition-colors ${canEdit ? 'cursor-pointer hover:bg-bg-3' : 'cursor-default'} bg-bg-2 border-border-neutral text-text-mid ${className}`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -28,40 +26,53 @@ export function PropertiesTable({ post, canEdit, onEdit }) {
   if (!post) return null;
   const ownerUser = post.owner_user_id && typeof post.owner_user_id === 'object' ? post.owner_user_id : null;
   const roleKey = ownerUser?.role ? String(ownerUser.role).toLowerCase() : ownerToRole(post.owner);
-  const displayName = ownerUser?.name || post.owner || DASH;
-  const showRoleSuffix = displayName && displayName.toLowerCase() !== roleKey.toLowerCase();
+  const displayName = ownerUser?.name || post.owner || null;
   const targetFmt = formatTargetDate(post.target_date);
-  const targetRel = daysUntil(post.target_date);
   const overdue = isOverdue(post.target_date, post.stage);
-  const fmt = post.format || DASH;
-  const pillar = post.content_pillar ? titleCase(post.content_pillar) : DASH;
-  const loc = post.location || DASH;
+  const fmt = post.format;
+  const pillar = post.content_pillar ? titleCase(post.content_pillar) : null;
+  const loc = post.location;
 
-  const open = (which) => () => { if (canEdit && onEdit) onEdit(which); };
+  const open = (which) => (e) => { e.stopPropagation(); if (canEdit && onEdit) onEdit(which); };
+
+  const ownerColorClass =
+    roleKey === 'client' ? 'text-role-client border-role-client/30 bg-role-client/5' :
+    roleKey === 'servicing' ? 'text-role-servicing border-role-servicing/30 bg-role-servicing/5' :
+    roleKey === 'creative' ? 'text-role-creative border-role-creative/30 bg-role-creative/5' :
+    roleKey === 'admin' ? 'text-role-admin border-role-admin/30 bg-role-admin/5' : '';
 
   return (
-    <div className="border-b border-divider-warm">
-      <PropRow keyLabel="Owner" canEdit={canEdit} onClick={open('owner')}>
-        <span>{displayName}</span>
-        {showRoleSuffix && <span className="text-text-soft text-sm">{DOT} {titleCase(roleKey)}</span>}
-      </PropRow>
-      <PropRow keyLabel="Target" canEdit={canEdit} onClick={open('target')}>
-        {targetFmt ? (
-          <>
-            <span className={overdue ? 'text-amber' : ''}>{targetFmt}</span>
-            {targetRel && <span className={`text-sm ${overdue ? 'text-amber' : 'text-text-soft'}`}>{DOT} {targetRel}</span>}
-          </>
-        ) : <span className="text-text-soft">{DASH}</span>}
-      </PropRow>
-      <PropRow keyLabel="Format" canEdit={canEdit} onClick={open('format')}>
-        <span className={fmt !== DASH ? 'text-terracotta' : 'text-text-soft'}>{fmt}</span>
-      </PropRow>
-      <PropRow keyLabel="Pillar" canEdit={canEdit} onClick={open('pillar')}>
-        <span className={pillar !== DASH ? 'text-text-loud' : 'text-text-soft'}>{pillar}</span>
-      </PropRow>
-      <PropRow keyLabel="Location" canEdit={canEdit} onClick={open('location')}>
-        <span className={loc !== DASH ? 'text-text-loud' : 'text-text-soft'}>{loc}</span>
-      </PropRow>
+    <div className="flex gap-1.5 px-3 py-2.5 border-b border-divider-warm overflow-x-auto scrollbar-none">
+      {displayName && (
+        <Chip canEdit={canEdit} onClick={open('owner')} className={ownerColorClass}>
+          {displayName}
+          {canEdit && <span className="text-2xs opacity-50">▾</span>}
+        </Chip>
+      )}
+      {(targetFmt || canEdit) && (
+        <Chip canEdit={canEdit} onClick={open('target')} className={overdue ? 'text-amber border-amber/30 bg-amber/5' : ''}>
+          {targetFmt || '+ Date'}
+          {canEdit && <span className="text-2xs opacity-50">▾</span>}
+        </Chip>
+      )}
+      {(fmt || canEdit) && (
+        <Chip canEdit={canEdit} onClick={open('format')} className={fmt ? 'text-terracotta border-terracotta/30 bg-terracotta/5' : 'text-text-dim'}>
+          {fmt || '+ Format'}
+          {canEdit && <span className="text-2xs opacity-50">▾</span>}
+        </Chip>
+      )}
+      {(pillar || canEdit) && (
+        <Chip canEdit={canEdit} onClick={open('pillar')} className={pillar ? '' : 'text-text-dim'}>
+          {pillar || '+ Pillar'}
+          {canEdit && <span className="text-2xs opacity-50">▾</span>}
+        </Chip>
+      )}
+      {(loc || canEdit) && (
+        <Chip canEdit={canEdit} onClick={open('location')} className={loc ? '' : 'text-text-dim'}>
+          {loc || '+ Location'}
+          {canEdit && <span className="text-2xs opacity-50">▾</span>}
+        </Chip>
+      )}
     </div>
   );
 }

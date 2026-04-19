@@ -6,12 +6,12 @@ import { createPostFlow } from './flows/create-post/index.js';
 import { pcsFlow } from './flows/pcs/index.js';
 
 if (typeof window !== 'undefined') {
-  console.log('[sorted-react] bundle loaded, v0.9.1');
+  console.log('[sorted-react] bundle loaded, v0.9.2');
 
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.9.1';
+  window.SortedReact.version   = '0.9.2';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;
@@ -35,7 +35,7 @@ if (typeof window !== 'undefined') {
       window.SortedReact.mounted = true;
       console.log('[sorted-react] mounted, core + flows ready on window.SortedReact');
 
-      if (window.ENABLE_REACT_PCS === true && window.__pcsAutoOpenPostId) {
+      if (window.__pcsAutoOpenPostId) {
         setTimeout(() => {
           try { pcsFlow.open(window.__pcsAutoOpenPostId); }
           catch (e) { console.error('[sorted-react/pcs] auto-open failed', e); }
