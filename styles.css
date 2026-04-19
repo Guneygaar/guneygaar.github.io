@@ -7394,6 +7394,52 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #E3B56A;
 }
 
+/* Admin caption action row (Edit · Write ▾ · QC · Rewrite · ✦ within target length) */
+.pcs-cap-actions .pcs-cap-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+}
+.pcs-cap-actions .pcs-cap-act:active { color: var(--text); }
+.pcs-cap-actions .pcs-cap-act--ai { color: var(--amber); }
+.pcs-cap-act-sep {
+  color: var(--text-muted);
+  font-size: 10px;
+  opacity: 0.4;
+}
+.pcs-cap-act-sparkle {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.10em;
+  color: var(--amber);
+  opacity: 0.7;
+}
+.pcs-cap-act-wrap { display: inline-flex; align-items: center; }
+.pcs-write-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.pcs-write-menu-item:last-child { border-bottom: none; }
+.pcs-write-menu-item:active { background: var(--surface2); }
+
 /* Caption header inline edit icon (CHANGE 1: pen) */
 .pcs-caption-edit-icon {
   background: none;
@@ -10015,6 +10061,111 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   text-transform: uppercase;
   color: var(--green);
   font-weight: 500;
+}
+.pcs-caption-wc--over { color: var(--amber) !important; }
+
+/* CHANGE 3: LinkedIn single-row indicator (replaces the boxed banner) */
+.pcs-li-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.pcs-li-icon { color: var(--green); flex-shrink: 0; }
+.pcs-li-live {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--green);
+}
+.pcs-li-url {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: #C15F3C;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+/* CHANGE 4: Drive + Canva link cards */
+.pcs-link-cards {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.pcs-link-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.pcs-link-card:active { background: var(--surface3); }
+.pcs-link-card-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.pcs-link-card-url {
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.pcs-link-card-arr {
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* CHANGE 5: comment clamp + READ MORE */
+.pcs-comment-text.clamped {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pcs-comment-read-more {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #C15F3C;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 4px;
+  display: inline-block;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+/* CHANGE 6: (edited) badge on comments */
+.pcs-edited-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
 }
 
 /* CHANGE 4: filter chips above comments (All / Client / Internal) */

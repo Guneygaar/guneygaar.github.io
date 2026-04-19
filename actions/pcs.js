@@ -32,6 +32,20 @@ document.addEventListener('click', function(e) {
   }
 });
 
+// Write-menu dropup (Angles + drafts / 3 options) for admin caption actions.
+window._pcsToggleWriteMenu = function(id, btn, ev) {
+  var menu = document.getElementById('pcs-write-menu-' + id);
+  if (!menu) return;
+  var isOpen = menu.style.display !== 'none';
+  document.querySelectorAll('.pcs-write-menu').forEach(function(m) { m.style.display = 'none'; });
+  if (!isOpen) menu.style.display = 'block';
+  if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+};
+document.addEventListener('click', function(e) {
+  if (e.target && e.target.closest && e.target.closest('.pcs-cap-act-wrap')) return;
+  document.querySelectorAll('.pcs-write-menu').forEach(function(m) { m.style.display = 'none'; });
+});
+
 window.openPCS = function(postId, listKey) {
   // Cancel any deferred forcePCSReset from a previous closePCS()  - 
   // without this, a rapid close->open reopens the sheet, then the
@@ -544,13 +558,17 @@ window._renderPCS = function(postId) {
     }
   }
 
-  // b2) Drive link card
+  // b2) Drive + Canva link cards (CHANGE 4)
   var driveLinkWrap = document.getElementById('pcs-drive-link-wrap');
   if (driveLinkWrap) {
-    var driveUrl = post.drive_link || post.driveLink || null;
-    if (driveUrl) {
+    var _linkCardsHtml = _buildLinkCards(post);
+    if (_linkCardsHtml) {
       driveLinkWrap.style.display = 'block';
-      driveLinkWrap.innerHTML = _buildDriveLinkCard(driveUrl, canManage, post.post_id || post.id);
+      driveLinkWrap.innerHTML = _linkCardsHtml;
+    } else if (canManage && (post.drive_link || post.driveLink)) {
+      // Fallback: still render the legacy "Edit/Remove" drive control when
+      // canManage has a drive link but _buildLinkCards rendered it.
+      driveLinkWrap.style.display = 'none';
     } else {
       driveLinkWrap.style.display = 'none';
     }
@@ -586,19 +604,44 @@ window._renderPCS = function(postId) {
   var waContainer = document.getElementById('pcs-wa-container');
   if (waContainer) waContainer.innerHTML = '';
 
-  // f2) Caption action buttons (canManage only). The AI \u2726 Write button
-  //     that lived in this row in PR 2 has moved to Zone 1 in PR 3 (see
-  //     the two-zone layout below), so cap-actions is back to the
-  //     original Edit/Copy/Clear trio.
+  // f2) Caption action buttons. Admin gets the minimalist AI row
+  //     (Edit · Write ▾ · QC · Rewrite · ✦ within target length).
+  //     Non-admin canManage keeps the legacy Edit/Copy/Clear trio.
   var capActionsContainer = document.getElementById('pcs-cap-actions-container');
   if (capActionsContainer) {
     if (canManage) {
-      capActionsContainer.innerHTML =
-        '<div class="pcs-cap-actions">' +
-        '<button class="pcs-cap-btn pcs-cap-btn--ai" onclick="window.openCaptionWorkspace(\'chat\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})">\u2726 Claude</button>' +
-        '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
-        (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
-        '</div>';
+      var _capTrim = (post.caption || '').trim();
+      var _wcForActions = _capTrim ? _capTrim.split(/\s+/).filter(Boolean).length : 0;
+      var _ccForActions = post._commentCount || 0;
+      if (isAdmin) {
+        capActionsContainer.innerHTML =
+          '<div class="pcs-cap-actions">' +
+          '<button class="pcs-cap-act" onclick="window._startCaptionEdit(\'' + esc(id) + '\')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit</button>' +
+          '<span class="pcs-cap-act-sep">\u00B7</span>' +
+          '<div class="pcs-cap-act-wrap" style="position:relative">' +
+          '<button class="pcs-cap-act pcs-cap-act--ai" onclick="window._pcsToggleWriteMenu(\'' + esc(id) + '\', this, event)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 4V2m0 2v2m0-2h-4.5M3 10h18M10 16l-2 6 8-6h-6z"/></svg> Write \u25BE</button>' +
+          '<div class="pcs-write-menu" id="pcs-write-menu-' + esc(id) + '" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:160px;z-index:50;overflow:hidden">' +
+          '<button class="pcs-write-menu-item" onclick="window.openCaptionWorkspace(\'write\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})">Angles + drafts</button>' +
+          '<button class="pcs-write-menu-item" onclick="window.openCaptionWorkspace(\'write-options\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})">3 options</button>' +
+          '</div></div>' +
+          '<span class="pcs-cap-act-sep">\u00B7</span>' +
+          '<button class="pcs-cap-act pcs-cap-act--ai" onclick="window.openCaptionWorkspace(\'qc\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> QC</button>' +
+          (_ccForActions > 0 ?
+            '<span class="pcs-cap-act-sep">\u00B7</span>' +
+            '<button class="pcs-cap-act pcs-cap-act--ai" onclick="window.openCaptionWorkspace(\'rewrite\',{postId:\'' + esc(id) + '\',caption:(getPostById(\'' + esc(id) + '\')||{}).caption||\'\',title:getTitle(getPostById(\'' + esc(id) + '\'))})"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Rewrite</button>'
+            : '') +
+          (post.caption && _wcForActions <= 125 ?
+            '<span class="pcs-cap-act-sparkle">\u2726 within target length</span>'
+            : '') +
+          '</div>';
+      } else {
+        capActionsContainer.innerHTML =
+          '<div class="pcs-cap-actions">' +
+          '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._startCaptionEdit(\'' + esc(id) + '\')">Edit</button>' +
+          '<button class="pcs-cap-btn pcs-cap-btn--bright" onclick="window._pcsCopyCaption(\'' + esc(id) + '\')">Copy</button>' +
+          (post.caption ? '<button class="pcs-cap-btn pcs-cap-btn--danger" onclick="window._pcsConfirmClearCaption(\'' + esc(id) + '\')">Clear</button>' : '') +
+          '</div>';
+      }
     } else {
       capActionsContainer.innerHTML = '';
     }
@@ -722,6 +765,32 @@ function _buildPhotoGrid(imgs, canEdit, canEditCreative, isAdmin, id) {
 
   return gridHtml + inputHtml;
 }
+
+// -- Drive + Canva link cards (CHANGE 4) --
+function _buildLinkCards(post) {
+  var driveUrl = (post.drive_link || post.driveLink || '').trim();
+  var canvaUrl = (post.canva_link || post.postLink || post.canvaLink || '').trim();
+  var hasDrive = !!driveUrl;
+  var hasCanva = !!canvaUrl;
+  if (!hasDrive && !hasCanva) return '';
+  var cards = '';
+  if (hasDrive) {
+    cards += '<a href="' + esc(driveUrl) + '" target="_blank" rel="noopener" class="pcs-link-card">' +
+      '<span class="pcs-link-card-label">Drive</span>' +
+      '<span class="pcs-link-card-url">' + esc(driveUrl.replace(/^https?:\/\//, '')) + '</span>' +
+      '<span class="pcs-link-card-arr">\u2197</span>' +
+      '</a>';
+  }
+  if (hasCanva) {
+    cards += '<a href="' + esc(canvaUrl) + '" target="_blank" rel="noopener" class="pcs-link-card">' +
+      '<span class="pcs-link-card-label">Canva</span>' +
+      '<span class="pcs-link-card-url">' + esc(canvaUrl.replace(/^https?:\/\//, '')) + '</span>' +
+      '<span class="pcs-link-card-arr">\u2197</span>' +
+      '</a>';
+  }
+  return '<div class="pcs-link-cards">' + cards + '</div>';
+}
+window._buildLinkCards = _buildLinkCards;
 
 // -- Drive link card builder --
 function _buildDriveLinkCard(driveUrl, canManage, postId) {
@@ -1039,7 +1108,7 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
   var headerRow = '<div class="pcs-caption-header-row">' +
     '<span class="pcs-caption-label">Caption</span>' +
     '<div style="display:flex;align-items:center;gap:10px;">' +
-    (post.caption ? '<span class="pcs-caption-wc">' + wc + ' / 125 words</span>' : '') +
+    (post.caption ? '<span class="pcs-caption-wc' + (wc > 125 ? ' pcs-caption-wc--over' : '') + '">' + wc + ' / 125 words</span>' : '') +
     (canManage ? '<button class="pcs-caption-edit-icon" onclick="window._startCaptionEdit(\'' + esc(id) + '\')" title="Edit caption"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' : '') +
     '</div>' +
   '</div>';
@@ -1060,17 +1129,13 @@ function _buildCaptionHtml(post, canEdit, canEditCreative, id) {
 function _buildLinkedInHtml(post, id, stageLC) {
   var stageForLi = (post.stage || stageLC || '').toLowerCase();
   if (stageForLi !== 'published') return '';
-  if (post.linkedinUrl) {
-    return '<div style="padding:12px 18px;border-bottom:1px solid #323244;background:#0A66C20A;border-top:1px solid #0A66C21A;">' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#0a66c2;margin-bottom:8px;display:flex;align-items:center;gap:6px;">' +
-      '<div style="width:6px;height:6px;border-radius:50%;background:#0a66c2;flex-shrink:0;"></div>Live on LinkedIn</div>' +
-      '<button onclick="window.open(\'' + esc(post.linkedinUrl) + '\',\'_blank\')" ' +
-      'style="width:100%;font-family:\'IBM Plex Mono\',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;' +
-      'color:#0a66c2;background:transparent;border:1px solid #0A66C24D;padding:11px 0;cursor:pointer;' +
-      'display:flex;align-items:center;justify-content:center;gap:8px;">' +
-      '<span style="font-size:14px;font-weight:600;">in</span>View Live Post &rarr;</button>' +
-      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;color:#2a2a2a;letter-spacing:0.04em;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
-      esc(post.linkedinUrl.replace('https://','')) + '</div></div>';
+  var _liUrl = post.linkedin_link || post.linkedinUrl || '';
+  if (_liUrl) {
+    return '<div class="pcs-li-row">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" class="pcs-li-icon"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>' +
+      '<span class="pcs-li-live">Live on LinkedIn</span>' +
+      '<a href="' + esc(_liUrl) + '" target="_blank" rel="noopener" class="pcs-li-url">' + esc(_liUrl.replace(/^https?:\/\//, '')) + ' \u2197</a>' +
+      '</div>';
   }
   return '<div style="padding:12px 18px;border-bottom:1px solid #323244;border-top:1px solid #F6A6231A;background:#F6A62308;">' +
     '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:7px;letter-spacing:0.18em;text-transform:uppercase;color:#444;margin-bottom:8px;">Live Post URL</div>' +
@@ -1562,6 +1627,8 @@ window.loadPcsComments = async function(postId) {
         : '';
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       var _replyToDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.reply_to_author) : c.reply_to_author;
+      var _needsClamp = (c.message || '').length > 180;
+      var _editedBadge = c.edited_at ? '<span class="pcs-edited-badge">(edited)</span>' : '';
       return '<div class="pcs-comment-item" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
         '<div class="pcs-cmt-mid">' +
@@ -1571,10 +1638,13 @@ window.loadPcsComments = async function(postId) {
           '<div class="pcs-comment-meta">' +
             '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
+            _editedBadge +
           '</div>' +
           '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
-          ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+          ((_isTask && c.resolved) ? ' pcs-task-done' : '') +
+          (_needsClamp ? ' clamped' : '') + '">' +
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+          (_needsClamp ? '<button class="pcs-comment-read-more" onclick="(function(b){var t=b.previousElementSibling;if(t)t.classList.remove(\'clamped\');b.style.display=\'none\';})(this)">Read more</button>' : '') +
           _imgHtml +
           _resolvedLabel +
           '<div class="pcs-comment-actions">' +
@@ -1709,6 +1779,8 @@ window.loadPcsComments = async function(postId) {
         : '';
       var _resolveBtnLabel = c.resolved ? 'Unresolve' : 'Resolve';
       var _replyToDisplay = (typeof getDisplayName === 'function') ? getDisplayName(c.reply_to_author) : c.reply_to_author;
+      var _needsClamp = (c.message || '').length > 180;
+      var _editedBadge = c.edited_at ? '<span class="pcs-edited-badge">(edited)</span>' : '';
       return '<div class="pcs-note-item' +
         (c.resolved ? ' pcs-resolved' : '') + '" data-comment-id="' + esc(c.id) + '" data-author="' + esc(c.author) + '">' +
         '<div class="pcs-cmt-av">' + ((typeof renderAvatar === 'function') ? renderAvatar(c.author, c.author_role, 28, { classes: 'pcs-avatar', fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace" }) : '<div class="' + _avatarClass(c) + '">' + esc(_initial) + '</div>') + '</div>' +
@@ -1720,11 +1792,14 @@ window.loadPcsComments = async function(postId) {
             '<span class="pcs-comment-author">' + esc(_authorDisplay) + '</span>' +
             '<span class="pcs-note-internal-badge">Internal</span>' +
             '<span class="pcs-comment-time">' + _formatTs(c) + '</span>' +
+            _editedBadge +
             _visTag +
           '</div>' +
           '<div class="pcs-comment-text' + (_isTask ? ' pcs-task-text' : '') +
-          ((_isTask && c.resolved) ? ' pcs-task-done' : '') + '">' +
+          ((_isTask && c.resolved) ? ' pcs-task-done' : '') +
+          (_needsClamp ? ' clamped' : '') + '">' +
           _taskPrefix + _highlightMentions(esc(c.message)) + '</div>' +
+          (_needsClamp ? '<button class="pcs-comment-read-more" onclick="(function(b){var t=b.previousElementSibling;if(t)t.classList.remove(\'clamped\');b.style.display=\'none\';})(this)">Read more</button>' : '') +
           _imgHtml +
           _resolvedLabel +
           '<div class="pcs-comment-actions">' +
