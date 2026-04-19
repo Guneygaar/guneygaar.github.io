@@ -6211,14 +6211,16 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   flex-wrap: wrap;
 }
 .pcs-comment-author {
-  font-size: 14px;
+  font-family: var(--sans);
+  font-size: 13px;
   font-weight: 600;
-  color: #F0F0F2;
+  color: var(--text);
 }
 .pcs-comment-time {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  color: #78788C;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
   margin-left: 8px;
 }
 .pcs-vis-tag {
@@ -6236,8 +6238,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-vis--serv { color: #22D3EE; border-color: #22D3EE33; }
 .pcs-vis--creat { color: #9b87f5; border-color: #9b87f533; }
 .pcs-comment-text {
-  font-size: 14px;
-  color: #B8B8C0;
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  color: var(--text2);
   line-height: 1.55;
   margin-top: 4px;
   white-space: pre-wrap;
@@ -6464,6 +6467,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   display: flex;
   align-items: flex-start;
   gap: 4px;
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text2);
 }
 .pcs-task-text.pcs-task-done {
   text-decoration: line-through;
@@ -6901,7 +6908,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 }
 
 .pcs-deleted-msg {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Fraunces', serif;
   font-size: 12px;
   color: #8E8E93;
   font-style: italic;
@@ -6917,22 +6924,34 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
    PCS v2 Design — approved v11
    =============================================== */
 
-/* Topbar pills */
+/* Topbar pills (CHANGE 1: Anthropic chip style) */
 .pcs-stage-pill {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px;
-  letter-spacing: .08em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
+  font-weight: 500;
+  background: #C8A84B1A;
+  border: 1px solid #C8A84B47;
   color: #C8A84B;
   cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  gap: 4px;
 }
-.pcs-stage-pill .pcs-pill-arr { font-size: 6px; opacity: .6; }
+.pcs-stage-pill .pcs-pill-arr {
+  font-size: 8px;
+  opacity: 0.5;
+}
+.pcs-topbar-overdue {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--red);
+}
 .pcs-od-pill {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 7px;
@@ -6971,7 +6990,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   justify-content: center;
   aspect-ratio: 5/3;
   background: #0c0c11;
-  border: 1px dashed #2e2e3a;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
   cursor: pointer;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
@@ -7364,13 +7384,22 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: var(--red);
 }
 
-/* Done button */
+/* Done button (CHANGE 2: clean pill) */
 .pcs-close-btn {
-  display: block; width: calc(100% - 32px); margin: 0 16px 8px;
-  padding: 14px; font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
-  color: #8E8E93; background: none; border: 1px solid #2A2A35;
-  cursor: pointer; text-align: center;
+  display: block;
+  width: calc(100% - 32px);
+  margin: 8px 16px 12px;
+  padding: 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
 }
 
 /* FIX 5: Pane overflow */
@@ -7424,7 +7453,7 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 10px 16px 4px;
 }
 .pcs-udrop-item {
-  font-family: 'DM Sans', sans-serif; font-size: 14px;
+  font-family: var(--sans); font-size: 14px;
   color: #E8E8E8; padding: 11px 16px; cursor: pointer;
   border-bottom: 1px solid #191924;
 }
@@ -7456,16 +7485,16 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   padding: 24px 16px 40px;
 }
 .pcs-bc-title {
-  font-family: 'DM Sans', sans-serif; font-size: 16px;
-  font-weight: 700; color: #E8E8E8; margin-bottom: 6px;
+  font-family: 'Fraunces', serif; font-size: 16px;
+  font-weight: 600; color: #E8E8E8; margin-bottom: 6px;
 }
 .pcs-bc-sub {
-  font-family: 'DM Sans', sans-serif; font-size: 13px;
+  font-family: 'Fraunces', serif; font-size: 13px;
   color: #8E8E93; margin-bottom: 20px;
 }
 .pcs-bc-btns { display: flex; gap: 10px; }
 .pcs-bc-cancel, .pcs-bc-action {
-  flex: 1; font-family: 'DM Sans', sans-serif; font-size: 14px;
+  flex: 1; font-family: var(--sans); font-size: 14px;
   padding: 13px; border: none; cursor: pointer;
 }
 .pcs-bc-cancel { background: #191924; color: #E8E8E8; }
@@ -10032,4 +10061,57 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   font-family: var(--mono);
   font-size: 11px;
   color: #C15F3C;
+}
+
+/* =========================================================================
+   PCS Polish (20260419c): caption edit pill buttons + textarea class,
+   Fraunces body text, Anthropic stage pill, done pill, photos empty border.
+   ========================================================================= */
+
+/* CHANGE 3: caption edit save/cancel pill buttons */
+#pcs-caption-btnrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.pcs-caption-save-btn {
+  flex: 1;
+  padding: 11px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--green);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.pcs-caption-cancel-btn {
+  flex: 1;
+  padding: 11px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* CHANGE 4: caption edit textarea — class-based, no inline styles */
+.pcs-caption-textarea,
+#pcs-caption-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 8px 0;
+  resize: none;
+  min-height: 160px;
+  outline: none;
 }
