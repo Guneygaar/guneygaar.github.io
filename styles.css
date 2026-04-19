@@ -7159,12 +7159,13 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* Title */
 #pcs-topbar-title {
-  font-size: 26px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.03em !important;
-  line-height: 1.1 !important;
-  color: #F0F0F2 !important;
-  padding: 11px 16px 4px !important;
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #F4F3EE;
+  padding: 9px 16px 4px;
 }
 
 /* Metadata row (dot-separated text values) */
@@ -7179,20 +7180,32 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   -webkit-overflow-scrolling: touch;
 }
 .pcs-meta-row::-webkit-scrollbar { display: none; }
+/* Metadata chips (CHANGE 9: rounded pills) */
 .pcs-mv {
-  color: #B8B8C0; cursor: pointer; padding: 3px 0;
-  position: relative; transition: color .12s;
-  white-space: nowrap; display: inline-flex; align-items: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  white-space: nowrap;
+  cursor: pointer;
 }
-.pcs-mv:active { color: #F0F0F2; }
-.pcs-mv--red { color: #FF4B4B; }
-.pcs-mv--cyan { color: #22D3EE; }
-.pcs-mv--purple { color: #9b87f5; }
-.pcs-mv--amber { color: #F6A623; }
-.pcs-mv--bright { color: #F0F0F2; }
+.pcs-mv--bright { color: #F4F3EE; border-color: #FFFFFF26; }
+.pcs-mv--cyan   { color: var(--cyan);   border-color: #22D3EE4D; }
+.pcs-mv--purple { color: var(--purple); border-color: #9B87F54D; }
+.pcs-mv--red    { color: var(--red);    border-color: #FF4B4B4D; }
+.pcs-mv--amber  { color: var(--amber);  border-color: #F6A6234D; }
 .pcs-dot {
-  color: #78788C; padding: 0 7px;
-  font-weight: 600; user-select: none;
+  display: inline-block;
+  color: var(--text-muted);
+  margin: 0 2px;
+  font-size: 12px;
 }
 
 /* Custom date calendar dropdown */
@@ -7319,18 +7332,37 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-topbar-icon svg { width: 17px; height: 17px; }
 .pcs-topbar-icon.danger:hover { color: #FF4B4B; }
 
-/* Caption action buttons */
+/* Caption action buttons (CHANGE 7: pill redesign) */
 .pcs-cap-actions {
-  display: flex; gap: 6px; padding: 12px 16px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
 }
 .pcs-cap-btn {
-  flex: 1; font-family: 'IBM Plex Mono', monospace;
-  font-size: 8px; letter-spacing: .06em; text-transform: uppercase;
-  color: #8E8E93; background: none; border: 1px solid #2A2A35;
-  padding: 13px 0; cursor: pointer; text-align: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  border: 1px solid;
+  background: transparent;
 }
-.pcs-cap-btn--bright { color: #B8B8C0; }
-.pcs-cap-btn--danger { border-color: #1F1F27; color: #FF4B4B; }
+.pcs-cap-btn--bright {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text2);
+}
+.pcs-cap-btn--danger {
+  background: #FF4B4B14;
+  border-color: #FF4B4B4D;
+  color: var(--red);
+}
 
 /* Done button */
 .pcs-close-btn {
@@ -7357,12 +7389,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 #pcs-scroll { padding-top: 0; }
 #pcs-photo-grid-wrap { margin-top: 0; padding-top: 0; }
 
-/* FIX 8: Tighter caption */
-#pcs-caption-text, .pcs-caption-text {
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+/* FIX 8 (superseded): caption typography moved to the .pcs-caption-text
+   block at the bottom of this file (Fraunces, 15px). Kept here as a
+   no-op marker so future diffs are easier to follow. */
 
 /* FIX 10: Photo grid flex-shrink (mobile Safari) */
 .pcs-pg-1 { flex-shrink:0; }
@@ -7370,14 +7399,18 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 .pcs-pg-3 { flex-shrink:0; }
 .pcs-pg-3plus { flex-shrink:0; }
 
-/* FIX 11: Title size */
-#pcs-topbar-title, .pc-title {
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.03em !important;
-  line-height: 1.1 !important;
-  color: #F0F0F2 !important;
-  padding: 9px 16px 4px !important;
+/* FIX 11: Title size — superseded by the Fraunces rule above; kept
+   as .pc-title only (a broader selector used elsewhere) so legacy
+   consumers still get a title style. The #pcs-topbar-title selector
+   is removed so the Fraunces spec wins cleanly. */
+.pc-title {
+  font-family: 'Fraunces', serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #F4F3EE;
+  padding: 9px 16px 4px;
 }
 
 /* Unified ··· dropdown (Photos + Caption groups) */
@@ -7838,8 +7871,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* Zone 1 root */
 .pcs-zone-ai {
-  display: block;
-  padding-bottom: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
 }
 
 /* Zone AI header */
@@ -8955,68 +8988,56 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 /* Legacy inline polish button (replaced by Claude sparkle) */
 .pcs-ibar-polish { display: none; }
 
-/* "Edit with Claude" entry button (caption tab) */
-@keyframes claude-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 #C15F3C00;
-    border-color: #5A3A2C;
-  }
-  50% {
-    box-shadow: 0 0 12px 2px #C15F3C26;
-    border-color: #C15F3C;
-  }
-}
+/* "Edit with Claude" entry card (CHANGE 8: amber warm pill) */
 .pcs-claude-entry {
-  margin: 6px 16px 8px;
-  padding: 14px;
-  background: linear-gradient(180deg, #1E1610 0%, #120C08 100%);
-  border: 1px solid #5A3A2C;
-  border-left: 3px solid #C15F3C;
-  border-radius: 0 10px 10px 0;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
-  animation: claude-glow 3s ease-in-out infinite;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #E3B56A0F;
+  border: 1px solid #E3B56A2E;
+  cursor: pointer;
+  transition: var(--transition);
 }
 .pcs-claude-entry:active {
-  animation: none;
-  background: #2A1A10;
-  border-color: #C15F3C;
-  box-shadow: 0 0 12px 2px #C15F3C33;
+  background: #E3B56A1A;
 }
 .pcs-ce-icon {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #E3B56A1F;
+  border: 1px solid #E3B56A47;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #2A1A12;
-  border: 1px solid #5A3A2C;
-  border-radius: 8px;
-  color: #C15F3C;
-  font-size: 15px;
+  font-size: 16px;
+  color: #E3B56A;
   flex-shrink: 0;
 }
-.pcs-ce-text { flex: 1; }
+.pcs-ce-text {
+  flex: 1;
+  min-width: 0;
+}
 .pcs-ce-title {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #C15F3C;
+  font-family: var(--mono);
+  font-size: 10px;
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #E3B56A;
+  margin-bottom: 2px;
 }
 .pcs-ce-sub {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  color: #7A7670;
-  margin-top: 2px;
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-muted);
 }
 .pcs-ce-arr {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  color: #5A3A2C;
+  color: var(--text-muted);
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 /* Comment selection strip + mode (client tab) */
@@ -9895,22 +9916,19 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 #pcs-pane-client,
 #pcs-pane-internal { display: block !important; overflow: visible !important; }
 
-/* CHANGE 2: caption collapse / expand (2-line clamp) */
+/* CHANGE 2: caption typography + 2-line clamp */
 .pcs-caption-text {
+  font-family: 'Fraunces', serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #C9C5BA;
+  white-space: pre-wrap;
+  word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   max-height: calc(1.6em * 2);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: #B8B8C0;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  max-width: 100%;
 }
 .pcs-caption-text.expanded {
   display: block;
@@ -9980,8 +9998,8 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 
 /* CHANGE 5: internal notes inline styling — amber left border + subtle wash + badge */
 .pcs-note-item {
-  border-left: 2px solid #F6A62340;
-  background: #F6A62308;
+  border-left: 2px solid #F6A62340 !important;
+  background: #F6A62308 !important;
 }
 .pcs-note-internal-badge {
   font-family: var(--mono);
