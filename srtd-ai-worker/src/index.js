@@ -216,11 +216,37 @@ async function loadApprovedContext() {
   }
 }
 
-function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) {
+async function loadProductKnowledge(productName) {
+  if (!productName) return '';
+  try {
+    const encoded = encodeURIComponent(productName);
+    const rows = await supabaseGet(
+      '/product_knowledge?or=(product_name.ilike.*' + encoded + '*,aliases.ilike.*' + encoded + '*)&limit=1'
+    );
+    if (!Array.isArray(rows) || rows.length === 0) return '';
+    const p = rows[0];
+    return 'PRODUCT BRIEF FOR THIS POST:\n'
+      + 'Name: ' + (p.product_name || '') + '\n'
+      + 'Also known as: ' + (p.aliases || '') + '\n'
+      + 'Category: ' + (p.category || '') + '\n'
+      + 'Biobased Content: ' + (p.biobased_content || '') + '\n'
+      + 'Applications: ' + (p.applications || '') + '\n'
+      + 'Key Industries: ' + (p.key_industries || '') + '\n'
+      + 'USP: ' + (p.usp || '') + '\n'
+      + 'CAS Number: ' + (p.cas_number || '') + '\n'
+      + 'Status: ' + (p.status || '');
+  } catch (e) {
+    return '';
+  }
+}
+
+function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext, productKnowledge) {
   const ctx = approvedContext || '';
   const bg  = brandGuide || '';
   const mem = memoryContext || '';
+  const pk  = productKnowledge || '';
   const hasMem = mem.length > 100;
+  const pkBlock = pk ? pk + '\n\n' : '';
 
   const captionOutputRule = 'CRITICAL OUTPUT FORMAT: Whenever you produce a caption the user might apply to their post, '
     + 'wrap the final caption in <caption>...</caption> tags. The caption inside these tags must be publishable-ready text only: '
@@ -239,13 +265,16 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
     if (hasMem) {
       return 'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL), a sugarcane biorefinery.\n\n'
         + mem + '\n\n'
+        + pkBlock
         + 'Here are 5 high-performing posts for voice reference:\n\n' + ctx
         + '\n\nReturn exactly 3 numbered copy options. Each option on its own. No preamble.'
         + '\n\n' + captionOutputRule
         + '\n\n' + writerTagRule;
     }
     return 'You are a LinkedIn content writer for Godavari Biorefineries Limited (GBL), a sugarcane biorefinery. '
-      + 'Write in their established voice. Here are 20 approved posts for reference:\n\n'
+      + 'Write in their established voice.\n\n'
+      + pkBlock
+      + 'Here are 20 approved posts for reference:\n\n'
       + ctx
       + '\n\nBrand guide:\n'
       + bg
@@ -266,11 +295,14 @@ function buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext) 
   if (feature === 'chat') {
     if (hasMem) {
       return 'You are a copy editor for GBL LinkedIn content.\n\n'
-        + mem
-        + '\n\nHelp the user improve the copy. Be direct and brief.'
+        + mem + '\n\n'
+        + pkBlock
+        + 'Help the user improve the copy. Be direct and brief.'
         + '\n\n' + captionOutputRule;
     }
-    return 'You are a copy editor helping refine LinkedIn content for GBL. Here are 20 approved posts for reference:\n\n'
+    return 'You are a copy editor helping refine LinkedIn content for GBL.\n\n'
+      + pkBlock
+      + 'Here are 20 approved posts for reference:\n\n'
       + ctx
       + '\n\nBrand guide:\n'
       + bg
@@ -341,6 +373,7 @@ async function handleComplete(request, env) {
     const postId      = (body && body.post_id) || null;
     const workspaceId = (body && body.workspace_id) || 'default';
     const createdBy   = (body && body.created_by) || '';
+    const productName = (body && body.product_name) || '';
 
     if (!feature || !FEATURE_FLAGS[feature]) {
       return errorResponse('Invalid or missing feature', 400);
@@ -364,13 +397,21 @@ async function handleComplete(request, env) {
     const memoryContext   = (body && body.memory_context) || '';
     const brandGuide      = await loadBrandGuide(env);
     let   approvedContext = await loadApprovedContext();
+    // On-demand product spec fetch — only populated for writer/chat
+    // (the two features that benefit from product facts in-prompt).
+    // qc / angles / email_brief branches of buildSystemPrompt ignore
+    // productKnowledge entirely, so the extra Supabase GET is gated
+    // on feature here to avoid paying for a read on unrelated calls.
+    const productKnowledge = (feature === 'writer' || feature === 'chat')
+      ? await loadProductKnowledge(productName)
+      : '';
 
     if (memoryContext && memoryContext.length > 100) {
       const posts = approvedContext.split('\n---\n');
       approvedContext = posts.slice(0, 5).join('\n---\n');
     }
 
-    const systemPrompt    = buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext);
+    const systemPrompt    = buildSystemPrompt(feature, approvedContext, brandGuide, memoryContext, productKnowledge);
 
     // B5.5a.1 defensive filter: Anthropic 400s on any role other than
     // 'user' or 'assistant' inside the messages array. If a legacy
