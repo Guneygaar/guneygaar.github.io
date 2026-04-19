@@ -21,6 +21,14 @@ import {
 let _msgSeq = 0;
 const _id = (prefix) => `${prefix}_${Date.now()}_${++_msgSeq}`;
 
+// Spread into callSrtdAI opts so an uploaded PDF/image rides every
+// AI call until the workspace closes. No-op when no attachment is set.
+function _attachmentOpts(st) {
+  const a = st && st.attachment;
+  if (!a || !a.key) return {};
+  return { fileKey: a.key, mediaType: a.mediaType || a.type || '' };
+}
+
 function _initialState() {
   return {
     isOpen: false,
@@ -29,7 +37,7 @@ function _initialState() {
     syntheticTitle: '',
     brief: '',
     briefSource: null,            // 'paste' | 'gmail' | 'upload' | 'synthesised' | null
-    attachment: null,             // {name, size, type, blob} | null
+    attachment: null,             // {name, size, type, blob, key, mediaType} | null
     headerExpanded: false,
     messages: [],                 // [{id, role, content, meta?, _display?}]
     isSending: false,
@@ -135,6 +143,23 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     set({ brief: String(text || '') });
   },
 
+  // Store a file attachment that was already uploaded to /ai/upload.
+  // `key` + `mediaType` are what the Worker needs; `name`/`size`/`type`
+  // drive the attachment chip in Header.jsx. Pass null to clear.
+  setAttachment(next) {
+    if (!next) { set({ attachment: null }); return; }
+    set({
+      attachment: {
+        name:      next.name      || '',
+        size:      Number(next.size) || 0,
+        type:      next.type      || '',
+        blob:      next.blob      || null,
+        key:       next.key       || '',
+        mediaType: next.mediaType || next.type || ''
+      }
+    });
+  },
+
   // ─── angles ──────────────────────────────────────────────
   async requestAngles() {
     const { brief, context, memoryPrompt, createdBy } = get();
@@ -146,7 +171,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     });
     const r = await callSrtdAI('angles', prompt, {
       createdBy,
-      memoryContext: memoryPrompt || undefined
+      memoryContext: memoryPrompt || undefined,
+      ..._attachmentOpts(get())
     });
     set({ isSending: false });
     if (!r || !r.success) {
@@ -187,7 +213,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     });
     const r = await callSrtdAI('write', prompt, {
       createdBy: st.createdBy,
-      memoryContext: st.memoryPrompt || undefined
+      memoryContext: st.memoryPrompt || undefined,
+      ..._attachmentOpts(st)
     });
     set({ isSending: false });
     if (!r || !r.success) {
@@ -222,7 +249,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     const prompt = buildRefinePrompt(draft.meta.content, type);
     const r = await callSrtdAI('refine', prompt, {
       createdBy: st.createdBy,
-      memoryContext: st.memoryPrompt || undefined
+      memoryContext: st.memoryPrompt || undefined,
+      ..._attachmentOpts(st)
     });
     set({ isSending: false });
     if (!r || !r.success) {
@@ -285,7 +313,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     }));
     const r = await callSrtdAI('review', buildReviewPrompt(target.meta.content), {
       createdBy: st.createdBy,
-      memoryContext: st.memoryPrompt || undefined
+      memoryContext: st.memoryPrompt || undefined,
+      ..._attachmentOpts(st)
     });
     set({ isSending: false });
     if (!r || !r.success) {
@@ -338,7 +367,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
     set({ isSending: true });
     const r = await callSrtdAI('rewrite', buildRewritePrompt(target.meta.content, checked), {
       createdBy: st.createdBy,
-      memoryContext: st.memoryPrompt || undefined
+      memoryContext: st.memoryPrompt || undefined,
+      ..._attachmentOpts(st)
     });
     set({ isSending: false });
     if (!r || !r.success) {
@@ -394,7 +424,8 @@ export const useCaptionWorkspaceStore = create((set, get) => ({
 
     const r = await callSrtdAI('write', trimmed, {
       createdBy: get().createdBy,
-      memoryContext: get().memoryPrompt || undefined
+      memoryContext: get().memoryPrompt || undefined,
+      ..._attachmentOpts(get())
     });
     set({ isSending: false });
     if (!r || !r.success) {
