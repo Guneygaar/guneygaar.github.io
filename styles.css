@@ -9883,3 +9883,135 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #F2EDE4;
   font-weight: 600;
 }
+
+/* =========================================================================
+   PCS Visual Upgrade (20260419a): single-scroll mode, caption collapse,
+   comments filter chips, section header, internal note badge.
+   ========================================================================= */
+
+/* CHANGE 1: hide the 3-tab bar; keep all three panes always visible in scroll order */
+.pcs-tab-bar { display: none !important; }
+#pcs-pane-caption,
+#pcs-pane-client,
+#pcs-pane-internal { display: block !important; overflow: visible !important; }
+
+/* CHANGE 2: caption collapse / expand (2-line clamp) */
+.pcs-caption-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: calc(1.6em * 2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #B8B8C0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+.pcs-caption-text.expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  max-height: none;
+}
+.pcs-caption-see-more {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #C15F3C;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  display: inline-block;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+/* CHANGE 3: caption header row — label left, word count right */
+.pcs-caption-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.pcs-caption-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.pcs-caption-wc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+/* CHANGE 4: filter chips above comments (All / Client / Internal) */
+.pcs-filter-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 18px 6px;
+}
+.pcs-fchip {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: transparent;
+  font-family: var(--sans);
+  transition: var(--transition);
+}
+.pcs-fchip--on {
+  background: var(--surface2);
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+/* CHANGE 5: internal notes inline styling — amber left border + subtle wash + badge */
+.pcs-note-item {
+  border-left: 2px solid #F6A62340;
+  background: #F6A62308;
+}
+.pcs-note-internal-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--amber-bg);
+  border: 1px solid #F6A62340;
+  margin-left: 6px;
+}
+
+/* CHANGE 6: comments section header */
+.pcs-comments-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 4px;
+}
+.pcs-section-title {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pcs-section-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #C15F3C;
+}
