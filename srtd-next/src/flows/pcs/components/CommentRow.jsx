@@ -15,12 +15,13 @@ import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { pcsFlow } from '../index.js';
 
-const LIKE_EMOJI = '\u2661';
+const LIKE_EMOJI = '\u2764\uFE0F';
 
 export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
   const currentRole = useAppState((s) => s.user?.role || '');
+  const currentName = useAppState((s) => s.user?.name || s.user?.email || '');
   const isAdmin = String(currentRole).toLowerCase() === 'admin';
   const lpTimer = useRef(null);
   const lpFired = useRef(false);
@@ -39,17 +40,25 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
 
   const imageAtts = getImageAttachments(comment.attachments);
   const taskAtts = getTaskAttachments(comment.attachments);
-  const reactionGroups = groupReactions(reactions, comment.id, currentEmail);
-  const myLike = reactionGroups.find((g) => g.emoji === LIKE_EMOJI && g.mine);
+  const reactionGroups = groupReactions(reactions, comment.id, currentName);
+  const myLikeGroup = reactionGroups.find((g) => g.emoji === LIKE_EMOJI);
+  const myLike = myLikeGroup && myLikeGroup.mine;
+  const likeCount = myLikeGroup ? myLikeGroup.count : 0;
 
   async function toggleLike() {
     if (busy) return;
     setBusy(true);
     try {
       if (myLike) {
-        await removeReaction(comment.id, LIKE_EMOJI, currentEmail);
+        await removeReaction({ commentId: comment.id, emoji: LIKE_EMOJI, author: currentName });
       } else {
-        await addReaction(comment.id, LIKE_EMOJI, currentEmail);
+        await addReaction({
+          commentId: comment.id,
+          postId: comment.post_id,
+          emoji: LIKE_EMOJI,
+          author: currentName,
+          authorRole: currentRole
+        });
       }
       logClick('pcs_react_comment_like', { commentId: comment.id, on: !myLike });
       if (isInternal) await pcsFlow.retryInternalNotes();
@@ -165,20 +174,15 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
           </span>
         )}
 
-        {reactionGroups.length > 0 && (
-          <div className="flex gap-1.5 mt-1.5 flex-wrap">
-            {reactionGroups.map((g) => (
-              <span key={g.emoji} className={`inline-flex items-center gap-1 px-1.5 py-[2px] rounded-sm2 bg-bg-2 border ${g.mine ? 'border-terracotta text-terracotta' : 'border-divider-soft text-text-mid'} text-sm`}>
-                <Heart size={10} className={g.mine ? 'text-terracotta' : ''} />
-                <span className="font-mono text-2xs text-text-dim">{g.count}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
         <div className="flex items-center gap-4 mt-2">
-          <button onClick={toggleLike} disabled={busy} className={`inline-flex items-center gap-1 text-sm font-medium ${myLike ? 'text-terracotta' : 'text-text-soft hover:text-text-mid'} disabled:opacity-50`}>
-            <Heart size={12} /><span>{myLike ? 'Liked' : 'Like'}</span>
+          <button
+            onClick={toggleLike}
+            disabled={busy}
+            className={`inline-flex items-center gap-1 text-sm font-medium disabled:opacity-50 ${myLike ? '' : 'text-text-soft hover:text-text-mid'}`}
+            style={myLike ? { color: '#FF4B4B' } : undefined}
+          >
+            <Heart size={14} fill={myLike ? '#FF4B4B' : 'none'} stroke={myLike ? '#FF4B4B' : 'currentColor'} />
+            {likeCount > 0 && <span className="font-mono text-sm">{likeCount}</span>}
           </button>
           <button onClick={() => onReply && onReply(comment)} className="inline-flex items-center gap-1 text-sm text-text-soft hover:text-text-mid font-medium">
             <Reply size={12} /><span>Reply</span>

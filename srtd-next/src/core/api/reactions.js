@@ -10,17 +10,23 @@ export async function listReactionsForComments(commentIds) {
   return Array.isArray(rows) ? rows : [];
 }
 
-export async function addReaction(commentId, emoji, createdBy) {
+export async function addReaction({ commentId, postId, emoji, author, authorRole }) {
   return apiFetch('/post_comment_reactions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({ comment_id: commentId, emoji, created_by: createdBy })
+    body: JSON.stringify({
+      comment_id: commentId,
+      post_id: postId,
+      author,
+      author_role: authorRole,
+      emoji
+    })
   });
 }
 
-export async function removeReaction(commentId, emoji, createdBy) {
+export async function removeReaction({ commentId, emoji, author }) {
   const c = encodeURIComponent(commentId);
   const e = encodeURIComponent(emoji);
-  const u = encodeURIComponent(createdBy);
-  return apiFetch(`/post_comment_reactions?comment_id=eq.${c}&emoji=eq.${e}&created_by=eq.${u}`, { method: 'DELETE' });
+  const a = encodeURIComponent(author);
+  return apiFetch(`/post_comment_reactions?comment_id=eq.${c}&emoji=eq.${e}&author=eq.${a}`, { method: 'DELETE' });
 }

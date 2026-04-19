@@ -87,7 +87,7 @@ export function PCS() {
             <>
               <Topbar post={post} isAdmin={isAdmin} canMove={canMove} onMoveStage={() => setStageSheetOpen(true)} />
               <PhotoStrip post={post} canEdit={canEdit} />
-              <div className="px-4 pt-3 pb-1">
+              <div className="px-3 pt-3 pb-1">
                 <h1
                   onClick={canEdit ? () => setActiveSheet('title') : undefined}
                   className={`font-serif text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-loud ${canEdit ? 'cursor-pointer' : ''}`}
@@ -96,8 +96,10 @@ export function PCS() {
                 </h1>
               </div>
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} userRoles={userRoles} />}
+              <div style={{ height: 24 }} />
               <LinkedInIndicator post={post} />
               <LinkCards post={post} linkedinLink={post.linkedin_link} />
+              <div style={{ height: 24 }} />
               <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}

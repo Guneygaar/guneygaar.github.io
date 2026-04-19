@@ -12,7 +12,7 @@ export function getTaskAttachments(att) {
 export function getImageAttachments(att) {
   return normalizeAttachments(att).filter((a) => {
     if (!a) return false;
-    if (a.type === 'images' && Array.isArray(a.urls) && a.urls.length > 0) return true;
+    if (a.type === 'image' && Array.isArray(a.urls) && a.urls.length > 0) return true;
     if (a.type === 'image' && a.url) return true;
     return false;
   }).map((a) => ({

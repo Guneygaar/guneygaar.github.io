@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pencil, Sparkles, ShieldCheck } from 'lucide-react';
 import { renderRichText, wordCount } from '../utils/mentions.jsx';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
@@ -22,8 +22,16 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
-  const showSeeMore = !expanded && caption.length > 100;
-  const collapsed = !expanded && caption.length > 100;
+  const editRef = useRef(null);
+  const expandable = caption.length > 100;
+  const collapsed = !expanded && expandable;
+
+  useEffect(() => {
+    if (editing && editRef.current) {
+      editRef.current.style.height = 'auto';
+      editRef.current.style.height = editRef.current.scrollHeight + 'px';
+    }
+  }, [editing, draft]);
 
   async function applyAiCaption(newText) {
     if (!newText || !post?.post_id) return;
@@ -100,14 +108,16 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
     <div className="border-b border-divider-warm">
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1 font-mono text-sm text-text-dim tracking-widest uppercase">
         <span>Caption</span>
-        {caption && <span><span className={over ? 'text-amber' : 'text-green'}>{wc}</span> / 125 words</span>}
+        {caption && <span><span style={over ? { color: '#f87171' } : undefined} className={over ? '' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
       {editing ? (
         <div className="px-3 pb-3">
           <textarea
+            ref={editRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 min-h-[120px]"
+            style={{ width: '100%', minHeight: 120, overflow: 'hidden' }}
+            className="bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 block"
             autoFocus
           />
           <div className="flex gap-2 mt-2">
@@ -135,13 +145,13 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
           >
             {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
           </div>
-          {showSeeMore && (
+          {expandable && (
             <div className="px-3 pb-2">
               <button
-                onClick={() => setExpanded(true)}
+                onClick={() => setExpanded((v) => !v)}
                 className="font-mono text-xs text-terracotta tracking-widest uppercase font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0"
               >
-                See more
+                {expanded ? 'See less' : 'See more'}
               </button>
             </div>
           )}
