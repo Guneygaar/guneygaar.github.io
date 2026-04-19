@@ -26,7 +26,9 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
   const lpFired = useRef(false);
 
   const userRecord = comment.author ? findUserRole(comment.author, userRoles) : null;
-  const authorName = comment.author ? ((userRecord && (userRecord.display_name || userRecord.name)) || 'Unknown') : 'Unknown';
+  const authorName = comment.author
+    ? ((userRecord && (userRecord.display_name || userRecord.name)) || comment.author.split('@')[0] || 'Unknown')
+    : 'Unknown';
   const roleKey = comment.author ? roleFromEmail(comment.author, userRoles, comment.author_role || 'creative') : 'unknown';
   const avatarUrl = (userRecord && userRecord.avatar_url) || null;
   const time = formatCommentTime(comment.created_at);

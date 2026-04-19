@@ -10,6 +10,9 @@ import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 
+const TILE_SIZE = 'min(72vw, 320px)';
+const SINGLE_SIZE = 'min(100vw, 390px)';
+
 function normalizeImages(images) {
   if (!images) return [];
   if (Array.isArray(images)) return images.filter(Boolean);
@@ -27,24 +30,7 @@ function ThumbImg({ src }) {
       </div>
     );
   }
-  return <img src={src} alt="" onError={() => setFailed(true)} className="max-w-full max-h-full object-contain" />;
-}
-
-function SingleImg({ src, onClick }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <div className="w-full aspect-[16/9] flex flex-col items-center justify-center gap-1.5 text-text-dim font-mono text-sm tracking-wide uppercase border border-dashed border-border-neutral">
-        <ImageOff size={18} />
-        <span>Failed to load</span>
-      </div>
-    );
-  }
-  return (
-    <div className="w-full bg-bg-2 flex items-center justify-center overflow-hidden" style={{ maxHeight: 500 }}>
-      <img src={src} alt="" onClick={onClick} onError={() => setFailed(true)} className="max-w-full object-contain cursor-pointer" style={{ maxHeight: 500 }} />
-    </div>
-  );
+  return <img src={src} alt="" onError={() => setFailed(true)} className="w-full h-full object-cover block" />;
 }
 
 async function downloadUrl(url) {
@@ -128,7 +114,8 @@ export function PhotoStrip({ post, canEdit }) {
     <button
       onClick={() => fileInputRef.current?.click()}
       disabled={busy}
-      className="flex-shrink-0 w-16 h-[280px] bg-bg-3 border border-dashed border-border-neutral flex flex-col items-center justify-center gap-1.5 text-text-dim cursor-pointer hover:bg-bg-2 disabled:opacity-50"
+      className="flex-shrink-0 bg-bg-3 border border-dashed border-border-neutral flex flex-col items-center justify-center gap-1.5 text-text-dim cursor-pointer hover:bg-bg-2 disabled:opacity-50"
+      style={{ width: TILE_SIZE, aspectRatio: '1 / 1' }}
       aria-label="Upload photo"
     >
       <Upload size={16} />
@@ -137,14 +124,14 @@ export function PhotoStrip({ post, canEdit }) {
   ) : null;
 
   return (
-    <div className="border-b border-divider-warm">
+    <div>
       <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
       {count === 0 ? (
         canEdit ? (
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="flex items-center gap-2 px-4 py-3 text-text-dim hover:text-text-mid w-full disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-3 text-text-dim hover:text-text-mid w-full disabled:opacity-50 border-b border-divider-warm"
           >
             <ImagePlus size={15} />
             <span className="font-mono text-xs tracking-widest uppercase">Add photos</span>
@@ -152,26 +139,46 @@ export function PhotoStrip({ post, canEdit }) {
         ) : null
       ) : count === 1 ? (
         canEdit ? (
-          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
-            <button onClick={() => setLightIdx(0)} className="flex-1 min-w-0 bg-bg-2 flex items-center justify-center overflow-hidden cursor-pointer" aria-label="Photo 1" style={{ height: 280 }}>
+          <div className="flex gap-px overflow-x-auto scrollbar-none border-b border-divider-warm">
+            <button
+              onClick={() => setLightIdx(0)}
+              className="flex-shrink-0 bg-bg-2 overflow-hidden cursor-pointer block"
+              style={{ width: TILE_SIZE, aspectRatio: '1 / 1' }}
+              aria-label="Photo 1"
+            >
               <ThumbImg src={imgs[0]} />
             </button>
             {AddTile}
           </div>
         ) : (
-          <SingleImg src={imgs[0]} onClick={() => setLightIdx(0)} />
+          <div className="border-b border-divider-warm">
+            <button
+              onClick={() => setLightIdx(0)}
+              className="block mx-auto bg-bg-2 overflow-hidden cursor-pointer"
+              style={{ width: SINGLE_SIZE, aspectRatio: '1 / 1' }}
+              aria-label="Photo 1"
+            >
+              <ThumbImg src={imgs[0]} />
+            </button>
+          </div>
         )
       ) : (
         <>
-          <div className="flex gap-px bg-divider-warm overflow-x-auto scrollbar-none">
+          <div className="flex gap-px overflow-x-auto scrollbar-none">
             {imgs.map((src, i) => (
-              <button key={i} onClick={() => setLightIdx(i)} className="flex-shrink-0 w-[180px] h-[280px] bg-bg-2 flex items-center justify-center overflow-hidden cursor-pointer" aria-label={`Photo ${i + 1}`}>
+              <button
+                key={i}
+                onClick={() => setLightIdx(i)}
+                className="flex-shrink-0 bg-bg-2 overflow-hidden cursor-pointer block"
+                style={{ width: TILE_SIZE, aspectRatio: '1 / 1' }}
+                aria-label={`Photo ${i + 1}`}
+              >
                 <ThumbImg src={src} />
               </button>
             ))}
             {AddTile}
           </div>
-          <div className="flex items-center justify-between px-3 py-2 font-mono text-sm text-text-dim tracking-wide">
+          <div className="flex items-center justify-between px-3 py-2 font-mono text-sm text-text-dim tracking-wide border-b border-divider-warm">
             <span>{count} IMAGES {'\u00B7'} HERO + {count - 1}</span>
           </div>
         </>
