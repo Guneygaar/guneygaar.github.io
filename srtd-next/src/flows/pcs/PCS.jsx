@@ -5,7 +5,6 @@ import { usePcsStore } from './pcsStore.js';
 import { useAppState } from '../../core/stores/appState.js';
 import { pcsFlow } from './index.js';
 import { Topbar } from './components/Topbar.jsx';
-import { StageStrip } from './components/StageStrip.jsx';
 import { PropertiesTable } from './components/PropertiesTable.jsx';
 import { LinkedInIndicator } from './components/LinkedInIndicator.jsx';
 import { CaptionBlock } from './components/CaptionBlock.jsx';
@@ -95,18 +94,17 @@ export function PCS() {
           {post && (
             <>
               <Topbar post={post} isAdmin={isAdmin} canEdit={canEdit} onEditTitle={() => setActiveSheet('title')} />
-              <StageStrip post={post} canMove={canMove} onMove={() => setStageSheetOpen(true)} />
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} onEdit={(which) => setActiveSheet(which === 'owner' ? 'owner' : which)} />}
               <LinkedInIndicator post={post} />
-              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} onEdit={() => setActiveSheet('caption')} />
               <PhotoStrip post={post} canEdit={canEdit} />
+              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} onEdit={() => setActiveSheet('caption')} />
               <LinkCards post={post} />
               {canEdit && (
-                <div className="flex flex-wrap gap-2 px-3 py-2 border-b border-divider-warm font-mono text-2xs text-text-dim tracking-wide uppercase">
-                  <button onClick={() => setActiveSheet('drive')} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm2 hover:bg-bg-2"><Pencil size={10} /> Drive</button>
-                  <button onClick={() => setActiveSheet('canva')} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm2 hover:bg-bg-2"><Pencil size={10} /> Canva</button>
-                  {!isClient && <button onClick={() => setActiveSheet('internal_notes')} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm2 hover:bg-bg-2"><Pencil size={10} /> Internal notes</button>}
-                  <button onClick={() => setActiveSheet('client_feedback')} className="inline-flex items-center gap-1 px-2 py-1 rounded-sm2 hover:bg-bg-2"><Pencil size={10} /> Client feedback</button>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 px-3 py-2 border-b border-divider-warm font-mono text-2xs text-text-dim tracking-wide uppercase">
+                  <button onClick={() => setActiveSheet('drive')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Drive</button>
+                  <button onClick={() => setActiveSheet('canva')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Canva</button>
+                  {!isClient && <button onClick={() => setActiveSheet('internal_notes')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Internal notes</button>}
+                  <button onClick={() => setActiveSheet('client_feedback')} className="inline-flex items-center gap-1 hover:text-text-mid"><Pencil size={10} /> Client feedback</button>
                 </div>
               )}
               <div className="flex items-center gap-2 px-3 pt-3 pb-1">
@@ -120,9 +118,6 @@ export function PCS() {
                     <span className="font-sans text-base text-text-soft">{internalNotes.length} internal</span>
                   </>
                 )}
-                <span className="ml-auto font-mono text-2xs text-text-dim tracking-widest uppercase">
-                  {activeTab === 'internal' ? 'Agency Only' : 'Client + Agency'}
-                </span>
               </div>
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
