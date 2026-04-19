@@ -9957,7 +9957,10 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
 #pcs-pane-client,
 #pcs-pane-internal { display: block !important; overflow: visible !important; }
 
-/* CHANGE 2: caption typography + 2-line clamp */
+/* CHANGE 2: caption typography + 2-line clamp (no ellipsis — the
+   See More button signals truncation). Uses pure max-height + overflow
+   hidden instead of -webkit-line-clamp so the browser does not paint
+   the "..." suffix at the cutoff. */
 .pcs-caption-text {
   font-family: 'Fraunces', serif;
   font-size: 15px;
@@ -9965,10 +9968,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   color: #C9C5BA;
   white-space: pre-wrap;
   word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  display: block;
   overflow: hidden;
+  text-overflow: clip;
   max-height: calc(1.6em * 2);
 }
 .pcs-caption-text.expanded {
@@ -10153,3 +10155,9 @@ body.client-mode .stage-chip[data-stage="brief_done"] {
   min-height: 160px;
   outline: none;
 }
+
+/* CHANGE 1 (20260419h): the ALL/ADMIN/SERV/CREATIVE visibility
+   selector inside #pcs-pane-internal is hidden — the filter chip
+   bar at the top + the single CLIENT + AGENCY label in the section
+   header replace it. */
+#pcs-vis-selector { display: none !important; }

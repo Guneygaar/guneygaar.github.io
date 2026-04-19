@@ -1331,6 +1331,18 @@ function _pcsEnsureCommentsHeader(list) {
         document.querySelectorAll('.pcs-note-item').forEach(function(el) {
           el.style.display = (f === 'internal') ? '' : 'none';
         });
+        // Toggle composers so only the active zone's composer is in flow.
+        var clientComposer = document.getElementById('pcs-composer-root-client');
+        var noteComposer = document.getElementById('pcs-composer-root-note');
+        var clientIbar = clientComposer ? clientComposer.closest('.pcs-ibar-wrap') : null;
+        var noteIbar = noteComposer ? noteComposer.closest('.pcs-ibar-wrap') : null;
+        if (f === 'client') {
+          if (clientIbar) clientIbar.style.display = '';
+          if (noteIbar) noteIbar.style.display = 'none';
+        } else if (f === 'internal') {
+          if (clientIbar) clientIbar.style.display = 'none';
+          if (noteIbar) noteIbar.style.display = '';
+        }
         var scroller = document.getElementById('pcs-scroll');
         var targetId = (f === 'client') ? 'pcs-pane-client' : 'pcs-pane-internal';
         var target = document.getElementById(targetId);
@@ -1345,12 +1357,17 @@ function _pcsEnsureCommentsHeader(list) {
     // initial render (the Client chip already carries pcs-fchip--on in
     // the innerHTML above; this is a defensive reassertion + hides
     // every .pcs-note-item so only client comments show until the user
-    // taps Internal).
+    // taps Internal). Also pre-hides the notes composer so only the
+    // client composer sits in the page flow on first open.
     var clientChip = filterBar.querySelector('[data-filter="client"]');
     if (clientChip) clientChip.classList.add('pcs-fchip--on');
     document.querySelectorAll('.pcs-note-item').forEach(function(el) {
       el.style.display = 'none';
     });
+    var _clientIbar = document.querySelector('.pcs-ibar-wrap.client');
+    var _noteIbar = document.querySelector('.pcs-ibar-wrap.notes');
+    if (_clientIbar) _clientIbar.style.display = '';
+    if (_noteIbar) _noteIbar.style.display = 'none';
   }
 }
 
