@@ -82,7 +82,7 @@ window.logError = function(message, stack, action) {
     action:        String(action || 'uncaught'),
     app_version:   _version
   };
-  var _url = 'https://vxokfscjzytpgdrmertk.supabase.co/rest/v1/error_log';
+  var _url = 'https://ozptjplxbyswclolbxyn.supabase.co/rest/v1/error_log';
   var _key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
   fetch(_url, {
     method: 'POST',

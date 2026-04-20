@@ -1,4 +1,4 @@
-const SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzMzE2NzAsImV4cCI6MjA4ODkwNzY3MH0.j1LKb2FOarLIi5DDChiWF_DTihKdLCEQMKdy9M5JQkw';
 
 const CORS_HEADERS = {

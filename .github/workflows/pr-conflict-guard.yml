@@ -122,11 +122,11 @@ jobs:
         id: step4
         run: |
           set +e
-          MATCHES=$(gh pr diff "$PR_NUMBER" | grep '^+' | grep 'ozptjplxbyswclolbxyn' || true)
+          MATCHES=$(gh pr diff "$PR_NUMBER" | grep '^+' | grep 'vxokfscjzytpgdrmertk' || true)
           set -e
           if [ -n "$MATCHES" ]; then
             echo "status=fail" >> "$GITHUB_OUTPUT"
-            echo "message=❌ Stale Seoul Supabase URL found in diff — replace with vxokfscjzytpgdrmertk" >> "$GITHUB_OUTPUT"
+            echo "message=❌ Stale Seoul Supabase URL found in diff — replace with ozptjplxbyswclolbxyn" >> "$GITHUB_OUTPUT"
           else
             echo "status=pass" >> "$GITHUB_OUTPUT"
             echo "message=✅ No stale Seoul Supabase URL" >> "$GITHUB_OUTPUT"
