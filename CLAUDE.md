@@ -16,7 +16,7 @@ Team: Shubham (Admin), Chitra (Servicing), Pranav (Creative), Manisha + Shivangi
 
 ## 2 — DB SCHEMA
 
-Supabase: `vxokfscjzytpgdrmertk.supabase.co`. Always `apiFetch()`, never raw `fetch()`. PostgREST `eq.` is CASE-SENSITIVE — use Title Case roles (`Admin`, `Servicing`, `Creative`, `Client`).
+Supabase: `ozptjplxbyswclolbxyn.supabase.co`. Always `apiFetch()`, never raw `fetch()`. PostgREST `eq.` is CASE-SENSITIVE — use Title Case roles (`Admin`, `Servicing`, `Creative`, `Client`).
 
 **posts** — PK `post_id` text
 | col | type | notes |
