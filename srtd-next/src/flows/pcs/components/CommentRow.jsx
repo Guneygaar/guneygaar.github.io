@@ -14,12 +14,14 @@ import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { pcsFlow } from '../index.js';
+import { CommentLightbox } from './CommentLightbox.jsx';
 
 const LIKE_EMOJI = '\u2661';
 
 export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
   const [expanded, setExpanded] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const currentRole = useAppState((s) => s.user?.role || '');
   const isAdmin = String(currentRole).toLowerCase() === 'admin';
   const lpTimer = useRef(null);
@@ -38,6 +40,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
   const parentName = parent ? (displayNameFromEmail(parent.author, userRoles) || 'Unknown') : null;
 
   const imageAtts = getImageAttachments(comment.attachments);
+  const flatImageUrls = imageAtts.flatMap((a) => a.urls);
   const taskAtts = getTaskAttachments(comment.attachments);
   const reactionGroups = groupReactions(reactions, comment.id, currentEmail);
   const myLike = reactionGroups.find((g) => g.emoji === LIKE_EMOJI && g.mine);
@@ -136,16 +139,16 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
           </button>
         )}
 
-        {imageAtts.length > 0 && (
+        {flatImageUrls.length > 0 && (
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
-            {imageAtts.flatMap((a) => a.urls).slice(0, 6).map((src, i) => (
+            {flatImageUrls.slice(0, 6).map((src, i) => (
               <img
                 key={i}
                 src={src}
                 alt=""
                 loading="lazy"
                 decoding="async"
-                onClick={() => window.open(src, '_blank')}
+                onClick={() => setLightboxIndex(i)}
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 className="w-16 h-16 rounded-sm2 object-cover border border-divider-soft cursor-pointer"
               />
@@ -190,6 +193,13 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
           </button>
         </div>
       </div>
+      {lightboxIndex !== null && (
+        <CommentLightbox
+          urls={flatImageUrls}
+          startIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      )}
     </div>
   );
 }
