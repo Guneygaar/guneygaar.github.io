@@ -13,7 +13,7 @@
 //   *                  → 404
 // ═══════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = 'https://vxokfscjzytpgdrmertk.supabase.co';
+const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
 // Service-role key — required for workspace_settings reads + ai_usage
 // writes with the current (loose) table permissions. Consistent with
 // the hardcoded-Supabase-creds pattern used by sorted-preview-worker.
