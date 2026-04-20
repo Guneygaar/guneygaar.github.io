@@ -388,9 +388,9 @@ async function submitClientRequest() {
     });
     console.log('[REQUEST] API SUCCESS');
     await logActivity({ post_id: reqId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
-    var _reqActor = (typeof getDisplayName === 'function' && email)
-      ? getDisplayName(email)
-      : (window.AppState.user.name || window.currentUserName || email || 'Client');
+    var _reqActor = (typeof getCanonicalActor === 'function')
+      ? getCanonicalActor(email || (window.AppState.user && window.AppState.user.email))
+      : '';
     apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
