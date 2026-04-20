@@ -697,7 +697,7 @@ async function loadNotifications() {
     if (commentPostIds.length > 0) {
       try {
         var idList = commentPostIds.join(',');
-        var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,author_role,message,created_at,mentioned_users,resolved,resolved_at,visibility,post_title';
+        var commentUrl = '/post_comments?post_id=in.(' + idList + ')&order=created_at.desc&select=id,post_id,author,author_role,message,created_at,mentioned_users,resolved,resolved_at,visibility,post_title,attachments';
         var comments = await apiFetch(commentUrl);
         if (Array.isArray(comments)) window._notifComments = comments;
       } catch (ce) {
@@ -1250,6 +1250,20 @@ function _notifBuildThreadHtml(n, post, postTitle) {
 }
 
 // Render a single thread message (mini avatar + header + body).
+function _agencyCommentImgHtml(c) {
+  try {
+    var att = typeof c.attachments === 'string' ? JSON.parse(c.attachments) : c.attachments;
+    if (!att || att.type !== 'images' || !Array.isArray(att.urls) || !att.urls.length) return '';
+    return '<div class="pcs-comment-imgs">' +
+      att.urls.map(function(u, i) {
+        var jsArr = '[' + att.urls.map(function(x){ return "'" + esc(x) + "'"; }).join(',') + ']';
+        return '<img src="' + esc(u) + '" class="pcs-comment-img-thumb" ' +
+          'onclick="window._pcsOpenLightbox(\'' + esc(c.post_id || '') + '\',' + jsArr + ',' + i + ')">';
+      }).join('') +
+    '</div>';
+  } catch(e) { return ''; }
+}
+
 function _notifThreadMsgHtml(c, opts) {
   var author = c.author || '';
   var authorRole = c.author_role || '';
@@ -1269,6 +1283,7 @@ function _notifThreadMsgHtml(c, opts) {
           '<span class="thread-time">' + esc(ts) + '</span>' +
         '</div>' +
         '<div class="thread-message">' + esc(c.message || '') + '</div>' +
+        _agencyCommentImgHtml(c) +
       '</div>' +
     '</div>';
 }

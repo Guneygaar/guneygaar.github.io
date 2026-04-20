@@ -972,16 +972,18 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
       // actually hears about it. notify-stage cannot handle this path.
       var _assigneeRole = (typeof normalizeRole === 'function')
         ? (normalizeRole(ownerRole) || 'Creative') : 'Creative';
+      var _notifActor = (typeof getCanonicalActor === 'function')
+        ? getCanonicalActor(_emailKey) : '';
       window.apiFetch('/notifications', {
         method: 'POST',
         body: JSON.stringify({
           user_role: _assigneeRole,
           post_id:   postId,
           type:      'assign',
-          message:   actorName +
+          message:   _notifActor +
                      ' assigned you a brief: "' +
                      (post.title || 'Untitled') + '"',
-          actor:     actorName,
+          actor:     _notifActor,
           read:      false
         })
       }).catch(function(err) {
@@ -1042,16 +1044,18 @@ window._assignBrief = function(postId, ownerRole, displayName, isReassign) {
     // handle it, but the assignee needs a reliable notif on this path too.
     var _assigneeRole = (typeof normalizeRole === 'function')
       ? (normalizeRole(ownerRole) || 'Creative') : 'Creative';
+    var _notifActor = (typeof getCanonicalActor === 'function')
+      ? getCanonicalActor(_emailKey) : '';
     window.apiFetch('/notifications', {
       method: 'POST',
       body: JSON.stringify({
         user_role: _assigneeRole,
         post_id:   postId,
         type:      'assign',
-        message:   actorName +
+        message:   _notifActor +
                    ' assigned you a brief: "' +
                    (post.title || 'Untitled') + '"',
-        actor:     actorName,
+        actor:     _notifActor,
         read:      false
       })
     }).catch(function(err) {
