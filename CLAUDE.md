@@ -142,6 +142,7 @@ window.AppState = {
   ```
   All four tables must be in the `supabase_realtime` publication or `postgres_changes` delivers zero events. RLS is disabled on `notifications` (see §2), so the `user_role=eq.Client` clause is a SERVER-SIDE broadcast filter applied by the Realtime server, not a row-level security policy.
 - `loadPostsForClient` still skips overwriting `post.post_comments` when `_commentSaving === true` — object-level lock set by `_handleSubmitComment` (render/client.js) so in-flight optimistic rows aren't clobbered.
+- **Invariant:** `_handleSubmitComment` runs `decodeHtmlEntities(input.value)` on the raw textarea value BEFORE deriving `message` / `savedValue` / the POST body — prevents browser-escaped `&#39;` / `&amp;` etc. from round-tripping into `post_comments.message`.
 - `renderClientView` guards cv click listeners via `cv._clientEventsWired` (cv persists across re-renders, unguarded `addEventListener` stacks on every render).
 - Client @mention roster fetched live from `/user_roles`, cached in `window._clientMentionRoster` via `_fetchClientMentionRoster()`.
 
@@ -227,7 +228,7 @@ Edge functions live in Supabase — NOT in this repo. Do not try to edit them fr
 - **notify-digest** — scheduled daily digest email per role listing pending items.
 
 Cloudflare Workers:
-- **srtd-og-inject** — route `srtd.io/preview/*`. Source: `sorted-preview-worker/src/index.js`. Serves WhatsApp OG HTML from KV `sorted-whatsapp-previews`. Previews seeded fire-and-forget by `06-post-create.js` and `render/brief.js` POSTing to `/generate-preview`. Lookup `?id=POST_ID` (direct) or `?p=SLUG` (legacy). Shared secret `PREVIEW_SECRET=srtd2026xK9mN3pQ`. Short URL: `srtd.io/p/XXXX` via Cloudflare Page Rule. Zero Supabase egress.
+- **srtd-og-inject** — route `srtd.io/preview/*`. Source: `sorted-preview-worker/src/index.js`. Serves WhatsApp OG HTML from KV `sorted-whatsapp-previews`. Previews seeded fire-and-forget by `06-post-create.js` and `render/brief.js` POSTing to `/generate-preview`. Lookup `?id=POST_ID` (direct) or `?p=SLUG` (legacy). Shared secret `PREVIEW_SECRET=srtd2026xK9mN3pQ`. Short URL: `srtd.io/p/XXXX` via Cloudflare Page Rule. Zero Supabase egress. **Invariant:** `handlePreview` checks `env.PREVIEWS_KV.get(shortId)` first and, on a cold Supabase-backed miss, populates KV via `ctx.waitUntil(env.PREVIEWS_KV.put(shortId, html, { expirationTtl: 2592000 }))` so the next hit never re-queries Supabase.
 - **srtd-r2-upload** — `srtd-r2-upload.ksg-kumarshubhamgune.workers.dev`. Handles uploads and `/download?key=` (sets `Content-Disposition: attachment`). Source: `r2-upload-worker.js`.
 
 ai_usage lifecycle invariant (`srtd-ai-worker/src/index.js`): every Anthropic call writes a `pending` row (with `estimated_cost_usd` from a `Math.ceil(promptChars/4) * USD_PER_INPUT_TOKEN` estimate) BEFORE firing, then PATCHes the row to `status='complete'` (with real `tokens_input`, `tokens_output`, `actual_cost_usd`, and `cost_usd` mirrored to `actual_cost_usd` for back-compat) on success or `status='failed'` on throw / non-200. INSERT failure logs to `console.error` and proceeds without a row id; UPDATE failure logs and still returns the response. `/ai/month-cost` is now a stub returning `{ success: true, month_cost_inr: null }` — month spend comes from the `ai_usage` table client-side.

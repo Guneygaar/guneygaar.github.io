@@ -67,9 +67,23 @@ async function findPostByShortId(shortId) {
   return null;
 }
 
-async function handlePreview(url) {
+async function handlePreview(url, env, ctx) {
   const shortId = url.searchParams.get('p') || '';
   if (!shortId) return fetch(url.toString());
+
+  // KV write-through: serve cached HTML on hit, populate KV on cold miss
+  // using the same 30-day TTL + put shape as /generate-preview above.
+  const cached = env && env.PREVIEWS_KV
+    ? await env.PREVIEWS_KV.get(shortId)
+    : null;
+  if (cached) {
+    return new Response(cached, {
+      headers: {
+        'Content-Type': 'text/html;charset=UTF-8',
+        ...CORS_HEADERS
+      }
+    });
+  }
 
   const post = await findPostByShortId(shortId);
   if (!post) return fetch(url.toString());
@@ -79,6 +93,12 @@ async function handlePreview(url) {
     ? post.images[0] : '';
 
   const html = buildOgHtml(shortId, title, imgUrl, post.post_id);
+
+  if (env && env.PREVIEWS_KV && ctx && typeof ctx.waitUntil === 'function') {
+    ctx.waitUntil(
+      env.PREVIEWS_KV.put(shortId, html, { expirationTtl: 2592000 })
+    );
+  }
 
   return new Response(html, {
     headers: {
@@ -189,7 +209,7 @@ export default {
 
     if (request.method === 'GET' &&
         url.pathname.startsWith('/preview')) {
-      return handlePreview(url);
+      return handlePreview(url, env, ctx);
     }
 
     return new Response('Not Found', {
