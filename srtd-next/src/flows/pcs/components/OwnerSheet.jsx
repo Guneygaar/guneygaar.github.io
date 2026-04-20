@@ -23,7 +23,7 @@ export function OwnerSheet({ onClose }) {
     setBusy(true);
     try {
       const roleLabel = ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative';
-      const updated = await patchPost(post.post_id, { owner: roleLabel, owner_user_id: user.id, updated_by: actor });
+      const updated = await patchPost(post.post_id, { owner: roleLabel, updated_by: actor });
       writeAudit({ postId: post.post_id, field: 'owner', oldValue: post.owner, newValue: roleLabel, actor }).catch(() => {});
       if (updated) usePcsStore.setState({ post: updated });
       logClick('pcs_react_owner_set', { userId: user.id });
@@ -36,7 +36,7 @@ export function OwnerSheet({ onClose }) {
     }
   }
 
-  const currentId = (post && post.owner_user_id && (post.owner_user_id.id || post.owner_user_id)) || null;
+  const currentId = null;
 
   return (
     <FullScreenEditor title="Set owner" onClose={onClose} busy={busy}>
