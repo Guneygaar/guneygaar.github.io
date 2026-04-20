@@ -603,9 +603,11 @@ console.log('LOADED:', 'render/client.js');
 
   function _parseCommentAttachments(c) {
     try {
-      return typeof c.attachments === 'string'
+      var att = typeof c.attachments === 'string'
         ? JSON.parse(c.attachments)
         : c.attachments;
+      if (typeof att === 'string') att = JSON.parse(att);
+      return att;
     } catch (e) { return null; }
   }
 

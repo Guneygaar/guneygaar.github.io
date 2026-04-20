@@ -1253,6 +1253,7 @@ function _notifBuildThreadHtml(n, post, postTitle) {
 function _agencyCommentImgHtml(c) {
   try {
     var att = typeof c.attachments === 'string' ? JSON.parse(c.attachments) : c.attachments;
+    if (typeof att === 'string') { try { att = JSON.parse(att); } catch(e) { return ''; } }
     if (!att || att.type !== 'images' || !Array.isArray(att.urls) || !att.urls.length) return '';
     return '<div class="pcs-comment-imgs">' +
       att.urls.map(function(u, i) {
