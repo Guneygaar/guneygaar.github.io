@@ -64,7 +64,7 @@ export async function createPost(payload) {
 export async function getPostByPostId(postId) {
   if (!postId) throw new Error('[sorted-react/posts] getPostByPostId: postId required');
   const encoded = encodeURIComponent(postId);
-  const rows = await apiFetch(`/posts?post_id=eq.${encoded}&select=*,owner_user_id(id,name,email,role)&limit=1`, {
+  const rows = await apiFetch(`/posts?post_id=eq.${encoded}&select=*&limit=1`, {
     method: 'GET',
     headers: { 'Accept': 'application/json' }
   });
