@@ -250,6 +250,22 @@ Email: Resend, FROM `hinglish@srtd.io`.
 5. CLAUDE.md updates in the SAME PR as the code change. Never a separate PR.
 6. Every push response must include: files changed, test count, version bump, PR URL.
 
+## ONE PR RULE — NON-NEGOTIABLE
+Before writing any fix prompt or creating any branch, always run:
+  gh pr list --state open --base main-/-root
+If ANY open PR exists, stop immediately and tell Shubham:
+  "PR #[number] ([title]) is still open. Merge or close it before I create a new one."
+No exceptions — not for critical fixes, not for small changes, not for hotfixes.
+One open PR maximum at all times.
+
+## PR CONFLICT GUARD — NON-NEGOTIABLE
+Before creating any branch:
+1. Run: git fetch origin && git diff --name-only origin/main-/-root HEAD
+2. If any file in the planned PR was modified in main-/-root since the last fetch, stop and report the conflicting files. Do not proceed until Shubham confirms.
+3. Never branch off anything except origin/main-/-root directly.
+4. Never bump ?v= version strings to a letter already used by an open PR. Read open PRs first, then pick the next unused letter.
+5. If in doubt about conflict state, run a dry-run merge check: git merge --no-commit --no-ff origin/main-/-root, then git merge --abort. Report any conflicts before touching a single file.
+
 ## 8 — TESTS
 
 Unit: `npx vitest run` — 563/563 passing across 22 test files. E2E: `npx playwright test` — 9 specs (3 critical run in CI only on core-logic file changes). Smoke: `.github/workflows/smoke.yml` runs `live-smoke-schedule.spec.js` every 30 min against production. Required secrets: `SORTED_CLIENT_EMAIL`, `SORTED_ADMIN_EMAIL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `EXPECTED_VERSION`.
