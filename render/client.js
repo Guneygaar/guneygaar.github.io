@@ -1672,15 +1672,22 @@ console.log('LOADED:', 'render/client.js');
     if (drop) drop.style.display = 'none';
   };
 
+  function decodeHtmlEntities(str) {
+    var txt = document.createElement('textarea');
+    txt.innerHTML = str;
+    return txt.value;
+  }
+
   function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
     var _sendBtn = document.querySelector('button[data-action="submitComment"][data-id="' + postId + '"]');
     if (input.dataset.submitting === 'true' || (_sendBtn && _sendBtn.dataset.submitting === 'true')) return;
-    var message = input.value.trim();
+    var rawValue = decodeHtmlEntities(input.value || '');
+    var message = rawValue.trim();
     var _urls = window._clientFeedPendingImgs[postId] || [];
     if (!message && _urls.length === 0) return;
-    var savedValue = input.value;
+    var savedValue = rawValue;
     input.value = '';
 
     var _emailKey = window.AppState.user.email || '';
