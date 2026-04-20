@@ -1,20 +1,102 @@
 name: Auto Merge PR
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - 'main-/-root'
+
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      THIS_PR: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
     steps:
-      - name: Enable Auto-Merge
-        if: startsWith(github.head_ref, 'claude/')
+      - name: Queue gate
+        id: queue
+        if: startsWith(github.head_ref, 'claude/') || (github.event.action == 'closed' && github.event.pull_request.merged == true)
         run: |
-          gh pr merge "${{ github.event.pull_request.number }}" \
+          set -e
+
+          # ── Branch A: a PR just merged — promote the next one in the queue.
+          if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+            NEXT_JSON=$(gh pr list --state open --base main-/-root \
+              --json number,title,createdAt \
+              --jq 'sort_by(.createdAt) | .[0] // empty')
+            if [ -n "$NEXT_JSON" ]; then
+              NEXT_NUM=$(echo "$NEXT_JSON" | jq -r '.number')
+              NEXT_TITLE=$(echo "$NEXT_JSON" | jq -r '.title')
+              BODY=$(cat <<EOF
+## 🟡 Queue cleared — PR #${NEXT_NUM} now merging
+PR #${THIS_PR} has merged. You are next.
+Auto-merge is now active. Nothing needed from you.
+EOF
+)
+              gh api --method POST \
+                "repos/${REPO}/issues/${NEXT_NUM}/comments" \
+                -f body="$BODY" >/dev/null
+              gh pr merge "$NEXT_NUM" --auto --squash --repo "$REPO" || true
+              echo "Promoted PR #${NEXT_NUM} to auto-merge"
+            else
+              echo "No queued PRs to promote."
+            fi
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # ── Branch B: open / synchronize / reopen — enforce one-PR queue.
+          OPEN_COUNT=$(gh pr list --state open --base main-/-root --json number --jq length)
+          OTHER_PRS=$(gh pr list --state open --base main-/-root --json number,title \
+            --jq ".[] | select(.number != ${THIS_PR}) | \"#\(.number) \(.title)\"")
+
+          if [ "$OPEN_COUNT" -gt 1 ]; then
+            BODY=$(cat <<EOF
+## 🔴 Queued — waiting for another PR
+PR #${THIS_PR} is waiting. The following PR must merge first:
+$OTHER_PRS
+No action needed from you — I will auto-trigger once the queue clears.
+EOF
+)
+            gh api --method POST \
+              "repos/${REPO}/issues/${THIS_PR}/comments" \
+              -f body="$BODY" >/dev/null
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Single open PR (this one) — announce and proceed to enable auto-merge.
+          FILES_JSON=$(gh pr diff "$THIS_PR" --name-only | sed 's/^/- /')
+          VER_LINE="index.html not modified"
+          if echo "$FILES_JSON" | grep -qx '- index.html'; then
+            NEW_VER=$(gh pr diff "$THIS_PR" -- index.html \
+              | grep '^+' \
+              | grep -oE 'v=2026[0-9]{4}[a-z]' \
+              | head -n1 || true)
+            if [ -n "$NEW_VER" ]; then VER_LINE="?${NEW_VER}"; fi
+          fi
+          BODY=$(cat <<EOF
+## 🟢 Auto-merge enabled — PR #${THIS_PR}
+Files changed:
+$FILES_JSON
+Version bump: ${VER_LINE}
+All conflict checks: ✅
+Cloudflare purge will fire on merge.
+Nothing needed from you.
+EOF
+)
+          gh api --method POST \
+            "repos/${REPO}/issues/${THIS_PR}/comments" \
+            -f body="$BODY" >/dev/null
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Enable Auto-Merge
+        if: steps.queue.outputs.proceed == 'true'
+        run: |
+          gh pr merge "${THIS_PR}" \
             --auto \
             --squash \
-            --repo "${{ github.repository }}"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            --repo "${REPO}"

@@ -230,12 +230,11 @@ describe('Client request notification', function() {
     expect(block).toContain('actor:');
   });
 
-  it('client request notification resolves actor via getDisplayName', function() {
+  it('client request notification resolves actor via getCanonicalActor', function() {
     var idx = actionsSrc.indexOf("'new_request'");
     var block = actionsSrc.substring(idx - 300, idx + 300);
-    // Post-PR #903: actor resolves to profile.display_name via
-    // getDisplayName(email); AppState.user.name is the fallback.
-    expect(block).toMatch(/getDisplayName|AppState\.user\.name/);
+    // getCanonicalActor(email) is the canonical actor resolver since PR #983.
+    expect(block).toMatch(/getCanonicalActor/);
   });
 
   it('client request notification includes read:false', function() {

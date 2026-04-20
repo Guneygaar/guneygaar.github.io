@@ -1,0 +1,192 @@
+name: PR Conflict Guard
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - 'main-/-root'
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  conflict-guard:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: STEP 1 — Behind-main check
+        id: step1
+        run: |
+          set -e
+          git fetch origin main-/-root
+          COUNT=$(git rev-list --count HEAD..origin/main-/-root)
+          if [ "$COUNT" -gt 0 ]; then
+            MSG="❌ Behind main by $COUNT commit(s) — rebase required before merge"
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+          else
+            MSG="✅ Up to date with main"
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+          fi
+          echo "message=$MSG" >> "$GITHUB_OUTPUT"
+          echo "$MSG"
+
+      - name: STEP 2 — File overlap check
+        id: step2
+        run: |
+          set -e
+          mapfile -t THIS_FILES < <(gh pr diff "$PR_NUMBER" --name-only | sort -u)
+          OTHERS=$(gh pr list --state open --base main-/-root --json number,title \
+            --jq ".[] | select(.number != $PR_NUMBER) | \"\(.number)|\(.title)\"")
+          CONFLICT_LINES=""
+          if [ -n "$OTHERS" ]; then
+            while IFS='|' read -r other_num other_title; do
+              [ -z "$other_num" ] && continue
+              mapfile -t OTHER_FILES < <(gh pr diff "$other_num" --name-only | sort -u)
+              OVERLAP=$(comm -12 \
+                <(printf '%s\n' "${THIS_FILES[@]}" | sort -u) \
+                <(printf '%s\n' "${OTHER_FILES[@]}" | sort -u) | paste -sd, -)
+              if [ -n "$OVERLAP" ]; then
+                CONFLICT_LINES="${CONFLICT_LINES}❌ File conflict with PR #${other_num} (${other_title}): ${OVERLAP}%0A"
+              fi
+            done <<< "$OTHERS"
+          fi
+          if [ -n "$CONFLICT_LINES" ]; then
+            CONFLICT_LINES="${CONFLICT_LINES%\%0A}"
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "message<<EOF" >> "$GITHUB_OUTPUT"
+            printf '%b' "${CONFLICT_LINES//%0A/\\n}" >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "message=✅ No file conflicts with other open PRs" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: STEP 3 — Version string collision check
+        id: step3
+        run: |
+          set -e
+          THIS_FILES=$(gh pr diff "$PR_NUMBER" --name-only)
+          if ! echo "$THIS_FILES" | grep -qx 'index.html'; then
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "message=✅ index.html not modified — no version check needed" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          THIS_VER=$(gh pr diff "$PR_NUMBER" -- index.html \
+            | grep '^+' \
+            | grep -oE 'v=2026[0-9]{4}[a-z]' \
+            | head -n1 || true)
+          if [ -z "$THIS_VER" ]; then
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "message=✅ index.html modified but no ?v= bump detected" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OTHERS=$(gh pr list --state open --base main-/-root --json number,title \
+            --jq ".[] | select(.number != $PR_NUMBER) | \"\(.number)|\(.title)\"")
+          COLLISIONS=""
+          if [ -n "$OTHERS" ]; then
+            while IFS='|' read -r other_num other_title; do
+              [ -z "$other_num" ] && continue
+              OTHER_FILES=$(gh pr diff "$other_num" --name-only)
+              if ! echo "$OTHER_FILES" | grep -qx 'index.html'; then continue; fi
+              OTHER_VER=$(gh pr diff "$other_num" -- index.html \
+                | grep '^+' \
+                | grep -oE 'v=2026[0-9]{4}[a-z]' \
+                | head -n1 || true)
+              if [ "$OTHER_VER" = "$THIS_VER" ] && [ -n "$OTHER_VER" ]; then
+                COLLISIONS="${COLLISIONS}❌ Version string collision: ?${THIS_VER} also used in PR #${other_num} (${other_title})%0A"
+              fi
+            done <<< "$OTHERS"
+          fi
+          if [ -n "$COLLISIONS" ]; then
+            COLLISIONS="${COLLISIONS%\%0A}"
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "message<<EOF" >> "$GITHUB_OUTPUT"
+            printf '%b' "${COLLISIONS//%0A/\\n}" >> "$GITHUB_OUTPUT"
+            echo "" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "message=✅ No version string collision (this PR uses ?${THIS_VER})" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: STEP 4 — Stale Seoul URL check
+        id: step4
+        run: |
+          set +e
+          MATCHES=$(gh pr diff "$PR_NUMBER" | grep '^+' | grep 'ozptjplxbyswclolbxyn' || true)
+          set -e
+          if [ -n "$MATCHES" ]; then
+            echo "status=fail" >> "$GITHUB_OUTPUT"
+            echo "message=❌ Stale Seoul Supabase URL found in diff — replace with vxokfscjzytpgdrmertk" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=pass" >> "$GITHUB_OUTPUT"
+            echo "message=✅ No stale Seoul Supabase URL" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: STEP 5 — Post or update PR comment
+        id: step5
+        run: |
+          set -e
+          S1_STATUS="${{ steps.step1.outputs.status }}"
+          S2_STATUS="${{ steps.step2.outputs.status }}"
+          S3_STATUS="${{ steps.step3.outputs.status }}"
+          S4_STATUS="${{ steps.step4.outputs.status }}"
+          S1_MSG="${{ steps.step1.outputs.message }}"
+          S2_MSG="${{ steps.step2.outputs.message }}"
+          S3_MSG="${{ steps.step3.outputs.message }}"
+          S4_MSG="${{ steps.step4.outputs.message }}"
+
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ALL_PASS="true"
+          for s in "$S1_STATUS" "$S2_STATUS" "$S3_STATUS" "$S4_STATUS"; do
+            if [ "$s" != "pass" ]; then ALL_PASS="false"; fi
+          done
+
+          if [ "$ALL_PASS" = "true" ]; then
+            BODY=$(cat <<EOF
+## PR Conflict Guard
+✅ All checks passed. Safe to merge.
+_Last checked: $TIMESTAMP_
+EOF
+)
+          else
+            BODY=$(cat <<EOF
+## PR Conflict Guard
+$S1_MSG
+$S2_MSG
+$S3_MSG
+$S4_MSG
+_Last checked: $TIMESTAMP_
+EOF
+)
+          fi
+
+          EXISTING_ID=$(gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq '.[] | select(.body | startswith("## PR Conflict Guard")) | .id' | head -n1)
+
+          if [ -n "$EXISTING_ID" ]; then
+            gh api --method PATCH \
+              "repos/${{ github.repository }}/issues/comments/${EXISTING_ID}" \
+              -f body="$BODY" >/dev/null
+            echo "Updated existing comment id=$EXISTING_ID"
+          else
+            gh api --method POST \
+              "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+              -f body="$BODY" >/dev/null
+            echo "Posted new comment"
+          fi
+
+          if [ "$ALL_PASS" != "true" ]; then
+            echo "::error::PR Conflict Guard found blocking issues — see PR comment."
+            exit 1
+          fi
