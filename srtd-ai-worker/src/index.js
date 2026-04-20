@@ -17,7 +17,7 @@ const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
 // Service-role key — required for workspace_settings reads + ai_usage
 // writes with the current (loose) table permissions. Consistent with
 // the hardcoded-Supabase-creds pattern used by sorted-preview-worker.
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4b2tmc2Nqenl0cGdkcm1lcnRrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MzA2NjkxNCwiZXhwIjoyMDU4NjQyOTE0fQ.mhMGDExFm3pVFmB24gzBGwIuXHHBB2B88FVqnmM5JQkw';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cHRqcGx4Ynlzd2Nsb2xieHluIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjQ3NTQ4MCwiZXhwIjoyMDkyMDUxNDgwfQ.804mVf7ZqqgaQAn8Pe6ngOphfsP07BTKDpa2QmmdDYk';
 
 const ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 const ANTHROPIC_MAX_TOKENS = 3000;
