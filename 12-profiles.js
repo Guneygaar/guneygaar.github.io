@@ -57,6 +57,46 @@ async function fetchProfiles() {
   }
 }
 
+// Canonical actor string for notifications.actor — single source of truth.
+function getCanonicalActor(userIdOrEmail) {
+  var raw = userIdOrEmail;
+  if (raw == null) {
+    raw = (window.AppState && window.AppState.user &&
+           window.AppState.user.email) || '';
+  }
+  var key = String(raw || '').toLowerCase().trim();
+  if (!key) return '';
+  var cache = window._profilesCache;
+  if (cache && cache[key]) {
+    return cache[key].display_name || cache[key].email || '';
+  }
+  if (cache) {
+    var keys = Object.keys(cache);
+    for (var i = 0; i < keys.length; i++) {
+      var p = cache[keys[i]];
+      if (!p) continue;
+      if (p.id && String(p.id).toLowerCase() === key) {
+        return p.display_name || p.email || '';
+      }
+      if (p.display_name && p.display_name.toLowerCase() === key) {
+        return p.display_name;
+      }
+      if (p.username && p.username.toLowerCase() === key) {
+        return p.display_name || p.email || '';
+      }
+    }
+  }
+  if (window._nameToEmailCache && window._nameToEmailCache[key]) {
+    var resolvedEmail = window._nameToEmailCache[key];
+    if (cache && cache[resolvedEmail]) {
+      return cache[resolvedEmail].display_name ||
+             cache[resolvedEmail].email || resolvedEmail;
+    }
+    return resolvedEmail;
+  }
+  return (key.indexOf('@') >= 0) ? key : String(raw);
+}
+
 function getDisplayName(emailOrName) {
   if (!emailOrName) return 'Unknown';
   var key = String(emailOrName).toLowerCase().trim();
