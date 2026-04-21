@@ -9,3 +9,5 @@ export { WhatsAppIcon }  from './WhatsAppIcon.jsx';
 export { Toast }         from './Toast.jsx';
 export { BottomSheet }   from './BottomSheet.jsx';
 export { EditIcon }      from './EditIcon.jsx';
+export { Lightbox }      from './Lightbox.jsx';
+export { PhotoKebabMenu } from './PhotoKebabMenu.jsx';

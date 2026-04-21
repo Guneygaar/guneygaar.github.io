@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Upload, ImageOff, X, Trash2, Download, ImagePlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { ImagePlus, ImageOff, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Lightbox, PhotoKebabMenu } from '../../../core/ui';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
 import { useAppState } from '../../../core/stores/appState.js';
@@ -10,28 +11,40 @@ import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 
-const TILE_SIZE = 'min(72vw, 320px)';
-const SINGLE_SIZE = 'min(100vw, 390px)';
-const ADD_TILE_WIDTH = '64px';
+const MAX_IMAGES = 20;
+const MAX_FILE_MB = 12;
 
 function normalizeImages(images) {
   if (!images) return [];
   if (Array.isArray(images)) return images.filter(Boolean);
-  if (typeof images === 'object' && Array.isArray(images.urls)) return images.urls.filter(Boolean);
+  if (typeof images === 'object' && Array.isArray(images.urls)) {
+    return images.urls.filter(Boolean);
+  }
   return [];
 }
 
-function ThumbImg({ src }) {
+function ThumbImg({ src, onLoad }) {
   const [failed, setFailed] = useState(false);
   if (failed) {
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-text-dim font-mono text-sm tracking-wide uppercase border border-dashed border-border-neutral">
+      <div className="w-full h-full flex flex-col items-center
+                      justify-center gap-1 text-text-dim font-mono
+                      text-sm tracking-wide uppercase border
+                      border-dashed border-border-neutral">
         <ImageOff size={18} />
         <span>Failed to load</span>
       </div>
     );
   }
-  return <img src={src} alt="" onError={() => setFailed(true)} className="w-full h-full object-cover block" />;
+  return (
+    <img
+      src={src}
+      alt=""
+      onError={() => setFailed(true)}
+      onLoad={onLoad}
+      className="w-full h-full object-cover block"
+    />
+  );
 }
 
 async function downloadUrl(url) {
@@ -54,224 +67,529 @@ async function downloadUrl(url) {
 export function PhotoStrip({ post, canEdit }) {
   const imgs = normalizeImages(post?.images);
   const count = imgs.length;
-  const [lightIdx, setLightIdx] = useState(null);
-  const [busy, setBusy] = useState(false);
-  const fileInputRef = useRef(null);
-  const touchStartX = useRef(null);
   const actor = useAppState((s) => s.user?.email || '');
 
-  useEffect(() => {
-    if (lightIdx === null) return;
-    function onKey(e) {
-      if (e.key === 'Escape') { setLightIdx(null); return; }
-      if (e.key === 'ArrowLeft') { setLightIdx((i) => (i > 0 ? i - 1 : imgs.length - 1)); return; }
-      if (e.key === 'ArrowRight') { setLightIdx((i) => (i < imgs.length - 1 ? i + 1 : 0)); return; }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lightIdx, imgs.length]);
+  const [lightIdx, setLightIdx] = useState(null);
+  const [reorderOpen, setReorderOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [scrollIdx, setScrollIdx] = useState(0);
+  const fileInputRef = useRef(null);
+  const scrollRef = useRef(null);
 
-  function onTouchStart(e) {
-    const t = e.touches && e.touches[0];
-    touchStartX.current = t ? t.clientX : null;
-  }
-  function onTouchEnd(e) {
-    if (touchStartX.current == null) return;
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) { touchStartX.current = null; return; }
-    const dx = t.clientX - touchStartX.current;
-    touchStartX.current = null;
-    if (Math.abs(dx) < 50 || imgs.length < 2) return;
-    if (dx < 0) setLightIdx((i) => (i < imgs.length - 1 ? i + 1 : 0));
-    else setLightIdx((i) => (i > 0 ? i - 1 : imgs.length - 1));
+  function onScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const w = el.offsetWidth || 1;
+    const next = Math.round(el.scrollLeft / w);
+    if (next !== scrollIdx) setScrollIdx(next);
   }
 
   async function onPickFiles(e) {
-    const files = Array.from(e.target.files || []);
+    const rawFiles = Array.from(e.target.files || []);
     e.target.value = '';
-    if (!files.length || !post?.post_id) return;
+    if (!rawFiles.length || !post?.post_id || busy) return;
+
+    // Cap + size guard
+    const remaining = MAX_IMAGES - count;
+    if (remaining <= 0) {
+      toast(`Maximum ${MAX_IMAGES} photos reached`, 'warning');
+      return;
+    }
+    const files = rawFiles.slice(0, remaining);
+    if (rawFiles.length > remaining) {
+      toast(
+        `Only ${remaining} photo${remaining === 1 ? '' : 's'} added; ${MAX_IMAGES}-photo cap`,
+        'warning'
+      );
+    }
+    for (const f of files) {
+      if (f.size > MAX_FILE_MB * 1024 * 1024) {
+        toast(`${f.name} exceeds ${MAX_FILE_MB}MB`, 'error');
+        return;
+      }
+    }
+
     setBusy(true);
+    setUploadProgress({ current: 0, total: files.length });
+
     try {
       const urls = [];
+      let i = 0;
       for (const f of files) {
+        i += 1;
+        setUploadProgress({ current: i, total: files.length });
         const blob = await compressImage(f, { maxDim: 1200, quality: 0.82 });
-        const url = await uploadToR2(generateFilename('jpg'), blob);
+        const filename = generateFilename('jpg', post.post_id);
+        const url = await uploadToR2(filename, blob);
         urls.push(url);
       }
       const next = [...imgs, ...urls];
-      const updated = await patchPost(post.post_id, { images: next, updated_by: actor });
-      writeAudit({ postId: post.post_id, field: 'images', oldValue: count, newValue: next.length, actor }).catch(() => {});
+      const updated = await patchPost(post.post_id, {
+        images: next,
+        updated_by: actor,
+      });
+      try {
+        await writeAudit({
+          postId: post.post_id,
+          field: 'images',
+          oldValue: count,
+          newValue: next.length,
+          actor,
+        });
+      } catch (err) {
+        logError(err, { context: 'pcs_react_photo_audit' });
+      }
       if (updated) usePcsStore.setState({ post: updated });
       reseedOgPreview(post.post_id);
-      logClick('pcs_react_photo_upload', { postId: post.post_id, added: urls.length });
-      toast(`Uploaded ${urls.length} photo${urls.length === 1 ? '' : 's'}`, 'success');
+      logClick('pcs_react_photo_upload', {
+        postId: post.post_id,
+        added: urls.length,
+      });
+      toast(
+        `Uploaded ${urls.length} photo${urls.length === 1 ? '' : 's'}`,
+        'success'
+      );
     } catch (err) {
-      logError(err, { context: 'pcs_react_photo_upload', postId: post.post_id });
+      logError(err, {
+        context: 'pcs_react_photo_upload',
+        postId: post.post_id,
+      });
       toast('Photo upload failed', 'error');
     } finally {
       setBusy(false);
+      setUploadProgress(null);
+    }
+  }
+
+  async function applyImagesPatch(nextImages, auditField = 'images') {
+    try {
+      const updated = await patchPost(post.post_id, {
+        images: nextImages,
+        updated_by: actor,
+      });
+      try {
+        await writeAudit({
+          postId: post.post_id,
+          field: auditField,
+          oldValue: imgs,
+          newValue: nextImages,
+          actor,
+        });
+      } catch (err) {
+        logError(err, { context: 'pcs_react_photo_audit' });
+      }
+      if (updated) usePcsStore.setState({ post: updated });
+      reseedOgPreview(post.post_id);
+      return true;
+    } catch (err) {
+      logError(err, {
+        context: 'pcs_react_photo_patch',
+        postId: post.post_id,
+        field: auditField,
+      });
+      toast('Save failed', 'error');
+      return false;
     }
   }
 
   async function removeAt(idx) {
     if (!post?.post_id || busy) return;
-    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-      if (!window.confirm('Remove this photo?')) return;
-    }
+    if (!window.confirm('Remove this photo?')) return;
     setBusy(true);
-    try {
-      const next = imgs.slice(0, idx).concat(imgs.slice(idx + 1));
-      const updated = await patchPost(post.post_id, { images: next, updated_by: actor });
-      writeAudit({ postId: post.post_id, field: 'images', oldValue: count, newValue: next.length, actor }).catch(() => {});
-      if (updated) usePcsStore.setState({ post: updated });
-      reseedOgPreview(post.post_id);
+    const next = imgs.slice(0, idx).concat(imgs.slice(idx + 1));
+    const ok = await applyImagesPatch(next, 'images');
+    if (ok) {
       logClick('pcs_react_photo_remove', { postId: post.post_id });
       toast('Photo removed', 'success');
       setLightIdx((cur) => (cur != null && cur >= next.length ? null : cur));
+    }
+    setBusy(false);
+  }
+
+  async function setAsHero(idx) {
+    if (!post?.post_id || busy) return;
+    if (idx === 0) return;
+    setBusy(true);
+    const next = [imgs[idx], ...imgs.slice(0, idx), ...imgs.slice(idx + 1)];
+    const ok = await applyImagesPatch(next, 'hero');
+    if (ok) {
+      logClick('pcs_react_photo_sethero', { postId: post.post_id });
+      toast('Hero updated', 'success');
+      setLightIdx(0);
+    }
+    setBusy(false);
+  }
+
+  function openLightbox(i) {
+    setLightIdx(i);
+  }
+
+  // Empty state
+  if (count === 0) {
+    if (!canEdit) return null;
+    return (
+      <div className="border-b border-divider-subtle">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={onPickFiles}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={busy}
+          className="flex items-center gap-2 px-4 py-3 text-text-dim
+                     hover:text-text-mid w-full disabled:opacity-50"
+        >
+          <ImagePlus size={15} />
+          <span className="font-mono text-xs tracking-widest uppercase">
+            Add photos
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  const current = Math.max(0, Math.min(scrollIdx, count - 1));
+
+  return (
+    <div className="relative">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={onPickFiles}
+        className="hidden"
+      />
+
+      {/* Horizontal snap scroll */}
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex overflow-x-auto scrollbar-none"
+        style={{
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch',
+        }}
+      >
+        {imgs.map((src, i) => (
+          <div
+            key={`${src}-${i}`}
+            className="relative flex-shrink-0 bg-bg-2"
+            style={{
+              width: '100%',
+              aspectRatio: '1 / 1',
+              scrollSnapAlign: 'start',
+            }}
+          >
+            <button
+              onClick={() => openLightbox(i)}
+              className="w-full h-full block"
+              aria-label={`Photo ${i + 1} of ${count}`}
+            >
+              <ThumbImg src={src} />
+            </button>
+
+            {/* Top-right cluster: count badge + kebab */}
+            <div
+              className="absolute top-3 right-3 flex items-center gap-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {count > 1 ? (
+                <div
+                  className="font-mono text-xs tracking-widest uppercase
+                             px-2.5 py-1 rounded-pill"
+                  style={{
+                    background: 'rgba(0,0,0,0.55)',
+                    color: '#F4F3EE',
+                    fontFeatureSettings: "'tnum' 1",
+                  }}
+                >
+                  {i + 1} / {count}
+                </div>
+              ) : null}
+              {canEdit ? (
+                <PhotoKebabMenu
+                  context="card"
+                  canSetHero={i !== 0}
+                  canReorder={count > 1}
+                  onViewFull={() => openLightbox(i)}
+                  onAdd={() => fileInputRef.current?.click()}
+                  onSetHero={() => setAsHero(i)}
+                  onReorder={() => {
+                    openLightbox(i);
+                    setReorderOpen(true);
+                  }}
+                  onDownload={() => downloadUrl(src)}
+                  onRemove={() => removeAt(i)}
+                />
+              ) : null}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Upload progress overlay */}
+      {uploadProgress ? (
+        <div
+          className="absolute left-0 right-0 top-0 flex items-center
+                     justify-center font-mono text-xs tracking-widest
+                     uppercase"
+          style={{
+            bottom: 0,
+            background: 'rgba(0,0,0,0.6)',
+            color: '#F4F3EE',
+            zIndex: 5,
+          }}
+        >
+          Uploading {uploadProgress.current} / {uploadProgress.total}
+        </div>
+      ) : null}
+
+      {/* Lightbox */}
+      {lightIdx !== null && !reorderOpen ? (
+        <Lightbox
+          urls={imgs}
+          startIndex={lightIdx}
+          onClose={() => setLightIdx(null)}
+          onIndexChange={(i) => setLightIdx(i)}
+          topRightSlot={
+            canEdit ? (
+              <PhotoKebabMenu
+                context="lightbox"
+                canSetHero={lightIdx !== 0}
+                canReorder={count > 1}
+                onAdd={() => fileInputRef.current?.click()}
+                onSetHero={() => setAsHero(lightIdx)}
+                onReorder={() => setReorderOpen(true)}
+                onDownload={() => downloadUrl(imgs[lightIdx])}
+                onRemove={() => removeAt(lightIdx)}
+              />
+            ) : null
+          }
+        />
+      ) : null}
+
+      {/* Reorder mode */}
+      {reorderOpen && canEdit ? (
+        <ReorderMode
+          imgs={imgs}
+          post={post}
+          actor={actor}
+          onClose={() => {
+            setReorderOpen(false);
+            setLightIdx(null);
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------- ReorderMode (colocated in PhotoStrip.jsx) ---------- */
+
+function ReorderMode({ imgs, post, actor, onClose }) {
+  const [order, setOrder] = useState(imgs);
+  const [busy, setBusy] = useState(false);
+
+  function move(idx, direction) {
+    const target = idx + direction;
+    if (target < 0 || target >= order.length) return;
+    const next = order.slice();
+    const tmp = next[idx];
+    next[idx] = next[target];
+    next[target] = tmp;
+    setOrder(next);
+  }
+
+  function removeTile(idx) {
+    if (!window.confirm('Remove this photo?')) return;
+    setOrder(order.slice(0, idx).concat(order.slice(idx + 1)));
+  }
+
+  async function commit() {
+    if (busy) return;
+    const changed = order.length !== imgs.length ||
+      order.some((u, i) => u !== imgs[i]);
+    if (!changed) { onClose(); return; }
+    setBusy(true);
+    try {
+      const updated = await patchPost(post.post_id, {
+        images: order,
+        updated_by: actor,
+      });
+      try {
+        await writeAudit({
+          postId: post.post_id,
+          field: 'reorder',
+          oldValue: imgs,
+          newValue: order,
+          actor,
+        });
+      } catch (err) {
+        logError(err, { context: 'pcs_react_photo_reorder_audit' });
+      }
+      if (updated) usePcsStore.setState({ post: updated });
+      reseedOgPreview(post.post_id);
+      logClick('pcs_react_photo_reorder', { postId: post.post_id });
+      toast('Order saved', 'success');
+      onClose();
     } catch (err) {
-      logError(err, { context: 'pcs_react_photo_remove', postId: post.post_id });
-      toast('Remove failed', 'error');
-    } finally {
+      logError(err, { context: 'pcs_react_photo_reorder' });
+      toast('Save failed', 'error');
       setBusy(false);
     }
   }
 
-  if (count === 0 && !canEdit) return null;
-
-  const CompactAddTile = canEdit ? (
-    <button
-      onClick={() => fileInputRef.current?.click()}
-      disabled={busy}
-      className="flex-shrink-0 bg-bg-3 border border-dashed border-border-neutral flex flex-col items-center justify-center gap-1.5 text-text-dim cursor-pointer hover:bg-bg-2 disabled:opacity-50 self-stretch"
-      style={{ width: ADD_TILE_WIDTH }}
-      aria-label="Upload photo"
-    >
-      <Upload size={14} />
-      <span className="font-mono text-2xs tracking-widest uppercase">Add</span>
-    </button>
-  ) : null;
-
-  const StripAddTile = canEdit ? (
-    <button
-      onClick={() => fileInputRef.current?.click()}
-      disabled={busy}
-      className="flex-shrink-0 bg-bg-3 border border-dashed border-border-neutral flex flex-col items-center justify-center gap-1.5 text-text-dim cursor-pointer hover:bg-bg-2 disabled:opacity-50"
-      style={{ width: TILE_SIZE, aspectRatio: '1 / 1' }}
-      aria-label="Upload photo"
-    >
-      <Upload size={16} />
-      <span className="font-mono text-2xs tracking-widest uppercase">Add</span>
-    </button>
-  ) : null;
-
   return (
-    <div>
-      <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onPickFiles} className="hidden" />
-      {count === 0 ? (
-        canEdit ? (
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={busy}
-            className="flex items-center gap-2 px-4 py-3 text-text-dim hover:text-text-mid w-full disabled:opacity-50 border-b border-divider-warm"
-          >
-            <ImagePlus size={15} />
-            <span className="font-mono text-xs tracking-widest uppercase">Add photos</span>
-          </button>
-        ) : null
-      ) : count === 1 ? (
-        canEdit ? (
-          <div className="flex gap-px overflow-x-auto scrollbar-none border-b border-divider-warm items-stretch">
-            <button
-              onClick={() => setLightIdx(0)}
-              className="flex-shrink-0 bg-bg-2 overflow-hidden cursor-pointer block mx-auto"
-              style={{ width: SINGLE_SIZE, aspectRatio: '1 / 1' }}
-              aria-label="Photo 1"
-            >
-              <ThumbImg src={imgs[0]} />
-            </button>
-            {CompactAddTile}
-          </div>
-        ) : (
-          <div className="border-b border-divider-warm">
-            <button
-              onClick={() => setLightIdx(0)}
-              className="block mx-auto bg-bg-2 overflow-hidden cursor-pointer"
-              style={{ width: SINGLE_SIZE, aspectRatio: '1 / 1' }}
-              aria-label="Photo 1"
-            >
-              <ThumbImg src={imgs[0]} />
-            </button>
-          </div>
-        )
-      ) : (
-        <>
-          <div className="flex gap-px overflow-x-auto scrollbar-none">
-            {imgs.map((src, i) => (
-              <button
-                key={i}
-                onClick={() => setLightIdx(i)}
-                className="flex-shrink-0 bg-bg-2 overflow-hidden cursor-pointer block"
-                style={{ width: TILE_SIZE, aspectRatio: '1 / 1' }}
-                aria-label={`Photo ${i + 1}`}
-              >
-                <ThumbImg src={src} />
-              </button>
-            ))}
-            {StripAddTile}
-          </div>
-          <div className="flex items-center justify-between px-3 py-2 font-mono text-sm text-text-dim tracking-wide border-b border-divider-warm">
-            <span>{count} IMAGES {'\u00B7'} HERO + {count - 1}</span>
-          </div>
-        </>
-      )}
-
-      {lightIdx !== null && (
-        <div
-          className="fixed inset-0 z-[1600] bg-black/95 flex items-center justify-center"
-          onClick={() => setLightIdx(null)}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
+    <div
+      className="fixed inset-0 overflow-y-auto"
+      style={{
+        zIndex: 1601,
+        background: '#1A1816',
+        color: '#F4F3EE',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      {/* Header */}
+      <div
+        className="sticky top-0 flex items-center justify-between
+                   px-4 border-b"
+        style={{
+          height: 48,
+          background: '#1A1816',
+          borderColor: 'rgba(255,255,255,0.1)',
+          zIndex: 2,
+        }}
+      >
+        <button
+          onClick={onClose}
+          className="font-mono text-sm tracking-widest uppercase"
+          style={{ color: '#B1ADA1' }}
         >
-          <img src={imgs[lightIdx]} alt="" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
-          <button onClick={(e) => { e.stopPropagation(); setLightIdx(null); }} className="absolute top-4 right-4 w-10 h-10 rounded-pill bg-black/60 text-text-loud flex items-center justify-center" aria-label="Close">
-            <X size={20} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); downloadUrl(imgs[lightIdx]); }} className="absolute top-4 right-16 w-10 h-10 rounded-pill bg-black/60 text-text-loud flex items-center justify-center" aria-label="Download photo">
-            <Download size={18} />
-          </button>
-          {imgs.length > 1 && (
-            <>
-              <button
-                onClick={(e) => { e.stopPropagation(); setLightIdx((i) => (i > 0 ? i - 1 : imgs.length - 1)); }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-pill bg-black/60 text-text-loud flex items-center justify-center"
-                aria-label="Previous photo"
-              >
-                <ChevronLeft size={24} />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setLightIdx((i) => (i < imgs.length - 1 ? i + 1 : 0)); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-pill bg-black/60 text-text-loud flex items-center justify-center"
-                aria-label="Next photo"
-              >
-                <ChevronRight size={24} />
-              </button>
-            </>
-          )}
-          {canEdit && (
-            <button onClick={(e) => { e.stopPropagation(); removeAt(lightIdx); }} disabled={busy} className="absolute bottom-16 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-2 rounded-sm2 bg-black/60 text-red text-sm disabled:opacity-50" aria-label="Remove photo">
-              <Trash2 size={14} />
-              <span>Remove</span>
-            </button>
-          )}
-          {imgs.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {imgs.map((_, i) => (
-                <button key={i} onClick={(e) => { e.stopPropagation(); setLightIdx(i); }} className={`w-2 h-2 rounded-pill ${i === lightIdx ? 'bg-text-loud' : 'bg-white/30'}`} aria-label={`Go to photo ${i + 1}`} />
-              ))}
-            </div>
-          )}
+          Cancel
+        </button>
+        <div
+          className="font-mono text-sm tracking-widest uppercase"
+          style={{ color: '#F4F3EE' }}
+        >
+          Reorder
         </div>
-      )}
+        <button
+          onClick={commit}
+          disabled={busy}
+          className="font-mono text-sm tracking-widest uppercase px-3 py-1
+                     rounded-sm2 disabled:opacity-50"
+          style={{ background: '#C15F3C', color: '#F4F3EE' }}
+        >
+          Done
+        </button>
+      </div>
+
+      {/* Helper copy */}
+      <div
+        className="px-4 py-3 font-mono text-xs tracking-widest uppercase"
+        style={{ color: '#7A7670' }}
+      >
+        Tap arrows to reorder {'·'} Tap {'×'} to remove
+      </div>
+
+      {/* Tile list */}
+      <div className="px-4 pb-6 flex flex-col gap-3">
+        {order.map((src, i) => (
+          <div
+            key={`${src}-${i}`}
+            className="relative rounded-card overflow-hidden"
+            style={{
+              background: '#252320',
+              aspectRatio: '16 / 9',
+            }}
+          >
+            <img
+              src={src}
+              alt=""
+              className="w-full h-full"
+              style={{ objectFit: 'cover' }}
+            />
+
+            {/* Hero badge */}
+            {i === 0 ? (
+              <div
+                className="absolute top-2 left-2 font-mono text-xs
+                           tracking-widest uppercase px-2 py-0.5
+                           rounded-pill inline-flex items-center gap-1"
+                style={{
+                  background: 'rgba(0,0,0,0.55)',
+                  color: '#F4F3EE',
+                }}
+              >
+                {'★'} HERO
+              </div>
+            ) : null}
+
+            {/* Remove */}
+            <button
+              onClick={() => removeTile(i)}
+              className="absolute top-2 right-2 w-8 h-8 rounded-pill
+                         inline-flex items-center justify-center"
+              style={{
+                background: 'rgba(0,0,0,0.55)',
+                color: '#F4F3EE',
+              }}
+              aria-label="Remove photo"
+            >
+              {'×'}
+            </button>
+
+            {/* Arrows */}
+            <div
+              className="absolute bottom-2 left-1/2 flex items-center gap-2"
+              style={{ transform: 'translateX(-50%)' }}
+            >
+              <button
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                className="w-9 h-9 rounded-pill inline-flex items-center
+                           justify-center disabled:opacity-30"
+                style={{
+                  background: 'rgba(0,0,0,0.55)',
+                  color: '#F4F3EE',
+                }}
+                aria-label="Move up"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <button
+                onClick={() => move(i, 1)}
+                disabled={i === order.length - 1}
+                className="w-9 h-9 rounded-pill inline-flex items-center
+                           justify-center disabled:opacity-30"
+                style={{
+                  background: 'rgba(0,0,0,0.55)',
+                  color: '#F4F3EE',
+                }}
+                aria-label="Move down"
+              >
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {order.length === 0 ? (
+          <div
+            className="text-center py-8 font-sans"
+            style={{ color: '#7A7670' }}
+          >
+            No photos left. Tap Done to save.
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
