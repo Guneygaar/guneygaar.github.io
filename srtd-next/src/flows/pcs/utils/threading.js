@@ -1,4 +1,4 @@
-// Returns ALL comments sorted by created_at asc as visible.
+// Returns ALL comments sorted by created_at desc (newest first) as visible.
 // Threading/nesting is handled by CommentRow via resolveParent.
 // We do NOT suppress replies, ex-employee comments, or any other
 // rows from rendering — readers should see the full conversation.
@@ -11,7 +11,7 @@ export function filterAndIndex(comments) {
     .sort((a, b) => {
       const ta = new Date(a?.created_at || 0).getTime() || 0;
       const tb = new Date(b?.created_at || 0).getTime() || 0;
-      return ta - tb;
+      return tb - ta;
     });
   const byId = new Map();
   for (const c of visible) { if (c && c.id) byId.set(c.id, c); }

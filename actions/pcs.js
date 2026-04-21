@@ -1432,14 +1432,14 @@ window.loadPcsComments = async function(postId) {
     var rows = await withRetry(function() { return apiFetch(
       '/post_comments?post_id=eq.' +
       encodeURIComponent(postId) +
-      '&order=created_at.asc&limit=100'
+      '&order=created_at.desc&limit=100'
     ); });
     if (!Array.isArray(rows)) rows = [];
 
     var internalData = await withRetry(function() { return apiFetch(
       '/internal_notes?post_id=eq.' +
       encodeURIComponent(postId) +
-      '&order=created_at.asc&limit=100'
+      '&order=created_at.desc&limit=100'
     ); });
     if (!Array.isArray(internalData)) internalData = [];
 
@@ -1929,8 +1929,8 @@ window.loadPcsComments = async function(postId) {
       // Vis chips: keep static HTML, do not rebuild with counts
     }
 
-    list.scrollTop = list.scrollHeight;
-    if (notesList) notesList.scrollTop = notesList.scrollHeight;
+    list.scrollTop = 0;
+    if (notesList) notesList.scrollTop = 0;
 
   } catch(e) {
     console.error('loadPcsComments failed:', e);
