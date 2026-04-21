@@ -14,6 +14,9 @@ import { Composer } from './components/Composer.jsx';
 import { RetryBanner } from './components/RetryBanner.jsx';
 import { PropertySheet } from './components/PropertySheet.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
+import { ViewAllLink } from './components/ViewAllLink.jsx';
+import { FullScreenThread } from './components/FullScreenThread.jsx';
+import { ActivityFeed } from './components/ActivityFeed.jsx';
 
 // Fields still routed through the full-screen PropertySheet (title only).
 // Every other field lives in PcsDetailSheet.
@@ -38,15 +41,12 @@ export function PCS() {
   const [activeSheet, setActiveSheet] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [actionSheet, setActionSheet] = useState(null);
+  const [threadView, setThreadView] = useState(null);
 
   const isAgency = !isClient;
   const canEdit = !isClient;
   const canMove = !isClient;
   const canSeeInternal = isAgency;
-  const currentThread = activeTab === 'internal' ? internalNotes : comments;
-  const currentError = activeTab === 'internal' ? notesError : commentsError;
-  const currentRetry = activeTab === 'internal' ? pcsFlow.retryInternalNotes : pcsFlow.retryComments;
-  const emptyLabel = activeTab === 'internal' ? `No internal notes yet ${'·'} PRIVATE` : 'No comments yet';
 
   function onReplyToComment(c) {
     const authorName = c.author ? (userRoles.find((u) => u.email === c.author)?.name || c.author.split('@')[0]) : 'Unknown';
@@ -86,23 +86,69 @@ export function PCS() {
                 </h1>
               </div>
               <CaptionBlock post={post} canEdit={canEdit} isAdmin={isAdmin} />
-              <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
-              {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
+              <Tabs
+                activeTab={activeTab}
+                onChange={setActiveTab}
+                commentsCount={comments.length}
+                internalCount={internalNotes.length}
+                canSeeInternal={canSeeInternal}
+              />
+              {activeTab === 'comments' && commentsError && (
+                <RetryBanner message={commentsError} onRetry={pcsFlow.retryComments} />
+              )}
+              {activeTab === 'internal' && notesError && (
+                <RetryBanner message={notesError} onRetry={pcsFlow.retryInternalNotes} />
+              )}
               <div className="flex-1">
-                {!currentError && (
-                  <CommentList
-                    comments={currentThread}
-                    reactions={reactions}
-                    userRoles={userRoles}
-                    currentEmail={userEmail}
-                    isInternal={activeTab === 'internal'}
-                    onReply={onReplyToComment}
-                    onLongPress={onLongPressComment}
-                    emptyLabel={emptyLabel}
-                  />
-                )}
+                {activeTab === 'comments' && !commentsError ? (
+                  <>
+                    <CommentList
+                      comments={comments}
+                      reactions={reactions}
+                      userRoles={userRoles}
+                      currentEmail={userEmail}
+                      isInternal={false}
+                      truncateAt={4}
+                      onReply={onReplyToComment}
+                      onLongPress={onLongPressComment}
+                      emptyLabel="No comments yet"
+                    />
+                    {comments.length > 4 ? (
+                      <ViewAllLink
+                        label={`View all ${comments.length} comments`}
+                        onClick={() => setThreadView('comments')}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+
+                {activeTab === 'internal' && canSeeInternal && !notesError ? (
+                  <>
+                    <CommentList
+                      comments={internalNotes}
+                      reactions={reactions}
+                      userRoles={userRoles}
+                      currentEmail={userEmail}
+                      isInternal={true}
+                      truncateAt={4}
+                      onReply={onReplyToComment}
+                      onLongPress={onLongPressComment}
+                      emptyLabel={`No internal notes yet ${'·'} PRIVATE`}
+                    />
+                    {internalNotes.length > 4 ? (
+                      <ViewAllLink
+                        label={`View all ${internalNotes.length} internal notes`}
+                        onClick={() => setThreadView('internal')}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+
+                {activeTab === 'activity' ? <ActivityFeed /> : null}
               </div>
-              <Composer activeTab={activeTab} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+              {activeTab !== 'activity' && (
+                <Composer activeTab={activeTab} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+              )}
             </>
           )}
         </div>
@@ -142,6 +188,30 @@ export function PCS() {
           onClose={() => setActionSheet(null)}
         />
       )}
+
+      {threadView === 'comments' && post ? (
+        <FullScreenThread
+          title="All comments"
+          isInternal={false}
+          comments={comments}
+          userRoles={userRoles}
+          reactions={reactions}
+          currentEmail={userEmail}
+          onClose={() => setThreadView(null)}
+        />
+      ) : null}
+
+      {threadView === 'internal' && post ? (
+        <FullScreenThread
+          title="All internal notes"
+          isInternal={true}
+          comments={internalNotes}
+          userRoles={userRoles}
+          reactions={reactions}
+          currentEmail={userEmail}
+          onClose={() => setThreadView(null)}
+        />
+      ) : null}
     </ErrorBoundary>
   );
 }

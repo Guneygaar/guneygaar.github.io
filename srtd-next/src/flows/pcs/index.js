@@ -5,10 +5,24 @@ import { getPostByPostId } from '../../core/api/posts.js';
 import { listComments, listInternalNotes } from '../../core/api/comments.js';
 import { listReactionsForComments } from '../../core/api/reactions.js';
 import { listUserRoles } from '../../core/api/users.js';
+import { listAuditForPost } from '../../core/api/audit.js';
 import { subscribePostComments } from '../../core/bridges/realtime.js';
 import { logClick, logError } from '../../core/bridges/logging.js';
 
 let _unsub = null;
+
+async function retryActivity() {
+  const postId = usePcsFlowState.getState().postId;
+  if (!postId) return;
+  usePcsStore.setState({ activityError: null });
+  try {
+    const rows = await listAuditForPost(postId);
+    usePcsStore.setState({ activity: rows || [] });
+  } catch (err) {
+    logError(err, { context: 'pcs_react_retry_activity', postId });
+    usePcsStore.setState({ activityError: String(err?.message || err) });
+  }
+}
 
 async function fetchCommentsAndReactions(postId) {
   const comments = await listComments(postId);
@@ -90,6 +104,14 @@ export const pcsFlow = {
       }
     }
 
+    try {
+      const rows = await listAuditForPost(postId);
+      usePcsStore.setState({ activity: rows || [], activityError: null });
+    } catch (err) {
+      logError(err, { context: 'pcs_react_open_activity', postId });
+      usePcsStore.setState({ activityError: String(err?.message || err) });
+    }
+
     if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
     _unsub = subscribePostComments(postId, () => refreshRealtime(postId));
   },
@@ -135,5 +157,6 @@ export const pcsFlow = {
       usePcsStore.setState({ notesError: 'Failed to load internal notes' });
     }
   },
+  retryActivity,
   isOpen() { return usePcsFlowState.getState().isOpen; }
 };
