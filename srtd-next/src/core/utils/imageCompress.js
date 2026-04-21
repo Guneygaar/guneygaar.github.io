@@ -47,8 +47,10 @@ export function compressImage(file, options = {}) {
 
 // Generate a deterministic filename for R2. Pattern matches
 // vanilla: timestamp-randomSuffix.jpg
-export function generateFilename(ext = 'jpg') {
+export function generateFilename(ext = 'jpg', postId = null) {
   const ts = Date.now();
   const rand = Math.random().toString(36).slice(2, 8);
-  return `${ts}-${rand}.${ext}`;
+  const base = `${ts}-${rand}.${ext}`;
+  if (postId) return `post-assets/${postId}/${base}`;
+  return base;
 }
