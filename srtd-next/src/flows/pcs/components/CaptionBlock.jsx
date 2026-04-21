@@ -59,10 +59,25 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   }
 
   async function applyCaption(next) {
+    const isTransientNetworkError = (err) => {
+      const msg = (err && err.message) || '';
+      return /^Load failed$/i.test(msg)
+          || /^NetworkError/i.test(msg)
+          || /^Failed to fetch/i.test(msg);
+    };
     try {
-      const updated = await patchPost(post.post_id, {
-        caption: next, updated_by: post?.updated_by || null,
-      });
+      let updated;
+      try {
+        updated = await patchPost(post.post_id, {
+          caption: next, updated_by: post?.updated_by || null,
+        });
+      } catch (err) {
+        if (!isTransientNetworkError(err)) throw err;
+        await new Promise((r) => setTimeout(r, 800));
+        updated = await patchPost(post.post_id, {
+          caption: next, updated_by: post?.updated_by || null,
+        });
+      }
       writeAudit({
         postId: post.post_id, field: 'caption',
         oldValue: caption, newValue: next,
@@ -73,7 +88,10 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
       toast('Caption saved', 'success');
     } catch (err) {
       logError(err, { context: 'pcs_react_caption_save' });
-      toast('Save failed', 'error');
+      toast(
+        isTransientNetworkError(err) ? 'Network blip, please try again' : 'Save failed',
+        'error'
+      );
     }
   }
 
