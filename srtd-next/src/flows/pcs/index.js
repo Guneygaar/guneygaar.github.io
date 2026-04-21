@@ -32,6 +32,11 @@ async function fetchCommentsAndReactions(postId) {
 }
 
 async function refreshRealtime(postId) {
+  // NOTE: This handler currently does NOT replace post row fields.
+  // If a future change adds post-row realtime refresh here, gate it
+  // on usePcsStore.getState().optimisticFields — any field name in
+  // that Set has an in-flight optimistic edit and must NOT be
+  // overwritten by the realtime payload. See useOptimisticPatch.
   try {
     const { comments, reactions } = await fetchCommentsAndReactions(postId);
     const currentPostId = usePcsFlowState.getState().postId;

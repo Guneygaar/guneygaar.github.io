@@ -7,7 +7,11 @@
 // Shape: toast(msg, type, opts)
 //   msg:  string
 //   type: 'success' | 'error' | 'warning'  (default: 'success')
-//   opts: { cost?: number }   // success-variant session cost pill
+//   opts: {
+//     cost?: number,                                 // success-variant session cost pill
+//     action?: { label: string, onClick: () => void }, // UNDO / RETRY button
+//     duration?: number                              // override auto-dismiss ms
+//   }
 
 import { useToastStore } from '../stores/toastStore.js';
 
