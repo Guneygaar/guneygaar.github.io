@@ -1,185 +1,266 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Pencil, Sparkles, ShieldCheck } from 'lucide-react';
-import { renderRichText, wordCount } from '../utils/mentions.jsx';
-import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { ChevronDown, Sparkles, ShieldCheck } from 'lucide-react';
+import { EditIcon } from '../../../core/ui/index.js';
+import { wordCount, renderRichText } from '../utils/mentions.jsx';
+import { usePcsStore } from '../pcsStore.js';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
-import { useAppState } from '../../../core/stores/appState.js';
-import { usePcsStore } from '../pcsStore.js';
-import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
+import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 
-export function CaptionBlock({ post, canEdit, userRoles }) {
+const OVER_WORD_THRESHOLD = 125;
+const LONG_PRESS_MS = 500;
+
+export function CaptionBlock({ post, canEdit, isAdmin }) {
   const caption = post?.caption || '';
   const wc = wordCount(caption);
-  const over = wc > 125;
-  const actor = useAppState((s) => s.user?.email || '');
-  const userRole = useAppState((s) => s.user?.role || '');
-  const isAdmin = String(userRole).toLowerCase() === 'admin';
-  const comments = usePcsStore((s) => s.comments);
-  const [expanded, setExpanded] = useState(false);
+  const over = wc > OVER_WORD_THRESHOLD;
+  const isEmpty = !caption.trim();
+
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [saving, setSaving] = useState(false);
-  const editRef = useRef(null);
-  const expandable = caption.length > 100;
-  const collapsed = !expanded && expandable;
+  const [draft, setDraft] = useState(caption);
+  const [showFull, setShowFull] = useState(false);
+  const [overflows, setOverflows] = useState(false);
 
-  useEffect(() => {
-    if (editing && editRef.current) {
-      editRef.current.style.height = 'auto';
-      editRef.current.style.height = editRef.current.scrollHeight + 'px';
+  const bodyRef = useRef(null);
+  const textareaRef = useRef(null);
+  const lpTimer = useRef(null);
+
+  // Measure caption overflow after render.
+  useLayoutEffect(() => {
+    if (editing || isEmpty) { setOverflows(false); return; }
+    const el = bodyRef.current;
+    if (!el) return;
+    if (!showFull) {
+      setOverflows(el.scrollHeight > el.clientHeight + 1);
+    } else {
+      // Keep chevron visible when expanded so user can re-collapse.
+      setOverflows(true);
     }
-  }, [editing, draft]);
+  }, [caption, showFull, editing, isEmpty]);
 
-  async function applyAiCaption(newText) {
-    if (!newText || !post?.post_id) return;
+  // Reset draft + clamp when post changes.
+  useEffect(() => {
+    setDraft(caption);
+    setShowFull(false);
+  }, [post?.post_id]);
+
+  function startEdit() {
+    if (!canEdit) return;
+    setDraft(caption);
+    setEditing(true);
+    setTimeout(() => textareaRef.current && textareaRef.current.focus(), 50);
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+    setDraft(caption);
+  }
+
+  async function applyCaption(next) {
     try {
-      const updated = await patchPost(post.post_id, { caption: newText, updated_by: actor });
-      writeAudit({ postId: post.post_id, field: 'caption', oldValue: post.caption, newValue: newText, actor }).catch(() => {});
+      const updated = await patchPost(post.post_id, {
+        caption: next, updated_by: post?.updated_by || null,
+      });
+      writeAudit({
+        postId: post.post_id, field: 'caption',
+        oldValue: caption, newValue: next,
+        actor: post?.updated_by || null,
+      }).catch(() => {});
       if (updated) usePcsStore.setState({ post: updated });
-      reseedOgPreview(post.post_id);
-      logClick('pcs_react_caption_ai_apply', { postId: post.post_id });
+      logClick('pcs_react_caption_save', { len: (next || '').length });
+      toast('Caption saved', 'success');
     } catch (err) {
-      logError(err, { context: 'pcs_react_caption_ai_apply' });
+      logError(err, { context: 'pcs_react_caption_save' });
       toast('Save failed', 'error');
     }
   }
 
   async function handleSave() {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await applyAiCaption(draft);
-      setEditing(false);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  function startEdit() {
-    setDraft(caption);
-    setEditing(true);
-  }
-
-  function openWrite(mode) {
-    openCaptionWorkspace(mode, {
-      postId: post.post_id,
-      initialCaption: post.caption,
-      syntheticContext: {
-        caption: post.caption,
-        title: post.title,
-        pillar: post.content_pillar,
-        location: post.location,
-        format: post.format,
-        source: 'pcs'
-      },
-      onUse: applyAiCaption
-    });
-  }
-
-  function openQc() {
-    openCaptionWorkspace('qc', {
-      postId: post.post_id,
-      initialCaption: post.caption,
-      syntheticContext: { caption: post.caption, title: post.title, pillar: post.content_pillar, location: post.location, format: post.format, source: 'pcs' },
-      onUse: applyAiCaption
-    });
+    const next = draft.trim();
+    setEditing(false);
+    if (next === caption) return;
+    await applyCaption(next);
   }
 
   function onClaude() {
-    if ((comments || []).length > 0) {
-      openCaptionWorkspace('rewrite', {
-        postId: post.post_id,
-        caption: post.caption,
-        comments: (comments || []).map((c) => ({
-          author_name: c.author_name || (c.author ? c.author.split('@')[0] : 'Unknown'),
-          text: c.message || ''
-        })),
-        onUse: applyAiCaption
-      });
-    } else {
-      openWrite('write');
-    }
+    if (!isAdmin) return;
+    logClick('pcs_react_caption_claude', {});
+    const syntheticContext = {
+      caption, title: post?.title, pillar: post?.content_pillar,
+      location: post?.location, format: post?.format, source: 'pcs',
+    };
+    openCaptionWorkspace('write', {
+      postId: post.post_id,
+      initialCaption: caption,
+      syntheticContext,
+      onUse: (next) => applyCaption(next),
+    });
   }
 
-  return (
-    <div className="border-b border-divider-warm">
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1 font-mono text-sm text-text-dim tracking-widest uppercase">
-        <span>Caption</span>
-        {caption && <span><span className={over ? 'text-red' : 'text-green'}>{wc}</span> / 125 words</span>}
+  function onQc() {
+    if (!isAdmin) return;
+    logClick('pcs_react_caption_qc', {});
+    const syntheticContext = {
+      caption, title: post?.title, pillar: post?.content_pillar,
+      location: post?.location, format: post?.format, source: 'pcs',
+    };
+    openCaptionWorkspace('qc', {
+      postId: post.post_id,
+      initialCaption: caption,
+      syntheticContext,
+      onUse: (next) => applyCaption(next),
+    });
+  }
+
+  // Long-press body to enter edit mode.
+  function startLP(e) {
+    if (!canEdit) return;
+    if (e.target.closest('button, a, input, textarea')) return;
+    lpTimer.current = setTimeout(() => {
+      try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
+      startEdit();
+    }, LONG_PRESS_MS);
+  }
+  function cancelLP() {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }
+
+  // Empty state
+  if (isEmpty && !editing) {
+    return (
+      <div className="px-4 py-3 border-b border-divider-subtle">
+        <button
+          onClick={startEdit}
+          disabled={!canEdit}
+          className="font-sans text-lg text-text-dim italic text-left disabled:cursor-default"
+        >
+          {canEdit ? 'Add caption…' : 'No caption yet'}
+        </button>
       </div>
-      {editing ? (
-        <div className="px-3 pb-3">
-          <textarea
-            ref={editRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full min-h-[120px] overflow-hidden bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 block"
-            autoFocus
-          />
-          <div className="flex gap-2 mt-2">
+    );
+  }
+
+  // Edit mode
+  if (editing) {
+    return (
+      <div className="px-4 pt-2 pb-3 border-b border-divider-subtle">
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="w-full min-h-[140px] bg-bg-draft border border-border-warm rounded-card p-3 font-sans text-lg leading-relaxed text-text-loud outline-none resize-none"
+          style={{ lineHeight: '1.6' }}
+        />
+        <div className="flex items-center justify-between pt-2">
+          <div
+            className="font-mono text-sm tracking-widest uppercase"
+            style={{ fontFeatureSettings: "'tnum' 1" }}
+          >
+            <span className={wordCount(draft) > OVER_WORD_THRESHOLD ? 'text-red' : 'text-text-dim'}>
+              {wordCount(draft)} WORDS
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex-1 py-2.5 bg-green text-bg font-sans text-base font-semibold rounded-block disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={() => setEditing(false)}
-              disabled={saving}
-              className="flex-1 py-2.5 bg-bg-3 border border-divider-soft text-text-mid font-sans text-base font-semibold rounded-block disabled:opacity-50"
+              onClick={cancelEdit}
+              className="font-sans text-base text-text-soft px-2 py-1 hover:text-text-loud"
             >
               Cancel
             </button>
+            <button
+              onClick={handleSave}
+              className="font-sans text-base font-medium bg-terracotta-grad text-text-loud px-3 py-1 rounded-sm2"
+            >
+              Save
+            </button>
           </div>
         </div>
-      ) : (
-        <>
-          <div
-            className="px-3 pb-1 font-serif text-lg leading-[1.55] text-text-loud whitespace-pre-wrap"
-            style={collapsed ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'clip' } : undefined}
-          >
-            {caption ? renderRichText(caption, userRoles) : <span className="text-text-soft italic">No copy yet</span>}
-          </div>
-          {expandable && (
-            <div className="px-3 pb-2">
+      </div>
+    );
+  }
+
+  // Display mode
+  return (
+    <div className="px-4">
+      <div
+        ref={bodyRef}
+        onTouchStart={startLP}
+        onTouchEnd={cancelLP}
+        onTouchMove={cancelLP}
+        onMouseDown={startLP}
+        onMouseUp={cancelLP}
+        onMouseLeave={cancelLP}
+        onContextMenu={(e) => { e.preventDefault(); }}
+        className={`font-sans text-lg text-text-loud whitespace-pre-wrap ${!showFull && overflows ? 'caption-clamp-6 caption-fade-bottom' : ''}`}
+        style={{ lineHeight: '1.6' }}
+      >
+        {renderRichText(caption)}
+      </div>
+
+      <div className="flex items-center justify-between py-2.5 mt-2.5 border-t border-b border-divider-subtle">
+        <div
+          className="font-mono text-sm tracking-widest uppercase"
+          style={{ fontFeatureSettings: "'tnum' 1" }}
+        >
+          <span className={over ? 'text-red' : 'text-text-dim'}>
+            {wc} WORDS
+          </span>
+        </div>
+
+        <div className="flex items-center gap-0">
+          {overflows ? (
+            <button
+              onClick={() => setShowFull((v) => !v)}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+              style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+              aria-label={showFull ? 'Show less' : 'Show more'}
+            >
+              <ChevronDown
+                size={14}
+                strokeWidth={1.75}
+                style={{
+                  transform: showFull ? 'rotate(180deg)' : 'rotate(0)',
+                  transition: 'transform 0.22s cubic-bezier(0.2, 0, 0.1, 1)',
+                }}
+              />
+            </button>
+          ) : null}
+
+          {canEdit ? (
+            <button
+              onClick={startEdit}
+              className="w-8 h-8 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+              style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+              aria-label="Edit caption"
+            >
+              <EditIcon size={14} />
+            </button>
+          ) : null}
+
+          {isAdmin ? (
+            <>
               <button
-                onClick={() => setExpanded((v) => !v)}
-                className="font-mono text-xs text-terracotta tracking-widest uppercase font-semibold mt-1 bg-transparent border-0 cursor-pointer p-0"
+                onClick={onClaude}
+                className="w-8 h-8 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+                style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+                aria-label="Rewrite with Claude"
               >
-                {expanded ? 'See less' : 'See more'}
+                <Sparkles size={14} strokeWidth={1.75} />
               </button>
-            </div>
-          )}
-          {!collapsed && caption && <div className="pb-2" />}
-          {canEdit && (
-            <div className="flex items-center gap-2 px-3 pb-2.5 font-mono text-sm text-text-dim tracking-wide flex-wrap">
-              <button onClick={startEdit} className="font-sans text-sm text-text-mid inline-flex items-center gap-1.5 hover:text-text-loud">
-                <Pencil size={12} />
-                <span>Edit</span>
-                <span className="font-mono text-2xs text-text-dim px-1 py-px border border-border-neutral rounded-sm2 bg-bg">E</span>
+              <button
+                onClick={onQc}
+                className="w-8 h-8 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+                style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+                aria-label="Quality check"
+              >
+                <ShieldCheck size={14} strokeWidth={1.75} />
               </button>
-              {isAdmin && (
-                <>
-                  <span className="text-text-dim">{'\u00B7'}</span>
-                  <button onClick={onClaude} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                    <Sparkles size={12} />
-                    <span>Claude</span>
-                  </button>
-                  <span className="text-text-dim">{'\u00B7'}</span>
-                  <button onClick={openQc} className="font-sans text-sm text-amber inline-flex items-center gap-1.5 hover:text-text-loud">
-                    <ShieldCheck size={12} />
-                    <span>QC</span>
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </>
-      )}
+            </>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
