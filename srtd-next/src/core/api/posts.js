@@ -84,8 +84,13 @@ export async function patchPost(postId, patch) {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 }
 
-export async function updatePostStage(postId, newStage, actor) {
-  return patchPost(postId, { stage: newStage, status_changed_at: new Date().toISOString(), updated_by: actor });
+export async function updatePostStage(postId, newStage, actor, extraPatch = {}) {
+  return patchPost(postId, {
+    stage: newStage,
+    status_changed_at: new Date().toISOString(),
+    updated_by: actor,
+    ...extraPatch,
+  });
 }
 
 export async function deletePost(postId) {

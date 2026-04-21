@@ -85,6 +85,19 @@
   .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
+
+  @keyframes pcsPublishPanelIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      max-height: 320px;
+    }
+  }
 }
 
 /* Component classes for repeated vanilla patterns. */
