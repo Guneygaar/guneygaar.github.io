@@ -108,7 +108,7 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
     <div className="border-b border-divider-warm">
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1 font-mono text-sm text-text-dim tracking-widest uppercase">
         <span>Caption</span>
-        {caption && <span><span style={over ? { color: '#f87171' } : undefined} className={over ? '' : 'text-green'}>{wc}</span> / 125 words</span>}
+        {caption && <span><span className={over ? 'text-red' : 'text-green'}>{wc}</span> / 125 words</span>}
       </div>
       {editing ? (
         <div className="px-3 pb-3">
@@ -116,8 +116,7 @@ export function CaptionBlock({ post, canEdit, userRoles }) {
             ref={editRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            style={{ width: '100%', minHeight: 120, overflow: 'hidden' }}
-            className="bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 block"
+            className="w-full min-h-[120px] overflow-hidden bg-transparent border-0 border-b border-divider-warm font-serif text-lg leading-[1.55] text-text-loud resize-none outline-none py-1 block"
             autoFocus
           />
           <div className="flex gap-2 mt-2">

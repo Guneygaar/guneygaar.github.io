@@ -24,11 +24,6 @@ import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 function fieldConfig(which) {
   switch (which) {
     case 'title':          return { field: 'title', title: 'Title', inputType: 'text', placeholder: 'Post title', reseedOg: true };
-    case 'drive':          return { field: 'drive_link', title: 'Drive link', inputType: 'url', placeholder: 'https://drive.google.com/...' };
-    case 'canva':          return { field: 'canva_link', title: 'Canva link', inputType: 'url', placeholder: 'https://canva.com/...' };
-    case 'internal_notes': return { field: 'internal_notes', title: 'Internal notes', inputType: 'textarea', placeholder: 'Notes for the agency team' };
-    case 'client_feedback':return { field: 'client_feedback', title: 'Client feedback', inputType: 'textarea', placeholder: 'Feedback from the client' };
-    case 'caption':        return { field: 'caption', title: 'Caption', inputType: 'textarea', placeholder: 'Post caption', reseedOg: true };
     default: return null;
   }
 }
@@ -96,10 +91,10 @@ export function PCS() {
                 </h1>
               </div>
               {!isClient && <PropertiesTable post={post} canEdit={canEdit} userRoles={userRoles} />}
-              <div style={{ height: 24 }} />
+              <div className="h-6" />
               <LinkedInIndicator post={post} />
               <LinkCards post={post} linkedinLink={post.linkedin_link} />
-              <div style={{ height: 24 }} />
+              <div className="h-6" />
               <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}

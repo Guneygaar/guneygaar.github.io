@@ -238,7 +238,7 @@ export function PropertiesTable({ post, canEdit, userRoles }) {
                 if (v) savePatch({ target_date: v }, 'target_date', post.target_date, v);
               }}
               className="w-full px-3 py-3 rounded-sm2 bg-bg-2 border border-border-neutral text-text-loud text-base"
-              style={{ WebkitAppearance: 'none', appearance: 'none', colorScheme: 'dark', minHeight: 56 }}
+              style={{ WebkitAppearance: 'none', appearance: 'none', minHeight: 56 }}
             />
             {post.target_date && (
               <button

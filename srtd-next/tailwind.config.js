@@ -32,6 +32,7 @@ export default {
         'border-warm':    'var(--c-border-warm)',
         'divider-warm':   'var(--c-divider-warm)',
         'divider-soft':   'var(--c-divider-soft)',
+        'divider-subtle': 'var(--c-divider-subtle)',
         'text-loud':      'var(--c-text-loud)',
         'text-mid':       'var(--c-text-mid)',
         'text-soft':      'var(--c-text-soft)',

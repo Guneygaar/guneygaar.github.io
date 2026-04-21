@@ -20,6 +20,7 @@
     --c-border-warm:    #C9B89C;
     --c-divider-warm:   #D8C8AC;
     --c-divider-soft:   #E3DCCC;
+    --c-divider-subtle: color-mix(in srgb, var(--c-divider-soft) 70%, transparent);
     --c-text-loud:      #1A1816;
     --c-text-mid:       #4A4640;
     --c-text-soft:      #7A7670;
@@ -53,6 +54,7 @@
       --c-border-warm:    #5A3A2C;
       --c-divider-warm:   #3A3220;
       --c-divider-soft:   #2A2622;
+      --c-divider-subtle: color-mix(in srgb, var(--c-divider-soft) 70%, transparent);
       --c-text-loud:      #F4F3EE;
       --c-text-mid:       #B1ADA1;
       --c-text-soft:      #7A7670;
