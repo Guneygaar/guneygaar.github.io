@@ -1,23 +1,52 @@
 import React from 'react';
 
-export function Tabs({ activeTab, onChange, commentCount, internalCount, canSeeInternal }) {
-  const visibility = canSeeInternal
-    ? (activeTab === 'internal' ? 'AGENCY ONLY' : 'CLIENT + AGENCY')
-    : 'CLIENT + AGENCY';
-
+export function Tabs({ activeTab, onChange, commentsCount, internalCount, canSeeInternal }) {
   return (
-    <div className="flex gap-0 border-b border-divider-warm px-3">
-      <button onClick={() => onChange('comments')} className={`py-2.5 px-2.5 text-sm font-medium inline-flex items-center gap-1.5 tracking-tight border-b -mb-px ${activeTab === 'comments' ? 'text-text-loud border-terracotta' : 'text-text-soft border-transparent'}`}>
-        <span>Comments</span>
-        {commentCount > 0 && <span className={`font-mono text-sm font-medium ${activeTab === 'comments' ? 'text-terracotta' : 'text-text-dim'}`}>{commentCount}</span>}
+    <div className="flex items-center gap-4 px-4 pt-2.5 pb-2
+                    border-b border-divider-subtle">
+      <button
+        onClick={() => onChange('comments')}
+        className={`font-mono text-sm tracking-widest uppercase
+                    flex items-center gap-1.5 py-0.5 border-b border-transparent
+                    ${activeTab === 'comments' ? 'text-text-loud border-text-loud' : 'text-text-soft'}`}
+        style={{ transition: 'color 0.1s ease, border-color 0.15s ease' }}
+      >
+        Comments
+        <span
+          className="font-mono text-sm opacity-55"
+          style={{ fontFeatureSettings: "'tnum' 1" }}
+        >
+          {commentsCount}
+        </span>
       </button>
-      {canSeeInternal && (
-        <button onClick={() => onChange('internal')} className={`py-2.5 px-2.5 text-sm font-medium inline-flex items-center gap-1.5 tracking-tight border-b -mb-px ${activeTab === 'internal' ? 'text-text-loud border-terracotta' : 'text-text-soft border-transparent'}`}>
-          <span>Internal</span>
-          {internalCount > 0 && <span className={`font-mono text-sm font-medium ${activeTab === 'internal' ? 'text-terracotta' : 'text-text-dim'}`}>{internalCount}</span>}
+
+      {canSeeInternal ? (
+        <button
+          onClick={() => onChange('internal')}
+          className={`font-mono text-sm tracking-widest uppercase
+                      flex items-center gap-1.5 py-0.5 border-b border-transparent
+                      ${activeTab === 'internal' ? 'text-text-loud border-text-loud' : 'text-text-soft'}`}
+          style={{ transition: 'color 0.1s ease, border-color 0.15s ease' }}
+        >
+          Internal
+          <span
+            className="font-mono text-sm opacity-55"
+            style={{ fontFeatureSettings: "'tnum' 1" }}
+          >
+            {internalCount}
+          </span>
         </button>
-      )}
-      <span className="ml-auto self-center font-mono text-sm text-text-dim tracking-wide">{visibility}</span>
+      ) : null}
+
+      <button
+        onClick={() => onChange('activity')}
+        className={`font-mono text-sm tracking-widest uppercase
+                    py-0.5 border-b border-transparent
+                    ${activeTab === 'activity' ? 'text-text-loud border-text-loud' : 'text-text-soft'}`}
+        style={{ transition: 'color 0.1s ease, border-color 0.15s ease' }}
+      >
+        Activity
+      </button>
     </div>
   );
 }

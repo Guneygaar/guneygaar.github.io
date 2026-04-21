@@ -14,3 +14,22 @@ export async function writeAudit({ postId, field, oldValue, newValue, actor }) {
     })
   });
 }
+
+export async function listAuditForPost(postId, { limit = 200 } = {}) {
+  if (!postId) return [];
+  const encoded = encodeURIComponent(postId);
+  try {
+    const rows = await apiFetch(
+      `/audit_log?post_id=eq.${encoded}` +
+      `&order=created_at.desc` +
+      `&limit=${limit}` +
+      `&select=id,post_id,field,old_value,new_value,actor,created_at`,
+      { method: 'GET', headers: { 'Accept': 'application/json' } }
+    );
+    return Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    // Non-fatal: activity is secondary UI, fall back to empty
+    try { if (typeof console !== 'undefined') console.warn('listAuditForPost failed', err); } catch (e) {}
+    return [];
+  }
+}

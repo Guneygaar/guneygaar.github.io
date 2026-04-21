@@ -9,5 +9,19 @@ export const usePcsStore = create((set) => ({
   error: null,
   commentsError: null,
   notesError: null,
-  reset: () => set({ post: null, comments: [], internalNotes: [], reactions: [], userRoles: [], loading: false, error: null, commentsError: null, notesError: null })
+  activity: [],
+  activityError: null,
+  reset: () => set({
+    post: null,
+    comments: [],
+    internalNotes: [],
+    reactions: [],
+    userRoles: [],
+    loading: false,
+    error: null,
+    commentsError: null,
+    notesError: null,
+    activity: [],
+    activityError: null
+  })
 }));
