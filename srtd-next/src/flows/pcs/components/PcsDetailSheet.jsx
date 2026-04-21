@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { BottomSheet, Avatar } from '../../../core/ui/index.js';
 import { deletePost } from '../../../core/api/posts.js';
@@ -8,7 +8,7 @@ import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
 import { pcsFlow } from '../index.js';
-import { STAGE_LABELS, STAGE_TOKEN, ownerToRole, titleCase } from '../utils/stage.js';
+import { STAGE_LABELS, ownerToRole, titleCase } from '../utils/stage.js';
 import { FORMATS, PILLARS, LOCATIONS } from '../../../core/mappings.js';
 
 const ROLE_TO_OWNER_LABEL = {
@@ -16,17 +16,21 @@ const ROLE_TO_OWNER_LABEL = {
   creative: 'Creative', client: 'Client',
 };
 
-const TRANSITIONS = {
-  brief_done:           { forward: ['in_production'], back: [], off: ['parked', 'rejected'] },
-  in_production:        { forward: ['ready'], back: ['brief_done'], off: ['parked', 'rejected'] },
-  ready:                { forward: ['awaiting_approval'], back: ['in_production'], off: ['parked', 'rejected'] },
-  awaiting_approval:    { forward: ['scheduled'], back: ['awaiting_brand_input', 'in_production'], off: ['parked', 'rejected'] },
-  awaiting_brand_input: { forward: ['awaiting_approval'], back: ['in_production'], off: ['parked', 'rejected'] },
-  scheduled:            { forward: ['published'], back: ['awaiting_approval'], off: ['parked'] },
-  published:            { forward: [], back: [], off: ['parked'] },
-  parked:               { forward: ['in_production'], back: [], off: ['rejected'] },
-  rejected:             { forward: [], back: [], off: ['parked'] },
-  brief:                { forward: ['in_production'], back: [], off: ['parked', 'rejected'] }
+const STAGES_BY_GROUP = {
+  progression: [
+    { value: 'brief',                label: 'Brief',                token: 'brief' },
+    { value: 'brief_done',           label: 'Brief done',           token: 'brief' },
+    { value: 'in_production',        label: 'In production',        token: 'production' },
+    { value: 'ready',                label: 'Ready',                token: 'ready' },
+    { value: 'awaiting_approval',    label: 'Awaiting approval',    token: 'ready' },
+    { value: 'awaiting_brand_input', label: 'Awaiting brand input', token: 'input' },
+    { value: 'scheduled',            label: 'Scheduled',            token: 'scheduled' },
+    { value: 'published',            label: 'Published',            token: 'scheduled' },
+  ],
+  offpath: [
+    { value: 'parked',   label: 'Parked',   token: null },
+    { value: 'rejected', label: 'Rejected', token: null },
+  ],
 };
 
 function formatDateLong(iso) {
@@ -109,41 +113,217 @@ function ActionRow({ label, value = null, onClick }) {
   );
 }
 
-function StageOptions({ post, onSelect }) {
-  const t = TRANSITIONS[post.stage] || { forward: [], back: [], off: [] };
-  const groups = [
-    { key: 'forward', label: 'Forward', items: t.forward },
-    { key: 'back', label: 'Back', items: t.back },
-    { key: 'off', label: 'Off-path', items: t.off },
-  ].filter(g => g.items.length > 0);
+function StageOptions({ post, onSelect, onPublishCommit }) {
+  const [pendingPublish, setPendingPublish] = useState(false);
+  const currentStage = post?.stage || '';
 
-  if (groups.length === 0) {
-    return <div className="text-text-dim font-sans text-base py-1">No further transitions available.</div>;
+  function onTap(value) {
+    if (pendingPublish) {
+      // User was mid-publish and tapped a different stage.
+      // Cancel publish flow and commit the new stage.
+      if (value !== 'published') {
+        setPendingPublish(false);
+        onSelect(value);
+      }
+      return;
+    }
+    if (value === 'published') {
+      setPendingPublish(true);
+      return;
+    }
+    onSelect(value);
+  }
+
+  function onPublishCancel() {
+    setPendingPublish(false);
+  }
+
+  function onPublishSave(url) {
+    setPendingPublish(false);
+    onPublishCommit(url);
   }
 
   return (
-    <div className="space-y-3">
-      {groups.map((g) => (
-        <div key={g.key}>
-          <div className="font-mono text-2xs text-text-soft tracking-widest uppercase mb-1.5">{g.label}</div>
-          <div className="space-y-1.5">
-            {g.items.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => onSelect(s)}
-                className="w-full flex items-center gap-2.5 px-3 py-3 rounded-sm2 bg-bg-2 hover:bg-bg-3 text-left"
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: `var(--c-${STAGE_TOKEN[s] || 'stage-production'})` }}
-                />
-                <span className="text-lg text-text-loud">{STAGE_LABELS[s] || s}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+    <div>
+      <div className="font-mono text-xs tracking-widest uppercase
+                      text-text-dim px-3 pt-1 pb-2">
+        Progression
+      </div>
+      {STAGES_BY_GROUP.progression.map((s) => (
+        <React.Fragment key={s.value}>
+          <StageChoice
+            stage={s}
+            isCurrent={!pendingPublish && s.value === currentStage}
+            isPendingSelected={pendingPublish && s.value === 'published'}
+            onTap={() => onTap(s.value)}
+          />
+          {pendingPublish && s.value === 'published' ? (
+            <PublishUrlPanel
+              existingUrl={post?.linkedin_link || ''}
+              onCancel={onPublishCancel}
+              onSave={onPublishSave}
+            />
+          ) : null}
+        </React.Fragment>
       ))}
+
+      <div className="font-mono text-xs tracking-widest uppercase
+                      text-text-dim px-3 pt-4 pb-2">
+        Off-path
+      </div>
+      {STAGES_BY_GROUP.offpath.map((s) => (
+        <StageChoice
+          key={s.value}
+          stage={s}
+          isCurrent={!pendingPublish && s.value === currentStage}
+          isPendingSelected={false}
+          onTap={() => onTap(s.value)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function StageChoice({ stage, isCurrent, isPendingSelected, onTap }) {
+  const selected = isCurrent || isPendingSelected;
+  const dotStyle = stage.token
+    ? { backgroundColor: `var(--c-stage-${stage.token})` }
+    : { backgroundColor: 'var(--c-text-dim)' };
+  return (
+    <button
+      onClick={onTap}
+      className={`w-full flex items-center gap-3 px-3 py-2.5
+                  rounded-block text-left mb-px
+                  ${selected ? 'bg-bg-2 font-medium' : ''}
+                  active:bg-bg-2`}
+      style={{ transition: 'background 0.1s ease' }}
+    >
+      <span
+        className={`w-[18px] h-[18px] rounded-full flex items-center
+                    justify-center flex-shrink-0 border-[1.5px]
+                    ${selected
+                        ? 'border-terracotta bg-terracotta'
+                        : 'border-border-neutral'}`}
+        style={{ transition: 'all 0.18s ease' }}
+      >
+        {selected ? (
+          <span
+            className="w-[7px] h-[7px] rounded-full"
+            style={{ backgroundColor: '#fff' }}
+          />
+        ) : null}
+      </span>
+      <span
+        className="flex-1 font-sans text-lg text-text-loud"
+      >
+        {stage.label}
+      </span>
+      <span
+        className="w-2 h-2 rounded-full flex-shrink-0"
+        style={dotStyle}
+      />
+    </button>
+  );
+}
+
+function PublishUrlPanel({ existingUrl, onCancel, onSave }) {
+  const [url, setUrl] = useState(existingUrl || '');
+  const [touched, setTouched] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (inputRef.current) inputRef.current.focus();
+  }, []);
+
+  const trimmed = url.trim();
+  const isEmpty = trimmed.length === 0;
+  const isValid = /^https?:\/\/(www\.)?linkedin\.com\//.test(trimmed);
+  const showError = touched && !isEmpty && !isValid;
+  const canSubmit = isValid;
+
+  function onInputChange(e) {
+    setUrl(e.target.value);
+    if (!touched) setTouched(true);
+  }
+
+  function onSubmit() {
+    if (!canSubmit) return;
+    onSave(trimmed);
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && canSubmit) {
+      e.preventDefault();
+      onSubmit();
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    }
+  }
+
+  return (
+    <div
+      className="bg-bg-2 rounded-card p-3.5 ml-8 mr-3 mb-2.5 mt-1"
+      style={{
+        animation: 'pcsPublishPanelIn 0.22s cubic-bezier(0.2,0,0.1,1)',
+      }}
+    >
+      <div className="font-mono text-xs tracking-widest uppercase
+                      text-text-dim mb-2">
+        LinkedIn URL
+      </div>
+      <input
+        ref={inputRef}
+        type="url"
+        value={url}
+        onChange={onInputChange}
+        onKeyDown={onKeyDown}
+        placeholder="https://linkedin.com/posts/..."
+        autoComplete="off"
+        spellCheck="false"
+        className={`w-full bg-bg-pill rounded-input px-3.5 py-3
+                    font-sans text-lg text-text-loud outline-none
+                    border
+                    ${showError ? 'border-red' : 'border-divider-soft'}`}
+        style={{
+          WebkitAppearance: 'none',
+          appearance: 'none',
+          minHeight: 44,
+          transition: 'border-color 0.15s ease',
+        }}
+      />
+      <div
+        className={`text-sm mt-2 ${showError ? 'text-red' : 'text-text-soft'}`}
+        style={{ transition: 'color 0.15s ease' }}
+      >
+        {showError
+          ? 'URL must be a linkedin.com link.'
+          : 'Required. Client email includes this link.'}
+      </div>
+      <div className="flex justify-end gap-2 mt-3.5">
+        <button
+          onClick={onCancel}
+          className="font-sans text-lg font-medium text-text-soft
+                     px-3.5 py-2 rounded-block active:bg-bg-3"
+          style={{ transition: 'background 0.1s ease' }}
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          className={`font-sans text-lg font-medium px-4 py-2
+                      rounded-block
+                      ${canSubmit
+                          ? 'bg-terracotta text-bg'
+                          : 'bg-text-dim opacity-40 cursor-not-allowed'}`}
+          style={{ color: canSubmit ? '#fff' : undefined,
+                   transition: 'opacity 0.15s ease' }}
+        >
+          Publish
+        </button>
+      </div>
     </div>
   );
 }
@@ -340,6 +520,16 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
     setExpandedField(null);
   }
 
+  async function savePublish(url) {
+    await commit('stage', 'published', {
+      stage: true,
+      auditField: 'stage',
+      actor,
+      extraPatch: { linkedin_link: url },
+    });
+    setExpandedField(null);
+  }
+
   async function saveOwner(user) {
     if (!user) {
       await commit('owner', null, {
@@ -409,7 +599,11 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
         expanded={expandedField === 'stage'}
         onToggle={() => toggleField('stage')}
       >
-        <StageOptions post={post} onSelect={saveStage} />
+        <StageOptions
+          post={post}
+          onSelect={saveStage}
+          onPublishCommit={savePublish}
+        />
       </SheetRow>
 
       <SheetRow

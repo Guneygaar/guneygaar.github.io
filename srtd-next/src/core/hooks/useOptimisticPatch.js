@@ -21,7 +21,7 @@ export function useOptimisticPatch() {
     try {
       let updated;
       if (opts.stage) {
-        updated = await updatePostStage(post.post_id, oldValue, opts.actor);
+        updated = await updatePostStage(post.post_id, oldValue, opts.actor, opts.extraPatch || {});
       } else {
         const body = { [field]: oldValue, ...(opts.extraPatch || {}), updated_by: opts.actor };
         updated = await patchPost(post.post_id, body);
@@ -83,7 +83,7 @@ export function useOptimisticPatch() {
       try {
         let updated;
         if (stage) {
-          updated = await updatePostStage(post.post_id, newValue, actor);
+          updated = await updatePostStage(post.post_id, newValue, actor, extraPatch);
         } else {
           const body = { [field]: newValue, ...extraPatch, updated_by: actor };
           updated = await patchPost(post.post_id, body);
@@ -98,11 +98,19 @@ export function useOptimisticPatch() {
         if (updated) usePcsStore.setState({ post: updated });
         logClick('pcs_react_opt_commit', { field: auditField });
 
+        const undoExtraPatch = {};
+        if (extraPatch && typeof extraPatch === 'object') {
+          for (const key of Object.keys(extraPatch)) {
+            // Capture the pre-commit value of each extraPatch key
+            undoExtraPatch[key] = post[key];
+          }
+        }
+
         toast(`${label} updated`, 'success', {
           action: {
             label: 'UNDO',
             onClick: () => undo(field, oldValue, {
-              stage, auditField, actor, extraPatch,
+              stage, auditField, actor, extraPatch: undoExtraPatch,
             }),
           },
           duration: 5000,
