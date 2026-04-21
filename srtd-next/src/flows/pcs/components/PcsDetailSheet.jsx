@@ -76,7 +76,7 @@ function SheetRow({ field, label, value, placeholder = false, expanded, onToggle
       </div>
       <div
         style={{
-          maxHeight: expanded ? 480 : 0,
+          maxHeight: expanded ? 9999 : 0,
           overflow: 'hidden',
           transition: 'max-height 0.28s cubic-bezier(0.2, 0, 0.1, 1)',
         }}
