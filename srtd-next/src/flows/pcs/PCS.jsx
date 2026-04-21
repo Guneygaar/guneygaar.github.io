@@ -4,29 +4,20 @@ import { usePcsFlowState } from './flowStore.js';
 import { usePcsStore } from './pcsStore.js';
 import { useAppState, useIsAdmin, useIsClient } from '../../core/stores/appState.js';
 import { pcsFlow } from './index.js';
-import { Topbar } from './components/Topbar.jsx';
-import { PropertiesTable } from './components/PropertiesTable.jsx';
-import { LinkedInIndicator } from './components/LinkedInIndicator.jsx';
+import { KickerRow } from './components/KickerRow.jsx';
+import { PcsDetailSheet } from './components/PcsDetailSheet.jsx';
 import { CaptionBlock } from './components/CaptionBlock.jsx';
 import { PhotoStrip } from './components/PhotoStrip.jsx';
-import { LinkCards } from './components/LinkCards.jsx';
 import { Tabs } from './components/Tabs.jsx';
 import { CommentList } from './components/CommentList.jsx';
 import { Composer } from './components/Composer.jsx';
 import { RetryBanner } from './components/RetryBanner.jsx';
-import { StageSheet } from './components/StageSheet.jsx';
 import { PropertySheet } from './components/PropertySheet.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 
-// Fields still routed through the full-screen PropertySheet (title +
-// long text fields). Chip fields (owner/target/format/pillar/location)
-// moved to inline dropdowns owned by PropertiesTable itself.
-function fieldConfig(which) {
-  switch (which) {
-    case 'title':          return { field: 'title', title: 'Title', inputType: 'text', placeholder: 'Post title', reseedOg: true };
-    default: return null;
-  }
-}
+// Fields still routed through the full-screen PropertySheet (title only).
+// Every other field lives in PcsDetailSheet.
+const TITLE_FIELD_CONFIG = { field: 'title', title: 'Title', inputType: 'text', placeholder: 'Post title', reseedOg: true };
 
 export function PCS() {
   const postId = usePcsFlowState((s) => s.postId);
@@ -43,7 +34,7 @@ export function PCS() {
   const isAdmin = useIsAdmin();
   const isClient = useIsClient();
   const [activeTab, setActiveTab] = useState('comments');
-  const [stageSheetOpen, setStageSheetOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
   const [activeSheet, setActiveSheet] = useState(null);
   const [replyTo, setReplyTo] = useState(null);
   const [actionSheet, setActionSheet] = useState(null);
@@ -55,7 +46,7 @@ export function PCS() {
   const currentThread = activeTab === 'internal' ? internalNotes : comments;
   const currentError = activeTab === 'internal' ? notesError : commentsError;
   const currentRetry = activeTab === 'internal' ? pcsFlow.retryInternalNotes : pcsFlow.retryComments;
-  const emptyLabel = activeTab === 'internal' ? `No internal notes yet ${'\u00B7'} PRIVATE` : 'No comments yet';
+  const emptyLabel = activeTab === 'internal' ? `No internal notes yet ${'·'} PRIVATE` : 'No comments yet';
 
   function onReplyToComment(c) {
     const authorName = c.author ? (userRoles.find((u) => u.email === c.author)?.name || c.author.split('@')[0]) : 'Unknown';
@@ -78,7 +69,13 @@ export function PCS() {
           )}
           {post && (
             <>
-              <Topbar post={post} isAdmin={isAdmin} canMove={canMove} onMoveStage={() => setStageSheetOpen(true)} />
+              <KickerRow
+                post={post}
+                isAdmin={isAdmin}
+                canMove={canMove}
+                onOpenSheet={() => setDetailSheetOpen(true)}
+                onOpenStage={() => setDetailSheetOpen(true)}
+              />
               <PhotoStrip post={post} canEdit={canEdit} />
               <div className="px-3 pt-3 pb-1">
                 <h1
@@ -88,11 +85,6 @@ export function PCS() {
                   {post.title || 'Untitled'}
                 </h1>
               </div>
-              {!isClient && <PropertiesTable post={post} canEdit={canEdit} userRoles={userRoles} />}
-              <div className="h-6" />
-              <LinkedInIndicator post={post} />
-              <LinkCards post={post} linkedinLink={post.linkedin_link} />
-              <div className="h-6" />
               <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
@@ -116,26 +108,29 @@ export function PCS() {
         </div>
       </Overlay>
 
-      {stageSheetOpen && post && (
-        <StageSheet post={post} onClose={() => setStageSheetOpen(false)} />
+      {post && (
+        <PcsDetailSheet
+          post={post}
+          isAdmin={isAdmin}
+          canEdit={canEdit}
+          userRoles={userRoles}
+          open={detailSheetOpen}
+          onClose={() => setDetailSheetOpen(false)}
+          actor={userEmail}
+        />
       )}
 
-      {activeSheet && post && (() => {
-        const cfg = fieldConfig(activeSheet);
-        if (!cfg) return null;
-        return (
-          <PropertySheet
-            field={cfg.field}
-            title={cfg.title}
-            currentValue={post[cfg.field]}
-            options={cfg.options}
-            inputType={cfg.inputType}
-            placeholder={cfg.placeholder}
-            reseedOg={!!cfg.reseedOg}
-            onClose={() => setActiveSheet(null)}
-          />
-        );
-      })()}
+      {activeSheet === 'title' && post && (
+        <PropertySheet
+          field={TITLE_FIELD_CONFIG.field}
+          title={TITLE_FIELD_CONFIG.title}
+          currentValue={post[TITLE_FIELD_CONFIG.field]}
+          inputType={TITLE_FIELD_CONFIG.inputType}
+          placeholder={TITLE_FIELD_CONFIG.placeholder}
+          reseedOg={TITLE_FIELD_CONFIG.reseedOg}
+          onClose={() => setActiveSheet(null)}
+        />
+      )}
 
       {actionSheet && (
         <CommentActionSheet

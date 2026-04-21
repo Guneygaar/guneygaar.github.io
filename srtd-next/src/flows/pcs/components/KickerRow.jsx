@@ -1,0 +1,79 @@
+import React, { useEffect, useState } from 'react';
+import { X, PanelRight } from 'lucide-react';
+import { STAGE_LABELS, STAGE_TOKEN } from '../utils/stage.js';
+import { pcsFlow } from '../index.js';
+
+export function KickerRow({ post, isAdmin, canMove, onOpenSheet, onOpenStage }) {
+  const [compressed, setCompressed] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setCompressed(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const stage = post?.stage || '';
+  const stageToken = STAGE_TOKEN[stage] || 'stage-production';
+  const stageLabel = (STAGE_LABELS[stage] || stage || '').toUpperCase();
+
+  return (
+    <header
+      className={`sticky top-0 z-[20] flex items-center justify-between bg-bg border-b border-divider-subtle ${compressed ? 'h-8' : 'h-10'}`}
+      style={{
+        boxShadow: compressed ? '0 1px 0 var(--c-divider-subtle)' : 'none',
+        transition: 'height 0.22s cubic-bezier(0.2, 0, 0.1, 1), box-shadow 0.2s ease',
+      }}
+    >
+      <div className="flex items-center gap-0.5 flex-shrink-0 pl-2">
+        <button
+          onClick={() => pcsFlow.close()}
+          className="w-9 h-9 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+          style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+          aria-label="Close"
+        >
+          <X size={16} strokeWidth={1.75} />
+        </button>
+      </div>
+      <div className="flex-1 min-w-0 flex items-center gap-2 px-1 overflow-hidden">
+        <button
+          onClick={canMove ? onOpenStage : undefined}
+          disabled={!canMove}
+          className="font-mono text-sm tracking-widest uppercase text-text-soft flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:cursor-default"
+          style={{ fontFeatureSettings: "'tnum' 1" }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+            style={{ backgroundColor: `var(--c-${stageToken})` }}
+          />
+          <span>{stageLabel}</span>
+        </button>
+        <span
+          className="text-text-dim"
+          style={{ opacity: compressed ? 1 : 0, transition: 'opacity 0.2s ease' }}
+        >
+          {'·'}
+        </span>
+        <span
+          className="font-sans text-base font-medium text-text-mid whitespace-nowrap overflow-hidden text-ellipsis"
+          style={{
+            opacity: compressed ? 1 : 0,
+            maxWidth: compressed ? 320 : 0,
+            transition: 'opacity 0.2s ease, max-width 0.22s cubic-bezier(0.2, 0, 0.1, 1)',
+          }}
+        >
+          {post?.title || 'Untitled'}
+        </span>
+      </div>
+      <div className="flex items-center gap-0.5 flex-shrink-0 pr-2">
+        <button
+          onClick={onOpenSheet}
+          className="w-9 h-9 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+          style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+          aria-label="Post details"
+        >
+          <PanelRight size={17} strokeWidth={1.75} />
+        </button>
+      </div>
+    </header>
+  );
+}
