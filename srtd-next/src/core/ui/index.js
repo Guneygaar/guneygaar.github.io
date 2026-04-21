@@ -8,3 +8,4 @@ export { Avatar }        from './Avatar.jsx';
 export { WhatsAppIcon }  from './WhatsAppIcon.jsx';
 export { Toast }         from './Toast.jsx';
 export { BottomSheet }   from './BottomSheet.jsx';
+export { EditIcon }      from './EditIcon.jsx';

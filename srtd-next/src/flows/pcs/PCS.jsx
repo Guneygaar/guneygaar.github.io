@@ -85,7 +85,7 @@ export function PCS() {
                   {post.title || 'Untitled'}
                 </h1>
               </div>
-              <CaptionBlock post={post} canEdit={canEdit} userRoles={userRoles} />
+              <CaptionBlock post={post} canEdit={canEdit} isAdmin={isAdmin} />
               <Tabs activeTab={activeTab} onChange={setActiveTab} commentCount={comments.length} internalCount={internalNotes.length} canSeeInternal={canSeeInternal} />
               {currentError && <RetryBanner message={currentError} onRetry={currentRetry} />}
               <div className="flex-1">

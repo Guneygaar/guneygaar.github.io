@@ -126,4 +126,27 @@
   .sheet-body.scrolled::before {
     box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.12);
   }
+
+  /* Caption line-clamp + gradient fade — auto-flips light/dark via var(--c-bg).
+     Reusable across PCS, Library, pipeline card previews. */
+  .caption-clamp-6 {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .caption-fade-bottom {
+    position: relative;
+  }
+  .caption-fade-bottom::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 42px;
+    background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 85%);
+    pointer-events: none;
+  }
 }
