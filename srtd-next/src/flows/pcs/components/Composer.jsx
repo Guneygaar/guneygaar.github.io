@@ -40,6 +40,18 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
     }
   }, [text]);
 
+  useEffect(() => {
+    function onDocPointerDown(e) {
+      if (!taRef.current) return;
+      if (document.activeElement !== taRef.current) return;
+      const composerEl = taRef.current.closest('[data-composer]');
+      if (composerEl && composerEl.contains(e.target)) return;
+      taRef.current.blur();
+    }
+    document.addEventListener('pointerdown', onDocPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onDocPointerDown, true);
+  }, []);
+
   function onTextChange(e) {
     const v = e.target.value;
     setText(v);
@@ -210,7 +222,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   );
 
   return (
-    <div className="sticky bottom-0 bg-bg border-t border-divider-warm pb-safe-b">
+    <div data-composer className="sticky bottom-0 bg-bg border-t border-divider-warm pb-safe-b">
       {replyTo && (
         <div className="flex items-center gap-2 px-3 py-1.5 border-b border-divider-soft bg-bg-2">
           <div className="flex-1 text-2xs text-text-soft">
@@ -300,8 +312,8 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
 
       {sheetOpen && (
         <>
-          <div className="fixed inset-0 bg-black/60 z-10" onClick={() => setSheetOpen(false)} />
-          <div className="fixed bottom-0 left-0 right-0 bg-bg-2 border-t border-divider-warm rounded-t-[16px] z-20 pb-safe-b">
+          <div className="fixed inset-0 bg-black/60 z-[2700]" onClick={() => setSheetOpen(false)} />
+          <div className="fixed bottom-0 left-0 right-0 bg-bg-2 border-t border-divider-warm rounded-t-[16px] z-[2701] pb-safe-b">
             <div className="w-8 h-1 bg-border-neutral rounded-pill mx-auto mt-3 mb-2" />
             {sheetOption(ImagePlus, 'Photo', 'Upload an image', () => { setSheetOpen(false); photoInputRef.current?.click(); })}
             {sheetOption(Paperclip, 'File', 'Attach a document', () => { setSheetOpen(false); fileInputRef.current?.click(); })}

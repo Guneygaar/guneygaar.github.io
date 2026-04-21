@@ -5,7 +5,8 @@ import { formatINR } from '../../shared/caption-workspace/utils.js';
 
 // Anthropic/Linear-style toast. Dark pill at bottom-center, slides
 // up + fades in on mount. Success variant can carry a session-cost
-// pill on the right; error variant never does.
+// pill on the right; error variant never does. Optional action
+// button (UNDO / RETRY) when current.action is set.
 
 export function Toast() {
   const current = useToastStore(s => s.current);
@@ -21,7 +22,7 @@ export function Toast() {
 
   const isError = current.type === 'error';
   const Icon = isError ? XCircle : CheckCircle2;
-  const iconColor = isError ? '#FF4B4B' : '#3ECF8E';
+  const iconClass = isError ? 'text-red' : 'text-green';
   const msg = isError
     ? (current.msg.length > 60 ? current.msg.slice(0, 60) + '…' : current.msg)
     : current.msg;
@@ -31,9 +32,8 @@ export function Toast() {
     <div
       role="status"
       aria-live="polite"
+      className="fixed left-1/2 bg-bg-2 border border-border-neutral rounded-pill inline-flex items-center gap-2.5 font-sans text-text-loud shadow-overlay"
       style={{
-        position: 'fixed',
-        left: '50%',
         bottom: 80,
         transform: visible
           ? 'translateX(-50%) translateY(0)'
@@ -42,34 +42,27 @@ export function Toast() {
         transition: visible
           ? 'opacity 200ms ease, transform 200ms ease'
           : 'opacity 150ms ease, transform 150ms ease',
-        background: '#1A1816',
-        border: '1px solid #3A3632',
-        borderRadius: 9999,
         padding: '10px 16px',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 10,
         zIndex: 9800,
-        boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
-        fontFamily: '"DM Sans", sans-serif',
-        color: '#F4F3EE',
         maxWidth: '92vw'
       }}>
-      <Icon size={14} color={iconColor} strokeWidth={2} />
-      <span style={{ fontSize: 13, lineHeight: 1.3 }}>{msg}</span>
+      <Icon size={14} strokeWidth={2} className={iconClass} />
+      <span className="text-base leading-snug">{msg}</span>
+      {current.action ? (
+        <button
+          type="button"
+          onClick={() => {
+            try { current.action.onClick(); } catch (e) {}
+            useToastStore.getState().dismiss();
+          }}
+          className="font-mono text-xs tracking-widest uppercase text-terracotta-1 hover:opacity-80 border-l border-border-neutral pl-2.5 ml-0.5"
+        >
+          {current.action.label}
+        </button>
+      ) : null}
       {hasCost && (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: 11,
-          color: '#F6A623',
-          borderLeft: '1px solid #3A3632',
-          paddingLeft: 10,
-          marginLeft: 2
-        }}>
-          <span style={{
-            width: 5, height: 5, borderRadius: '50%', background: '#F6A623'
-          }} />
+        <span className="inline-flex items-center gap-1.5 font-mono text-xs text-amber border-l border-border-neutral pl-2.5 ml-0.5">
+          <span className="w-[5px] h-[5px] rounded-pill bg-amber" />
           {formatINR(current.cost)}
         </span>
       )}

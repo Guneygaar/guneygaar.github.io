@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { BottomSheet, Avatar } from '../../../core/ui/index.js';
-import { usePcsStore } from '../pcsStore.js';
-import { patchPost, updatePostStage, deletePost } from '../../../core/api/posts.js';
-import { writeAudit } from '../../../core/api/audit.js';
+import { deletePost } from '../../../core/api/posts.js';
 import { copyToClipboard } from '../../../core/bridges/clipboard.js';
 import { openWhatsAppShare, buildShortUrl } from '../../../core/bridges/whatsapp.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
+import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
 import { pcsFlow } from '../index.js';
 import { STAGE_LABELS, STAGE_TOKEN, ownerToRole, titleCase } from '../utils/stage.js';
 import { FORMATS, PILLARS, LOCATIONS } from '../../../core/mappings.js';
@@ -318,6 +317,7 @@ function UrlInput({ value, placeholder, onSave }) {
 export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClose, actor }) {
   const [expandedField, setExpandedField] = useState(null);
   const [busy, setBusy] = useState(false);
+  const { commit } = useOptimisticPatch();
 
   if (!post) return null;
 
@@ -327,72 +327,36 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
   }
 
   async function savePatch(column, value, auditField) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const patch = { [column]: value, updated_by: actor };
-      const updated = await patchPost(post.post_id, patch);
-      writeAudit({
-        postId: post.post_id, field: auditField,
-        oldValue: post[column], newValue: value, actor,
-      }).catch(() => {});
-      if (updated) usePcsStore.setState({ post: updated });
-      logClick('pcs_react_panel_edit', { field: auditField });
-      toast('Saved', 'success');
-      setExpandedField(null);
-    } catch (err) {
-      logError(err, { context: 'pcs_react_panel_edit', field: auditField });
-      toast('Save failed', 'error');
-    }
-    setBusy(false);
+    await commit(column, value, { auditField, actor });
+    setExpandedField(null);
   }
 
   async function saveStage(newStage) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const updated = await updatePostStage(post.post_id, newStage, actor);
-      writeAudit({
-        postId: post.post_id, field: 'stage',
-        oldValue: post.stage, newValue: newStage, actor,
-      }).catch(() => {});
-      if (updated) usePcsStore.setState({ post: updated });
-      logClick('pcs_react_panel_edit', { field: 'stage' });
-      toast(`Moved to ${STAGE_LABELS[newStage] || newStage}`, 'success');
-      setExpandedField(null);
-    } catch (err) {
-      logError(err, { context: 'pcs_react_panel_edit', field: 'stage' });
-      toast('Failed to move stage', 'error');
-    }
-    setBusy(false);
+    await commit('stage', newStage, {
+      stage: true,
+      auditField: 'stage',
+      actor,
+    });
+    setExpandedField(null);
   }
 
   async function saveOwner(user) {
-    if (busy) return;
-    setBusy(true);
-    try {
-      let patch;
-      if (user == null) {
-        patch = { owner_user_id: null, owner: null, updated_by: actor };
-      } else {
-        const roleLabel = ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative';
-        patch = { owner_user_id: user.id, owner: roleLabel, updated_by: actor };
-      }
-      const updated = await patchPost(post.post_id, patch);
-      writeAudit({
-        postId: post.post_id, field: 'owner',
-        oldValue: post.owner, newValue: user == null ? null : (ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative'),
+    if (!user) {
+      await commit('owner', null, {
+        auditField: 'owner',
         actor,
-      }).catch(() => {});
-      if (updated) usePcsStore.setState({ post: updated });
-      logClick('pcs_react_panel_edit', { field: 'owner' });
-      toast(user == null ? 'Owner cleared' : 'Owner updated', 'success');
-      setExpandedField(null);
-    } catch (err) {
-      logError(err, { context: 'pcs_react_panel_edit', field: 'owner' });
-      toast('Save failed', 'error');
+        extraPatch: { owner_user_id: null },
+      });
+    } else {
+      const roleLabel = ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative';
+      await commit('owner', roleLabel, {
+        auditField: 'owner',
+        label: 'Owner',
+        actor,
+        extraPatch: { owner_user_id: user.id },
+      });
     }
-    setBusy(false);
+    setExpandedField(null);
   }
 
   async function onCopy() {
