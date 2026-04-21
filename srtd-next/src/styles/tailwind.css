@@ -110,4 +110,20 @@
   .tint-role-creative  { background-color: color-mix(in srgb, var(--c-role-creative)  20%, transparent); }
   .tint-role-servicing { background-color: color-mix(in srgb, var(--c-role-servicing) 20%, transparent); }
   .tint-role-client    { background-color: color-mix(in srgb, var(--c-role-client)    20%, transparent); }
+
+  .sheet-body::before {
+    content: '';
+    position: sticky;
+    top: 0;
+    display: block;
+    height: 1px;
+    margin-bottom: -1px;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0);
+    transition: box-shadow 0.2s ease;
+  }
+  .sheet-body.scrolled::before {
+    box-shadow: 0 6px 10px -6px rgba(0, 0, 0, 0.12);
+  }
 }

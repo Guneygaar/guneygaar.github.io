@@ -119,7 +119,7 @@ export function PropertiesTable({ post, canEdit, userRoles }) {
   const fmt = post.format;
   const pillar = post.content_pillar ? titleCase(post.content_pillar) : null;
   const loc = post.location;
-  const currentOwnerId = null;
+  const currentOwnerId = post?.owner_user_id || null;
 
   async function savePatch(patch, auditField, oldValue, newValue) {
     try {
@@ -138,7 +138,11 @@ export function PropertiesTable({ post, canEdit, userRoles }) {
   async function saveOwner(user) {
     const roleLabel = ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative';
     try {
-      const updated = await patchPost(post.post_id, { owner: roleLabel, updated_by: actor });
+      const updated = await patchPost(post.post_id, {
+        owner_user_id: user.id,
+        owner: roleLabel,
+        updated_by: actor,
+      });
       writeAudit({ postId: post.post_id, field: 'owner', oldValue: post.owner, newValue: roleLabel, actor }).catch(() => {});
       if (updated) usePcsStore.setState({ post: updated });
       logClick('pcs_react_owner_set', { userId: user.id });
