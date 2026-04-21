@@ -28,7 +28,7 @@ export function logError(err, context = {}) {
     if (typeof window === 'undefined') return;
     const message = (err && err.message) || String(err || 'unknown');
     const stack = (err && err.stack) || '';
-    const action = context.action || 'react-unknown';
+    const action = context.action || context.context || 'react-unknown';
     if (typeof window.logError === 'function') {
       window.logError(message, stack, action);
     }
