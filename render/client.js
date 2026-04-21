@@ -837,7 +837,12 @@ console.log('LOADED:', 'render/client.js');
   /* Wrap comments list + input bar in a single collapsible container
      so the Comment engagement-bar button can toggle it. Feed defaults
      to collapsed; _openClientPostOverlay flips the display style to
-     'block' after render because the user explicitly opened the post. */
+     'block' after render because the user explicitly opened the post.
+
+     The input slot is an EMPTY placeholder (`data-needs-composer="true"`).
+     The actual composer DOM is mounted after innerHTML by
+     `_remountPersistentComposers` so that typed text, pending image
+     uploads, and quote-bar state survive realtime refetches. */
   function _commentsContainerHtml(post, expanded) {
     var pid = _esc(post.post_id || post.id || '');
     var disp = expanded ? 'block' : 'none';
@@ -845,9 +850,20 @@ console.log('LOADED:', 'render/client.js');
       'class="client-comments-section" ' +
       'data-comments-section="' + pid + '" ' +
       'style="display:' + disp + ';">' +
-      _commentsListHtml(post) +
-      _commentInputHtml(post) +
+      '<div data-comments-list-section="' + pid + '">' +
+        _commentsListHtml(post) +
+      '</div>' +
+      _commentsInputSlotHtml(post) +
     '</div>';
+  }
+
+  /* Empty slot for the persistent composer. Only emitted for stages
+     where _commentInputHtml would produce output — other stages skip
+     the composer entirely (same gate as the original inline render). */
+  function _commentsInputSlotHtml(post) {
+    if (post.stage !== 'awaiting_approval' && post.stage !== 'awaiting_brand_input') return '';
+    var pid = _esc(post.post_id || post.id || '');
+    return '<div data-comments-input-section="' + pid + '" data-needs-composer="true"></div>';
   }
 
   /* ---- drive link card ----
@@ -1164,6 +1180,102 @@ console.log('LOADED:', 'render/client.js');
 
   function _clientComposerRoot(postId) {
     return document.getElementById('client-composer-root-' + postId);
+  }
+
+  /* ---- Persistent composer cache --------------------------------
+     The client feed rerenders via `cv.innerHTML = html` on every
+     realtime event (debounced 400 ms in 07-post-load.js). A naive
+     textarea-inside-innerHTML gets destroyed mid-type, so we keep the
+     composer DOM out of the rebuild path: `_commentsInputSlotHtml`
+     emits an empty placeholder; this cache holds the live composer
+     element (textarea value, pending-image state, quote bar, wired
+     listeners) and gets moved back into the freshly-rendered slot
+     after each refetch. The SAME element also moves between the feed
+     card and `_openClientPostOverlay` so typed text survives the
+     card->overlay->card transitions too. */
+  window._persistentComposers = window._persistentComposers || {};
+
+  function _buildPersistentComposer(post) {
+    var pid = post.post_id || post.id || '';
+    var wrap = document.createElement('div');
+    wrap.className = 'claude-persistent-composer';
+    wrap.setAttribute('data-composer-pid', pid);
+    wrap.innerHTML = _commentInputHtml(post);
+    return wrap;
+  }
+
+  function _wirePersistentComposer(composer, pid) {
+    if (!composer || composer._srtdWired) return;
+    composer._srtdWired = true;
+    var input = composer.querySelector('#comment-input-' + pid);
+    if (input) {
+      input.addEventListener('focus', function() {
+        setTimeout(function() {
+          try { input.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) {}
+        }, 300);
+      });
+      input.addEventListener('input', function() {
+        var send = composer.querySelector('.claude-send');
+        if (!send) return;
+        var hasContent = (this.value || '').trim().length > 0;
+        var hasPendingImgs = window._clientFeedPendingImgs &&
+          window._clientFeedPendingImgs[pid] &&
+          window._clientFeedPendingImgs[pid].length > 0;
+        if (hasContent || hasPendingImgs) send.classList.remove('dim');
+        else send.classList.add('dim');
+      });
+    }
+    if (typeof window._clientWireClaudeComposer === 'function') {
+      window._clientWireClaudeComposer(pid);
+    }
+  }
+
+  function _detachPersistentComposer(slotEl) {
+    if (!slotEl) return;
+    var pid = slotEl.getAttribute('data-comments-input-section') || '';
+    if (!pid) return;
+    var composer = slotEl.querySelector(':scope > .claude-persistent-composer');
+    if (!composer) return;
+    window._persistentComposers[pid] = composer;
+    if (composer.parentNode) composer.parentNode.removeChild(composer);
+  }
+
+  function _detachAllPersistentComposersIn(root) {
+    if (!root) return;
+    var slots = root.querySelectorAll('[data-comments-input-section]');
+    for (var i = 0; i < slots.length; i++) _detachPersistentComposer(slots[i]);
+  }
+
+  function _mountPersistentComposerIntoSlot(slotEl, post) {
+    if (!slotEl) return null;
+    var pid = slotEl.getAttribute('data-comments-input-section') || '';
+    if (!pid) return null;
+    var composer = window._persistentComposers[pid];
+    if (!composer) {
+      if (!post) return null;
+      composer = _buildPersistentComposer(post);
+      window._persistentComposers[pid] = composer;
+    }
+    if (composer.parentNode !== slotEl) slotEl.appendChild(composer);
+    slotEl.removeAttribute('data-needs-composer');
+    _wirePersistentComposer(composer, pid);
+    return composer;
+  }
+
+  function _remountPersistentComposersIn(root, postsById) {
+    if (!root) return;
+    var slots = root.querySelectorAll('[data-needs-composer="true"]');
+    for (var i = 0; i < slots.length; i++) {
+      var pid = slots[i].getAttribute('data-comments-input-section') || '';
+      var post = postsById && postsById[pid];
+      if (!post) {
+        var all = (window.AppState && window.AppState.posts && window.AppState.posts.all) || [];
+        for (var j = 0; j < all.length; j++) {
+          if ((all[j].post_id || all[j].id) === pid) { post = all[j]; break; }
+        }
+      }
+      _mountPersistentComposerIntoSlot(slots[i], post);
+    }
   }
 
   function _clientMountQuoteBar(postId, author, snippet) {
@@ -2231,6 +2343,13 @@ console.log('LOADED:', 'render/client.js');
     var inputs = root.querySelectorAll('[id^="comment-input-"]');
     for (var i = 0; i < inputs.length; i++) {
       (function(input) {
+        // Persistent composers (now the only code path) wire their own
+        // focus + input listeners once via _wirePersistentComposer and
+        // set `_srtdWired` on the composer wrapper. Skip re-wiring so
+        // every renderClientView() call doesn't stack another copy of
+        // the focus/input handlers on the same textarea.
+        var composer = input.closest && input.closest('.claude-persistent-composer');
+        if (composer && composer._srtdWired) return;
         input.addEventListener('focus', function() {
           setTimeout(function() {
             input.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2256,6 +2375,7 @@ console.log('LOADED:', 'render/client.js');
           if (hasContent || hasPendingImgs) send.classList.remove('dim');
           else send.classList.add('dim');
         });
+        if (composer) composer._srtdWired = true;
       })(inputs[i]);
     }
   }
@@ -2351,6 +2471,17 @@ console.log('LOADED:', 'render/client.js');
       }
     }
 
+    // Detach any live composer nodes currently inside cv (feed path)
+    // OR inside the overlay (if it's open). Both surfaces share the
+    // same per-post composer, keyed by post_id, and either could be
+    // holding it at this moment. Do this BEFORE cv.innerHTML obliterates
+    // the feed copy, so the detached element (with its typed text,
+    // listeners, pending images, quote bar, etc.) survives into the
+    // cache and gets moved back into the freshly-rendered slot below.
+    _detachAllPersistentComposersIn(cv);
+    var _overlayForDetach = document.getElementById('client-post-overlay');
+    if (_overlayForDetach) _detachAllPersistentComposersIn(_overlayForDetach);
+
     cv.innerHTML = html;
 
     // Restore the expanded comment sections captured above. Safe no-op
@@ -2359,6 +2490,36 @@ console.log('LOADED:', 'render/client.js');
     for (var _rsi = 0; _rsi < _expandedCommentIds.length; _rsi++) {
       var _restoreEl = cv.querySelector('[data-comments-section="' + _expandedCommentIds[_rsi] + '"]');
       if (_restoreEl) _restoreEl.style.display = 'block';
+    }
+
+    // Remount persistent composers into their fresh slots — cached
+    // composer (with preserved state) if we have one, otherwise build
+    // a new one. The overlay (if currently open) takes priority for
+    // its own post's composer: don't steal it back from an open
+    // overlay just because the feed also has a slot for that post.
+    var _overlayAfter = document.getElementById('client-post-overlay');
+    var _overlayPid = null;
+    if (_overlayAfter) {
+      var _overlaySlot = _overlayAfter.querySelector('[data-comments-input-section]');
+      if (_overlaySlot) {
+        _overlayPid = _overlaySlot.getAttribute('data-comments-input-section');
+        // Remount into the overlay first so the cached composer stays
+        // with the overlay view where the user is actively typing.
+        _remountPersistentComposersIn(_overlayAfter, null);
+      }
+    }
+    // Skip the feed's slot for that pid so we don't pull the composer
+    // out from under the open overlay.
+    var _feedSlots = cv.querySelectorAll('[data-needs-composer="true"]');
+    for (var _fsi = 0; _fsi < _feedSlots.length; _fsi++) {
+      var _fpid = _feedSlots[_fsi].getAttribute('data-comments-input-section') || '';
+      if (_overlayPid && _fpid === _overlayPid) continue;
+      var _fpost = null;
+      var _all = (window.AppState && window.AppState.posts && window.AppState.posts.all) || [];
+      for (var _ai = 0; _ai < _all.length; _ai++) {
+        if ((_all[_ai].post_id || _all[_ai].id) === _fpid) { _fpost = _all[_ai]; break; }
+      }
+      _mountPersistentComposerIntoSlot(_feedSlots[_fsi], _fpost);
     }
 
     _wireTopNavOnce();
@@ -2430,7 +2591,21 @@ console.log('LOADED:', 'render/client.js');
           if (_esId) _overlayExpandedIds.push(_esId);
         }
       }
+      // Detach any live composers from the existing overlay into the
+      // cache BEFORE the overlay is removed from the DOM — otherwise
+      // typed text, pending uploads, and quote-bar state die with it.
+      _detachAllPersistentComposersIn(existing);
       existing.remove();
+    }
+
+    // Also detach the composer for THIS post from the feed (cv). When
+    // the overlay opens we want that same element — with any text the
+    // user has already typed in the feed card — to move into the
+    // overlay, and then move back to the feed on close.
+    var _cvForDetach = document.getElementById('client-view');
+    if (_cvForDetach) {
+      var _feedSlot = _cvForDetach.querySelector('[data-comments-input-section="' + (post.post_id || post.id) + '"]');
+      if (_feedSlot) _detachPersistentComposer(_feedSlot);
     }
 
     _ensurePulseStyle();
@@ -2486,6 +2661,10 @@ console.log('LOADED:', 'render/client.js');
         var _orEl = _self_overlay.querySelector('[data-comments-section="' + _overlayExpandedIds[_orsi] + '"]');
         if (_orEl) _orEl.style.display = 'block';
       }
+      // Mount the persistent composer into the overlay slot. Uses the
+      // cached element detached from the feed above (preserving typed
+      // text) if present, otherwise builds a fresh one.
+      _remountPersistentComposersIn(_self_overlay, null);
       window.AppState.ui.modalOpen = true;
       document.body.style.overflow = 'hidden';
       _wireEvents(_self_overlay);
@@ -2502,6 +2681,20 @@ console.log('LOADED:', 'render/client.js');
         _wireEvents(lbEl);
         lbEl.dataset.clickWired = '1';
       }
+      // Move the persistent composer back to the feed slot before the
+      // overlay is torn down — so typed text / pending images survive
+      // the overlay->feed transition. Both close paths call this.
+      function _handOffComposerToFeed() {
+        _detachAllPersistentComposersIn(_self_overlay);
+        var cvNow = document.getElementById('client-view');
+        if (cvNow) {
+          var _feedSlots = cvNow.querySelectorAll('[data-needs-composer="true"]');
+          for (var _fi = 0; _fi < _feedSlots.length; _fi++) {
+            _mountPersistentComposerIntoSlot(_feedSlots[_fi], null);
+          }
+        }
+      }
+
       // Back-to-notifications button (when opened from notif panel)
       if (window._notifOpenedPCS) {
         var nbBtn = document.createElement('button');
@@ -2509,6 +2702,7 @@ console.log('LOADED:', 'render/client.js');
         nbBtn.textContent = '\u2190 NOTIFICATIONS';
         nbBtn.onclick = function() {
           window._notifOpenedPCS = false;
+          _handOffComposerToFeed();
           _self_overlay.remove();
           window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
@@ -2525,6 +2719,7 @@ console.log('LOADED:', 'render/client.js');
       if (closeBtn) {
         closeBtn.addEventListener('click', function() {
           window._notifOpenedPCS = false;
+          _handOffComposerToFeed();
           _self_overlay.remove();
           window.AppState.ui.modalOpen = false;
           document.body.style.overflow = '';
