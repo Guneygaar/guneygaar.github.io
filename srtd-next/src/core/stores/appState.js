@@ -35,6 +35,11 @@ export function useIsAdmin() {
   );
 }
 
+export const useIsClient = () =>
+  useAppState((s) =>
+    ((s.user?.effectiveRole || s.user?.role || '') + '')
+      .toLowerCase() === 'client');
+
 // Install window bridge so vanilla code can notify React.
 if (typeof window !== 'undefined') {
   window.__syncAppStateToReact = () => {
