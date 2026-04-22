@@ -1390,6 +1390,13 @@ async function _notifSubmitReply(sendBtn) {
   var postTitle = (post && post.title) || (notifMatch && notifMatch.message) || postId;
 
   var _emailKey = (window.AppState.user && window.AppState.user.email) || '';
+  if (!_emailKey) {
+    if (typeof showToast === 'function') showToast('Session expired, please refresh', 'error');
+    delete sendBtn.dataset.submitting;
+    sendBtn.disabled = false;
+    ta.disabled = false;
+    return;
+  }
   var authorName = (typeof getDisplayName === 'function' && _emailKey)
     ? getDisplayName(_emailKey)
     : ((window.AppState.user && window.AppState.user.name) || _emailKey || 'Unknown');
@@ -1423,7 +1430,7 @@ async function _notifSubmitReply(sendBtn) {
   var payload = {
     post_id:         postId,
     post_title:      postTitle,
-    author:          authorName,
+    author:          _emailKey,
     author_role:     authorRole,
     message:         msg,
     visibility:      'all',

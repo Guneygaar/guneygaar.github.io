@@ -1805,6 +1805,11 @@ console.log('LOADED:', 'render/client.js');
     input.value = '';
 
     var _emailKey = window.AppState.user.email || '';
+    if (!_emailKey) {
+      if (typeof window.showToast === 'function') window.showToast('Session expired, please refresh', 'error');
+      input.value = savedValue;
+      return;
+    }
     var authorName = (typeof getDisplayName === 'function' && _emailKey)
       ? getDisplayName(_emailKey)
       : (window.AppState.user.name || _emailKey || 'Client');
@@ -1858,7 +1863,7 @@ console.log('LOADED:', 'render/client.js');
 
     var _commentBody = {
       post_id: realPostId,
-      author: authorName,
+      author: _emailKey,
       author_role: 'Client',
       message: message,
       reply_to: _replyTo || null,

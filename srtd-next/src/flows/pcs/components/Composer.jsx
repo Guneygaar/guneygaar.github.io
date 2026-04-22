@@ -156,12 +156,23 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
       if (attachedImages.length > 0) attachmentParts.push({ type: 'images', urls: attachedImages });
       if (attachedFiles.length > 0) attachmentParts.push({ type: 'files', files: attachedFiles });
       taskAttachments.forEach((t) => attachmentParts.push(t));
-      const attachments = attachmentParts.length > 0 ? attachmentParts : null;
+      const attachments = attachmentParts.length === 0
+        ? null
+        : JSON.stringify(attachmentParts.length === 1 ? attachmentParts[0] : attachmentParts);
+
+      const authorRoleTitle = currentRole
+        ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1).toLowerCase()
+        : '';
+
+      if (!currentEmail) {
+        toast('Session expired, please refresh', 'error');
+        return;
+      }
 
       const payload = {
         post_id: post.post_id,
         author: currentEmail,
-        author_role: currentRole,
+        author_role: authorRoleTitle,
         message: text.trim(),
         post_title: post.title,
         mentioned_users: mentioned.length > 0 ? mentioned : null,

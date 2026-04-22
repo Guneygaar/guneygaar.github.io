@@ -184,6 +184,11 @@ window._briefSubmitComment = function(postId) {
   var text = (input.value || '').trim();
   if (!text) return;
   var authorName = (window.AppState.user && window.AppState.user.name) || 'Unknown';
+  var authorEmail = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+  if (!authorEmail) {
+    if (typeof showToast === 'function') showToast('Session expired, please refresh', 'error');
+    return;
+  }
   var rawRole = (window.AppState.user && window.AppState.user.effectiveRole) || 'Admin';
   var normRole = (typeof normalizeRole === 'function') ?
     (normalizeRole(rawRole) || 'Admin') : rawRole;
@@ -230,7 +235,7 @@ window._briefSubmitComment = function(postId) {
     method: 'POST',
     body: JSON.stringify({
       post_id: postId,
-      author: authorName,
+      author: authorEmail,
       author_role: normRole,
       message: text,
       post_title: (post && post.title) || '',
