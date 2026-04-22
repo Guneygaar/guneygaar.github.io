@@ -2766,9 +2766,11 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   var _realPostId = _post ? _post.post_id : postId;
   var _title = _post ? (_post.title || postId) : postId;
   var _emailKey = window.AppState.user.email || '';
-  var _author = (typeof getDisplayName === 'function' && _emailKey)
-    ? getDisplayName(_emailKey)
-    : (window.AppState.user.name || _emailKey || 'Team');
+  if (!_emailKey) {
+    if (typeof showToast === 'function') showToast('Session expired, please refresh', 'error');
+    return;
+  }
+  var _author = _emailKey;
   var _role = (window.AppState.user.effectiveRole || 'Admin');
   var _roleLower = _role.toLowerCase();
 
@@ -2899,6 +2901,10 @@ window._doSubmitComment = async function(opts) {
     var _submitEndpoint = opts.isInternal
       ? '/internal_notes'
       : '/post_comments';
+    if (!opts.author) {
+      if (typeof showToast === 'function') showToast('Session expired, please refresh', 'error');
+      return;
+    }
     await apiFetch(_submitEndpoint, {
       method: 'POST',
       body: JSON.stringify({
