@@ -187,7 +187,7 @@ export function List() {
         <section key={g.start.toISOString()}>
           <header style={{
             position: 'sticky',
-            top: 44,
+            top: 0,
             background: 'var(--c-bg-2)',
             padding: '8px 16px',
             display: 'flex',
