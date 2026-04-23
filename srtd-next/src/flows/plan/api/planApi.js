@@ -147,3 +147,22 @@ export async function patchPostTitle(postIdUuid, newTitle) {
     body: JSON.stringify({ title: newTitle })
   });
 }
+
+/**
+ * Query 9 - patchStage(postIdUuid, newStage)
+ * Mirrors rescheduleTarget shape. stage only. The notify-stage edge
+ * function fires the fan-out; status_changed_at is a server trigger
+ * column and is never written from the client.
+ */
+export async function patchStage(postIdUuid, newStage) {
+  if (!postIdUuid) throw new Error('patchStage: postIdUuid required');
+  if (typeof newStage !== 'string' || !newStage) {
+    throw new Error('patchStage: newStage required');
+  }
+  const path = `/posts?id=eq.${encodeURIComponent(postIdUuid)}`;
+  return apiFetch(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({ stage: newStage })
+  });
+}
