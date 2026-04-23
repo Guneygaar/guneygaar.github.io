@@ -26,11 +26,44 @@ import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
 import { ReasonBlock } from '../shared/ReasonBlock.jsx';
 
-function safeImages(images) {
-  if (!images) return [];
-  let arr = images;
-  try { if (typeof arr === 'string') arr = JSON.parse(arr); } catch (e) { return []; }
-  return Array.isArray(arr) ? arr : [];
+function normalizePlanImages(raw) {
+  if (!raw) return [];
+  let value = raw;
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value); } catch (e) { return []; }
+  }
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map(function (item) {
+        if (!item) return null;
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object' && item.url) return item.url;
+        return null;
+      })
+      .filter(function (u) { return typeof u === 'string' && u.length > 0; });
+  }
+  if (typeof value === 'object' && Array.isArray(value.urls)) {
+    return value.urls.filter(function (u) { return typeof u === 'string' && u.length > 0; });
+  }
+  return [];
+}
+
+function openInPCS(postId) {
+  if (!postId) return;
+  const bridge = window.SortedReact && window.SortedReact.flows && window.SortedReact.flows.pcs;
+  if (bridge && typeof bridge.open === 'function') {
+    bridge.open(postId);
+    return;
+  }
+  // Fallback: URL deep-link path read by index.html on mount.
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('pcs_post', String(postId));
+    window.location.assign(url.toString());
+  } catch (e) {
+    window.location.search = '?pcs_post=' + encodeURIComponent(String(postId));
+  }
 }
 
 function formatDateLine(post) {
@@ -52,7 +85,7 @@ function lifecycleDays(post) {
 }
 
 function GalleryStrip({ post }) {
-  const images = safeImages(post && post.images);
+  const images = normalizePlanImages(post && post.images);
   if (images.length === 0) return null;
   return (
     <div className="scrollbar-none" style={{
@@ -77,6 +110,96 @@ function GalleryStrip({ post }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function HeroBlock(props) {
+  const post = props.post;
+  const images = normalizePlanImages(post && post.images);
+  const [lightboxOpen, setLightboxOpen] = React.useState(false);
+  const [lightboxIndex, setLightboxIndex] = React.useState(0);
+
+  const openLightbox = function (idx) {
+    setLightboxIndex(idx || 0);
+    setLightboxOpen(true);
+  };
+  const closeLightbox = function () { setLightboxOpen(false); };
+  const nextImage = function () {
+    setLightboxIndex(function (i) { return (i + 1) % images.length; });
+  };
+  const prevImage = function () {
+    setLightboxIndex(function (i) { return (i - 1 + images.length) % images.length; });
+  };
+
+  // Empty state: render pillar-gradient fallback tile instead of hiding.
+  if (images.length === 0) {
+    return (
+      <div className="plan-hero plan-hero-empty">
+        <div className={'plan-hero-fallback pillar-' + (post && post.content_pillar ? post.content_pillar.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'default')} />
+      </div>
+    );
+  }
+
+  const heroSrc = images[0];
+  const count = images.length;
+
+  return (
+    <React.Fragment>
+      <div className="plan-hero" onClick={function () { openLightbox(0); }}>
+        <img src={heroSrc} alt="" loading="lazy" decoding="async" className="plan-hero-img" />
+        <button
+          type="button"
+          className="plan-hero-expand"
+          aria-label="Expand image"
+          onClick={function (e) { e.stopPropagation(); openLightbox(0); }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
+        {count > 1 ? (
+          <div className="plan-hero-counter">1 of {count}</div>
+        ) : null}
+      </div>
+      {lightboxOpen ? (
+        <div className="plan-lightbox" role="dialog" aria-modal="true" onClick={closeLightbox}>
+          <button type="button" className="plan-lightbox-close" aria-label="Close" onClick={closeLightbox}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <div
+            className="plan-lightbox-stage"
+            onClick={function (e) { e.stopPropagation(); }}
+            onTouchStart={function (e) {
+              const t = e.touches[0];
+              e.currentTarget.dataset.startX = String(t.clientX);
+              e.currentTarget.dataset.startY = String(t.clientY);
+            }}
+            onTouchEnd={function (e) {
+              const el = e.currentTarget;
+              const startX = parseFloat(el.dataset.startX || '0');
+              const startY = parseFloat(el.dataset.startY || '0');
+              const t = e.changedTouches[0];
+              const dx = t.clientX - startX;
+              const dy = t.clientY - startY;
+              if (Math.abs(dy) > 40) return;
+              if (Math.abs(dx) < 60) return;
+              if (dx < 0) nextImage(); else prevImage();
+            }}
+          >
+            <img src={images[lightboxIndex]} alt="" className="plan-lightbox-img" />
+          </div>
+          {count > 1 ? (
+            <div className="plan-lightbox-counter">{lightboxIndex + 1} of {count}</div>
+          ) : null}
+        </div>
+      ) : null}
+    </React.Fragment>
   );
 }
 
@@ -284,40 +407,59 @@ function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
     );
   }
 
+  const openPcsHandler = () => openInPCS(post && post.post_id);
+  const openPcsBtn = (key) => btn('Open in PCS', 'dark', ExternalLink, openPcsHandler, key);
+
   let buttons = [];
   if (stage === 'awaiting_approval') {
     if (role === 'admin') buttons = [
       btn('Recall', 'secondary', RotateCcw, null, 'rc'),
       btn('Nudge client', 'warn', Send, null, 'nc'),
-      btn('Force approve', 'primary', Check, null, 'fa')
+      btn('Force approve', 'primary', Check, null, 'fa'),
+      openPcsBtn('op')
     ];
     else if (role === 'agency') buttons = [
       btn('Recall', 'secondary', RotateCcw, null, 'rc'),
-      btn('Nudge client', 'primary', Send, null, 'nc')
+      btn('Nudge client', 'primary', Send, null, 'nc'),
+      openPcsBtn('op')
     ];
     else if (role === 'client') buttons = [
       btn('Request changes', 'warn', RefreshCcw, null, 'rq'),
       btn('Approve', 'primary', Check, null, 'ap')
     ];
+  } else if (stage === 'awaiting_brand_input') {
+    if (role === 'admin' || role === 'agency') buttons = [
+      openPcsBtn('op')
+    ];
   } else if (stage === 'in_production') {
     if (role === 'admin' || role === 'agency') buttons = [
       btn('Save', 'secondary', Save, null, 'sv'),
-      btn('Send for approval', 'primary', Send, null, 'sf')
+      btn('Send for approval', 'primary', Send, null, 'sf'),
+      openPcsBtn('op')
     ];
   } else if (stage === 'scheduled') {
     if (role === 'admin') buttons = [
       btn('Reschedule', 'secondary', Calendar, null, 'rs'),
-      btn('Publish now', 'dark', Send, null, 'pn')
+      btn('Publish now', 'dark', Send, null, 'pn'),
+      openPcsBtn('op')
     ];
     else if (role === 'agency') buttons = [
-      btn('Reschedule', 'secondary', Calendar, null, 'rs')
+      btn('Reschedule', 'secondary', Calendar, null, 'rs'),
+      openPcsBtn('op')
     ];
   } else if (stage === 'published') {
     if (role === 'admin') buttons = [
       btn('View on LinkedIn', 'secondary', ExternalLink, () => {
         if (post.linkedin_link) window.open(post.linkedin_link, '_blank', 'noopener');
       }, 'vl'),
-      btn('Archive', 'secondary', Archive, null, 'ar')
+      btn('Archive', 'secondary', Archive, null, 'ar'),
+      openPcsBtn('op')
+    ];
+    else if (role === 'agency') buttons = [
+      btn('View on LinkedIn', 'primary', ExternalLink, () => {
+        if (post.linkedin_link) window.open(post.linkedin_link, '_blank', 'noopener');
+      }, 'vl'),
+      openPcsBtn('op')
     ];
     else buttons = [
       btn('View on LinkedIn', 'primary', ExternalLink, () => {
@@ -327,11 +469,16 @@ function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
   } else if (stage === 'brief_done') {
     if (role === 'admin') buttons = [
       btn('Rework brief', 'warn', RefreshCcw, null, 'rb'),
-      btn('Assign', 'dark', UserPlus, null, 'as')
+      btn('Assign', 'dark', UserPlus, null, 'as'),
+      openPcsBtn('op')
+    ];
+    else if (role === 'agency') buttons = [
+      openPcsBtn('op')
     ];
   } else if (stage === 'rejected' || stage === 'parked') {
     if (role === 'admin' || role === 'agency') buttons = [
-      btn('Revive', 'secondary', RotateCcw, null, 'rv')
+      btn('Revive', 'secondary', RotateCcw, null, 'rv'),
+      openPcsBtn('op')
     ];
   }
 
@@ -512,7 +659,7 @@ export function CardSheet() {
         <div
           {...swipeProps}
           style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {isClient ? <GalleryStrip post={post} /> : null}
+          {isClient ? <GalleryStrip post={post} /> : <HeroBlock post={post} />}
 
           <div style={{
             display: 'flex',
@@ -661,6 +808,23 @@ export function CardSheet() {
                 <MessageSquarePlus size={14} />
                 <span style={{ flex: 1, textAlign: 'left' }}>Write a comment</span>
                 <ChevronRight size={14} />
+              </button>
+            </div>
+          ) : null}
+
+          {!isClient ? (
+            <div style={{ padding: '0 18px' }}>
+              <button
+                type="button"
+                className="plan-open-pcs-row"
+                onClick={function () { openInPCS(post && post.post_id); }}
+              >
+                <span className="plan-open-pcs-row-label">Open in PCS to edit</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
               </button>
             </div>
           ) : null}
