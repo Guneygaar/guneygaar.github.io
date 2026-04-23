@@ -390,12 +390,13 @@ function ActivityRow({ a }) {
   );
 }
 
-function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
+function ActionBar({ post, role, onApprove, onComment }) {
   const closeCard = usePlanStore((s) => s.closeCard);
   const stage = post.stage;
+
   const BTN_STYLE = {
     flex: 1,
-    padding: '11px 10px',
+    padding: '12px 10px',
     border: 'none',
     borderRadius: '8px',
     fontFamily: '"IBM Plex Mono", monospace',
@@ -409,117 +410,103 @@ function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
     justifyContent: 'center',
     gap: '6px'
   };
-  const variant = (kind) => {
-    if (kind === 'primary') return { background: 'var(--c-green)', color: '#fff' };
-    if (kind === 'dark')    return { background: 'var(--c-text-loud)', color: 'var(--c-bg)' };
-    if (kind === 'warn')    return { background: 'var(--c-bg-2)', color: 'var(--c-stage-input)', border: '1px solid var(--c-border-warm)' };
-    return { background: 'var(--c-bg-2)', color: 'var(--c-text-mid)', border: '1px solid var(--c-divider-soft)' };
+
+  const ghost = {
+    background: 'var(--c-bg-2)',
+    color: 'var(--c-text-loud)',
+    border: '1px solid var(--c-divider-soft)'
+  };
+  const solid = {
+    background: 'var(--c-text-loud)',
+    color: 'var(--c-bg)',
+    border: 'none'
+  };
+  const approveStyle = {
+    background: 'var(--c-terracotta-1)',
+    color: '#fff',
+    border: 'none'
   };
 
-  function btn(label, kind, Icon, onClick, key) {
-    const primaryish = kind === 'primary' || kind === 'dark';
-    const clickHandler = onClick || (primaryish ? onApproveStub : onRescheduleStub);
+  function CommentBtn() {
     return (
-      <button key={key} type="button" onClick={clickHandler} style={{ ...BTN_STYLE, ...variant(kind) }}>
-        {Icon ? <Icon size={13} /> : null}
-        <span>{label}</span>
+      <button
+        type="button"
+        onClick={onComment}
+        style={{ ...BTN_STYLE, ...ghost }}
+      >
+        <MessageSquare size={13} />
+        <span>Comment</span>
       </button>
     );
   }
 
-  const openPcsHandler = () => {
-    const pid = post && post.post_id;
-    if (!pid) return;
-    closeCard();
-    openInPCS(pid);
-  };
-  const openPcsBtn = (key) => btn('Open in PCS', 'dark', ExternalLink, openPcsHandler, key);
-
-  let buttons = [];
-  if (stage === 'awaiting_approval') {
-    if (role === 'admin') buttons = [
-      btn('Recall', 'secondary', RotateCcw, null, 'rc'),
-      btn('Nudge client', 'warn', Send, null, 'nc'),
-      btn('Force approve', 'primary', Check, null, 'fa'),
-      openPcsBtn('op')
-    ];
-    else if (role === 'agency') buttons = [
-      btn('Recall', 'secondary', RotateCcw, null, 'rc'),
-      btn('Nudge client', 'primary', Send, null, 'nc'),
-      openPcsBtn('op')
-    ];
-    else if (role === 'client') buttons = [
-      btn('Request changes', 'warn', RefreshCcw, null, 'rq'),
-      btn('Approve', 'primary', Check, null, 'ap')
-    ];
-  } else if (stage === 'awaiting_brand_input') {
-    if (role === 'admin' || role === 'agency') buttons = [
-      openPcsBtn('op')
-    ];
-  } else if (stage === 'in_production') {
-    if (role === 'admin' || role === 'agency') buttons = [
-      btn('Save', 'secondary', Save, null, 'sv'),
-      btn('Send for approval', 'primary', Send, null, 'sf'),
-      openPcsBtn('op')
-    ];
-  } else if (stage === 'scheduled') {
-    if (role === 'admin') buttons = [
-      btn('Reschedule', 'secondary', Calendar, null, 'rs'),
-      btn('Publish now', 'dark', Send, null, 'pn'),
-      openPcsBtn('op')
-    ];
-    else if (role === 'agency') buttons = [
-      btn('Reschedule', 'secondary', Calendar, null, 'rs'),
-      openPcsBtn('op')
-    ];
-  } else if (stage === 'published') {
-    if (role === 'admin') buttons = [
-      btn('View on LinkedIn', 'secondary', ExternalLink, () => {
-        if (post.linkedin_link) window.open(post.linkedin_link, '_blank', 'noopener');
-      }, 'vl'),
-      btn('Archive', 'secondary', Archive, null, 'ar'),
-      openPcsBtn('op')
-    ];
-    else if (role === 'agency') buttons = [
-      btn('View on LinkedIn', 'primary', ExternalLink, () => {
-        if (post.linkedin_link) window.open(post.linkedin_link, '_blank', 'noopener');
-      }, 'vl'),
-      openPcsBtn('op')
-    ];
-    else buttons = [
-      btn('View on LinkedIn', 'primary', ExternalLink, () => {
-        if (post.linkedin_link) window.open(post.linkedin_link, '_blank', 'noopener');
-      }, 'vl')
-    ];
-  } else if (stage === 'brief_done') {
-    if (role === 'admin') buttons = [
-      btn('Rework brief', 'warn', RefreshCcw, null, 'rb'),
-      btn('Assign', 'dark', UserPlus, null, 'as'),
-      openPcsBtn('op')
-    ];
-    else if (role === 'agency') buttons = [
-      openPcsBtn('op')
-    ];
-  } else if (stage === 'rejected' || stage === 'parked') {
-    if (role === 'admin' || role === 'agency') buttons = [
-      btn('Revive', 'secondary', RotateCcw, null, 'rv'),
-      openPcsBtn('op')
-    ];
+  function OpenPcsBtn() {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          const pid = post && post.post_id;
+          if (!pid) return;
+          closeCard();
+          openInPCS(pid);
+        }}
+        style={{ ...BTN_STYLE, ...solid }}
+      >
+        <ExternalLink size={13} />
+        <span>Open in PCS</span>
+      </button>
+    );
   }
 
-  if (buttons.length === 0) {
+  function LinkedInBtn() {
+    const disabled = !post.linkedin_link;
     return (
-      <div style={{
-        padding: 'calc(14px + env(safe-area-inset-bottom, 0px)) 14px 14px',
-        borderTop: '1px solid var(--c-divider-soft)',
-        background: 'var(--c-bg)',
-        textAlign: 'center',
-        fontFamily: '"DM Sans", sans-serif',
-        fontSize: '12px',
-        fontStyle: 'italic',
-        color: 'var(--c-text-dim)'
-      }}>No actions at this stage.</div>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!post.linkedin_link) return;
+          window.open(post.linkedin_link, '_blank', 'noopener,noreferrer');
+        }}
+        style={{
+          ...BTN_STYLE,
+          ...solid,
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? 'default' : 'pointer'
+        }}
+      >
+        <ExternalLink size={13} />
+        <span>View on LinkedIn</span>
+      </button>
     );
+  }
+
+  function ApproveBtn() {
+    return (
+      <button
+        type="button"
+        onClick={onApprove}
+        style={{ ...BTN_STYLE, ...approveStyle }}
+      >
+        <Check size={13} />
+        <span>Approve</span>
+      </button>
+    );
+  }
+
+  let buttons = null;
+  if (stage === 'published') {
+    buttons = [<LinkedInBtn key="vl" />];
+  } else if (role === 'client') {
+    if (stage === 'awaiting_approval') {
+      buttons = [<CommentBtn key="cm" />, <ApproveBtn key="ap" />];
+    } else if (stage === 'awaiting_brand_input') {
+      buttons = [<CommentBtn key="cm" />];
+    } else {
+      buttons = [<CommentBtn key="cm" />];
+    }
+  } else {
+    buttons = [<CommentBtn key="cm" />, <OpenPcsBtn key="op" />];
   }
 
   return (
@@ -631,12 +618,19 @@ export function CardSheet() {
 
   const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
-  const onApproveStub = () => {
+  const commentPillRef = useRef(null);
+
+  const onApprove = () => {
     closeCard();
     showToast({ msg: 'Sent to publish queue', duration: 3000 });
   };
-  const onRescheduleStub = () => {
-    showToast({ msg: 'Stage action wired up in PR 3', duration: 2500 });
+  const onComment = () => {
+    setActiveTab('comments');
+    const el = commentPillRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (typeof el.focus === 'function') el.focus();
+    }
   };
   const onKebabAction = (key) => {
     showToast({ msg: `${key} wired up next`, duration: 2000 });
@@ -857,6 +851,7 @@ export function CardSheet() {
           {!isClient ? (
             <div style={{ padding: '12px 18px 0' }}>
               <button
+                ref={commentPillRef}
                 type="button"
                 onClick={() => showToast({ msg: 'Compose opens in real PCS', duration: 2500 })}
                 style={{
@@ -875,7 +870,7 @@ export function CardSheet() {
                   textTransform: 'uppercase',
                   cursor: 'pointer'
                 }}>
-                <MessageSquarePlus size={14} />
+                <MessageSquare size={14} />
                 <span style={{ flex: 1, textAlign: 'left' }}>Write a comment</span>
                 <ChevronRight size={14} />
               </button>
@@ -953,8 +948,8 @@ export function CardSheet() {
         <ActionBar
           post={post}
           role={role}
-          onApproveStub={onApproveStub}
-          onRescheduleStub={onRescheduleStub}
+          onApprove={onApprove}
+          onComment={onComment}
         />
       </div>
       {lightboxIndex !== null && postImages.length > 0 ? (
