@@ -4,7 +4,7 @@
 // input. Both gestures are gated off for client role.
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import { usePosts } from '../hooks/usePosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import { useDatePicker } from '../hooks/useDatePicker.js';
@@ -273,6 +273,8 @@ export function List() {
   const posts = usePosts();
   const { triggerPicker } = useDatePicker();
 
+  const currentWeekIso = useMemo(() => weekKey(new Date()), []);
+
   const grouped = useMemo(() => {
     const groups = new Map();
     for (const p of posts) {
@@ -281,7 +283,7 @@ export function List() {
       const k = weekKey(d);
       if (!groups.has(k)) {
         const r = weekRangeMonFirst(d);
-        groups.set(k, { start: r.start, end: r.end, items: [] });
+        groups.set(k, { key: k, start: r.start, end: r.end, items: [] });
       }
       groups.get(k).items.push(p);
     }
@@ -289,6 +291,16 @@ export function List() {
     for (const g of arr) g.items.sort((a, b) => (a.target_date || '').localeCompare(b.target_date || ''));
     return arr;
   }, [posts]);
+
+  const [expandedWeeks, setExpandedWeeks] = useState(() => new Set([currentWeekIso]));
+
+  const toggleWeek = useCallback((iso) => {
+    setExpandedWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(iso)) next.delete(iso); else next.add(iso);
+      return next;
+    });
+  }, []);
 
   if (posts.length === 0) {
     return (
@@ -304,38 +316,57 @@ export function List() {
 
   return (
     <div>
-      {grouped.map((g) => (
-        <section key={g.start.toISOString()}>
-          <header style={{
-            position: 'sticky',
-            top: 0,
-            background: 'var(--c-bg-2)',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderTop: '1px solid var(--c-divider-soft)',
-            borderBottom: '1px solid var(--c-divider-subtle)',
-            zIndex: 5
-          }}>
-            <span style={{
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '9.5px',
-              textTransform: 'uppercase',
-              letterSpacing: '.14em',
-              color: 'var(--c-text-mid)'
-            }}>{formatWeekHeader(g.start, g.end)}</span>
-            <span style={{
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '9.5px',
-              color: 'var(--c-text-dim)'
-            }}>{g.items.length} post{g.items.length === 1 ? '' : 's'}</span>
-          </header>
-          {g.items.map((p) => (
-            <PostRow key={p.id} post={p} triggerPicker={triggerPicker} />
-          ))}
-        </section>
-      ))}
+      {grouped.map((g) => {
+        const isExpanded = expandedWeeks.has(g.key);
+        const isCurrent = g.key === currentWeekIso;
+        return (
+          <section key={g.key}>
+            <button
+              type="button"
+              onClick={() => toggleWeek(g.key)}
+              style={{
+                position: 'sticky',
+                top: 0,
+                background: 'var(--c-bg-2)',
+                padding: '8px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderTop: '1px solid var(--c-divider-soft)',
+                borderBottom: '1px solid var(--c-divider-subtle)',
+                zIndex: 5,
+                width: '100%',
+                border: 'none',
+                borderLeft: 'none',
+                borderRight: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontFamily: 'inherit'
+              }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                {isExpanded
+                  ? <ChevronDown size={13} style={{ color: 'var(--c-text-mid)', flexShrink: 0 }} />
+                  : <ChevronRight size={13} style={{ color: 'var(--c-text-mid)', flexShrink: 0 }} />}
+                <span style={{
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '9.5px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.14em',
+                  color: isCurrent ? 'var(--c-terracotta-1)' : 'var(--c-text-mid)'
+                }}>{formatWeekHeader(g.start, g.end)}{isCurrent ? ' - This Week' : ''}</span>
+              </span>
+              <span style={{
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '9.5px',
+                color: 'var(--c-text-dim)'
+              }}>{g.items.length} post{g.items.length === 1 ? '' : 's'}</span>
+            </button>
+            {isExpanded ? g.items.map((p) => (
+              <PostRow key={p.id} post={p} triggerPicker={triggerPicker} />
+            )) : null}
+          </section>
+        );
+      })}
     </div>
   );
 }
