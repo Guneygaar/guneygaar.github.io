@@ -3,8 +3,9 @@
 // native date picker; long-press on the title swaps it for an inline
 // input. Both gestures are gated off for client role.
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronDown } from 'lucide-react';
+import { JumpPill } from './JumpPill.jsx';
 import { usePosts } from '../hooks/usePosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import { useDatePicker } from '../hooks/useDatePicker.js';
@@ -302,6 +303,42 @@ export function List() {
     });
   }, []);
 
+  const currentWeekHeaderRef = useRef(null);
+  const hasCurrentWeek = useMemo(
+    () => grouped.some((g) => g.key === currentWeekIso),
+    [grouped, currentWeekIso]
+  );
+  const didAutoScrollRef = useRef(false);
+  useEffect(() => {
+    if (didAutoScrollRef.current) return;
+    if (!hasCurrentWeek) return;
+    const el = currentWeekHeaderRef.current;
+    if (!el || typeof el.scrollIntoView !== 'function') return;
+    try {
+      el.scrollIntoView({ behavior: 'instant', block: 'start' });
+    } catch (e) {
+      el.scrollIntoView({ block: 'start' });
+    }
+    didAutoScrollRef.current = true;
+  }, [hasCurrentWeek]);
+
+  const jumpToCurrentWeek = useCallback(() => {
+    setExpandedWeeks((prev) => {
+      if (prev.has(currentWeekIso)) return prev;
+      const next = new Set(prev);
+      next.add(currentWeekIso);
+      return next;
+    });
+    const el = currentWeekHeaderRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        el.scrollIntoView({ block: 'start' });
+      }
+    }
+  }, [currentWeekIso]);
+
   if (posts.length === 0) {
     return (
       <div style={{
@@ -323,6 +360,7 @@ export function List() {
           <section key={g.key}>
             <button
               type="button"
+              ref={isCurrent ? currentWeekHeaderRef : null}
               onClick={() => toggleWeek(g.key)}
               style={{
                 position: 'sticky',
@@ -367,6 +405,12 @@ export function List() {
           </section>
         );
       })}
+      <JumpPill
+        targetRef={currentWeekHeaderRef}
+        isExpanded={expandedWeeks.has(currentWeekIso)}
+        isPresent={hasCurrentWeek}
+        onJump={jumpToCurrentWeek}
+      />
     </div>
   );
 }
