@@ -1,0 +1,87 @@
+/* Plan flow tokens. Scoped to [data-plan-root] so the Plan palette
+   never leaks into PCS / Create Post. All existing tokens
+   (--c-bg, --c-text-mid, --c-stage-brief, etc) are inherited from
+   src/styles/tailwind.css. Only Plan-specific additions below.
+   Pure ASCII only - no unicode dashes or smart quotes. */
+
+[data-plan-root],
+[data-plan-root][data-plan-theme="light"] {
+  --c-stage-approval:          #C8841A;
+  --c-stage-published:         #147A4F;
+  --c-stage-rejected:          #D83838;
+  --c-stage-parked:            #8A857A;
+  --c-pillar-innovation:       #3E7196;
+  --c-pillar-announcements:    #6B4FD9;
+  --c-pillar-leadership:       #8E7A2E;
+  --c-pillar-sustainability:   #1FA66E;
+  --c-pillar-events:           #A85C3C;
+  --c-pillar-inclusivity:      #0891A0;
+  --c-pillar-growth:           #C8841A;
+  --backdrop-tint:             rgba(20,18,15,.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-plan-root]:not([data-plan-theme="light"]) {
+    --c-stage-approval:          #F6A623;
+    --c-stage-published:         #3ECF8E;
+    --c-stage-rejected:          #FF4B4B;
+    --c-stage-parked:            #6A655C;
+    --c-pillar-innovation:       #6FA8C9;
+    --c-pillar-announcements:    #9b87f5;
+    --c-pillar-leadership:       #C8A84B;
+    --c-pillar-sustainability:   #3ECF8E;
+    --c-pillar-events:           #D48B6E;
+    --c-pillar-inclusivity:      #22D3EE;
+    --c-pillar-growth:           #F6A623;
+    --backdrop-tint:             rgba(0,0,0,.3);
+  }
+}
+
+[data-plan-root][data-plan-theme="dark"] {
+  --c-stage-approval:          #F6A623;
+  --c-stage-published:         #3ECF8E;
+  --c-stage-rejected:          #FF4B4B;
+  --c-stage-parked:            #6A655C;
+  --c-pillar-innovation:       #6FA8C9;
+  --c-pillar-announcements:    #9b87f5;
+  --c-pillar-leadership:       #C8A84B;
+  --c-pillar-sustainability:   #3ECF8E;
+  --c-pillar-events:           #D48B6E;
+  --c-pillar-inclusivity:      #22D3EE;
+  --c-pillar-growth:           #F6A623;
+  --backdrop-tint:             rgba(0,0,0,.3);
+}
+
+.plan-pillar-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.plan-stage-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.plan-card-sheet-enter {
+  animation: planCardSheetSlideUp 340ms cubic-bezier(.32,.72,0,1);
+}
+
+@keyframes planCardSheetSlideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.plan-pillar-grad-innovation     { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-innovation)     35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-innovation)     15%, var(--c-bg-2))); }
+.plan-pillar-grad-announcements  { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-announcements)  35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-announcements)  15%, var(--c-bg-2))); }
+.plan-pillar-grad-leadership     { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-leadership)     35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-leadership)     15%, var(--c-bg-2))); }
+.plan-pillar-grad-sustainability { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-sustainability) 35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-sustainability) 15%, var(--c-bg-2))); }
+.plan-pillar-grad-events         { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-events)         35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-events)         15%, var(--c-bg-2))); }
+.plan-pillar-grad-inclusivity    { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-inclusivity)    35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-inclusivity)    15%, var(--c-bg-2))); }
+.plan-pillar-grad-growth         { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-growth)         35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-growth)         15%, var(--c-bg-2))); }
+.plan-pillar-grad-default        { background: linear-gradient(135deg, var(--c-bg-3), var(--c-bg-2)); }
