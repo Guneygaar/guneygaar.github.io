@@ -13,8 +13,8 @@ import {
 } from '../shared/constants.js';
 
 const VIEWS = [
-  { key: 'list',     label: 'List',     Icon: ListIcon },
   { key: 'board',    label: 'Board',    Icon: LayoutGrid },
+  { key: 'list',     label: 'List',     Icon: ListIcon },
   { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
   { key: 'insights', label: 'Insights', Icon: BarChart3 }
 ];
