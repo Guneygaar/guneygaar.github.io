@@ -1,5 +1,5 @@
 // Rotated kanban. One row per stage, horizontal snap-scroll of
-// cards. Card tap is a stub in PR 1 (toast "Opens in real PCS").
+// cards. Card tap opens the Mini Card sheet via planStore.openCard.
 
 import React, { useMemo } from 'react';
 import { usePosts } from '../hooks/usePosts.js';
@@ -17,7 +17,7 @@ import { PillarThumb } from '../shared/PillarThumb.jsx';
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
 function Card({ post }) {
-  const showToast = usePlanStore((s) => s.showToast);
+  const openCard = usePlanStore((s) => s.openCard);
   const d = parseISODate(post.target_date);
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
@@ -41,7 +41,7 @@ function Card({ post }) {
   return (
     <button
       type="button"
-      onClick={() => showToast({ msg: 'Opens in real PCS', duration: 3000, undoAction: null })}
+      onClick={() => openCard(post)}
       style={{
         width: '138px',
         flexShrink: 0,
