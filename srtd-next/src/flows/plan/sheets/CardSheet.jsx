@@ -2,19 +2,19 @@
 // bottom, role-gated tabs + action matrix. Stage changes in PR 1
 // are stubbed to toast - no real writes to posts.stage.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ChevronDown, ChevronLeft, ChevronRight, MessageSquarePlus,
-  RotateCcw, Send, Check, RefreshCcw, Save, Calendar, ExternalLink,
-  Archive, UserPlus
+  ChevronDown, ChevronLeft, ChevronRight, MessageSquare,
+  ExternalLink, Check
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
 import { useReasonFor } from '../hooks/useReasons.js';
-import { useSwipe } from '../hooks/useSwipe.js';
 import {
   fetchCommentsForCard, fetchActivityForCard
 } from '../api/planApi.js';
+import { KebabMenu } from './KebabMenu.jsx';
+import { Lightbox } from './Lightbox.jsx';
 import {
   parseISODate, dayNumber, dowShortSunFirst, monthAbbr, formatTime12,
   daysBetween
@@ -85,54 +85,105 @@ function lifecycleDays(post) {
   return daysBetween(post.created_at, endTs);
 }
 
-function GalleryStrip({ post }) {
+function GalleryStrip({ post, onImageTap }) {
   const images = normalizePlanImages(post && post.images);
+  const scrollerRef = useRef(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    function onScroll() {
+      const w = el.clientWidth;
+      if (w <= 0) return;
+      setActiveIdx(Math.round(el.scrollLeft / w));
+    }
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [images.length]);
+
   if (images.length === 0) return null;
+
   return (
-    <div className="scrollbar-none" style={{
-      display: 'flex',
-      gap: '8px',
-      padding: '10px 14px 2px',
-      overflowX: 'auto',
-      scrollSnapType: 'x mandatory'
-    }}>
-      {images.map((src, i) => (
-        <div key={i} style={{
-          flexShrink: 0,
-          width: '84%',
-          aspectRatio: '4 / 5',
-          scrollSnapAlign: 'start',
-          background: 'var(--c-bg-2)',
-          borderRadius: '10px',
-          overflow: 'hidden'
+    <div style={{ padding: '10px 0 2px' }}>
+      <div
+        ref={scrollerRef}
+        className="scrollbar-none"
+        style={{
+          display: 'flex',
+          gap: '8px',
+          paddingLeft: '14px',
+          paddingRight: '36px',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
+        {images.map((src, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Open photo ${i + 1}`}
+            onClick={() => { if (onImageTap) onImageTap(i); }}
+            style={{
+              flexShrink: 0,
+              width: '84%',
+              aspectRatio: '4 / 5',
+              scrollSnapAlign: 'start',
+              background: 'var(--c-bg-2)',
+              borderRadius: '10px',
+              overflow: 'hidden',
+              padding: 0,
+              border: 'none',
+              cursor: 'pointer',
+              display: 'block'
+            }}
+          >
+            <img
+              src={src}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+                touchAction: 'pinch-zoom'
+              }}
+            />
+          </button>
+        ))}
+      </div>
+      {images.length > 1 ? (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '6px',
+          padding: '8px 14px 0'
         }}>
-          <img src={src} alt="" loading="lazy" decoding="async"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          {images.map((_, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                width: i === activeIdx ? '16px' : '5px',
+                height: '5px',
+                borderRadius: '5px',
+                background: i === activeIdx ? 'var(--c-text-loud)' : 'var(--c-divider-soft)',
+                transition: 'width .18s ease, background .18s ease'
+              }}
+            />
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
 }
 
-function HeroBlock(props) {
-  const post = props.post;
+function HeroBlock({ post, onImageTap }) {
   const images = normalizePlanImages(post && post.images);
-  const [lightboxOpen, setLightboxOpen] = React.useState(false);
-  const [lightboxIndex, setLightboxIndex] = React.useState(0);
 
-  const openLightbox = function (idx) {
-    setLightboxIndex(idx || 0);
-    setLightboxOpen(true);
-  };
-  const closeLightbox = function () { setLightboxOpen(false); };
-  const nextImage = function () {
-    setLightboxIndex(function (i) { return (i + 1) % images.length; });
-  };
-  const prevImage = function () {
-    setLightboxIndex(function (i) { return (i - 1 + images.length) % images.length; });
-  };
-
-  // Empty state: render pillar-gradient fallback tile instead of hiding.
   if (images.length === 0) {
     return (
       <div className="plan-hero plan-hero-empty">
@@ -145,62 +196,29 @@ function HeroBlock(props) {
   const count = images.length;
 
   return (
-    <React.Fragment>
-      <div className="plan-hero" onClick={function () { openLightbox(0); }}>
-        <img src={heroSrc} alt="" loading="lazy" decoding="async" className="plan-hero-img" />
-        <button
-          type="button"
-          className="plan-hero-expand"
-          aria-label="Expand image"
-          onClick={function (e) { e.stopPropagation(); openLightbox(0); }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <polyline points="9 21 3 21 3 15"></polyline>
-            <line x1="21" y1="3" x2="14" y2="10"></line>
-            <line x1="3" y1="21" x2="10" y2="14"></line>
-          </svg>
-        </button>
-        {count > 1 ? (
-          <div className="plan-hero-counter">1 of {count}</div>
-        ) : null}
-      </div>
-      {lightboxOpen ? (
-        <div className="plan-lightbox" role="dialog" aria-modal="true" onClick={closeLightbox}>
-          <button type="button" className="plan-lightbox-close" aria-label="Close" onClick={closeLightbox}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-          <div
-            className="plan-lightbox-stage"
-            onClick={function (e) { e.stopPropagation(); }}
-            onTouchStart={function (e) {
-              const t = e.touches[0];
-              e.currentTarget.dataset.startX = String(t.clientX);
-              e.currentTarget.dataset.startY = String(t.clientY);
-            }}
-            onTouchEnd={function (e) {
-              const el = e.currentTarget;
-              const startX = parseFloat(el.dataset.startX || '0');
-              const startY = parseFloat(el.dataset.startY || '0');
-              const t = e.changedTouches[0];
-              const dx = t.clientX - startX;
-              const dy = t.clientY - startY;
-              if (Math.abs(dy) > 40) return;
-              if (Math.abs(dx) < 60) return;
-              if (dx < 0) nextImage(); else prevImage();
-            }}
-          >
-            <img src={images[lightboxIndex]} alt="" className="plan-lightbox-img" />
-          </div>
-          {count > 1 ? (
-            <div className="plan-lightbox-counter">{lightboxIndex + 1} of {count}</div>
-          ) : null}
-        </div>
+    <div
+      className="plan-hero"
+      onClick={() => { if (onImageTap) onImageTap(0); }}
+      style={{ cursor: 'pointer' }}
+    >
+      <img src={heroSrc} alt="" loading="lazy" decoding="async" className="plan-hero-img" />
+      <button
+        type="button"
+        className="plan-hero-expand"
+        aria-label="Expand image"
+        onClick={(e) => { e.stopPropagation(); if (onImageTap) onImageTap(0); }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+      {count > 1 ? (
+        <div className="plan-hero-counter">1 of {count}</div>
       ) : null}
-    </React.Fragment>
+    </div>
   );
 }
 
@@ -531,17 +549,16 @@ export function CardSheet() {
   const [commentsError, setCommentsError] = useState(null);
   const [activity, setActivity] = useState([]);
   const [activityError, setActivityError] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   const isClient = role === 'client';
   const canSeeInternal = role === 'admin' || role === 'agency';
   const canSeeActivity = role === 'admin' || role === 'agency';
 
-  const swipeProps = useSwipe({
-    onSwipeLeft:  () => navigateCard('next'),
-    onSwipeRight: () => navigateCard('prev'),
-    threshold: 60,
-    vMax: 40
-  });
+  const postImages = useMemo(
+    () => normalizePlanImages(post && post.images),
+    [post && post.images]
+  );
 
   useEffect(() => {
     if (!post || !post.post_id) { setComments([]); return; }
@@ -664,9 +681,10 @@ export function CardSheet() {
         </header>
 
         <div
-          {...swipeProps}
           style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {isClient ? <GalleryStrip post={post} /> : <HeroBlock post={post} />}
+          {isClient
+            ? <GalleryStrip post={post} onImageTap={setLightboxIndex} />
+            : <HeroBlock post={post} onImageTap={setLightboxIndex} />}
 
           <div style={{
             display: 'flex',
@@ -916,6 +934,13 @@ export function CardSheet() {
           onRescheduleStub={onRescheduleStub}
         />
       </div>
+      {lightboxIndex !== null && postImages.length > 0 ? (
+        <Lightbox
+          images={postImages}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
+      ) : null}
     </>
   );
 }
