@@ -560,6 +560,24 @@ export function CardSheet() {
     [post && post.images]
   );
 
+  const posts = usePlanStore((s) => s.posts);
+  const navIndex = useMemo(() => {
+    if (!post || !posts || posts.length === 0) return { hasPrev: false, hasNext: false };
+    const sorted = [...posts].sort((a, b) => {
+      const da = a.target_date || '';
+      const db = b.target_date || '';
+      if (da !== db) return da < db ? -1 : 1;
+      const pa = a.post_id || '';
+      const pb = b.post_id || '';
+      return pa < pb ? -1 : pa > pb ? 1 : 0;
+    });
+    const idx = sorted.findIndex((p) => p.id === post.id);
+    if (idx < 0) return { hasPrev: false, hasNext: false };
+    return { hasPrev: idx > 0, hasNext: idx < sorted.length - 1 };
+  }, [post && post.id, posts]);
+  const hasPrev = navIndex.hasPrev;
+  const hasNext = navIndex.hasNext;
+
   useEffect(() => {
     if (!post || !post.post_id) { setComments([]); return; }
     let cancelled = false;
@@ -620,6 +638,9 @@ export function CardSheet() {
   const onRescheduleStub = () => {
     showToast({ msg: 'Stage action wired up in PR 3', duration: 2500 });
   };
+  const onKebabAction = (key) => {
+    showToast({ msg: `${key} wired up next`, duration: 2000 });
+  };
 
   return (
     <>
@@ -652,32 +673,56 @@ export function CardSheet() {
           padding: '8px 12px 6px',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px'
+          gap: '6px'
         }}>
           <button type="button" aria-label="Close" onClick={closeCard}
             style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
             <ChevronDown size={20} />
           </button>
+          <button
+            type="button"
+            aria-label="Previous post"
+            disabled={!hasPrev}
+            onClick={hasPrev ? () => navigateCard('prev') : undefined}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '6px',
+              cursor: hasPrev ? 'pointer' : 'default',
+              color: 'var(--c-text-mid)',
+              opacity: hasPrev ? 1 : 0.3
+            }}>
+            <ChevronLeft size={18} />
+          </button>
           <div style={{
             flex: 1,
             textAlign: 'center',
-            fontFamily: '"DM Sans", sans-serif',
-            fontSize: '12.5px',
-            fontWeight: 600,
+            fontFamily: 'Fraunces, serif',
+            fontSize: '14px',
+            fontWeight: 500,
+            letterSpacing: '-.01em',
             color: 'var(--c-text-loud)',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             padding: '0 4px'
           }}>{post.title || 'Untitled'}</div>
-          <button type="button" aria-label="Previous" onClick={() => navigateCard('prev')}
-            style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
-            <ChevronLeft size={16} />
+          <button
+            type="button"
+            aria-label="Next post"
+            disabled={!hasNext}
+            onClick={hasNext ? () => navigateCard('next') : undefined}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: '6px',
+              cursor: hasNext ? 'pointer' : 'default',
+              color: 'var(--c-text-mid)',
+              opacity: hasNext ? 1 : 0.3
+            }}>
+            <ChevronRight size={18} />
           </button>
-          <button type="button" aria-label="Next" onClick={() => navigateCard('next')}
-            style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
-            <ChevronRight size={16} />
-          </button>
+          <KebabMenu post={post} role={role} onAction={onKebabAction} />
         </header>
 
         <div
