@@ -10,11 +10,14 @@ import {
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
 import { useReasonFor } from '../hooks/useReasons.js';
+import { useDatePicker } from '../hooks/useDatePicker.js';
 import {
-  fetchCommentsForCard, fetchActivityForCard
+  fetchCommentsForCard, fetchActivityForCard, patchStage
 } from '../api/planApi.js';
+import { createComment } from '../../../core/api/comments.js';
 import { KebabMenu } from './KebabMenu.jsx';
 import { Lightbox } from './Lightbox.jsx';
+import { RecallSheet } from './RecallSheet.jsx';
 import {
   parseISODate, dayNumber, dowShortSunFirst, monthAbbr, formatTime12,
   daysBetween
@@ -619,6 +622,8 @@ export function CardSheet() {
   const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
   const commentPillRef = useRef(null);
+  const [recallOpen, setRecallOpen] = useState(false);
+  const { triggerPicker } = useDatePicker();
 
   const onApprove = () => {
     closeCard();
@@ -632,8 +637,84 @@ export function CardSheet() {
       if (typeof el.focus === 'function') el.focus();
     }
   };
-  const onKebabAction = (key) => {
-    showToast({ msg: `${key} wired up next`, duration: 2000 });
+
+  const runPatchStage = async (newStage, successMsg) => {
+    if (!post || !post.id) return;
+    try {
+      await patchStage(post.id, newStage);
+      showToast({ msg: successMsg || 'Stage updated', duration: 2500 });
+    } catch (err) {
+      showToast({ msg: (err && err.message) || 'Stage update failed', duration: 3000 });
+    }
+  };
+
+  const onKebabAction = async (key) => {
+    if (!post) return;
+
+    if (key === 'recall') {
+      setRecallOpen(true);
+      return;
+    }
+
+    if (key === 'send_for_approval') {
+      runPatchStage('awaiting_approval', 'Sent for approval');
+      return;
+    }
+
+    if (key === 'publish_now') {
+      const ok = window.confirm('Publish now?');
+      if (!ok) return;
+      runPatchStage('published', 'Published');
+      return;
+    }
+
+    if (key === 'revive') {
+      runPatchStage('in_production', 'Revived');
+      return;
+    }
+
+    if (key === 'reschedule') {
+      triggerPicker(post);
+      return;
+    }
+
+    if (key === 'nudge_client') {
+      const message = window.prompt('Message to client:', 'Could you please take a look?');
+      if (message == null) return;
+      const trimmed = String(message).trim();
+      if (!trimmed) return;
+      const email = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+      if (!email) {
+        showToast({ msg: 'Session expired, please refresh', duration: 3000 });
+        return;
+      }
+      const titleCase = role === 'admin' ? 'Admin' : 'Servicing';
+      try {
+        await createComment({
+          post_id: post.post_id,
+          author: email,
+          author_role: titleCase,
+          message: trimmed,
+          visibility: 'all',
+          post_title: post.title || '',
+          created_at: new Date().toISOString()
+        });
+        showToast({ msg: 'Client nudged', duration: 2500 });
+      } catch (err) {
+        showToast({ msg: (err && err.message) || 'Nudge failed', duration: 3000 });
+      }
+      return;
+    }
+
+    if (key === 'assign' || key === 'rework_brief') {
+      showToast({ msg: `${key === 'assign' ? 'Assign' : 'Rework brief'} coming soon`, duration: 2500 });
+      return;
+    }
+  };
+
+  const onRecallPick = (stage) => {
+    setRecallOpen(false);
+    runPatchStage(stage, `Recalled to ${stage}`);
   };
 
   return (
@@ -957,6 +1038,13 @@ export function CardSheet() {
           images={postImages}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
+        />
+      ) : null}
+      {recallOpen ? (
+        <RecallSheet
+          currentStage={post.stage}
+          onPick={onRecallPick}
+          onClose={() => setRecallOpen(false)}
         />
       ) : null}
     </>
