@@ -130,3 +130,20 @@ export async function rescheduleTarget(postIdUuid, newDateISO) {
     body: JSON.stringify({ target_date: newDateISO })
   });
 }
+
+/**
+ * Query 8 - patchPostTitle(postIdUuid, newTitle)
+ * Mirrors rescheduleTarget shape. title only. Never writes
+ * status_changed_at. updated_at is left to the server trigger so
+ * status_changed_at is not co-bumped.
+ */
+export async function patchPostTitle(postIdUuid, newTitle) {
+  if (!postIdUuid) throw new Error('patchPostTitle: postIdUuid required');
+  if (typeof newTitle !== 'string') throw new Error('patchPostTitle: newTitle required');
+  const path = `/posts?id=eq.${encodeURIComponent(postIdUuid)}`;
+  return apiFetch(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+    body: JSON.stringify({ title: newTitle })
+  });
+}
