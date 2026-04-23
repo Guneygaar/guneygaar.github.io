@@ -56,6 +56,7 @@ function openInPCS(postId) {
     bridge.open(postId);
     return;
   }
+  console.error('[plan/cardsheet] PCS bridge missing; falling back to URL deep link');
   // Fallback: URL deep-link path read by index.html on mount.
   try {
     const url = new URL(window.location.href);
@@ -372,6 +373,7 @@ function ActivityRow({ a }) {
 }
 
 function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
+  const closeCard = usePlanStore((s) => s.closeCard);
   const stage = post.stage;
   const BTN_STYLE = {
     flex: 1,
@@ -407,7 +409,12 @@ function ActionBar({ post, role, onApproveStub, onRescheduleStub }) {
     );
   }
 
-  const openPcsHandler = () => openInPCS(post && post.post_id);
+  const openPcsHandler = () => {
+    const pid = post && post.post_id;
+    if (!pid) return;
+    closeCard();
+    openInPCS(pid);
+  };
   const openPcsBtn = (key) => btn('Open in PCS', 'dark', ExternalLink, openPcsHandler, key);
 
   let buttons = [];
@@ -817,7 +824,12 @@ export function CardSheet() {
               <button
                 type="button"
                 className="plan-open-pcs-row"
-                onClick={function () { openInPCS(post && post.post_id); }}
+                onClick={function () {
+                  const pid = post && post.post_id;
+                  if (!pid) return;
+                  closeCard();
+                  openInPCS(pid);
+                }}
               >
                 <span className="plan-open-pcs-row-label">Open in PCS to edit</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
