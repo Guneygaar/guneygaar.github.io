@@ -29,7 +29,7 @@ export const usePlanStore = create((set, get) => ({
   metrics: {},
   reasons: {},
   currentPost: null,
-  currentView: 'list',
+  currentView: 'board',
   currentFilter: { stage: 'all' },
   currentDay: null,
   activeSheet: null,
