@@ -268,7 +268,8 @@ export default function Plan() {
       <main style={{
         flex: 1,
         overflowY: 'auto',
-        WebkitOverflowScrolling: 'touch'
+        WebkitOverflowScrolling: 'touch',
+        scrollPaddingTop: '40px'
       }}>
         <ViewContainer />
       </main>
