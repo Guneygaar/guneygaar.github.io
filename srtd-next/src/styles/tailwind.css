@@ -162,4 +162,13 @@
     background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 85%);
     pointer-events: none;
   }
+
+  /* Long-press press-state tint for Plan list rows. Hook sets
+     data-pressing="true" on the target element while a long-press
+     timer is running; CSS supplies the warm terracotta wash. */
+  .plan-list-title[data-pressing="true"],
+  .plan-list-date-btn[data-pressing="true"] {
+    background-color: color-mix(in srgb, var(--c-terracotta) 18%, transparent);
+    transition: background-color 120ms ease;
+  }
 }

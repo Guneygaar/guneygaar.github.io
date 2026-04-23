@@ -1,13 +1,16 @@
 // Week-grouped list view. Monday-first week boundaries. Stage pill
-// taps apply stage filter. Date block taps open native date picker
-// for inline reschedule.
+// taps apply stage filter. Long-press on the date number opens the
+// native date picker; long-press on the title swaps it for an inline
+// input. Both gestures are gated off for client role.
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { usePosts } from '../hooks/usePosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import { useDatePicker } from '../hooks/useDatePicker.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
+import { useLongPress } from '../hooks/useLongPress.js';
+import { patchPostTitle } from '../api/planApi.js';
 import {
   parseISODate, dayNumber, dowShortMonFirst, weekRangeMonFirst,
   weekKey, formatWeekHeader, formatTime12
@@ -20,10 +23,26 @@ import { PillarThumb } from '../shared/PillarThumb.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
 
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
+const LONG_PRESS_GUARD_MS = 400;
+
+function rowClickGuarded(handler) {
+  return (e) => {
+    if (window.__planLastLongPressAt && Date.now() - window.__planLastLongPressAt < LONG_PRESS_GUARD_MS) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    handler(e);
+  };
+}
 
 function PostRow({ post, triggerPicker }) {
   const openCard = usePlanStore((s) => s.openCard);
   const setFilter = usePlanStore((s) => s.setFilter);
+  const role = usePlanStore((s) => s.role);
+  const updatePostInPlace = usePlanStore.setState;
+  const planPosts = usePlanStore((s) => s.posts);
+  const currentPost = usePlanStore((s) => s.currentPost);
   const metrics = useMetricsFor(post);
   const d = parseISODate(post.target_date);
   const stageColor = STAGE_COLOR_VAR[post.stage]
@@ -41,9 +60,66 @@ function PostRow({ post, triggerPicker }) {
     if (!isNaN(pd.getTime())) publishedTime = formatTime12(pd);
   }
 
+  const editingEnabled = role !== 'client';
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(post.title || '');
+
+  const dateLongPress = useLongPress({
+    enabled: editingEnabled,
+    onLongPress: () => triggerPicker(post)
+  });
+
+  const titleLongPress = useLongPress({
+    enabled: editingEnabled,
+    onLongPress: () => {
+      setTitleDraft(post.title || '');
+      setEditingTitle(true);
+    }
+  });
+
+  const cancelTitleEdit = useCallback(() => {
+    setEditingTitle(false);
+    setTitleDraft(post.title || '');
+  }, [post.title]);
+
+  const commitTitle = useCallback(async () => {
+    const next = (titleDraft || '').trim();
+    setEditingTitle(false);
+    const prev = post.title || '';
+    if (!next || next === prev) {
+      setTitleDraft(prev);
+      return;
+    }
+
+    const nextPosts = planPosts.map((p) =>
+      p.id === post.id ? { ...p, title: next } : p
+    );
+    const nextCurrent = currentPost && currentPost.id === post.id
+      ? { ...currentPost, title: next }
+      : currentPost;
+    updatePostInPlace({ posts: nextPosts, currentPost: nextCurrent });
+
+    try {
+      await patchPostTitle(post.id, next);
+    } catch (err) {
+      const revertPosts = usePlanStore.getState().posts.map((p) =>
+        p.id === post.id ? { ...p, title: prev } : p
+      );
+      const curNow = usePlanStore.getState().currentPost;
+      const revertCur = curNow && curNow.id === post.id
+        ? { ...curNow, title: prev }
+        : curNow;
+      updatePostInPlace({ posts: revertPosts, currentPost: revertCur });
+      const showToast = usePlanStore.getState().showToast;
+      if (typeof showToast === 'function') {
+        showToast({ msg: 'Title save failed', duration: 3000, undoAction: null });
+      }
+    }
+  }, [titleDraft, post.id, post.title, planPosts, currentPost, updatePostInPlace]);
+
   return (
     <div
-      onClick={() => openCard(post)}
+      onClick={rowClickGuarded(() => openCard(post))}
       style={{
         display: 'flex',
         alignItems: 'stretch',
@@ -54,7 +130,8 @@ function PostRow({ post, triggerPicker }) {
       }}>
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); triggerPicker(post); }}
+        className="plan-list-date-btn"
+        {...dateLongPress}
         style={{
           width: '42px',
           flexShrink: 0,
@@ -62,7 +139,8 @@ function PostRow({ post, triggerPicker }) {
           border: 'none',
           padding: '10px 0 10px 12px',
           textAlign: 'left',
-          cursor: 'pointer'
+          cursor: editingEnabled ? 'pointer' : 'inherit',
+          touchAction: 'manipulation'
         }}>
         <div style={{
           fontFamily: 'Fraunces, serif',
@@ -88,15 +166,58 @@ function PostRow({ post, triggerPicker }) {
       <div style={{ width: '3px', background: ownerColor, flexShrink: 0 }} />
 
       <div style={{ flex: 1, minWidth: 0, padding: '10px 12px' }}>
-        <div style={{
-          fontFamily: '"DM Sans", sans-serif',
-          fontWeight: 600,
-          fontSize: '13.5px',
-          color: 'var(--c-text-loud)',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }}>{post.title || 'Untitled'}</div>
+        {editingTitle ? (
+          <input
+            type="text"
+            autoFocus
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+            onFocus={(e) => { try { e.target.select(); } catch (err) { /* noop */ } }}
+            onBlur={() => { commitTitle(); }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                commitTitle();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelTitleEdit();
+              }
+            }}
+            style={{
+              width: '100%',
+              fontFamily: '"DM Sans", sans-serif',
+              fontWeight: 600,
+              fontSize: '13.5px',
+              color: 'var(--c-text-loud)',
+              background: 'transparent',
+              border: '1px solid var(--c-terracotta)',
+              padding: '2px 6px',
+              outline: 'none',
+              borderRadius: '3px'
+            }}
+          />
+        ) : (
+          <div
+            className="plan-list-title"
+            {...titleLongPress}
+            style={{
+              fontFamily: '"DM Sans", sans-serif',
+              fontWeight: 600,
+              fontSize: '13.5px',
+              color: 'var(--c-text-loud)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              padding: '2px 6px',
+              margin: '0 -6px',
+              borderRadius: '3px',
+              touchAction: 'manipulation'
+            }}>
+            {post.title || 'Untitled'}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px', flexWrap: 'nowrap', overflow: 'hidden' }}>
           <button
             type="button"
