@@ -1,18 +1,22 @@
-// Month grid view. Monday-first. Cells show up to 2 thumb previews.
-// Cell tap opens DaySheet. Thumb tap bypasses DaySheet and opens
-// MiniCardSheet directly. Thumbs are draggable between cells to
-// reschedule target_date via planStore.rescheduleTarget.
+// Infinite vertical stack of month grids. Monday-first. Cells show up
+// to 2 thumb previews. Cell tap opens DaySheet. Thumb tap bypasses
+// DaySheet and opens MiniCardSheet directly. Thumbs are draggable
+// across months to reschedule target_date via planStore.rescheduleTarget.
+// IntersectionObserver sentinels at the top and bottom of the stack
+// lazy-load the previous or next month when the user scrolls near
+// the edge of the loaded range.
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
   useDraggable
 } from '@dnd-kit/core';
-import { Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Loader2, ArrowDown } from 'lucide-react';
 import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import {
@@ -31,7 +35,24 @@ const MONTH_NAMES_FULL = [
 
 const DOW_HEADERS = ['M','T','W','T','F','S','S'];
 
-function ThumbMini({ post }) {
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function todayMonthStartISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-01`;
+}
+
+function shiftMonthStartISO(monthStartISO, delta) {
+  const parts = (monthStartISO || '').split('-');
+  if (parts.length !== 3) return monthStartISO;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  if (!y || !m) return monthStartISO;
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-01`;
+}
+
+function ThumbMini({ post, isOverlay }) {
   const openMiniCard = usePlanStore((s) => s.openMiniCard);
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
@@ -41,12 +62,14 @@ function ThumbMini({ post }) {
     ? `inset 0 0 0 1.5px ${stageColor}`
     : 'none';
 
-  const { attributes, listeners, setNodeRef, isDragging, transform } = useDraggable({
+  const draggable = useDraggable({
     id: 'thumb-' + post.id,
-    data: { uuid: post.id, target_date: post.target_date }
+    data: { uuid: post.id, target_date: post.target_date, post },
+    disabled: !!isOverlay
   });
+  const { attributes, listeners, setNodeRef, isDragging, transform } = draggable;
 
-  const dragStyle = transform
+  const dragStyle = transform && !isOverlay
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         zIndex: 50
@@ -55,11 +78,12 @@ function ThumbMini({ post }) {
 
   return (
     <button
-      ref={setNodeRef}
+      ref={isOverlay ? undefined : setNodeRef}
       type="button"
-      {...attributes}
-      {...listeners}
+      {...(isOverlay ? {} : attributes)}
+      {...(isOverlay ? {} : listeners)}
       onClick={(e) => {
+        if (isOverlay) return;
         if (window.__planDragActive) return;
         e.stopPropagation();
         openMiniCard(post);
@@ -70,10 +94,10 @@ function ThumbMini({ post }) {
         aspectRatio: '16 / 10',
         border: 'none',
         padding: 0,
-        cursor: isDragging ? 'grabbing' : 'pointer',
+        cursor: isOverlay ? 'grabbing' : (isDragging ? 'grabbing' : 'pointer'),
         borderRadius: '3px',
         overflow: 'hidden',
-        opacity: isDragging ? 0.4 : (dim ? 0.5 : 1),
+        opacity: !isOverlay && isDragging ? 0.3 : (dim ? 0.5 : 1),
         background: 'transparent',
         boxShadow: approvalInset,
         marginBottom: '2px',
@@ -121,6 +145,7 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
   return (
     <button
       ref={droppableId ? setNodeRef : undefined}
+      data-cell-id={droppableId || undefined}
       type="button"
       onClick={() => date && openDay(date)}
       style={{
@@ -137,7 +162,9 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
         flexDirection: 'column',
         opacity: isOffMonth ? 0.25 : 1,
         textAlign: 'left',
-        transition: 'background 120ms ease, border-color 120ms ease'
+        transform: isOver ? 'scale(1.02)' : 'scale(1)',
+        transformOrigin: 'center',
+        transition: 'background 120ms ease, border-color 120ms ease, transform 100ms ease'
       }}>
       {date ? (
         <>
@@ -187,22 +214,10 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
   );
 }
 
-export function Calendar() {
-  const posts = useCalendarPosts();
-  const monthStart = usePlanStore((s) => s.monthStart);
-  const setMonthRange = usePlanStore((s) => s.setMonthRange);
-  const loadData = usePlanStore((s) => s.loadData);
-  const storeLoading = usePlanStore((s) => s.loading);
-  const rescheduleTarget = usePlanStore((s) => s.rescheduleTarget);
-  const [isExporting, setIsExporting] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
-
-  const startDate = useMemo(() => parseISODate(monthStart), [monthStart]);
+function MonthBlock({ monthStartISO, posts, headerRef, today }) {
+  const startDate = useMemo(() => parseISODate(monthStartISO), [monthStartISO]);
   const grid = useMemo(() => buildMonthGrid(startDate), [startDate]);
+
   const postsByDay = useMemo(() => {
     const map = {};
     for (const p of posts) {
@@ -214,87 +229,220 @@ export function Calendar() {
     return map;
   }, [posts]);
 
-  const monthLabel = useMemo(() => {
+  const label = useMemo(() => {
     if (!startDate) return '';
-    try {
-      const safe = new Date(monthStart + 'T00:00:00');
-      if (!isNaN(safe.getTime())) {
-        return safe.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-      }
-    } catch (e) {
-      // fall through to manual format
-    }
     return MONTH_NAMES_FULL[startDate.getMonth()] + ' ' + startDate.getFullYear();
-  }, [startDate, monthStart]);
-
-  const isThisMonth = useMemo(() => {
-    if (!startDate) return true;
-    const now = new Date();
-    return startDate.getFullYear() === now.getFullYear()
-      && startDate.getMonth() === now.getMonth();
   }, [startDate]);
 
-  const navDisabled = isNavigating || storeLoading;
+  return (
+    <section data-month-block={monthStartISO} style={{ marginBottom: '24px' }}>
+      <h2
+        ref={headerRef || undefined}
+        data-month-header={monthStartISO}
+        style={{
+          fontFamily: 'Fraunces, serif',
+          fontSize: '18px',
+          fontWeight: 600,
+          letterSpacing: '-.01em',
+          color: 'var(--c-text-loud)',
+          margin: 0,
+          padding: '12px 2px 10px',
+          scrollMarginTop: '88px'
+        }}>
+        {label}
+      </h2>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gap: '4px'
+      }}>
+        {Array.from({ length: grid.leading }).map((_, i) => (
+          <Cell
+            key={`${monthStartISO}-lead-${i}`}
+            date={null}
+            posts={[]}
+            isToday={false}
+            isOffMonth={true}
+            dateKey={null}
+          />
+        ))}
+        {grid.days.map((d) => {
+          const key = formatYYYYMMDD(d);
+          return (
+            <Cell
+              key={key}
+              date={d}
+              dateKey={key}
+              posts={postsByDay[key] || []}
+              isToday={sameDay(d, today)}
+              isOffMonth={false}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+export function Calendar() {
+  const posts = useCalendarPosts();
+  const loadedMonths = usePlanStore((s) => s.loadedMonths) || [];
+  const loadMonthIfMissing = usePlanStore((s) => s.loadMonthIfMissing);
+  const storeLoading = usePlanStore((s) => s.loading);
+  const rescheduleTarget = usePlanStore((s) => s.rescheduleTarget);
+  const [isExporting, setIsExporting] = useState(false);
+  const [activeDragPost, setActiveDragPost] = useState(null);
+  const [showJumpPill, setShowJumpPill] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const today = useMemo(() => new Date(), []);
+  const todayMonthISO = useMemo(() => todayMonthStartISO(), []);
+
+  const topSentinelRef = useRef(null);
+  const bottomSentinelRef = useRef(null);
+  const todayHeaderRef = useRef(null);
+  const didInitialScrollRef = useRef(false);
+  const loadDebounceRef = useRef({ topTimer: null, bottomTimer: null, pending: new Set() });
+
+  // postsByDayByMonth: each monthStart maps to the posts that belong to it.
+  // We group by target_date YYYY-MM and filter into each month's pool. This
+  // keeps optimistic reschedules visible even when a post's month hasn't
+  // been reloaded yet.
+  const postsByMonth = useMemo(() => {
+    const map = {};
+    for (const m of loadedMonths) map[m.start] = [];
+    for (const p of posts) {
+      if (!p.target_date) continue;
+      const mk = String(p.target_date).slice(0, 7) + '-01';
+      if (map[mk]) map[mk].push(p);
+    }
+    return map;
+  }, [posts, loadedMonths]);
+
+  const scheduleLoad = useCallback((monthISO, edge) => {
+    if (!monthISO) return;
+    if (!loadMonthIfMissing) return;
+    const state = loadDebounceRef.current;
+    if (state.pending.has(monthISO)) return;
+    state.pending.add(monthISO);
+    const timerKey = edge === 'top' ? 'topTimer' : 'bottomTimer';
+    if (state[timerKey]) clearTimeout(state[timerKey]);
+    state[timerKey] = setTimeout(() => {
+      Promise.resolve(loadMonthIfMissing(monthISO)).finally(() => {
+        state.pending.delete(monthISO);
+      });
+    }, 200);
+  }, [loadMonthIfMissing]);
+
+  // Top + bottom sentinel IntersectionObservers. Each enters viewport -> load
+  // the month just outside the current range.
+  useEffect(() => {
+    if (loadedMonths.length === 0) return;
+    const earliestStart = loadedMonths[0].start;
+    const latestStart = loadedMonths[loadedMonths.length - 1].start;
+
+    const topNode = topSentinelRef.current;
+    const bottomNode = bottomSentinelRef.current;
+
+    const topObs = topNode ? new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const prevISO = shiftMonthStartISO(earliestStart, -1);
+          scheduleLoad(prevISO, 'top');
+        }
+      }
+    }, { rootMargin: '200px 0px 0px 0px' }) : null;
+
+    const bottomObs = bottomNode ? new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          const nextISO = shiftMonthStartISO(latestStart, 1);
+          scheduleLoad(nextISO, 'bottom');
+        }
+      }
+    }, { rootMargin: '0px 0px 200px 0px' }) : null;
+
+    if (topObs && topNode) topObs.observe(topNode);
+    if (bottomObs && bottomNode) bottomObs.observe(bottomNode);
+
+    return () => {
+      if (topObs) topObs.disconnect();
+      if (bottomObs) bottomObs.disconnect();
+    };
+  }, [loadedMonths, scheduleLoad]);
+
+  // Initial scroll to today's month header once it mounts.
+  useEffect(() => {
+    if (didInitialScrollRef.current) return;
+    if (!todayHeaderRef.current) return;
+    const hasTodayMonth = loadedMonths.some((m) => m.start === todayMonthISO);
+    if (!hasTodayMonth) return;
+    didInitialScrollRef.current = true;
+    try {
+      todayHeaderRef.current.scrollIntoView({ block: 'start', behavior: 'auto' });
+    } catch (e) {
+      // Safari quirks: ignore.
+    }
+  }, [loadedMonths, todayMonthISO]);
+
+  // Jump-to-today pill visibility: tracks the today-month header.
+  useEffect(() => {
+    const node = todayHeaderRef.current;
+    if (!node) return;
+    const obs = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        setShowJumpPill(!entry.isIntersecting);
+      }
+    }, { threshold: 0, rootMargin: '-80px 0px -40% 0px' });
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [loadedMonths]);
+
+  const handleJumpToday = useCallback(() => {
+    const node = todayHeaderRef.current;
+    if (!node) return;
+    try {
+      node.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    } catch (e) {
+      node.scrollIntoView();
+    }
+  }, []);
 
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
     try {
+      // Export the month that contains today; that is the most common intent.
+      const startDate = parseISODate(todayMonthISO);
       await exportCalendarAsPng(posts, startDate);
     } finally {
       setIsExporting(false);
     }
   };
 
-  const shiftMonth = async (delta) => {
-    if (navDisabled) return;
-    const base = startDate ? new Date(startDate) : new Date();
-    base.setDate(1);
-    base.setMonth(base.getMonth() + delta);
-    const y = base.getFullYear();
-    const m = String(base.getMonth() + 1).padStart(2, '0');
-    const newStart = `${y}-${m}-01`;
-    const endDate = new Date(y, base.getMonth() + 1, 0);
-    const endD = String(endDate.getDate()).padStart(2, '0');
-    const newEnd = `${y}-${m}-${endD}`;
-    setIsNavigating(true);
-    try {
-      setMonthRange(newStart, newEnd);
-      await loadData();
-    } finally {
-      setIsNavigating(false);
-    }
-  };
+  const pulseSourceCell = useCallback((post) => {
+    if (!post || !post.target_date) return;
+    const key = String(post.target_date).slice(0, 10);
+    const cell = document.querySelector(`[data-cell-id="cell-${key}"]`);
+    if (!cell) return;
+    cell.classList.add('drag-source-pulse');
+    setTimeout(() => { cell.classList.remove('drag-source-pulse'); }, 400);
+  }, []);
 
-  const handlePrev = () => { shiftMonth(-1); };
-  const handleNext = () => { shiftMonth(1); };
-
-  const handleToday = async () => {
-    if (navDisabled) return;
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const newStart = `${y}-${m}-01`;
-    const endDate = new Date(y, now.getMonth() + 1, 0);
-    const endD = String(endDate.getDate()).padStart(2, '0');
-    const newEnd = `${y}-${m}-${endD}`;
-    setIsNavigating(true);
-    try {
-      setMonthRange(newStart, newEnd);
-      await loadData();
-    } finally {
-      setIsNavigating(false);
-    }
-  };
-
-  const today = new Date();
-
-  const handleDragStart = () => {
+  const handleDragStart = (event) => {
     window.__planDragActive = true;
+    const data = event && event.active && event.active.data ? event.active.data.current : null;
+    const post = data && data.post ? data.post : null;
+    setActiveDragPost(post);
+    if (post) pulseSourceCell(post);
   };
 
   const handleDragEnd = (event) => {
     window.__planDragActive = false;
+    setActiveDragPost(null);
     if (!event.over) return;
     const overId = String(event.over.id || '');
     if (!overId.startsWith('cell-')) return;
@@ -308,112 +456,34 @@ export function Calendar() {
 
   const handleDragCancel = () => {
     window.__planDragActive = false;
+    setActiveDragPost(null);
   };
 
   return (
     <DndContext
       sensors={sensors}
+      autoScroll={{ enabled: true, threshold: { x: 0, y: 0.15 }, acceleration: 10 }}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}>
-      <div style={{ padding: '12px' }}>
+      <div style={{ padding: '12px', position: 'relative' }}>
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '8px',
-          padding: '0 2px',
-          gap: '8px'
+          position: 'sticky',
+          top: '44px',
+          zIndex: 20,
+          background: 'var(--c-bg)',
+          paddingTop: '4px',
+          paddingBottom: '4px',
+          marginBottom: '2px',
+          borderBottom: '1px solid var(--c-divider-subtle)'
         }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            minWidth: 0
-          }}>
-            <button
-              type="button"
-              aria-label="Previous month"
-              onClick={handlePrev}
-              disabled={navDisabled}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '36px',
-                height: '36px',
-                background: 'transparent',
-                border: '1px solid var(--c-divider-soft)',
-                borderRadius: '6px',
-                cursor: navDisabled ? 'default' : 'pointer',
-                color: 'var(--c-text-mid)',
-                opacity: navDisabled ? 0.5 : 1,
-                pointerEvents: navDisabled ? 'none' : 'auto'
-              }}>
-              <ChevronLeft size={18} />
-            </button>
-            <div style={{
-              fontFamily: 'Fraunces, serif',
-              fontSize: '18px',
-              fontWeight: 600,
-              letterSpacing: '-.01em',
-              color: 'var(--c-text-loud)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>{monthLabel}</div>
-            <button
-              type="button"
-              aria-label="Next month"
-              onClick={handleNext}
-              disabled={navDisabled}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '36px',
-                height: '36px',
-                background: 'transparent',
-                border: '1px solid var(--c-divider-soft)',
-                borderRadius: '6px',
-                cursor: navDisabled ? 'default' : 'pointer',
-                color: 'var(--c-text-mid)',
-                opacity: navDisabled ? 0.5 : 1,
-                pointerEvents: navDisabled ? 'none' : 'auto'
-              }}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
+            justifyContent: 'flex-end',
+            padding: '0 2px 6px',
             gap: '8px'
           }}>
-            {!isThisMonth ? (
-              <button
-                type="button"
-                aria-label="Jump to current month"
-                onClick={handleToday}
-                disabled={navDisabled}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: 'transparent',
-                  border: '1px solid var(--c-divider-soft)',
-                  borderRadius: '6px',
-                  padding: '5px 9px',
-                  cursor: navDisabled ? 'default' : 'pointer',
-                  color: 'var(--c-text-mid)',
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: '9px',
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
-                  opacity: navDisabled ? 0.5 : 1,
-                  pointerEvents: navDisabled ? 'none' : 'auto'
-                }}>
-                Today
-              </button>
-            ) : null}
             <button
               type="button"
               aria-label="Export calendar"
@@ -447,48 +517,103 @@ export function Calendar() {
               <span>{isExporting ? 'Exporting' : 'Export'}</span>
             </button>
           </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '4px'
+          }}>
+            {DOW_HEADERS.map((d, i) => (
+              <div key={i} style={{
+                textAlign: 'center',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '8.5px',
+                textTransform: 'uppercase',
+                letterSpacing: '.12em',
+                color: 'var(--c-text-dim)',
+                padding: '4px 0'
+              }}>{d}</div>
+            ))}
+          </div>
         </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: '4px',
-          marginBottom: '6px'
-        }}>
-          {DOW_HEADERS.map((d, i) => (
-            <div key={i} style={{
-              textAlign: 'center',
+
+        <div ref={topSentinelRef} data-sentinel="top" style={{ height: '1px' }} />
+
+        {loadedMonths.length === 0 && storeLoading ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 0',
+            color: 'var(--c-text-dim)',
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '11px',
+            letterSpacing: '.06em'
+          }}>
+            <Loader2
+              size={16}
+              style={{ animation: 'plan-spin 0.8s linear infinite', marginRight: '8px' }}
+            />
+            Loading
+          </div>
+        ) : null}
+
+        {loadedMonths.map((m) => (
+          <MonthBlock
+            key={m.start}
+            monthStartISO={m.start}
+            posts={postsByMonth[m.start] || []}
+            headerRef={m.start === todayMonthISO ? todayHeaderRef : null}
+            today={today}
+          />
+        ))}
+
+        <div ref={bottomSentinelRef} data-sentinel="bottom" style={{ height: '1px' }} />
+
+        {showJumpPill ? (
+          <button
+            type="button"
+            aria-label="Jump to today"
+            onClick={handleJumpToday}
+            style={{
+              position: 'fixed',
+              right: '14px',
+              bottom: '84px',
+              zIndex: 60,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'var(--c-bg-2, var(--c-bg))',
+              border: '1px solid var(--c-divider-soft)',
+              borderRadius: '999px',
+              padding: '8px 14px',
+              cursor: 'pointer',
+              color: 'var(--c-text-loud)',
               fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '8.5px',
-              textTransform: 'uppercase',
+              fontSize: '10px',
               letterSpacing: '.12em',
-              color: 'var(--c-text-dim)',
-              padding: '4px 0'
-            }}>{d}</div>
-          ))}
-        </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: '4px'
-        }}>
-          {Array.from({ length: grid.leading }).map((_, i) => (
-            <Cell key={`lead-${i}`} date={null} posts={[]} isToday={false} isOffMonth={true} dateKey={null} />
-          ))}
-          {grid.days.map((d) => {
-            const key = formatYYYYMMDD(d);
-            return (
-              <Cell
-                key={key}
-                date={d}
-                dateKey={key}
-                posts={postsByDay[key] || []}
-                isToday={sameDay(d, today)}
-                isOffMonth={false}
-              />
-            );
-          })}
-        </div>
+              textTransform: 'uppercase',
+              boxShadow: '0 6px 20px rgba(0,0,0,.28)'
+            }}>
+            <ArrowDown size={13} />
+            <span>Today</span>
+          </button>
+        ) : null}
       </div>
+
+      <DragOverlay
+        dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)' }}>
+        {activeDragPost ? (
+          <div style={{
+            width: '64px',
+            transform: 'scale(1.08)',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+            borderRadius: '6px',
+            overflow: 'hidden'
+          }}>
+            <ThumbMini post={activeDragPost} isOverlay />
+          </div>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   );
 }
