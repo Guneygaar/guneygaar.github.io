@@ -10,7 +10,8 @@ import { useMetrics } from '../hooks/useMetrics.js';
 import { usePlanStore } from '../store/planStore.js';
 import {
   STAGE_LABELS, STAGE_COLOR_VAR, OWNER_COLOR_VAR,
-  OWNER_LABELS, PILLAR_LABELS, PILLAR_COLOR_VAR
+  OWNER_LABELS, PILLAR_LABELS, PILLAR_COLOR_VAR,
+  FORMAT_LABELS, FORMAT_COLOR_VAR
 } from '../shared/constants.js';
 import { parseISODate, daysBetween, formatTime12, monthAbbr, dayNumber } from '../shared/dateUtils.js';
 
@@ -166,6 +167,15 @@ export function Insights() {
     const pillarBars = Object.entries(byPillar).sort((a, b) => b[1] - a[1]);
     const maxPillar = pillarBars.reduce((m, p) => Math.max(m, p[1]), 0);
 
+    // Format mix
+    const byFormat = {};
+    for (const p of posts) {
+      if (!p.format) continue;
+      byFormat[p.format] = (byFormat[p.format] || 0) + 1;
+    }
+    const formatBars = Object.entries(byFormat).sort((a, b) => b[1] - a[1]);
+    const maxFormat = formatBars.reduce((m, p) => Math.max(m, p[1]), 0);
+
     // Top post
     const withMetrics = published
       .map((p) => ({ post: p, m: metrics[p.id] }))
@@ -204,6 +214,8 @@ export function Insights() {
       maxOwner,
       pillarBars,
       maxPillar,
+      formatBars,
+      maxFormat,
       topPost
     };
   }, [posts, metrics]);
@@ -355,6 +367,25 @@ export function Insights() {
               value={count}
               max={stats.maxPillar}
               color={`var(${PILLAR_COLOR_VAR[pillar] || '--c-text-dim'})`}
+            />
+          ))}
+        </Card>
+
+        <Card title="Format mix" span={2}>
+          {stats.formatBars.length === 0 ? (
+            <div style={{
+              fontFamily: '"DM Sans", sans-serif',
+              fontSize: '12px',
+              fontStyle: 'italic',
+              color: 'var(--c-text-dim)'
+            }}>No data</div>
+          ) : stats.formatBars.map(([fmt, count]) => (
+            <Bar
+              key={fmt}
+              label={FORMAT_LABELS[fmt] || fmt}
+              value={count}
+              max={stats.maxFormat}
+              color={`var(${FORMAT_COLOR_VAR[fmt] || '--c-text-dim'})`}
             />
           ))}
         </Card>
