@@ -20,6 +20,7 @@ import { PillarThumb } from '../shared/PillarThumb.jsx';
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
 function Row({ post, onOpen }) {
+  const isClient = usePlanStore((s) => s.role) === 'client';
   const metrics = useMetricsFor(post);
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
@@ -51,7 +52,9 @@ function Row({ post, onOpen }) {
         textAlign: 'left'
       }}>
       <PillarThumb post={post} size={44} />
-      <div style={{ width: '3px', background: ownerColor, alignSelf: 'stretch', margin: '0 10px' }} />
+      {!isClient ? (
+        <div style={{ width: '3px', background: ownerColor, alignSelf: 'stretch', margin: '0 10px' }} />
+      ) : null}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontFamily: '"DM Sans", sans-serif',
