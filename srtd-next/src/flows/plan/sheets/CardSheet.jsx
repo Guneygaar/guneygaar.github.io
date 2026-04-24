@@ -621,7 +621,6 @@ export function CardSheet() {
 
   const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
-  const commentPillRef = useRef(null);
   const [recallOpen, setRecallOpen] = useState(false);
   const { triggerPicker } = useDatePicker();
 
@@ -631,11 +630,6 @@ export function CardSheet() {
   };
   const onComment = () => {
     setActiveTab('comments');
-    const el = commentPillRef.current;
-    if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      if (typeof el.focus === 'function') el.focus();
-    }
   };
 
   const runPatchStage = async (newStage, successMsg) => {
@@ -928,35 +922,6 @@ export function CardSheet() {
           ) : null}
 
           <Caption post={post} isClient={isClient} />
-
-          {!isClient ? (
-            <div style={{ padding: '12px 18px 0' }}>
-              <button
-                ref={commentPillRef}
-                type="button"
-                onClick={() => showToast({ msg: 'Compose opens in real PCS', duration: 2500 })}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  width: '100%',
-                  padding: '10px 12px',
-                  background: 'var(--c-text-loud)',
-                  color: 'var(--c-bg)',
-                  border: 'none',
-                  borderRadius: '100px',
-                  fontFamily: '"IBM Plex Mono", monospace',
-                  fontSize: '10px',
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer'
-                }}>
-                <MessageSquare size={14} />
-                <span style={{ flex: 1, textAlign: 'left' }}>Write a comment</span>
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          ) : null}
 
           <div style={{
             display: 'flex',
