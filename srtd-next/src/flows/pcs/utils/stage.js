@@ -1,6 +1,5 @@
 export const STAGE_LABELS = {
   brief: 'Brief',
-  brief_done: 'Brief done',
   in_production: 'In production',
   ready: 'Ready',
   awaiting_approval: 'Awaiting approval',
@@ -13,7 +12,6 @@ export const STAGE_LABELS = {
 
 export const STAGE_TOKEN = {
   brief:                'stage-brief',
-  brief_done:           'stage-brief',
   in_production:        'stage-production',
   ready:                'stage-ready',
   awaiting_approval:    'amber',

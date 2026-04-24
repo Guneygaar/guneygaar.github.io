@@ -334,7 +334,7 @@ window._openBriefSheet = async function(postId) {
   var _isClient = _role === 'client';
   var _isCreativeRole = _role === 'creative';
   var _canAssign = _role === 'admin' || _role === 'servicing';
-  var _isBriefDone = (post.stage || '') === 'brief_done';
+  var _isBriefDone = false;
   var sentTime = '';
   if (post.status_changed_at && post.status_changed_at !== 'null') {
     var _d = new Date((post.status_changed_at || '') + 'Z');
@@ -496,11 +496,6 @@ window._openBriefSheet = async function(postId) {
       'color:#555566;text-align:center;padding:8px 0;">' +
       'The team is working on this</div>';
 
-    // STATE: brief_done
-    if (_isBriefDone) {
-      return _viewPostBtn +
-        (_canAssign ? _reopenBtn : '');
-    }
     // STATE: has linked post (post already created). For multi-post
     // campaign briefs, expose a Create Another Post button until
     // completed_posts catches up to total_posts.
@@ -1136,10 +1131,10 @@ window._closeBrief = function(postId) {
       method: 'PATCH',
       body: JSON.stringify({ status: 'closed' })
     }).then(function() {
-      // Update AppState — change stage to brief_done
+      // Update AppState — request status is now 'closed'; no stage change.
       var updated = (window.AppState.posts.all || []).map(function(p) {
         if ((p.post_id || p.id) === postId) {
-          return Object.assign({}, p, { stage: 'brief_done' });
+          return Object.assign({}, p, { _requestStatus: 'closed' });
         }
         return p;
       });
@@ -1160,7 +1155,7 @@ window._closeBrief = function(postId) {
   apiFetch('/posts?post_id=eq.' + encodeURIComponent(postId), {
     method: 'PATCH',
     body: JSON.stringify({
-      stage: 'brief_done',
+      stage: 'parked',
       updated_at: new Date().toISOString(),
       updated_by: resolveActor()
     })

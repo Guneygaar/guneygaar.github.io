@@ -144,31 +144,57 @@ function Bucket({ label, items }) {
   );
 }
 
+function BriefsHeader({ label, count }) {
+  return (
+    <header style={{
+      padding: '12px 16px 4px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }}>
+      <FileText size={12} style={{ color: 'var(--c-text-mid)' }} />
+      <span style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: '10px',
+        fontWeight: 600,
+        letterSpacing: '.14em',
+        textTransform: 'uppercase',
+        color: 'var(--c-text-mid)'
+      }}>{label}</span>
+      <span style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: '9.5px',
+        color: 'var(--c-text-dim)'
+      }}>{count}</span>
+    </header>
+  );
+}
+
+export function BriefsAssignedSection() {
+  const { assigned } = useRequests();
+  return (
+    <section style={{ borderBottom: '1px solid var(--c-divider-subtle)' }}>
+      <BriefsHeader label="Briefs" count={assigned.length} />
+      <Bucket label={`Assigned ${assigned.length}`} items={assigned} />
+    </section>
+  );
+}
+
+export function BriefsCompletedSection() {
+  const { closed } = useRequests();
+  return (
+    <section style={{ borderBottom: '1px solid var(--c-divider-subtle)' }}>
+      <BriefsHeader label="Briefs completed" count={closed.length} />
+      <Bucket label={`Closed ${closed.length}`} items={closed} />
+    </section>
+  );
+}
+
 export function BriefsSection() {
   const { assigned, closed } = useRequests();
   return (
     <section style={{ borderBottom: '1px solid var(--c-divider-subtle)' }}>
-      <header style={{
-        padding: '12px 16px 4px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <FileText size={12} style={{ color: 'var(--c-text-mid)' }} />
-        <span style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '10px',
-          fontWeight: 600,
-          letterSpacing: '.14em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
-        }}>Briefs</span>
-        <span style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '9.5px',
-          color: 'var(--c-text-dim)'
-        }}>{assigned.length + closed.length}</span>
-      </header>
+      <BriefsHeader label="Briefs" count={assigned.length + closed.length} />
       <Bucket label={`Assigned ${assigned.length}`} items={assigned} />
       <Bucket label={`Closed ${closed.length}`} items={closed} />
     </section>

@@ -2,7 +2,6 @@
 // ASCII. No unicode dashes or smart quotes.
 
 export const STAGE_LABELS = {
-  brief_done:            'Brief done',
   in_production:         'In production',
   awaiting_brand_input:  'Awaiting brand input',
   awaiting_approval:     'Awaiting approval',
@@ -13,7 +12,6 @@ export const STAGE_LABELS = {
 };
 
 export const STAGE_COLOR_VAR = {
-  brief_done:            '--c-stage-brief',
   in_production:         '--c-stage-production',
   awaiting_brand_input:  '--c-stage-input',
   awaiting_approval:     '--c-stage-approval',
@@ -28,7 +26,6 @@ export const STAGE_ORDER_BOARD = [
   'in_production',
   'scheduled',
   'published',
-  'brief_done',
   'rejected',
   'parked'
 ];

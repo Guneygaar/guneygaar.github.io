@@ -17,7 +17,7 @@ import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
 
-const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
+const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 
 function Row({ post, onOpen }) {
   const isClient = usePlanStore((s) => s.role) === 'client';

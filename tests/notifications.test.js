@@ -513,10 +513,6 @@ describe('_stageLabel', function() {
     expect(_stageLabel('brief')).toBe('Brief');
   });
 
-  it("'brief_done' -> 'Closed Brief'", function() {
-    expect(_stageLabel('brief_done')).toBe('Closed Brief');
-  });
-
   it("'in_production' -> 'In Production'", function() {
     expect(_stageLabel('in_production')).toBe('In Production');
   });

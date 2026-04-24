@@ -40,7 +40,6 @@ const STAGE_MATRIX = {
   awaiting_brand_input: ['recall', 'nudge_client'],
   in_production:        ['recall', 'send_for_approval'],
   scheduled:            ['recall', 'reschedule', 'publish_now'],
-  brief_done:           ['recall', 'assign', 'rework_brief'],
   rejected:             ['revive'],
   parked:               ['revive'],
   published:            []

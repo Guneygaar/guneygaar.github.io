@@ -906,7 +906,7 @@ if (window._activeBriefPostId) {
     apiFetch('/posts?post_id=eq.' + encodeURIComponent(_bid), {
       method: 'PATCH',
       body: JSON.stringify({
-        stage: 'brief_done',
+        stage: 'parked',
         linked_post_id: _newPostId || null,
         updated_at: new Date().toISOString(),
         updated_by: resolveActor()

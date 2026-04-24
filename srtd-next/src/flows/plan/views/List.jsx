@@ -23,7 +23,7 @@ import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
 
-const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
+const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 const LONG_PRESS_GUARD_MS = 400;
 
 function rowClickGuarded(handler) {

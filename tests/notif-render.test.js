@@ -16,8 +16,8 @@ function extract(fnSig) {
 }
 
 var sandbox = '';
-sandbox += 'var _NOTIF_MOVES_TYPES = ["stage_change","ready","in_production","scheduled","brief","brief_done"];\n';
-sandbox += 'var _NOTIF_STAGE_LABELS = { brief:"Brief", brief_done:"Brief Done", in_production:"In Production", awaiting_approval:"Awaiting Approval", awaiting_brand_input:"Needs Input", ready:"Ready", scheduled:"Scheduled", published:"Published" };\n';
+sandbox += 'var _NOTIF_MOVES_TYPES = ["stage_change","ready","in_production","scheduled","brief"];\n';
+sandbox += 'var _NOTIF_STAGE_LABELS = { brief:"Brief", in_production:"In Production", awaiting_approval:"Awaiting Approval", awaiting_brand_input:"Needs Input", ready:"Ready", scheduled:"Scheduled", published:"Published" };\n';
 sandbox += extract('_notifRelTime\\(iso\\)');
 sandbox += extract('_notifActionText\\(n\\)');
 sandbox += extract('_notifTypeClass\\(n, isMention\\)');
@@ -183,13 +183,12 @@ describe('_notifChipMatch', function() {
     expect(helpers._notifChipMatch('live', {type:'scheduled'}, null)).toBe(false);
     expect(helpers._notifChipMatch('live', {type:'comment'}, null)).toBe(false);
   });
-  it('"moves" matches stage_change/ready/in_production/scheduled/brief/brief_done', function() {
+  it('"moves" matches stage_change/ready/in_production/scheduled/brief', function() {
     expect(helpers._notifChipMatch('moves', {type:'stage_change'}, null)).toBe(true);
     expect(helpers._notifChipMatch('moves', {type:'ready'}, null)).toBe(true);
     expect(helpers._notifChipMatch('moves', {type:'in_production'}, null)).toBe(true);
     expect(helpers._notifChipMatch('moves', {type:'scheduled'}, null)).toBe(true);
     expect(helpers._notifChipMatch('moves', {type:'brief'}, null)).toBe(true);
-    expect(helpers._notifChipMatch('moves', {type:'brief_done'}, null)).toBe(true);
     expect(helpers._notifChipMatch('moves', {type:'comment'}, null)).toBe(false);
     expect(helpers._notifChipMatch('moves', {type:'published'}, null)).toBe(false);
   });

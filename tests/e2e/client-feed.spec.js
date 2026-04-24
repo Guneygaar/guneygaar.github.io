@@ -333,7 +333,7 @@ test.describe('Client Feed Smoke Tests', () => {
     });
 
     const allowedStages = ['awaiting_approval', 'awaiting_brand_input', 'published'];
-    const internalStages = ['in_production', 'ready', 'brief', 'brief_done', 'scheduled'];
+    const internalStages = ['in_production', 'ready', 'brief', 'scheduled'];
 
     for (const stage of stages) {
       expect(allowedStages).toContain(stage);
