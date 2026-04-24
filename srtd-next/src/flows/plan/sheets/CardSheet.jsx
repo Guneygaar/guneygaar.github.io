@@ -617,7 +617,7 @@ function ActionBar({ post, role, onApprove, onComment }) {
         style={{ ...BTN_STYLE, ...solid }}
       >
         <ExternalLink size={13} />
-        <span>Open in PCS</span>
+        <span>Open</span>
       </button>
     );
   }
