@@ -12,7 +12,9 @@ export const STAGE_LABELS = {
 };
 
 export const STAGE_COLOR_VAR = {
+  brief:                 '--c-stage-brief',
   in_production:         '--c-stage-production',
+  ready:                 '--c-stage-ready',
   awaiting_brand_input:  '--c-stage-input',
   awaiting_approval:     '--c-stage-approval',
   scheduled:             '--c-stage-scheduled',

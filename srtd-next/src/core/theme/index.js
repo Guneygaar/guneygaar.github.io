@@ -45,7 +45,11 @@ export const colors = {
   stageProduction: cssVar('stage-production'),
   stageReady:      cssVar('stage-ready'),
   stageInput:      cssVar('stage-input'),
+  stageApproval:   cssVar('stage-approval'),
   stageScheduled:  cssVar('stage-scheduled'),
+  stagePublished:  cssVar('stage-published'),
+  stageRejected:   cssVar('stage-rejected'),
+  stageParked:     cssVar('stage-parked'),
   roleCreative:    cssVar('role-creative'),
   roleClient:      cssVar('role-client'),
 };

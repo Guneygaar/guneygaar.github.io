@@ -3,7 +3,7 @@
 // MiniCardSheet directly.
 
 import React, { useMemo } from 'react';
-import { usePosts } from '../hooks/usePosts.js';
+import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import {
   parseISODate, buildMonthGrid, sameDay, formatYYYYMMDD
@@ -140,7 +140,7 @@ function Cell({ date, posts, isToday, isOffMonth }) {
 }
 
 export function Calendar() {
-  const posts = usePosts();
+  const posts = useCalendarPosts();
   const monthStart = usePlanStore((s) => s.monthStart);
 
   const startDate = useMemo(() => parseISODate(monthStart), [monthStart]);

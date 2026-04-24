@@ -37,7 +37,11 @@
     --c-role-admin:     #8E7A2E;
     --c-stage-brief:#6A5AA0; --c-stage-production:#3E7196;
     --c-stage-ready:#6B7E9A; --c-stage-input:#A85C3C;
-    --c-stage-scheduled:#6E9068;
+    --c-stage-approval:#A0502E;
+    --c-stage-scheduled:#C4A000;
+    --c-stage-published:#147A4F;
+    --c-stage-rejected:#E5E5E5;
+    --c-stage-parked:#8A857A;
     --c-role-creative:#3E7196; --c-role-client:#A85C3C;
   }
 
@@ -71,7 +75,11 @@
       --c-role-admin:     #C8A84B;
       --c-stage-brief:#9E8FC7; --c-stage-production:#6FA5C4;
       --c-stage-ready:#A3B2C7; --c-stage-input:#D48B6E;
-      --c-stage-scheduled:#A8BFA3;
+      --c-stage-approval:#CC785C;
+      --c-stage-scheduled:#E4C441;
+      --c-stage-published:#3ECF8E;
+      --c-stage-rejected:#FFFFFF;
+      --c-stage-parked:#6A655C;
       --c-role-creative:#6FA8C9; --c-role-client:#D48B6E;
     }
   }

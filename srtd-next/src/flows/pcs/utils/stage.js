@@ -14,12 +14,12 @@ export const STAGE_TOKEN = {
   brief:                'stage-brief',
   in_production:        'stage-production',
   ready:                'stage-ready',
-  awaiting_approval:    'amber',
+  awaiting_approval:    'stage-approval',
   awaiting_brand_input: 'stage-input',
   scheduled:            'stage-scheduled',
-  published:            'green',
-  parked:               'text-soft',
-  rejected:             'red'
+  published:            'stage-published',
+  parked:               'stage-parked',
+  rejected:             'stage-rejected'
 };
 
 export function ownerToRole(ownerLabel) {

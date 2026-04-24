@@ -22,14 +22,14 @@ const STAGES_BY_GROUP = {
     { value: 'brief',                label: 'Brief',                token: 'brief' },
     { value: 'in_production',        label: 'In production',        token: 'production' },
     { value: 'ready',                label: 'Ready',                token: 'ready' },
-    { value: 'awaiting_approval',    label: 'Awaiting approval',    token: 'ready' },
+    { value: 'awaiting_approval',    label: 'Awaiting approval',    token: 'approval' },
     { value: 'awaiting_brand_input', label: 'Awaiting brand input', token: 'input' },
     { value: 'scheduled',            label: 'Scheduled',            token: 'scheduled' },
-    { value: 'published',            label: 'Published',            token: 'scheduled' },
+    { value: 'published',            label: 'Published',            token: 'published' },
   ],
   offpath: [
-    { value: 'parked',   label: 'Parked',   token: null },
-    { value: 'rejected', label: 'Rejected', token: null },
+    { value: 'parked',   label: 'Parked',   token: 'parked' },
+    { value: 'rejected', label: 'Rejected', token: 'rejected' },
   ],
 };
 

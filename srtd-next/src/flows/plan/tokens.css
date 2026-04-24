@@ -6,10 +6,9 @@
 
 [data-plan-root],
 [data-plan-root][data-plan-theme="light"] {
-  --c-stage-approval:          #C8841A;
-  --c-stage-published:         #147A4F;
-  --c-stage-rejected:          #D83838;
-  --c-stage-parked:            #8A857A;
+  /* Stage tokens (--c-stage-approval, --c-stage-published, --c-stage-rejected,
+     --c-stage-parked) moved to styles/tailwind.css :root as the single source
+     of truth. */
   --c-pillar-innovation:       #3E7196;
   --c-pillar-announcements:    #6B4FD9;
   --c-pillar-leadership:       #8E7A2E;
@@ -22,10 +21,7 @@
 
 @media (prefers-color-scheme: dark) {
   [data-plan-root]:not([data-plan-theme="light"]) {
-    --c-stage-approval:          #F6A623;
-    --c-stage-published:         #3ECF8E;
-    --c-stage-rejected:          #FF4B4B;
-    --c-stage-parked:            #6A655C;
+    /* Stage tokens moved to styles/tailwind.css dark :root. */
     --c-pillar-innovation:       #6FA8C9;
     --c-pillar-announcements:    #9b87f5;
     --c-pillar-leadership:       #C8A84B;
@@ -38,10 +34,7 @@
 }
 
 [data-plan-root][data-plan-theme="dark"] {
-  --c-stage-approval:          #F6A623;
-  --c-stage-published:         #3ECF8E;
-  --c-stage-rejected:          #FF4B4B;
-  --c-stage-parked:            #6A655C;
+  /* Stage tokens moved to styles/tailwind.css dark :root. */
   --c-pillar-innovation:       #6FA8C9;
   --c-pillar-announcements:    #9b87f5;
   --c-pillar-leadership:       #C8A84B;
