@@ -11,6 +11,7 @@
 import React from 'react';
 import { FileText } from 'lucide-react';
 import { useRequests } from '../hooks/useRequests.js';
+import { STAGE_COLOR_VAR } from '../shared/constants.js';
 import {
   parseISODate, dayNumber, dowShortMonFirst, monthAbbr
 } from '../shared/dateUtils.js';
@@ -26,7 +27,7 @@ function BriefTile({ request }) {
   const pillLabel = isClosed ? 'CLOSED' : 'ASSIGNED';
   const pillColor = isClosed
     ? 'var(--c-text-dim)'
-    : 'var(--c-stage-approval)';
+    : `var(${STAGE_COLOR_VAR.awaiting_approval})`;
 
   const total = Number(request && request.total_posts);
   const completed = Number(request && request.completed_posts);

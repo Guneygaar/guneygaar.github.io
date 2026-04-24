@@ -226,6 +226,7 @@ export default function Plan() {
   const loadRequests = usePlanStore((s) => s.loadRequests);
   const setRole = usePlanStore((s) => s.setRole);
   const setTheme = usePlanStore((s) => s.setTheme);
+  const initializeDefaultView = usePlanStore((s) => s.initializeDefaultView);
   const theme = usePlanStore((s) => s.theme);
   const role = usePlanStore((s) => s.role);
   const activeSheet = usePlanStore((s) => s.activeSheet);
@@ -237,6 +238,11 @@ export default function Plan() {
     if (!planEnabled) return;
     setRole(resolveRole(user));
   }, [planEnabled, user, setRole]);
+
+  useEffect(() => {
+    if (!planEnabled || !role) return;
+    initializeDefaultView(role);
+  }, [planEnabled, role, initializeDefaultView]);
 
   useEffect(() => {
     if (!planEnabled) return;

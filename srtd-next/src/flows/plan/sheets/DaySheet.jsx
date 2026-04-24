@@ -112,7 +112,11 @@ export function DaySheet() {
   const day = usePlanStore((s) => s.currentDay);
   const closeDay = usePlanStore((s) => s.closeDay);
   const openMiniCard = usePlanStore((s) => s.openMiniCard);
-  const allPosts = useAllPosts();
+  const rawAllPosts = useAllPosts();
+  const allPosts = useMemo(
+    () => rawAllPosts.filter((p) => p.stage !== 'in_production'),
+    [rawAllPosts]
+  );
 
   const posts = useMemo(() => {
     if (!day) return [];

@@ -222,5 +222,10 @@ export const usePlanStore = create((set, get) => ({
   setInsightsPeriod(p) {
     const allowed = p === 'week' || p === 'month' || p === 'quarter';
     set({ insightsPeriod: allowed ? p : 'month' });
+  },
+
+  initializeDefaultView(role) {
+    const defaults = { client: 'calendar', admin: 'board', agency: 'board' };
+    set({ currentView: defaults[role] || 'board' });
   }
 }));

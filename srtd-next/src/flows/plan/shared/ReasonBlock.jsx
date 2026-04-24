@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { XCircle, Pause } from 'lucide-react';
+import { STAGE_COLOR_VAR } from './constants.js';
 
 function cap(s) {
   if (!s || typeof s !== 'string') return '';
@@ -12,7 +13,9 @@ function cap(s) {
 export function ReasonBlock({ stage, reason }) {
   const rejected = stage === 'rejected';
   const Icon = rejected ? XCircle : Pause;
-  const color = rejected ? 'var(--c-red)' : 'var(--c-stage-parked)';
+  const color = rejected
+    ? `var(${STAGE_COLOR_VAR.rejected})`
+    : `var(${STAGE_COLOR_VAR.parked})`;
   const bg = rejected
     ? 'color-mix(in srgb, var(--c-red) 10%, transparent)'
     : 'color-mix(in srgb, var(--c-text-dim) 10%, transparent)';
