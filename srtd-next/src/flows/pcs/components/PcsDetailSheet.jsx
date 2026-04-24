@@ -7,6 +7,7 @@ import { openWhatsAppShare, buildShortUrl } from '../../../core/bridges/whatsapp
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
+import { useIsClient } from '../../../core/stores/appState.js';
 import { pcsFlow } from '../index.js';
 import { STAGE_LABELS, ownerToRole, titleCase } from '../utils/stage.js';
 import { FORMATS, PILLARS, LOCATIONS } from '../../../core/mappings.js';
@@ -108,6 +109,23 @@ function ActionRow({ label, value = null, onClick }) {
           <div className="font-sans text-lg text-text-dim truncate">{value}</div>
         ) : null}
         <ChevronRight size={13} strokeWidth={2} className="text-text-dim flex-shrink-0" />
+      </div>
+    </div>
+  );
+}
+
+function ReadOnlyRow({ field, label, value, placeholder = false }) {
+  return (
+    <div className="overflow-hidden" data-field={field}>
+      <div
+        className="flex items-center justify-between px-[18px] py-3 min-h-12 border-t border-divider-subtle"
+      >
+        <div className="font-sans text-lg font-medium text-text-loud">{label}</div>
+        <div className="flex items-center gap-2 max-w-[65%]">
+          <div className={`font-sans text-lg truncate ${placeholder ? 'text-text-dim italic' : 'text-text-mid'}`}>
+            {value}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -498,6 +516,7 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
   const [expandedField, setExpandedField] = useState(null);
   const [busy, setBusy] = useState(false);
   const { commit } = useOptimisticPatch();
+  const isClient = useIsClient();
 
   if (!post) return null;
 
@@ -572,6 +591,13 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
     setTimeout(onClose, 130);
   }
 
+  function onCanvaOpen() {
+    if (!post.canva_link) return;
+    logClick('pcs_react_panel_canva', {});
+    if (typeof window !== 'undefined') window.open(post.canva_link, '_blank');
+    setTimeout(onClose, 130);
+  }
+
   async function onDelete() {
     if (busy) return;
     if (!window.confirm(`Delete this post permanently?\n\n${post.title || post.post_id}`)) return;
@@ -592,112 +618,175 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
     <BottomSheet open={open} onClose={onClose}>
       <div className="font-mono text-xs tracking-widest uppercase text-text-dim px-[18px] pt-3 pb-1.5">METADATA</div>
 
-      <SheetRow
-        field="stage"
-        label="Stage"
-        value={STAGE_LABELS[post.stage] || post.stage || 'Not set'}
-        expanded={expandedField === 'stage'}
-        onToggle={() => toggleField('stage')}
-      >
-        <StageOptions
-          post={post}
-          onSelect={saveStage}
-          onPublishCommit={savePublish}
-        />
-      </SheetRow>
+      {isClient ? (
+        <>
+          <ReadOnlyRow
+            field="stage"
+            label="Stage"
+            value={STAGE_LABELS[post.stage] || post.stage || 'Not set'}
+            placeholder={!post.stage}
+          />
 
-      <SheetRow
-        field="owner"
-        label="Owner"
-        value={post.owner || 'Not set'}
-        placeholder={!post.owner}
-        expanded={expandedField === 'owner'}
-        onToggle={() => toggleField('owner')}
-      >
-        <OwnerOptions
-          userRoles={userRoles}
-          currentOwnerId={post.owner_user_id}
-          onSelect={saveOwner}
-          onClear={() => saveOwner(null)}
-        />
-      </SheetRow>
+          <ReadOnlyRow
+            field="owner"
+            label="Owner"
+            value={post.owner || 'Not set'}
+            placeholder={!post.owner}
+          />
 
-      <SheetRow
-        field="date"
-        label="Date"
-        value={post.target_date ? formatDateLong(post.target_date) : 'Not set'}
-        placeholder={!post.target_date}
-        expanded={expandedField === 'date'}
-        onToggle={() => toggleField('date')}
-      >
-        <DateInput
-          value={post.target_date}
-          onChange={(v) => savePatch('target_date', v, 'date')}
-          onClear={() => savePatch('target_date', null, 'date')}
-        />
-      </SheetRow>
+          <ReadOnlyRow
+            field="date"
+            label="Date"
+            value={post.target_date ? formatDateLong(post.target_date) : 'Not set'}
+            placeholder={!post.target_date}
+          />
 
-      <SheetRow
-        field="format"
-        label="Format"
-        value={post.format || 'Not set'}
-        placeholder={!post.format}
-        expanded={expandedField === 'format'}
-        onToggle={() => toggleField('format')}
-      >
-        <OptionList
-          options={FORMATS}
-          current={post.format}
-          onSelect={(v) => savePatch('format', v, 'format')}
-          onClear={() => savePatch('format', null, 'format')}
-        />
-      </SheetRow>
+          <ReadOnlyRow
+            field="format"
+            label="Format"
+            value={post.format || 'Not set'}
+            placeholder={!post.format}
+          />
 
-      <SheetRow
-        field="pillar"
-        label="Pillar"
-        value={pillarDisplay(post.content_pillar) || 'Not set'}
-        placeholder={!post.content_pillar}
-        expanded={expandedField === 'pillar'}
-        onToggle={() => toggleField('pillar')}
-      >
-        <PillarList
-          current={post.content_pillar}
-          onSelect={(v) => savePatch('content_pillar', v, 'content_pillar')}
-          onClear={() => savePatch('content_pillar', null, 'content_pillar')}
-        />
-      </SheetRow>
+          <ReadOnlyRow
+            field="pillar"
+            label="Pillar"
+            value={pillarDisplay(post.content_pillar) || 'Not set'}
+            placeholder={!post.content_pillar}
+          />
 
-      <SheetRow
-        field="location"
-        label="Location"
-        value={post.location || 'Not set'}
-        placeholder={!post.location}
-        expanded={expandedField === 'location'}
-        onToggle={() => toggleField('location')}
-      >
-        <OptionList
-          options={LOCATIONS}
-          current={post.location}
-          onSelect={(v) => savePatch('location', v, 'location')}
-          onClear={() => savePatch('location', null, 'location')}
-        />
-      </SheetRow>
+          <ReadOnlyRow
+            field="location"
+            label="Location"
+            value={post.location || 'Not set'}
+            placeholder={!post.location}
+          />
 
-      <SheetRow
-        field="canva"
-        label="Canva"
-        value={shortenUrl(post.canva_link) || 'Not set'}
-        placeholder={!post.canva_link}
-        expanded={expandedField === 'canva'}
-        onToggle={() => toggleField('canva')}
-      >
-        <UrlInput
-          value={post.canva_link}
-          placeholder="https://canva.com/..."
-          onSave={(v) => savePatch('canva_link', v || null, 'canva_link')}
-        />
-      </SheetRow>
+          {post.canva_link ? (
+            <ActionRow
+              label="Canva"
+              value={shortenUrl(post.canva_link)}
+              onClick={onCanvaOpen}
+            />
+          ) : (
+            <ReadOnlyRow
+              field="canva"
+              label="Canva"
+              value="Not set"
+              placeholder
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <SheetRow
+            field="stage"
+            label="Stage"
+            value={STAGE_LABELS[post.stage] || post.stage || 'Not set'}
+            expanded={expandedField === 'stage'}
+            onToggle={() => toggleField('stage')}
+          >
+            <StageOptions
+              post={post}
+              onSelect={saveStage}
+              onPublishCommit={savePublish}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="owner"
+            label="Owner"
+            value={post.owner || 'Not set'}
+            placeholder={!post.owner}
+            expanded={expandedField === 'owner'}
+            onToggle={() => toggleField('owner')}
+          >
+            <OwnerOptions
+              userRoles={userRoles}
+              currentOwnerId={post.owner_user_id}
+              onSelect={saveOwner}
+              onClear={() => saveOwner(null)}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="date"
+            label="Date"
+            value={post.target_date ? formatDateLong(post.target_date) : 'Not set'}
+            placeholder={!post.target_date}
+            expanded={expandedField === 'date'}
+            onToggle={() => toggleField('date')}
+          >
+            <DateInput
+              value={post.target_date}
+              onChange={(v) => savePatch('target_date', v, 'date')}
+              onClear={() => savePatch('target_date', null, 'date')}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="format"
+            label="Format"
+            value={post.format || 'Not set'}
+            placeholder={!post.format}
+            expanded={expandedField === 'format'}
+            onToggle={() => toggleField('format')}
+          >
+            <OptionList
+              options={FORMATS}
+              current={post.format}
+              onSelect={(v) => savePatch('format', v, 'format')}
+              onClear={() => savePatch('format', null, 'format')}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="pillar"
+            label="Pillar"
+            value={pillarDisplay(post.content_pillar) || 'Not set'}
+            placeholder={!post.content_pillar}
+            expanded={expandedField === 'pillar'}
+            onToggle={() => toggleField('pillar')}
+          >
+            <PillarList
+              current={post.content_pillar}
+              onSelect={(v) => savePatch('content_pillar', v, 'content_pillar')}
+              onClear={() => savePatch('content_pillar', null, 'content_pillar')}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="location"
+            label="Location"
+            value={post.location || 'Not set'}
+            placeholder={!post.location}
+            expanded={expandedField === 'location'}
+            onToggle={() => toggleField('location')}
+          >
+            <OptionList
+              options={LOCATIONS}
+              current={post.location}
+              onSelect={(v) => savePatch('location', v, 'location')}
+              onClear={() => savePatch('location', null, 'location')}
+            />
+          </SheetRow>
+
+          <SheetRow
+            field="canva"
+            label="Canva"
+            value={shortenUrl(post.canva_link) || 'Not set'}
+            placeholder={!post.canva_link}
+            expanded={expandedField === 'canva'}
+            onToggle={() => toggleField('canva')}
+          >
+            <UrlInput
+              value={post.canva_link}
+              placeholder="https://canva.com/..."
+              onSave={(v) => savePatch('canva_link', v || null, 'canva_link')}
+            />
+          </SheetRow>
+        </>
+      )}
 
       <div className="font-mono text-xs tracking-widest uppercase text-text-dim px-[18px] pt-3 pb-1.5">SHARE</div>
 
@@ -707,7 +796,7 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
         <ActionRow label="Open on LinkedIn" onClick={onLi} />
       ) : null}
 
-      {isAdmin ? (
+      {isAdmin && !isClient ? (
         <>
           <div className="font-mono text-xs tracking-widest uppercase text-text-dim px-[18px] pt-3 pb-1.5">DANGER</div>
           <button
