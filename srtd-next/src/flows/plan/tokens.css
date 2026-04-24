@@ -180,3 +180,125 @@
 [data-plan-root] .plan-header-expand:active {
   background: rgba(255,255,255,0.08);
 }
+
+[data-plan-root] .plan-comment-card {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+[data-plan-root] .plan-comment-card:active {
+  background: rgba(255,255,255,0.05);
+}
+[data-plan-root] .plan-comment-card-resolved {
+  opacity: 0.55;
+}
+[data-plan-root] .plan-comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+[data-plan-root] .plan-comment-author {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-loud);
+}
+[data-plan-root] .plan-comment-role {
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(245,245,245,0.5);
+  background: rgba(255,255,255,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+[data-plan-root] .plan-comment-time {
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  color: rgba(245,245,245,0.4);
+  margin-left: auto;
+}
+[data-plan-root] .plan-comment-resolved-pill {
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(204,120,92,0.15);
+  color: #cc785c;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+[data-plan-root] .plan-comment-body {
+  font-size: 13px;
+  color: rgba(245,245,245,0.85);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+[data-plan-root] .plan-comment-actions {
+  display: flex;
+  gap: 14px;
+}
+[data-plan-root] .plan-comment-action {
+  background: transparent;
+  border: none;
+  color: rgba(245,245,245,0.6);
+  font-family: ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 0;
+  cursor: pointer;
+}
+[data-plan-root] .plan-comment-action:active {
+  color: #cc785c;
+}
+
+[data-plan-root] .plan-composer-quote {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(204,120,92,0.08);
+  border: 1px solid rgba(204,120,92,0.2);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+[data-plan-root] .plan-composer-quote-stripe {
+  width: 3px;
+  align-self: stretch;
+  background: #cc785c;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+[data-plan-root] .plan-composer-quote-content {
+  flex: 1;
+  min-width: 0;
+}
+[data-plan-root] .plan-composer-quote-author {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-text-loud);
+  margin-bottom: 2px;
+}
+[data-plan-root] .plan-composer-quote-text {
+  font-size: 12px;
+  color: rgba(245,245,245,0.6);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+[data-plan-root] .plan-composer-quote-dismiss {
+  background: transparent;
+  border: none;
+  color: rgba(245,245,245,0.5);
+  padding: 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
