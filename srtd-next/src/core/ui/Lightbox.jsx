@@ -18,6 +18,11 @@ export function Lightbox({
   topRightSlot = null,
   onIndexChange,
 }) {
+  if (urls && !Array.isArray(urls)) {
+    if (typeof window !== 'undefined' && typeof window.logError === 'function') {
+      window.logError('Lightbox non-array urls', { urls });
+    }
+  }
   const safe = Array.isArray(urls) ? urls.filter(Boolean) : [];
   const [idx, setIdx] = useState(
     Math.max(0, Math.min(startIndex, safe.length - 1))

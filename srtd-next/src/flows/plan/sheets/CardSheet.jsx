@@ -33,7 +33,14 @@ function normalizePlanImages(raw) {
   if (!raw) return [];
   let value = raw;
   if (typeof value === 'string') {
-    try { value = JSON.parse(value); } catch (e) { return []; }
+    try {
+      value = JSON.parse(value);
+    } catch (e) {
+      if (typeof window !== 'undefined' && typeof window.logError === 'function') {
+        window.logError('normalizePlanImages parse', e);
+      }
+      return [];
+    }
   }
   if (!value) return [];
   if (Array.isArray(value)) {
