@@ -86,74 +86,6 @@
 .plan-pillar-grad-growth         { background: linear-gradient(135deg, color-mix(in srgb, var(--c-pillar-growth)         35%, var(--c-bg-2)), color-mix(in srgb, var(--c-pillar-growth)         15%, var(--c-bg-2))); }
 .plan-pillar-grad-default        { background: linear-gradient(135deg, var(--c-bg-3), var(--c-bg-2)); }
 
-[data-plan-root] .plan-hero {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #1a1a1a;
-  cursor: pointer;
-  margin-bottom: 16px;
-}
-[data-plan-root] .plan-hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-[data-plan-root] .plan-hero-fallback {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
-}
-[data-plan-root] .plan-hero-empty {
-  cursor: default;
-}
-[data-plan-root] .plan-hero-expand {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-}
-[data-plan-root] .plan-hero-counter {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.65);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-[data-plan-root] .plan-gallery-strip {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 4px;
-  margin-bottom: 16px;
-  -webkit-overflow-scrolling: touch;
-}
-[data-plan-root] .plan-gallery-strip::-webkit-scrollbar {
-  display: none;
-}
-[data-plan-root] .plan-gallery-strip > * {
-  scroll-snap-align: start;
-  flex: 0 0 auto;
-}
 [data-plan-root] .plan-open-pcs-row {
   width: 100%;
   display: flex;
@@ -177,55 +109,74 @@
 [data-plan-root] .plan-open-pcs-row-label {
   text-align: left;
 }
-[data-plan-root] .plan-lightbox {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-[data-plan-root] .plan-lightbox-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 44px;
-  height: 44px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-}
-[data-plan-root] .plan-lightbox-stage {
+
+[data-plan-root] .plan-carousel {
+  position: relative;
   width: 100%;
-  max-width: 900px;
+  background: #0a0a0a;
+  margin-bottom: 16px;
+}
+[data-plan-root] .plan-carousel-strip {
   display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+[data-plan-root] .plan-carousel-strip::-webkit-scrollbar { display: none; }
+[data-plan-root] .plan-carousel-single {
+  display: block;
+}
+[data-plan-root] .plan-carousel-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  aspect-ratio: 4 / 3;
+  background: #1a1a1a;
+}
+[data-plan-root] .plan-carousel-single .plan-carousel-slide {
+  flex: 0 0 auto;
+  width: 100%;
+}
+[data-plan-root] .plan-carousel-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+[data-plan-root] .plan-carousel-empty {
+  aspect-ratio: 4 / 3;
+}
+[data-plan-root] .plan-carousel-fallback {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+}
+[data-plan-root] .plan-carousel-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.65);
+  color: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  z-index: 1;
+}
+
+[data-plan-root] .plan-header-expand {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+  border: none;
+  cursor: pointer;
 }
-[data-plan-root] .plan-lightbox-img {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  display: block;
-  border-radius: 6px;
-}
-[data-plan-root] .plan-lightbox-counter {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 500;
+[data-plan-root] .plan-header-expand:active {
+  background: rgba(255,255,255,0.08);
 }

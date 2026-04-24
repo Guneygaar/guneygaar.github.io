@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown, ChevronLeft, ChevronRight, MessageSquare,
-  ExternalLink, Check, Send, Maximize
+  ExternalLink, Check, Send, Maximize, Maximize2
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
@@ -95,150 +95,51 @@ function lifecycleDays(post) {
   return daysBetween(post.created_at, endTs);
 }
 
-function GalleryStrip({ post, onImageTap }) {
-  const images = normalizePlanImages(post && post.images);
-  const scrollerRef = useRef(null);
-  const [activeIdx, setActiveIdx] = useState(0);
+function Carousel({ post, onImageTap }) {
+  const images = normalizePlanImages(post.images);
+  const count = images.length;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const stripRef = useRef(null);
 
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    function onScroll() {
-      const w = el.clientWidth;
-      if (w <= 0) return;
-      setActiveIdx(Math.round(el.scrollLeft / w));
-    }
-    el.addEventListener('scroll', onScroll, { passive: true });
-    return () => el.removeEventListener('scroll', onScroll);
-  }, [images.length]);
-
-  if (images.length === 0) return null;
-
-  return (
-    <div style={{ padding: '10px 0 2px', position: 'relative' }}>
-      {images.length > 1 ? (
-        <div style={{
-          position: 'absolute',
-          top: '18px',
-          right: '22px',
-          zIndex: 2,
-          padding: '4px 10px',
-          borderRadius: '999px',
-          background: 'rgba(0, 0, 0, 0.65)',
-          color: '#fff',
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '10px',
-          letterSpacing: '.08em',
-          pointerEvents: 'none'
-        }}>{`${activeIdx + 1} / ${images.length}`}</div>
-      ) : null}
-      <div
-        ref={scrollerRef}
-        className="scrollbar-none"
-        style={{
-          display: 'flex',
-          gap: '8px',
-          paddingLeft: '14px',
-          paddingRight: '36px',
-          overflowX: 'auto',
-          scrollSnapType: 'x mandatory',
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-x'
-        }}
-      >
-        {images.map((src, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-label={`Open photo ${i + 1}`}
-            onClick={() => { if (onImageTap) onImageTap(i); }}
-            style={{
-              flexShrink: 0,
-              width: '84%',
-              aspectRatio: '4 / 5',
-              scrollSnapAlign: 'start',
-              background: 'var(--c-bg-2)',
-              borderRadius: '10px',
-              overflow: 'hidden',
-              padding: 0,
-              border: 'none',
-              cursor: 'pointer',
-              display: 'block'
-            }}
-          >
-            <img
-              src={src}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                touchAction: 'pan-y pinch-zoom'
-              }}
-            />
-          </button>
-        ))}
-      </div>
-      {images.length > 1 ? (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: '6px',
-          padding: '8px 14px 0'
-        }}>
-          {images.map((_, i) => (
-            <span
-              key={i}
-              style={{
-                display: 'inline-block',
-                width: i === activeIdx ? '16px' : '5px',
-                height: '5px',
-                borderRadius: '5px',
-                background: i === activeIdx ? 'var(--c-text-loud)' : 'var(--c-divider-soft)',
-                transition: 'width .18s ease, background .18s ease'
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function HeroBlock({ post, onImageTap }) {
-  const images = normalizePlanImages(post && post.images);
-
-  if (images.length === 0) {
+  if (count === 0) {
     return (
-      <div className="plan-hero plan-hero-empty">
-        <div className={'plan-hero-fallback pillar-' + (post && post.content_pillar ? post.content_pillar.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'default')} />
+      <div className="plan-carousel plan-carousel-empty">
+        <div className={'plan-carousel-fallback pillar-' + (post.content_pillar ? post.content_pillar.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'default')} />
       </div>
     );
   }
 
-  const heroSrc = images[0];
-  const count = images.length;
+  const handleScroll = function () {
+    if (!stripRef.current || count <= 1) return;
+    const scrollLeft = stripRef.current.scrollLeft;
+    const width = stripRef.current.clientWidth;
+    const newIndex = Math.round(scrollLeft / width);
+    if (newIndex !== currentIndex) setCurrentIndex(newIndex);
+  };
 
   return (
-    <div
-      className="plan-hero"
-      onClick={() => { if (onImageTap) onImageTap(0); }}
-      style={{ cursor: 'pointer' }}
-    >
-      <img src={heroSrc} alt="" loading="lazy" decoding="async" className="plan-hero-img" />
-      <button
-        type="button"
-        className="plan-hero-expand"
-        aria-label="Expand image"
-        onClick={(e) => { e.stopPropagation(); if (onImageTap) onImageTap(0); }}
+    <div className="plan-carousel">
+      <div
+        ref={stripRef}
+        className={count > 1 ? 'plan-carousel-strip' : 'plan-carousel-single'}
+        onScroll={handleScroll}
       >
-        <Maximize size={18} />
-      </button>
+        {images.map(function (src, i) {
+          return (
+            <div className="plan-carousel-slide" key={i}>
+              <img
+                src={src}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="plan-carousel-img"
+              />
+            </div>
+          );
+        })}
+      </div>
       {count > 1 ? (
-        <div className="plan-hero-counter">1 of {count}</div>
+        <div className="plan-carousel-counter">{currentIndex + 1} of {count}</div>
       ) : null}
     </div>
   );
@@ -964,14 +865,22 @@ export function MiniCardSheet() {
             }}>
             <ChevronRight size={18} />
           </button>
+          {postImages.length > 0 ? (
+            <button
+              type="button"
+              className="plan-header-expand"
+              onClick={function () { setLightboxIndex(0); }}
+              aria-label="View full size"
+            >
+              <Maximize2 size={18} strokeWidth={2} />
+            </button>
+          ) : null}
           <KebabMenu post={post} role={role} onAction={onKebabAction} />
         </header>
 
         <div
           style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {isClient
-            ? <GalleryStrip post={post} onImageTap={setLightboxIndex} />
-            : <HeroBlock post={post} onImageTap={setLightboxIndex} />}
+          <Carousel post={post} onImageTap={setLightboxIndex} />
 
           <div style={{
             display: 'flex',
