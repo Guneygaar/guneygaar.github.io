@@ -3,17 +3,45 @@
 // admin-only and shows a placeholder dash (real number requires
 // ai_usage fetch - deferred to PR 2 or 3).
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronDown, ArrowUpRight } from 'lucide-react';
 import { useAllPosts } from '../hooks/usePosts.js';
 import { useMetrics } from '../hooks/useMetrics.js';
 import { usePlanStore } from '../store/planStore.js';
+import { PeriodSheet } from '../sheets/PeriodSheet.jsx';
 import {
   STAGE_LABELS, STAGE_COLOR_VAR, OWNER_COLOR_VAR,
   OWNER_LABELS, PILLAR_LABELS, PILLAR_COLOR_VAR,
   FORMAT_LABELS, FORMAT_COLOR_VAR
 } from '../shared/constants.js';
 import { daysBetween } from '../shared/dateUtils.js';
+
+const PERIOD_DAYS = { week: 7, month: 30, quarter: 90 };
+const PERIOD_LABELS = {
+  week:    'Last 7 days',
+  month:   'Last 30 days',
+  quarter: 'Last 90 days'
+};
+const PERIOD_COMPARE_LABELS = {
+  week:    'vs prior week',
+  month:   'vs prior month',
+  quarter: 'vs prior quarter'
+};
+
+function periodBounds(period) {
+  const days = PERIOD_DAYS[period] || PERIOD_DAYS.month;
+  const now = new Date();
+  const since = new Date(now.getTime() - days * 86400000);
+  const prior = new Date(now.getTime() - 2 * days * 86400000);
+  return { since, prior, now };
+}
+
+function inRange(iso, from, to) {
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return false;
+  return t >= from.getTime() && t < to.getTime();
+}
 
 function Card({ title, children, onClick, span = 1 }) {
   return (
@@ -103,10 +131,29 @@ function Bar({ label, value, max, color }) {
 }
 
 export function Insights() {
-  const posts = useAllPosts();
+  const allPosts = useAllPosts();
   const metrics = useMetrics();
   const role = usePlanStore((s) => s.role);
-  const showToast = usePlanStore((s) => s.showToast);
+  const insightsPeriod = usePlanStore((s) => s.insightsPeriod);
+  const setInsightsPeriod = usePlanStore((s) => s.setInsightsPeriod);
+
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const bounds = useMemo(() => periodBounds(insightsPeriod), [insightsPeriod]);
+
+  const posts = useMemo(() => {
+    return allPosts.filter((p) => {
+      const ref = p.updated_at || p.status_changed_at || p.created_at;
+      return inRange(ref, bounds.since, bounds.now);
+    });
+  }, [allPosts, bounds.since.getTime(), bounds.now.getTime()]);
+
+  const priorPosts = useMemo(() => {
+    return allPosts.filter((p) => {
+      const ref = p.updated_at || p.status_changed_at || p.created_at;
+      return inRange(ref, bounds.prior, bounds.since);
+    });
+  }, [allPosts, bounds.prior.getTime(), bounds.since.getTime()]);
 
   const stats = useMemo(() => {
     const published = posts.filter((p) => p.stage === 'published');
@@ -211,7 +258,7 @@ export function Insights() {
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '4px 4px 14px' }}>
         <button
           type="button"
-          onClick={() => showToast({ msg: 'Period switcher coming in PR 2', duration: 2500 })}
+          onClick={() => setSheetOpen(true)}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -227,7 +274,7 @@ export function Insights() {
             textTransform: 'uppercase',
             cursor: 'pointer'
           }}>
-          April 2026 <ChevronDown size={12} />
+          {PERIOD_LABELS[insightsPeriod] || PERIOD_LABELS.month} <ChevronDown size={12} />
         </button>
         <span style={{
           display: 'inline-flex',
@@ -241,7 +288,7 @@ export function Insights() {
           color: 'var(--c-green-deep)'
         }}>
           <ArrowUpRight size={11} />
-          vs Mar
+          {PERIOD_COMPARE_LABELS[insightsPeriod] || PERIOD_COMPARE_LABELS.month}
         </span>
       </div>
 
@@ -375,6 +422,13 @@ export function Insights() {
           ))}
         </Card>
       </div>
+      {sheetOpen ? (
+        <PeriodSheet
+          current={insightsPeriod}
+          onPick={(p) => { setInsightsPeriod(p); setSheetOpen(false); }}
+          onClose={() => setSheetOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

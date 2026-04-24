@@ -40,6 +40,7 @@ export const usePlanStore = create((set, get) => ({
   monthEnd: DEFAULT_RANGE.monthEnd,
   loading: false,
   loadError: null,
+  insightsPeriod: 'month',
 
   async loadData() {
     set({ loading: true, loadError: null });
@@ -202,5 +203,10 @@ export const usePlanStore = create((set, get) => ({
 
   setMonthRange(monthStart, monthEnd) {
     set({ monthStart, monthEnd });
+  },
+
+  setInsightsPeriod(p) {
+    const allowed = p === 'week' || p === 'month' || p === 'quarter';
+    set({ insightsPeriod: allowed ? p : 'month' });
   }
 }));
