@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Check, ExternalLink, MessageSquare } from 'lucide-react';
 import { ErrorBoundary, Overlay } from '../../core/ui/index.js';
 import { usePcsFlowState } from './flowStore.js';
 import { usePcsStore } from './pcsStore.js';
@@ -8,6 +9,7 @@ import { KickerRow } from './components/KickerRow.jsx';
 import { PcsDetailSheet } from './components/PcsDetailSheet.jsx';
 import { CaptionBlock } from './components/CaptionBlock.jsx';
 import { PhotoStrip } from './components/PhotoStrip.jsx';
+import { StatsStrip } from './components/StatsStrip.jsx';
 import { Tabs } from './components/Tabs.jsx';
 import { CommentList } from './components/CommentList.jsx';
 import { Composer } from './components/Composer.jsx';
@@ -17,6 +19,11 @@ import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 import { ViewAllLink } from './components/ViewAllLink.jsx';
 import { FullScreenThread } from './components/FullScreenThread.jsx';
 import { ActivityFeed } from './components/ActivityFeed.jsx';
+import { apiFetch } from '../../core/api/client.js';
+import { updatePostStage } from '../../core/api/posts.js';
+import { toast } from '../../core/bridges/toast.js';
+import { logClick, logError } from '../../core/bridges/logging.js';
+import { formatTargetDate } from './utils/time.js';
 
 // Fields still routed through the full-screen PropertySheet (title only).
 // Every other field lives in PcsDetailSheet.
@@ -48,6 +55,8 @@ export function PCS() {
   const canMove = !isClient;
   const canSeeInternal = isAgency;
 
+  const [approving, setApproving] = useState(false);
+
   function onReplyToComment(c) {
     const authorName = c.author ? (userRoles.find((u) => u.email === c.author)?.name || c.author.split('@')[0]) : 'Unknown';
     setReplyTo({ id: c.id, authorName, message: c.message || '' });
@@ -55,6 +64,124 @@ export function PCS() {
 
   function onLongPressComment(c, isInternal) {
     setActionSheet({ comment: c, isInternal });
+  }
+
+  function focusComposer() {
+    // The Composer container is marked with data-composer (see Composer.jsx).
+    // Find its textarea and focus it; iOS Safari tolerates programmatic focus
+    // here because this is driven by a direct tap handler.
+    try {
+      const ta = document.querySelector('[data-composer] textarea');
+      if (ta && typeof ta.focus === 'function') ta.focus();
+    } catch (err) {
+      // Non-fatal — the composer may not yet be mounted on the activity tab.
+    }
+  }
+
+  async function onClientApprove() {
+    if (!post || approving) return;
+    if (post.stage !== 'awaiting_approval') return;
+    const actor = userEmail || 'unknown';
+    const oldStage = post.stage;
+    const newStage = 'scheduled';
+    const previousPost = post;
+    setApproving(true);
+    // Optimistic local update so the action bar flips immediately.
+    usePcsStore.setState({ post: { ...post, stage: newStage } });
+    try {
+      const updated = await updatePostStage(post.post_id, newStage, actor);
+      if (updated) usePcsStore.setState({ post: updated });
+      // Activity log write. notify-stage edge function fires server-side on
+      // the PATCH above — we do not invoke it from the client.
+      apiFetch('/activity_log', {
+        method: 'POST',
+        body: JSON.stringify({
+          post_id: post.post_id,
+          actor,
+          action: 'approved',
+          old_stage: oldStage,
+          new_stage: newStage,
+          created_at: new Date().toISOString(),
+        }),
+      }).catch((err) => {
+        logError(err, { context: 'pcs_react_client_approve_activity' });
+      });
+      logClick('pcs_react_client_approve', { post_id: post.post_id });
+      const when = formatTargetDate(post.target_date);
+      toast(when ? `Approved. Goes live ${when}` : 'Approved. Agency will schedule.', 'success');
+    } catch (err) {
+      // Rollback optimistic update on failure.
+      usePcsStore.setState({ post: previousPost });
+      logError(err, { context: 'pcs_react_client_approve' });
+      toast('Approve failed', 'error');
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  function onOpenLinkedIn() {
+    if (!post || !post.linkedin_link) return;
+    try {
+      window.open(post.linkedin_link, '_blank', 'noopener,noreferrer');
+      logClick('pcs_react_client_view_linkedin', { post_id: post.post_id });
+    } catch (err) {
+      logError(err, { context: 'pcs_react_client_view_linkedin' });
+    }
+  }
+
+  function renderClientActionBar() {
+    if (!isClient || !post) return null;
+    const stage = post.stage;
+    const commentBtn = (
+      <button
+        type="button"
+        onClick={focusComposer}
+        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 border border-border-warm bg-transparent text-text-mid font-mono text-xs tracking-wide uppercase active:opacity-70"
+        aria-label="Comment"
+      >
+        <MessageSquare size={14} />
+        <span>Comment</span>
+      </button>
+    );
+    if (stage === 'awaiting_approval') {
+      return (
+        <div className="flex items-stretch gap-2 px-3 py-2 border-t border-divider-warm bg-bg">
+          {commentBtn}
+          <button
+            type="button"
+            onClick={onClientApprove}
+            disabled={approving}
+            style={{ backgroundColor: '#cc785c', color: '#ffffff' }}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 font-sans text-sm font-semibold tracking-tight disabled:opacity-60"
+            aria-label="Approve"
+          >
+            <Check size={14} />
+            <span>{approving ? 'Approving...' : 'Approve'}</span>
+          </button>
+        </div>
+      );
+    }
+    if (stage === 'published' && post.linkedin_link) {
+      return (
+        <div className="flex items-stretch gap-2 px-3 py-2 border-t border-divider-warm bg-bg">
+          {commentBtn}
+          <button
+            type="button"
+            onClick={onOpenLinkedIn}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 bg-text-loud text-bg font-sans text-sm font-semibold tracking-tight active:opacity-80"
+            aria-label="View on LinkedIn"
+          >
+            <ExternalLink size={14} />
+            <span>View on LinkedIn</span>
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex items-stretch gap-2 px-3 py-2 border-t border-divider-warm bg-bg">
+        {commentBtn}
+      </div>
+    );
   }
 
   return (
@@ -86,6 +213,7 @@ export function PCS() {
                 </h1>
               </div>
               <CaptionBlock post={post} canEdit={canEdit} isAdmin={isAdmin} />
+              <StatsStrip post={post} />
               <Tabs
                 activeTab={activeTab}
                 onChange={setActiveTab}
@@ -146,9 +274,12 @@ export function PCS() {
 
                 {activeTab === 'activity' ? <ActivityFeed /> : null}
               </div>
-              {activeTab !== 'activity' && (
-                <Composer activeTab={activeTab} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
-              )}
+              <div className="sticky bottom-0 z-10 bg-bg">
+                {renderClientActionBar()}
+                {activeTab !== 'activity' && (
+                  <Composer activeTab={activeTab} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
+                )}
+              </div>
             </>
           )}
         </div>
