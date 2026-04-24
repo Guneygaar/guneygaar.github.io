@@ -280,10 +280,10 @@ export function PhotoStrip({ post, canEdit }) {
         {imgs.map((src, i) => (
           <div
             key={`${src}-${i}`}
-            className="relative flex-shrink-0 bg-bg-2"
+            className={`relative flex-shrink-0 bg-bg-2 ${isClient ? 'aspect-square' : ''}`}
             style={{
               width: '100%',
-              aspectRatio: '1 / 1',
+              ...(isClient ? {} : { aspectRatio: '1 / 1' }),
               scrollSnapAlign: 'start',
             }}
           >

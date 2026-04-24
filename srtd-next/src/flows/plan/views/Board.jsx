@@ -18,6 +18,8 @@ const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief
 
 function Card({ post }) {
   const openMiniCard = usePlanStore((s) => s.openMiniCard);
+  const role = usePlanStore((s) => s.role);
+  const isClient = role === 'client';
   const d = parseISODate(post.target_date);
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
@@ -92,21 +94,23 @@ function Card({ post }) {
           WebkitBoxOrient: 'vertical',
           overflow: 'hidden'
         }}>{post.title || 'Untitled'}</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-          <span style={{
-            fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: '7.5px',
-            textTransform: 'uppercase',
-            letterSpacing: '.1em',
-            color: 'var(--c-text-dim)'
-          }}>{post.owner || ''}</span>
-          <span style={{
-            width: '20px', height: '20px',
-            borderRadius: '20px',
-            background: ownerColor,
-            flexShrink: 0
-          }} />
-        </div>
+        {!isClient ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+            <span style={{
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '7.5px',
+              textTransform: 'uppercase',
+              letterSpacing: '.1em',
+              color: 'var(--c-text-dim)'
+            }}>{post.owner || ''}</span>
+            <span style={{
+              width: '20px', height: '20px',
+              borderRadius: '20px',
+              background: ownerColor,
+              flexShrink: 0
+            }} />
+          </div>
+        ) : null}
       </div>
     </button>
   );
