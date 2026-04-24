@@ -119,7 +119,8 @@ function GalleryStrip({ post, onImageTap }) {
           paddingRight: '36px',
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          WebkitOverflowScrolling: 'touch'
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-x'
         }}
       >
         {images.map((src, i) => (
@@ -152,7 +153,7 @@ function GalleryStrip({ post, onImageTap }) {
                 height: '100%',
                 objectFit: 'cover',
                 display: 'block',
-                touchAction: 'pinch-zoom'
+                touchAction: 'pan-y pinch-zoom'
               }}
             />
           </button>
