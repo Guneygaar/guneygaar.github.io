@@ -68,11 +68,11 @@
   flex-shrink: 0;
 }
 
-.plan-card-sheet-enter {
-  animation: planCardSheetSlideUp 340ms cubic-bezier(.32,.72,0,1);
+.plan-mini-card-sheet-enter {
+  animation: planMiniCardSheetSlideUp 340ms cubic-bezier(.32,.72,0,1);
 }
 
-@keyframes planCardSheetSlideUp {
+@keyframes planMiniCardSheetSlideUp {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }

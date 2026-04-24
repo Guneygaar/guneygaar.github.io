@@ -38,7 +38,7 @@ function rowClickGuarded(handler) {
 }
 
 function PostRow({ post, triggerPicker }) {
-  const openCard = usePlanStore((s) => s.openCard);
+  const openMiniCard = usePlanStore((s) => s.openMiniCard);
   const setFilter = usePlanStore((s) => s.setFilter);
   const role = usePlanStore((s) => s.role);
   const updatePostInPlace = usePlanStore.setState;
@@ -120,7 +120,7 @@ function PostRow({ post, triggerPicker }) {
 
   return (
     <div
-      onClick={rowClickGuarded(() => openCard(post))}
+      onClick={rowClickGuarded(() => openMiniCard(post))}
       style={{
         display: 'flex',
         alignItems: 'stretch',

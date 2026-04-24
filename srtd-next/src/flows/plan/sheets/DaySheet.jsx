@@ -108,7 +108,7 @@ function Row({ post, onOpen }) {
 export function DaySheet() {
   const day = usePlanStore((s) => s.currentDay);
   const closeDay = usePlanStore((s) => s.closeDay);
-  const openCard = usePlanStore((s) => s.openCard);
+  const openMiniCard = usePlanStore((s) => s.openMiniCard);
   const allPosts = useAllPosts();
 
   const posts = useMemo(() => {
@@ -129,7 +129,7 @@ export function DaySheet() {
 
   function handleOpen(post) {
     // Sequential transition - close day sheet, then open card.
-    setTimeout(() => openCard(post), 240);
+    setTimeout(() => openMiniCard(post), 240);
     closeDay();
   }
 
@@ -143,7 +143,7 @@ export function DaySheet() {
           zIndex: 2400
         }} />
       <div
-        className="plan-card-sheet-enter"
+        className="plan-mini-card-sheet-enter"
         style={{
           position: 'fixed',
           left: 0, right: 0, bottom: 0,
