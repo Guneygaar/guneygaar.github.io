@@ -13,7 +13,7 @@ import {
   OWNER_LABELS, PILLAR_LABELS, PILLAR_COLOR_VAR,
   FORMAT_LABELS, FORMAT_COLOR_VAR
 } from '../shared/constants.js';
-import { parseISODate, daysBetween, formatTime12, monthAbbr, dayNumber } from '../shared/dateUtils.js';
+import { daysBetween } from '../shared/dateUtils.js';
 
 function Card({ title, children, onClick, span = 1 }) {
   return (
@@ -106,7 +106,6 @@ export function Insights() {
   const posts = useAllPosts();
   const metrics = useMetrics();
   const role = usePlanStore((s) => s.role);
-  const openCard = usePlanStore((s) => s.openCard);
   const showToast = usePlanStore((s) => s.showToast);
 
   const stats = useMemo(() => {
@@ -176,19 +175,6 @@ export function Insights() {
     const formatBars = Object.entries(byFormat).sort((a, b) => b[1] - a[1]);
     const maxFormat = formatBars.reduce((m, p) => Math.max(m, p[1]), 0);
 
-    // Top post
-    const withMetrics = published
-      .map((p) => ({ post: p, m: metrics[p.id] }))
-      .filter((x) => x.m);
-    const sorted = withMetrics.sort((a, b) => {
-      const er = (b.m.engagement_rate || 0) - (a.m.engagement_rate || 0);
-      if (er !== 0) return er;
-      const ba = (b.m.likes || 0) + (b.m.comments || 0) + (b.m.reposts || 0);
-      const aa = (a.m.likes || 0) + (a.m.comments || 0) + (a.m.reposts || 0);
-      return ba - aa;
-    });
-    const topPost = sorted[0] || null;
-
     // Format mix for rejection note
     const rejectedFormats = {};
     for (const p of rejected) {
@@ -215,8 +201,7 @@ export function Insights() {
       pillarBars,
       maxPillar,
       formatBars,
-      maxFormat,
-      topPost
+      maxFormat
     };
   }, [posts, metrics]);
 
@@ -388,89 +373,6 @@ export function Insights() {
               color={`var(${FORMAT_COLOR_VAR[fmt] || '--c-text-dim'})`}
             />
           ))}
-        </Card>
-
-        <Card title="Top post" span={2} onClick={stats.topPost ? () => openCard(stats.topPost.post) : undefined}>
-          {!stats.topPost ? (
-            <div style={{
-              fontFamily: '"DM Sans", sans-serif',
-              fontSize: '12px',
-              fontStyle: 'italic',
-              color: 'var(--c-text-dim)'
-            }}>No published posts in this period.</div>
-          ) : (
-            <>
-              <div style={{
-                fontFamily: 'Fraunces, serif',
-                fontSize: '20px',
-                fontWeight: 500,
-                color: 'var(--c-text-loud)',
-                lineHeight: 1.2,
-                marginBottom: '10px'
-              }}>{stats.topPost.post.title || 'Untitled'}</div>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                {stats.topPost.post.content_pillar ? (
-                  <span style={{
-                    padding: '3px 7px',
-                    background: 'var(--c-bg-2)',
-                    borderRadius: '2px',
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '8.5px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '.1em',
-                    color: 'var(--c-text-mid)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}>
-                    <span style={{
-                      width: '6px', height: '6px', borderRadius: '6px',
-                      background: `var(${PILLAR_COLOR_VAR[stats.topPost.post.content_pillar] || '--c-text-dim'})`
-                    }} />
-                    {PILLAR_LABELS[stats.topPost.post.content_pillar] || stats.topPost.post.content_pillar}
-                  </span>
-                ) : null}
-                {stats.topPost.post.owner ? (
-                  <span style={{
-                    padding: '3px 7px',
-                    background: 'var(--c-bg-2)',
-                    borderRadius: '2px',
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '8.5px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '.1em',
-                    color: 'var(--c-text-mid)'
-                  }}>{stats.topPost.post.owner}</span>
-                ) : null}
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                <div>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: '20px', fontWeight: 500, color: 'var(--c-text-loud)' }}>
-                    {stats.topPost.m.impressions || 0}
-                  </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--c-text-dim)' }}>
-                    Views
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: '20px', fontWeight: 500, color: 'var(--c-text-loud)' }}>
-                    {stats.topPost.m.likes || 0}
-                  </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--c-text-dim)' }}>
-                    Likes
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: '20px', fontWeight: 500, color: 'var(--c-text-loud)' }}>
-                    {((stats.topPost.m.engagement_rate || 0) * 100).toFixed(1)}%
-                  </div>
-                  <div style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: '8px', textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--c-text-dim)' }}>
-                    ER
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
         </Card>
       </div>
     </div>
