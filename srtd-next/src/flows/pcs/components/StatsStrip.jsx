@@ -82,7 +82,6 @@ export function StatsStrip({ post }) {
             style={{
               fontSize: '36px',
               fontFeatureSettings: "'tnum' 1",
-              letterSpacing: '-0.01em',
             }}
           >
             {formatNumber(row.impressions)}
@@ -128,7 +127,6 @@ export function StatsStrip({ post }) {
               style={{
                 fontSize: '20px',
                 fontFeatureSettings: "'tnum' 1",
-                letterSpacing: '-0.01em',
               }}
             >
               {formatNumber(cell.value)}
