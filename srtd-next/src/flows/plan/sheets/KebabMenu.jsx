@@ -1,4 +1,4 @@
-// Kebab menu for CardSheet top bar. Hidden for clients. Shows a
+// Kebab menu for MiniCardSheet top bar. Hidden for clients. Shows a
 // stage-appropriate action matrix. Dismisses on item tap, outside
 // click, or Escape.
 //

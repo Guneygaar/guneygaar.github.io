@@ -12,7 +12,7 @@ import { useMetricsFor } from '../hooks/useMetrics.js';
 import { useReasonFor } from '../hooks/useReasons.js';
 import { useDatePicker } from '../hooks/useDatePicker.js';
 import {
-  fetchCommentsForCard, fetchActivityForCard, patchStage
+  fetchCommentsForMiniCard, fetchActivityForMiniCard, patchStage
 } from '../api/planApi.js';
 import { createComment } from '../../../core/api/comments.js';
 import { KebabMenu } from './KebabMenu.jsx';
@@ -66,7 +66,7 @@ function openInPCS(postId) {
     bridge.open(postId);
     return;
   }
-  console.error('[plan/cardsheet] PCS bridge missing; falling back to URL deep link');
+  console.error('[plan/minicard] PCS bridge missing; falling back to URL deep link');
   // Fallback: URL deep-link path read by index.html on mount.
   try {
     const url = new URL(window.location.href);
@@ -320,7 +320,7 @@ function roleDotColor(author_role) {
   return 'var(--c-text-dim)';
 }
 
-function CommentCard({ c }) {
+function MiniCommentCard({ c }) {
   const author = c.author || '';
   const short = author.includes('@') ? author.split('@')[0] : author;
   const time = c.created_at ? new Date(c.created_at) : null;
@@ -550,7 +550,7 @@ function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
 }
 
 function ActionBar({ post, role, onApprove, onComment }) {
-  const closeCard = usePlanStore((s) => s.closeCard);
+  const closeMiniCard = usePlanStore((s) => s.closeMiniCard);
   const stage = post.stage;
 
   const BTN_STYLE = {
@@ -606,7 +606,7 @@ function ActionBar({ post, role, onApprove, onComment }) {
         onClick={() => {
           const pid = post && post.post_id;
           if (!pid) return;
-          closeCard();
+          closeMiniCard();
           openInPCS(pid);
         }}
         style={{ ...BTN_STYLE, ...solid }}
@@ -681,11 +681,11 @@ function ActionBar({ post, role, onApprove, onComment }) {
   );
 }
 
-export function CardSheet() {
+export function MiniCardSheet() {
   const post = usePlanStore((s) => s.currentPost);
   const role = usePlanStore((s) => s.role);
-  const closeCard = usePlanStore((s) => s.closeCard);
-  const navigateCard = usePlanStore((s) => s.navigateCard);
+  const closeMiniCard = usePlanStore((s) => s.closeMiniCard);
+  const navigateMiniCard = usePlanStore((s) => s.navigateMiniCard);
   const showToast = usePlanStore((s) => s.showToast);
   const metrics = useMetricsFor(post);
   const reason = useReasonFor(post);
@@ -728,7 +728,7 @@ export function CardSheet() {
     if (!post || !post.post_id) { setComments([]); return; }
     let cancelled = false;
     setCommentsError(null);
-    fetchCommentsForCard(post.post_id, role).then((rows) => {
+    fetchCommentsForMiniCard(post.post_id, role).then((rows) => {
       if (cancelled) return;
       setComments(rows);
     }).catch((err) => {
@@ -743,7 +743,7 @@ export function CardSheet() {
     if (isClient) { setActivity([]); return; }
     let cancelled = false;
     setActivityError(null);
-    fetchActivityForCard(post.post_id).then((rows) => {
+    fetchActivityForMiniCard(post.post_id).then((rows) => {
       if (cancelled) return;
       setActivity(rows);
     }).catch((err) => {
@@ -781,7 +781,7 @@ export function CardSheet() {
   const { triggerPicker } = useDatePicker();
 
   const onApprove = () => {
-    closeCard();
+    closeMiniCard();
     showToast({ msg: 'Sent to publish queue', duration: 3000 });
   };
   const onComment = () => {
@@ -887,14 +887,14 @@ export function CardSheet() {
   return (
     <>
       <div
-        onClick={closeCard}
+        onClick={closeMiniCard}
         style={{
           position: 'fixed', inset: 0,
           background: 'var(--backdrop-tint, rgba(0,0,0,.3))',
           zIndex: 2500
         }} />
       <div
-        className="plan-card-sheet-enter"
+        className="plan-mini-card-sheet-enter"
         style={{
           position: 'fixed',
           inset: 0,
@@ -917,7 +917,7 @@ export function CardSheet() {
           alignItems: 'center',
           gap: '6px'
         }}>
-          <button type="button" aria-label="Close" onClick={closeCard}
+          <button type="button" aria-label="Close" onClick={closeMiniCard}
             style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
             <ChevronDown size={20} />
           </button>
@@ -925,7 +925,7 @@ export function CardSheet() {
             type="button"
             aria-label="Previous post"
             disabled={!hasPrev}
-            onClick={hasPrev ? () => navigateCard('prev') : undefined}
+            onClick={hasPrev ? () => navigateMiniCard('prev') : undefined}
             style={{
               background: 'transparent',
               border: 'none',
@@ -953,7 +953,7 @@ export function CardSheet() {
             type="button"
             aria-label="Next post"
             disabled={!hasNext}
-            onClick={hasNext ? () => navigateCard('next') : undefined}
+            onClick={hasNext ? () => navigateMiniCard('next') : undefined}
             style={{
               background: 'transparent',
               border: 'none',
@@ -1140,7 +1140,7 @@ export function CardSheet() {
                   <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
                     No comments yet.
                   </div>
-                ) : commentsVisible.map((c) => <CommentCard key={c.id} c={c} />)}
+                ) : commentsVisible.map((c) => <MiniCommentCard key={c.id} c={c} />)}
                 {canComposeAll ? (
                   <InlineComposer
                     postId={post.post_id}
@@ -1159,7 +1159,7 @@ export function CardSheet() {
                   <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
                     No internal notes.
                   </div>
-                ) : commentsInternal.map((c) => <CommentCard key={c.id} c={c} />)}
+                ) : commentsInternal.map((c) => <MiniCommentCard key={c.id} c={c} />)}
                 {canComposeInternal ? (
                   <InlineComposer
                     postId={post.post_id}

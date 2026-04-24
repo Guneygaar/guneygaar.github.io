@@ -89,13 +89,13 @@ export const usePlanStore = create((set, get) => ({
   setFilter(f) { set({ currentFilter: f || { stage: 'all' } }); },
   clearFilter() { set({ currentFilter: { stage: 'all' } }); },
 
-  openCard(post) {
-    set({ currentPost: post, activeSheet: 'card' });
+  openMiniCard(post) {
+    set({ currentPost: post, activeSheet: 'miniCard' });
     if (post && (post.caption == null || post.images == null)) {
       get().loadCaptionFor(post);
     }
   },
-  closeCard() { set({ currentPost: null, activeSheet: null }); },
+  closeMiniCard() { set({ currentPost: null, activeSheet: null }); },
 
   openDay(d) { set({ currentDay: d, activeSheet: 'day' }); },
   closeDay() { set({ currentDay: null, activeSheet: null }); },
@@ -108,7 +108,7 @@ export const usePlanStore = create((set, get) => ({
 
   closeSheet() { set({ activeSheet: null, currentPost: null, currentDay: null }); },
 
-  navigateCard(direction) {
+  navigateMiniCard(direction) {
     const { posts, currentPost } = get();
     if (!currentPost || posts.length === 0) return;
     const sorted = [...posts].sort((a, b) => {

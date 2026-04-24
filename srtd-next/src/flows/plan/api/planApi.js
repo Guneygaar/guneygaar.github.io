@@ -69,10 +69,10 @@ export async function fetchReasonComments(postIdsText) {
 }
 
 /**
- * Query 4 - fetchCommentsForCard(postIdText, role)
+ * Query 4 - fetchCommentsForMiniCard(postIdText, role)
  * role: 'admin' | 'agency' | 'client'
  */
-export async function fetchCommentsForCard(postIdText, role) {
+export async function fetchCommentsForMiniCard(postIdText, role) {
   if (!postIdText) return [];
   const select = 'id,author,author_role,message,created_at,visibility';
   let visFilter = '';
@@ -91,10 +91,10 @@ export async function fetchCommentsForCard(postIdText, role) {
 }
 
 /**
- * Query 5 - fetchActivityForCard(postIdText)
+ * Query 5 - fetchActivityForMiniCard(postIdText)
  * Hidden for client role - callers must skip this when role === 'client'.
  */
-export async function fetchActivityForCard(postIdText) {
+export async function fetchActivityForMiniCard(postIdText) {
   if (!postIdText) return [];
   const select = 'id,actor,action,old_stage,new_stage,created_at';
   const path = `/activity_log?select=${select}`

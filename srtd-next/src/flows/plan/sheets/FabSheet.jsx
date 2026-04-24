@@ -76,7 +76,7 @@ export function FabSheet() {
           zIndex: 2300
         }} />
       <div
-        className="plan-card-sheet-enter"
+        className="plan-mini-card-sheet-enter"
         style={{
           position: 'fixed',
           left: 0, right: 0, bottom: 0,

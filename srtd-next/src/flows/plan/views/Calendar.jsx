@@ -1,6 +1,6 @@
 // Month grid view. Monday-first. Cells show up to 2 thumb previews.
 // Cell tap opens DaySheet. Thumb tap bypasses DaySheet and opens
-// CardSheet directly.
+// MiniCardSheet directly.
 
 import React, { useMemo } from 'react';
 import { usePosts } from '../hooks/usePosts.js';
@@ -16,7 +16,7 @@ import { PillarThumb } from '../shared/PillarThumb.jsx';
 const DOW_HEADERS = ['M','T','W','T','F','S','S'];
 
 function ThumbMini({ post }) {
-  const openCard = usePlanStore((s) => s.openCard);
+  const openMiniCard = usePlanStore((s) => s.openMiniCard);
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
     : 'var(--c-text-dim)';
@@ -28,7 +28,7 @@ function ThumbMini({ post }) {
   return (
     <button
       type="button"
-      onClick={(e) => { e.stopPropagation(); openCard(post); }}
+      onClick={(e) => { e.stopPropagation(); openMiniCard(post); }}
       style={{
         position: 'relative',
         width: '100%',
