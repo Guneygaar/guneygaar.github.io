@@ -43,6 +43,24 @@ function inRange(iso, from, to) {
   return t >= from.getTime() && t < to.getTime();
 }
 
+function deltaLabel(current, prior, opts) {
+  if (current == null || prior == null) return null;
+  const diff = current - prior;
+  if (diff === 0) return 'no change';
+  const suffix = opts && opts.suffix ? opts.suffix : '';
+  const rounded = Math.round(diff * 10) / 10;
+  const arrow = diff > 0 ? '+' : '';
+  return `${arrow}${rounded}${suffix} ${opts && opts.compareLabel ? opts.compareLabel : ''}`.trim();
+}
+
+function deltaColor(current, prior, higherIsBetter) {
+  if (current == null || prior == null) return 'var(--c-text-dim)';
+  if (current === prior) return 'var(--c-text-dim)';
+  const up = current > prior;
+  const good = higherIsBetter ? up : !up;
+  return good ? 'var(--c-green-deep)' : 'var(--c-terracotta-2)';
+}
+
 function Card({ title, children, onClick, span = 1 }) {
   return (
     <div
@@ -155,24 +173,39 @@ export function Insights() {
     });
   }, [allPosts, bounds.prior.getTime(), bounds.since.getTime()]);
 
-  const stats = useMemo(() => {
-    const published = posts.filter((p) => p.stage === 'published');
-    const rejected = posts.filter((p) => p.stage === 'rejected');
-    const parked = posts.filter((p) => p.stage === 'parked');
-    const scheduled = posts.filter((p) => p.stage === 'scheduled');
-    const total = posts.length;
-
+  const computeCore = (pool) => {
+    const published = pool.filter((p) => p.stage === 'published');
+    const rejected = pool.filter((p) => p.stage === 'rejected');
+    const total = pool.length;
     const reliabilityDenom = published.length + rejected.length;
     const reliability = reliabilityDenom > 0
       ? Math.round((published.length / reliabilityDenom) * 100)
       : null;
-
     const cycles = published
       .map((p) => daysBetween(p.created_at, p.status_changed_at))
       .filter((d) => d > 0);
     const avgCycle = cycles.length > 0
       ? Math.round((cycles.reduce((a, b) => a + b, 0) / cycles.length) * 10) / 10
       : null;
+    const rework = total > 0
+      ? Math.round((rejected.length / total) * 100)
+      : 0;
+    const rejection = total > 0
+      ? Math.round((rejected.length / total) * 100)
+      : 0;
+    return { published, rejected, total, reliability, avgCycle, rework, rejection };
+  };
+
+  const stats = useMemo(() => {
+    const core = computeCore(posts);
+    const prior = computeCore(priorPosts);
+    const published = core.published;
+    const rejected = core.rejected;
+    const parked = posts.filter((p) => p.stage === 'parked');
+    const scheduled = posts.filter((p) => p.stage === 'scheduled');
+    const total = core.total;
+    const reliability = core.reliability;
+    const avgCycle = core.avgCycle;
 
     // Bottleneck - average dwell time per stage (among posts currently
     // in that stage, days since status_changed_at).
@@ -188,12 +221,8 @@ export function Insights() {
       .slice(0, 5);
     const maxDwell = dwellPairs.reduce((m, p) => Math.max(m, p[1]), 0);
 
-    const rework = total > 0
-      ? Math.round((rejected.length / total) * 100)
-      : 0;
-    const rejection = total > 0
-      ? Math.round((rejected.length / total) * 100)
-      : 0;
+    const rework = core.rework;
+    const rejection = core.rejection;
 
     // Owner workload
     const byOwner = {};
@@ -248,9 +277,10 @@ export function Insights() {
       pillarBars,
       maxPillar,
       formatBars,
-      maxFormat
+      maxFormat,
+      prior
     };
-  }, [posts, metrics]);
+  }, [posts, priorPosts, metrics]);
 
   return (
     <div style={{ padding: '14px 12px 80px' }}>
@@ -297,7 +327,8 @@ export function Insights() {
           <BigStat
             value={stats.reliability == null ? '-' : stats.reliability}
             suffix={stats.reliability == null ? '' : '%'}
-            sub={stats.reliability != null ? `${stats.published} of ${stats.published + stats.rejected}` : null}
+            sub={deltaLabel(stats.reliability, stats.prior.reliability, { suffix: 'pp', compareLabel: PERIOD_COMPARE_LABELS[insightsPeriod] || '' })}
+            subColor={deltaColor(stats.reliability, stats.prior.reliability, true)}
           />
         </Card>
 
@@ -305,7 +336,8 @@ export function Insights() {
           <BigStat
             value={stats.avgCycle == null ? '-' : stats.avgCycle}
             suffix={stats.avgCycle == null ? '' : 'd'}
-            sub={stats.avgCycle != null ? 'brief to published' : null}
+            sub={deltaLabel(stats.avgCycle, stats.prior.avgCycle, { suffix: 'd', compareLabel: PERIOD_COMPARE_LABELS[insightsPeriod] || '' })}
+            subColor={deltaColor(stats.avgCycle, stats.prior.avgCycle, false)}
           />
         </Card>
 
@@ -329,14 +361,20 @@ export function Insights() {
         </Card>
 
         <Card title="Rework rate">
-          <BigStat value={stats.rework} suffix="%" sub={`${stats.rejected} rejected`} />
+          <BigStat
+            value={stats.rework}
+            suffix="%"
+            sub={deltaLabel(stats.rework, stats.prior.rework, { suffix: 'pp', compareLabel: PERIOD_COMPARE_LABELS[insightsPeriod] || '' })}
+            subColor={deltaColor(stats.rework, stats.prior.rework, false)}
+          />
         </Card>
 
         <Card title="Rejection rate">
           <BigStat
             value={stats.rejection}
             suffix="%"
-            sub={stats.dominantFormat ? `Most: ${stats.dominantFormat}` : null}
+            sub={deltaLabel(stats.rejection, stats.prior.rejection, { suffix: 'pp', compareLabel: PERIOD_COMPARE_LABELS[insightsPeriod] || '' })}
+            subColor={deltaColor(stats.rejection, stats.prior.rejection, false)}
           />
         </Card>
 
