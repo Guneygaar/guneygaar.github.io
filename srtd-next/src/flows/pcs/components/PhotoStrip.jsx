@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { ImagePlus, ImageOff, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ImagePlus, ImageOff, ArrowLeft, ArrowRight, Maximize2 } from 'lucide-react';
 import { Lightbox, PhotoKebabMenu } from '../../../core/ui';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState.js';
 import { usePcsStore } from '../pcsStore.js';
 import { uploadToR2 } from '../../../core/bridges/r2.js';
 import { compressImage, generateFilename } from '../../../core/utils/imageCompress.js';
@@ -68,6 +68,7 @@ export function PhotoStrip({ post, canEdit }) {
   const imgs = normalizeImages(post?.images);
   const count = imgs.length;
   const actor = useAppState((s) => s.user?.email || '');
+  const isClient = useIsClient();
 
   const [lightIdx, setLightIdx] = useState(null);
   const [reorderOpen, setReorderOpen] = useState(false);
@@ -294,7 +295,7 @@ export function PhotoStrip({ post, canEdit }) {
               <ThumbImg src={src} />
             </button>
 
-            {/* Top-right cluster: count badge + kebab */}
+            {/* Top-right cluster: count badge + expand pill + kebab */}
             <div
               className="absolute top-3 right-3 flex items-center gap-2"
               onClick={(e) => e.stopPropagation()}
@@ -312,12 +313,26 @@ export function PhotoStrip({ post, canEdit }) {
                   {i + 1} / {count}
                 </div>
               ) : null}
-              {canEdit ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLightbox(i);
+                }}
+                className="inline-flex items-center justify-center
+                           w-8 h-8 rounded-pill"
+                style={{
+                  background: 'rgba(0,0,0,0.55)',
+                  color: '#F4F3EE',
+                }}
+                aria-label="Expand photo"
+              >
+                <Maximize2 size={14} />
+              </button>
+              {canEdit && !isClient ? (
                 <PhotoKebabMenu
                   context="card"
                   canSetHero={i !== 0}
                   canReorder={count > 1}
-                  onViewFull={() => openLightbox(i)}
                   onAdd={() => fileInputRef.current?.click()}
                   onSetHero={() => setAsHero(i)}
                   onReorder={() => {
@@ -358,7 +373,7 @@ export function PhotoStrip({ post, canEdit }) {
           onClose={() => setLightIdx(null)}
           onIndexChange={(i) => setLightIdx(i)}
           topRightSlot={
-            canEdit ? (
+            canEdit && !isClient ? (
               <PhotoKebabMenu
                 context="lightbox"
                 canSetHero={lightIdx !== 0}
