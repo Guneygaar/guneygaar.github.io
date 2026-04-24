@@ -365,3 +365,11 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+/* Drag source pulse - brief terracotta ring around the cell the user
+   picked up a thumb from. Added via classList.add in Calendar.jsx and
+   auto-removed 400ms later. */
+.drag-source-pulse {
+  box-shadow: 0 0 0 2px var(--c-terracotta, #cc785c);
+  transition: box-shadow 200ms ease;
+}
