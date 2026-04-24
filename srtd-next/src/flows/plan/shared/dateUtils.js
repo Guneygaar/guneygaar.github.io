@@ -118,3 +118,30 @@ export function sameDay(a, b) {
     && a.getMonth() === b.getMonth()
     && a.getDate() === b.getDate();
 }
+
+export function formatRelativeTime(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (isNaN(then)) return '';
+  const now = Date.now();
+  const diffMs = now - then;
+  if (diffMs < 0) return 'just now';
+
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return 'just now';
+
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + 'm ago';
+
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return hr + 'h ago';
+
+  const day = Math.floor(hr / 24);
+  if (day < 7) return day + 'd ago';
+
+  if (day < 30) return Math.floor(day / 7) + 'w ago';
+
+  if (day < 365) return Math.floor(day / 30) + 'mo ago';
+
+  return Math.floor(day / 365) + 'y ago';
+}
