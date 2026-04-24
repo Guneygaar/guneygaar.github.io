@@ -12,7 +12,7 @@ import {
   useDroppable,
   useDraggable
 } from '@dnd-kit/core';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import {
@@ -190,8 +190,12 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
 export function Calendar() {
   const posts = useCalendarPosts();
   const monthStart = usePlanStore((s) => s.monthStart);
+  const setMonthRange = usePlanStore((s) => s.setMonthRange);
+  const loadData = usePlanStore((s) => s.loadData);
+  const storeLoading = usePlanStore((s) => s.loading);
   const rescheduleTarget = usePlanStore((s) => s.rescheduleTarget);
   const [isExporting, setIsExporting] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -212,8 +216,25 @@ export function Calendar() {
 
   const monthLabel = useMemo(() => {
     if (!startDate) return '';
+    try {
+      const safe = new Date(monthStart + 'T00:00:00');
+      if (!isNaN(safe.getTime())) {
+        return safe.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+    } catch (e) {
+      // fall through to manual format
+    }
     return MONTH_NAMES_FULL[startDate.getMonth()] + ' ' + startDate.getFullYear();
+  }, [startDate, monthStart]);
+
+  const isThisMonth = useMemo(() => {
+    if (!startDate) return true;
+    const now = new Date();
+    return startDate.getFullYear() === now.getFullYear()
+      && startDate.getMonth() === now.getMonth();
   }, [startDate]);
+
+  const navDisabled = isNavigating || storeLoading;
 
   const handleExport = async () => {
     if (isExporting) return;
@@ -222,6 +243,47 @@ export function Calendar() {
       await exportCalendarAsPng(posts, startDate);
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const shiftMonth = async (delta) => {
+    if (navDisabled) return;
+    const base = startDate ? new Date(startDate) : new Date();
+    base.setDate(1);
+    base.setMonth(base.getMonth() + delta);
+    const y = base.getFullYear();
+    const m = String(base.getMonth() + 1).padStart(2, '0');
+    const newStart = `${y}-${m}-01`;
+    const endDate = new Date(y, base.getMonth() + 1, 0);
+    const endD = String(endDate.getDate()).padStart(2, '0');
+    const newEnd = `${y}-${m}-${endD}`;
+    setIsNavigating(true);
+    try {
+      setMonthRange(newStart, newEnd);
+      await loadData();
+    } finally {
+      setIsNavigating(false);
+    }
+  };
+
+  const handlePrev = () => { shiftMonth(-1); };
+  const handleNext = () => { shiftMonth(1); };
+
+  const handleToday = async () => {
+    if (navDisabled) return;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const newStart = `${y}-${m}-01`;
+    const endDate = new Date(y, now.getMonth() + 1, 0);
+    const endD = String(endDate.getDate()).padStart(2, '0');
+    const newEnd = `${y}-${m}-${endD}`;
+    setIsNavigating(true);
+    try {
+      setMonthRange(newStart, newEnd);
+      await loadData();
+    } finally {
+      setIsNavigating(false);
     }
   };
 
@@ -260,47 +322,131 @@ export function Calendar() {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: '8px',
-          padding: '0 2px'
+          padding: '0 2px',
+          gap: '8px'
         }}>
           <div style={{
-            fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: '10px',
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
-            color: 'var(--c-text-dim)'
-          }}>{monthLabel}</div>
-          <button
-            type="button"
-            aria-label="Export calendar"
-            onClick={handleExport}
-            disabled={isExporting}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'transparent',
-              border: '1px solid var(--c-divider-soft)',
-              borderRadius: '6px',
-              padding: '5px 9px',
-              cursor: isExporting ? 'default' : 'pointer',
-              color: 'var(--c-text-mid)',
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '9px',
-              letterSpacing: '.12em',
-              textTransform: 'uppercase',
-              opacity: isExporting ? 0.6 : 1
-            }}>
-            {isExporting ? (
-              <Loader2
-                size={13}
-                className="animate-spin"
-                style={{ animation: 'plan-spin 0.8s linear infinite' }}
-              />
-            ) : (
-              <Download size={13} />
-            )}
-            <span>{isExporting ? 'Exporting' : 'Export'}</span>
-          </button>
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            minWidth: 0
+          }}>
+            <button
+              type="button"
+              aria-label="Previous month"
+              onClick={handlePrev}
+              disabled={navDisabled}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                background: 'transparent',
+                border: '1px solid var(--c-divider-soft)',
+                borderRadius: '6px',
+                cursor: navDisabled ? 'default' : 'pointer',
+                color: 'var(--c-text-mid)',
+                opacity: navDisabled ? 0.5 : 1,
+                pointerEvents: navDisabled ? 'none' : 'auto'
+              }}>
+              <ChevronLeft size={18} />
+            </button>
+            <div style={{
+              fontFamily: 'Fraunces, serif',
+              fontSize: '18px',
+              fontWeight: 600,
+              letterSpacing: '-.01em',
+              color: 'var(--c-text-loud)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>{monthLabel}</div>
+            <button
+              type="button"
+              aria-label="Next month"
+              onClick={handleNext}
+              disabled={navDisabled}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                background: 'transparent',
+                border: '1px solid var(--c-divider-soft)',
+                borderRadius: '6px',
+                cursor: navDisabled ? 'default' : 'pointer',
+                color: 'var(--c-text-mid)',
+                opacity: navDisabled ? 0.5 : 1,
+                pointerEvents: navDisabled ? 'none' : 'auto'
+              }}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            {!isThisMonth ? (
+              <button
+                type="button"
+                aria-label="Jump to current month"
+                onClick={handleToday}
+                disabled={navDisabled}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  background: 'transparent',
+                  border: '1px solid var(--c-divider-soft)',
+                  borderRadius: '6px',
+                  padding: '5px 9px',
+                  cursor: navDisabled ? 'default' : 'pointer',
+                  color: 'var(--c-text-mid)',
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '9px',
+                  letterSpacing: '.12em',
+                  textTransform: 'uppercase',
+                  opacity: navDisabled ? 0.5 : 1,
+                  pointerEvents: navDisabled ? 'none' : 'auto'
+                }}>
+                Today
+              </button>
+            ) : null}
+            <button
+              type="button"
+              aria-label="Export calendar"
+              onClick={handleExport}
+              disabled={isExporting}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'transparent',
+                border: '1px solid var(--c-divider-soft)',
+                borderRadius: '6px',
+                padding: '5px 9px',
+                cursor: isExporting ? 'default' : 'pointer',
+                color: 'var(--c-text-mid)',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '9px',
+                letterSpacing: '.12em',
+                textTransform: 'uppercase',
+                opacity: isExporting ? 0.6 : 1
+              }}>
+              {isExporting ? (
+                <Loader2
+                  size={13}
+                  className="animate-spin"
+                  style={{ animation: 'plan-spin 0.8s linear infinite' }}
+                />
+              ) : (
+                <Download size={13} />
+              )}
+              <span>{isExporting ? 'Exporting' : 'Export'}</span>
+            </button>
+          </div>
         </div>
         <div style={{
           display: 'grid',
