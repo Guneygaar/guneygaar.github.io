@@ -76,3 +76,19 @@ export const OWNER_LABELS = {
   Creative:   'Creative',
   Client:     'Client'
 };
+
+export const FORMAT_LABELS = {
+  Photo:     'Photo',
+  Carousel:  'Carousel',
+  Video:     'Video',
+  Creative:  'Creative',
+  Text:      'Text'
+};
+
+export const FORMAT_COLOR_VAR = {
+  Photo:     '--c-stage-production',
+  Carousel:  '--c-amber',
+  Video:     '--c-terracotta',
+  Creative:  '--c-role-servicing',
+  Text:      '--c-text-dim'
+};
