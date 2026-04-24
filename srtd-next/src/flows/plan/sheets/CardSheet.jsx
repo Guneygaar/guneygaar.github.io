@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown, ChevronLeft, ChevronRight, MessageSquare,
-  ExternalLink, Check
+  ExternalLink, Check, Send
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
@@ -393,6 +393,143 @@ function ActivityRow({ a }) {
   );
 }
 
+function titleCaseRole(role) {
+  const r = (role || '').toLowerCase();
+  if (r === 'admin') return 'Admin';
+  if (r === 'client') return 'Client';
+  if (r === 'creative') return 'Creative';
+  if (r === 'servicing' || r === 'agency') return 'Servicing';
+  return r ? r.charAt(0).toUpperCase() + r.slice(1).toLowerCase() : '';
+}
+
+function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
+  const showToast = usePlanStore((s) => s.showToast);
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const taRef = useRef(null);
+
+  function autoGrow() {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(160, Math.max(56, el.scrollHeight));
+    el.style.height = next + 'px';
+  }
+
+  useEffect(() => { autoGrow(); }, [text]);
+
+  async function submit() {
+    const message = text.trim();
+    if (!message || sending) return;
+    const email = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+    if (!email) {
+      showToast({ msg: 'Session expired, please refresh', duration: 3000 });
+      return;
+    }
+    const authorRole = titleCaseRole(role);
+    const nowIso = new Date().toISOString();
+    const payload = {
+      post_id: postId,
+      author: email,
+      author_role: authorRole,
+      message,
+      visibility,
+      reply_to: null,
+      post_title: postTitle || '',
+      created_at: nowIso
+    };
+
+    const optimistic = {
+      id: `_local_${Date.now()}`,
+      _optimistic: true,
+      post_id: postId,
+      author: email,
+      author_role: authorRole,
+      message,
+      visibility,
+      created_at: nowIso
+    };
+    setSending(true);
+    onPosted({ phase: 'optimistic', row: optimistic });
+    try {
+      const rows = await createComment(payload);
+      const saved = Array.isArray(rows) ? rows[0] : rows;
+      onPosted({ phase: 'success', tempId: optimistic.id, row: saved || optimistic });
+      setText('');
+    } catch (err) {
+      onPosted({ phase: 'rollback', tempId: optimistic.id });
+      showToast({ msg: (err && err.message) || 'Send failed', duration: 3000 });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  }
+
+  const isInternal = visibility === 'servicing';
+  const placeholder = isInternal ? 'Add an internal note' : 'Write a comment';
+
+  return (
+    <div style={{
+      padding: '10px 16px 16px',
+      borderTop: '1px solid var(--c-divider-subtle)',
+      background: 'var(--c-bg)',
+      display: 'flex',
+      alignItems: 'flex-end',
+      gap: '8px'
+    }}>
+      <textarea
+        ref={taRef}
+        value={text}
+        placeholder={placeholder}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={onKeyDown}
+        rows={1}
+        style={{
+          flex: 1,
+          minHeight: '56px',
+          maxHeight: '160px',
+          resize: 'none',
+          padding: '10px 12px',
+          background: 'var(--c-bg-2)',
+          border: '1px solid var(--c-divider-soft)',
+          borderRadius: '10px',
+          color: 'var(--c-text-loud)',
+          fontFamily: '"DM Sans", sans-serif',
+          fontSize: '13.5px',
+          lineHeight: 1.45,
+          outline: 'none'
+        }}
+      />
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!text.trim() || sending}
+        style={{
+          padding: '10px 14px',
+          background: 'var(--c-text-loud)',
+          color: 'var(--c-bg)',
+          border: 'none',
+          borderRadius: '8px',
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: '10px',
+          letterSpacing: '.1em',
+          textTransform: 'uppercase',
+          fontWeight: 600,
+          cursor: (!text.trim() || sending) ? 'default' : 'pointer',
+          opacity: (!text.trim() || sending) ? 0.4 : 1
+        }}>
+        <Send size={13} />
+      </button>
+    </div>
+  );
+}
+
 function ActionBar({ post, role, onApprove, onComment }) {
   const closeCard = usePlanStore((s) => s.closeCard);
   const stage = post.stage;
@@ -630,6 +767,23 @@ export function CardSheet() {
   };
   const onComment = () => {
     setActiveTab('comments');
+  };
+
+  const canComposeAll = !isClient || post.stage === 'awaiting_approval' || post.stage === 'awaiting_brand_input';
+  const canComposeInternal = canSeeInternal;
+
+  const handlePosted = (evt) => {
+    if (evt.phase === 'optimistic') {
+      setComments((prev) => [...prev, evt.row]);
+      return;
+    }
+    if (evt.phase === 'success') {
+      setComments((prev) => prev.map((c) => (c.id === evt.tempId ? evt.row : c)));
+      return;
+    }
+    if (evt.phase === 'rollback') {
+      setComments((prev) => prev.filter((c) => c.id !== evt.tempId));
+    }
   };
 
   const runPatchStage = async (newStage, successMsg) => {
@@ -958,23 +1112,45 @@ export function CardSheet() {
 
           <div style={{ padding: '0 0 20px' }}>
             {activeTab === 'comments' ? (
-              commentsError ? (
-                <div style={{ padding: '20px 18px', color: 'var(--c-red)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px' }}>
-                  {commentsError}
-                </div>
-              ) : commentsVisible.length === 0 ? (
-                <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
-                  No comments yet.
-                </div>
-              ) : commentsVisible.map((c) => <CommentCard key={c.id} c={c} />)
+              <>
+                {commentsError ? (
+                  <div style={{ padding: '20px 18px', color: 'var(--c-red)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px' }}>
+                    {commentsError}
+                  </div>
+                ) : commentsVisible.length === 0 ? (
+                  <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
+                    No comments yet.
+                  </div>
+                ) : commentsVisible.map((c) => <CommentCard key={c.id} c={c} />)}
+                {canComposeAll ? (
+                  <InlineComposer
+                    postId={post.post_id}
+                    postTitle={post.title}
+                    role={role}
+                    visibility="all"
+                    onPosted={handlePosted}
+                  />
+                ) : null}
+              </>
             ) : null}
 
             {activeTab === 'internal' && canSeeInternal ? (
-              commentsInternal.length === 0 ? (
-                <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
-                  No internal notes.
-                </div>
-              ) : commentsInternal.map((c) => <CommentCard key={c.id} c={c} />)
+              <>
+                {commentsInternal.length === 0 ? (
+                  <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
+                    No internal notes.
+                  </div>
+                ) : commentsInternal.map((c) => <CommentCard key={c.id} c={c} />)}
+                {canComposeInternal ? (
+                  <InlineComposer
+                    postId={post.post_id}
+                    postTitle={post.title}
+                    role={role}
+                    visibility="servicing"
+                    onPosted={handlePosted}
+                  />
+                ) : null}
+              </>
             ) : null}
 
             {activeTab === 'activity' && canSeeActivity ? (
