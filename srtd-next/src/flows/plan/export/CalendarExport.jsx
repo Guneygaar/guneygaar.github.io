@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
 import {
   STAGE_COLOR_VAR, STAGE_LABELS, PILLAR_GRAD_CLASS, PILLAR_LABELS
 } from '../shared/constants.js';
-import { buildMonthGrid, formatYYYYMMDD } from '../shared/dateUtils.js';
+import { buildMonthGrid, buildWeekGrid, formatYYYYMMDD, monthAbbr, dowShortMonFirst } from '../shared/dateUtils.js';
 
 const DOW_HEADERS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = [
@@ -194,7 +194,91 @@ function DayCell({ date, posts, inMonth }) {
   );
 }
 
-export function CalendarExport({ monthPosts, monthDate }) {
+function WeekRowExport({ date, posts }) {
+  const dow = dowShortMonFirst(date).toUpperCase();
+  const dayNum = date ? date.getDate() : '';
+  const monthLabel = monthAbbr(date).toUpperCase();
+
+  return (
+    <div style={{
+      background: resolveVar('--c-bg', '#FAF7F0'),
+      border: '1px solid ' + resolveVar('--c-divider-soft', '#D9D2C1'),
+      borderRadius: '6px',
+      padding: '10px 12px',
+      boxSizing: 'border-box'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        marginBottom: posts.length > 0 ? '8px' : '4px'
+      }}>
+        <span style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: '11px',
+          letterSpacing: '.14em',
+          textTransform: 'uppercase',
+          color: resolveVar('--c-text-mid', '#4A4640'),
+          fontWeight: 600
+        }}>{dow}  {dayNum} {monthLabel}</span>
+        {posts.length > 0 ? (
+          <span style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '9px',
+            letterSpacing: '.1em',
+            textTransform: 'uppercase',
+            color: resolveVar('--c-text-dim', '#6A655C')
+          }}>{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
+        ) : null}
+      </div>
+      {posts.length === 0 ? (
+        <div style={{
+          fontFamily: '"DM Sans", sans-serif',
+          fontStyle: 'italic',
+          fontSize: '10px',
+          color: resolveVar('--c-text-soft', '#8A857A')
+        }}>(empty)</div>
+      ) : (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {posts.map((p) => (
+            <div key={p.id} style={{ width: 'calc(50% - 3px)', minWidth: 0 }}>
+              <ThumbBlock post={p} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeekExportBody({ weekPosts, weekStart }) {
+  const grid = useMemo(() => buildWeekGrid(weekStart), [weekStart]);
+  const postsByDay = useMemo(() => {
+    const map = {};
+    const arr = Array.isArray(weekPosts) ? weekPosts : [];
+    for (const p of arr) {
+      if (!p || !p.target_date) continue;
+      const key = String(p.target_date).slice(0, 10);
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    }
+    return map;
+  }, [weekPosts]);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {grid.days.map((d) => {
+        const key = formatYYYYMMDD(d);
+        return (
+          <WeekRowExport key={key} date={d} posts={postsByDay[key] || []} />
+        );
+      })}
+    </div>
+  );
+}
+
+export function CalendarExport({ monthPosts, monthDate, mode, rangeEnd }) {
+  const effectiveMode = mode === 'week' ? 'week' : 'month';
   const grid = useMemo(() => buildMonthGrid(monthDate), [monthDate]);
 
   const postsByDay = useMemo(() => {
@@ -211,7 +295,18 @@ export function CalendarExport({ monthPosts, monthDate }) {
 
   const monthName = monthDate ? MONTH_NAMES[monthDate.getMonth()] : '';
   const year = monthDate ? monthDate.getFullYear() : '';
-  const headerTitle = 'Sorted ' + monthName + ' ' + year;
+  const weekHeaderTitle = (() => {
+    if (effectiveMode !== 'week' || !monthDate) return '';
+    const startMonth = monthAbbr(monthDate);
+    const endMonth = rangeEnd ? monthAbbr(rangeEnd) : startMonth;
+    if (startMonth === endMonth) {
+      return `Sorted ${startMonth} ${monthDate.getDate()} - ${rangeEnd ? rangeEnd.getDate() : monthDate.getDate() + 6}`;
+    }
+    return `Sorted ${startMonth} ${monthDate.getDate()} - ${endMonth} ${rangeEnd ? rangeEnd.getDate() : ''}`;
+  })();
+  const headerTitle = effectiveMode === 'week'
+    ? weekHeaderTitle
+    : ('Sorted ' + monthName + ' ' + year);
 
   // Build leading empty cells for days before month-start.
   const leadingCells = [];
@@ -273,44 +368,50 @@ export function CalendarExport({ monthPosts, monthDate }) {
         </div>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '6px',
-        marginBottom: '6px'
-      }}>
-        {DOW_HEADERS.map((d, i) => (
-          <div key={i} style={{
-            textAlign: 'left',
-            fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: '9.5px',
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
-            color: resolveVar('--c-text-dim', '#6A655C'),
-            padding: '4px 2px'
-          }}>{d}</div>
-        ))}
-      </div>
+      {effectiveMode === 'week' ? (
+        <WeekExportBody weekPosts={monthPosts} weekStart={monthDate} />
+      ) : (
+        <>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '6px',
+            marginBottom: '6px'
+          }}>
+            {DOW_HEADERS.map((d, i) => (
+              <div key={i} style={{
+                textAlign: 'left',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '9.5px',
+                letterSpacing: '.14em',
+                textTransform: 'uppercase',
+                color: resolveVar('--c-text-dim', '#6A655C'),
+                padding: '4px 2px'
+              }}>{d}</div>
+            ))}
+          </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '6px'
-      }}>
-        {leadingCells}
-        {grid.days.map((d) => {
-          const key = formatYYYYMMDD(d);
-          return (
-            <DayCell
-              key={key}
-              date={d}
-              posts={postsByDay[key] || []}
-              inMonth={true}
-            />
-          );
-        })}
-        {trailingCells}
-      </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '6px'
+          }}>
+            {leadingCells}
+            {grid.days.map((d) => {
+              const key = formatYYYYMMDD(d);
+              return (
+                <DayCell
+                  key={key}
+                  date={d}
+                  posts={postsByDay[key] || []}
+                  inMonth={true}
+                />
+              );
+            })}
+            {trailingCells}
+          </div>
+        </>
+      )}
 
       <div style={{
         marginTop: '18px',

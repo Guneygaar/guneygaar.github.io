@@ -49,7 +49,29 @@ function monthStartISOForDate(dateISO) {
   return `${parts[0]}-${parts[1]}-01`;
 }
 
+function currentWeekStartISO() {
+  const now = new Date();
+  const day = now.getDay();
+  const offsetFromMon = (day + 6) % 7;
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offsetFromMon);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${mon.getFullYear()}-${pad(mon.getMonth() + 1)}-${pad(mon.getDate())}`;
+}
+
+function shiftDateISO(iso, deltaDays) {
+  const parts = (iso || '').split('-');
+  if (parts.length !== 3) return iso;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (!y || !m || !d) return iso;
+  const next = new Date(y, m - 1, d + deltaDays);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
+}
+
 const DEFAULT_RANGE = currentMonthRange();
+const DEFAULT_WEEK_START = currentWeekStartISO();
 
 export const usePlanStore = create((set, get) => ({
   posts: [],
@@ -72,6 +94,8 @@ export const usePlanStore = create((set, get) => ({
   loading: false,
   loadError: null,
   insightsPeriod: 'month',
+  calendarMode: 'week',
+  currentWeekStart: DEFAULT_WEEK_START,
 
   async loadData() {
     set({ loading: true, loadError: null, loadedMonths: [], posts: [] });
@@ -408,7 +432,30 @@ export const usePlanStore = create((set, get) => ({
   },
 
   initializeDefaultView(role) {
-    const defaults = { client: 'calendar', admin: 'board', agency: 'board' };
+    const defaults = { client: 'calendar', admin: 'board', agency: 'calendar' };
     set({ currentView: defaults[role] || 'board' });
+  },
+
+  setCalendarMode(mode) {
+    const next = mode === 'month' ? 'month' : 'week';
+    set({ calendarMode: next });
+  },
+
+  setCurrentWeekStart(iso) {
+    if (typeof iso !== 'string') return;
+    set({ currentWeekStart: iso });
+  },
+
+  async loadWeekMonths(weekStartISO) {
+    if (!weekStartISO) return;
+    const firstMonth = monthStartISOForDate(weekStartISO);
+    const lastDay = shiftDateISO(weekStartISO, 6);
+    const lastMonth = monthStartISOForDate(lastDay);
+    const fn = get().loadMonthIfMissing;
+    if (!fn) return;
+    await fn(firstMonth);
+    if (lastMonth && lastMonth !== firstMonth) {
+      await fn(lastMonth);
+    }
   }
 }));

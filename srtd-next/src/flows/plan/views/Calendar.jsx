@@ -16,11 +16,15 @@ import {
   useDroppable,
   useDraggable
 } from '@dnd-kit/core';
-import { Download, Loader2, ArrowDown } from 'lucide-react';
+import {
+  Download, Loader2, ArrowDown,
+  CalendarDays, CalendarRange, ChevronLeft, ChevronRight
+} from 'lucide-react';
 import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
 import {
-  parseISODate, buildMonthGrid, sameDay, formatYYYYMMDD
+  parseISODate, buildMonthGrid, buildWeekGrid, sameDay, formatYYYYMMDD,
+  dowShortMonFirst, monthAbbr
 } from '../shared/dateUtils.js';
 import {
   STAGE_COLOR_VAR, PILLAR_LABELS
@@ -58,6 +62,36 @@ function isMonthInCurrentYear(monthStartISO) {
   const parts = (monthStartISO || '').split('-');
   if (parts.length !== 3) return false;
   return Number(parts[0]) === CURRENT_YEAR;
+}
+
+function currentWeekMondayISO() {
+  const now = new Date();
+  const day = now.getDay();
+  const offsetFromMon = (day + 6) % 7;
+  const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offsetFromMon);
+  return `${mon.getFullYear()}-${pad2(mon.getMonth() + 1)}-${pad2(mon.getDate())}`;
+}
+
+function shiftDateISO(iso, deltaDays) {
+  const parts = (iso || '').split('-');
+  if (parts.length !== 3) return iso;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (!y || !m || !d) return iso;
+  const next = new Date(y, m - 1, d + deltaDays);
+  return `${next.getFullYear()}-${pad2(next.getMonth() + 1)}-${pad2(next.getDate())}`;
+}
+
+function formatWeekRangeLabel(startDate) {
+  if (!startDate) return '';
+  const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6);
+  const startMonth = monthAbbr(startDate);
+  const endMonth = monthAbbr(endDate);
+  if (startMonth === endMonth) {
+    return `${startMonth} ${startDate.getDate()} - ${endDate.getDate()}`;
+  }
+  return `${startMonth} ${startDate.getDate()} - ${endMonth} ${endDate.getDate()}`;
 }
 
 function ThumbMini({ post, isOverlay }) {
@@ -297,12 +331,143 @@ function MonthBlock({ monthStartISO, posts, headerRef, today }) {
   );
 }
 
+function WeekDayRow({ date, posts, isToday }) {
+  const openDay = usePlanStore((s) => s.openDay);
+  const dateKey = formatYYYYMMDD(date);
+  const droppableId = 'cell-' + dateKey;
+  const { setNodeRef, isOver } = useDroppable({ id: droppableId });
+
+  const dow = dowShortMonFirst(date).toUpperCase();
+  const dayNum = date.getDate();
+  const monthLabel = monthAbbr(date).toUpperCase();
+  const borderColor = isToday
+    ? 'var(--c-terracotta-1)'
+    : isOver
+      ? 'var(--c-terracotta, var(--c-text-mid))'
+      : 'var(--c-divider-subtle)';
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-cell-id={droppableId}
+      style={{
+        background: isOver ? 'var(--c-bg-2, var(--c-bg))' : 'var(--c-bg)',
+        border: '1px solid ' + borderColor,
+        borderRadius: '8px',
+        padding: '10px 12px',
+        transition: 'background 120ms ease, border-color 120ms ease, transform 100ms ease',
+        transform: isOver ? 'scale(1.01)' : 'scale(1)'
+      }}>
+      <button
+        type="button"
+        onClick={() => openDay(date)}
+        style={{
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          width: '100%',
+          marginBottom: posts.length > 0 ? '8px' : '6px',
+          background: 'transparent',
+          border: 'none',
+          padding: 0,
+          cursor: 'pointer',
+          textAlign: 'left'
+        }}>
+        <span style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: '10px',
+          letterSpacing: '.14em',
+          textTransform: 'uppercase',
+          color: isToday ? 'var(--c-terracotta-1)' : 'var(--c-text-mid)',
+          fontWeight: isToday ? 600 : 500
+        }}>{dow}  {dayNum} {monthLabel}</span>
+        {posts.length > 0 ? (
+          <span style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '9px',
+            letterSpacing: '.1em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-dim)'
+          }}>{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
+        ) : null}
+      </button>
+      {posts.length === 0 ? (
+        <div style={{
+          fontFamily: '"DM Sans", sans-serif',
+          fontStyle: 'italic',
+          fontSize: '11px',
+          color: 'var(--c-text-soft)',
+          paddingLeft: '2px'
+        }}>(empty)</div>
+      ) : (
+        <div style={{
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+          paddingBottom: '2px',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          {posts.map((p) => (
+            <div key={p.id} style={{ width: '88px', flexShrink: 0 }}>
+              <ThumbMini post={p} />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeekBlock({ weekStartISO, posts, headerRef, today }) {
+  const startDate = useMemo(() => parseISODate(weekStartISO), [weekStartISO]);
+  const grid = useMemo(() => buildWeekGrid(startDate), [startDate]);
+
+  const postsByDay = useMemo(() => {
+    const map = {};
+    for (const p of posts) {
+      if (!p.target_date) continue;
+      const key = String(p.target_date).slice(0, 10);
+      if (!map[key]) map[key] = [];
+      map[key].push(p);
+    }
+    return map;
+  }, [posts]);
+
+  return (
+    <section
+      ref={headerRef || undefined}
+      data-week-block={weekStartISO}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
+      {grid.days.map((d) => {
+        const key = formatYYYYMMDD(d);
+        return (
+          <WeekDayRow
+            key={key}
+            date={d}
+            posts={postsByDay[key] || []}
+            isToday={sameDay(d, today)}
+          />
+        );
+      })}
+    </section>
+  );
+}
+
 export function Calendar() {
   const posts = useCalendarPosts();
   const loadedMonths = usePlanStore((s) => s.loadedMonths) || [];
   const loadMonthIfMissing = usePlanStore((s) => s.loadMonthIfMissing);
   const storeLoading = usePlanStore((s) => s.loading);
   const rescheduleTarget = usePlanStore((s) => s.rescheduleTarget);
+  const calendarMode = usePlanStore((s) => s.calendarMode) || 'week';
+  const setCalendarMode = usePlanStore((s) => s.setCalendarMode);
+  const currentWeekStart = usePlanStore((s) => s.currentWeekStart);
+  const setCurrentWeekStart = usePlanStore((s) => s.setCurrentWeekStart);
+  const loadWeekMonths = usePlanStore((s) => s.loadWeekMonths);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDragPost, setActiveDragPost] = useState(null);
   const [showJumpPill, setShowJumpPill] = useState(false);
@@ -423,6 +588,10 @@ export function Calendar() {
   }, [loadedMonths]);
 
   const handleJumpToday = useCallback(() => {
+    if (calendarMode === 'week') {
+      if (setCurrentWeekStart) setCurrentWeekStart(currentWeekMondayISO());
+      return;
+    }
     const node = todayHeaderRef.current;
     if (!node) return;
     try {
@@ -430,18 +599,63 @@ export function Calendar() {
     } catch (e) {
       node.scrollIntoView();
     }
-  }, []);
+  }, [calendarMode, setCurrentWeekStart]);
+
+  // Load the month(s) needed for the currently selected week. A week that
+  // crosses a month boundary requires both months loaded for postsByMonth
+  // to produce the full 7 days.
+  useEffect(() => {
+    if (calendarMode !== 'week') return;
+    if (!currentWeekStart) return;
+    if (loadWeekMonths) loadWeekMonths(currentWeekStart);
+  }, [calendarMode, currentWeekStart, loadWeekMonths]);
+
+  const weekStartDate = useMemo(() => parseISODate(currentWeekStart), [currentWeekStart]);
+  const weekLabel = useMemo(() => formatWeekRangeLabel(weekStartDate), [weekStartDate]);
+
+  const weekPosts = useMemo(() => {
+    if (calendarMode !== 'week' || !currentWeekStart) return [];
+    const startISO = currentWeekStart;
+    const endISO = shiftDateISO(currentWeekStart, 6);
+    return posts.filter((p) => {
+      if (!p || !p.target_date) return false;
+      const k = String(p.target_date).slice(0, 10);
+      return k >= startISO && k <= endISO;
+    });
+  }, [posts, calendarMode, currentWeekStart]);
+
+  const handlePrevWeek = useCallback(() => {
+    if (!setCurrentWeekStart || !currentWeekStart) return;
+    setCurrentWeekStart(shiftDateISO(currentWeekStart, -7));
+  }, [currentWeekStart, setCurrentWeekStart]);
+
+  const handleNextWeek = useCallback(() => {
+    if (!setCurrentWeekStart || !currentWeekStart) return;
+    setCurrentWeekStart(shiftDateISO(currentWeekStart, 7));
+  }, [currentWeekStart, setCurrentWeekStart]);
 
   const handleExport = async () => {
     if (isExporting) return;
     setIsExporting(true);
     try {
-      // Export the month that contains today; that is the most common intent.
-      const startDate = parseISODate(todayMonthISO);
-      await exportCalendarAsPng(posts, startDate);
+      if (calendarMode === 'week') {
+        const startDate = weekStartDate;
+        const endDate = startDate
+          ? new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 6)
+          : null;
+        await exportCalendarAsPng(weekPosts, startDate, endDate, 'week');
+      } else {
+        const startDate = parseISODate(todayMonthISO);
+        await exportCalendarAsPng(posts, startDate, null, 'month');
+      }
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const handleSetMode = (mode) => {
+    if (!setCalendarMode) return;
+    setCalendarMode(mode);
   };
 
   const pulseSourceCell = useCallback((post) => {
@@ -495,6 +709,73 @@ export function Calendar() {
           padding: '12px 2px 6px',
           gap: '8px'
         }}>
+          <div
+            role="tablist"
+            aria-label="Calendar mode"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'var(--c-bg-2, var(--c-bg))',
+              border: '1px solid var(--c-divider-soft)',
+              borderRadius: '100px',
+              padding: '3px'
+            }}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={calendarMode === 'week'}
+              onClick={() => handleSetMode('week')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '100px',
+                border: calendarMode === 'week'
+                  ? '1px solid var(--c-terracotta-1)'
+                  : '1px solid transparent',
+                background: calendarMode === 'week'
+                  ? 'var(--c-terracotta-1)'
+                  : 'transparent',
+                cursor: 'pointer',
+                color: calendarMode === 'week' ? '#FFFFFF' : 'var(--c-text-mid)',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '9px',
+                letterSpacing: '.12em',
+                textTransform: 'uppercase'
+              }}>
+              <CalendarRange size={12} />
+              <span>Week</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={calendarMode === 'month'}
+              onClick={() => handleSetMode('month')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                borderRadius: '100px',
+                border: calendarMode === 'month'
+                  ? '1px solid var(--c-terracotta-1)'
+                  : '1px solid transparent',
+                background: calendarMode === 'month'
+                  ? 'var(--c-terracotta-1)'
+                  : 'transparent',
+                cursor: 'pointer',
+                color: calendarMode === 'month' ? '#FFFFFF' : 'var(--c-text-mid)',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '9px',
+                letterSpacing: '.12em',
+                textTransform: 'uppercase'
+              }}>
+              <CalendarDays size={12} />
+              <span>Month</span>
+            </button>
+          </div>
           <button
             type="button"
             aria-label="Export calendar"
@@ -528,94 +809,213 @@ export function Calendar() {
             <span>{isExporting ? 'Exporting' : 'Export'}</span>
           </button>
         </div>
-        <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 20,
-          background: 'var(--c-bg)',
-          paddingTop: '6px',
-          paddingBottom: '6px',
-          marginBottom: '2px',
-          borderBottom: '1px solid var(--c-divider-subtle)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: '4px'
-        }}>
-          {DOW_HEADERS.map((d, i) => (
-            <div key={i} style={{
-              textAlign: 'center',
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '8.5px',
-              textTransform: 'uppercase',
-              letterSpacing: '.12em',
-              color: 'var(--c-text-dim)',
-              padding: '4px 0'
-            }}>{d}</div>
-          ))}
-        </div>
 
-        <div ref={topSentinelRef} data-sentinel="top" style={{ height: '1px' }} />
-
-        {loadedMonths.length === 0 && storeLoading ? (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '48px 0',
-            color: 'var(--c-text-dim)',
-            fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: '11px',
-            letterSpacing: '.06em'
-          }}>
-            <Loader2
-              size={16}
-              style={{ animation: 'plan-spin 0.8s linear infinite', marginRight: '8px' }}
-            />
-            Loading
-          </div>
-        ) : null}
-
-        {loadedMonths.map((m) => (
-          <MonthBlock
-            key={m.start}
-            monthStartISO={m.start}
-            posts={postsByMonth[m.start] || []}
-            headerRef={m.start === todayMonthISO ? todayHeaderRef : null}
-            today={today}
-          />
-        ))}
-
-        <div ref={bottomSentinelRef} data-sentinel="bottom" style={{ height: '1px' }} />
-
-        {showJumpPill ? (
-          <button
-            type="button"
-            aria-label="Jump to today"
-            onClick={handleJumpToday}
-            style={{
-              position: 'fixed',
-              right: '14px',
-              bottom: '84px',
-              zIndex: 60,
-              display: 'inline-flex',
+        {calendarMode === 'week' ? (
+          <>
+            <div style={{
+              display: 'flex',
               alignItems: 'center',
-              gap: '6px',
-              background: 'var(--c-bg-2, var(--c-bg))',
-              border: '1px solid var(--c-divider-soft)',
-              borderRadius: '999px',
-              padding: '8px 14px',
-              cursor: 'pointer',
-              color: 'var(--c-text-loud)',
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '10px',
-              letterSpacing: '.12em',
-              textTransform: 'uppercase',
-              boxShadow: '0 6px 20px rgba(0,0,0,.28)'
+              justifyContent: 'space-between',
+              padding: '4px 2px 10px',
+              gap: '10px'
             }}>
-            <ArrowDown size={13} />
-            <span>Today</span>
-          </button>
-        ) : null}
+              <button
+                type="button"
+                aria-label="Previous week"
+                onClick={handlePrevWeek}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  background: 'transparent',
+                  border: '1px solid var(--c-divider-soft)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  color: 'var(--c-text-mid)'
+                }}>
+                <ChevronLeft size={16} />
+              </button>
+              <div style={{
+                flex: 1,
+                textAlign: 'center',
+                fontFamily: 'Fraunces, serif',
+                fontSize: '18px',
+                fontWeight: 600,
+                letterSpacing: '-.01em',
+                color: 'var(--c-text-loud)'
+              }}>
+                {weekLabel}
+              </div>
+              <button
+                type="button"
+                aria-label="Next week"
+                onClick={handleNextWeek}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '32px',
+                  background: 'transparent',
+                  border: '1px solid var(--c-divider-soft)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  color: 'var(--c-text-mid)'
+                }}>
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {loadedMonths.length === 0 && storeLoading ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 0',
+                color: 'var(--c-text-dim)',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '11px',
+                letterSpacing: '.06em'
+              }}>
+                <Loader2
+                  size={16}
+                  style={{ animation: 'plan-spin 0.8s linear infinite', marginRight: '8px' }}
+                />
+                Loading
+              </div>
+            ) : (
+              <WeekBlock
+                weekStartISO={currentWeekStart}
+                posts={weekPosts}
+                headerRef={null}
+                today={today}
+              />
+            )}
+
+            {currentWeekStart !== currentWeekMondayISO() ? (
+              <button
+                type="button"
+                aria-label="This week"
+                onClick={handleJumpToday}
+                style={{
+                  position: 'fixed',
+                  right: '14px',
+                  bottom: '84px',
+                  zIndex: 60,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--c-bg-2, var(--c-bg))',
+                  border: '1px solid var(--c-divider-soft)',
+                  borderRadius: '999px',
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                  color: 'var(--c-text-loud)',
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '10px',
+                  letterSpacing: '.12em',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 6px 20px rgba(0,0,0,.28)'
+                }}>
+                <ArrowDown size={13} />
+                <span>Today</span>
+              </button>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <div style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 20,
+              background: 'var(--c-bg)',
+              paddingTop: '6px',
+              paddingBottom: '6px',
+              marginBottom: '2px',
+              borderBottom: '1px solid var(--c-divider-subtle)',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gap: '4px'
+            }}>
+              {DOW_HEADERS.map((d, i) => (
+                <div key={i} style={{
+                  textAlign: 'center',
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '8.5px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '.12em',
+                  color: 'var(--c-text-dim)',
+                  padding: '4px 0'
+                }}>{d}</div>
+              ))}
+            </div>
+
+            <div ref={topSentinelRef} data-sentinel="top" style={{ height: '1px' }} />
+
+            {loadedMonths.length === 0 && storeLoading ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '48px 0',
+                color: 'var(--c-text-dim)',
+                fontFamily: '"IBM Plex Mono", monospace',
+                fontSize: '11px',
+                letterSpacing: '.06em'
+              }}>
+                <Loader2
+                  size={16}
+                  style={{ animation: 'plan-spin 0.8s linear infinite', marginRight: '8px' }}
+                />
+                Loading
+              </div>
+            ) : null}
+
+            {loadedMonths.map((m) => (
+              <MonthBlock
+                key={m.start}
+                monthStartISO={m.start}
+                posts={postsByMonth[m.start] || []}
+                headerRef={m.start === todayMonthISO ? todayHeaderRef : null}
+                today={today}
+              />
+            ))}
+
+            <div ref={bottomSentinelRef} data-sentinel="bottom" style={{ height: '1px' }} />
+
+            {showJumpPill ? (
+              <button
+                type="button"
+                aria-label="Jump to today"
+                onClick={handleJumpToday}
+                style={{
+                  position: 'fixed',
+                  right: '14px',
+                  bottom: '84px',
+                  zIndex: 60,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--c-bg-2, var(--c-bg))',
+                  border: '1px solid var(--c-divider-soft)',
+                  borderRadius: '999px',
+                  padding: '8px 14px',
+                  cursor: 'pointer',
+                  color: 'var(--c-text-loud)',
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: '10px',
+                  letterSpacing: '.12em',
+                  textTransform: 'uppercase',
+                  boxShadow: '0 6px 20px rgba(0,0,0,.28)'
+                }}>
+                <ArrowDown size={13} />
+                <span>Today</span>
+              </button>
+            ) : null}
+          </>
+        )}
       </div>
 
       <DragOverlay
