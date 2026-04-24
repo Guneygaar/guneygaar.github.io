@@ -358,3 +358,10 @@
   color: rgba(245,245,245,0.4);
   margin-top: 3px;
 }
+
+/* Spinner keyframes for the Calendar export button. Kept local to
+   the Plan scope so vanilla CSS is never touched. */
+@keyframes plan-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
