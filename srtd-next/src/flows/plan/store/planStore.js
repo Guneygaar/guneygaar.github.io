@@ -8,6 +8,7 @@ import {
   fetchPostMetrics,
   fetchReasonComments,
   fetchCaptionAndImages,
+  fetchPlanRequests,
   rescheduleTarget as apiReschedule
 } from '../api/planApi.js';
 
@@ -28,6 +29,9 @@ export const usePlanStore = create((set, get) => ({
   posts: [],
   metrics: {},
   reasons: {},
+  requests: [],
+  requestsLoading: false,
+  requestsError: null,
   currentPost: null,
   currentView: 'board',
   currentFilter: { stage: 'all' },
@@ -65,6 +69,16 @@ export const usePlanStore = create((set, get) => ({
       set({ posts: postsRows, metrics: metricsById, reasons: reasonsById, loading: false });
     } catch (err) {
       set({ loading: false, loadError: (err && err.message) || 'Failed to load plan data' });
+    }
+  },
+
+  async loadRequests() {
+    set({ requestsLoading: true, requestsError: null });
+    try {
+      const rows = await fetchPlanRequests();
+      set({ requests: Array.isArray(rows) ? rows : [], requestsLoading: false });
+    } catch (err) {
+      set({ requestsLoading: false, requestsError: (err && err.message) || 'Failed to load briefs' });
     }
   },
 
