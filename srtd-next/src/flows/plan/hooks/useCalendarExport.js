@@ -74,7 +74,7 @@ function dataUrlToBlob(dataUrl) {
   return new Blob([bytes], { type: mime });
 }
 
-async function mountAndCapture(monthPosts, monthDate) {
+async function mountAndCapture(monthPosts, monthDate, rangeEnd, mode) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   const container = document.createElement('div');
@@ -90,7 +90,9 @@ async function mountAndCapture(monthPosts, monthDate) {
     root.render(
       React.createElement(CalendarExport, {
         monthPosts: monthPosts,
-        monthDate: monthDate
+        monthDate: monthDate,
+        mode: mode === 'week' ? 'week' : 'month',
+        rangeEnd: rangeEnd || null
       })
     );
 
@@ -156,10 +158,10 @@ async function mountAndCapture(monthPosts, monthDate) {
   }
 }
 
-export async function exportCalendarAsPng(monthPosts, monthDate) {
+export async function exportCalendarAsPng(monthPosts, monthDate, rangeEnd, mode) {
   try {
     if (!monthDate) throw new Error('monthDate required');
-    await mountAndCapture(monthPosts || [], monthDate);
+    await mountAndCapture(monthPosts || [], monthDate, rangeEnd || null, mode === 'week' ? 'week' : 'month');
   } catch (err) {
     try {
       if (typeof window !== 'undefined' && typeof window.logError === 'function') {

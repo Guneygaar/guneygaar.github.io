@@ -53,6 +53,18 @@ export function weekKey(d) {
   return formatYYYYMMDD(r.start);
 }
 
+// 7 sequential Date objects starting at the Monday of the week containing d.
+export function buildWeekGrid(anyDate) {
+  const r = weekRangeMonFirst(anyDate);
+  if (!r) return { days: [] };
+  const { start } = r;
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
+  }
+  return { days };
+}
+
 export function formatWeekHeader(weekStart, weekEnd) {
   if (!weekStart || !weekEnd) return '';
   const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
