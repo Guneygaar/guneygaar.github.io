@@ -75,8 +75,8 @@ export function StatsStrip({ post }) {
   return (
     <div className="px-4 py-4 border-b border-divider-subtle overflow-hidden min-w-0">
       {/* Row 1: impressions headline + ER pill */}
-      <div className="flex items-end justify-between gap-3 min-w-0">
-        <div className="min-w-0">
+      <div className="flex items-end justify-between gap-3 min-w-0 overflow-hidden">
+        <div className="min-w-0 overflow-hidden">
           <div
             className="font-serif text-text-loud leading-none"
             style={{
@@ -118,7 +118,7 @@ export function StatsStrip({ post }) {
         {cells.map((cell, i) => (
           <div
             key={cell.label}
-            className="min-w-0 px-2 py-2"
+            className={`min-w-0 py-2 ${i === 0 ? 'pr-2' : i === cells.length - 1 ? 'pl-2' : 'px-2'}`}
             style={{
               borderLeft: i === 0 ? 'none' : '1px solid var(--c-divider-subtle)',
             }}
