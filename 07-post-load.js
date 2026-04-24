@@ -289,7 +289,7 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
   var _apiMeta = { allowLogout: false };
   try {
     const allowedStages =
-      'awaiting_approval,awaiting_brand_input,published,brief,brief_done,scheduled,in_production';
+      'awaiting_approval,awaiting_brand_input,published,brief,scheduled,in_production';
     var data  = await withRetry(function() { return apiFetch(
       '/posts?stage=in.(' + allowedStages +
       ')&is_draft=eq.false&select=*&order=created_at.desc',
@@ -1244,14 +1244,14 @@ function renderAll() {
   if (ll) ll.textContent = `${libCount} posts`;
 
   // Deep-link: open the right overlay for ?open=POST_ID after posts load.
-  // Brief stage / brief_done / request stubs route to the brief sheet;
+  // Brief stage / request stubs route to the brief sheet;
   // client role uses the client post overlay; everything else opens PCS.
   if (window._pendingOpenPost && window.AppState.posts.loaded) {
     var _pid = window._pendingOpenPost;
     window._pendingOpenPost = null;
     var _dlPost = (typeof getPostById === 'function') ? getPostById(_pid) : null;
     var _dlStage = _dlPost ? (_dlPost.stage || '') : '';
-    var _dlIsBrief = _dlPost && (_dlStage === 'brief' || _dlStage === 'brief_done' || _dlPost._isRequest);
+    var _dlIsBrief = _dlPost && (_dlStage === 'brief' || _dlPost._isRequest);
     var _dlRole = (window.AppState.user.effectiveRole || '').toLowerCase();
     if (_dlIsBrief && typeof window._openBriefSheet === 'function') {
       window._openBriefSheet(_pid);
@@ -3220,7 +3220,7 @@ document.addEventListener('click', function _cardClickDelegate(e) {
       return p.post_id === pid;
     });
     var stage = post ? post.stage : '';
-    if (stage === 'brief' || stage === 'brief_done') {
+    if (stage === 'brief') {
       if (typeof window._openBriefSheet === 'function')
         window._openBriefSheet(pid);
     } else {

@@ -591,12 +591,11 @@ function _notifRelTime(iso) {
   return d.getDate() + ' ' + months[d.getMonth()] + ' ' + timeStr;
 }
 
-var _NOTIF_MOVES_TYPES = ['stage_change','ready','in_production','scheduled','brief','brief_done'];
+var _NOTIF_MOVES_TYPES = ['stage_change','ready','in_production','scheduled','brief'];
 
 // Human-readable stage labels substituted into action text
 var _NOTIF_STAGE_LABELS = {
   'brief':                'Brief',
-  'brief_done':           'Brief Done',
   'in_production':        'In Production',
   'awaiting_approval':    'Awaiting Approval',
   'awaiting_brand_input': 'Needs Input',
@@ -1068,7 +1067,7 @@ window._notifBuildItem = function _notifBuildItem(n, ctx) {
     headlineInner = esc(actionText);
   }
 
-  var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'brief_done' || n.type === 'assign') ? ' data-is-brief="1"' : '';
+  var isBriefAttr = (n.type === 'new_request' || n.type === 'brief' || n.type === 'assign') ? ' data-is-brief="1"' : '';
   var liveMarker = isPublished ? ' notif-live-card' : '';
   var expandableAttr = isExpandable ? ' data-expandable="1"' : '';
   var expandedClass = isExpanded ? ' expanded' : '';

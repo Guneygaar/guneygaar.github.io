@@ -63,7 +63,6 @@ function _stageRecipients(stage) {
 function _stageLabel(stage) {
   var map = {
     'brief': 'Brief',
-    'brief_done': 'Closed Brief',
     'in_production': 'In Production',
     'awaiting_approval': 'Awaiting Approval',
     'awaiting_brand_input': 'Awaiting Input',

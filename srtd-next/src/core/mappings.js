@@ -1,7 +1,7 @@
 // Data mappings: UI labels ↔ DB values.
 //
 // Source of truth for stage check constraint (per Supabase audit):
-//   brief, brief_done, in_production, ready, awaiting_approval,
+//   brief, in_production, ready, awaiting_approval,
 //   awaiting_brand_input, scheduled, published, parked, rejected
 //
 // Owner check constraint values: Creative, Servicing, Client, Admin
@@ -9,7 +9,6 @@
 // UI display label → DB value
 export const STAGE_UI_TO_DB = {
   'Brief':                 'brief',
-  'Brief done':            'brief_done',
   'In production':         'in_production',
   'Ready':                 'ready',
   'Awaiting approval':     'awaiting_approval',

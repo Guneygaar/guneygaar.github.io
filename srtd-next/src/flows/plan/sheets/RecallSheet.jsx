@@ -7,7 +7,6 @@ import React, { useEffect } from 'react';
 import { STAGE_LABELS } from '../shared/constants.js';
 
 const STAGE_ORDER = [
-  'brief_done',
   'in_production',
   'awaiting_brand_input',
   'awaiting_approval',

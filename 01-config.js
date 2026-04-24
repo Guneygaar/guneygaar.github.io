@@ -34,7 +34,6 @@ const STAGE_META = {
   'parked':               { label: 'Parked',           hex: '#64748b' },
   'rejected':             { label: 'Rejected',         hex: '#ef4444' },
   'brief':                { label: 'Brief',            hex: '#C8A84B' },
-  'brief_done':           { label: 'Brief Done',       hex: '#C8A84B' },
 };
 
 // Canonical stage order  -  single source of truth for all dropdowns and rendering
@@ -48,7 +47,6 @@ const STAGE_ORDER = [
   'parked',
   'rejected',
   'brief',
-  'brief_done',
 ];
 
 // Active DB stages (same order)

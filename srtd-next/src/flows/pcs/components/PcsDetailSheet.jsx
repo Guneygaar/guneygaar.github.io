@@ -20,7 +20,6 @@ const ROLE_TO_OWNER_LABEL = {
 const STAGES_BY_GROUP = {
   progression: [
     { value: 'brief',                label: 'Brief',                token: 'brief' },
-    { value: 'brief_done',           label: 'Brief done',           token: 'brief' },
     { value: 'in_production',        label: 'In production',        token: 'production' },
     { value: 'ready',                label: 'Ready',                token: 'ready' },
     { value: 'awaiting_approval',    label: 'Awaiting approval',    token: 'ready' },

@@ -13,9 +13,9 @@ import {
 } from '../shared/constants.js';
 import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
-import { BriefsSection } from './BriefsSection.jsx';
+import { BriefsAssignedSection, BriefsCompletedSection } from './BriefsSection.jsx';
 
-const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
+const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 
 function Card({ post }) {
   const openMiniCard = usePlanStore((s) => s.openMiniCard);
@@ -170,7 +170,7 @@ export function Board() {
   const role = usePlanStore((s) => s.role);
   const isClient = role === 'client';
   const visibleStages = isClient
-    ? ['brief_done', 'awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published', 'rejected', 'parked']
+    ? ['awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published', 'rejected', 'parked']
     : STAGE_ORDER_BOARD;
   const groups = useMemo(() => {
     const map = {};
@@ -183,10 +183,11 @@ export function Board() {
 
   return (
     <div style={{ paddingBottom: '80px' }}>
-      {isClient ? <BriefsSection /> : null}
+      {isClient ? <BriefsAssignedSection /> : null}
       {visibleStages.map((stage) => (
         <Row key={stage} stage={stage} items={groups[stage] || []} />
       ))}
+      {isClient ? <BriefsCompletedSection /> : null}
     </div>
   );
 }

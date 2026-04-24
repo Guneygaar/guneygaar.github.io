@@ -151,7 +151,7 @@ window.handlePipelineSearch = function(query) {
   var container = document.getElementById('pipeline-container');
   var posts = Array.isArray(window.AppState.posts.all) ? window.AppState.posts.all : [];
 
-  var pipelineStages = ['brief','brief_done','awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
+  var pipelineStages = ['brief','awaiting_approval','awaiting_brand_input','scheduled','ready','in_production'];
   var pipelinePosts = posts.filter(function(p) { return pipelineStages.indexOf(p.stage) > -1; });
 
   if (!query || query.trim() === '') {
@@ -166,7 +166,6 @@ window.handlePipelineSearch = function(query) {
 
   var stageDisplayMap = {
     'brief': 'Brief',
-    'brief_done': 'Brief Done',
     'awaiting_approval': 'Approval',
     'awaiting_brand_input': 'Input',
     'scheduled': 'Scheduled',
@@ -175,7 +174,6 @@ window.handlePipelineSearch = function(query) {
   };
   var stageColorMap = {
     'brief': '#C8A84B',
-    'brief_done': '#C8A84B',
     'awaiting_approval': '#FF4B4B',
     'awaiting_brand_input': '#9b87f5',
     'scheduled': '#22D3EE',
@@ -855,7 +853,7 @@ window._renderPipelineInner = function() {
 
   // Pipeline only renders PIPELINE_RENDER_ORDER stages (excludes parked, rejected, published)
   var _clientStages = ['awaiting_approval', 'awaiting_brand_input',
-    'scheduled', 'published', 'brief', 'brief_done'];
+    'scheduled', 'published', 'brief'];
   var _isClient = (window.AppState.user.effectiveRole || '').toLowerCase() === 'client';
   const base = window.AppState.posts.all.filter(p => {
     if (_isClient && !_clientStages.includes(p.stage || '')) return false;
@@ -1059,42 +1057,6 @@ window._renderPipelineInner = function() {
       </div>`;
   }).join('');
 
-  // -- Closed Briefs collapsed group --
-  var briefDonePosts = window.AppState.posts.all.filter(function(p) {
-    return (p.stage || '') === 'brief_done';
-  });
-  var briefDoneCount = briefDonePosts.length;
-  var briefDoneCardsHtml = '';
-  if (briefDoneCount > 0) {
-    var bdListKey = 'pipeline-brief-done';
-    var bdSorted = briefDonePosts.slice().sort(function(a, b) {
-      var dA = new Date((a.status_changed_at||'')+'Z').getTime();
-      var dB = new Date((b.status_changed_at||'')+'Z').getTime();
-      return dB - dA;
-    });
-    window._postLists[bdListKey] = bdSorted;
-    briefDoneCardsHtml = bdSorted.map(function(p) {
-      return buildPipelineCard(p, bdListKey);
-    }).join('');
-  }
-  var briefDoneGroupHtml = briefDoneCount > 0 ?
-    '<div class="group-section pipeline-brief-done-group" ' +
-    'id="pipeline-brief-done-group">' +
-    '<div class="pipeline-pub-toggle" ' +
-    'onclick="this.closest(\'.pipeline-brief-done-group\')' +
-    '.classList.toggle(\'pipeline-pub-expanded\')">' +
-    '<span class="pipeline-pub-arrow">&#9654;</span>' +
-    '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;' +
-    'letter-spacing:0.18em;text-transform:uppercase;color:#C8A84B;">' +
-    'CLOSED BRIEFS</span>' +
-    '<span style="margin-left:auto"></span>' +
-    '<span class="group-count">' + briefDoneCount + '</span>' +
-    '</div>' +
-    '<div class="pipeline-pub-cards"><div class="row-list post-list">' +
-    briefDoneCardsHtml +
-    '</div></div>' +
-    '</div>' : '';
-
   // -- Published collapsed group --
   var pubPosts = window.AppState.posts.all.filter(function(p) { return (p.stage || '') === 'published'; });
   var pubCount = pubPosts.length;
@@ -1168,7 +1130,7 @@ window._renderPipelineInner = function() {
 
   const container = document.getElementById('pipeline-container');
   if (!container) return;
-  container.innerHTML = html + briefDoneGroupHtml + commentedHtml + pubGroupHtml;
+  container.innerHTML = html + commentedHtml + pubGroupHtml;
 
   // -- Restore published expanded state --
   if (window._pipelinePubExpanded) {

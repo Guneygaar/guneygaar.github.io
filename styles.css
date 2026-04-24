@@ -6051,8 +6051,7 @@ body.client-mode .img-duo {
 body.client-mode .stage-chip[data-stage="scheduled"],
 body.client-mode .stage-chip[data-stage="ready"],
 body.client-mode .stage-chip[data-stage="in_production"],
-body.client-mode .stage-chip[data-stage="brief"],
-body.client-mode .stage-chip[data-stage="brief_done"] {
+body.client-mode .stage-chip[data-stage="brief"] {
   display: none !important;
 }
 

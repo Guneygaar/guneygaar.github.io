@@ -23,7 +23,6 @@ const STAGES = [
   { label: 'Scheduled', color: tokens.ownerPranav },
   { label: 'Published', color: tokens.textSoft },
   { label: 'Brief', color: tokens.textWhisper },
-  { label: 'Brief done', color: tokens.textSoft },
   { label: 'Parked', color: tokens.textGhost },
   { label: 'Rejected', color: tokens.red }
 ];

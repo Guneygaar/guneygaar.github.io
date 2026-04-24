@@ -685,7 +685,7 @@ export function MiniCardSheet() {
   const lifeDays = lifecycleDays(post);
   const dateLine = formatDateLine(post);
 
-  const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
+  const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 
   const [recallOpen, setRecallOpen] = useState(false);
   const { triggerPicker } = useDatePicker();
