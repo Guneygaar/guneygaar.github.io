@@ -223,9 +223,11 @@ export default function Plan() {
 
   const user = useAppState((s) => s.user);
   const loadData = usePlanStore((s) => s.loadData);
+  const loadRequests = usePlanStore((s) => s.loadRequests);
   const setRole = usePlanStore((s) => s.setRole);
   const setTheme = usePlanStore((s) => s.setTheme);
   const theme = usePlanStore((s) => s.theme);
+  const role = usePlanStore((s) => s.role);
   const activeSheet = usePlanStore((s) => s.activeSheet);
 
   // Mount the hidden native date input once.
@@ -245,6 +247,12 @@ export default function Plan() {
     if (!planEnabled) return;
     loadData();
   }, [planEnabled, loadData]);
+
+  useEffect(() => {
+    if (!planEnabled) return;
+    if (role !== 'client') return;
+    loadRequests();
+  }, [planEnabled, role, loadRequests]);
 
   if (!planEnabled) return null;
 
