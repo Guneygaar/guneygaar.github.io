@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown, ChevronLeft, ChevronRight, MessageSquare,
-  ExternalLink, Check, Send, Maximize, Maximize2, X
+  ExternalLink, Check, Send, X
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
@@ -20,13 +20,12 @@ import { Lightbox } from './Lightbox.jsx';
 import { RecallSheet } from './RecallSheet.jsx';
 import {
   parseISODate, dayNumber, dowShortSunFirst, monthAbbr, formatTime12,
-  daysBetween
+  daysBetween, formatRelativeTime
 } from '../shared/dateUtils.js';
 import {
   STAGE_LABELS, STAGE_COLOR_VAR, PILLAR_LABELS, PILLAR_COLOR_VAR
 } from '../shared/constants.js';
 import { AgeBadge } from '../shared/AgeBadge.jsx';
-import { MetricsLine } from '../shared/MetricsLine.jsx';
 import { ReasonBlock } from '../shared/ReasonBlock.jsx';
 
 function normalizePlanImages(raw) {
@@ -95,19 +94,19 @@ function lifecycleDays(post) {
   return daysBetween(post.created_at, endTs);
 }
 
+function formatStatNumber(n) {
+  if (n == null) return '-';
+  if (n >= 10000) return (n / 1000).toFixed(0) + 'K';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return String(n);
+}
+
 function Carousel({ post, onImageTap }) {
   const images = normalizePlanImages(post.images);
   const count = images.length;
   const [currentIndex, setCurrentIndex] = useState(0);
   const stripRef = useRef(null);
-
-  if (count === 0) {
-    return (
-      <div className="plan-carousel plan-carousel-empty">
-        <div className={'plan-carousel-fallback pillar-' + (post.content_pillar ? post.content_pillar.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'default')} />
-      </div>
-    );
-  }
+  const tapStateRef = useRef({ x: 0, y: 0, t: 0 });
 
   const handleScroll = function () {
     if (!stripRef.current || count <= 1) return;
@@ -116,6 +115,35 @@ function Carousel({ post, onImageTap }) {
     const newIndex = Math.round(scrollLeft / width);
     if (newIndex !== currentIndex) setCurrentIndex(newIndex);
   };
+
+  const handleTouchStart = function (e) {
+    const t = e.touches[0];
+    tapStateRef.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+  };
+
+  const handleTouchEnd = function (e) {
+    const end = e.changedTouches[0];
+    const start = tapStateRef.current;
+    const dx = Math.abs(end.clientX - start.x);
+    const dy = Math.abs(end.clientY - start.y);
+    const dt = Date.now() - start.t;
+    if (dx < 10 && dy < 10 && dt < 300) {
+      e.preventDefault();
+      onImageTap(0);
+    }
+  };
+
+  const handleClick = function () {
+    onImageTap(0);
+  };
+
+  if (count === 0) {
+    return (
+      <div className="plan-carousel plan-carousel-empty">
+        <div className={'plan-carousel-fallback pillar-' + (post.content_pillar ? post.content_pillar.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'default')} />
+      </div>
+    );
+  }
 
   return (
     <div className="plan-carousel">
@@ -126,13 +154,22 @@ function Carousel({ post, onImageTap }) {
       >
         {images.map(function (src, i) {
           return (
-            <div className="plan-carousel-slide" key={i}>
+            <div
+              className="plan-carousel-slide"
+              key={i}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              onClick={handleClick}
+              role="button"
+              tabIndex={0}
+            >
               <img
                 src={src}
                 alt=""
                 loading="lazy"
                 decoding="async"
                 className="plan-carousel-img"
+                draggable="false"
               />
             </div>
           );
@@ -224,8 +261,6 @@ function roleDotColor(author_role) {
 function MiniCommentCard({ c, onReply, onResolve }) {
   const author = c.author || '';
   const short = author.includes('@') ? author.split('@')[0] : author;
-  const time = c.created_at ? new Date(c.created_at) : null;
-  const timeStr = time ? formatTime12(time) : '';
   const isResolved = c.resolved === true;
 
   const handleBodyTap = function () { if (onReply) onReply(c); };
@@ -262,7 +297,7 @@ function MiniCommentCard({ c, onReply, onResolve }) {
         }}>{(short[0] || '?').toUpperCase()}</span>
         <span className="plan-comment-author">{short}</span>
         <span className="plan-comment-role">{c.author_role || ''}</span>
-        <span className="plan-comment-time">{timeStr}</span>
+        <span className="plan-comment-time">{formatRelativeTime(c.created_at)}</span>
         {isResolved ? <span className="plan-comment-resolved-pill">Resolved</span> : null}
       </div>
       <div className="plan-comment-body" style={{ whiteSpace: 'pre-wrap' }}>{c.message || ''}</div>
@@ -871,16 +906,6 @@ export function MiniCardSheet() {
             }}>
             <ChevronRight size={18} />
           </button>
-          {postImages.length > 0 ? (
-            <button
-              type="button"
-              className="plan-header-expand"
-              onClick={function () { setLightboxIndex(0); }}
-              aria-label="View full size"
-            >
-              <Maximize2 size={18} strokeWidth={2} />
-            </button>
-          ) : null}
           <KebabMenu post={post} role={role} onAction={onKebabAction} />
         </header>
 
@@ -968,39 +993,36 @@ export function MiniCardSheet() {
             ) : null}
           </div>
 
-          {post.stage === 'published' ? (
-            <div style={{
-              margin: '10px 18px 0',
-              padding: '10px 12px',
-              background: 'var(--c-bg-2)',
-              borderRadius: '8px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}>
-              {[
-                ['Impressions', metrics ? (metrics.impressions || 0) : 0],
-                ['Clicks',      metrics ? (metrics.clicks || 0) : 0],
-                ['Likes',       metrics ? (metrics.likes || 0) : 0],
-                ['Comments',    metrics ? (metrics.comments || 0) : 0],
-                ['Reposts',     metrics ? (metrics.reposts || 0) : 0],
-                ['ER',          metrics ? `${((metrics.engagement_rate || 0) * 100).toFixed(2)}%` : '-']
-              ].map(([label, value]) => (
-                <div key={label} style={{ minWidth: '72px' }}>
-                  <div style={{ fontFamily: 'Fraunces, serif', fontSize: '16px', fontWeight: 500, color: 'var(--c-text-loud)' }}>
-                    {value}
-                  </div>
-                  <div style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '8px',
-                    letterSpacing: '.12em',
-                    textTransform: 'uppercase',
-                    color: 'var(--c-text-dim)'
-                  }}>{label}</div>
+          {post.stage === 'published' && metrics ? (
+            <div className="plan-stats">
+              <div className="plan-stats-primary">
+                <div className="plan-stats-hero">
+                  <span className="plan-stats-hero-num">
+                    {metrics.impressions != null ? metrics.impressions.toLocaleString('en-US') : '-'}
+                  </span>
+                  <div className="plan-stats-hero-label">Impressions</div>
                 </div>
-              ))}
-              <div style={{ marginLeft: 'auto', alignSelf: 'center' }}>
-                <MetricsLine metrics={metrics} publishedAt={dateLine} />
+                {typeof metrics.engagement_rate === 'number' ? (
+                  <div className="plan-stats-er-pill">{metrics.engagement_rate.toFixed(2)}% ER</div>
+                ) : null}
+              </div>
+              <div className="plan-stats-secondary">
+                <div className="plan-stats-cell">
+                  <div className="plan-stats-cell-num">{formatStatNumber(metrics.clicks)}</div>
+                  <div className="plan-stats-cell-label">Clicks</div>
+                </div>
+                <div className="plan-stats-cell">
+                  <div className="plan-stats-cell-num">{formatStatNumber(metrics.likes)}</div>
+                  <div className="plan-stats-cell-label">Likes</div>
+                </div>
+                <div className="plan-stats-cell">
+                  <div className="plan-stats-cell-num">{formatStatNumber(metrics.comments)}</div>
+                  <div className="plan-stats-cell-label">Comments</div>
+                </div>
+                <div className="plan-stats-cell">
+                  <div className="plan-stats-cell-num">{formatStatNumber(metrics.reposts)}</div>
+                  <div className="plan-stats-cell-label">Reposts</div>
+                </div>
               </div>
             </div>
           ) : null}
