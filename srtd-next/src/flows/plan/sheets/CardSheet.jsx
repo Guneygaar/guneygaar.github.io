@@ -108,7 +108,23 @@ function GalleryStrip({ post, onImageTap }) {
   if (images.length === 0) return null;
 
   return (
-    <div style={{ padding: '10px 0 2px' }}>
+    <div style={{ padding: '10px 0 2px', position: 'relative' }}>
+      {images.length > 1 ? (
+        <div style={{
+          position: 'absolute',
+          top: '18px',
+          right: '22px',
+          zIndex: 2,
+          padding: '4px 10px',
+          borderRadius: '999px',
+          background: 'rgba(0, 0, 0, 0.65)',
+          color: '#fff',
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: '10px',
+          letterSpacing: '.08em',
+          pointerEvents: 'none'
+        }}>{`${activeIdx + 1} / ${images.length}`}</div>
+      ) : null}
       <div
         ref={scrollerRef}
         className="scrollbar-none"
