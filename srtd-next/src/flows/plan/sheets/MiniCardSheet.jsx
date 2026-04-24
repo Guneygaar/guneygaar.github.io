@@ -5,14 +5,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ChevronDown, ChevronLeft, ChevronRight, MessageSquare,
-  ExternalLink, Check, Send, Maximize, Maximize2
+  ExternalLink, Check, Send, Maximize, Maximize2, X
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useMetricsFor } from '../hooks/useMetrics.js';
 import { useReasonFor } from '../hooks/useReasons.js';
 import { useDatePicker } from '../hooks/useDatePicker.js';
 import {
-  fetchCommentsForMiniCard, fetchActivityForMiniCard, patchStage
+  fetchCommentsForMiniCard, patchStage
 } from '../api/planApi.js';
 import { createComment } from '../../../core/api/comments.js';
 import { KebabMenu } from './KebabMenu.jsx';
@@ -221,14 +221,32 @@ function roleDotColor(author_role) {
   return 'var(--c-text-dim)';
 }
 
-function MiniCommentCard({ c }) {
+function MiniCommentCard({ c, onReply, onResolve }) {
   const author = c.author || '';
   const short = author.includes('@') ? author.split('@')[0] : author;
   const time = c.created_at ? new Date(c.created_at) : null;
   const timeStr = time ? formatTime12(time) : '';
+  const isResolved = c.resolved === true;
+
+  const handleBodyTap = function () { if (onReply) onReply(c); };
+  const handleReplyClick = function (e) {
+    e.stopPropagation();
+    if (onReply) onReply(c);
+  };
+  const handleResolveClick = function (e) {
+    e.stopPropagation();
+    if (onResolve) onResolve(c);
+  };
+
   return (
-    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--c-divider-subtle)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+    <div
+      className={'plan-comment-card' + (isResolved ? ' plan-comment-card-resolved' : '')}
+      onClick={handleBodyTap}
+      role="button"
+      tabIndex={0}
+      style={{ margin: '0 16px 10px' }}
+    >
+      <div className="plan-comment-head">
         <span style={{
           width: '22px', height: '22px',
           borderRadius: '22px',
@@ -242,73 +260,22 @@ function MiniCommentCard({ c }) {
           justifyContent: 'center',
           flexShrink: 0
         }}>{(short[0] || '?').toUpperCase()}</span>
-        <span style={{
-          fontFamily: '"DM Sans", sans-serif',
-          fontSize: '12px',
-          fontWeight: 600,
-          color: 'var(--c-text-loud)'
-        }}>{short}</span>
-        <span style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '8px',
-          textTransform: 'uppercase',
-          letterSpacing: '.1em',
-          color: 'var(--c-text-dim)',
-          padding: '2px 5px',
-          background: 'var(--c-bg-2)',
-          borderRadius: '2px'
-        }}>{c.author_role || ''}</span>
-        <span style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '9px',
-          color: 'var(--c-text-dim)',
-          marginLeft: 'auto'
-        }}>{timeStr}</span>
+        <span className="plan-comment-author">{short}</span>
+        <span className="plan-comment-role">{c.author_role || ''}</span>
+        <span className="plan-comment-time">{timeStr}</span>
+        {isResolved ? <span className="plan-comment-resolved-pill">Resolved</span> : null}
       </div>
-      <div style={{
-        fontFamily: '"DM Sans", sans-serif',
-        fontSize: '13px',
-        color: 'var(--c-text-mid)',
-        lineHeight: 1.5,
-        whiteSpace: 'pre-wrap',
-        background: 'var(--c-bg-2)',
-        padding: '8px 10px',
-        borderRadius: '8px'
-      }}>{c.message || ''}</div>
-    </div>
-  );
-}
-
-function ActivityRow({ a }) {
-  const t = a.created_at ? new Date(a.created_at) : null;
-  const timeStr = t ? formatTime12(t) : '';
-  let line;
-  if (a.action === 'stage_change') {
-    line = `${a.actor || 'Someone'} moved from ${STAGE_LABELS[a.old_stage] || a.old_stage || '?'} to ${STAGE_LABELS[a.new_stage] || a.new_stage || '?'}`;
-  } else {
-    line = `${a.actor || 'Someone'} - ${a.action || ''}`;
-  }
-  return (
-    <div style={{
-      display: 'flex',
-      gap: '12px',
-      padding: '10px 16px',
-      borderBottom: '1px solid var(--c-divider-subtle)'
-    }}>
-      <span style={{
-        fontFamily: '"IBM Plex Mono", monospace',
-        fontSize: '9px',
-        color: 'var(--c-text-dim)',
-        width: '64px',
-        flexShrink: 0,
-        paddingTop: '2px'
-      }}>{timeStr}</span>
-      <span style={{
-        fontFamily: '"DM Sans", sans-serif',
-        fontSize: '13px',
-        color: 'var(--c-text-mid)',
-        flex: 1
-      }}>{line}</span>
+      <div className="plan-comment-body" style={{ whiteSpace: 'pre-wrap' }}>{c.message || ''}</div>
+      <div className="plan-comment-actions">
+        <button type="button" className="plan-comment-action" onClick={handleReplyClick}>
+          Reply
+        </button>
+        {!isResolved ? (
+          <button type="button" className="plan-comment-action" onClick={handleResolveClick}>
+            Resolve
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -322,11 +289,19 @@ function titleCaseRole(role) {
   return r ? r.charAt(0).toUpperCase() + r.slice(1).toLowerCase() : '';
 }
 
-function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
+const InlineComposer = React.forwardRef(function InlineComposer(props, ref) {
+  const { postId, postTitle, role, visibility, replyTo, onDismissReply, onPosted } = props;
+  const effectiveVisibility = visibility || 'all';
   const showToast = usePlanStore((s) => s.showToast);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const taRef = useRef(null);
+
+  React.useImperativeHandle(ref, function () {
+    return {
+      focus: function () { if (taRef.current) taRef.current.focus(); },
+    };
+  });
 
   function autoGrow() {
     const el = taRef.current;
@@ -348,13 +323,14 @@ function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
     }
     const authorRole = titleCaseRole(role);
     const nowIso = new Date().toISOString();
+    const replyToId = replyTo && replyTo.id ? replyTo.id : null;
     const payload = {
       post_id: postId,
       author: email,
       author_role: authorRole,
       message,
-      visibility,
-      reply_to: null,
+      visibility: effectiveVisibility,
+      reply_to: replyToId,
       post_title: postTitle || '',
       created_at: nowIso
     };
@@ -366,7 +342,8 @@ function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
       author: email,
       author_role: authorRole,
       message,
-      visibility,
+      visibility: effectiveVisibility,
+      reply_to: replyToId,
       created_at: nowIso
     };
     setSending(true);
@@ -391,64 +368,83 @@ function InlineComposer({ postId, postTitle, role, visibility, onPosted }) {
     }
   }
 
-  const isInternal = visibility === 'servicing';
-  const placeholder = isInternal ? 'Add an internal note' : 'Write a comment';
+  const placeholder = replyTo ? 'Write a reply' : 'Write a comment';
+  const quoteAuthor = replyTo ? (replyTo.author || 'Anonymous') : '';
+  const quoteAuthorShort = quoteAuthor.includes('@') ? quoteAuthor.split('@')[0] : quoteAuthor;
+  const quoteText = replyTo ? (replyTo.message || '') : '';
+  const quoteTextClipped = quoteText.length > 80 ? quoteText.slice(0, 80) + '...' : quoteText;
 
   return (
     <div style={{
       padding: '10px 16px 16px',
       borderTop: '1px solid var(--c-divider-subtle)',
-      background: 'var(--c-bg)',
-      display: 'flex',
-      alignItems: 'flex-end',
-      gap: '8px'
+      background: 'var(--c-bg)'
     }}>
-      <textarea
-        ref={taRef}
-        value={text}
-        placeholder={placeholder}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={onKeyDown}
-        rows={1}
-        style={{
-          flex: 1,
-          minHeight: '56px',
-          maxHeight: '160px',
-          resize: 'none',
-          padding: '10px 12px',
-          background: 'var(--c-bg-2)',
-          border: '1px solid var(--c-divider-soft)',
-          borderRadius: '10px',
-          color: 'var(--c-text-loud)',
-          fontFamily: '"DM Sans", sans-serif',
-          fontSize: '13.5px',
-          lineHeight: 1.45,
-          outline: 'none'
-        }}
-      />
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!text.trim() || sending}
-        style={{
-          padding: '10px 14px',
-          background: 'var(--c-text-loud)',
-          color: 'var(--c-bg)',
-          border: 'none',
-          borderRadius: '8px',
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '10px',
-          letterSpacing: '.1em',
-          textTransform: 'uppercase',
-          fontWeight: 600,
-          cursor: (!text.trim() || sending) ? 'default' : 'pointer',
-          opacity: (!text.trim() || sending) ? 0.4 : 1
-        }}>
-        <Send size={13} />
-      </button>
+      {replyTo ? (
+        <div className="plan-composer-quote">
+          <div className="plan-composer-quote-stripe" />
+          <div className="plan-composer-quote-content">
+            <div className="plan-composer-quote-author">{quoteAuthorShort || 'Anonymous'}</div>
+            <div className="plan-composer-quote-text">{quoteTextClipped}</div>
+          </div>
+          <button
+            type="button"
+            className="plan-composer-quote-dismiss"
+            onClick={onDismissReply}
+            aria-label="Cancel reply"
+          >
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+      ) : null}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+        <textarea
+          ref={taRef}
+          value={text}
+          placeholder={placeholder}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          rows={1}
+          style={{
+            flex: 1,
+            minHeight: '56px',
+            maxHeight: '160px',
+            resize: 'none',
+            padding: '10px 12px',
+            background: 'var(--c-bg-2)',
+            border: '1px solid var(--c-divider-soft)',
+            borderRadius: '10px',
+            color: 'var(--c-text-loud)',
+            fontFamily: '"DM Sans", sans-serif',
+            fontSize: '13.5px',
+            lineHeight: 1.45,
+            outline: 'none'
+          }}
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!text.trim() || sending}
+          style={{
+            padding: '10px 14px',
+            background: 'var(--c-text-loud)',
+            color: 'var(--c-bg)',
+            border: 'none',
+            borderRadius: '8px',
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '10px',
+            letterSpacing: '.1em',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+            cursor: (!text.trim() || sending) ? 'default' : 'pointer',
+            opacity: (!text.trim() || sending) ? 0.4 : 1
+          }}>
+          <Send size={13} />
+        </button>
+      </div>
     </div>
   );
-}
+});
 
 function ActionBar({ post, role, onApprove, onComment }) {
   const closeMiniCard = usePlanStore((s) => s.closeMiniCard);
@@ -591,16 +587,13 @@ export function MiniCardSheet() {
   const metrics = useMetricsFor(post);
   const reason = useReasonFor(post);
 
-  const [activeTab, setActiveTab] = useState('comments');
   const [comments, setComments] = useState([]);
   const [commentsError, setCommentsError] = useState(null);
-  const [activity, setActivity] = useState([]);
-  const [activityError, setActivityError] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const composerRef = useRef(null);
 
   const isClient = role === 'client';
-  const canSeeInternal = role === 'admin' || role === 'agency';
-  const canSeeActivity = role === 'admin' || role === 'agency';
 
   const postImages = useMemo(
     () => normalizePlanImages(post && post.images),
@@ -639,30 +632,11 @@ export function MiniCardSheet() {
     return () => { cancelled = true; };
   }, [post && post.post_id, role]);
 
-  useEffect(() => {
-    if (!post || !post.post_id) { setActivity([]); return; }
-    if (isClient) { setActivity([]); return; }
-    let cancelled = false;
-    setActivityError(null);
-    fetchActivityForMiniCard(post.post_id).then((rows) => {
-      if (cancelled) return;
-      setActivity(rows);
-    }).catch((err) => {
-      if (cancelled) return;
-      setActivityError((err && err.message) || 'Failed to load activity');
-    });
-    return () => { cancelled = true; };
-  }, [post && post.post_id, isClient]);
-
   if (!post) return null;
 
   const commentsVisible = comments.filter((c) => {
     const v = (c.visibility || 'all').toLowerCase();
     return v === 'all';
-  });
-  const commentsInternal = comments.filter((c) => {
-    const v = (c.visibility || 'all').toLowerCase();
-    return v === 'servicing' || v === 'internal';
   });
 
   const stageColor = STAGE_COLOR_VAR[post.stage]
@@ -686,11 +660,10 @@ export function MiniCardSheet() {
     showToast({ msg: 'Sent to publish queue', duration: 3000 });
   };
   const onComment = () => {
-    setActiveTab('comments');
+    setTimeout(function () {
+      if (composerRef.current) composerRef.current.focus();
+    }, 50);
   };
-
-  const canComposeAll = !isClient || post.stage === 'awaiting_approval' || post.stage === 'awaiting_brand_input';
-  const canComposeInternal = canSeeInternal;
 
   const handlePosted = (evt) => {
     if (evt.phase === 'optimistic') {
@@ -699,10 +672,43 @@ export function MiniCardSheet() {
     }
     if (evt.phase === 'success') {
       setComments((prev) => prev.map((c) => (c.id === evt.tempId ? evt.row : c)));
+      setReplyTo(null);
       return;
     }
     if (evt.phase === 'rollback') {
       setComments((prev) => prev.filter((c) => c.id !== evt.tempId));
+    }
+  };
+
+  const handleReply = (c) => {
+    setReplyTo(c);
+    setTimeout(function () {
+      if (composerRef.current) composerRef.current.focus();
+    }, 50);
+  };
+
+  const handleResolve = async (c) => {
+    if (!c || !c.id) return;
+    setComments((prev) => prev.map((row) => (row.id === c.id ? { ...row, resolved: true } : row)));
+    try {
+      const token = (typeof window !== 'undefined' && window.sb_access_token) || (typeof localStorage !== 'undefined' && localStorage.getItem('sb_access_token')) || '';
+      const apiFetch = typeof window !== 'undefined' ? window.apiFetch : null;
+      if (typeof apiFetch === 'function') {
+        await apiFetch('/post_comments?id=eq.' + encodeURIComponent(c.id), {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation'
+          },
+          body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString() })
+        });
+      } else {
+        throw new Error('apiFetch unavailable');
+      }
+      showToast({ msg: 'Resolved', duration: 2000 });
+    } catch (err) {
+      setComments((prev) => prev.map((row) => (row.id === c.id ? { ...row, resolved: false } : row)));
+      showToast({ msg: (err && err.message) || 'Could not resolve. Try again.', duration: 3000 });
     }
   };
 
@@ -1007,91 +1013,47 @@ export function MiniCardSheet() {
 
           <div style={{
             display: 'flex',
-            gap: '0',
+            alignItems: 'center',
+            gap: '8px',
             margin: '16px 18px 0',
-            borderBottom: '1px solid var(--c-divider-soft)'
+            paddingBottom: '8px',
+            borderBottom: '1px solid var(--c-divider-soft)',
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '10px',
+            letterSpacing: '.12em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-loud)'
           }}>
-            {(() => {
-              const tabs = [];
-              tabs.push({ key: 'comments', label: `Comments (${commentsVisible.length})` });
-              if (canSeeInternal) tabs.push({ key: 'internal', label: `Internal (${commentsInternal.length})` });
-              if (canSeeActivity) tabs.push({ key: 'activity', label: `Activity (${activity.length})` });
-              return tabs.map((t) => (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setActiveTab(t.key)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    padding: '10px 0',
-                    marginRight: '18px',
-                    fontFamily: '"IBM Plex Mono", monospace',
-                    fontSize: '10px',
-                    letterSpacing: '.12em',
-                    textTransform: 'uppercase',
-                    color: activeTab === t.key ? 'var(--c-text-loud)' : 'var(--c-text-dim)',
-                    borderBottom: activeTab === t.key ? '2px solid var(--c-text-loud)' : '2px solid transparent',
-                    cursor: 'pointer'
-                  }}>{t.label}</button>
-              ));
-            })()}
+            <span>Comments ({commentsVisible.length})</span>
           </div>
 
-          <div style={{ padding: '0 0 20px' }}>
-            {activeTab === 'comments' ? (
-              <>
-                {commentsError ? (
-                  <div style={{ padding: '20px 18px', color: 'var(--c-red)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px' }}>
-                    {commentsError}
-                  </div>
-                ) : commentsVisible.length === 0 ? (
-                  <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
-                    No comments yet.
-                  </div>
-                ) : commentsVisible.map((c) => <MiniCommentCard key={c.id} c={c} />)}
-                {canComposeAll ? (
-                  <InlineComposer
-                    postId={post.post_id}
-                    postTitle={post.title}
-                    role={role}
-                    visibility="all"
-                    onPosted={handlePosted}
-                  />
-                ) : null}
-              </>
-            ) : null}
-
-            {activeTab === 'internal' && canSeeInternal ? (
-              <>
-                {commentsInternal.length === 0 ? (
-                  <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
-                    No internal notes.
-                  </div>
-                ) : commentsInternal.map((c) => <MiniCommentCard key={c.id} c={c} />)}
-                {canComposeInternal ? (
-                  <InlineComposer
-                    postId={post.post_id}
-                    postTitle={post.title}
-                    role={role}
-                    visibility="servicing"
-                    onPosted={handlePosted}
-                  />
-                ) : null}
-              </>
-            ) : null}
-
-            {activeTab === 'activity' && canSeeActivity ? (
-              activityError ? (
-                <div style={{ padding: '20px 18px', color: 'var(--c-red)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px' }}>
-                  {activityError}
-                </div>
-              ) : activity.length === 0 ? (
-                <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
-                  No activity yet.
-                </div>
-              ) : activity.map((a) => <ActivityRow key={a.id} a={a} />)
-            ) : null}
+          <div style={{ padding: '12px 0 20px' }}>
+            {commentsError ? (
+              <div style={{ padding: '20px 18px', color: 'var(--c-red)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px' }}>
+                {commentsError}
+              </div>
+            ) : commentsVisible.length === 0 ? (
+              <div style={{ padding: '20px 18px', color: 'var(--c-text-dim)', fontFamily: '"DM Sans", sans-serif', fontSize: '13px', fontStyle: 'italic' }}>
+                No comments yet.
+              </div>
+            ) : commentsVisible.map((c) => (
+              <MiniCommentCard
+                key={c.id}
+                c={c}
+                onReply={handleReply}
+                onResolve={handleResolve}
+              />
+            ))}
+            <InlineComposer
+              ref={composerRef}
+              postId={post.post_id}
+              postTitle={post.title}
+              role={role}
+              visibility="all"
+              replyTo={replyTo}
+              onDismissReply={function () { setReplyTo(null); }}
+              onPosted={handlePosted}
+            />
           </div>
         </div>
 
