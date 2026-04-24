@@ -1,10 +1,10 @@
 // Infinite vertical stack of month grids. Monday-first. Cells show up
 // to 2 thumb previews. Cell tap opens DaySheet. Thumb tap bypasses
-// DaySheet and opens MiniCardSheet directly. Thumbs are draggable
-// across months to reschedule target_date via planStore.rescheduleTarget.
-// IntersectionObserver sentinels at the top and bottom of the stack
-// lazy-load the previous or next month when the user scrolls near
-// the edge of the loaded range.
+// DaySheet and opens PCS directly via the sorted-react bridge. Thumbs
+// are draggable across months to reschedule target_date via
+// planStore.rescheduleTarget. IntersectionObserver sentinels at the
+// top and bottom of the stack lazy-load the previous or next month
+// when the user scrolls near the edge of the loaded range.
 
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import {
@@ -30,6 +30,7 @@ import {
   STAGE_COLOR_VAR, PILLAR_LABELS
 } from '../shared/constants.js';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
+import { openInPcs } from '../shared/openInPcs.js';
 import { exportCalendarAsPng } from '../hooks/useCalendarExport.js';
 
 const MONTH_NAMES_FULL = [
@@ -94,8 +95,7 @@ function formatWeekRangeLabel(startDate) {
   return `${startMonth} ${startDate.getDate()} - ${endMonth} ${endDate.getDate()}`;
 }
 
-function ThumbMini({ post, isOverlay }) {
-  const openMiniCard = usePlanStore((s) => s.openMiniCard);
+function ThumbMini({ post, isOverlay, contextPosts }) {
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
     : 'var(--c-text-dim)';
@@ -130,7 +130,7 @@ function ThumbMini({ post, isOverlay }) {
         if (isOverlay) return;
         if (window.__planDragActive) return;
         e.stopPropagation();
-        openMiniCard(post);
+        openInPcs(post, contextPosts);
       }}
       style={{
         position: 'relative',
@@ -178,7 +178,7 @@ function ThumbMini({ post, isOverlay }) {
   );
 }
 
-function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
+function Cell({ date, posts, isToday, isOffMonth, dateKey, contextPosts }) {
   const openDay = usePlanStore((s) => s.openDay);
   const preview = posts.slice(0, 2);
   const extra = Math.max(0, posts.length - preview.length);
@@ -231,7 +231,7 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {preview.map((p) => (
-              <ThumbMini key={p.id} post={p} />
+              <ThumbMini key={p.id} post={p} contextPosts={contextPosts} />
             ))}
             {extra > 0 ? (
               <span style={{
@@ -261,7 +261,7 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey }) {
   );
 }
 
-function MonthBlock({ monthStartISO, posts, headerRef, today }) {
+function MonthBlock({ monthStartISO, posts, headerRef, today, contextPosts }) {
   const startDate = useMemo(() => parseISODate(monthStartISO), [monthStartISO]);
   const grid = useMemo(() => buildMonthGrid(startDate), [startDate]);
 
@@ -323,6 +323,7 @@ function MonthBlock({ monthStartISO, posts, headerRef, today }) {
               posts={postsByDay[key] || []}
               isToday={sameDay(d, today)}
               isOffMonth={false}
+              contextPosts={contextPosts}
             />
           );
         })}
@@ -331,7 +332,7 @@ function MonthBlock({ monthStartISO, posts, headerRef, today }) {
   );
 }
 
-function WeekDayRow({ date, posts, isToday }) {
+function WeekDayRow({ date, posts, isToday, contextPosts }) {
   const openDay = usePlanStore((s) => s.openDay);
   const dateKey = formatYYYYMMDD(date);
   const droppableId = 'cell-' + dateKey;
@@ -409,7 +410,7 @@ function WeekDayRow({ date, posts, isToday }) {
         }}>
           {posts.map((p) => (
             <div key={p.id} style={{ width: '88px', flexShrink: 0 }}>
-              <ThumbMini post={p} />
+              <ThumbMini post={p} contextPosts={contextPosts} />
             </div>
           ))}
         </div>
@@ -418,7 +419,7 @@ function WeekDayRow({ date, posts, isToday }) {
   );
 }
 
-function WeekBlock({ weekStartISO, posts, headerRef, today }) {
+function WeekBlock({ weekStartISO, posts, headerRef, today, contextPosts }) {
   const startDate = useMemo(() => parseISODate(weekStartISO), [weekStartISO]);
   const grid = useMemo(() => buildWeekGrid(startDate), [startDate]);
 
@@ -450,6 +451,7 @@ function WeekBlock({ weekStartISO, posts, headerRef, today }) {
             date={d}
             posts={postsByDay[key] || []}
             isToday={sameDay(d, today)}
+            contextPosts={contextPosts}
           />
         );
       })}
@@ -891,6 +893,7 @@ export function Calendar() {
                 posts={weekPosts}
                 headerRef={null}
                 today={today}
+                contextPosts={weekPosts}
               />
             )}
 
@@ -980,6 +983,7 @@ export function Calendar() {
                 posts={postsByMonth[m.start] || []}
                 headerRef={m.start === todayMonthISO ? todayHeaderRef : null}
                 today={today}
+                contextPosts={posts}
               />
             ))}
 

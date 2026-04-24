@@ -7,7 +7,6 @@ import {
   fetchPlanPosts,
   fetchPostMetrics,
   fetchReasonComments,
-  fetchCaptionAndImages,
   fetchPlanRequests,
   rescheduleTarget as apiReschedule
 } from '../api/planApi.js';
@@ -81,7 +80,6 @@ export const usePlanStore = create((set, get) => ({
   requests: [],
   requestsLoading: false,
   requestsError: null,
-  currentPost: null,
   currentView: 'board',
   currentFilter: { stage: 'all' },
   currentDay: null,
@@ -194,26 +192,6 @@ export const usePlanStore = create((set, get) => ({
     }
   },
 
-  async loadCaptionFor(post) {
-    if (!post || !post.id) return;
-    if (post.caption != null && post.images != null) return;
-    try {
-      const row = await fetchCaptionAndImages(post.id);
-      if (!row) return;
-      const transform = (p) => p.id === post.id ? { ...p, caption: row.caption, images: row.images } : p;
-      const posts = get().posts.map(transform);
-      const newLoadedMonths = get().loadedMonths.map((mo) => ({
-        ...mo,
-        posts: (mo.posts || []).map(transform)
-      }));
-      const cur = get().currentPost;
-      const nextCur = cur && cur.id === post.id ? { ...cur, caption: row.caption, images: row.images } : cur;
-      set({ posts, loadedMonths: newLoadedMonths, currentPost: nextCur });
-    } catch (err) {
-      // Silent - card sheet renders without caption if this fails.
-    }
-  },
-
   getPostsForDate(dateISO) {
     if (!dateISO) return [];
     const key = String(dateISO).slice(0, 10);
@@ -225,14 +203,6 @@ export const usePlanStore = create((set, get) => ({
   setFilter(f) { set({ currentFilter: f || { stage: 'all' } }); },
   clearFilter() { set({ currentFilter: { stage: 'all' } }); },
 
-  openMiniCard(post) {
-    set({ currentPost: post, activeSheet: 'miniCard' });
-    if (post && (post.caption == null || post.images == null)) {
-      get().loadCaptionFor(post);
-    }
-  },
-  closeMiniCard() { set({ currentPost: null, activeSheet: null }); },
-
   openDay(d) { set({ currentDay: d, activeSheet: 'day' }); },
   closeDay() { set({ currentDay: null, activeSheet: null }); },
 
@@ -242,32 +212,10 @@ export const usePlanStore = create((set, get) => ({
   openFab() { set({ activeSheet: 'fab' }); },
   closeFab() { set({ activeSheet: null }); },
 
-  closeSheet() { set({ activeSheet: null, currentPost: null, currentDay: null }); },
-
-  navigateMiniCard(direction) {
-    const { posts, currentPost } = get();
-    if (!currentPost || posts.length === 0) return;
-    const sorted = [...posts].sort((a, b) => {
-      const da = a.target_date || '';
-      const db = b.target_date || '';
-      if (da !== db) return da < db ? -1 : 1;
-      const pa = a.post_id || '';
-      const pb = b.post_id || '';
-      return pa < pb ? -1 : pa > pb ? 1 : 0;
-    });
-    const idx = sorted.findIndex((p) => p.id === currentPost.id);
-    if (idx < 0) return;
-    const next = direction === 'next' ? idx + 1 : idx - 1;
-    if (next < 0 || next >= sorted.length) return;
-    const target = sorted[next];
-    set({ currentPost: target });
-    if (target.caption == null || target.images == null) {
-      get().loadCaptionFor(target);
-    }
-  },
+  closeSheet() { set({ activeSheet: null, currentDay: null }); },
 
   async rescheduleTarget(postIdUuid, newDateISO) {
-    const { loadedMonths, posts, currentPost } = get();
+    const { loadedMonths, posts } = get();
 
     // Locate the post inside loadedMonths.
     let oldMonthStart = null;
@@ -330,11 +278,7 @@ export const usePlanStore = create((set, get) => ({
       ? newLoadedMonths.flatMap((m) => m.posts)
       : posts.map((p) => p.id === postIdUuid ? updatedPost : p);
 
-    const nextCur = currentPost && currentPost.id === postIdUuid
-      ? { ...currentPost, target_date: newDateISO }
-      : currentPost;
-
-    set({ loadedMonths: newLoadedMonths, posts: nextFlatPosts, currentPost: nextCur });
+    set({ loadedMonths: newLoadedMonths, posts: nextFlatPosts });
 
     const parts = (newDateISO || '').split('-');
     const d = parts.length === 3 ? new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])) : null;
@@ -387,11 +331,7 @@ export const usePlanStore = create((set, get) => ({
         ? revertedMonths.flatMap((m) => m.posts)
         : curPosts.map((p) => p.id === postIdUuid ? revertedPost : p);
 
-      const curNow = get().currentPost;
-      const revertCur = curNow && curNow.id === postIdUuid
-        ? { ...curNow, target_date: oldDate }
-        : curNow;
-      set({ loadedMonths: revertedMonths, posts: revertFlat, currentPost: revertCur });
+      set({ loadedMonths: revertedMonths, posts: revertFlat });
       get().showToast({ msg: 'Reschedule failed', duration: 3000, undoAction: null });
     }
   },

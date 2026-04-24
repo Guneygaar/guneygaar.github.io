@@ -202,6 +202,7 @@ export function PCS() {
                 canMove={canMove}
                 onOpenSheet={() => setDetailSheetOpen(true)}
                 onOpenStage={() => setDetailSheetOpen(true)}
+                actor={userEmail}
               />
               <PhotoStrip post={post} canEdit={canEdit} />
               <div className="px-3 pt-3 pb-1">

@@ -14,7 +14,6 @@ import { Calendar } from './views/Calendar.jsx';
 import { Insights } from './views/Insights.jsx';
 import { FilterBanner } from './shared/FilterBanner.jsx';
 import { Toast } from './shared/Toast.jsx';
-import { MiniCardSheet } from './sheets/MiniCardSheet.jsx';
 import { DaySheet } from './sheets/DaySheet.jsx';
 import { FabSheet } from './sheets/FabSheet.jsx';
 import { Menu } from './sheets/Menu.jsx';
@@ -291,7 +290,6 @@ export default function Plan() {
       <Fab />
 
       {activeSheet === 'menu' ? <Menu /> : null}
-      {activeSheet === 'miniCard' ? <MiniCardSheet /> : null}
       {activeSheet === 'day' ? <DaySheet /> : null}
       {activeSheet === 'fab' ? <FabSheet /> : null}
 

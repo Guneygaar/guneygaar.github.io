@@ -69,53 +69,6 @@ export async function fetchReasonComments(postIdsText) {
 }
 
 /**
- * Query 4 - fetchCommentsForMiniCard(postIdText, role)
- * role: 'admin' | 'agency' | 'client'
- */
-export async function fetchCommentsForMiniCard(postIdText, role) {
-  if (!postIdText) return [];
-  const select = 'id,author,author_role,message,created_at,visibility';
-  let visFilter = '';
-  if (role === 'client') {
-    visFilter = '&visibility=eq.all';
-  } else if (role === 'agency') {
-    visFilter = `&visibility=in.${encodeURIComponent('(all,servicing)')}`;
-  }
-  const path = `/post_comments?select=${select}`
-    + `&post_id=eq.${encodeURIComponent(postIdText)}`
-    + `&or=(deleted.is.null,deleted.eq.false)`
-    + visFilter
-    + `&order=created_at.desc`;
-  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
-  return Array.isArray(rows) ? rows : [];
-}
-
-/**
- * Query 5 - fetchActivityForMiniCard(postIdText)
- * Hidden for client role - callers must skip this when role === 'client'.
- */
-export async function fetchActivityForMiniCard(postIdText) {
-  if (!postIdText) return [];
-  const select = 'id,actor,action,old_stage,new_stage,created_at';
-  const path = `/activity_log?select=${select}`
-    + `&post_id=eq.${encodeURIComponent(postIdText)}`
-    + `&order=created_at.desc&limit=50`;
-  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
-  return Array.isArray(rows) ? rows : [];
-}
-
-/**
- * Query 6 - fetchCaptionAndImages(postIdUuid)
- * id is the uuid PK, not the post_id text slug.
- */
-export async function fetchCaptionAndImages(postIdUuid) {
-  if (!postIdUuid) return null;
-  const path = `/posts?select=caption,images&id=eq.${encodeURIComponent(postIdUuid)}&limit=1`;
-  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
-}
-
-/**
  * fetchPlanRequests()
  * Fetches every row in `requests` ordered by created_at desc. No
  * client-side scoping by created_by: matches the vanilla pattern in
@@ -164,21 +117,3 @@ export async function patchPostTitle(postIdUuid, newTitle) {
   });
 }
 
-/**
- * Query 9 - patchStage(postIdUuid, newStage)
- * Mirrors rescheduleTarget shape. stage only. The notify-stage edge
- * function fires the fan-out; status_changed_at is a server trigger
- * column and is never written from the client.
- */
-export async function patchStage(postIdUuid, newStage) {
-  if (!postIdUuid) throw new Error('patchStage: postIdUuid required');
-  if (typeof newStage !== 'string' || !newStage) {
-    throw new Error('patchStage: newStage required');
-  }
-  const path = `/posts?id=eq.${encodeURIComponent(postIdUuid)}`;
-  return apiFetch(path, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-    body: JSON.stringify({ stage: newStage })
-  });
-}
