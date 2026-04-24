@@ -83,7 +83,7 @@ export function Lightbox({
   return (
     <div
       className="fixed inset-0 flex items-center justify-center"
-      style={{ zIndex: 1600, background: 'rgba(0,0,0,0.95)' }}
+      style={{ zIndex: 2700, background: 'rgba(0,0,0,0.95)' }}
       onClick={onClose}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
