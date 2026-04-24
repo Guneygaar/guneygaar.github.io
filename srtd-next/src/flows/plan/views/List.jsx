@@ -61,7 +61,8 @@ function PostRow({ post, triggerPicker }) {
     if (!isNaN(pd.getTime())) publishedTime = formatTime12(pd);
   }
 
-  const editingEnabled = role !== 'client';
+  const isClient = role === 'client';
+  const editingEnabled = !isClient;
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(post.title || '');
 
@@ -164,7 +165,9 @@ function PostRow({ post, triggerPicker }) {
         <PillarThumb post={post} size={44} />
       </div>
 
-      <div style={{ width: '3px', background: ownerColor, flexShrink: 0 }} />
+      {!isClient ? (
+        <div style={{ width: '3px', background: ownerColor, flexShrink: 0 }} />
+      ) : null}
 
       <div style={{ flex: 1, minWidth: 0, padding: '10px 12px' }}>
         {editingTitle ? (

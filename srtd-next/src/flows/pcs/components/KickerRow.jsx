@@ -2,9 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { X, PanelRight } from 'lucide-react';
 import { STAGE_LABELS, STAGE_TOKEN } from '../utils/stage.js';
 import { pcsFlow } from '../index.js';
+import { useIsClient } from '../../../core/stores/appState.js';
+import { daysSince } from '../../plan/shared/dateUtils.js';
+
+// Aging threshold: AgeBadge (plan/shared/AgeBadge.jsx) treats days >= 7 as
+// the red bucket. For the client-facing overdue capsule we render only when
+// N strictly exceeds that threshold (matches "exceeds 7 days" requirement).
+const STAGE_AGING_THRESHOLD_DAYS = 7;
 
 export function KickerRow({ post, isAdmin, canMove, onOpenSheet, onOpenStage }) {
   const [compressed, setCompressed] = useState(false);
+  const isClient = useIsClient();
 
   useEffect(() => {
     const onScroll = () => setCompressed(window.scrollY > 60);
@@ -15,6 +23,12 @@ export function KickerRow({ post, isAdmin, canMove, onOpenSheet, onOpenStage }) 
   const stage = post?.stage || '';
   const stageToken = STAGE_TOKEN[stage] || 'stage-production';
   const stageLabel = (STAGE_LABELS[stage] || stage || '').toUpperCase();
+
+  // Days the post has spent in its current stage. Uses the same
+  // status_changed_at field that AgeBadge reads from, so the client and
+  // agency surfaces stay in sync.
+  const daysInStage = daysSince(post?.status_changed_at);
+  const showOverdue = isClient && daysInStage > STAGE_AGING_THRESHOLD_DAYS;
 
   return (
     <header
@@ -58,6 +72,22 @@ export function KickerRow({ post, isAdmin, canMove, onOpenSheet, onOpenStage }) 
             />
             <span>{stageLabel}</span>
           </div>
+        )}
+        {showOverdue && (
+          <span
+            className="font-mono tracking-widest uppercase flex-shrink-0 inline-flex items-center"
+            style={{
+              color: 'var(--c-amber)',
+              background: 'color-mix(in srgb, var(--c-amber) 14%, transparent)',
+              fontSize: '8.5px',
+              letterSpacing: '0.08em',
+              padding: '2px 6px',
+              borderRadius: '2px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {`Overdue ${daysInStage} days`}
+          </span>
         )}
         <span
           className="text-text-dim"
