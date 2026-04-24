@@ -13,6 +13,7 @@ import {
 } from '../shared/constants.js';
 import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
+import { BriefsSection } from './BriefsSection.jsx';
 
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'brief_done']);
 
@@ -182,6 +183,7 @@ export function Board() {
 
   return (
     <div style={{ paddingBottom: '80px' }}>
+      {isClient ? <BriefsSection /> : null}
       {visibleStages.map((stage) => (
         <Row key={stage} stage={stage} items={groups[stage] || []} />
       ))}
