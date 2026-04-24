@@ -35,18 +35,30 @@ export function KickerRow({ post, isAdmin, canMove, onOpenSheet, onOpenStage }) 
         </button>
       </div>
       <div className="flex-1 min-w-0 flex items-center gap-2 px-1 overflow-hidden">
-        <button
-          onClick={canMove ? onOpenStage : undefined}
-          disabled={!canMove}
-          className="font-mono text-sm tracking-widest uppercase text-text-soft flex items-center gap-2 flex-shrink-0 cursor-pointer disabled:cursor-default"
-          style={{ fontFeatureSettings: "'tnum' 1" }}
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-            style={{ backgroundColor: `var(--c-${stageToken})` }}
-          />
-          <span>{stageLabel}</span>
-        </button>
+        {canMove ? (
+          <button
+            onClick={onOpenStage}
+            className="font-mono text-sm tracking-widest uppercase text-text-soft flex items-center gap-2 flex-shrink-0 cursor-pointer"
+            style={{ fontFeatureSettings: "'tnum' 1" }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: `var(--c-${stageToken})` }}
+            />
+            <span>{stageLabel}</span>
+          </button>
+        ) : (
+          <div
+            className="font-mono text-sm tracking-widest uppercase text-text-soft flex items-center gap-2 flex-shrink-0"
+            style={{ fontFeatureSettings: "'tnum' 1" }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: `var(--c-${stageToken})` }}
+            />
+            <span>{stageLabel}</span>
+          </div>
+        )}
         <span
           className="text-text-dim"
           style={{ opacity: compressed ? 1 : 0, transition: 'opacity 0.2s ease' }}
