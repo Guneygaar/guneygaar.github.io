@@ -86,15 +86,21 @@ export const usePlanStore = create((set, get) => ({
     const prevStart = `${prevDate.getFullYear()}-${pad(prevDate.getMonth() + 1)}-01`;
     const nextStart = `${nextDate.getFullYear()}-${pad(nextDate.getMonth() + 1)}-01`;
 
+    // Year-cap clamp: do not preload months outside the current calendar year.
+    // If today is January, skip December of previous year.
+    // If today is December, skip January of next year.
+    const prevInYear = prevDate.getFullYear() === y;
+    const nextInYear = nextDate.getFullYear() === y;
+
     try {
       const metricsPromise = fetchPostMetrics();
       // Current month first (blocks initial paint).
       await get().loadMonthIfMissing(curStart);
       const metricsById = await metricsPromise;
       set({ metrics: metricsById });
-      // Prev + next in background (fire-and-forget).
-      get().loadMonthIfMissing(prevStart);
-      get().loadMonthIfMissing(nextStart);
+      // Prev + next in background (fire-and-forget), clamped within CURRENT_YEAR.
+      if (prevInYear) get().loadMonthIfMissing(prevStart);
+      if (nextInYear) get().loadMonthIfMissing(nextStart);
     } catch (err) {
       set({ loading: false, loadError: (err && err.message) || 'Failed to load plan data' });
     }

@@ -35,6 +35,8 @@ const MONTH_NAMES_FULL = [
 
 const DOW_HEADERS = ['M','T','W','T','F','S','S'];
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 function pad2(n) { return String(n).padStart(2, '0'); }
 
 function todayMonthStartISO() {
@@ -50,6 +52,12 @@ function shiftMonthStartISO(monthStartISO, delta) {
   if (!y || !m) return monthStartISO;
   const d = new Date(y, m - 1 + delta, 1);
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-01`;
+}
+
+function isMonthInCurrentYear(monthStartISO) {
+  const parts = (monthStartISO || '').split('-');
+  if (parts.length !== 3) return false;
+  return Number(parts[0]) === CURRENT_YEAR;
 }
 
 function ThumbMini({ post, isOverlay }) {
@@ -80,6 +88,8 @@ function ThumbMini({ post, isOverlay }) {
     <button
       ref={isOverlay ? undefined : setNodeRef}
       type="button"
+      draggable={false}
+      onContextMenu={(e) => e.preventDefault()}
       {...(isOverlay ? {} : attributes)}
       {...(isOverlay ? {} : listeners)}
       onClick={(e) => {
@@ -102,6 +112,9 @@ function ThumbMini({ post, isOverlay }) {
         boxShadow: approvalInset,
         marginBottom: '2px',
         touchAction: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
         ...dragStyle
       }}>
       <PillarThumb post={post} size="100%" radius={0} labelSize="6px" showLabel={true} />
@@ -350,7 +363,11 @@ export function Calendar() {
     const topObs = topNode ? new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
+          // Year cap: if earliest loaded is already January of CURRENT_YEAR,
+          // do not load December of previous year.
+          if (earliestStart === `${CURRENT_YEAR}-01-01`) continue;
           const prevISO = shiftMonthStartISO(earliestStart, -1);
+          if (!isMonthInCurrentYear(prevISO)) continue;
           scheduleLoad(prevISO, 'top');
         }
       }
@@ -359,7 +376,11 @@ export function Calendar() {
     const bottomObs = bottomNode ? new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
+          // Year cap: if latest loaded is already December of CURRENT_YEAR,
+          // do not load January of next year.
+          if (latestStart === `${CURRENT_YEAR}-12-01`) continue;
           const nextISO = shiftMonthStartISO(latestStart, 1);
+          if (!isMonthInCurrentYear(nextISO)) continue;
           scheduleLoad(nextISO, 'bottom');
         }
       }
@@ -466,74 +487,71 @@ export function Calendar() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}>
-      <div style={{ padding: '12px', position: 'relative' }}>
+      <div style={{ padding: '12px', paddingTop: 0 }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          padding: '12px 2px 6px',
+          gap: '8px'
+        }}>
+          <button
+            type="button"
+            aria-label="Export calendar"
+            onClick={handleExport}
+            disabled={isExporting}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'transparent',
+              border: '1px solid var(--c-divider-soft)',
+              borderRadius: '6px',
+              padding: '5px 9px',
+              cursor: isExporting ? 'default' : 'pointer',
+              color: 'var(--c-text-mid)',
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '9px',
+              letterSpacing: '.12em',
+              textTransform: 'uppercase',
+              opacity: isExporting ? 0.6 : 1
+            }}>
+            {isExporting ? (
+              <Loader2
+                size={13}
+                className="animate-spin"
+                style={{ animation: 'plan-spin 0.8s linear infinite' }}
+              />
+            ) : (
+              <Download size={13} />
+            )}
+            <span>{isExporting ? 'Exporting' : 'Export'}</span>
+          </button>
+        </div>
         <div style={{
           position: 'sticky',
-          top: '44px',
+          top: 0,
           zIndex: 20,
           background: 'var(--c-bg)',
-          paddingTop: '4px',
-          paddingBottom: '4px',
+          paddingTop: '6px',
+          paddingBottom: '6px',
           marginBottom: '2px',
-          borderBottom: '1px solid var(--c-divider-subtle)'
+          borderBottom: '1px solid var(--c-divider-subtle)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: '4px'
         }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            padding: '0 2px 6px',
-            gap: '8px'
-          }}>
-            <button
-              type="button"
-              aria-label="Export calendar"
-              onClick={handleExport}
-              disabled={isExporting}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'transparent',
-                border: '1px solid var(--c-divider-soft)',
-                borderRadius: '6px',
-                padding: '5px 9px',
-                cursor: isExporting ? 'default' : 'pointer',
-                color: 'var(--c-text-mid)',
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: '9px',
-                letterSpacing: '.12em',
-                textTransform: 'uppercase',
-                opacity: isExporting ? 0.6 : 1
-              }}>
-              {isExporting ? (
-                <Loader2
-                  size={13}
-                  className="animate-spin"
-                  style={{ animation: 'plan-spin 0.8s linear infinite' }}
-                />
-              ) : (
-                <Download size={13} />
-              )}
-              <span>{isExporting ? 'Exporting' : 'Export'}</span>
-            </button>
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(7, 1fr)',
-            gap: '4px'
-          }}>
-            {DOW_HEADERS.map((d, i) => (
-              <div key={i} style={{
-                textAlign: 'center',
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: '8.5px',
-                textTransform: 'uppercase',
-                letterSpacing: '.12em',
-                color: 'var(--c-text-dim)',
-                padding: '4px 0'
-              }}>{d}</div>
-            ))}
-          </div>
+          {DOW_HEADERS.map((d, i) => (
+            <div key={i} style={{
+              textAlign: 'center',
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '8.5px',
+              textTransform: 'uppercase',
+              letterSpacing: '.12em',
+              color: 'var(--c-text-dim)',
+              padding: '4px 0'
+            }}>{d}</div>
+          ))}
         </div>
 
         <div ref={topSentinelRef} data-sentinel="top" style={{ height: '1px' }} />
