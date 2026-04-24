@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Sparkles, X, AtSign, ImagePlus, Paperclip, CircleDot, FileText } from 'lucide-react';
 import { createComment, createInternalNote } from '../../../core/api/comments.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState.js';
 import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { polishText } from '../../../core/bridges/claudePolish.js';
@@ -15,6 +15,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   const userRoles = usePcsStore((s) => s.userRoles);
   const currentEmail = useAppState((s) => s.user?.email || '');
   const currentRole = useAppState((s) => s.user?.role || '');
+  const isClient = useIsClient();
   const [text, setText] = useState('');
   const [polishPreview, setPolishPreview] = useState(null);
   const [polishing, setPolishing] = useState(false);
@@ -310,7 +311,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
           rows={1}
           className="flex-1 bg-transparent text-lg text-text-loud placeholder:text-text-dim font-sans py-1.5 px-1 outline-none resize-none"
         />
-        {isAgency && text.trim() && !polishPreview && (
+        {!isClient && isAgency && text.trim() && !polishPreview && (
           <button onClick={onPolish} disabled={polishing} className="w-8 h-8 flex items-center justify-center rounded-sm2 tint-amber border text-amber disabled:opacity-50" aria-label="Polish">
             <Sparkles size={14} />
           </button>
