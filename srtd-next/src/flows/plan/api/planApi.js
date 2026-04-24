@@ -116,6 +116,22 @@ export async function fetchCaptionAndImages(postIdUuid) {
 }
 
 /**
+ * fetchPlanRequests()
+ * Fetches every row in `requests` ordered by created_at desc. No
+ * client-side scoping by created_by: matches the vanilla pattern in
+ * 07-post-load.js (`/requests?status=in.(pending,assigned)&order=created_at.desc`)
+ * which is unscoped and relies on RLS / single-tenant data. For the
+ * Briefs section we want ALL statuses (pending, assigned, closed) so
+ * we omit the status filter and let the UI bucket rows.
+ */
+export async function fetchPlanRequests() {
+  const select = 'id,title,description,created_by,created_at,status,content_type,target_date,images,drive_link,assigned_to,total_posts,completed_posts,first_post_created_at,last_post_published_at';
+  const path = `/requests?select=${select}&order=created_at.desc`;
+  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
+  return Array.isArray(rows) ? rows : [];
+}
+
+/**
  * Query 7 - rescheduleTarget(postIdUuid, newDateISO)
  * CRITICAL: target_date only. Never write status_changed_at.
  * newDateISO format: YYYY-MM-DD.
