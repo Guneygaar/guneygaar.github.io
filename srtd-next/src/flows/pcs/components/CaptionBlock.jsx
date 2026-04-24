@@ -8,11 +8,13 @@ import { writeAudit } from '../../../core/api/audit.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
+import { useIsClient } from '../../../core/stores/appState.js';
 
 const OVER_WORD_THRESHOLD = 125;
 const LONG_PRESS_MS = 500;
 
 export function CaptionBlock({ post, canEdit, isAdmin }) {
+  const isClient = useIsClient();
   const caption = post?.caption || '';
   const wc = wordCount(caption);
   const over = wc > OVER_WORD_THRESHOLD;
@@ -103,7 +105,7 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   }
 
   function onClaude() {
-    if (!isAdmin) return;
+    if (isClient) return;
     logClick('pcs_react_caption_claude', {});
     const syntheticContext = {
       caption, title: post?.title, pillar: post?.content_pillar,
@@ -118,7 +120,7 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   }
 
   function onQc() {
-    if (!isAdmin) return;
+    if (isClient) return;
     logClick('pcs_react_caption_qc', {});
     const syntheticContext = {
       caption, title: post?.title, pillar: post?.content_pillar,
@@ -134,6 +136,7 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
 
   // Long-press body to enter edit mode.
   function startLP(e) {
+    if (isClient) return;
     if (!canEdit) return;
     if (e.target.closest('button, a, input, textarea')) return;
     lpTimer.current = setTimeout(() => {
@@ -257,7 +260,7 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
             </button>
           ) : null}
 
-          {isAdmin ? (
+          {!isClient ? (
             <>
               <button
                 onClick={onClaude}
