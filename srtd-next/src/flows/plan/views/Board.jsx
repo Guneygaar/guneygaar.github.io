@@ -1,5 +1,6 @@
 // Rotated kanban. One row per stage, horizontal snap-scroll of
-// cards. Card tap opens the Mini Card sheet via planStore.openMiniCard.
+// cards. Card tap opens PCS via the sorted-react bridge, passing the
+// filtered post list as the prev/next navigation context.
 
 import React, { useMemo } from 'react';
 import { usePosts } from '../hooks/usePosts.js';
@@ -13,12 +14,12 @@ import {
 } from '../shared/constants.js';
 import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
+import { openInPcs } from '../shared/openInPcs.js';
 import { BriefsAssignedSection, BriefsCompletedSection } from './BriefsSection.jsx';
 
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 
-function Card({ post }) {
-  const openMiniCard = usePlanStore((s) => s.openMiniCard);
+function Card({ post, contextPosts }) {
   const role = usePlanStore((s) => s.role);
   const isClient = role === 'client';
   const d = parseISODate(post.target_date);
@@ -44,7 +45,7 @@ function Card({ post }) {
   return (
     <button
       type="button"
-      onClick={() => openMiniCard(post)}
+      onClick={() => openInPcs(post, contextPosts)}
       style={{
         width: '138px',
         flexShrink: 0,
@@ -117,7 +118,7 @@ function Card({ post }) {
   );
 }
 
-function Row({ stage, items }) {
+function Row({ stage, items, contextPosts }) {
   const stageColor = STAGE_COLOR_VAR[stage]
     ? `var(${STAGE_COLOR_VAR[stage]})`
     : 'var(--c-text-dim)';
@@ -159,7 +160,7 @@ function Row({ stage, items }) {
             color: 'var(--c-text-dim)',
             padding: '8px 0'
           }}>Nothing here</div>
-        ) : items.map((p) => <Card key={p.id} post={p} />)}
+        ) : items.map((p) => <Card key={p.id} post={p} contextPosts={contextPosts} />)}
       </div>
     </section>
   );
@@ -185,7 +186,7 @@ export function Board() {
     <div style={{ paddingBottom: '80px' }}>
       {isClient ? <BriefsAssignedSection /> : null}
       {visibleStages.map((stage) => (
-        <Row key={stage} stage={stage} items={groups[stage] || []} />
+        <Row key={stage} stage={stage} items={groups[stage] || []} contextPosts={posts} />
       ))}
       {isClient ? <BriefsCompletedSection /> : null}
     </div>

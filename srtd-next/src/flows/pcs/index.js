@@ -62,13 +62,14 @@ async function refreshRealtime(postId) {
 }
 
 export const pcsFlow = {
-  async open(postId) {
+  async open(postId, opts) {
     if (!postId) { console.warn('[sorted-react/pcs] open() without postId'); return; }
     useAppState.getState().syncFromWindow();
     usePcsStore.getState().reset();
     usePcsFlowState.getState().open(postId);
     logClick('pcs_react_open', { postId });
-    usePcsStore.setState({ loading: true });
+    const contextList = (opts && Array.isArray(opts.contextList)) ? opts.contextList : [];
+    usePcsStore.setState({ loading: true, contextList });
 
     const role = String(useAppState.getState().user?.role || '').toLowerCase();
     const isAgency = ['admin', 'creative', 'servicing'].includes(role);
@@ -163,5 +164,24 @@ export const pcsFlow = {
     }
   },
   retryActivity,
-  isOpen() { return usePcsFlowState.getState().isOpen; }
+  isOpen() { return usePcsFlowState.getState().isOpen; },
+  // Walk the context list supplied to open(). Preserves the list across
+  // navigation so the user can swipe prev/next through the same filtered
+  // set without refetching it from Plan. No-op when the list is empty
+  // (e.g. PCS opened from a notification deep link) or when there's no
+  // neighbour in the requested direction.
+  async navigate(direction) {
+    const state = usePcsStore.getState();
+    const list = state.contextList || [];
+    const currentPostId = usePcsFlowState.getState().postId;
+    if (!list.length || !currentPostId) return;
+    const idx = list.indexOf(currentPostId);
+    if (idx < 0) return;
+    const nextIdx = direction === 'next' ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= list.length) return;
+    const nextPostId = list[nextIdx];
+    if (!nextPostId || nextPostId === currentPostId) return;
+    logClick('pcs_react_navigate', { direction, postId: nextPostId });
+    await pcsFlow.open(nextPostId, { contextList: list });
+  }
 };

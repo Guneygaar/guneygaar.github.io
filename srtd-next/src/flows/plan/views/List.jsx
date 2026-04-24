@@ -22,6 +22,7 @@ import {
 import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
+import { openInPcs } from '../shared/openInPcs.js';
 
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 const LONG_PRESS_GUARD_MS = 400;
@@ -37,13 +38,11 @@ function rowClickGuarded(handler) {
   };
 }
 
-function PostRow({ post, triggerPicker }) {
-  const openMiniCard = usePlanStore((s) => s.openMiniCard);
+function PostRow({ post, triggerPicker, contextPosts }) {
   const setFilter = usePlanStore((s) => s.setFilter);
   const role = usePlanStore((s) => s.role);
   const updatePostInPlace = usePlanStore.setState;
   const planPosts = usePlanStore((s) => s.posts);
-  const currentPost = usePlanStore((s) => s.currentPost);
   const metrics = useMetricsFor(post);
   const d = parseISODate(post.target_date);
   const stageColor = STAGE_COLOR_VAR[post.stage]
@@ -96,10 +95,7 @@ function PostRow({ post, triggerPicker }) {
     const nextPosts = planPosts.map((p) =>
       p.id === post.id ? { ...p, title: next } : p
     );
-    const nextCurrent = currentPost && currentPost.id === post.id
-      ? { ...currentPost, title: next }
-      : currentPost;
-    updatePostInPlace({ posts: nextPosts, currentPost: nextCurrent });
+    updatePostInPlace({ posts: nextPosts });
 
     try {
       await patchPostTitle(post.id, next);
@@ -107,21 +103,17 @@ function PostRow({ post, triggerPicker }) {
       const revertPosts = usePlanStore.getState().posts.map((p) =>
         p.id === post.id ? { ...p, title: prev } : p
       );
-      const curNow = usePlanStore.getState().currentPost;
-      const revertCur = curNow && curNow.id === post.id
-        ? { ...curNow, title: prev }
-        : curNow;
-      updatePostInPlace({ posts: revertPosts, currentPost: revertCur });
+      updatePostInPlace({ posts: revertPosts });
       const showToast = usePlanStore.getState().showToast;
       if (typeof showToast === 'function') {
         showToast({ msg: 'Title save failed', duration: 3000, undoAction: null });
       }
     }
-  }, [titleDraft, post.id, post.title, planPosts, currentPost, updatePostInPlace]);
+  }, [titleDraft, post.id, post.title, planPosts, updatePostInPlace]);
 
   return (
     <div
-      onClick={rowClickGuarded(() => openMiniCard(post))}
+      onClick={rowClickGuarded(() => openInPcs(post, contextPosts))}
       style={{
         display: 'flex',
         alignItems: 'stretch',
@@ -403,7 +395,7 @@ export function List() {
               }}>{g.items.length} post{g.items.length === 1 ? '' : 's'}</span>
             </button>
             {isExpanded ? g.items.map((p) => (
-              <PostRow key={p.id} post={p} triggerPicker={triggerPicker} />
+              <PostRow key={p.id} post={p} triggerPicker={triggerPicker} contextPosts={posts} />
             )) : null}
           </section>
         );

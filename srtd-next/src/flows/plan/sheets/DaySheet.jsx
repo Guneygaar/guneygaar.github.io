@@ -1,6 +1,6 @@
 // 70vh bottom sheet showing every post for a single day. Row tap
-// closes Day sheet and opens Card sheet (via sequential store
-// transition - the store switches activeSheet from 'day' to 'card').
+// closes Day sheet and opens PCS via the sorted-react bridge, passing
+// the day's visible posts as the prev/next navigation context.
 
 import React, { useMemo } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
 import { AgeBadge } from '../shared/AgeBadge.jsx';
 import { MetricsLine } from '../shared/MetricsLine.jsx';
 import { PillarThumb } from '../shared/PillarThumb.jsx';
+import { openInPcs } from '../shared/openInPcs.js';
 
 const AGED_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
 
@@ -111,7 +112,6 @@ function Row({ post, onOpen }) {
 export function DaySheet() {
   const day = usePlanStore((s) => s.currentDay);
   const closeDay = usePlanStore((s) => s.closeDay);
-  const openMiniCard = usePlanStore((s) => s.openMiniCard);
   const rawAllPosts = useAllPosts();
   const allPosts = useMemo(
     () => rawAllPosts.filter((p) => p.stage !== 'in_production'),
@@ -135,8 +135,10 @@ export function DaySheet() {
   const headerTitle = `${dowShortSunFirst(day)} - ${dayNumber(day)} ${monthAbbr(day)}`;
 
   function handleOpen(post) {
-    // Sequential transition - close day sheet, then open card.
-    setTimeout(() => openMiniCard(post), 240);
+    // Sequential transition - close day sheet, then open PCS with the
+    // day's posts as the prev/next navigation context.
+    const contextPosts = posts.slice();
+    setTimeout(() => openInPcs(post, contextPosts), 240);
     closeDay();
   }
 
