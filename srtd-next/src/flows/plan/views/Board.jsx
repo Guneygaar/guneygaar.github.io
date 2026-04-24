@@ -166,18 +166,23 @@ function Row({ stage, items }) {
 
 export function Board() {
   const posts = usePosts();
+  const role = usePlanStore((s) => s.role);
+  const isClient = role === 'client';
+  const visibleStages = isClient
+    ? ['brief_done', 'awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published', 'rejected', 'parked']
+    : STAGE_ORDER_BOARD;
   const groups = useMemo(() => {
     const map = {};
-    for (const s of STAGE_ORDER_BOARD) map[s] = [];
+    for (const s of visibleStages) map[s] = [];
     for (const p of posts) {
       if (map[p.stage]) map[p.stage].push(p);
     }
     return map;
-  }, [posts]);
+  }, [posts, visibleStages]);
 
   return (
     <div style={{ paddingBottom: '80px' }}>
-      {STAGE_ORDER_BOARD.map((stage) => (
+      {visibleStages.map((stage) => (
         <Row key={stage} stage={stage} items={groups[stage] || []} />
       ))}
     </div>
