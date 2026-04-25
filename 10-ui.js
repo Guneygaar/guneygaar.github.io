@@ -1830,6 +1830,20 @@ function _recomputeBadgeLocal() {
     return !n.read;
   }).length;
   _setBadgeCount(count);
+  // PR-A: emit a window event so the React Plan tree can subscribe
+  // to notifications updates without opening its own Supabase channel.
+  // Single choke point — every mutation of _notifData ends here
+  // (loadNotifications, mark-read, delete, mark-all, realtime insert).
+  try {
+    window.dispatchEvent(new CustomEvent('sorted:notifications-updated', {
+      detail: {
+        notifications: window._notifData,
+        unreadCount: count
+      }
+    }));
+  } catch (e) {
+    console.warn('[notif] dispatch sorted:notifications-updated failed', e);
+  }
 }
 
 function updateNotifBadge() {

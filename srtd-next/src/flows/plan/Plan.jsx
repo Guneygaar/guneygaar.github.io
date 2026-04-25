@@ -6,6 +6,8 @@
 import React, { useEffect, useMemo } from 'react';
 import { Search, Bell, MoreVertical, Plus, LayoutDashboard, CalendarDays, Inbox } from 'lucide-react';
 import { usePlanStore } from './store/planStore.js';
+import { startRealtimeBridge, pauseRealtime, resumeRealtime } from './store/realtimeBridge.js';
+import { usePcsFlowState } from '../pcs/flowStore.js';
 import { useAppState } from '../../core/stores/appState.js';
 import { useDatePicker } from './hooks/useDatePicker.js';
 import { List } from './views/List.jsx';
@@ -40,6 +42,7 @@ function TopBar() {
   const openMenu = usePlanStore((s) => s.openMenu);
   const currentView = usePlanStore((s) => s.currentView);
   const showToast = usePlanStore((s) => s.showToast);
+  const unreadCount = usePlanStore((s) => s.unreadCount);
   const VIEW_TITLES = {
     list:     'List',
     board:    'Board',
@@ -87,8 +90,24 @@ function TopBar() {
         type="button"
         aria-label="Notifications"
         onClick={() => showToast({ msg: 'Notifications panel coming in PR 2', duration: 2000 })}
-        style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
+        style={{ position: 'relative', background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
         <Bell size={18} />
+        {unreadCount > 0 ? (
+          <span
+            aria-label={`${unreadCount} unread`}
+            style={{
+              position: 'absolute',
+              top: '4px',
+              right: '4px',
+              width: '8px',
+              height: '8px',
+              borderRadius: '8px',
+              background: 'var(--c-terracotta-1)',
+              border: '1.5px solid var(--c-bg)',
+              pointerEvents: 'none'
+            }}
+          />
+        ) : null}
       </button>
       <button
         type="button"
@@ -229,6 +248,7 @@ export default function Plan() {
   const theme = usePlanStore((s) => s.theme);
   const role = usePlanStore((s) => s.role);
   const activeSheet = usePlanStore((s) => s.activeSheet);
+  const pcsOpen = usePcsFlowState((s) => s.isOpen);
 
   // Mount the hidden native date input once.
   useDatePicker();
@@ -258,6 +278,30 @@ export default function Plan() {
     if (role !== 'client') return;
     loadRequests();
   }, [planEnabled, role, loadRequests]);
+
+  // PR-A: subscribe the planStore to vanilla's realtime stream via window
+  // events. Bridge is idempotent — a second start returns the same stopFn.
+  useEffect(() => {
+    if (!planEnabled) return undefined;
+    const stop = startRealtimeBridge(usePlanStore);
+    return () => { if (typeof stop === 'function') stop(); };
+  }, [planEnabled]);
+
+  // Pause snapshot application while a Plan sheet is open. useEffect
+  // cleanup fires even if a render inside the sheet throws, providing
+  // try/finally semantics for the resume path.
+  useEffect(() => {
+    if (!planEnabled || !activeSheet) return undefined;
+    pauseRealtime();
+    return () => resumeRealtime();
+  }, [planEnabled, activeSheet]);
+
+  // Pause snapshot application while React PCS is open over the Plan tree.
+  useEffect(() => {
+    if (!planEnabled || !pcsOpen) return undefined;
+    pauseRealtime();
+    return () => resumeRealtime();
+  }, [planEnabled, pcsOpen]);
 
   if (!planEnabled) return null;
 

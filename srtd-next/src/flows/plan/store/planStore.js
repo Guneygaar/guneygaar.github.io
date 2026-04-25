@@ -80,6 +80,8 @@ export const usePlanStore = create((set, get) => ({
   requests: [],
   requestsLoading: false,
   requestsError: null,
+  notifications: [],
+  unreadCount: 0,
   currentView: 'board',
   currentFilter: { stage: 'all' },
   currentDay: null,
@@ -364,6 +366,39 @@ export const usePlanStore = create((set, get) => ({
 
   setMonthRange(monthStart, monthEnd) {
     set({ monthStart, monthEnd });
+  },
+
+  // PR-A: thin setState wrappers used by realtimeBridge.js to push
+  // window-event snapshots (sorted:posts-updated /
+  // sorted:notifications-updated) into the store. Vanilla owns the
+  // Supabase channels; React only consumes the resulting AppState
+  // snapshots. Posts filter strips _isRequest:true rows because
+  // vanilla folds /requests into posts.all but Plan tracks them
+  // through its own requests slot via loadRequests().
+  applyPostsSnapshot(detail) {
+    if (!detail) return;
+    const incoming = Array.isArray(detail.posts) ? detail.posts : [];
+    const nextPosts = incoming.filter((p) => !p._isRequest);
+    const next = { posts: nextPosts };
+    if (Array.isArray(detail.requests) && detail.requests.length > 0) {
+      next.requests = detail.requests;
+    }
+    set(next);
+  },
+
+  applyNotificationsSnapshot(detail) {
+    if (!detail) return;
+    const next = {};
+    if (Array.isArray(detail.notifications)) {
+      next.notifications = detail.notifications;
+    }
+    if (typeof detail.unreadCount === 'number') {
+      next.unreadCount = detail.unreadCount;
+    } else if (Array.isArray(detail.notifications)) {
+      next.unreadCount = detail.notifications.filter((n) => !n.read).length;
+    }
+    if (Object.keys(next).length === 0) return;
+    set(next);
   },
 
   setInsightsPeriod(p) {
