@@ -40,12 +40,53 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   const [draft, setDraft] = useState(caption);
   const [showFull, setShowFull] = useState(false);
   const [overflows, setOverflows] = useState(false);
+  const [selectionPill, setSelectionPill] = useState(null); // {x, y, text, char_start, char_end}
 
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
   const captionEditRequested = usePcsStore((s) => s.captionEditRequested);
   const lastSeenEditRequest = useRef(captionEditRequested);
+  const comments = usePcsStore((s) => s.comments);
+  const internalNotes = usePcsStore((s) => s.internalNotes);
+  const flashCommentId = usePcsStore((s) => s.flashCommentId);
+  const flashComment = usePcsStore((s) => s.flashComment);
+  const captionExpandRequested = usePcsStore((s) => s.captionExpandRequested);
+  const lastSeenExpand = useRef(captionExpandRequested);
   const { commit } = useOptimisticPatch();
+
+  // Build anchors[] for renderRichText. Resolved + soft-deleted comments
+  // and notes drop their visual mark — comment row stays in the thread
+  // with a greyed badge label. Both tabs feed the same caption surface.
+  const captionAnchors = React.useMemo(() => {
+    const all = [...(Array.isArray(comments) ? comments : []), ...(Array.isArray(internalNotes) ? internalNotes : [])];
+    const list = [];
+    for (const c of all) {
+      if (!c) continue;
+      if (c.resolved) continue;
+      if (c.deleted) continue;
+      if (c.anchor_type !== 'caption') continue;
+      const payload = c.anchor_payload || null;
+      if (!payload || typeof payload.text !== 'string' || !payload.text) continue;
+      list.push({
+        id: c.id,
+        payload,
+        onClick: () => {
+          setShowFull(true);
+          flashComment(c.id);
+          try {
+            const row = document.querySelector(`[data-comment-row-id="${c.id}"]`);
+            if (row && typeof row.scrollIntoView === 'function') {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          } catch (e) { /* noop */ }
+          setTimeout(() => {
+            try { flashComment(null); } catch (e) {}
+          }, 1600);
+        },
+      });
+    }
+    return list;
+  }, [comments, internalNotes, flashComment]);
 
   const copyLongPress = useLongPress({
     enabled: !!canEdit,
@@ -126,6 +167,89 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
       try { textareaRef.current && textareaRef.current.focus(); } catch (e) {}
     }, 50);
   }, [captionEditRequested, canEdit, post?.caption]);
+
+  // External expand trigger from CommentRow caption badge. Clamped
+  // caption unfurls before the anchor mark scrolls into view.
+  useEffect(() => {
+    if (captionExpandRequested === lastSeenExpand.current) return;
+    lastSeenExpand.current = captionExpandRequested;
+    setShowFull(true);
+  }, [captionExpandRequested]);
+
+  // When flashCommentId points at one of the visible captionAnchors,
+  // toggle the .is-flashing class on the matching <mark> so the
+  // anchor pulse runs in lockstep with the comment-row pulse.
+  useEffect(() => {
+    if (!flashCommentId) return;
+    const root = bodyRef.current;
+    if (!root) return;
+    const el = root.querySelector(`mark[data-anchor-id="${flashCommentId}"]`);
+    if (!el) return;
+    el.classList.add('is-flashing');
+    const tid = setTimeout(() => {
+      try { el.classList.remove('is-flashing'); } catch (e) {}
+    }, 1600);
+    return () => clearTimeout(tid);
+  }, [flashCommentId]);
+
+  // Floating "+ Comment on selection" pill. Listens to selectionchange
+  // and only renders inside the caption body, in display mode. Suppressed
+  // during edit mode (the textarea has its own selection UX).
+  useEffect(() => {
+    if (editing) { setSelectionPill(null); return undefined; }
+    function onSelChange() {
+      try {
+        const sel = window.getSelection && window.getSelection();
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+          setSelectionPill(null);
+          return;
+        }
+        const range = sel.getRangeAt(0);
+        const root = bodyRef.current;
+        if (!root) { setSelectionPill(null); return; }
+        const start = range.startContainer;
+        const end = range.endContainer;
+        if (!root.contains(start) || !root.contains(end)) {
+          setSelectionPill(null);
+          return;
+        }
+        const text = sel.toString();
+        if (!text || !text.trim()) { setSelectionPill(null); return; }
+        // Compute char_start/char_end against the live caption.
+        const idx = caption.indexOf(text);
+        if (idx < 0) { setSelectionPill(null); return; }
+        const rect = range.getBoundingClientRect();
+        if (!rect || (rect.width === 0 && rect.height === 0)) { setSelectionPill(null); return; }
+        const top = rect.top + window.scrollY - 44;
+        const left = rect.left + window.scrollX + rect.width / 2;
+        setSelectionPill({ top, left, text, char_start: idx, char_end: idx + text.length });
+      } catch (e) {
+        setSelectionPill(null);
+      }
+    }
+    document.addEventListener('selectionchange', onSelChange);
+    return () => document.removeEventListener('selectionchange', onSelChange);
+  }, [editing, caption]);
+
+  function onPillClick(e) {
+    if (!selectionPill) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      usePcsStore.getState().requestAnchor({
+        type: 'caption',
+        text: selectionPill.text,
+        char_start: selectionPill.char_start,
+        char_end: selectionPill.char_end,
+      });
+      logClick('pcs_react_anchor_caption_capture', { len: selectionPill.text.length });
+    } catch (err) { /* noop */ }
+    try {
+      const sel = window.getSelection && window.getSelection();
+      if (sel && sel.removeAllRanges) sel.removeAllRanges();
+    } catch (err) { /* noop */ }
+    setSelectionPill(null);
+  }
 
   function startEdit() {
     if (!canEdit) return;
@@ -256,14 +380,43 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
 
   // Display mode
   return (
-    <div className="px-4">
+    <div className="px-4 relative">
       <div
         ref={bodyRef}
+        data-caption-body
         className={`font-sans text-lg text-text-loud whitespace-pre-wrap ${!showFull && overflows ? 'caption-clamp-6 caption-fade-bottom' : ''}`}
         style={{ lineHeight: '1.6' }}
+        onContextMenu={(e) => e.preventDefault()}
       >
-        {renderRichText(caption)}
+        {renderRichText(caption, [], captionAnchors)}
       </div>
+
+      {selectionPill ? (
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={onPillClick}
+          style={{
+            position: 'fixed',
+            top: selectionPill.top - window.scrollY,
+            left: selectionPill.left - window.scrollX,
+            transform: 'translateX(-50%)',
+            zIndex: 2650,
+            background: '#0F0E0C',
+            color: '#F4F3EE',
+            padding: '6px 12px',
+            borderRadius: 9999,
+            fontFamily: 'IBM Plex Mono, monospace',
+            fontSize: 12,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          + Comment on selection
+        </button>
+      ) : null}
 
       <div className="flex items-center justify-between py-2.5 mt-2.5 border-t border-b border-divider-subtle">
         <div

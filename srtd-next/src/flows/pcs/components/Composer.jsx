@@ -26,9 +26,36 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
+  const [anchor, setAnchor] = useState(null);
   const taRef = useRef(null);
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const chipRef = useRef(null);
+  const anchorRequested = usePcsStore((s) => s.anchorRequested);
+  const lastSeenAnchor = useRef(anchorRequested);
+
+  useEffect(() => {
+    if (anchorRequested === lastSeenAnchor.current) return;
+    lastSeenAnchor.current = anchorRequested;
+    const next = usePcsStore.getState().pendingAnchor;
+    if (!next) return;
+    setAnchor(next);
+    setTimeout(() => {
+      try { taRef.current && taRef.current.focus(); } catch (e) {}
+      setTimeout(() => {
+        try {
+          if (chipRef.current && typeof chipRef.current.scrollIntoView === 'function') {
+            chipRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+        } catch (e) {}
+      }, 80);
+    }, 30);
+  }, [anchorRequested]);
+
+  function clearAnchorChip() {
+    setAnchor(null);
+    try { usePcsStore.getState().clearAnchor(); } catch (e) {}
+  }
 
   const isAgency = ['admin', 'creative', 'servicing'].includes(String(currentRole).toLowerCase());
   const isInternalTab = activeTab === 'internal' && isAgency;
@@ -181,6 +208,9 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
       const trimmed = text.trim();
       const createdAtIso = new Date().toISOString();
 
+      const anchorType = anchor && (anchor.type === 'caption' || anchor.type === 'photo') ? anchor.type : null;
+      const anchorPayload = anchorType ? anchor : null;
+
       const payload = {
         post_id: post.post_id,
         author: currentEmail,
@@ -191,6 +221,8 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         attachments,
         reply_to: replyTo?.id || null,
         visibility: isInternalTab ? 'servicing' : 'all',
+        anchor_type: anchorType,
+        anchor_payload: anchorPayload,
         created_at: createdAtIso
       };
 
@@ -210,6 +242,8 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
           created_at: createdAtIso,
           reply_to: replyTo?.id || null,
           attachments,
+          anchor_type: anchorType,
+          anchor_payload: anchorPayload,
           _temp: true
         };
         usePcsStore.setState((s) => ({ comments: [...s.comments, optimisticRow] }));
@@ -229,12 +263,14 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         throw err;
       }
 
-      logClick('pcs_react_comment_send', { tab: activeTab, withImages: attachedImages.length > 0, withFiles: attachedFiles.length > 0, withTasks: taskAttachments.length > 0, replyTo: !!replyTo });
+      logClick('pcs_react_comment_send', { tab: activeTab, withImages: attachedImages.length > 0, withFiles: attachedFiles.length > 0, withTasks: taskAttachments.length > 0, replyTo: !!replyTo, anchorType: anchorType || null });
       setText('');
       setAttachedImages([]);
       setAttachedFiles([]);
       setTaskAttachments([]);
       setPolishPreview(null);
+      setAnchor(null);
+      try { usePcsStore.getState().clearAnchor(); } catch (e) {}
       if (onCancelReply) onCancelReply();
       if (isInternalTab) {
         await pcsFlow.retryInternalNotes();
@@ -314,6 +350,43 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
             <button onClick={acceptPolish} className="px-3 py-1 rounded-sm2 bg-amber text-text-loud text-2xs font-semibold">Accept</button>
             <button onClick={rejectPolish} className="px-3 py-1 rounded-sm2 border border-border-neutral text-2xs text-text-mid">Discard</button>
           </div>
+        </div>
+      )}
+      {anchor && (
+        <div
+          ref={chipRef}
+          className="anchor-chip-enter mx-3 mt-2 mb-1 flex items-start gap-2 bg-bg-2 border border-divider-warm rounded-sm2"
+          style={{
+            borderLeft: '3px solid var(--c-terracotta)',
+            padding: '10px 12px',
+          }}
+        >
+          <div className="flex-1 min-w-0">
+            <div
+              className="font-mono text-2xs text-terracotta tracking-widest uppercase font-semibold"
+              style={{ marginBottom: 2 }}
+            >
+              {anchor.type === 'caption' ? 'Replying to caption' : 'Replying to photo'}
+            </div>
+            <div
+              className="font-serif text-sm text-text-mid italic truncate"
+              style={{ maxWidth: '100%' }}
+            >
+              {anchor.type === 'caption'
+                ? (typeof anchor.text === 'string'
+                    ? '“' + (anchor.text.length > 120 ? anchor.text.slice(0, 120) + '…' : anchor.text) + '”'
+                    : '“snippet”')
+                : `Pin at ${Math.round(anchor.x_pct || 0)}%, ${Math.round(anchor.y_pct || 0)}% · photo ${(anchor.image_index || 0) + 1}`}
+            </div>
+          </div>
+          <button
+            onClick={clearAnchorChip}
+            className="w-6 h-6 flex-shrink-0 flex items-center justify-center text-text-soft hover:text-text-loud"
+            aria-label="Clear anchor"
+            type="button"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
       {attachedImages.length > 0 && (

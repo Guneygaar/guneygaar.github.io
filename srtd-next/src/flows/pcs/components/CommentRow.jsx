@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { Heart, Reply, Check, CircleDot } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Heart, Reply, Check, CircleDot, Quote, MapPin } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { timeAgo } from '../utils/timeAgo.js';
 import { renderRichText } from '../utils/mentions.jsx';
@@ -20,12 +20,25 @@ const LIKE_EMOJI = '\u2661';
 export function CommentRow({ comment, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
   const expanded = usePcsStore((s) => s.expandedComments.has(comment.id));
   const toggle = usePcsStore((s) => s.toggleExpanded);
+  const post = usePcsStore((s) => s.post);
+  const flashCommentId = usePcsStore((s) => s.flashCommentId);
+  const flashComment = usePcsStore((s) => s.flashComment);
+  const requestCarouselScroll = usePcsStore((s) => s.requestCarouselScroll);
+  const requestCaptionExpand = usePcsStore((s) => s.requestCaptionExpand);
   const [busy, setBusy] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [flashing, setFlashing] = useState(false);
   const currentRole = useAppState((s) => s.user?.role || '');
   const isAdmin = String(currentRole).toLowerCase() === 'admin';
   const lpTimer = useRef(null);
   const lpFired = useRef(false);
+
+  useEffect(() => {
+    if (flashCommentId !== comment.id) return;
+    setFlashing(true);
+    const tid = setTimeout(() => setFlashing(false), 1600);
+    return () => clearTimeout(tid);
+  }, [flashCommentId, comment.id]);
 
   const userRecord = comment.author ? findUserRole(comment.author, userRoles) : null;
   const authorName = comment.author
@@ -41,6 +54,82 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
   const taskAtts = getTaskAttachments(comment.attachments);
   const reactionGroups = groupReactions(reactions, comment.id, currentEmail);
   const myLike = reactionGroups.find((g) => g.emoji === LIKE_EMOJI && g.mine);
+
+  const anchorBadge = (() => {
+    const t = comment.anchor_type;
+    const p = comment.anchor_payload || null;
+    if (!t || !p) return null;
+    const isResolved = !!comment.resolved;
+    if (t === 'caption') {
+      const snippet = typeof p.text === 'string' ? p.text : '';
+      if (!snippet) return null;
+      const captionLive = post && typeof post.caption === 'string' ? post.caption : '';
+      const present = !isResolved && captionLive.indexOf(snippet) >= 0;
+      const trimmed = snippet.length > 60 ? snippet.slice(0, 60) + '…' : snippet;
+      const cls = present
+        ? 'inline-flex items-center gap-1 max-w-full px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-terracotta border-l-2 border-terracotta bg-bg-2 rounded-sm2'
+        : 'inline-flex items-center gap-1 max-w-full px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-text-dim border-l-2 border-border-neutral bg-bg-2 rounded-sm2';
+      const onClick = present ? (e) => {
+        e.stopPropagation();
+        try { requestCaptionExpand(); } catch (err) {}
+        setTimeout(() => {
+          try {
+            const root = document.querySelector('[data-caption-body]');
+            const target = root && root.querySelector(`mark[data-anchor-id="${comment.id}"]`);
+            if (target && typeof target.scrollIntoView === 'function') {
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          } catch (err) { /* noop */ }
+          flashComment(comment.id);
+          setTimeout(() => { try { flashComment(null); } catch (err) {} }, 1600);
+        }, 80);
+      } : undefined;
+      return (
+        <span
+          className={cls}
+          style={{ cursor: present ? 'pointer' : 'default' }}
+          onClick={onClick}
+          role={present ? 'button' : undefined}
+          aria-label={present ? 'Scroll to caption anchor' : 'Anchored text removed'}
+        >
+          <Quote size={9} />
+          <span className="truncate" style={{ maxWidth: 220 }}>
+            {present
+              ? <>anchored to: <span className="italic normal-case">{trimmed}</span></>
+              : <><span className="italic normal-case">{trimmed}</span> · text removed</>}
+          </span>
+        </span>
+      );
+    }
+    if (t === 'photo') {
+      const ii = typeof p.image_index === 'number' ? p.image_index : 0;
+      const present = !isResolved;
+      const cls = present
+        ? 'inline-flex items-center gap-1 px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-terracotta border-l-2 border-terracotta bg-bg-2 rounded-sm2'
+        : 'inline-flex items-center gap-1 px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-text-dim border-l-2 border-border-neutral bg-bg-2 rounded-sm2';
+      const onClick = present ? (e) => {
+        e.stopPropagation();
+        try { requestCarouselScroll(ii); } catch (err) {}
+        setTimeout(() => {
+          try { flashComment(comment.id); } catch (err) {}
+          setTimeout(() => { try { flashComment(null); } catch (err) {} }, 1600);
+        }, 250);
+      } : undefined;
+      return (
+        <span
+          className={cls}
+          style={{ cursor: present ? 'pointer' : 'default' }}
+          onClick={onClick}
+          role={present ? 'button' : undefined}
+          aria-label={present ? 'Scroll to photo anchor' : 'Photo anchor cleared'}
+        >
+          <MapPin size={9} />
+          <span>photo {ii + 1} {'·'} pin</span>
+        </span>
+      );
+    }
+    return null;
+  })();
 
   async function toggleLike() {
     if (busy) return;
@@ -97,7 +186,8 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
 
   return (
     <div
-      className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-[70px] pl-0' : ''}`}
+      data-comment-row-id={comment.id}
+      className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-[70px] pl-0' : ''}${flashing ? ' anchor-row-flash' : ''}`}
       onTouchStart={startLP}
       onTouchEnd={cancelLP}
       onTouchMove={cancelLP}
@@ -112,6 +202,7 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
           <span className="text-text-dim text-2xs">{'\u00B7'}</span>
           <span className="font-mono text-sm text-text-dim">{time}</span>
           {comment.edited_at && <span className="font-mono text-2xs text-text-dim">(edited)</span>}
+          {anchorBadge}
         </div>
 
         <div
