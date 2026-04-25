@@ -354,7 +354,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
           ))}
         </div>
       )}
-      <div className="flex items-end gap-2 px-3 py-2">
+      <div className="flex items-end gap-2 px-3 py-3">
         <button onClick={() => setSheetOpen(true)} className="w-8 h-8 flex items-center justify-center text-text-soft hover:bg-bg-2 rounded-sm2" aria-label="Add">
           <Plus size={18} />
         </button>
