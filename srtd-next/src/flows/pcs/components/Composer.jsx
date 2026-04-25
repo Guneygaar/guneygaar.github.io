@@ -14,7 +14,7 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   const post = usePcsStore((s) => s.post);
   const userRoles = usePcsStore((s) => s.userRoles);
   const currentEmail = useAppState((s) => s.user?.email || '');
-  const currentRole = useAppState((s) => s.user?.role || '');
+  const currentRole = useAppState((s) => s.user?.effectiveRole || s.user?.role || '');
   const isClient = useIsClient();
   const [text, setText] = useState('');
   const [polishPreview, setPolishPreview] = useState(null);
@@ -161,32 +161,72 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         ? null
         : JSON.stringify(attachmentParts.length === 1 ? attachmentParts[0] : attachmentParts);
 
-      const authorRoleTitle = currentRole
-        ? currentRole.charAt(0).toUpperCase() + currentRole.slice(1).toLowerCase()
-        : '';
+      const r = String(currentRole).toLowerCase();
+      const authorRoleTitle =
+        r === 'admin' ? 'Admin' :
+        r === 'servicing' ? 'Servicing' :
+        r === 'creative' ? 'Creative' :
+        r === 'client' ? 'Client' : '';
+      if (!authorRoleTitle) {
+        toast('Session role missing, please refresh', 'error');
+        logError(new Error('composer_missing_role'), { context: 'pcs_react_comment_send', role: currentRole });
+        return;
+      }
 
       if (!currentEmail) {
         toast('Session expired, please refresh', 'error');
         return;
       }
 
+      const trimmed = text.trim();
+      const createdAtIso = new Date().toISOString();
+
       const payload = {
         post_id: post.post_id,
         author: currentEmail,
         author_role: authorRoleTitle,
-        message: text.trim(),
+        message: trimmed,
         post_title: post.title,
         mentioned_users: mentioned.length > 0 ? mentioned : null,
         attachments,
         reply_to: replyTo?.id || null,
         visibility: isInternalTab ? 'servicing' : 'all',
-        created_at: new Date().toISOString()
+        created_at: createdAtIso
       };
 
-      if (isInternalTab) {
-        await createInternalNote(payload);
-      } else {
-        await createComment(payload);
+      // Optimistic insert for the comments tab. Internal notes path stays
+      // await-only because Bug #6.1 was scoped to client-visible comments.
+      const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+      const originalText = text;
+      const doOptimistic = !isInternalTab;
+      if (doOptimistic) {
+        const optimisticRow = {
+          id: tempId,
+          post_id: post.post_id,
+          author: currentEmail,
+          author_role: authorRoleTitle,
+          message: trimmed,
+          visibility: 'all',
+          created_at: createdAtIso,
+          reply_to: replyTo?.id || null,
+          attachments,
+          _temp: true
+        };
+        usePcsStore.setState((s) => ({ comments: [...s.comments, optimisticRow] }));
+      }
+
+      try {
+        if (isInternalTab) {
+          await createInternalNote(payload);
+        } else {
+          await createComment(payload);
+        }
+      } catch (err) {
+        if (doOptimistic) {
+          usePcsStore.setState((s) => ({ comments: s.comments.filter((c) => c.id !== tempId) }));
+          setText(originalText);
+        }
+        throw err;
       }
 
       logClick('pcs_react_comment_send', { tab: activeTab, withImages: attachedImages.length > 0, withFiles: attachedFiles.length > 0, withTasks: taskAttachments.length > 0, replyTo: !!replyTo });
@@ -200,6 +240,24 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
         await pcsFlow.retryInternalNotes();
       } else {
         await pcsFlow.retryComments();
+        // Dedupe: drop the optimistic row when a real row landed with
+        // matching author + message and a created_at within 60s.
+        usePcsStore.setState((s) => {
+          const tempRow = s.comments.find((c) => c.id === tempId);
+          if (!tempRow) return {};
+          const tempTs = new Date(tempRow.created_at).getTime();
+          const realMatch = s.comments.find((c) =>
+            c.id !== tempId &&
+            !c._temp &&
+            c.author === tempRow.author &&
+            c.message === tempRow.message &&
+            Math.abs(new Date(c.created_at).getTime() - tempTs) < 60000
+          );
+          if (realMatch) {
+            return { comments: s.comments.filter((c) => c.id !== tempId) };
+          }
+          return {};
+        });
       }
     } catch (err) {
       logError(err, { context: 'pcs_react_comment_send' });
