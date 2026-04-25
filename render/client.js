@@ -1792,7 +1792,46 @@ console.log('LOADED:', 'render/client.js');
     return txt.value;
   }
 
-  function _handleSubmitComment(postId, root) {
+  // Resolve mention NAMES (or emails) to canonical emails using the
+  // cached client mention roster. notify-comment edge silently drops
+  // mentions whose author_role cannot be resolved, so writing names
+  // straight to mentioned_users produced zero notifications. Drop any
+  // mention that does not map to a known roster entry.
+  function _resolveMentionNamesToEmails(names) {
+    if (!Array.isArray(names) || names.length === 0) return Promise.resolve([]);
+    var ready = window._clientMentionRoster
+      ? Promise.resolve(window._clientMentionRoster)
+      : (typeof _fetchClientMentionRoster === 'function'
+          ? _fetchClientMentionRoster()
+          : Promise.resolve([]));
+    return ready.then(function(roster) {
+      var list = Array.isArray(roster) ? roster : [];
+      var out = [];
+      var seen = {};
+      for (var i = 0; i < names.length; i++) {
+        var raw = String(names[i] || '').trim();
+        if (!raw) continue;
+        var lower = raw.toLowerCase();
+        var hit = null;
+        for (var j = 0; j < list.length; j++) {
+          var u = list[j];
+          if (!u) continue;
+          if ((u.email && u.email.toLowerCase() === lower) ||
+              (u.name && u.name.toLowerCase() === lower)) {
+            hit = u;
+            break;
+          }
+        }
+        if (hit && hit.email && !seen[hit.email]) {
+          seen[hit.email] = true;
+          out.push(hit.email);
+        }
+      }
+      return out;
+    });
+  }
+
+  async function _handleSubmitComment(postId, root) {
     var input = document.getElementById('comment-input-' + postId);
     if (!input) return;
     var _sendBtn = document.querySelector('button[data-action="submitComment"][data-id="' + postId + '"]');
@@ -1813,7 +1852,7 @@ console.log('LOADED:', 'render/client.js');
     var authorName = (typeof getDisplayName === 'function' && _emailKey)
       ? getDisplayName(_emailKey)
       : (window.AppState.user.name || _emailKey || 'Client');
-    var _mentioned = _parseMentions(message);
+    var _mentioned = await _resolveMentionNamesToEmails(_parseMentions(message));
     var post = (window.AppState.posts.all || []).find(function (p) {
       return p.post_id === postId || p.id === postId;
     });
