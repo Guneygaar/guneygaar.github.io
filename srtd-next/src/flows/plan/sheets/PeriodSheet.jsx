@@ -21,7 +21,7 @@ export function PeriodSheet({ current, onPick, onClose }) {
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,.35)',
+          background: 'var(--backdrop-tint, rgba(0,0,0,.3))',
           zIndex: 2700
         }} />
       <div style={{

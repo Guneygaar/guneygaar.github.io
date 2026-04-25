@@ -109,11 +109,11 @@ function Card({ post, contextPosts }) {
             <span style={{
               width: '24px', height: '24px',
               borderRadius: '24px',
-              background: '#FFFFFF0D',
-              color: ownerColor,
+              background: ownerColor,
+              color: '#FFFFFF',
               fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '7px',
-              fontWeight: 600,
+              fontSize: '8px',
+              fontWeight: 700,
               letterSpacing: '.04em',
               display: 'flex',
               alignItems: 'center',
@@ -134,10 +134,12 @@ function Row({ stage, items, contextPosts }) {
   return (
     <section style={{ borderBottom: '1px solid var(--c-divider-subtle)' }}>
       <header style={{
-        padding: '12px 16px 8px',
+        padding: '10px 16px 8px',
         display: 'flex',
         alignItems: 'center',
-        gap: '8px'
+        gap: '8px',
+        background: 'var(--c-bg-2)',
+        borderBottom: '1px solid var(--c-divider-warm)'
       }}>
         <span style={{ width: '6px', height: '6px', borderRadius: '6px', background: stageColor }} />
         <span style={{
@@ -146,7 +148,7 @@ function Row({ stage, items, contextPosts }) {
           fontWeight: 600,
           letterSpacing: '.14em',
           textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
+          color: 'var(--c-text-soft)'
         }}>{STAGE_LABELS[stage] || stage}</span>
         <span style={{
           fontFamily: '"IBM Plex Mono", monospace',

@@ -17,6 +17,7 @@
   --c-pillar-inclusivity:      #0891A0;
   --c-pillar-growth:           #C8841A;
   --backdrop-tint:             rgba(20,18,15,.18);
+  --shadow-fab:                0 10px 24px -10px rgba(120,80,60,.45);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,6 +31,7 @@
     --c-pillar-inclusivity:      #22D3EE;
     --c-pillar-growth:           #F6A623;
     --backdrop-tint:             rgba(0,0,0,.3);
+    --shadow-fab:                0 12px 32px -8px rgba(0,0,0,.35);
   }
 }
 
@@ -43,6 +45,7 @@
   --c-pillar-inclusivity:      #22D3EE;
   --c-pillar-growth:           #F6A623;
   --backdrop-tint:             rgba(0,0,0,.3);
+  --shadow-fab:                0 12px 32px -8px rgba(0,0,0,.35);
 }
 
 .plan-pillar-swatch {
