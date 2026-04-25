@@ -9,8 +9,8 @@ const ROLE_BG = {
 };
 
 const SIZE = {
-  sm: 'w-[22px] h-[22px] text-sm',
-  md: 'w-[24px] h-[24px] text-sm',
+  sm: 'w-[26px] h-[26px] text-sm',
+  md: 'w-[36px] h-[36px] text-base',
   lg: 'w-[32px] h-[32px] text-base',
 };
 
