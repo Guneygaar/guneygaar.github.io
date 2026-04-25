@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ExternalLink, MessageSquare } from 'lucide-react';
 import { ErrorBoundary, Overlay } from '../../core/ui/index.js';
 import { usePcsFlowState } from './flowStore.js';
@@ -49,6 +49,10 @@ export function PCS() {
   const [replyTo, setReplyTo] = useState(null);
   const [actionSheet, setActionSheet] = useState(null);
   const [threadView, setThreadView] = useState(null);
+
+  useEffect(() => {
+    setReplyTo(null);
+  }, [activeTab]);
 
   const isAgency = !isClient;
   const canEdit = !isClient;
@@ -332,6 +336,7 @@ export function PCS() {
           userRoles={userRoles}
           reactions={reactions}
           currentEmail={userEmail}
+          onReplyToComment={onReplyToComment}
           onClose={() => setThreadView(null)}
         />
       ) : null}
@@ -344,6 +349,7 @@ export function PCS() {
           userRoles={userRoles}
           reactions={reactions}
           currentEmail={userEmail}
+          onReplyToComment={onReplyToComment}
           onClose={() => setThreadView(null)}
         />
       ) : null}
