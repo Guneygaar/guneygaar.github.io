@@ -148,6 +148,22 @@ function mergePosts(fresh) {
   });
   window.AppState.posts.setAll(next140);
   window.AppState.posts.cached = window.AppState.posts.all;
+  // PR-A: emit a window event so the React Plan tree can subscribe to
+  // posts updates without opening its own Supabase channel. Vanilla
+  // remains the sole channel owner; this is a read-only signal. The
+  // detail.requests slot is kept for API symmetry with the bridge
+  // contract — vanilla folds `_isRequest:true` rows into posts.all,
+  // so a separate requests array is not maintained.
+  try {
+    window.dispatchEvent(new CustomEvent('sorted:posts-updated', {
+      detail: {
+        posts: window.AppState.posts.all,
+        requests: (window.AppState.posts && window.AppState.posts.requests) || []
+      }
+    }));
+  } catch (e) {
+    console.warn('[mergePosts] dispatch sorted:posts-updated failed', e);
+  }
 }
 
 // -- Versioned load guard  -  prevents stale responses from overriding fresh data --
