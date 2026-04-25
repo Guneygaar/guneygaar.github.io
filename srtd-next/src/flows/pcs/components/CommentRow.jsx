@@ -102,7 +102,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
 
   return (
     <div
-      className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-6 border-l-2 border-l-divider-warm pl-3' : ''}`}
+      className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-[70px] pl-0' : ''}`}
       onTouchStart={startLP}
       onTouchEnd={cancelLP}
       onTouchMove={cancelLP}
