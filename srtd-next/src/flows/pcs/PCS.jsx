@@ -91,6 +91,9 @@ export function PCS() {
     try {
       const updated = await updatePostStage(post.post_id, newStage, actor);
       if (updated) usePcsStore.setState({ post: updated });
+      // Refresh comments after a stage transition so visibility-filtered
+      // rows (e.g. brand_input -> awaiting_approval) reappear.
+      pcsFlow.retryComments();
       // Activity log write. notify-stage edge function fires server-side on
       // the PATCH above — we do not invoke it from the client.
       apiFetch('/activity_log', {
