@@ -177,6 +177,42 @@ function _briefBuildDiscussionHtml(postId, comments, sectionNumber) {
     '</div>';
 }
 
+// Resolve @name mentions in a brief comment to canonical user_roles
+// emails using the brief team-member cache. notify-comment edge silently
+// drops mentions whose role cannot be resolved, so we must send emails.
+// Falls back to window._pcsRosterData when the brief cache is not yet
+// populated (e.g. brief sheet opened before the assign dropdown was used).
+function _resolveBriefMentionsToEmails(message) {
+  if (!message) return [];
+  var raw = message.match(/(?:^|[\s(])@([a-zA-Z0-9_]+)/g) || [];
+  if (!raw.length) return [];
+  var names = [];
+  for (var n = 0; n < raw.length; n++) names.push(raw[n].replace(/^[\s(@]+/, ''));
+  var roster = (Array.isArray(window._briefTeamMembersCache) && window._briefTeamMembersCache.length)
+    ? window._briefTeamMembersCache
+    : (Array.isArray(window._pcsRosterData) ? window._pcsRosterData : []);
+  if (!roster.length) return [];
+  var out = [];
+  var seen = {};
+  for (var i = 0; i < names.length; i++) {
+    var lower = String(names[i] || '').toLowerCase();
+    if (!lower) continue;
+    for (var j = 0; j < roster.length; j++) {
+      var u = roster[j];
+      if (!u) continue;
+      if ((u.email && u.email.toLowerCase() === lower) ||
+          (u.name && u.name.toLowerCase() === lower)) {
+        if (u.email && !seen[u.email]) {
+          seen[u.email] = true;
+          out.push(u.email);
+        }
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 // Submit a brief comment — optimistic insert, rolls back on failure.
 window._briefSubmitComment = function(postId) {
   var input = document.getElementById('brief-cmt-input-' + postId);
@@ -239,6 +275,7 @@ window._briefSubmitComment = function(postId) {
       author_role: normRole,
       message: text,
       post_title: (post && post.title) || '',
+      mentioned_users: _resolveBriefMentionsToEmails(text),
       created_at: nowISO
     })
   }).then(function() {
