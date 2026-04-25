@@ -170,8 +170,13 @@ export function Board() {
   const posts = usePosts();
   const role = usePlanStore((s) => s.role);
   const isClient = role === 'client';
+  // Client board mirrors the safe subset of usePosts' CLIENT_ALLOWED_STAGES
+  // (drops 'brief' which renders via BriefsAssignedSection above, and
+  // 'in_production' which is hydrated for client only when comments
+  // exist on it — vanilla 07-post-load.js:380-385 — and which Plan does
+  // not surface as a row).
   const visibleStages = isClient
-    ? ['awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published', 'rejected', 'parked']
+    ? ['awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published']
     : STAGE_ORDER_BOARD;
   const groups = useMemo(() => {
     const map = {};

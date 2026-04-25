@@ -5,8 +5,11 @@
 // language matches the stage sections in Board.jsx (same typography,
 // same tokens, same spacing primitives).
 //
-// Tap handler is a no-op that logs to console; wiring to a detail
-// view is deferred to a follow-up PR per the parent task.
+// Tap handler bridges to vanilla _openBriefSheet (render/brief.js),
+// which mounts a z-index 9500 overlay above Plan's z-index 1400 layer.
+// Vanilla emits sorted:brief-sheet-opened/closed events; realtimeBridge
+// listens for them to pause/resume snapshot application (same pattern
+// as PR-A's activeSheet pause).
 
 import React from 'react';
 import { FileText } from 'lucide-react';
@@ -40,8 +43,14 @@ function BriefTile({ request }) {
     <button
       type="button"
       onClick={() => {
-        // eslint-disable-next-line no-console
-        console.log('[briefs] tap', request && request.id);
+        const id = request && request.id;
+        if (!id) return;
+        if (typeof window !== 'undefined' && typeof window._openBriefSheet === 'function') {
+          window._openBriefSheet(id);
+        } else {
+          // eslint-disable-next-line no-console
+          console.error('[briefs] _openBriefSheet missing on window');
+        }
       }}
       style={{
         width: '220px',

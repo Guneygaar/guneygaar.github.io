@@ -18,7 +18,26 @@ async function _startRouter() {
   }
 
   const openPost = params.get('open');
-  if (openPost) window._pendingOpenPost = openPost;
+  // Plan React deep-link routing. When ?plan_react=1 is set, route the
+  // ?open=POST_ID through the React PCS bridge (regular posts) or the
+  // vanilla _openBriefSheet (briefs above Plan z-index 1400; brief sheet
+  // is z-index 9500). Vanilla drain in 07-post-load.js renderAll would
+  // open vanilla openPCS UNDERNEATH Plan, which is wrong. So we skip
+  // setting window._pendingOpenPost for the plan_react case; instead we
+  // queue into window._planReactPendingOpen and let srtd-next/src/index.jsx
+  // drain it after mount (race-safe vs activateRole + React mount).
+  let _planReactOn = false;
+  try { _planReactOn = params.get('plan_react') === '1'; } catch (e) {}
+  if (openPost && _planReactOn) {
+    window._planReactPendingOpen = openPost;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('open');
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  } else if (openPost) {
+    window._pendingOpenPost = openPost;
+  }
 
   const hash = window.location.hash;
   if (hash && hash.includes('access_token=')) {

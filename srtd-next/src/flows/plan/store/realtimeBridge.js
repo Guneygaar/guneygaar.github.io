@@ -61,6 +61,16 @@ function _onNotifications(ev) {
   _applyNotificationsSnapshot(detail);
 }
 
+// Vanilla brief sheet (render/brief.js) is opened from Plan React via
+// BriefsSection.jsx and the deep-link drain in srtd-next/src/index.jsx.
+// While the brief sheet is on screen we pause snapshot application so a
+// realtime echo can't blow away the brief overlay's local state. Vanilla
+// dispatches sorted:brief-sheet-opened on _openBriefSheet's appendChild
+// and sorted:brief-sheet-closed when the overlay is removed (any path,
+// observed via MutationObserver in render/brief.js).
+function _onBriefOpen() { pauseRealtime(); }
+function _onBriefClose() { resumeRealtime(); }
+
 export function startRealtimeBridge(store) {
   if (_started) return _stopFn;
   if (!store || typeof store.getState !== 'function') {
@@ -72,12 +82,16 @@ export function startRealtimeBridge(store) {
   _store = store;
   window.addEventListener('sorted:posts-updated', _onPosts);
   window.addEventListener('sorted:notifications-updated', _onNotifications);
+  window.addEventListener('sorted:brief-sheet-opened', _onBriefOpen);
+  window.addEventListener('sorted:brief-sheet-closed', _onBriefClose);
   _started = true;
 
   _stopFn = function stopRealtimeBridge() {
     if (!_started) return;
     window.removeEventListener('sorted:posts-updated', _onPosts);
     window.removeEventListener('sorted:notifications-updated', _onNotifications);
+    window.removeEventListener('sorted:brief-sheet-opened', _onBriefOpen);
+    window.removeEventListener('sorted:brief-sheet-closed', _onBriefClose);
     _started = false;
     _store = null;
     _pauseCount = 0;
