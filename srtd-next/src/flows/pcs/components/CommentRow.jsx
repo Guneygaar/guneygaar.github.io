@@ -19,7 +19,8 @@ import { CommentLightbox } from './CommentLightbox.jsx';
 const LIKE_EMOJI = '\u2661';
 
 export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
-  const [expanded, setExpanded] = useState(false);
+  const expanded = usePcsStore((s) => s.expandedComments.has(comment.id));
+  const toggle = usePcsStore((s) => s.toggleExpanded);
   const [busy, setBusy] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const currentRole = useAppState((s) => s.user?.role || '');
@@ -133,8 +134,8 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
         <div className={`font-serif text-lg leading-[1.5] text-text-loud whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
           {renderRichText(comment.message, userRoles)}
         </div>
-        {!expanded && comment.message && comment.message.length > 180 && (
-          <button onClick={() => setExpanded(true)} className="font-mono text-sm text-terracotta tracking-wide uppercase mt-1 font-semibold bg-transparent border-0 cursor-pointer p-0">
+        {!expanded && comment.message && comment.message.length > 140 && (
+          <button onClick={() => toggle(comment.id)} className="font-mono text-sm text-terracotta tracking-wide uppercase mt-1 font-semibold bg-transparent border-0 cursor-pointer p-0">
             Read more
           </button>
         )}
