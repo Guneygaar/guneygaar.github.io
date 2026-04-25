@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Heart, Reply, Check, CircleDot } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
-import { formatCommentTime } from '../utils/time.js';
+import { timeAgo } from '../utils/timeAgo.js';
 import { renderRichText } from '../utils/mentions.jsx';
 import { displayNameFromEmail, roleFromEmail, findUserRole } from '../utils/users.js';
 import { getImageAttachments, getTaskAttachments } from '../utils/attachments.js';
@@ -34,7 +34,8 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
     : 'Unknown';
   const roleKey = comment.author ? roleFromEmail(comment.author, userRoles, comment.author_role || 'creative') : 'unknown';
   const avatarUrl = (userRecord && userRecord.avatar_url) || null;
-  const time = formatCommentTime(comment.created_at);
+  const time = timeAgo(comment.created_at);
+  const isReply = (comment.depth || 0) > 0;
 
   const { parent, hasGrandparent } = resolveParent(comment, byId);
   const parentDeleted = !!(comment.reply_to && (!parent || parent.deleted));
@@ -101,7 +102,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
 
   return (
     <div
-      className="flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm"
+      className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-6 border-l-2 border-l-divider-warm pl-3' : ''}`}
       onTouchStart={startLP}
       onTouchEnd={cancelLP}
       onTouchMove={cancelLP}
