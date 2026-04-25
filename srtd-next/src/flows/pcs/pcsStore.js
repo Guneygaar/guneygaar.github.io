@@ -29,6 +29,10 @@ export const usePcsStore = create((set) => ({
     if (next.has(id)) next.delete(id); else next.add(id);
     return { expandedComments: next };
   }),
+  // Monotonic counter; CaptionBlock subscribes and enters inline edit
+  // mode whenever the value increments past the last seen tick.
+  captionEditRequested: 0,
+  requestCaptionEdit: () => set((s) => ({ captionEditRequested: s.captionEditRequested + 1 })),
   setContextList: (list) => set({ contextList: Array.isArray(list) ? list : [] }),
   reset: () => set({
     post: null,
@@ -44,6 +48,7 @@ export const usePcsStore = create((set) => ({
     activityError: null,
     contextList: [],
     optimisticFields: new Set(),
-    expandedComments: new Set()
+    expandedComments: new Set(),
+    captionEditRequested: 0
   })
 }));

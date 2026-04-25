@@ -3,21 +3,35 @@ import { ChevronDown, Sparkles, ShieldCheck } from 'lucide-react';
 import { EditIcon } from '../../../core/ui/index.js';
 import { wordCount, renderRichText } from '../utils/mentions.jsx';
 import { usePcsStore } from '../pcsStore.js';
-import { patchPost } from '../../../core/api/posts.js';
-import { writeAudit } from '../../../core/api/audit.js';
-import { toast } from '../../../core/bridges/toast.js';
-import { logClick, logError } from '../../../core/bridges/logging.js';
+import { logClick } from '../../../core/bridges/logging.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
-import { useIsClient } from '../../../core/stores/appState.js';
+import { useIsClient, useAppState } from '../../../core/stores/appState.js';
+import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
+import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 
-const OVER_WORD_THRESHOLD = 125;
-const LONG_PRESS_MS = 500;
+const TEXTAREA_MAX_HEIGHT = 400;
+const GREEN_TOKEN = '#7DBE8A';
+
+function wordStateOf(n) {
+  if (n === 0) return 'default';
+  if (n >= 80 && n <= 100) return 'green';
+  if (n > 100 && n <= 125) return 'amber';
+  if (n > 125) return 'red';
+  return 'default';
+}
+
+function wordStateClass(state) {
+  if (state === 'amber') return 'text-amber';
+  if (state === 'red') return 'text-red';
+  return 'text-text-dim';
+}
 
 export function CaptionBlock({ post, canEdit, isAdmin }) {
   const isClient = useIsClient();
+  const userEmail = useAppState((s) => s.user?.email || '');
   const caption = post?.caption || '';
   const wc = wordCount(caption);
-  const over = wc > OVER_WORD_THRESHOLD;
+  const wcState = wordStateOf(wc);
   const isEmpty = !caption.trim();
 
   const [editing, setEditing] = useState(false);
@@ -27,7 +41,9 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
 
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
-  const lpTimer = useRef(null);
+  const captionEditRequested = usePcsStore((s) => s.captionEditRequested);
+  const lastSeenEditRequest = useRef(captionEditRequested);
+  const { commit } = useOptimisticPatch();
 
   // Measure caption overflow after render.
   useLayoutEffect(() => {
@@ -37,16 +53,36 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
     if (!showFull) {
       setOverflows(el.scrollHeight > el.clientHeight + 1);
     } else {
-      // Keep chevron visible when expanded so user can re-collapse.
       setOverflows(true);
     }
   }, [caption, showFull, editing, isEmpty]);
+
+  // Auto-grow textarea to content up to 400px, then scroll.
+  useLayoutEffect(() => {
+    if (!editing) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, TEXTAREA_MAX_HEIGHT) + 'px';
+  }, [editing, draft]);
 
   // Reset draft + clamp when post changes.
   useEffect(() => {
     setDraft(caption);
     setShowFull(false);
   }, [post?.post_id]);
+
+  // External edit trigger from KickerRow Copy long-press.
+  useEffect(() => {
+    if (captionEditRequested === lastSeenEditRequest.current) return;
+    lastSeenEditRequest.current = captionEditRequested;
+    if (!canEdit) return;
+    setDraft(post?.caption || '');
+    setEditing(true);
+    setTimeout(() => {
+      try { textareaRef.current && textareaRef.current.focus(); } catch (e) {}
+    }, 50);
+  }, [captionEditRequested, canEdit, post?.caption]);
 
   function startEdit() {
     if (!canEdit) return;
@@ -61,46 +97,20 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   }
 
   async function applyCaption(next) {
-    const isTransientNetworkError = (err) => {
-      const msg = (err && err.message) || '';
-      return /^Load failed$/i.test(msg)
-          || /^NetworkError/i.test(msg)
-          || /^Failed to fetch/i.test(msg);
-    };
-    try {
-      let updated;
-      try {
-        updated = await patchPost(post.post_id, {
-          caption: next, updated_by: post?.updated_by || null,
-        });
-      } catch (err) {
-        if (!isTransientNetworkError(err)) throw err;
-        await new Promise((r) => setTimeout(r, 800));
-        updated = await patchPost(post.post_id, {
-          caption: next, updated_by: post?.updated_by || null,
-        });
-      }
-      writeAudit({
-        postId: post.post_id, field: 'caption',
-        oldValue: caption, newValue: next,
-        actor: post?.updated_by || null,
-      }).catch(() => {});
-      if (updated) usePcsStore.setState({ post: updated });
-      logClick('pcs_react_caption_save', { len: (next || '').length });
-      toast('Caption saved', 'success');
-    } catch (err) {
-      logError(err, { context: 'pcs_react_caption_save' });
-      toast(
-        isTransientNetworkError(err) ? 'Network blip, please try again' : 'Save failed',
-        'error'
-      );
-    }
+    await commit('caption', next, {
+      auditField: 'caption',
+      actor: userEmail || null,
+      label: 'Caption',
+    });
+    if (post?.post_id) reseedOgPreview(post.post_id);
   }
 
   async function handleSave() {
-    const next = draft.trim();
+    const next = (draft || '').trim();
     setEditing(false);
+    if (!next) return;
     if (next === caption) return;
+    logClick('pcs_react_caption_save', { len: next.length });
     await applyCaption(next);
   }
 
@@ -134,20 +144,6 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
     });
   }
 
-  // Long-press body to enter edit mode.
-  function startLP(e) {
-    if (isClient) return;
-    if (!canEdit) return;
-    if (e.target.closest('button, a, input, textarea')) return;
-    lpTimer.current = setTimeout(() => {
-      try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
-      startEdit();
-    }, LONG_PRESS_MS);
-  }
-  function cancelLP() {
-    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
-  }
-
   // Empty state
   if (isEmpty && !editing) {
     return (
@@ -165,22 +161,35 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
 
   // Edit mode
   if (editing) {
+    const draftWc = wordCount(draft);
+    const draftState = wordStateOf(draftWc);
     return (
       <div className="px-4 pt-2 pb-3 border-b border-divider-subtle">
         <textarea
           ref={textareaRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          className="w-full min-h-[140px] bg-bg-draft border border-border-warm rounded-card p-3 font-sans text-lg leading-relaxed text-text-loud outline-none resize-none"
-          style={{ lineHeight: '1.6' }}
+          className="w-full bg-bg-draft p-3 font-sans text-lg leading-relaxed text-text-loud resize-none"
+          style={{
+            border: '1px solid var(--c-terracotta)',
+            outline: 'none',
+            boxShadow: 'none',
+            caretColor: 'currentColor',
+            lineHeight: '1.6',
+            maxHeight: TEXTAREA_MAX_HEIGHT + 'px',
+            overflowY: 'auto',
+          }}
         />
         <div className="flex items-center justify-between pt-2">
           <div
             className="font-mono text-sm tracking-widest uppercase"
             style={{ fontFeatureSettings: "'tnum' 1" }}
           >
-            <span className={wordCount(draft) > OVER_WORD_THRESHOLD ? 'text-red' : 'text-text-dim'}>
-              {wordCount(draft)} WORDS
+            <span
+              className={draftState === 'green' ? '' : wordStateClass(draftState)}
+              style={draftState === 'green' ? { color: GREEN_TOKEN } : undefined}
+            >
+              {draftWc} WORDS
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -207,13 +216,6 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
     <div className="px-4">
       <div
         ref={bodyRef}
-        onTouchStart={startLP}
-        onTouchEnd={cancelLP}
-        onTouchMove={cancelLP}
-        onMouseDown={startLP}
-        onMouseUp={cancelLP}
-        onMouseLeave={cancelLP}
-        onContextMenu={(e) => { e.preventDefault(); }}
         className={`font-sans text-lg text-text-loud whitespace-pre-wrap ${!showFull && overflows ? 'caption-clamp-6 caption-fade-bottom' : ''}`}
         style={{ lineHeight: '1.6' }}
       >
@@ -225,7 +227,10 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
           className="font-mono text-sm tracking-widest uppercase"
           style={{ fontFeatureSettings: "'tnum' 1" }}
         >
-          <span className={over ? 'text-red' : 'text-text-dim'}>
+          <span
+            className={wcState === 'green' ? '' : wordStateClass(wcState)}
+            style={wcState === 'green' ? { color: GREEN_TOKEN } : undefined}
+          >
             {wc} WORDS
           </span>
         </div>

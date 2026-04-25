@@ -223,6 +223,7 @@ export function PCS() {
                 post={post}
                 isAdmin={isAdmin}
                 canMove={canMove}
+                canEdit={canEdit}
                 onOpenSheet={() => setDetailSheetOpen(true)}
                 onOpenStage={() => setDetailSheetOpen(true)}
                 actor={userEmail}
