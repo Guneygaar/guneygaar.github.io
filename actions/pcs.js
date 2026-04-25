@@ -2795,6 +2795,19 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
     });
   }
 
+  // notify-comment edge silently drops mentions whose author_role cannot
+  // be resolved, so we must send canonical user_roles emails. Use the
+  // existing helper to look each name up; drop unresolved entries.
+  if (_mentioned.length) {
+    try {
+      var _resolved = await _lookupMentionEmails(_mentioned);
+      _mentioned = (_resolved || []).map(function(r) { return r && r.email; })
+        .filter(function(e) { return !!e; });
+    } catch(_lkErr) {
+      _mentioned = [];
+    }
+  }
+
   var _imgs = (visibility === 'all' && !isTask)
     ? window._pcsClientImgs.slice()
     : window._pcsNoteImgs.slice();
