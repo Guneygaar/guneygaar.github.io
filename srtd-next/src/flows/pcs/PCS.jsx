@@ -14,7 +14,6 @@ import { Tabs } from './components/Tabs.jsx';
 import { CommentList } from './components/CommentList.jsx';
 import { Composer } from './components/Composer.jsx';
 import { RetryBanner } from './components/RetryBanner.jsx';
-import { PropertySheet } from './components/PropertySheet.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 import { ViewAllLink } from './components/ViewAllLink.jsx';
 import { FullScreenThread } from './components/FullScreenThread.jsx';
@@ -24,10 +23,8 @@ import { updatePostStage } from '../../core/api/posts.js';
 import { toast } from '../../core/bridges/toast.js';
 import { logClick, logError } from '../../core/bridges/logging.js';
 import { formatTargetDate } from './utils/time.js';
-
-// Fields still routed through the full-screen PropertySheet (title only).
-// Every other field lives in PcsDetailSheet.
-const TITLE_FIELD_CONFIG = { field: 'title', title: 'Title', inputType: 'text', placeholder: 'Post title', reseedOg: true };
+import { useOptimisticPatch } from '../../core/hooks/useOptimisticPatch.js';
+import { reseedOgPreview } from '../../core/bridges/ogPreview.js';
 
 export function PCS() {
   const postId = usePcsFlowState((s) => s.postId);
@@ -49,6 +46,9 @@ export function PCS() {
   const [replyTo, setReplyTo] = useState(null);
   const [actionSheet, setActionSheet] = useState(null);
   const [threadView, setThreadView] = useState(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const { commit } = useOptimisticPatch();
 
   useEffect(() => {
     setReplyTo(null);
@@ -60,6 +60,22 @@ export function PCS() {
   const canSeeInternal = isAgency;
 
   const [approving, setApproving] = useState(false);
+
+  function cancelTitleEdit() {
+    setEditingTitle(false);
+    setTitleDraft('');
+  }
+
+  async function commitTitle() {
+    if (!post) { cancelTitleEdit(); return; }
+    const trimmed = (titleDraft || '').trim();
+    setEditingTitle(false);
+    setTitleDraft('');
+    if (!trimmed) return;
+    if (trimmed === (post.title || '')) return;
+    await commit('title', trimmed, { auditField: 'title', actor: userEmail, label: 'Title' });
+    reseedOgPreview(post.post_id);
+  }
 
   function onReplyToComment(c) {
     const authorName = c.author ? (userRoles.find((u) => u.email === c.author)?.name || c.author.split('@')[0]) : 'Unknown';
@@ -213,12 +229,31 @@ export function PCS() {
               />
               <PhotoStrip post={post} canEdit={canEdit} />
               <div className="px-3 pt-3 pb-1">
-                <h1
-                  onClick={canEdit ? () => setActiveSheet('title') : undefined}
-                  className={`font-serif text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-loud ${canEdit ? 'cursor-pointer' : ''}`}
-                >
-                  {post.title || 'Untitled'}
-                </h1>
+                {editingTitle && canEdit ? (
+                  <input
+                    type="text"
+                    maxLength={200}
+                    value={titleDraft}
+                    autoFocus
+                    enterKeyHint="done"
+                    onFocus={(e) => { try { e.target.select(); } catch (err) { /* ignore */ } }}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
+                      else if (e.key === 'Escape') { e.preventDefault(); cancelTitleEdit(); }
+                    }}
+                    onBlur={commitTitle}
+                    className="block w-full font-serif text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-loud bg-transparent -mx-2 px-2 -my-1 py-1"
+                    style={{ border: '1px solid var(--c-terracotta)', outline: 'none', boxShadow: 'none', caretColor: 'currentColor' }}
+                  />
+                ) : (
+                  <h1
+                    onClick={canEdit ? () => { setTitleDraft(post.title || ''); setEditingTitle(true); } : undefined}
+                    className={`font-serif text-[26px] font-semibold leading-[1.15] tracking-[-0.02em] text-text-loud -mx-2 px-2 -my-1 py-1 ${canEdit ? 'cursor-pointer hover:bg-bg-2' : ''}`}
+                  >
+                    {post.title || 'Untitled'}
+                  </h1>
+                )}
               </div>
               <CaptionBlock post={post} canEdit={canEdit} isAdmin={isAdmin} />
               <StatsStrip post={post} />
@@ -302,18 +337,6 @@ export function PCS() {
           open={detailSheetOpen}
           onClose={() => setDetailSheetOpen(false)}
           actor={userEmail}
-        />
-      )}
-
-      {activeSheet === 'title' && post && (
-        <PropertySheet
-          field={TITLE_FIELD_CONFIG.field}
-          title={TITLE_FIELD_CONFIG.title}
-          currentValue={post[TITLE_FIELD_CONFIG.field]}
-          inputType={TITLE_FIELD_CONFIG.inputType}
-          placeholder={TITLE_FIELD_CONFIG.placeholder}
-          reseedOg={TITLE_FIELD_CONFIG.reseedOg}
-          onClose={() => setActiveSheet(null)}
         />
       )}
 
