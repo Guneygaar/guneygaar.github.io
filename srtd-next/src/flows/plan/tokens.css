@@ -1,14 +1,51 @@
-/* Plan flow tokens. Scoped to [data-plan-root] so the Plan palette
-   never leaks into PCS / Create Post. All existing tokens
-   (--c-bg, --c-text-mid, --c-stage-brief, etc) are inherited from
-   src/styles/tailwind.css. Only Plan-specific additions below.
+/* Plan flow tokens. Scoped to [data-plan-root][data-plan-theme=...] with
+   FULL token isolation: every token Plan consumes is redeclared in BOTH
+   light and dark blocks so the attribute selector always wins regardless
+   of OS prefers-color-scheme or tailwind.css :root cascade. Plan is
+   OS-theme-independent — resolveTheme() in Plan.jsx reads the system
+   preference once at mount and writes data-plan-theme; from there the
+   Plan palette is sealed.
    Pure ASCII only - no unicode dashes or smart quotes. */
 
 [data-plan-root],
 [data-plan-root][data-plan-theme="light"] {
-  /* Stage tokens (--c-stage-approval, --c-stage-published, --c-stage-rejected,
-     --c-stage-parked) moved to styles/tailwind.css :root as the single source
-     of truth. */
+  /* Surfaces */
+  --c-bg:                      #FAF8F3;
+  --c-bg-2:                    #F4F0E8;
+  --c-bg-3:                    #EBE6DC;
+  --c-border-neutral:          #D8D2C4;
+  --c-divider-warm:            #D8C8AC;
+  --c-divider-soft:            #E3DCCC;
+  --c-divider-subtle:          color-mix(in srgb, var(--c-divider-soft) 70%, transparent);
+  /* Text */
+  --c-text-loud:               #1A1816;
+  --c-text-mid:                #4A4640;
+  --c-text-soft:               #7A7670;
+  --c-text-dim:                #8A857A;
+  /* Accents */
+  --c-terracotta:              #B85430;
+  --c-terracotta-1:            #C15F3C;
+  --c-terracotta-2:            #9E4526;
+  --c-amber:                   #C8841A;
+  --c-green:                   #1FA66E;
+  --c-green-deep:              #147A4F;
+  --c-red:                     #D83838;
+  /* Roles */
+  --c-role-admin:              #8E7A2E;
+  --c-role-servicing:          #0891A0;
+  --c-role-creative:           #6B4FD9;
+  --c-role-client:             #D83838;
+  /* Stages */
+  --c-stage-brief:             #6A5AA0;
+  --c-stage-production:        #3E7196;
+  --c-stage-ready:             #6B7E9A;
+  --c-stage-input:             #A85C3C;
+  --c-stage-scheduled:         #6E9068;
+  --c-stage-approval:          #C8841A;
+  --c-stage-published:         #147A4F;
+  --c-stage-rejected:          #D83838;
+  --c-stage-parked:            #8A857A;
+  /* Pillars */
   --c-pillar-innovation:       #3E7196;
   --c-pillar-announcements:    #6B4FD9;
   --c-pillar-leadership:       #8E7A2E;
@@ -16,13 +53,50 @@
   --c-pillar-events:           #A85C3C;
   --c-pillar-inclusivity:      #0891A0;
   --c-pillar-growth:           #C8841A;
+  /* Plan-specific */
   --backdrop-tint:             rgba(20,18,15,.18);
   --shadow-fab:                0 10px 24px -10px rgba(120,80,60,.45);
 }
 
 @media (prefers-color-scheme: dark) {
   [data-plan-root]:not([data-plan-theme="light"]) {
-    /* Stage tokens moved to styles/tailwind.css dark :root. */
+    /* Surfaces */
+    --c-bg:                      #1A1816;
+    --c-bg-2:                    #201E1A;
+    --c-bg-3:                    #252320;
+    --c-border-neutral:          #3A3632;
+    --c-divider-warm:            #3A3220;
+    --c-divider-soft:            #2A2622;
+    --c-divider-subtle:          color-mix(in srgb, var(--c-divider-soft) 70%, transparent);
+    /* Text */
+    --c-text-loud:               #F4F3EE;
+    --c-text-mid:                #B1ADA1;
+    --c-text-soft:               #7A7670;
+    --c-text-dim:                #6A655C;
+    /* Accents */
+    --c-terracotta:              #C15F3C;
+    --c-terracotta-1:            #D46840;
+    --c-terracotta-2:            #B85430;
+    --c-amber:                   #F6A623;
+    --c-green:                   #3ECF8E;
+    --c-green-deep:              #2AA670;
+    --c-red:                     #FF4B4B;
+    /* Roles */
+    --c-role-admin:              #C8A84B;
+    --c-role-servicing:          #22D3EE;
+    --c-role-creative:           #9b87f5;
+    --c-role-client:             #FF4B4B;
+    /* Stages */
+    --c-stage-brief:             #9E8FC7;
+    --c-stage-production:        #6FA5C4;
+    --c-stage-ready:             #A3B2C7;
+    --c-stage-input:             #D48B6E;
+    --c-stage-approval:          #CC785C;
+    --c-stage-scheduled:         #E4C441;
+    --c-stage-published:         #3ECF8E;
+    --c-stage-rejected:          #FFFFFF;
+    --c-stage-parked:            #6A655C;
+    /* Pillars */
     --c-pillar-innovation:       #6FA8C9;
     --c-pillar-announcements:    #9b87f5;
     --c-pillar-leadership:       #C8A84B;
@@ -30,13 +104,50 @@
     --c-pillar-events:           #D48B6E;
     --c-pillar-inclusivity:      #22D3EE;
     --c-pillar-growth:           #F6A623;
+    /* Plan-specific */
     --backdrop-tint:             rgba(0,0,0,.3);
     --shadow-fab:                0 12px 32px -8px rgba(0,0,0,.35);
   }
 }
 
 [data-plan-root][data-plan-theme="dark"] {
-  /* Stage tokens moved to styles/tailwind.css dark :root. */
+  /* Surfaces */
+  --c-bg:                      #1A1816;
+  --c-bg-2:                    #201E1A;
+  --c-bg-3:                    #252320;
+  --c-border-neutral:          #3A3632;
+  --c-divider-warm:            #3A3220;
+  --c-divider-soft:            #2A2622;
+  --c-divider-subtle:          color-mix(in srgb, var(--c-divider-soft) 70%, transparent);
+  /* Text */
+  --c-text-loud:               #F4F3EE;
+  --c-text-mid:                #B1ADA1;
+  --c-text-soft:               #7A7670;
+  --c-text-dim:                #6A655C;
+  /* Accents */
+  --c-terracotta:              #C15F3C;
+  --c-terracotta-1:            #D46840;
+  --c-terracotta-2:            #B85430;
+  --c-amber:                   #F6A623;
+  --c-green:                   #3ECF8E;
+  --c-green-deep:              #2AA670;
+  --c-red:                     #FF4B4B;
+  /* Roles */
+  --c-role-admin:              #C8A84B;
+  --c-role-servicing:          #22D3EE;
+  --c-role-creative:           #9b87f5;
+  --c-role-client:             #FF4B4B;
+  /* Stages */
+  --c-stage-brief:             #9E8FC7;
+  --c-stage-production:        #6FA5C4;
+  --c-stage-ready:             #A3B2C7;
+  --c-stage-input:             #D48B6E;
+  --c-stage-approval:          #CC785C;
+  --c-stage-scheduled:         #E4C441;
+  --c-stage-published:         #3ECF8E;
+  --c-stage-rejected:          #FFFFFF;
+  --c-stage-parked:            #6A655C;
+  /* Pillars */
   --c-pillar-innovation:       #6FA8C9;
   --c-pillar-announcements:    #9b87f5;
   --c-pillar-leadership:       #C8A84B;
@@ -44,6 +155,7 @@
   --c-pillar-events:           #D48B6E;
   --c-pillar-inclusivity:      #22D3EE;
   --c-pillar-growth:           #F6A623;
+  /* Plan-specific */
   --backdrop-tint:             rgba(0,0,0,.3);
   --shadow-fab:                0 12px 32px -8px rgba(0,0,0,.35);
 }
