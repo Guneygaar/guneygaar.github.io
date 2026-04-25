@@ -360,8 +360,12 @@ export const usePlanStore = create((set, get) => ({
 
   setRole(r) {
     const norm = (r || '').toLowerCase();
-    const role = (norm === 'admin' || norm === 'agency' || norm === 'client') ? norm : 'agency';
-    set({ role });
+    // PR-C1: keep creative + servicing distinct from the umbrella 'agency'
+    // bucket so usePosts can apply vanilla pipeline.js role-scoped filters
+    // (creative own-only briefs, servicing brief gating). 'agency' stays
+    // as the unrecognised-role fallback.
+    const allowed = new Set(['admin', 'agency', 'client', 'creative', 'servicing']);
+    set({ role: allowed.has(norm) ? norm : 'agency' });
   },
 
   setMonthRange(monthStart, monthEnd) {
@@ -372,13 +376,26 @@ export const usePlanStore = create((set, get) => ({
   // window-event snapshots (sorted:posts-updated /
   // sorted:notifications-updated) into the store. Vanilla owns the
   // Supabase channels; React only consumes the resulting AppState
-  // snapshots. Posts filter strips _isRequest:true rows because
-  // vanilla folds /requests into posts.all but Plan tracks them
-  // through its own requests slot via loadRequests().
+  // snapshots.
+  //
+  // PR-C1: for agency roles (admin/creative/servicing/agency) we KEEP
+  // _isRequest:true rows because vanilla mergePosts already converts
+  // pending+assigned requests into brief-stage cards inside
+  // AppState.posts.all (see 07-post-load.js loadPosts agency branch);
+  // dropping them here would hide every brief from the agency Board.
+  // Client role still strips them — clients render briefs through the
+  // dedicated BriefsAssignedSection / BriefsCompletedSection that read
+  // the separate `requests` slot via loadRequests(). Dedup is provided
+  // by vanilla mergePosts, which keys on getPostId(); the snapshot we
+  // receive is already deduplicated.
   applyPostsSnapshot(detail) {
     if (!detail) return;
     const incoming = Array.isArray(detail.posts) ? detail.posts : [];
-    const nextPosts = incoming.filter((p) => !p._isRequest);
+    const role = get().role;
+    const isClient = role === 'client';
+    const nextPosts = isClient
+      ? incoming.filter((p) => !p._isRequest)
+      : incoming;
     const next = { posts: nextPosts };
     if (Array.isArray(detail.requests) && detail.requests.length > 0) {
       next.requests = detail.requests;
@@ -407,7 +424,13 @@ export const usePlanStore = create((set, get) => ({
   },
 
   initializeDefaultView(role) {
-    const defaults = { client: 'calendar', admin: 'board', agency: 'calendar' };
+    const defaults = {
+      client: 'calendar',
+      admin: 'board',
+      agency: 'calendar',
+      creative: 'calendar',
+      servicing: 'calendar'
+    };
     set({ currentView: defaults[role] || 'board' });
   },
 

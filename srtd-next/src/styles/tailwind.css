@@ -42,7 +42,12 @@
     --c-stage-published:#147A4F;
     --c-stage-rejected:#E5E5E5;
     --c-stage-parked:#8A857A;
-    --c-role-creative:#3E7196; --c-role-client:#A85C3C;
+    /* PR-C1: owner color tokens align with vanilla pipeline.js:361-365.
+       Creative -> --c-purple, Client -> --c-red, Servicing keeps
+       --c-role-servicing (#22D3EE in dark, #0891A0 in light). Light
+       palette uses the existing --c-purple / --c-red light shades so
+       contrast stays readable on warm-paper. */
+    --c-role-creative:#6B4FD9; --c-role-client:#D83838;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -80,7 +85,9 @@
       --c-stage-published:#3ECF8E;
       --c-stage-rejected:#FFFFFF;
       --c-stage-parked:#6A655C;
-      --c-role-creative:#6FA8C9; --c-role-client:#D48B6E;
+      /* PR-C1: dark mode owner shades match vanilla render/pipeline.js
+         (Creative #9b87f5, Client #FF4B4B). Servicing keeps #22D3EE. */
+      --c-role-creative:#9b87f5; --c-role-client:#FF4B4B;
     }
   }
 }

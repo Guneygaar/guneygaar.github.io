@@ -26,6 +26,8 @@ function resolveRole(user) {
   const raw = (user.effectiveRole || user.role || '').toLowerCase();
   if (raw === 'admin') return 'admin';
   if (raw === 'client') return 'client';
+  if (raw === 'creative') return 'creative';
+  if (raw === 'servicing') return 'servicing';
   return 'agency';
 }
 
