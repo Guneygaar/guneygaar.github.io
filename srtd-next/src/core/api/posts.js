@@ -64,7 +64,7 @@ export async function createPost(payload) {
 export async function getPostByPostId(postId) {
   if (!postId) throw new Error('[sorted-react/posts] getPostByPostId: postId required');
   const encoded = encodeURIComponent(postId);
-  const rows = await apiFetch(`/posts?post_id=eq.${encoded}&select=*,owner_user_id(id,name,email,role)&limit=1`, {
+  const rows = await apiFetch(`/posts?post_id=eq.${encoded}&select=*&limit=1`, {
     method: 'GET',
     headers: { 'Accept': 'application/json' }
   });
@@ -97,4 +97,16 @@ export async function deletePost(postId) {
   if (!postId) throw new Error('deletePost: postId required');
   const encoded = encodeURIComponent(postId);
   return apiFetch(`/posts?post_id=eq.${encoded}`, { method: 'DELETE' });
+}
+
+export async function enrichPostOwner(post) {
+  if (!post || !post.owner_user_id) return null;
+  try {
+    const ownerId = typeof post.owner_user_id === 'string' ? post.owner_user_id : post.owner_user_id?.id;
+    if (!ownerId) return null;
+    const rows = await apiFetch(`/user_roles?id=eq.${encodeURIComponent(ownerId)}&select=id,name,email,role`);
+    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  } catch (e) {
+    return null;
+  }
 }
