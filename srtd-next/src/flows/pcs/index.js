@@ -37,11 +37,16 @@ async function refreshRealtime(postId) {
   // on usePcsStore.getState().optimisticFields — any field name in
   // that Set has an in-flight optimistic edit and must NOT be
   // overwritten by the realtime payload. See useOptimisticPatch.
+  // userRoles refetched in the same batch so realtime echoes after
+  // role/owner changes always render with fresh roster data.
   try {
-    const { comments, reactions } = await fetchCommentsAndReactions(postId);
+    const [userRoles, { comments, reactions }] = await Promise.all([
+      listUserRoles(),
+      fetchCommentsAndReactions(postId)
+    ]);
     const currentPostId = usePcsFlowState.getState().postId;
     if (currentPostId === postId) {
-      usePcsStore.setState({ comments, reactions, commentsError: null });
+      usePcsStore.setState({ userRoles, comments, reactions, commentsError: null });
     }
   } catch (err) {
     logError(err, { context: 'pcs_react_realtime_refresh', postId });
@@ -96,22 +101,19 @@ export const pcsFlow = {
       return;
     }
 
+    // Parallel fetch userRoles + comments/reactions so avatars resolve
+    // on first paint instead of racing the realtime echo.
     try {
-      const userRoles = await listUserRoles();
+      const [userRoles, { comments, reactions }] = await Promise.all([
+        listUserRoles(),
+        fetchCommentsAndReactions(postId)
+      ]);
       if (usePcsFlowState.getState().postId !== postId) return;
-      usePcsStore.setState({ userRoles });
+      usePcsStore.setState({ userRoles, comments, reactions, commentsError: null });
     } catch (err) {
-      logError(err, { context: 'pcs_react_open_users', postId });
-    }
-
-    try {
-      const { comments, reactions } = await fetchCommentsAndReactions(postId);
+      logError(err, { context: 'pcs_react_open', postId });
       if (usePcsFlowState.getState().postId !== postId) return;
-      usePcsStore.setState({ comments, reactions, commentsError: null });
-    } catch (err) {
-      logError(err, { context: 'pcs_react_open_comments', postId });
-      if (usePcsFlowState.getState().postId !== postId) return;
-      usePcsStore.setState({ commentsError: 'Failed to load comments' });
+      usePcsStore.setState({ commentsError: 'Failed to load data' });
     }
 
     if (isAgency) {
