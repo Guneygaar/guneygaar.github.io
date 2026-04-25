@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
+import { useIsClient } from '../../../core/stores/appState.js';
 import {
   parseISODate, buildMonthGrid, buildWeekGrid, sameDay, formatYYYYMMDD,
   dowShortMonFirst, monthAbbr
@@ -95,7 +96,7 @@ function formatWeekRangeLabel(startDate) {
   return `${startMonth} ${startDate.getDate()} - ${endMonth} ${endDate.getDate()}`;
 }
 
-function ThumbMini({ post, isOverlay, contextPosts }) {
+function ThumbMini({ post, isOverlay, contextPosts, isClient }) {
   const stageColor = STAGE_COLOR_VAR[post.stage]
     ? `var(${STAGE_COLOR_VAR[post.stage]})`
     : 'var(--c-text-dim)';
@@ -107,7 +108,7 @@ function ThumbMini({ post, isOverlay, contextPosts }) {
   const draggable = useDraggable({
     id: 'thumb-' + post.id,
     data: { uuid: post.id, target_date: post.target_date, post },
-    disabled: !!isOverlay
+    disabled: !!isOverlay || isClient
   });
   const { attributes, listeners, setNodeRef, isDragging, transform } = draggable;
 
@@ -178,7 +179,7 @@ function ThumbMini({ post, isOverlay, contextPosts }) {
   );
 }
 
-function Cell({ date, posts, isToday, isOffMonth, dateKey, contextPosts }) {
+function Cell({ date, posts, isToday, isOffMonth, dateKey, contextPosts, isClient }) {
   const openDay = usePlanStore((s) => s.openDay);
   const preview = posts.slice(0, 2);
   const extra = Math.max(0, posts.length - preview.length);
@@ -231,7 +232,7 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey, contextPosts }) {
           </div>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {preview.map((p) => (
-              <ThumbMini key={p.id} post={p} contextPosts={contextPosts} />
+              <ThumbMini key={p.id} post={p} contextPosts={contextPosts} isClient={isClient} />
             ))}
             {extra > 0 ? (
               <span style={{
@@ -261,7 +262,7 @@ function Cell({ date, posts, isToday, isOffMonth, dateKey, contextPosts }) {
   );
 }
 
-function MonthBlock({ monthStartISO, posts, headerRef, today, contextPosts }) {
+function MonthBlock({ monthStartISO, posts, headerRef, today, contextPosts, isClient }) {
   const startDate = useMemo(() => parseISODate(monthStartISO), [monthStartISO]);
   const grid = useMemo(() => buildMonthGrid(startDate), [startDate]);
 
@@ -324,6 +325,7 @@ function MonthBlock({ monthStartISO, posts, headerRef, today, contextPosts }) {
               isToday={sameDay(d, today)}
               isOffMonth={false}
               contextPosts={contextPosts}
+              isClient={isClient}
             />
           );
         })}
@@ -332,7 +334,7 @@ function MonthBlock({ monthStartISO, posts, headerRef, today, contextPosts }) {
   );
 }
 
-function WeekDayRow({ date, posts, isToday, contextPosts }) {
+function WeekDayRow({ date, posts, isToday, contextPosts, isClient }) {
   const openDay = usePlanStore((s) => s.openDay);
   const dateKey = formatYYYYMMDD(date);
   const droppableId = 'cell-' + dateKey;
@@ -410,7 +412,7 @@ function WeekDayRow({ date, posts, isToday, contextPosts }) {
         }}>
           {posts.map((p) => (
             <div key={p.id} style={{ width: '88px', flexShrink: 0 }}>
-              <ThumbMini post={p} contextPosts={contextPosts} />
+              <ThumbMini post={p} contextPosts={contextPosts} isClient={isClient} />
             </div>
           ))}
         </div>
@@ -419,7 +421,7 @@ function WeekDayRow({ date, posts, isToday, contextPosts }) {
   );
 }
 
-function WeekBlock({ weekStartISO, posts, headerRef, today, contextPosts }) {
+function WeekBlock({ weekStartISO, posts, headerRef, today, contextPosts, isClient }) {
   const startDate = useMemo(() => parseISODate(weekStartISO), [weekStartISO]);
   const grid = useMemo(() => buildWeekGrid(startDate), [startDate]);
 
@@ -452,6 +454,7 @@ function WeekBlock({ weekStartISO, posts, headerRef, today, contextPosts }) {
             posts={postsByDay[key] || []}
             isToday={sameDay(d, today)}
             contextPosts={contextPosts}
+            isClient={isClient}
           />
         );
       })}
@@ -461,6 +464,7 @@ function WeekBlock({ weekStartISO, posts, headerRef, today, contextPosts }) {
 
 export function Calendar() {
   const posts = useCalendarPosts();
+  const isClient = useIsClient();
   const loadedMonths = usePlanStore((s) => s.loadedMonths) || [];
   const loadMonthIfMissing = usePlanStore((s) => s.loadMonthIfMissing);
   const storeLoading = usePlanStore((s) => s.loading);
@@ -678,6 +682,7 @@ export function Calendar() {
   };
 
   const handleDragEnd = (event) => {
+    if (isClient) return;
     window.__planDragActive = false;
     setActiveDragPost(null);
     if (!event.over) return;
@@ -894,6 +899,7 @@ export function Calendar() {
                 headerRef={null}
                 today={today}
                 contextPosts={weekPosts}
+                isClient={isClient}
               />
             )}
 
@@ -984,6 +990,7 @@ export function Calendar() {
                 headerRef={m.start === todayMonthISO ? todayHeaderRef : null}
                 today={today}
                 contextPosts={posts}
+                isClient={isClient}
               />
             ))}
 
