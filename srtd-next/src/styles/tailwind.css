@@ -288,4 +288,56 @@
     0%   { transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 0 4px var(--c-anchor-flash); }
     100% { transform: translate(-50%, -50%) scale(1);    box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
   }
+
+  /* PR-3.13.1 draft pin — pre-send pin the user can drag. Distinct
+     visual via dashed white border + soft pulse. Hosts a centered "+"
+     glyph so the affordance reads as "this is the spot you tapped". */
+  .anchor-photo-dot.is-draft {
+    border-style: dashed;
+    border-color: var(--c-anchor-dot-ring);
+    animation: anchorDraftPulse 1.4s ease-in-out infinite;
+    cursor: grab;
+  }
+  .anchor-photo-dot.is-draft:active { cursor: grabbing; }
+  .anchor-photo-dot-plus {
+    display: block;
+    text-align: center;
+    line-height: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--c-anchor-dot-ring);
+    pointer-events: none;
+    user-select: none;
+  }
+  @keyframes anchorDraftPulse {
+    0%, 100% { box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 0 0 var(--c-anchor-flash); }
+    50%      { box-shadow: 0 1px 4px rgba(0,0,0,0.4), 0 0 0 6px var(--c-anchor-flash); }
+  }
+  /* Composer chip thumbnail variant — smaller, no animation, sits
+     statically over the 60x60 photo preview. */
+  .anchor-photo-dot.is-draft.is-thumb {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-width: 1.5px;
+    animation: none;
+    cursor: default;
+  }
+  .anchor-photo-dot.is-draft.is-thumb .anchor-photo-dot-plus {
+    line-height: 11px;
+    font-size: 10px;
+  }
+
+  /* PR-3.13.1 caption selection bar — slides up above the composer
+     when a non-empty selection exists inside the caption body. Replaces
+     the floating pill (PR-3.13) which was clobbered by iOS native
+     text-selection callout. */
+  .anchor-sel-bar {
+    animation: anchorSelBarIn 0.18s ease-out;
+  }
+  @keyframes anchorSelBarIn {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
 }

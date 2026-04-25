@@ -40,7 +40,8 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   const [draft, setDraft] = useState(caption);
   const [showFull, setShowFull] = useState(false);
   const [overflows, setOverflows] = useState(false);
-  const [selectionPill, setSelectionPill] = useState(null); // {x, y, text, char_start, char_end}
+  const [selectionBar, setSelectionBar] = useState(null); // {text, char_start, char_end}
+  const [composerHeight, setComposerHeight] = useState(60);
 
   const bodyRef = useRef(null);
   const textareaRef = useRef(null);
@@ -192,63 +193,85 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
     return () => clearTimeout(tid);
   }, [flashCommentId]);
 
-  // Floating "+ Comment on selection" pill. Listens to selectionchange
-  // and only renders inside the caption body, in display mode. Suppressed
-  // during edit mode (the textarea has its own selection UX).
+  // Persistent selection bar above the composer. Replaces the legacy
+  // floating pill (PR-3.13.1) — iOS native text-selection callout sits
+  // OS-level above any in-page element anchored to the selection rect,
+  // so the trigger lives at the bottom instead. selectionchange listener
+  // is unchanged: bar visible only when selection non-empty AND fully in
+  // caption body AND not in edit mode.
   useEffect(() => {
-    if (editing) { setSelectionPill(null); return undefined; }
+    if (editing) { setSelectionBar(null); return undefined; }
     function onSelChange() {
       try {
         const sel = window.getSelection && window.getSelection();
         if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-          setSelectionPill(null);
+          setSelectionBar(null);
           return;
         }
         const range = sel.getRangeAt(0);
         const root = bodyRef.current;
-        if (!root) { setSelectionPill(null); return; }
+        if (!root) { setSelectionBar(null); return; }
         const start = range.startContainer;
         const end = range.endContainer;
         if (!root.contains(start) || !root.contains(end)) {
-          setSelectionPill(null);
+          setSelectionBar(null);
           return;
         }
         const text = sel.toString();
-        if (!text || !text.trim()) { setSelectionPill(null); return; }
-        // Compute char_start/char_end against the live caption.
+        if (!text || !text.trim()) { setSelectionBar(null); return; }
         const idx = caption.indexOf(text);
-        if (idx < 0) { setSelectionPill(null); return; }
-        const rect = range.getBoundingClientRect();
-        if (!rect || (rect.width === 0 && rect.height === 0)) { setSelectionPill(null); return; }
-        const top = rect.top + window.scrollY - 44;
-        const left = rect.left + window.scrollX + rect.width / 2;
-        setSelectionPill({ top, left, text, char_start: idx, char_end: idx + text.length });
+        if (idx < 0) { setSelectionBar(null); return; }
+        setSelectionBar({ text, char_start: idx, char_end: idx + text.length });
       } catch (e) {
-        setSelectionPill(null);
+        setSelectionBar(null);
       }
     }
     document.addEventListener('selectionchange', onSelChange);
     return () => document.removeEventListener('selectionchange', onSelChange);
   }, [editing, caption]);
 
-  function onPillClick(e) {
-    if (!selectionPill) return;
+  // Measure live composer height so the selection bar always sits
+  // immediately above it (composer height varies with attachments,
+  // mention picker, polish preview, anchor chip).
+  useEffect(() => {
+    const composerEl = document.querySelector('[data-composer]');
+    if (!composerEl) return undefined;
+    function measure() {
+      try { setComposerHeight(composerEl.offsetHeight || 60); } catch (e) {}
+    }
+    measure();
+    let ro = null;
+    try {
+      if (typeof ResizeObserver !== 'undefined') {
+        ro = new ResizeObserver(measure);
+        ro.observe(composerEl);
+      }
+    } catch (e) { /* noop */ }
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+      if (ro) try { ro.disconnect(); } catch (e) {}
+    };
+  }, [selectionBar]);
+
+  function onSelectionCommentClick(e) {
+    if (!selectionBar) return;
     e.preventDefault();
     e.stopPropagation();
     try {
       usePcsStore.getState().requestAnchor({
         type: 'caption',
-        text: selectionPill.text,
-        char_start: selectionPill.char_start,
-        char_end: selectionPill.char_end,
+        text: selectionBar.text,
+        char_start: selectionBar.char_start,
+        char_end: selectionBar.char_end,
       });
-      logClick('pcs_react_anchor_caption_capture', { len: selectionPill.text.length });
+      logClick('pcs_react_anchor_caption_capture', { len: selectionBar.text.length });
     } catch (err) { /* noop */ }
     try {
       const sel = window.getSelection && window.getSelection();
       if (sel && sel.removeAllRanges) sel.removeAllRanges();
     } catch (err) { /* noop */ }
-    setSelectionPill(null);
+    setSelectionBar(null);
   }
 
   function startEdit() {
@@ -391,31 +414,53 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
         {renderRichText(caption, [], captionAnchors)}
       </div>
 
-      {selectionPill ? (
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={onPillClick}
+      {selectionBar ? (
+        <div
+          className="anchor-sel-bar"
           style={{
             position: 'fixed',
-            top: selectionPill.top - window.scrollY,
-            left: selectionPill.left - window.scrollX,
-            transform: 'translateX(-50%)',
-            zIndex: 2650,
-            background: '#0F0E0C',
-            color: '#F4F3EE',
-            padding: '6px 12px',
-            borderRadius: 9999,
-            fontFamily: 'IBM Plex Mono, monospace',
-            fontSize: 12,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-            whiteSpace: 'nowrap',
+            left: 0,
+            right: 0,
+            bottom: composerHeight,
+            zIndex: 2640,
+            pointerEvents: 'none',
           }}
         >
-          + Comment on selection
-        </button>
+          <div
+            className="mx-auto bg-bg-2 border border-divider-warm flex items-center gap-3"
+            style={{
+              maxWidth: 480,
+              borderLeft: '3px solid var(--c-terracotta)',
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+              borderBottom: 'none',
+              padding: '10px 14px',
+              pointerEvents: 'auto',
+            }}
+          >
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-mono text-2xs text-terracotta tracking-widest uppercase font-semibold"
+                style={{ marginBottom: 2 }}
+              >
+                Selected
+              </div>
+              <div className="font-serif text-sm text-text-mid italic truncate">
+                {selectionBar.text.length > 60
+                  ? selectionBar.text.slice(0, 60) + '…'
+                  : selectionBar.text}
+              </div>
+            </div>
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onSelectionCommentClick}
+              className="font-mono text-xs tracking-widest uppercase text-terracotta px-2 py-1 flex-shrink-0"
+            >
+              Comment {'→'}
+            </button>
+          </div>
+        </div>
       ) : null}
 
       <div className="flex items-center justify-between py-2.5 mt-2.5 border-t border-b border-divider-subtle">

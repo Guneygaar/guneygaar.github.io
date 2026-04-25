@@ -46,6 +46,11 @@ export const usePcsStore = create((set) => ({
     pendingAnchor: payload || null,
   })),
   clearAnchor: () => set({ pendingAnchor: null }),
+  // Live drag updates for the photo draft pin. Updates pendingAnchor
+  // x_pct/y_pct without bumping anchorRequested (no re-focus/scroll).
+  updatePendingAnchor: (patch) => set((s) => ({
+    pendingAnchor: s.pendingAnchor ? { ...s.pendingAnchor, ...(patch || {}) } : s.pendingAnchor,
+  })),
   // Comment id to flash (highlight pulse) — used when a caption mark
   // or photo dot is tapped to draw the eye to the matching thread row.
   flashCommentId: null,

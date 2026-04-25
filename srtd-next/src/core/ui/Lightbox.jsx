@@ -140,8 +140,18 @@ export function Lightbox({
         <img
           src={safe[idx]}
           alt=""
+          draggable={false}
+          onDragStart={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
           className="max-w-full max-h-full block"
-          style={{ objectFit: 'contain' }}
+          style={{
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
+            userSelect: 'none',
+            WebkitUserDrag: 'none',
+          }}
         />
         {imageOverlay ? imageOverlay(idx) : null}
       </div>

@@ -40,9 +40,19 @@ function ThumbImg({ src, onLoad }) {
     <img
       src={src}
       alt=""
+      draggable={false}
       onError={() => setFailed(true)}
       onLoad={onLoad}
+      onDragStart={(e) => e.preventDefault()}
+      onContextMenu={(e) => e.preventDefault()}
       className="w-full h-full object-cover block"
+      style={{
+        pointerEvents: 'none',
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        userSelect: 'none',
+        WebkitUserDrag: 'none',
+      }}
     />
   );
 }
@@ -76,6 +86,7 @@ export function PhotoStrip({ post, canEdit }) {
   const flashComment = usePcsStore((s) => s.flashComment);
   const carouselScrollRequested = usePcsStore((s) => s.carouselScrollRequested);
   const carouselScrollTarget = usePcsStore((s) => s.carouselScrollTarget);
+  const pendingAnchor = usePcsStore((s) => s.pendingAnchor);
   const lastSeenScroll = useRef(carouselScrollRequested);
 
   const [lightIdx, setLightIdx] = useState(null);
@@ -139,8 +150,8 @@ export function PhotoStrip({ post, canEdit }) {
     if (!rect || rect.width <= 0 || rect.height <= 0) return;
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
-    const x_pct = Math.max(0, Math.min(100, x));
-    const y_pct = Math.max(0, Math.min(100, y));
+    const x_pct = Math.max(0, Math.min(100, Math.round(x * 10) / 10));
+    const y_pct = Math.max(0, Math.min(100, Math.round(y * 10) / 10));
     try {
       usePcsStore.getState().requestAnchor({
         type: 'photo',
@@ -326,10 +337,49 @@ export function PhotoStrip({ post, canEdit }) {
   }
 
   // Tap-to-anchor over the active image, used inside Lightbox via the
-  // imageOverlay render prop. % coords are derived from the live img
-  // rect so they stay correct regardless of objectFit:contain bars.
+  // imageOverlay render prop. The img has pointer-events:none so this
+  // overlay div captures every tap; % coords are derived from its rect
+  // so they stay correct regardless of objectFit:contain bars. Draft
+  // pin is draggable to fine-tune before sending.
   function lightboxImageOverlay(activeIdx) {
     const dots = dotsForIndex(activeIdx);
+    const draft = pendingAnchor && pendingAnchor.type === 'photo' && pendingAnchor.image_index === activeIdx
+      ? pendingAnchor : null;
+
+    function onOverlayClick(e) {
+      if (e.target !== e.currentTarget) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      captureAnchorAt(rect, e.clientX, e.clientY, activeIdx);
+    }
+
+    function onDraftPointerDown(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      const pin = e.currentTarget;
+      const overlay = pin.parentElement;
+      if (!overlay) return;
+      const rect = overlay.getBoundingClientRect();
+      try { pin.setPointerCapture(e.pointerId); } catch (_) {}
+      function clamp(v) { return Math.max(0, Math.min(100, Math.round(v * 10) / 10)); }
+      function move(ev) {
+        ev.preventDefault();
+        const x = ((ev.clientX - rect.left) / rect.width) * 100;
+        const y = ((ev.clientY - rect.top) / rect.height) * 100;
+        try {
+          usePcsStore.getState().updatePendingAnchor({ x_pct: clamp(x), y_pct: clamp(y) });
+        } catch (_) {}
+      }
+      function up(ev) {
+        try { pin.releasePointerCapture(ev.pointerId); } catch (_) {}
+        pin.removeEventListener('pointermove', move);
+        pin.removeEventListener('pointerup', up);
+        pin.removeEventListener('pointercancel', up);
+      }
+      pin.addEventListener('pointermove', move);
+      pin.addEventListener('pointerup', up);
+      pin.addEventListener('pointercancel', up);
+    }
+
     return (
       <div
         className="absolute inset-0"
@@ -338,11 +388,9 @@ export function PhotoStrip({ post, canEdit }) {
         <div
           className="absolute inset-0"
           style={{ pointerEvents: 'auto' }}
-          onClick={(e) => {
-            if (e.target !== e.currentTarget) return;
-            const rect = e.currentTarget.getBoundingClientRect();
-            captureAnchorAt(rect, e.clientX, e.clientY, activeIdx);
-          }}
+          onClick={onOverlayClick}
+          onContextMenu={(e) => e.preventDefault()}
+          onDragStart={(e) => e.preventDefault()}
         >
           {dots.map((d) => {
             const isFlash = flashCommentId === d.id;
@@ -357,6 +405,18 @@ export function PhotoStrip({ post, canEdit }) {
               />
             );
           })}
+          {draft ? (
+            <div
+              className="anchor-photo-dot is-draft"
+              style={{ left: `${draft.x_pct}%`, top: `${draft.y_pct}%`, touchAction: 'none' }}
+              onPointerDown={onDraftPointerDown}
+              onClick={(e) => e.stopPropagation()}
+              onContextMenu={(e) => e.preventDefault()}
+              aria-label="Draft anchor pin (drag to adjust)"
+            >
+              <span className="anchor-photo-dot-plus" aria-hidden="true">+</span>
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -428,7 +488,10 @@ export function PhotoStrip({ post, canEdit }) {
             >
               <button
                 onClick={() => openLightbox(i)}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
                 className="w-full h-full block"
+                style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
                 aria-label={`Photo ${i + 1} of ${count}`}
               >
                 <ThumbImg src={src} />

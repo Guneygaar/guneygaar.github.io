@@ -11,7 +11,7 @@ if (typeof window !== 'undefined') {
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.9.25';
+  window.SortedReact.version   = '0.9.26';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;
