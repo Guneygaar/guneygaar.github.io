@@ -1403,27 +1403,25 @@ async function _notifSubmitReply(sendBtn) {
                 (window.AppState.user && window.AppState.user.role) || 'Admin';
   var authorRole = effRole.charAt(0).toUpperCase() + effRole.slice(1).toLowerCase();
 
-  // Roster-aware mention extraction: match against known roster names
-  // first (from either client or PCS roster), fall back to regex.
+  // Roster-aware mention extraction: resolve roster matches to emails
+  // so notify-comment edge can attribute roles. Drop unresolved entries
+  // silently — sending names produced zero notifications because the
+  // edge silently skipped any mention whose role could not be resolved.
   var mentioned = [];
   var _notifRoster = window._clientMentionRoster || window._pcsRosterData || null;
   if (_notifRoster && _notifRoster.length) {
     var _lowerMsg = msg.toLowerCase();
+    var _seenMention = {};
     _notifRoster.forEach(function(m) {
       var _rn = m.name || '';
-      if (!_rn) return;
+      if (!_rn || !m.email) return;
       if (_lowerMsg.indexOf('@' + _rn.toLowerCase()) !== -1) {
-        mentioned.push(_rn);
+        if (!_seenMention[m.email]) {
+          _seenMention[m.email] = true;
+          mentioned.push(m.email);
+        }
       }
     });
-  }
-  if (mentioned.length === 0) {
-    var mRe = /@([A-Za-z][A-Za-z0-9_\-\s]*)/g;
-    var m;
-    while ((m = mRe.exec(msg)) !== null) {
-      var raw = (m[1] || '').trim();
-      if (raw) mentioned.push(raw);
-    }
   }
 
   var payload = {
