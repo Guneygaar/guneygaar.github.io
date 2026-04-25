@@ -9,7 +9,8 @@ import {
   parseISODate, dayNumber, dowShortMonFirst, monthAbbr, formatTime12
 } from '../shared/dateUtils.js';
 import {
-  STAGE_ORDER_BOARD, STAGE_LABELS, STAGE_COLOR_VAR,
+  STAGE_ORDER_BOARD_AGENCY, STAGE_ORDER_BOARD_CLIENT,
+  STAGE_LABELS, STAGE_COLOR_VAR,
   OWNER_COLOR_VAR, PILLAR_LABELS
 } from '../shared/constants.js';
 import { AgeBadge } from '../shared/AgeBadge.jsx';
@@ -106,11 +107,19 @@ function Card({ post, contextPosts }) {
               color: 'var(--c-text-dim)'
             }}>{post.owner || ''}</span>
             <span style={{
-              width: '20px', height: '20px',
-              borderRadius: '20px',
-              background: ownerColor,
+              width: '24px', height: '24px',
+              borderRadius: '24px',
+              background: '#FFFFFF0D',
+              color: ownerColor,
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '7px',
+              fontWeight: 600,
+              letterSpacing: '.04em',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               flexShrink: 0
-            }} />
+            }}>{(post.owner || '').slice(0, 2).toUpperCase()}</span>
           </div>
         ) : null}
       </div>
@@ -170,14 +179,9 @@ export function Board() {
   const posts = usePosts();
   const role = usePlanStore((s) => s.role);
   const isClient = role === 'client';
-  // Client board mirrors the safe subset of usePosts' CLIENT_ALLOWED_STAGES
-  // (drops 'brief' which renders via BriefsAssignedSection above, and
-  // 'in_production' which is hydrated for client only when comments
-  // exist on it — vanilla 07-post-load.js:380-385 — and which Plan does
-  // not surface as a row).
   const visibleStages = isClient
-    ? ['awaiting_brand_input', 'awaiting_approval', 'scheduled', 'published']
-    : STAGE_ORDER_BOARD;
+    ? STAGE_ORDER_BOARD_CLIENT
+    : STAGE_ORDER_BOARD_AGENCY;
   const groups = useMemo(() => {
     const map = {};
     for (const s of visibleStages) map[s] = [];
