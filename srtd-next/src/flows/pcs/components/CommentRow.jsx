@@ -114,7 +114,9 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
           {comment.edited_at && <span className="font-mono text-2xs text-text-dim">(edited)</span>}
         </div>
 
-        <div className={`font-serif text-lg leading-[1.5] text-text-loud whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
+        <div
+          className="font-serif text-lg leading-[1.5] text-text-loud whitespace-pre-wrap"
+          style={expanded ? undefined : { maxHeight: 'calc(1.5em * 3)', overflow: 'hidden', textOverflow: 'clip' }}>
           {renderRichText(comment.message, userRoles)}
         </div>
         {!expanded && comment.message && comment.message.length > 140 && (
