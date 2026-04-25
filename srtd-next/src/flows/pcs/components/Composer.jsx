@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Sparkles, X, AtSign, ImagePlus, Paperclip, CircleDot, FileText } from 'lucide-react';
+import { Plus, Sparkles, X, AtSign, ImagePlus, Paperclip, CircleDot, FileText, ArrowUp } from 'lucide-react';
 import { createComment, createInternalNote } from '../../../core/api/comments.js';
 import { useAppState, useIsClient } from '../../../core/stores/appState.js';
 import { usePcsStore } from '../pcsStore.js';
@@ -268,7 +268,11 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   }
 
   function onKeyDown(e) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); onSend(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const hasContent = text.trim() !== '' || attachedImages.length > 0 || attachedFiles.length > 0 || taskAttachments.length > 0;
+      if (hasContent && !sending) onSend();
+    }
   }
 
   const matchingUsers = mentionOpen ? userRoles.filter((u) => {
@@ -374,10 +378,17 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
             <Sparkles size={14} />
           </button>
         )}
-        <button onClick={onSend} disabled={sending || (!text.trim() && attachedImages.length === 0 && attachedFiles.length === 0 && taskAttachments.length === 0)} className="px-3 py-1.5 rounded-sm2 bg-text-loud text-bg text-sm font-semibold tracking-tight inline-flex items-center gap-1.5 disabled:opacity-40">
-          <span>Send</span>
-          <span className="font-mono text-2xs opacity-50">{'\u2318\u21B5'}</span>
-        </button>
+        {(() => {
+          const hasContent = text.trim() !== '' || attachedImages.length > 0 || attachedFiles.length > 0 || taskAttachments.length > 0;
+          const baseCls = 'w-8 h-8 mr-1 rounded-pill flex items-center justify-center transition-colors duration-150';
+          const stateCls = hasContent ? ' bg-terracotta text-white' : ' bg-send-idle text-text-mid';
+          const sendingCls = sending ? ' opacity-50 pointer-events-none' : '';
+          return (
+            <button onClick={onSend} disabled={sending} className={baseCls + stateCls + sendingCls} aria-label="Send">
+              <ArrowUp size={16} strokeWidth={2.5} />
+            </button>
+          );
+        })()}
       </div>
 
       {sheetOpen && (

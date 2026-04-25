@@ -58,6 +58,7 @@ export default {
         'stage-parked':     'var(--c-stage-parked)',
         'role-creative':    'var(--c-role-creative)',
         'role-client':      'var(--c-role-client)',
+        'send-idle':        'var(--c-send-idle-bg)',
       },
       fontFamily: {
         sans:  ['"DM Sans"', 'sans-serif'],
