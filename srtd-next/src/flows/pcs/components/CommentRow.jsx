@@ -119,19 +119,6 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
           {comment.edited_at && <span className="font-mono text-2xs text-text-dim">(edited)</span>}
         </div>
 
-        {parentDeleted && (
-          <div className="border-l-2 border-text-dim pl-2.5 py-[2px] mb-1 text-sm text-text-dim italic leading-[1.35]">
-            <div className="truncate">[deleted]</div>
-          </div>
-        )}
-        {!parentDeleted && parent && (
-          <div className="border-l-2 border-terracotta pl-2.5 py-[2px] mb-1 text-sm text-text-soft leading-[1.35]">
-            {hasGrandparent && <div className="font-mono text-2xs text-text-dim tracking-wide uppercase mb-[2px]">... earlier in thread</div>}
-            <div className="text-terracotta font-semibold text-sm">{parentName}</div>
-            <div className="truncate">{parent.message}</div>
-          </div>
-        )}
-
         <div className={`font-serif text-lg leading-[1.5] text-text-loud whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
           {renderRichText(comment.message, userRoles)}
         </div>
