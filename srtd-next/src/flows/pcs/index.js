@@ -1,7 +1,7 @@
 import { usePcsFlowState } from './flowStore.js';
 import { usePcsStore } from './pcsStore.js';
 import { useAppState } from '../../core/stores/appState.js';
-import { getPostByPostId } from '../../core/api/posts.js';
+import { getPostByPostId, enrichPostOwner } from '../../core/api/posts.js';
 import { listComments, listInternalNotes } from '../../core/api/comments.js';
 import { listReactionsForComments } from '../../core/api/reactions.js';
 import { listUserRoles } from '../../core/api/users.js';
@@ -64,6 +64,9 @@ async function refreshRealtime(postId) {
 export const pcsFlow = {
   async open(postId, opts) {
     if (!postId) { console.warn('[sorted-react/pcs] open() without postId'); return; }
+    const { isOpen } = usePcsFlowState.getState();
+    const { loading: alreadyLoading } = usePcsStore.getState();
+    if (isOpen || alreadyLoading) return;
     useAppState.getState().syncFromWindow();
     usePcsStore.getState().reset();
     usePcsFlowState.getState().open(postId);
@@ -76,9 +79,17 @@ export const pcsFlow = {
 
     let post = null;
     try {
-      post = await getPostByPostId(postId);
+      const timeoutP = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Post load timeout')), 12000)
+      );
+      post = await Promise.race([getPostByPostId(postId), timeoutP]);
       if (!post) { usePcsStore.setState({ error: 'Post not found', loading: false }); return; }
       usePcsStore.setState({ post, loading: false });
+      enrichPostOwner(post).then((owner) => {
+        if (usePcsFlowState.getState().postId !== postId) return;
+        if (!owner) return;
+        usePcsStore.setState((s) => ({ post: { ...s.post, owner_user_id: owner } }));
+      }).catch(() => {});
     } catch (err) {
       logError(err, { context: 'pcs_react_open_post', postId });
       usePcsStore.setState({ error: err?.message || 'Failed to load post', loading: false });
@@ -87,6 +98,7 @@ export const pcsFlow = {
 
     try {
       const userRoles = await listUserRoles();
+      if (usePcsFlowState.getState().postId !== postId) return;
       usePcsStore.setState({ userRoles });
     } catch (err) {
       logError(err, { context: 'pcs_react_open_users', postId });
@@ -94,32 +106,40 @@ export const pcsFlow = {
 
     try {
       const { comments, reactions } = await fetchCommentsAndReactions(postId);
+      if (usePcsFlowState.getState().postId !== postId) return;
       usePcsStore.setState({ comments, reactions, commentsError: null });
     } catch (err) {
       logError(err, { context: 'pcs_react_open_comments', postId });
+      if (usePcsFlowState.getState().postId !== postId) return;
       usePcsStore.setState({ commentsError: 'Failed to load comments' });
     }
 
     if (isAgency) {
       try {
         const internalNotes = await listInternalNotes(postId);
+        if (usePcsFlowState.getState().postId !== postId) return;
         usePcsStore.setState({ internalNotes, notesError: null });
       } catch (err) {
         logError(err, { context: 'pcs_react_open_notes', postId });
+        if (usePcsFlowState.getState().postId !== postId) return;
         usePcsStore.setState({ notesError: 'Failed to load internal notes' });
       }
     }
 
     try {
       const rows = await listAuditForPost(postId);
+      if (usePcsFlowState.getState().postId !== postId) return;
       usePcsStore.setState({ activity: rows || [], activityError: null });
     } catch (err) {
       logError(err, { context: 'pcs_react_open_activity', postId });
+      if (usePcsFlowState.getState().postId !== postId) return;
       usePcsStore.setState({ activityError: String(err?.message || err) });
     }
 
-    if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
-    _unsub = subscribePostComments(postId, () => refreshRealtime(postId));
+    if (usePcsFlowState.getState().postId === postId) {
+      if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
+      _unsub = subscribePostComments(postId, () => refreshRealtime(postId));
+    }
   },
   close() {
     if (_unsub) { try { _unsub(); } catch (e) {} _unsub = null; }
