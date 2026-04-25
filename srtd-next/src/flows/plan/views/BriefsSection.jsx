@@ -125,7 +125,7 @@ function Bucket({ label, items }) {
           fontWeight: 600,
           letterSpacing: '.12em',
           textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
+          color: 'var(--c-text-soft)'
         }}>{label}</span>
         <span style={{
           fontFamily: '"IBM Plex Mono", monospace',
@@ -157,19 +157,21 @@ function Bucket({ label, items }) {
 function BriefsHeader({ label, count }) {
   return (
     <header style={{
-      padding: '12px 16px 4px',
+      padding: '10px 16px 8px',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px'
+      gap: '8px',
+      background: 'var(--c-bg-2)',
+      borderBottom: '1px solid var(--c-divider-warm)'
     }}>
-      <FileText size={12} style={{ color: 'var(--c-text-mid)' }} />
+      <FileText size={12} style={{ color: 'var(--c-text-soft)' }} />
       <span style={{
         fontFamily: '"IBM Plex Mono", monospace',
         fontSize: '10px',
         fontWeight: 600,
         letterSpacing: '.14em',
         textTransform: 'uppercase',
-        color: 'var(--c-text-mid)'
+        color: 'var(--c-text-soft)'
       }}>{label}</span>
       <span style={{
         fontFamily: '"IBM Plex Mono", monospace',

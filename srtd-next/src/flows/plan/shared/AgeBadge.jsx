@@ -4,9 +4,25 @@
 //   2-4:   gray  (--c-text-dim on --c-bg-2)
 //   5-6:   amber
 //   >= 7:  red
+//
+// `dark` prop signals the badge is overlaid on a thumb image (Board card).
+// In dark mode the overlay is the legacy rgba(0,0,0,.55) blur so the pill
+// reads on bright imagery. In light mode the overlay would clash with cream
+// cards, so we fall through to the native tinted bg + saturated text colour.
+// Detection happens at render via window.matchMedia so PR-C1 light parity
+// applies everywhere AgeBadge is used.
 
 import React from 'react';
 import { daysSince } from './dateUtils.js';
+
+function prefersDark() {
+  if (typeof window === 'undefined' || !window.matchMedia) return true;
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  } catch (e) {
+    return true;
+  }
+}
 
 export function AgeBadge({ statusChangedAt, dark = false }) {
   const days = daysSince(statusChangedAt);
@@ -15,15 +31,16 @@ export function AgeBadge({ statusChangedAt, dark = false }) {
   let bg = 'var(--c-bg-2)';
   if (days >= 5 && days <= 6) {
     color = 'var(--c-amber)';
-    bg = 'color-mix(in srgb, var(--c-amber) 14%, transparent)';
+    bg = 'color-mix(in srgb, var(--c-amber) 18%, transparent)';
   } else if (days >= 7) {
     color = 'var(--c-red)';
-    bg = 'color-mix(in srgb, var(--c-red) 14%, transparent)';
+    bg = 'color-mix(in srgb, var(--c-red) 18%, transparent)';
   }
+  const useDarkOverlay = dark && prefersDark();
   const style = {
-    color,
-    background: dark ? 'rgba(0,0,0,.55)' : bg,
-    backdropFilter: dark ? 'blur(8px)' : undefined,
+    color: useDarkOverlay ? color : color,
+    background: useDarkOverlay ? 'rgba(0,0,0,.55)' : bg,
+    backdropFilter: useDarkOverlay ? 'blur(8px)' : undefined,
     fontFamily: '"IBM Plex Mono", monospace',
     fontSize: '8.5px',
     letterSpacing: '.08em',

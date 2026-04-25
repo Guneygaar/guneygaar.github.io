@@ -189,7 +189,7 @@ function Fab() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        boxShadow: '0 12px 32px -8px rgba(0,0,0,.35)',
+        boxShadow: 'var(--shadow-fab, 0 12px 32px -8px rgba(0,0,0,.35))',
         zIndex: 14
       }}>
       <Plus size={22} />
