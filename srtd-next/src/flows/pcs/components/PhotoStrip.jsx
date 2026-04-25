@@ -314,28 +314,6 @@ export function PhotoStrip({ post, canEdit }) {
             >
               <ThumbImg src={src} />
             </button>
-
-            {/* Top-right cluster: kebab only (count + expand removed in PR-3.10) */}
-            {canEdit && !isClient ? (
-              <div
-                className="absolute top-3 right-3 flex items-center gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <PhotoKebabMenu
-                  context="card"
-                  canSetHero={i !== 0}
-                  canReorder={count > 1}
-                  onAdd={() => fileInputRef.current?.click()}
-                  onSetHero={() => setAsHero(i)}
-                  onReorder={() => {
-                    openLightbox(i);
-                    setReorderOpen(true);
-                  }}
-                  onDownload={() => downloadUrl(src)}
-                  onRemove={() => removeAt(i)}
-                />
-              </div>
-            ) : null}
           </div>
         ))}
       </div>

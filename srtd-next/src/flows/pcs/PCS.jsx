@@ -228,7 +228,7 @@ export function PCS() {
                 onOpenStage={() => setDetailSheetOpen(true)}
               />
               <PhotoStrip post={post} canEdit={canEdit} />
-              <div className="px-3 pt-3 pb-1">
+              <div className="px-3 pt-3 pb-5">
                 {editingTitle && canEdit ? (
                   <input
                     type="text"

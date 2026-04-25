@@ -1,5 +1,5 @@
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
-import { ChevronDown, Sparkles, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Sparkles, ShieldCheck, Copy } from 'lucide-react';
 import { EditIcon } from '../../../core/ui/index.js';
 import { wordCount, renderRichText } from '../utils/mentions.jsx';
 import { usePcsStore } from '../pcsStore.js';
@@ -8,6 +8,8 @@ import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js'
 import { useIsClient, useAppState } from '../../../core/stores/appState.js';
 import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
 import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
+import { useLongPress } from '../../plan/hooks/useLongPress.js';
+import { toast } from '../../../core/bridges/toast.js';
 
 const TEXTAREA_MAX_HEIGHT = 400;
 const GREEN_TOKEN = '#7DBE8A';
@@ -45,6 +47,47 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
   const lastSeenEditRequest = useRef(captionEditRequested);
   const { commit } = useOptimisticPatch();
 
+  const copyLongPress = useLongPress({
+    enabled: !!canEdit,
+    threshold: 500,
+    onLongPress: () => {
+      try { usePcsStore.getState().requestCaptionEdit(); } catch (e) { /* noop */ }
+    },
+  });
+
+  async function copyCaption() {
+    const text = post?.caption || '';
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch (e) { /* fall through */ }
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) { /* noop */ }
+    }
+    try { logClick('pcs_react_caption_copy', { len: text.length }); } catch (e) {}
+    toast('Copied', 'success');
+  }
+
+  function handleCopyClick(e) {
+    if (copyLongPress.onClick) {
+      copyLongPress.onClick(e);
+      if (e.defaultPrevented) return;
+    }
+    copyCaption();
+  }
+
   // Measure caption overflow after render.
   useLayoutEffect(() => {
     if (editing || isEmpty) { setOverflows(false); return; }
@@ -72,7 +115,7 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
     setShowFull(false);
   }, [post?.post_id]);
 
-  // External edit trigger from KickerRow Copy long-press.
+  // External edit trigger from Copy long-press.
   useEffect(() => {
     if (captionEditRequested === lastSeenEditRequest.current) return;
     lastSeenEditRequest.current = captionEditRequested;
@@ -253,6 +296,18 @@ export function CaptionBlock({ post, canEdit, isAdmin }) {
               />
             </button>
           ) : null}
+
+          <button
+            type="button"
+            {...copyLongPress}
+            onClick={handleCopyClick}
+            onContextMenu={(e) => e.preventDefault()}
+            className="w-8 h-8 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
+            style={{ transition: 'background 0.08s ease, color 0.1s ease, transform 0.08s ease' }}
+            aria-label="Copy caption"
+          >
+            <Copy size={14} strokeWidth={1.75} />
+          </button>
 
           {canEdit ? (
             <button
