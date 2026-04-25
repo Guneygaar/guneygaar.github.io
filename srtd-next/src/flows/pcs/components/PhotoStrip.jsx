@@ -70,6 +70,14 @@ export function PhotoStrip({ post, canEdit }) {
   const actor = useAppState((s) => s.user?.email || '');
   const isClient = useIsClient();
 
+  const comments = usePcsStore((s) => s.comments);
+  const internalNotes = usePcsStore((s) => s.internalNotes);
+  const flashCommentId = usePcsStore((s) => s.flashCommentId);
+  const flashComment = usePcsStore((s) => s.flashComment);
+  const carouselScrollRequested = usePcsStore((s) => s.carouselScrollRequested);
+  const carouselScrollTarget = usePcsStore((s) => s.carouselScrollTarget);
+  const lastSeenScroll = useRef(carouselScrollRequested);
+
   const [lightIdx, setLightIdx] = useState(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -79,6 +87,74 @@ export function PhotoStrip({ post, canEdit }) {
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
   const fadeTimer = useRef(null);
+
+  // Photo anchors: non-resolved, non-deleted, with a numeric image_index.
+  const photoAnchors = React.useMemo(() => {
+    const all = [...(Array.isArray(comments) ? comments : []), ...(Array.isArray(internalNotes) ? internalNotes : [])];
+    const list = [];
+    for (const c of all) {
+      if (!c) continue;
+      if (c.resolved) continue;
+      if (c.deleted) continue;
+      if (c.anchor_type !== 'photo') continue;
+      const p = c.anchor_payload || null;
+      if (!p) continue;
+      const ii = typeof p.image_index === 'number' ? p.image_index : -1;
+      const xp = typeof p.x_pct === 'number' ? p.x_pct : null;
+      const yp = typeof p.y_pct === 'number' ? p.y_pct : null;
+      if (ii < 0 || xp == null || yp == null) continue;
+      list.push({ id: c.id, image_index: ii, x_pct: xp, y_pct: yp });
+    }
+    return list;
+  }, [comments, internalNotes]);
+
+  function focusComment(id) {
+    flashComment(id);
+    try {
+      const row = document.querySelector(`[data-comment-row-id="${id}"]`);
+      if (row && typeof row.scrollIntoView === 'function') {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch (e) { /* noop */ }
+    setTimeout(() => {
+      try { flashComment(null); } catch (e) {}
+    }, 1600);
+  }
+
+  // External carousel scroll trigger (anchor badge in CommentRow).
+  useEffect(() => {
+    if (carouselScrollRequested === lastSeenScroll.current) return;
+    lastSeenScroll.current = carouselScrollRequested;
+    const el = scrollRef.current;
+    if (!el) return;
+    const target = Math.max(0, Math.min(carouselScrollTarget, count - 1));
+    const w = el.offsetWidth || 1;
+    try { el.scrollTo({ left: target * w, behavior: 'smooth' }); } catch (e) { el.scrollLeft = target * w; }
+  }, [carouselScrollRequested, carouselScrollTarget, count]);
+
+  // Capture an anchor at (x_pct, y_pct) on the active image. Used by
+  // both the carousel image button (via onTapCapture) and the Lightbox
+  // imageOverlay tap-layer.
+  function captureAnchorAt(rect, clientX, clientY, imageIndex) {
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    const x_pct = Math.max(0, Math.min(100, x));
+    const y_pct = Math.max(0, Math.min(100, y));
+    try {
+      usePcsStore.getState().requestAnchor({
+        type: 'photo',
+        image_index: imageIndex,
+        x_pct,
+        y_pct,
+      });
+      logClick('pcs_react_anchor_photo_capture', {
+        image_index: imageIndex,
+        x_pct: Math.round(x_pct),
+        y_pct: Math.round(y_pct),
+      });
+    } catch (e) { /* noop */ }
+  }
 
   function pingDots() {
     if (fadeTimer.current) clearTimeout(fadeTimer.current);
@@ -245,6 +321,47 @@ export function PhotoStrip({ post, canEdit }) {
     setLightIdx(i);
   }
 
+  function dotsForIndex(i) {
+    return photoAnchors.filter((a) => a.image_index === i);
+  }
+
+  // Tap-to-anchor over the active image, used inside Lightbox via the
+  // imageOverlay render prop. % coords are derived from the live img
+  // rect so they stay correct regardless of objectFit:contain bars.
+  function lightboxImageOverlay(activeIdx) {
+    const dots = dotsForIndex(activeIdx);
+    return (
+      <div
+        className="absolute inset-0"
+        style={{ zIndex: 3, pointerEvents: 'none' }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{ pointerEvents: 'auto' }}
+          onClick={(e) => {
+            if (e.target !== e.currentTarget) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            captureAnchorAt(rect, e.clientX, e.clientY, activeIdx);
+          }}
+        >
+          {dots.map((d) => {
+            const isFlash = flashCommentId === d.id;
+            return (
+              <button
+                key={d.id}
+                type="button"
+                className={`anchor-photo-dot${isFlash ? ' is-flashing' : ''}`}
+                style={{ left: `${d.x_pct}%`, top: `${d.y_pct}%` }}
+                onClick={(e) => { e.stopPropagation(); focusComment(d.id); }}
+                aria-label="Open anchored comment"
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // Empty state
   if (count === 0) {
     if (!canEdit) return null;
@@ -297,25 +414,49 @@ export function PhotoStrip({ post, canEdit }) {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {imgs.map((src, i) => (
-          <div
-            key={`${src}-${i}`}
-            className={`relative flex-shrink-0 bg-bg-2 ${isClient ? 'aspect-square' : ''}`}
-            style={{
-              width: '100%',
-              ...(isClient ? {} : { aspectRatio: '1 / 1' }),
-              scrollSnapAlign: 'start',
-            }}
-          >
-            <button
-              onClick={() => openLightbox(i)}
-              className="w-full h-full block"
-              aria-label={`Photo ${i + 1} of ${count}`}
+        {imgs.map((src, i) => {
+          const dots = dotsForIndex(i);
+          return (
+            <div
+              key={`${src}-${i}`}
+              className={`relative flex-shrink-0 bg-bg-2 ${isClient ? 'aspect-square' : ''}`}
+              style={{
+                width: '100%',
+                ...(isClient ? {} : { aspectRatio: '1 / 1' }),
+                scrollSnapAlign: 'start',
+              }}
             >
-              <ThumbImg src={src} />
-            </button>
-          </div>
-        ))}
+              <button
+                onClick={() => openLightbox(i)}
+                className="w-full h-full block"
+                aria-label={`Photo ${i + 1} of ${count}`}
+              >
+                <ThumbImg src={src} />
+              </button>
+              {dots.length > 0 ? (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ zIndex: 3 }}
+                  aria-hidden="true"
+                >
+                  {dots.map((d) => {
+                    const isFlash = flashCommentId === d.id;
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        className={`anchor-photo-dot${isFlash ? ' is-flashing' : ''}`}
+                        style={{ left: `${d.x_pct}%`, top: `${d.y_pct}%` }}
+                        onClick={(e) => { e.stopPropagation(); focusComment(d.id); }}
+                        aria-label="Open anchored comment"
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
       <CarouselDots count={count} current={current} active={dotsActive} />
@@ -344,6 +485,7 @@ export function PhotoStrip({ post, canEdit }) {
           startIndex={lightIdx}
           onClose={() => setLightIdx(null)}
           onIndexChange={(i) => setLightIdx(i)}
+          imageOverlay={lightboxImageOverlay}
           topRightSlot={
             canEdit && !isClient ? (
               <PhotoKebabMenu

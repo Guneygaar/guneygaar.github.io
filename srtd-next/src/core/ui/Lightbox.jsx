@@ -17,6 +17,7 @@ export function Lightbox({
   onClose,
   topRightSlot = null,
   onIndexChange,
+  imageOverlay = null,
 }) {
   if (urls && !Array.isArray(urls)) {
     if (typeof window !== 'undefined' && typeof window.logError === 'function') {
@@ -131,14 +132,19 @@ export function Lightbox({
         </div>
       </div>
 
-      {/* Image */}
-      <img
-        src={safe[idx]}
-        alt=""
-        className="max-w-full max-h-full"
-        style={{ objectFit: 'contain' }}
+      {/* Image (wrapped so anchor overlay can absolute-position over it) */}
+      <div
+        className="relative inline-flex items-center justify-center max-w-full max-h-full"
         onClick={(e) => e.stopPropagation()}
-      />
+      >
+        <img
+          src={safe[idx]}
+          alt=""
+          className="max-w-full max-h-full block"
+          style={{ objectFit: 'contain' }}
+        />
+        {imageOverlay ? imageOverlay(idx) : null}
+      </div>
 
       {/* Prev / Next */}
       {safe.length > 1 ? (

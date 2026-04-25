@@ -58,6 +58,16 @@
        neutral wash on the warm-paper surface. Active state uses
        --c-terracotta directly (no token override needed). */
     --c-send-idle-bg:   color-mix(in srgb, #000000 8%, transparent);
+    /* PR-3.13 anchor system — caption mark + photo dot + flash highlight.
+       Highlighter-yellow against warm-paper for the caption mark; the
+       comment-row flash uses a translucent terracotta wash so it reads
+       on either surface tone. Photo dot paints over the photo and is
+       identical in both palettes (same exception class as carousel dots). */
+    --c-hla:            color-mix(in srgb, #F2C94C 55%, transparent);
+    --c-hla-edge:       color-mix(in srgb, #F2C94C 80%, transparent);
+    --c-anchor-flash:   color-mix(in srgb, var(--c-terracotta) 18%, transparent);
+    --c-anchor-dot:     #C15F3C;
+    --c-anchor-dot-ring:#FFFFFF;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -104,6 +114,15 @@
       --c-dot-shadow:     rgba(0,0,0,0.30);
       /* PR-3.11 composer send button idle bg — warm-ink dark equivalent. */
       --c-send-idle-bg:   color-mix(in srgb, #FFFFFF 10%, transparent);
+      /* PR-3.13 anchor system — dark variants. Caption mark uses a
+         deeper amber so the loud text on top stays readable on warm-ink;
+         flash wash uses a hotter terracotta. Photo dot identical
+         (paints over photo, not UI surface). */
+      --c-hla:            color-mix(in srgb, #F6A623 40%, transparent);
+      --c-hla-edge:       color-mix(in srgb, #F6A623 70%, transparent);
+      --c-anchor-flash:   color-mix(in srgb, var(--c-terracotta) 26%, transparent);
+      --c-anchor-dot:     #C15F3C;
+      --c-anchor-dot-ring:#FFFFFF;
     }
   }
 }
@@ -201,5 +220,72 @@
   .plan-list-date-btn[data-pressing="true"] {
     background-color: color-mix(in srgb, var(--c-terracotta) 18%, transparent);
     transition: background-color 120ms ease;
+  }
+
+  /* PR-3.13 anchor system. Caption mark wraps an anchored substring in
+     the caption body; clicking scrolls the matching comment row into
+     view and flashes both. Token-driven so light + dark auto-flip. */
+  .anchor-mark {
+    background-color: var(--c-hla);
+    box-shadow: inset 0 -1px 0 0 var(--c-hla-edge);
+    color: inherit;
+    cursor: pointer;
+    padding: 0 1px;
+    border-radius: 2px;
+    transition: background-color 0.18s ease;
+  }
+  .anchor-mark:hover {
+    background-color: var(--c-hla-edge);
+  }
+  .anchor-mark.is-flashing {
+    animation: anchorMarkFlash 1.5s ease-out;
+  }
+  @keyframes anchorMarkFlash {
+    0%, 40% { background-color: var(--c-hla-edge); }
+    100%    { background-color: var(--c-hla); }
+  }
+
+  .anchor-row-flash {
+    animation: anchorRowFlash 1.5s ease-out;
+  }
+  @keyframes anchorRowFlash {
+    0%   { background-color: var(--c-anchor-flash); }
+    100% { background-color: transparent; }
+  }
+
+  /* Composer chip slide-in. Mirrors mobile reply preview rhythm. */
+  .anchor-chip-enter {
+    animation: anchorChipIn 0.2s ease-out;
+  }
+  @keyframes anchorChipIn {
+    0%   { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Photo anchor dot — terracotta core with white ring, paints over
+     photo so identical in both modes. Matches CarouselDots z-stacking
+     (z=4) by sitting at z=3 (below dots, above image). */
+  .anchor-photo-dot {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    background: var(--c-anchor-dot);
+    border: 2px solid var(--c-anchor-dot-ring);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.18s ease;
+  }
+  .anchor-photo-dot:hover {
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  .anchor-photo-dot.is-flashing {
+    animation: anchorDotFlash 1.5s ease-out;
+  }
+  @keyframes anchorDotFlash {
+    0%   { transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 0 4px var(--c-anchor-flash); }
+    100% { transform: translate(-50%, -50%) scale(1);    box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
   }
 }
