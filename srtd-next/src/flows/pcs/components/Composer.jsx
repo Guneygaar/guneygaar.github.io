@@ -26,12 +26,15 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [mentionOpen, setMentionOpen] = useState(false);
   const [mentionQuery, setMentionQuery] = useState('');
-  const [anchor, setAnchor] = useState(null);
   const taRef = useRef(null);
   const photoInputRef = useRef(null);
   const fileInputRef = useRef(null);
   const chipRef = useRef(null);
   const anchorRequested = usePcsStore((s) => s.anchorRequested);
+  // PR-3.13.1: read live pendingAnchor so the chip thumbnail/coords
+  // update in real time while the draft pin is being dragged in the
+  // Lightbox. Local-state shadow was removed for the same reason.
+  const anchor = usePcsStore((s) => s.pendingAnchor);
   const lastSeenAnchor = useRef(anchorRequested);
 
   useEffect(() => {
@@ -39,7 +42,6 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
     lastSeenAnchor.current = anchorRequested;
     const next = usePcsStore.getState().pendingAnchor;
     if (!next) return;
-    setAnchor(next);
     setTimeout(() => {
       try { taRef.current && taRef.current.focus(); } catch (e) {}
       setTimeout(() => {
@@ -53,7 +55,6 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
   }, [anchorRequested]);
 
   function clearAnchorChip() {
-    setAnchor(null);
     try { usePcsStore.getState().clearAnchor(); } catch (e) {}
   }
 
@@ -269,7 +270,6 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
       setAttachedFiles([]);
       setTaskAttachments([]);
       setPolishPreview(null);
-      setAnchor(null);
       try { usePcsStore.getState().clearAnchor(); } catch (e) {}
       if (onCancelReply) onCancelReply();
       if (isInternalTab) {
@@ -355,12 +355,53 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
       {anchor && (
         <div
           ref={chipRef}
-          className="anchor-chip-enter mx-3 mt-2 mb-1 flex items-start gap-2 bg-bg-2 border border-divider-warm rounded-sm2"
+          className="anchor-chip-enter mx-3 mt-2 mb-1 flex items-center gap-3 bg-bg-2 border border-divider-warm rounded-sm2"
           style={{
             borderLeft: '3px solid var(--c-terracotta)',
             padding: '10px 12px',
           }}
         >
+          {anchor.type === 'photo' ? (() => {
+            const imgs = Array.isArray(post?.images) ? post.images : (post?.images?.urls || []);
+            const src = imgs[anchor.image_index || 0] || '';
+            return (
+              <div
+                className="anchor-chip-thumb flex-shrink-0"
+                style={{
+                  position: 'relative',
+                  width: 60,
+                  height: 60,
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                  background: 'var(--c-bg-3)',
+                }}
+              >
+                {src ? (
+                  <img
+                    src={src}
+                    alt=""
+                    draggable={false}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                ) : null}
+                <span
+                  className="anchor-photo-dot is-draft is-thumb"
+                  style={{
+                    left: `${anchor.x_pct || 0}%`,
+                    top: `${anchor.y_pct || 0}%`,
+                  }}
+                  aria-hidden="true"
+                >
+                  <span className="anchor-photo-dot-plus">+</span>
+                </span>
+              </div>
+            );
+          })() : null}
           <div className="flex-1 min-w-0">
             <div
               className="font-mono text-2xs text-terracotta tracking-widest uppercase font-semibold"
@@ -368,16 +409,20 @@ export function Composer({ activeTab, replyTo, onCancelReply }) {
             >
               {anchor.type === 'caption' ? 'Replying to caption' : 'Replying to photo'}
             </div>
-            <div
-              className="font-serif text-sm text-text-mid italic truncate"
-              style={{ maxWidth: '100%' }}
-            >
-              {anchor.type === 'caption'
-                ? (typeof anchor.text === 'string'
-                    ? '“' + (anchor.text.length > 120 ? anchor.text.slice(0, 120) + '…' : anchor.text) + '”'
-                    : '“snippet”')
-                : `Pin at ${Math.round(anchor.x_pct || 0)}%, ${Math.round(anchor.y_pct || 0)}% · photo ${(anchor.image_index || 0) + 1}`}
-            </div>
+            {anchor.type === 'caption' ? (
+              <div
+                className="font-serif text-sm text-text-mid italic truncate"
+                style={{ maxWidth: '100%' }}
+              >
+                {typeof anchor.text === 'string'
+                  ? '“' + (anchor.text.length > 120 ? anchor.text.slice(0, 120) + '…' : anchor.text) + '”'
+                  : '“snippet”'}
+              </div>
+            ) : (
+              <div className="font-mono text-2xs text-text-soft tracking-wide">
+                Photo {(anchor.image_index || 0) + 1} {'·'} {Math.round(anchor.x_pct || 0)}%, {Math.round(anchor.y_pct || 0)}%
+              </div>
+            )}
           </div>
           <button
             onClick={clearAnchorChip}
