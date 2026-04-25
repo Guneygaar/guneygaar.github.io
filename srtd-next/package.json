@@ -1,7 +1,7 @@
 {
   "name": "sorted-react",
   "private": true,
-  "version": "0.9.15",
+  "version": "0.9.16",
   "type": "module",
   "description": "Sorted React runtime. Strangler-fig migration target.",
   "scripts": {
