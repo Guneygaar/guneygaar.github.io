@@ -110,7 +110,7 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
       onMouseUp={cancelLP}
       onMouseLeave={cancelLP}
       onContextMenu={(e) => { e.preventDefault(); onLongPress && onLongPress(comment, isInternal); }}>
-      <Avatar name={authorName === 'Unknown' ? 'U' : authorName} role={roleKey} size="md" avatarUrl={avatarUrl} />
+      <Avatar name={authorName === 'Unknown' ? 'U' : authorName} role={roleKey} size={isReply ? 'sm' : 'md'} avatarUrl={avatarUrl} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 mb-[3px] flex-wrap">
           <span className={`text-sm font-semibold tracking-tight ${authorName === 'Unknown' ? 'text-text-dim' : 'text-text-loud'}`}>{authorName}</span>
