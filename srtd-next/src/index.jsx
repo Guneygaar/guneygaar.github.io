@@ -6,12 +6,12 @@ import { createPostFlow } from './flows/create-post/index.js';
 import { pcsFlow } from './flows/pcs/index.js';
 
 if (typeof window !== 'undefined') {
-  console.log('[sorted-react] bundle loaded, v0.9.13');
+  console.log('[sorted-react] bundle loaded, v0.9.14');
 
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.9.13';
+  window.SortedReact.version   = '0.9.14';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;
@@ -39,6 +39,28 @@ if (typeof window !== 'undefined') {
         setTimeout(() => {
           try { pcsFlow.open(window.__pcsAutoOpenPostId); }
           catch (e) { console.error('[sorted-react/pcs] auto-open failed', e); }
+        }, 200);
+      }
+
+      // Plan React deep-link drain. Set by 04-router.js when ?plan_react=1
+      // is on with ?open=POST_ID. Brief IDs (REQ-*) route to vanilla
+      // _openBriefSheet (z-index 9500, above Plan's 1400). Regular post
+      // IDs route to pcsFlow.open. setTimeout matches the __pcsAutoOpenPostId
+      // delay so activateRole + React mount have settled.
+      if (window._planReactPendingOpen) {
+        const pendingId = window._planReactPendingOpen;
+        window._planReactPendingOpen = null;
+        setTimeout(() => {
+          try {
+            const isBrief = String(pendingId).indexOf('REQ-') === 0;
+            if (isBrief && typeof window._openBriefSheet === 'function') {
+              window._openBriefSheet(pendingId);
+            } else {
+              pcsFlow.open(pendingId);
+            }
+          } catch (e) {
+            console.error('[sorted-react/plan] deep-link open failed', e);
+          }
         }, 200);
       }
     } catch (err) {

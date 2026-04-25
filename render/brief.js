@@ -807,6 +807,36 @@ window._openBriefSheet = async function(postId) {
   document.body.appendChild(overlay);
   document.body.style.overflow = 'hidden';
 
+  // Plan React hook: dispatch sorted:brief-sheet-opened so realtimeBridge
+  // pauses snapshot application while the brief sheet is on screen.
+  // Pair with sorted:brief-sheet-closed observed via MutationObserver
+  // below — single choke point covers every close path (BACK button,
+  // _closeBrief, _reopenBrief, _createPostFromBrief, clientViewPost).
+  try {
+    window.dispatchEvent(new CustomEvent('sorted:brief-sheet-opened', {
+      detail: { postId: postId }
+    }));
+  } catch (e) {}
+  try {
+    var _briefMo = new MutationObserver(function(records) {
+      for (var i = 0; i < records.length; i++) {
+        var rem = records[i].removedNodes;
+        for (var j = 0; j < rem.length; j++) {
+          if (rem[j] === overlay) {
+            try {
+              window.dispatchEvent(new CustomEvent('sorted:brief-sheet-closed', {
+                detail: { postId: postId }
+              }));
+            } catch (e2) {}
+            _briefMo.disconnect();
+            return;
+          }
+        }
+      }
+    });
+    _briefMo.observe(document.body, { childList: true });
+  } catch (e) {}
+
   // Wire Enter-key submit (Shift+Enter = newline) for the comment textarea
   var _cmtInputEl = document.getElementById('brief-cmt-input-' + postId);
   if (_cmtInputEl) {
