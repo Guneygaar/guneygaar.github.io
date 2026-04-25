@@ -5,7 +5,7 @@ import { Composer } from './Composer.jsx';
 
 export function FullScreenThread({
   title, isInternal, comments, userRoles, reactions,
-  currentEmail, onClose,
+  currentEmail, onClose, onReplyToComment,
 }) {
   return (
     <FullScreenEditor title={title} onClose={onClose}>
@@ -18,7 +18,7 @@ export function FullScreenThread({
             currentEmail={currentEmail}
             isInternal={isInternal}
             truncateAt={null}
-            onReply={() => {}}
+            onReply={(c) => { onReplyToComment(c); onClose(); }}
             onLongPress={() => {}}
           />
         </div>
