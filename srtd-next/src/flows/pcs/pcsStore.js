@@ -20,6 +20,15 @@ export const usePcsStore = create((set) => ({
   // post-row realtime refresh paths should check this set and skip
   // any field name in it to avoid clobbering an optimistic edit.
   optimisticFields: new Set(),
+  // Comment ids currently expanded via Read more. Hoisted out of
+  // CommentRow local state so realtime echoes that remount the row
+  // do not collapse the expansion.
+  expandedComments: new Set(),
+  toggleExpanded: (id) => set((s) => {
+    const next = new Set(s.expandedComments);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return { expandedComments: next };
+  }),
   setContextList: (list) => set({ contextList: Array.isArray(list) ? list : [] }),
   reset: () => set({
     post: null,
@@ -34,6 +43,7 @@ export const usePcsStore = create((set) => ({
     activity: [],
     activityError: null,
     contextList: [],
-    optimisticFields: new Set()
+    optimisticFields: new Set(),
+    expandedComments: new Set()
   })
 }));
