@@ -6,7 +6,6 @@ import { useIsClient } from '../../../core/stores/appState.js';
 import { daysSince } from '../../plan/shared/dateUtils.js';
 import { usePcsFlowState } from '../flowStore.js';
 import { usePcsStore } from '../pcsStore.js';
-import { PcsKebabMenu } from './PcsKebabMenu.jsx';
 import { useLongPress } from '../../plan/hooks/useLongPress.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick } from '../../../core/bridges/logging.js';
@@ -16,7 +15,7 @@ import { logClick } from '../../../core/bridges/logging.js';
 // N strictly exceeds that threshold (matches "exceeds 7 days" requirement).
 const STAGE_AGING_THRESHOLD_DAYS = 7;
 
-export function KickerRow({ post, isAdmin, canMove, canEdit, onOpenSheet, onOpenStage, actor }) {
+export function KickerRow({ post, isAdmin, canMove, canEdit, onOpenSheet, onOpenStage }) {
   const [compressed, setCompressed] = useState(false);
   const isClient = useIsClient();
   const currentPostId = usePcsFlowState((s) => s.postId);
@@ -197,14 +196,6 @@ export function KickerRow({ post, isAdmin, canMove, canEdit, onOpenSheet, onOpen
         >
           <Copy size={16} strokeWidth={1.75} />
         </button>
-        {!isClient ? (
-          <PcsKebabMenu
-            post={post}
-            actor={actor}
-            canEdit={canMove}
-            onOpenSheet={onOpenSheet}
-          />
-        ) : null}
         <button
           onClick={onOpenSheet}
           className="w-9 h-9 inline-flex items-center justify-center rounded-sm2 text-text-mid hover:text-text-loud active:bg-bg-2 active:scale-[0.96]"
