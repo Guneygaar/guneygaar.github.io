@@ -2,7 +2,6 @@
 // Threads are ordered by latest activity (newest reply or root) DESC.
 // Within a thread: root first, replies in chronological order beneath.
 // Each entry carries a `depth` field (0 for root, 1+ for replies).
-// CommentRow continues to call resolveParent for the parent quote bar.
 
 export function filterAndIndex(comments) {
   if (!Array.isArray(comments)) return { visible: [], byId: new Map() };

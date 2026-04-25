@@ -3,10 +3,9 @@ import { Heart, Reply, Check, CircleDot } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { timeAgo } from '../utils/timeAgo.js';
 import { renderRichText } from '../utils/mentions.jsx';
-import { displayNameFromEmail, roleFromEmail, findUserRole } from '../utils/users.js';
+import { roleFromEmail, findUserRole } from '../utils/users.js';
 import { getImageAttachments, getTaskAttachments } from '../utils/attachments.js';
 import { groupReactions } from '../utils/reactions.js';
-import { resolveParent } from '../utils/threading.js';
 import { addReaction, removeReaction } from '../../../core/api/reactions.js';
 import { resolveComment, unresolveComment } from '../../../core/api/comments.js';
 import { useAppState } from '../../../core/stores/appState.js';
@@ -18,7 +17,7 @@ import { CommentLightbox } from './CommentLightbox.jsx';
 
 const LIKE_EMOJI = '\u2661';
 
-export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
+export function CommentRow({ comment, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
   const expanded = usePcsStore((s) => s.expandedComments.has(comment.id));
   const toggle = usePcsStore((s) => s.toggleExpanded);
   const [busy, setBusy] = useState(false);
@@ -36,10 +35,6 @@ export function CommentRow({ comment, byId, userRoles, reactions, currentEmail, 
   const avatarUrl = (userRecord && userRecord.avatar_url) || null;
   const time = timeAgo(comment.created_at);
   const isReply = (comment.depth || 0) > 0;
-
-  const { parent, hasGrandparent } = resolveParent(comment, byId);
-  const parentDeleted = !!(comment.reply_to && (!parent || parent.deleted));
-  const parentName = parent ? (displayNameFromEmail(parent.author, userRoles) || 'Unknown') : null;
 
   const imageAtts = getImageAttachments(comment.attachments);
   const flatImageUrls = imageAtts.flatMap((a) => a.urls);
