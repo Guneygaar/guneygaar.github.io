@@ -48,6 +48,12 @@
        palette uses the existing --c-purple / --c-red light shades so
        contrast stays readable on warm-paper. */
     --c-role-creative:#6B4FD9; --c-role-client:#D83838;
+    /* PR-3.10 carousel dots paint over photo, not UI surface — identical
+       in both palettes. White dots + 30% black drop shadow stay legible
+       on both bright and dark images. */
+    --c-dot-idle:       #FFFFFF;
+    --c-dot-active:     #FFFFFF;
+    --c-dot-shadow:     rgba(0,0,0,0.30);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -88,6 +94,10 @@
       /* PR-C1: dark mode owner shades match vanilla render/pipeline.js
          (Creative #9b87f5, Client #FF4B4B). Servicing keeps #22D3EE. */
       --c-role-creative:#9b87f5; --c-role-client:#FF4B4B;
+      /* PR-3.10 carousel dot tokens — IDENTICAL to light by design. */
+      --c-dot-idle:       #FFFFFF;
+      --c-dot-active:     #FFFFFF;
+      --c-dot-shadow:     rgba(0,0,0,0.30);
     }
   }
 }

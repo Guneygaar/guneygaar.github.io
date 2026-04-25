@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { ImagePlus, ImageOff, ArrowLeft, ArrowRight, Maximize2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ImagePlus, ImageOff, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Lightbox, PhotoKebabMenu } from '../../../core/ui';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
@@ -75,8 +75,23 @@ export function PhotoStrip({ post, canEdit }) {
   const [busy, setBusy] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [scrollIdx, setScrollIdx] = useState(0);
+  const [dotsActive, setDotsActive] = useState(true);
   const fileInputRef = useRef(null);
   const scrollRef = useRef(null);
+  const fadeTimer = useRef(null);
+
+  function pingDots() {
+    if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    setDotsActive(true);
+    fadeTimer.current = setTimeout(() => setDotsActive(false), 4000);
+  }
+
+  useEffect(() => {
+    pingDots();
+    return () => {
+      if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    };
+  }, [scrollIdx, post?.post_id]);
 
   function onScroll() {
     const el = scrollRef.current;
@@ -84,6 +99,10 @@ export function PhotoStrip({ post, canEdit }) {
     const w = el.offsetWidth || 1;
     const next = Math.round(el.scrollLeft / w);
     if (next !== scrollIdx) setScrollIdx(next);
+  }
+
+  function onTouchStart() {
+    pingDots();
   }
 
   async function onPickFiles(e) {
@@ -271,6 +290,7 @@ export function PhotoStrip({ post, canEdit }) {
       <div
         ref={scrollRef}
         onScroll={onScroll}
+        onTouchStart={onTouchStart}
         className="flex overflow-x-auto scrollbar-none"
         style={{
           scrollSnapType: 'x mandatory',
@@ -295,40 +315,12 @@ export function PhotoStrip({ post, canEdit }) {
               <ThumbImg src={src} />
             </button>
 
-            {/* Top-right cluster: count badge + expand pill + kebab */}
-            <div
-              className="absolute top-3 right-3 flex items-center gap-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {count > 1 ? (
-                <div
-                  className="font-mono text-xs tracking-widest uppercase
-                             px-2.5 py-1 rounded-pill"
-                  style={{
-                    background: 'rgba(0,0,0,0.55)',
-                    color: '#F4F3EE',
-                    fontFeatureSettings: "'tnum' 1",
-                  }}
-                >
-                  {i + 1} / {count}
-                </div>
-              ) : null}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openLightbox(i);
-                }}
-                className="inline-flex items-center justify-center
-                           w-8 h-8 rounded-pill"
-                style={{
-                  background: 'rgba(0,0,0,0.55)',
-                  color: '#F4F3EE',
-                }}
-                aria-label="Expand photo"
+            {/* Top-right cluster: kebab only (count + expand removed in PR-3.10) */}
+            {canEdit && !isClient ? (
+              <div
+                className="absolute top-3 right-3 flex items-center gap-2"
+                onClick={(e) => e.stopPropagation()}
               >
-                <Maximize2 size={14} />
-              </button>
-              {canEdit && !isClient ? (
                 <PhotoKebabMenu
                   context="card"
                   canSetHero={i !== 0}
@@ -342,11 +334,13 @@ export function PhotoStrip({ post, canEdit }) {
                   onDownload={() => downloadUrl(src)}
                   onRemove={() => removeAt(i)}
                 />
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
         ))}
       </div>
+
+      <CarouselDots count={count} current={current} active={dotsActive} />
 
       {/* Upload progress overlay */}
       {uploadProgress ? (
@@ -401,6 +395,69 @@ export function PhotoStrip({ post, canEdit }) {
           }}
         />
       ) : null}
+    </div>
+  );
+}
+
+/* ---------- CarouselDots (iOS Photos windowing pattern) ---------- */
+
+const DOT_WINDOW = 5;
+
+function CarouselDots({ count, current, active }) {
+  if (!count || count <= 1) return null;
+  const windowSize = Math.min(DOT_WINDOW, count);
+  // Center-shift window: keep active in middle when possible.
+  let start = current - Math.floor(windowSize / 2);
+  if (start < 0) start = 0;
+  if (start + windowSize > count) start = count - windowSize;
+
+  const slots = [];
+  for (let i = 0; i < windowSize; i += 1) {
+    const dotIndex = start + i;
+    const isActive = dotIndex === current;
+    // Edge shrink: only when there are more dots beyond the visible window.
+    const isEdgeShrink =
+      count > DOT_WINDOW &&
+      ((i === 0 && start > 0) ||
+        (i === windowSize - 1 && start + windowSize < count));
+    slots.push({ key: dotIndex, isActive, isEdgeShrink });
+  }
+
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 flex items-center justify-center"
+      style={{
+        bottom: 14,
+        transform: 'translateX(-50%)',
+        gap: 6,
+        opacity: active ? 1 : 0.4,
+        transition: 'opacity 200ms ease',
+        filter: 'drop-shadow(0 1px 2px var(--c-dot-shadow))',
+        zIndex: 4,
+      }}
+      aria-hidden="true"
+    >
+      {slots.map(({ key, isActive, isEdgeShrink }) => {
+        const w = isActive ? 18 : isEdgeShrink ? 4 : 6;
+        const h = isActive ? 6 : isEdgeShrink ? 4 : 6;
+        const r = isActive ? 3 : '50%';
+        return (
+          <span
+            key={key}
+            style={{
+              display: 'inline-block',
+              width: w,
+              height: h,
+              borderRadius: r,
+              background: isActive
+                ? 'var(--c-dot-active)'
+                : 'var(--c-dot-idle)',
+              transition:
+                'width 180ms ease, height 180ms ease, border-radius 180ms ease',
+            }}
+          />
+        );
+      })}
     </div>
   );
 }
