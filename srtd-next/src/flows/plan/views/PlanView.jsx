@@ -3,7 +3,7 @@
 // when usePlanStore.currentView === 'plan'. Tokens consumed via CSS
 // vars from tokens.css; never hardcoded hex.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, X } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { openInPcs } from '../shared/openInPcs.js';
@@ -12,7 +12,7 @@ import { useCellDatePicker } from '../hooks/useCellDatePicker.js';
 
 const DEFAULT_CHANNELS = ['linkedin', 'instagram', 'twitter'];
 
-const CHANNEL_LABELS = {
+export const CHANNEL_LABELS = {
   linkedin:  'LI',
   instagram: 'IG',
   twitter:   'X',
@@ -176,9 +176,9 @@ function CellChip({ status }) {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '4px',
-      marginTop: '5px',
-      padding: '3px 6px',
+      padding: '2px 6px',
       border: `1px solid ${color}`,
+      borderRadius: '3px',
       background: `color-mix(in srgb, ${color} 14%, transparent)`,
       fontFamily: FONT_MONO,
       fontSize: '9px',
@@ -191,8 +191,25 @@ function CellChip({ status }) {
   );
 }
 
+function MetaChip({ label }) {
+  if (!label) return null;
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '2px 6px',
+      border: '1px solid var(--c-divider-soft)',
+      borderRadius: '3px',
+      fontFamily: FONT_MONO,
+      fontSize: '9px',
+      letterSpacing: '.12em',
+      textTransform: 'uppercase',
+      color: 'var(--c-text-soft)'
+    }}>{label}</span>
+  );
+}
+
 function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
-  const [hover, setHover] = useState(false);
   if (!cell) {
     if (role === 'client') return <div style={{ flex: 1 }} />;
     return (
@@ -218,8 +235,6 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
   const canRemove = role !== 'client' && typeof onRemove === 'function';
   return (
     <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         position: 'relative',
         flex: 1,
@@ -239,7 +254,13 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
           display: 'flex',
           flexDirection: 'column'
         }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          <CellChip status={cell.cell_status} />
+          <MetaChip label={cell.content_pillar} />
+          <MetaChip label={cell.format} />
+        </div>
         <div style={{
+          marginTop: '6px',
           fontFamily: FONT_BODY,
           fontSize: '13px',
           lineHeight: 1.35,
@@ -247,12 +268,12 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
           whiteSpace: 'normal',
           wordBreak: 'break-word'
         }}>{cell.title || cell.concept || 'Untitled concept'}</div>
-        <CellChip status={cell.cell_status} />
       </button>
       {canRemove ? (
         <button
           type="button"
           aria-label="Remove concept"
+          className="plan-x-btn"
           onClick={(e) => { e.stopPropagation(); onRemove(cell.id); }}
           style={{
             position: 'absolute',
@@ -263,8 +284,6 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
             padding: '2px',
             cursor: 'pointer',
             color: 'var(--c-text-mid)',
-            opacity: hover ? 1 : 0.6,
-            transition: 'opacity 120ms ease',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -287,14 +306,14 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
     <>
       <div style={{
         fontFamily: FONT_MONO,
-        fontSize: '7px',
-        letterSpacing: '.18em',
+        fontSize: '11px',
+        letterSpacing: '.05em',
         textTransform: 'uppercase',
         color: 'var(--c-text-soft)'
       }}>{dayDOW(dateISO)}</div>
       <div style={{
         fontFamily: FONT_MONO,
-        fontSize: '18px',
+        fontSize: '28px',
         fontWeight: 500,
         lineHeight: 1,
         color: 'var(--c-text-loud)',
@@ -314,9 +333,10 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
         <button
           type="button"
           aria-label="Change date"
+          className="plan-date-btn"
           onClick={() => onDateTap(dateCell)}
           style={{
-            width: '54px',
+            width: '64px',
             flexShrink: 0,
             paddingRight: '6px',
             background: 'transparent',
@@ -328,7 +348,7 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
           {dateColInner}
         </button>
       ) : (
-        <div style={{ width: '54px', flexShrink: 0, paddingRight: '6px' }}>
+        <div style={{ width: '64px', flexShrink: 0, paddingRight: '6px' }}>
           {dateColInner}
         </div>
       )}
@@ -338,16 +358,6 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
           if (stack.length === 0) {
             return (
               <div key={ch} style={{ display: 'flex', alignItems: 'stretch', gap: '6px' }}>
-                <div style={{
-                  width: '34px',
-                  fontFamily: FONT_MONO,
-                  fontSize: '9px',
-                  letterSpacing: '.14em',
-                  textTransform: 'uppercase',
-                  color: 'var(--c-text-soft)',
-                  paddingTop: '8px',
-                  flexShrink: 0
-                }}>{CHANNEL_LABELS[ch] || ch}</div>
                 <ConceptCell
                   cell={null}
                   role={role}
@@ -358,16 +368,6 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
           }
           return (
             <div key={ch} style={{ display: 'flex', alignItems: 'stretch', gap: '6px' }}>
-              <div style={{
-                width: '34px',
-                fontFamily: FONT_MONO,
-                fontSize: '9px',
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                color: 'var(--c-text-soft)',
-                paddingTop: '8px',
-                flexShrink: 0
-              }}>{CHANNEL_LABELS[ch] || ch}</div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {stack.map((c) => (
                   <ConceptCell
@@ -669,6 +669,12 @@ export function PlanView() {
 
   return (
     <div style={{ maxWidth: '430px', margin: '0 auto' }}>
+      <style>{`
+        .plan-x-btn { opacity: 0.6; transition: opacity .1s ease; }
+        .plan-x-btn:active { opacity: 1; }
+        .plan-date-btn { transition: transform .1s ease; }
+        .plan-date-btn:active { transform: scale(0.96); }
+      `}</style>
       <section style={{ padding: '16px 12px 12px' }}>
         <div style={{
           fontFamily: FONT_MONO,
@@ -736,50 +742,50 @@ export function PlanView() {
       </section>
 
       <section style={{
-        position: 'sticky',
-        top: '44px',
-        zIndex: 10,
         background: 'var(--c-bg)',
         borderBottom: '1px solid var(--c-divider-soft)',
         padding: '8px 12px',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         gap: '8px'
       }}>
-        <button type="button" onClick={() => openPlanSheet('history')} style={{
-          background: 'transparent',
-          border: 'none',
-          padding: '4px 0',
-          cursor: 'pointer',
-          fontFamily: FONT_MONO,
-          fontSize: '9px',
-          letterSpacing: '.14em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
-        }}>History ({versions.length})</button>
-        <button type="button" onClick={() => openPlanSheet('comments')} style={{
-          background: 'transparent',
-          border: 'none',
-          padding: '4px 0',
-          cursor: 'pointer',
-          fontFamily: FONT_MONO,
-          fontSize: '9px',
-          letterSpacing: '.14em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
-        }}>Comments ({unresolvedComments})</button>
-        <button type="button" onClick={() => usePlanStore.getState().sharePlan()} style={{
-          background: 'transparent',
-          border: 'none',
-          padding: '4px 0',
-          cursor: 'pointer',
-          fontFamily: FONT_MONO,
-          fontSize: '9px',
-          letterSpacing: '.14em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-mid)'
-        }}>Share</button>
-        <div style={{ marginLeft: 'auto' }}>{primary}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button type="button" onClick={() => openPlanSheet('history')} style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            cursor: 'pointer',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-mid)'
+          }}>History ({versions.length})</button>
+          <button type="button" onClick={() => openPlanSheet('comments')} style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            cursor: 'pointer',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-mid)'
+          }}>Comments ({unresolvedComments})</button>
+          <button type="button" onClick={() => usePlanStore.getState().sharePlan()} style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            cursor: 'pointer',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-mid)'
+          }}>Share</button>
+        </div>
+        <div>{primary}</div>
       </section>
 
       <section style={{ padding: '6px 16px 96px' }}>
@@ -791,26 +797,14 @@ export function PlanView() {
           borderBottom: '1px solid var(--c-divider-soft)'
         }}>
           <div style={{
-            width: '54px',
+            width: '64px',
             fontFamily: FONT_MONO,
             fontSize: '7px',
             letterSpacing: '.18em',
             textTransform: 'uppercase',
             color: 'var(--c-text-soft)'
           }}>Date</div>
-          <div style={{ flex: 1, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-            {channelChannels.map((ch) => (
-              <span key={ch} style={{
-                fontFamily: FONT_MONO,
-                fontSize: '7px',
-                letterSpacing: '.18em',
-                textTransform: 'uppercase',
-                color: 'var(--c-text-soft)',
-                padding: '3px 6px',
-                border: '1px solid var(--c-divider-soft)'
-              }}>{CHANNEL_LABELS[ch] || ch}</span>
-            ))}
-          </div>
+          <div style={{ flex: 1 }} />
           <button
             type="button"
             onClick={() => setShowWeekends(!showWeekends)}
