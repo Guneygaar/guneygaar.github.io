@@ -39,13 +39,13 @@ export function Tabs({ activeTab, onChange, commentsCount, internalCount, canSee
       ) : null}
 
       <button
-        onClick={() => onChange('activity')}
+        onClick={() => onChange('history')}
         className={`font-mono text-sm tracking-widest uppercase
                     py-0.5 border-b border-transparent
-                    ${activeTab === 'activity' ? 'text-text-loud border-text-loud' : 'text-text-soft'}`}
+                    ${activeTab === 'history' ? 'text-text-loud border-text-loud' : 'text-text-soft'}`}
         style={{ transition: 'color 0.1s ease, border-color 0.15s ease' }}
       >
-        Activity
+        History
       </button>
     </div>
   );
