@@ -37,7 +37,6 @@ export function buildPostPayload(form, createdBy, options = {}) {
     target_date:    form.targetDate || null,
     format:         form.format || null,
     caption:        (form.caption || '').trim() || null,
-    internal_notes: (form.internalNotes || '').trim() || null,
     drive_link:     isCanva ? null : (form.driveLink || null),
     canva_link:     isCanva ? form.driveLink : null,
     images:         (form.photos && form.photos.length > 0)
