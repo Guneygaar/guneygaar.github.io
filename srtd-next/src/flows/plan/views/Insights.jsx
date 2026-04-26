@@ -3,12 +3,13 @@
 // admin-only and shows a placeholder dash (real number requires
 // ai_usage fetch - deferred to PR 2 or 3).
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronDown, ArrowUpRight } from 'lucide-react';
 import { useAllPosts } from '../hooks/usePosts.js';
 import { useMetrics } from '../hooks/useMetrics.js';
 import { usePlanStore } from '../store/planStore.js';
 import { PeriodSheet } from '../sheets/PeriodSheet.jsx';
+import { fetchRejectedForInsights } from '../api/planApi.js';
 import {
   STAGE_LABELS, STAGE_COLOR_VAR, OWNER_COLOR_VAR,
   OWNER_LABELS, PILLAR_LABELS, PILLAR_COLOR_VAR,
@@ -34,6 +35,13 @@ function periodBounds(period) {
   const since = new Date(now.getTime() - days * 86400000);
   const prior = new Date(now.getTime() - 2 * days * 86400000);
   return { since, prior, now };
+}
+
+function isoDay(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function inRange(iso, from, to) {
@@ -159,19 +167,41 @@ export function Insights() {
 
   const bounds = useMemo(() => periodBounds(insightsPeriod), [insightsPeriod]);
 
+  // Rejected posts are filtered out of fetchPlanPosts (so they never
+  // hit the grid), but Insights still needs them to keep rejection +
+  // rework rates honest. Fetch them separately for the prior->now
+  // window and merge into the in-memory pool below.
+  const [rejectedRows, setRejectedRows] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    const start = isoDay(bounds.prior);
+    const end = isoDay(bounds.now);
+    fetchRejectedForInsights(start, end)
+      .then((rows) => { if (!cancelled) setRejectedRows(Array.isArray(rows) ? rows : []); })
+      .catch(() => { if (!cancelled) setRejectedRows([]); });
+    return () => { cancelled = true; };
+  }, [bounds.prior.getTime(), bounds.now.getTime()]);
+
+  const mergedAllPosts = useMemo(() => {
+    if (rejectedRows.length === 0) return allPosts;
+    const seen = new Set(allPosts.map((p) => p.id));
+    const extras = rejectedRows.filter((p) => p && p.id && !seen.has(p.id));
+    return extras.length > 0 ? allPosts.concat(extras) : allPosts;
+  }, [allPosts, rejectedRows]);
+
   const posts = useMemo(() => {
-    return allPosts.filter((p) => {
+    return mergedAllPosts.filter((p) => {
       const ref = p.updated_at || p.status_changed_at || p.created_at;
       return inRange(ref, bounds.since, bounds.now);
     });
-  }, [allPosts, bounds.since.getTime(), bounds.now.getTime()]);
+  }, [mergedAllPosts, bounds.since.getTime(), bounds.now.getTime()]);
 
   const priorPosts = useMemo(() => {
-    return allPosts.filter((p) => {
+    return mergedAllPosts.filter((p) => {
       const ref = p.updated_at || p.status_changed_at || p.created_at;
       return inRange(ref, bounds.prior, bounds.since);
     });
-  }, [allPosts, bounds.prior.getTime(), bounds.since.getTime()]);
+  }, [mergedAllPosts, bounds.prior.getTime(), bounds.since.getTime()]);
 
   const computeCore = (pool) => {
     const published = pool.filter((p) => p.stage === 'published');

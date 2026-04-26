@@ -5,6 +5,7 @@
 // via Prefer: return=representation.
 
 import { apiFetch } from '../../../core/api/client.js';
+import { STAGES_FOR_PLAN } from '../../../shared/constants.js';
 
 const READ_META = { allowLogout: false };
 const READ_HEADERS = { 'Accept': 'application/json' };
@@ -187,15 +188,17 @@ export async function callSendPlanAlignment(payload) {
   return callEdgeFunction('send-plan-alignment', payload);
 }
 
-// PR-4: list stuck posts — anything with target_date < periodStart and no
-// plan_cell_id, in any stage except 'published' (work already shipped).
-// Rejected stays in (user may revive); scheduled stays in. No workspace_id
-// filter on posts (posts has no workspace_id column).
-export async function listStuckPosts(periodStart) {
-  if (!periodStart) return [];
+// Carryover candidate list for the create-plan wizard. Returns every
+// post whose stage is in STAGES_FOR_PLAN (i.e. excludes 'published'
+// and 'rejected'). target_date and plan_cell_id are intentionally
+// not filtered: the wizard surfaces the full pipeline so the user
+// can pick any in-flight post to slot into the new plan, regardless
+// of date or current cell assignment. `periodStart` is accepted for
+// back-compat with prior callers but ignored.
+export async function listStuckPosts(_periodStart) {
   const select = 'id,post_id,title,stage,target_date,content_pillar,format';
-  // PR-D: include null target_date (true backlog) + everything before periodStart
-  const path = `/posts?select=${select}&stage=neq.published&plan_cell_id=is.null&or=(target_date.lt.${enc(periodStart)},target_date.is.null)&order=target_date.asc.nullslast`;
+  const stages = enc('(' + STAGES_FOR_PLAN.join(',') + ')');
+  const path = `/posts?select=${select}&stage=in.${stages}&order=target_date.asc.nullslast`;
   const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
   return Array.isArray(rows) ? rows : [];
 }
