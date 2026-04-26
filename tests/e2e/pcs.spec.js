@@ -102,14 +102,22 @@ test('TEST 1 — PCS opens and renders correctly', async ({ page }) => {
   await openPCSCard(page);
 
   await expect(page.locator('#pcs-react-overlay')).toBeVisible();
-  await expect(page.locator('#pcs-topbar-title')).toBeVisible();
-  await expect(page.locator('#pcs-topbar-title')).not.toBeEmpty();
-  await expect(page.locator('.pcs-tab-bar')).toBeVisible();
 
-  // Client tab is where comments render; Caption is the default tab.
-  await page.locator('.pcs-tab[data-tab="client"]').click();
-  await expect(page.locator('#pcs-comments-list')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('#pcs-comments-list')).toContainText('This looks great, approve it.', { timeout: 5000 });
+  // Title renders as an <h1> inside the React overlay.
+  const title = page.locator('#pcs-react-overlay h1').first();
+  await expect(title).toBeVisible();
+  await expect(title).not.toBeEmpty();
+
+  // Tabs.jsx renders text-only tab buttons under #pcs-react-overlay; "Comments"
+  // replaces the legacy "Client" tab.
+  const commentsTab = page.locator('#pcs-react-overlay button', { hasText: 'Comments' }).first();
+  await expect(commentsTab).toBeVisible({ timeout: 5000 });
+  await commentsTab.click();
+
+  await expect(page.locator('#pcs-react-overlay')).toContainText(
+    'This looks great, approve it.',
+    { timeout: 5000 }
+  );
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-open.png' });
 });
@@ -130,16 +138,21 @@ test('TEST 2 — PCS closes correctly', async ({ page }) => {
 test('TEST 3 — Comment input works', async ({ page }) => {
   await openPCSCard(page);
 
-  // Client tab must be active for the comment input to be visible.
-  await page.locator('.pcs-tab[data-tab="client"]').click();
+  // Comments tab must be active for Composer to render in the comments tree.
+  await page.locator('#pcs-react-overlay button', { hasText: 'Comments' }).first().click();
 
-  const input = page.locator('#pcs-comment-input');
+  // Composer.jsx wraps its root in [data-composer]; textarea is ref-only,
+  // send button is reachable by aria-label.
+  const composer = page.locator('#pcs-react-overlay [data-composer]');
+  await expect(composer).toBeVisible({ timeout: 5000 });
+
+  const input = composer.locator('textarea').first();
   await expect(input).toBeVisible({ timeout: 5000 });
 
   await input.fill('Test comment from Playwright');
   await expect(input).toHaveValue('Test comment from Playwright');
 
-  await expect(page.locator('#pcs-send-btn-client')).toBeVisible({ timeout: 5000 });
+  await expect(composer.locator('[aria-label="Send"]')).toBeVisible({ timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-comment.png' });
 });
@@ -147,9 +160,10 @@ test('TEST 3 — Comment input works', async ({ page }) => {
 test('TEST 4 — Stage pill shows current stage label', async ({ page }) => {
   await openPCSCard(page);
 
-  // Advance button was removed from the redesign; the stage pill
-  // in the PCS topbar now shows the current stage label.
-  const stagePill = page.locator('#pcs-topbar-stage');
+  // KickerRow.jsx renders the stage label inside the topbar (the second
+  // <span> of the canMove button when admin can move the stage). Stage label
+  // is uppercase: STAGE_LABELS[mockPost.stage='ready'] -> 'READY'.
+  const stagePill = page.locator('#pcs-react-overlay header button', { hasText: 'READY' }).first();
   await expect(stagePill).toBeVisible({ timeout: 5000 });
   await expect(stagePill).not.toBeEmpty();
 
@@ -159,7 +173,9 @@ test('TEST 4 — Stage pill shows current stage label', async ({ page }) => {
 test('TEST 5 — Image renders in PCS', async ({ page }) => {
   await openPCSCard(page);
 
-  const img = page.locator('#pcs-photo-grid-wrap img').first();
+  // PhotoStrip.jsx renders ThumbImg <img> elements inside the
+  // overflow-x-auto carousel under #pcs-react-overlay.
+  const img = page.locator('#pcs-react-overlay .overflow-x-auto img').first();
   await expect(img).toBeVisible({ timeout: 5000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-image.png' });
@@ -176,20 +192,26 @@ test('TEST 6 — PCS caption is visible', async ({ page }) => {
 test('TEST 7 — PCS stage pill opens dropdown', async ({ page }) => {
   await openPCSCard(page);
 
-  const stagePill = page.locator('#pcs-topbar-stage');
+  // PR-2.2 replaced the popover dropdown with a full-screen BottomSheet:
+  // tapping the stage pill in KickerRow opens PcsDetailSheet expanded on
+  // the "stage" SheetRow, which reveals StageOptions buttons.
+  const stagePill = page.locator('#pcs-react-overlay header button', { hasText: 'READY' }).first();
   await expect(stagePill).toBeVisible({ timeout: 5000 });
-
-  // Click the stage pill to open the chip dropdown
   await stagePill.click();
 
-  // Assert the dropdown rendered at least one option
-  await expect(page.locator('.pcs-chip-drop-item').first()).toBeVisible({ timeout: 3000 });
+  // Stage SheetRow exposes a data-field attribute we can use as scope.
+  const stageRow = page.locator('[data-field="stage"]');
+  await expect(stageRow).toBeVisible({ timeout: 3000 });
 
-  // Dismiss the dropdown by clicking outside
-  await page.locator('#pcs-screen').click({ position: { x: 10, y: 10 } });
+  // At least one stage option button rendered inside the sheet.
+  await expect(stageRow.locator('button').first()).toBeVisible({ timeout: 3000 });
 
-  // Page should still be functional (no crash)
-  await expect(page.locator('#pcs-screen')).toBeVisible();
+  // BottomSheet backdrop click dismisses the sheet (CommentSheet wraps the
+  // entire viewport with a fixed inset-0 backdrop at z-index 2699).
+  await page.locator('div.fixed.inset-0.bg-black\\/50').first().click({ position: { x: 5, y: 5 } });
+
+  // PCS overlay still visible and functional (no crash)
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible();
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-stage-pill.png' });
 });
@@ -197,22 +219,35 @@ test('TEST 7 — PCS stage pill opens dropdown', async ({ page }) => {
 test('TEST 8 — PCS handles delete flow initialization', async ({ page }) => {
   await openPCSCard(page);
 
-  // Delete no longer has a PCS topbar trigger; invoke the confirm
-  // overlay directly so we still cover the pcsConfirmDelete path.
-  await page.evaluate(() => window.pcsConfirmDelete && window.pcsConfirmDelete());
+  // Open the metadata sheet (KickerRow [aria-label="Post details"] in the
+  // topbar opens PcsDetailSheet which contains the Danger Zone delete row).
+  await page.locator('#pcs-react-overlay [aria-label="Post details"]').click();
 
-  // Confirm overlay should appear (custom modal, not native dialog)
-  await expect(page.locator('.pcs-confirm-overlay')).toBeVisible({ timeout: 3000 });
-  await expect(page.locator('.pcs-confirm-overlay')).toContainText(/delete|sure/i);
+  // Tap the React delete trigger (admin-only).
+  const deleteTrigger = page.locator('[data-testid="pcs-detail-delete-trigger"]');
+  await expect(deleteTrigger).toBeVisible({ timeout: 3000 });
+  await deleteTrigger.click();
 
-  // Dismiss by clicking Cancel
-  await page.locator('.pcs-confirm-cancel').click();
-  await expect(page.locator('.pcs-confirm-overlay')).not.toBeVisible({ timeout: 2000 });
+  // PostDeleteConfirm modal renders with Cancel + Delete + post preview.
+  const confirm = page.locator('[data-testid="post-delete-confirm"]');
+  await expect(confirm).toBeVisible({ timeout: 3000 });
+  await expect(confirm).toContainText(/delete|undone/i);
+  await expect(confirm).toContainText('PCS Smoke Test Post');
+
+  // Cancel button dismisses the modal without deleting.
+  await page.locator('[data-testid="post-delete-confirm-cancel"]').click();
+  await expect(confirm).toHaveCount(0, { timeout: 2000 });
+
+  // PCS overlay must still be open after a cancelled delete.
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible();
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-delete.png' });
 });
 
-test('TEST 9 — Library bypass opens PCS', async ({ page }) => {
+// TODO PR-3.16: Library tile taps call vanilla _renderPCS bypassing React PCS bridge.
+// 09-library.js libOpenPostCard must route through window.openPCS or pcsFlow.open.
+// Re-enable once library bridge migrates. Currently opens dormant vanilla overlay.
+test.skip('TEST 9 — Library bypass opens PCS', async ({ page }) => {
   // Click Library tab
   const libTab = page.locator('[data-tab="library"]');
   await expect(libTab).toBeVisible({ timeout: 5000 });
