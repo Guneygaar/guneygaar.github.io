@@ -49,6 +49,22 @@ export async function unresolveComment(commentId) {
   return patchComment(commentId, { resolved: false, resolved_by: null, resolved_at: null });
 }
 
+export async function pinComment(commentId, actor) {
+  return patchComment(commentId, { pinned: true, pinned_at: new Date().toISOString(), pinned_by: actor });
+}
+
+export async function unpinComment(commentId) {
+  return patchComment(commentId, { pinned: false, pinned_at: null, pinned_by: null });
+}
+
+export async function pinInternalNote(noteId, actor) {
+  return patchInternalNote(noteId, { pinned: true, pinned_at: new Date().toISOString(), pinned_by: actor });
+}
+
+export async function unpinInternalNote(noteId) {
+  return patchInternalNote(noteId, { pinned: false, pinned_at: null, pinned_by: null });
+}
+
 export async function createInternalNote(payload) {
   return apiFetch('/internal_notes', {
     method: 'POST',
