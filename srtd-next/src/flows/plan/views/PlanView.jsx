@@ -608,7 +608,7 @@ export function PlanView() {
           textTransform: 'uppercase',
           color: 'var(--c-text-mid)'
         }}>Comments ({unresolvedComments})</button>
-        <button type="button" onClick={() => usePlanStore.getState().showToast({ msg: `Share link: ${plan.share_token || 'pending'}`, duration: 2500 })} style={{
+        <button type="button" onClick={() => usePlanStore.getState().sharePlan()} style={{
           background: 'transparent',
           border: 'none',
           padding: '4px 0',

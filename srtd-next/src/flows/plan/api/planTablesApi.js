@@ -147,3 +147,61 @@ export async function insertNotification(payload) {
     }
   }
 }
+
+// PR-3: edge-function wrappers. These bypass /rest/v1 and POST to
+// /functions/v1, so we issue the request via window.fetch. The
+// Supabase URL + anon key live as `const` in 01-config.js (not on
+// window), so we mirror them here — both values are public and
+// already shipped in the vanilla JS bundle.
+const FUNCTIONS_BASE = 'https://ozptjplxbyswclolbxyn.supabase.co/functions/v1';
+const ANON_APIKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cHRqcGx4Ynlzd2Nsb2xieHluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NzU0ODAsImV4cCI6MjA5MjA1MTQ4MH0.BCiqZAP64ZiJggcXT-vNAeagTlnUiybfgI5BEEoLDWA';
+
+async function callEdgeFunction(name, payload) {
+  const token = (typeof window !== 'undefined' && window.localStorage)
+    ? window.localStorage.getItem('sb_access_token') : null;
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'apikey': ANON_APIKEY,
+    'Authorization': `Bearer ${token || ANON_APIKEY}`
+  };
+  const res = await fetch(`${FUNCTIONS_BASE}/${name}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload || {})
+  });
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) {
+    const detail = (data && (data.detail || data.error)) || res.statusText;
+    throw new Error(`edge_${name}: ${detail}`);
+  }
+  return data;
+}
+
+export async function callAlignPlan(payload) {
+  return callEdgeFunction('align-plan', payload);
+}
+
+export async function callSendPlanAlignment(payload) {
+  return callEdgeFunction('send-plan-alignment', payload);
+}
+
+// PR-3: share-token generator. Calls generate_plan_share_token RPC.
+// Returns the existing token if already set, otherwise generates +
+// stores a new 24-byte base64url token.
+export async function generateShareToken(planId) {
+  if (!planId) throw new Error('generateShareToken: planId required');
+  const data = await apiFetch('/rpc/generate_plan_share_token', {
+    method: 'POST',
+    headers: WRITE_HEADERS,
+    body: JSON.stringify({ p_plan_id: planId })
+  });
+  // PostgREST RPC returns the scalar directly (string).
+  if (typeof data === 'string') return data;
+  if (Array.isArray(data) && data.length > 0) {
+    const row = data[0];
+    return typeof row === 'string' ? row : (row && (row.generate_plan_share_token || row.share_token)) || null;
+  }
+  return null;
+}
