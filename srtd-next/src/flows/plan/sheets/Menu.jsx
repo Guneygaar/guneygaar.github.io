@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import {
-  List as ListIcon, LayoutGrid, CalendarDays, BarChart3,
+  List as ListIcon, LayoutGrid, CalendarDays, BarChart3, BookOpen,
   Check, Settings, X
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
@@ -13,6 +13,7 @@ import {
 } from '../shared/constants.js';
 
 const VIEWS = [
+  { key: 'plan',     label: 'Plan',     Icon: BookOpen },
   { key: 'board',    label: 'Board',    Icon: LayoutGrid },
   { key: 'list',     label: 'List',     Icon: ListIcon },
   { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
