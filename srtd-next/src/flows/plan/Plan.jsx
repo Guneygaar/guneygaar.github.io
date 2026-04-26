@@ -231,6 +231,7 @@ function ViewContainer() {
   const currentView = usePlanStore((s) => s.currentView);
   const loading = usePlanStore((s) => s.loading);
   const loadError = usePlanStore((s) => s.loadError);
+  const loadData = usePlanStore((s) => s.loadData);
   if (loading) {
     return (
       <div style={{
@@ -249,10 +250,25 @@ function ViewContainer() {
       <div style={{
         padding: '80px 24px',
         textAlign: 'center',
-        fontFamily: '"DM Sans", sans-serif',
-        fontSize: '13px',
-        color: 'var(--c-red)'
-      }}>{loadError}</div>
+        fontFamily: '"DM Sans", sans-serif'
+      }}>
+        <div style={{ fontSize: '13px', color: 'var(--c-red)' }}>{loadError}</div>
+        <button
+          type="button"
+          onClick={() => { usePlanStore.setState({ loadError: null }); loadData(); }}
+          style={{
+            marginTop: '14px',
+            padding: '8px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-divider-warm)',
+            color: 'var(--c-text-loud)',
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}>Retry</button>
+      </div>
     );
   }
   if (currentView === 'plan') return <PlanView />;
