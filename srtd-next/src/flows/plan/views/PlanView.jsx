@@ -4,9 +4,10 @@
 // vars from tokens.css; never hardcoded hex.
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { openInPcs } from '../shared/openInPcs.js';
+import { CreatePlanWizard } from '../sheets/CreatePlanWizard.jsx';
 
 const DEFAULT_CHANNELS = ['linkedin', 'instagram', 'twitter'];
 
@@ -395,6 +396,10 @@ export function PlanView() {
   const addPlanCell = usePlanStore((s) => s.addPlanCell);
   const loadAdjacentPlan = usePlanStore((s) => s.loadAdjacentPlan);
 
+  const wizardOpen = usePlanStore((s) => s.wizardOpen);
+  const openWizard = usePlanStore((s) => s.openWizard);
+  const canCreatePlan = role === 'servicing' || role === 'admin';
+
   useEffect(() => { loadPlan(); }, [loadPlan]);
 
   const activeChannels = useMemo(() => {
@@ -484,20 +489,67 @@ export function PlanView() {
 
   if (!plan) {
     return (
-      <div style={{ maxWidth: '430px', margin: '0 auto', padding: '60px 18px', textAlign: 'center' }}>
-        <div style={{
-          fontFamily: FONT_HEAD,
-          fontSize: '18px',
-          fontWeight: 500,
-          color: 'var(--c-text-loud)'
-        }}>No plan yet</div>
-        <div style={{
-          marginTop: '8px',
-          fontFamily: FONT_BODY,
-          fontSize: '13px',
-          color: 'var(--c-text-mid)'
-        }}>Plan creation lands in PR-3.</div>
-      </div>
+      <>
+        <div style={{ maxWidth: '430px', margin: '0 auto', padding: '60px 32px', textAlign: 'center' }}>
+          <div style={{
+            width: '56px', height: '56px',
+            margin: '0 auto 16px',
+            background: 'var(--c-bg-2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--c-text-mid)'
+          }}>
+            <CalendarIcon size={24} />
+          </div>
+          <div style={{
+            fontFamily: FONT_HEAD,
+            fontSize: '20px',
+            fontWeight: 500,
+            color: 'var(--c-text-loud)'
+          }}>No plan yet</div>
+          {canCreatePlan ? (
+            <>
+              <div style={{
+                marginTop: '8px',
+                fontFamily: FONT_BODY,
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--c-text-mid)'
+              }}>Plan your content for the month: link existing posts, add new concepts, send for alignment.</div>
+              <button
+                type="button"
+                onClick={() => openWizard()}
+                style={{
+                  marginTop: '20px',
+                  padding: '11px 20px',
+                  background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
+                  color: '#fff',
+                  border: 'none',
+                  fontFamily: FONT_MONO,
+                  fontSize: '9px',
+                  letterSpacing: '.14em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), 0 4px 12px -4px color-mix(in srgb, var(--c-terracotta-2) 50%, transparent)'
+                }}>
+                <Plus size={13} />
+                Create plan
+              </button>
+            </>
+          ) : (
+            <div style={{
+              marginTop: '8px',
+              fontFamily: FONT_BODY,
+              fontSize: '13px',
+              lineHeight: 1.5,
+              color: 'var(--c-text-mid)'
+            }}>Your team hasn't shared a plan with you yet. You'll see it here when they do.</div>
+          )}
+        </div>
+        {wizardOpen ? <CreatePlanWizard /> : null}
+      </>
     );
   }
 
@@ -559,6 +611,25 @@ export function PlanView() {
           }}>
             <ChevronRight size={16} />
           </button>
+          {canCreatePlan ? (
+            <button type="button" onClick={() => openWizard()} style={{
+              background: 'transparent',
+              border: '1px solid var(--c-divider-warm)',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontFamily: FONT_MONO,
+              fontSize: '8px',
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: 'var(--c-text-mid)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}>
+              <Plus size={10} />
+              Create plan
+            </button>
+          ) : null}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
           <StatusPill status={plan.plan_status} />
@@ -692,6 +763,7 @@ export function PlanView() {
           );
         })}
       </section>
+      {wizardOpen ? <CreatePlanWizard /> : null}
     </div>
   );
 }

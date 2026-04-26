@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import {
   List as ListIcon, LayoutGrid, CalendarDays, BarChart3, BookOpen,
-  Check, Settings, X
+  Check, Settings, X, Plus
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useAllPosts } from '../hooks/usePosts.js';
@@ -96,6 +96,8 @@ export function Menu() {
   const allPosts = useAllPosts();
   const monthStart = usePlanStore((s) => s.monthStart);
   const monthEnd = usePlanStore((s) => s.monthEnd);
+  const openWizard = usePlanStore((s) => s.openWizard);
+  const canCreatePlan = role === 'servicing' || role === 'admin';
 
   const counts = useMemo(() => {
     const map = { all: allPosts.length };
@@ -188,6 +190,52 @@ export function Menu() {
           </button>
         </header>
         <div style={{ overflowY: 'auto' }}>
+          {canCreatePlan ? (
+            <section>
+              <button
+                type="button"
+                onClick={() => { openWizard(); closeMenu(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid var(--c-divider-subtle)',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}>
+                <span style={{
+                  width: '32px',
+                  height: '32px',
+                  background: 'var(--c-terracotta-2)',
+                  color: '#fff',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Plus size={16} />
+                </span>
+                <span style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--c-text-loud)'
+                  }}>New plan</span>
+                  <span style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '12px',
+                    color: 'var(--c-text-mid)',
+                    marginTop: '2px'
+                  }}>Create a plan for any period</span>
+                </span>
+              </button>
+            </section>
+          ) : null}
           <section>
             <div style={{
               fontFamily: '"IBM Plex Mono", monospace',

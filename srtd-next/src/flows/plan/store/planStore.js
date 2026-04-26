@@ -27,8 +27,12 @@ import {
   insertNotification,
   callAlignPlan,
   callSendPlanAlignment,
-  generateShareToken
+  generateShareToken,
+  callCreatePlan
 } from '../api/planTablesApi.js';
+
+// PR-4: single-tenant fallback workspace id used until multi-tenant lands.
+const DEFAULT_WORKSPACE_ID = 'default';
 
 function currentMonthRange() {
   const now = new Date();
@@ -491,10 +495,69 @@ export const usePlanStore = create((set, get) => ({
   activeCell: null,          // { id?, cell_date, channel, position, concept?, cell_status? }
   activeCellPostId: null,    // when cell_status spawned/linked: post.post_id
 
+  // PR-4: plan creation wizard state.
+  wizardOpen: false,
+  wizardPresetMonth: null,
+  creatingPlan: false,
+
   setShowWeekends(b) { set({ showWeekends: !!b }); },
   openPlanSheet(name) { set({ planSheet: name || null }); },
   closePlanSheet() { set({ planSheet: null, activeCell: null, activeCellPostId: null }); },
   setActiveCell(cell, postId) { set({ activeCell: cell || null, activeCellPostId: postId || null }); },
+
+  openWizard(presetMonth = null) {
+    set({ wizardOpen: true, wizardPresetMonth: presetMonth || null });
+  },
+  closeWizard() {
+    set({ wizardOpen: false, wizardPresetMonth: null });
+  },
+
+  // PR-4: create_plan_with_carryovers RPC wrapper. On success, refetch
+  // plans + load the new plan into the active slot, fire a toast, and
+  // resolve the result so the wizard can close itself.
+  async createPlan({ workspace_id, title, period_start, period_end, carryovers }) {
+    set({ creatingPlan: true });
+    try {
+      const res = await callCreatePlan({
+        workspace_id: workspace_id || DEFAULT_WORKSPACE_ID,
+        title,
+        period_start,
+        period_end,
+        carryovers: Array.isArray(carryovers) ? carryovers : []
+      });
+      const planId = res && (res.plan_id || res.planId);
+      const cellCount = (res && (res.cell_count || res.cellCount)) || 0;
+      const linkedPostCount = (res && (res.linked_post_count || res.linkedPostCount)) || 0;
+      if (planId) {
+        const full = await fetchPlanById(planId);
+        if (full) {
+          const [cells, versions, comments, channels] = await Promise.all([
+            fetchPlanCells(full.id),
+            fetchPlanVersions(full.id),
+            fetchPlanComments(full.id),
+            fetchWorkspaceChannels(full.workspace_id)
+          ]);
+          set({
+            plan: full,
+            planCells: cells,
+            planVersions: versions,
+            planComments: comments,
+            workspaceChannels: channels
+          });
+        }
+      }
+      const linkSuffix = linkedPostCount === 1 ? '1 post linked' : `${linkedPostCount} posts linked`;
+      get().showToast({
+        msg: `${title || 'Plan'} created : ${linkSuffix}`,
+        duration: 3000
+      });
+      set({ creatingPlan: false, wizardOpen: false, wizardPresetMonth: null });
+      return { plan_id: planId, cell_count: cellCount, linked_post_count: linkedPostCount };
+    } catch (err) {
+      set({ creatingPlan: false });
+      throw err;
+    }
+  },
 
   async loadPlan() {
     set({ planLoading: true, planError: null });
