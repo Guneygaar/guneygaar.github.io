@@ -791,6 +791,53 @@ body: JSON.stringify(payload)
 
 console.log('[submitNewPost] API SUCCESS');
 
+// PR-3.15: brief field is no longer a posts column. After the post
+// row is inserted, fan the brief textarea out as an auto-pinned
+// depth-0 row in the internal_notes table. Empty briefs skip the
+// insert entirely. Never run on update — submit handler only.
+try {
+  var _briefEl = document.getElementById('new-post-comments');
+  var _briefVal = (_briefEl && typeof _briefEl.value === 'string') ? _briefEl.value.trim() : '';
+  if (_briefVal) {
+    var _briefAuthor = (window.AppState && window.AppState.user && window.AppState.user.email) || '';
+    var _briefRoleRaw = (window.AppState && window.AppState.user &&
+      (window.AppState.user.effectiveRole || window.AppState.user.role)) || 'Admin';
+    var _briefRole = (typeof window.normalizeRole === 'function')
+      ? (window.normalizeRole(_briefRoleRaw) || _briefRoleRaw)
+      : _briefRoleRaw;
+    var _briefNow = new Date().toISOString();
+    apiFetch('/internal_notes', {
+      method: 'POST',
+      body: JSON.stringify({
+        post_id: payload.post_id,
+        author: _briefAuthor,
+        author_role: _briefRole,
+        message: _briefVal,
+        post_title: payload.title || '',
+        visibility: 'internal',
+        deleted: false,
+        pinned: true,
+        pinned_at: _briefNow,
+        pinned_by: _briefAuthor,
+        created_at: _briefNow
+      })
+    }).catch(function(noteErr) {
+      console.warn('[submitNewPost] brief -> internal_notes insert failed', noteErr);
+      if (typeof showToast === 'function') {
+        showToast('Brief saved as note failed - add manually in Internal notes', 'error');
+      }
+      if (window.logError) {
+        window.logError(noteErr && noteErr.message, noteErr && noteErr.stack, 'submit-new-post-brief-note');
+      }
+    });
+  }
+} catch (_briefSyncErr) {
+  console.warn('[submitNewPost] brief -> internal_notes sync error', _briefSyncErr);
+  if (window.logError) {
+    window.logError(_briefSyncErr && _briefSyncErr.message, _briefSyncErr && _briefSyncErr.stack, 'submit-new-post-brief-note-sync');
+  }
+}
+
 // Stamp any null-post_id ai_usage rows from this Create Post session
 // onto the newly created post. Fire-and-forget — must not block submit.
 // If it fails, the rows stay null-post_id (still counted globally).

@@ -5,6 +5,7 @@ import { useFormState, clearDraft } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
 import { useAppState } from '../../../core/stores/appState.js';
 import { buildPostPayload, createPost } from '../../../core/api/posts.js';
+import { createInternalNote } from '../../../core/api/comments.js';
 import { stampPostId } from '../../../core/api/aiUsage.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
@@ -85,6 +86,7 @@ export function Footer() {
     close();
 
     // 3. Background write. Do NOT await.
+    const briefText = (form.internalNotes || '').trim();
     createPost(payload).then((created) => {
       const postId = Array.isArray(created) && created.length > 0
         ? created[0].post_id
@@ -92,6 +94,31 @@ export function Footer() {
       if (postId && sessionCalls > 0) {
         stampPostId({ postId, createdBy: user.email, sessionStart })
           .catch(() => { /* non-critical */ });
+      }
+      // PR-3.15: brief field is no longer a posts column. After the
+      // post row is inserted, fan the brief out as an auto-pinned
+      // depth-0 row in internal_notes. Skip empty briefs.
+      if (postId && briefText) {
+        const role = (user.effectiveRole || user.role || 'Admin');
+        const titleCased = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+        const nowIso = new Date().toISOString();
+        createInternalNote({
+          post_id: postId,
+          author: user.email,
+          author_role: titleCased,
+          message: briefText,
+          post_title: payload.title || '',
+          visibility: 'internal',
+          deleted: false,
+          pinned: true,
+          pinned_at: nowIso,
+          pinned_by: user.email,
+          created_at: nowIso
+        }).catch((noteErr) => {
+          console.warn('[create-post] brief -> internal_notes insert failed', noteErr);
+          toast('Brief saved as note failed - add manually in Internal notes', 'error');
+          logError(noteErr, { action: 'create-post-brief-note-react' });
+        });
       }
     }).catch((err) => {
       console.error('[create-post] background insert failed:', err);
