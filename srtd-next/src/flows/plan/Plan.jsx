@@ -54,7 +54,6 @@ function resolveTheme() {
 function TopBar() {
   const openMenu = usePlanStore((s) => s.openMenu);
   const currentView = usePlanStore((s) => s.currentView);
-  const showToast = usePlanStore((s) => s.showToast);
   const unreadCount = usePlanStore((s) => s.unreadCount);
   const VIEW_TITLES = {
     plan:     'Plan',
@@ -99,14 +98,14 @@ function TopBar() {
       <button
         type="button"
         aria-label="Search"
-        onClick={() => showToast({ msg: 'Search coming in PR 2', duration: 2000 })}
+        onClick={() => { if (typeof window.openPipelineSearch === 'function') window.openPipelineSearch(); }}
         style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
         <Search size={18} />
       </button>
       <button
         type="button"
         aria-label="Notifications"
-        onClick={() => showToast({ msg: 'Notifications panel coming in PR 2', duration: 2000 })}
+        onClick={() => { if (typeof window.openNotifications === 'function') window.openNotifications(); }}
         style={{ position: 'relative', background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
         <Bell size={18} />
         {unreadCount > 0 ? (
@@ -345,6 +344,9 @@ export default function Plan() {
   }, [planEnabled, pcsOpen]);
 
   if (!planEnabled) return null;
+
+  const effectiveRole = ((user?.effectiveRole || user?.role) || '').toString().toLowerCase();
+  if (effectiveRole === 'client') return null;
 
   return (
     <div

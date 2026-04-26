@@ -30,8 +30,11 @@ export default function App() {
     if (!planEnabled) return;
     const panel = document.getElementById('panel-pipeline');
     const navBtn = document.querySelector('[data-tab="pipeline"]');
-    if (panel) panel.style.display = 'none';
+    if (panel) panel.style.display = 'flex';
     if (navBtn) navBtn.style.display = 'none';
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.classList.add('plan-active');
+    }
   }, [planEnabled]);
 
   return (
