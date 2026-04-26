@@ -6,12 +6,12 @@ import { createPostFlow } from './flows/create-post/index.js';
 import { pcsFlow } from './flows/pcs/index.js';
 
 if (typeof window !== 'undefined') {
-  console.log('[sorted-react] bundle loaded, v0.9.33');
+  console.log('[sorted-react] bundle loaded, v0.9.34');
 
   if (typeof window.SortedReact !== 'object' || window.SortedReact === null) {
     window.SortedReact = {};
   }
-  window.SortedReact.version   = '0.9.33';
+  window.SortedReact.version   = '0.9.34';
   window.SortedReact.tokens    = core.tokens;
   window.SortedReact.mappings  = core.mappings;
   window.SortedReact.stores    = core.stores;

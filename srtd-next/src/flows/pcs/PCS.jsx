@@ -17,7 +17,7 @@ import { RetryBanner } from './components/RetryBanner.jsx';
 import { CommentActionSheet } from './components/CommentActionSheet.jsx';
 import { ViewAllLink } from './components/ViewAllLink.jsx';
 import { FullScreenThread } from './components/FullScreenThread.jsx';
-import { ActivityFeed } from './components/ActivityFeed.jsx';
+import { HistoryFeed } from './components/HistoryFeed.jsx';
 import { apiFetch } from '../../core/api/client.js';
 import { updatePostStage } from '../../core/api/posts.js';
 import { toast } from '../../core/bridges/toast.js';
@@ -315,11 +315,11 @@ export function PCS() {
                   </>
                 ) : null}
 
-                {activeTab === 'activity' ? <ActivityFeed /> : null}
+                {activeTab === 'history' ? <HistoryFeed post={post} userRoles={userRoles} /> : null}
               </div>
               <div className="sticky bottom-0 z-10 bg-bg">
                 {renderClientActionBar()}
-                {activeTab !== 'activity' && (
+                {activeTab !== 'history' && (
                   <Composer activeTab={activeTab} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} />
                 )}
               </div>
