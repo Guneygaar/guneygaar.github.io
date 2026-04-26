@@ -599,19 +599,28 @@ export const usePlanStore = create((set, get) => ({
         set({ plan: null, planCells: [], planVersions: [], planComments: [], workspaceChannels: [], planLoading: false });
         return;
       }
-      const [cells, versions, comments, channels] = await Promise.all([
+      const results = await Promise.allSettled([
         fetchPlanCells(plan.id),
         fetchPlanVersions(plan.id),
         fetchPlanComments(plan.id),
         fetchWorkspaceChannels(plan.workspace_id)
       ]);
+      const [cellsR, versionsR, commentsR, channelsR] = results;
+      const firstReject = results.find((r) => r.status === 'rejected');
+      const cells = cellsR.status === 'fulfilled' ? cellsR.value : [];
+      const versions = versionsR.status === 'fulfilled' ? versionsR.value : [];
+      const comments = commentsR.status === 'fulfilled' ? commentsR.value : [];
+      const channels = channelsR.status === 'fulfilled' ? channelsR.value : [];
       set({
         plan,
         planCells: cells,
         planVersions: versions,
         planComments: comments,
         workspaceChannels: channels,
-        planLoading: false
+        planLoading: false,
+        planError: firstReject
+          ? ((firstReject.reason && firstReject.reason.message) || 'Failed to load plan data')
+          : null
       });
     } catch (err) {
       set({ planLoading: false, planError: (err && err.message) || 'Failed to load plan' });
@@ -659,17 +668,23 @@ export const usePlanStore = create((set, get) => ({
     }
   },
 
-  async addPlanCell({ cell_date, channel, concept, position }) {
+  async addPlanCell({ cell_date, channel, concept, position, title, contentPillar, format }) {
     const plan = get().plan;
     if (!plan) return;
     const tempId = `temp-${Date.now()}`;
+    const titleVal = (title || '').trim() || null;
+    const pillarVal = contentPillar || null;
+    const formatVal = format || null;
     const optimistic = {
       id: tempId,
       plan_id: plan.id,
       workspace_id: plan.workspace_id,
       cell_date,
       channel,
+      title: titleVal,
       concept: concept || '',
+      content_pillar: pillarVal,
+      format: formatVal,
       cell_status: 'draft',
       position: typeof position === 'number' ? position : 0,
       reference_image_url: null,
@@ -683,7 +698,10 @@ export const usePlanStore = create((set, get) => ({
         workspace_id: plan.workspace_id,
         cell_date,
         channel,
+        title: titleVal,
         concept: concept || '',
+        content_pillar: pillarVal,
+        format: formatVal,
         cell_status: 'draft',
         position: optimistic.position
       });
