@@ -58,7 +58,6 @@ function TopBar() {
   const currentView = usePlanStore((s) => s.currentView);
   const unreadCount = usePlanStore((s) => s.unreadCount);
   const planCells = usePlanStore((s) => s.planCells);
-  const workspaceChannels = usePlanStore((s) => s.workspaceChannels);
   const VIEW_TITLES = {
     plan:     'Plan',
     list:     'List',
@@ -67,24 +66,18 @@ function TopBar() {
     insights: 'Insights'
   };
   const eyebrow = currentView === 'plan' ? '' : (VIEW_TITLES[currentView] || '');
-  const channelPills = useMemo(() => {
-    if (currentView !== 'plan') return [];
+  const planChannelSuffix = useMemo(() => {
+    if (currentView !== 'plan') return '';
+    if (!Array.isArray(planCells) || planCells.length === 0) return '';
     const seen = new Set();
     const out = [];
-    if (Array.isArray(workspaceChannels)) {
-      for (const c of workspaceChannels) {
-        const ch = c && c.channel;
-        if (ch && !seen.has(ch)) { seen.add(ch); out.push(ch); }
-      }
+    for (const c of planCells) {
+      const ch = c && c.channel;
+      if (ch && !seen.has(ch)) { seen.add(ch); out.push(ch); }
     }
-    if (Array.isArray(planCells)) {
-      for (const c of planCells) {
-        const ch = c && c.channel;
-        if (ch && !seen.has(ch)) { seen.add(ch); out.push(ch); }
-      }
-    }
-    return out;
-  }, [currentView, planCells, workspaceChannels]);
+    if (out.length === 0) return '';
+    return out.map((ch) => CHANNEL_LABELS[ch] || ch).join(', ');
+  }, [currentView, planCells]);
   return (
     <header style={{
       position: 'sticky',
@@ -99,14 +92,21 @@ function TopBar() {
       height: '44px'
     }}>
       <div style={{
+        flex: 1,
+        minWidth: 0,
         fontFamily: 'Fraunces, serif',
         fontSize: '15px',
         fontWeight: 600,
         letterSpacing: '-.01em',
         color: 'var(--c-text-loud)',
-        flexShrink: 0
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
       }}>
-        Plan{eyebrow ? (
+        Plan{planChannelSuffix ? (
+          <span style={{ color: 'var(--c-text-mid)' }}> · {planChannelSuffix}</span>
+        ) : null}
+        {eyebrow ? (
           <span style={{
             fontFamily: '"IBM Plex Mono", monospace',
             fontSize: '9px',
@@ -117,30 +117,6 @@ function TopBar() {
           }}>{eyebrow}</span>
         ) : null}
       </div>
-      {channelPills.length > 0 ? (
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          gap: '6px',
-          overflowX: 'auto',
-          scrollbarWidth: 'none'
-        }}>
-          {channelPills.map((ch) => (
-            <span key={ch} style={{
-              flexShrink: 0,
-              fontFamily: '"IBM Plex Mono", monospace',
-              fontSize: '11px',
-              padding: '4px 8px',
-              borderRadius: '4px',
-              border: '1px solid var(--c-divider-soft)',
-              background: 'var(--c-bg-2)',
-              color: 'var(--c-text-loud)'
-            }}>{CHANNEL_LABELS[ch] || ch}</span>
-          ))}
-        </div>
-      ) : (
-        <div style={{ flex: 1 }} />
-      )}
       <button
         type="button"
         aria-label="Search"
