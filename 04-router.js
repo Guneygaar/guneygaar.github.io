@@ -27,7 +27,7 @@ async function _startRouter() {
   // queue into window._planReactPendingOpen and let srtd-next/src/index.jsx
   // drain it after mount (race-safe vs activateRole + React mount).
   let _planReactOn = false;
-  try { _planReactOn = params.get('plan_react') === '1'; } catch (e) {}
+  try { _planReactOn = params.get('plan_react') !== '0'; } catch (e) {}
   if (openPost && _planReactOn) {
     window._planReactPendingOpen = openPost;
     try {

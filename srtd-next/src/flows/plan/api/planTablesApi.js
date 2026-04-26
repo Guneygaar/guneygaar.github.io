@@ -194,7 +194,8 @@ export async function callSendPlanAlignment(payload) {
 export async function listStuckPosts(periodStart) {
   if (!periodStart) return [];
   const select = 'id,post_id,title,stage,target_date,content_pillar,format';
-  const path = `/posts?select=${select}&stage=neq.published&plan_cell_id=is.null&target_date=lt.${enc(periodStart)}&order=target_date.asc.nullslast`;
+  // PR-D: include null target_date (true backlog) + everything before periodStart
+  const path = `/posts?select=${select}&stage=neq.published&plan_cell_id=is.null&or=(target_date.lt.${enc(periodStart)},target_date.is.null)&order=target_date.asc.nullslast`;
   const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
   return Array.isArray(rows) ? rows : [];
 }
