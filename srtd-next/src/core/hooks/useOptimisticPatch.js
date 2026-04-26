@@ -145,7 +145,7 @@ function prettyFieldLabel(field) {
   const map = {
     stage: 'Stage',
     owner: 'Owner',
-    owner_user_id: 'Owner',
+    owner_profile_id: 'Owner',
     target_date: 'Date',
     format: 'Format',
     content_pillar: 'Pillar',

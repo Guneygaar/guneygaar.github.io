@@ -555,7 +555,7 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
       await commit('owner', null, {
         auditField: 'owner',
         actor,
-        extraPatch: { owner_user_id: null },
+        extraPatch: { owner_profile_id: null },
       });
     } else {
       const roleLabel = ROLE_TO_OWNER_LABEL[String(user.role || '').toLowerCase()] || 'Creative';
@@ -563,7 +563,7 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
         auditField: 'owner',
         label: 'Owner',
         actor,
-        extraPatch: { owner_user_id: user.id },
+        extraPatch: { owner_profile_id: user.id },
       });
     }
     setExpandedField(null);
@@ -709,7 +709,7 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
           >
             <OwnerOptions
               userRoles={userRoles}
-              currentOwnerId={post.owner_user_id}
+              currentOwnerId={post.owner_profile_id}
               onSelect={saveOwner}
               onClear={() => saveOwner(null)}
             />

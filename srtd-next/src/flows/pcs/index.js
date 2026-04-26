@@ -93,7 +93,7 @@ export const pcsFlow = {
       enrichPostOwner(post).then((owner) => {
         if (usePcsFlowState.getState().postId !== postId) return;
         if (!owner) return;
-        usePcsStore.setState((s) => ({ post: { ...s.post, owner_user_id: owner } }));
+        usePcsStore.setState((s) => ({ post: { ...s.post, owner_profile_id: owner } }));
       }).catch(() => {});
     } catch (err) {
       logError(err, { context: 'pcs_react_open_post', postId });
