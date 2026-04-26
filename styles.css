@@ -3681,6 +3681,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: flex;
 }
 
+body.plan-active .pipeline-search-bar.open {
+  display: flex !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1500;
+  background: var(--bg);
+}
+body.plan-active .pipeline-search-results.visible,
+body.plan-active .pipeline-search-empty.visible {
+  z-index: 1500;
+}
+body.plan-active #notif-overlay {
+  z-index: 1500 !important;
+}
+
 .pipeline-search-input {
   flex: 1;
   background: transparent;
