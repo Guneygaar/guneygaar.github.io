@@ -25,7 +25,7 @@ export function CarryoverStep({ periodStart, periodEnd, workspaceChannels, selec
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
-    listStuckPosts()
+    listStuckPosts(periodStart)
       .then((rows) => {
         if (cancelled) return;
         setPosts(Array.isArray(rows) ? rows : []);

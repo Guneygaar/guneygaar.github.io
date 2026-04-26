@@ -31,8 +31,11 @@ import {
   callCreatePlan
 } from '../api/planTablesApi.js';
 
-// PR-4: single-tenant fallback workspace id used until multi-tenant lands.
-const DEFAULT_WORKSPACE_ID = 'default';
+function _resolveWorkspaceId() {
+  const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || null;
+  const ws = (typeof window !== 'undefined' && window.AppState && window.AppState.workspace) || null;
+  return (user && (user.workspace_id || user.workspaceId)) || (ws && ws.id) || null;
+}
 
 function currentMonthRange() {
   const now = new Date();
@@ -515,11 +518,15 @@ export const usePlanStore = create((set, get) => ({
   // PR-4: create_plan_with_carryovers RPC wrapper. On success, refetch
   // plans + load the new plan into the active slot, fire a toast, and
   // resolve the result so the wizard can close itself.
-  async createPlan({ workspace_id, title, period_start, period_end, carryovers }) {
+  async createPlan({ title, period_start, period_end, carryovers }) {
+    const wsId = _resolveWorkspaceId();
+    if (!wsId) {
+      throw new Error('No workspace assigned to profile');
+    }
     set({ creatingPlan: true });
     try {
       const res = await callCreatePlan({
-        workspace_id: workspace_id || DEFAULT_WORKSPACE_ID,
+        workspace_id: wsId,
         title,
         period_start,
         period_end,

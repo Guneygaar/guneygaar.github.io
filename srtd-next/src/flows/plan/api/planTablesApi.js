@@ -187,14 +187,14 @@ export async function callSendPlanAlignment(payload) {
   return callEdgeFunction('send-plan-alignment', payload);
 }
 
-// PR-4: list stuck posts that haven't gone out and are not yet linked
-// to a plan cell. Stage filter + plan_cell_id IS NULL. No date filter,
-// no workspace_id filter on posts (single-tenant phase — posts has no
-// workspace_id column).
-export async function listStuckPosts() {
+// PR-4: list stuck posts — anything with target_date < periodStart and no
+// plan_cell_id, in any stage except 'published' (work already shipped).
+// Rejected stays in (user may revive); scheduled stays in. No workspace_id
+// filter on posts (posts has no workspace_id column).
+export async function listStuckPosts(periodStart) {
+  if (!periodStart) return [];
   const select = 'id,post_id,title,stage,target_date,content_pillar,format';
-  const stages = encodeURIComponent('(parked,awaiting_brand_input,changes_requested)');
-  const path = `/posts?select=${select}&stage=in.${stages}&plan_cell_id=is.null&order=target_date.asc.nullslast`;
+  const path = `/posts?select=${select}&stage=neq.published&plan_cell_id=is.null&target_date=lt.${enc(periodStart)}&order=target_date.asc.nullslast`;
   const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
   return Array.isArray(rows) ? rows : [];
 }
