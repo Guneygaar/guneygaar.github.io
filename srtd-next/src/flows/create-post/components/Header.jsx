@@ -42,7 +42,7 @@ export function Header() {
       (window.AppState && window.AppState.user && window.AppState.user.email) || '';
     const result = await uploadFile(file, {
       postId:      null,
-      workspaceId: 'default',
+      workspaceId: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
       createdBy
     });
 

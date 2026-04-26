@@ -180,7 +180,7 @@ async function _callSrtdAI(feature, messages, postId, opts) {
       feature: feature,
       messages: messages,
       post_id: postId || null,
-      workspace_id: 'default',
+      workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
       created_by: (window.AppState.user.email || '')
     };
     if (opts && opts.memory_context) payload.memory_context = opts.memory_context;
@@ -649,7 +649,7 @@ window._renderPCS = function(postId) {
   _pcsTabSwitch('caption');
 
   // l) Mention dropup (notes + client)
-  //    Pre-load the roster from /user_roles so the dropup filter has data
+  //    Pre-load the roster from /profiles so the dropup filter has data
   //    before the user starts typing. Fire-and-forget; internal cache.
   if (typeof _fetchPcsRoster === 'function') {
     try { _fetchPcsRoster(); } catch (e) {}
@@ -2796,7 +2796,7 @@ window.submitPcsComment = async function(postId, message, visibility, isTask, is
   }
 
   // notify-comment edge silently drops mentions whose author_role cannot
-  // be resolved, so we must send canonical user_roles emails. Use the
+  // be resolved, so we must send canonical profiles emails. Use the
   // existing helper to look each name up; drop unresolved entries.
   if (_mentioned.length) {
     try {
@@ -2885,12 +2885,12 @@ async function _lookupMentionEmails(names) {
     var results = [];
     for (var i = 0; i < names.length; i++) {
       var rows = await apiFetch(
-        '/user_roles?name=eq.' +
+        '/profiles?display_name=eq.' +
         encodeURIComponent(names[i]) +
-        '&select=email,name&limit=1'
+        '&select=email,display_name&limit=1'
       );
       if (Array.isArray(rows) && rows[0] && rows[0].email) {
-        results.push({ name: rows[0].name, email: rows[0].email });
+        results.push({ name: rows[0].display_name, email: rows[0].email });
       }
     }
     return results;
@@ -3017,15 +3017,15 @@ function _fetchPcsRoster() {
   }
   if (_pcsRosterPromise) return _pcsRosterPromise;
   _pcsRosterPromise = window.apiFetch(
-    '/user_roles?select=name,role,email&order=name.asc',
+    '/profiles?select=display_name,role,email&order=display_name.asc',
     { method: 'GET' }
   ).then(function(rows) {
     _pcsRoster = Array.isArray(rows)
-      ? rows.filter(function(r) { return r && (r.name || r.email); })
+      ? rows.filter(function(r) { return r && (r.display_name || r.email); })
           .map(function(r) {
             var safeRole = r.role
               ? String(r.role) : 'client';
-            var _rosterName = (r.name && r.name.trim()) ? r.name.trim() : '';
+            var _rosterName = (r.display_name && r.display_name.trim()) ? r.display_name.trim() : '';
             if (!_rosterName && r.email && typeof getDisplayName === 'function') {
               var _dn = getDisplayName(r.email);
               if (_dn && _dn !== r.email && _dn !== 'Unknown') _rosterName = _dn;

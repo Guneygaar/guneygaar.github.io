@@ -552,7 +552,7 @@ function _cwCaptureCorrection(original, edited) {
     if (_cwCharDiff(normOrig, normEdit) < 5) return;
 
     var payload = {
-      workspace_id: 'default',
+      workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
       type: 'edit_correction',
       content: JSON.stringify({
         original: original.slice(0, 500),
@@ -585,7 +585,7 @@ function _cwSaveMemory(trigger, instruction) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify({
-      workspace_id: 'default',
+      workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
       type: 'user_instruction',
       content: instruction,
       post_id: ws.postId || null

@@ -245,7 +245,7 @@ window._claudePolish = function(text, postId) {
       { role: 'user', content: userContent }
     ],
     post_id: postId || null,
-    workspace_id: 'default',
+    workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
     created_by: (window.AppState && window.AppState.user && window.AppState.user.email) || ''
   };
   return fetch(cfg.workerUrl + '/ai/complete', {

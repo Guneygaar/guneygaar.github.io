@@ -201,17 +201,18 @@ async function uploadPostAsset(file, postId) {
   return data.url;
 }
 
-// Fetches workspace_settings row for the active workspace and stashes
+// Fetches the workspaces row for the active workspace and stashes
 // the result on window.AppState.workspace so every AI feature gate can
 // read it without making a network call. Called once from activateRole()
 // (03-auth.js) right after the post-login token refresh timer is wired,
 // BEFORE any render function runs. Fire-and-forget: never blocks login,
 // never shows a toast, and swallows errors into an empty object so the
-// app degrades gracefully if workspace_settings is unreachable.
+// app degrades gracefully if workspaces is unreachable. Slug-keyed for now
+// — workspace.id (uuid) is the stable identity column for child writes.
 async function loadWorkspaceSettings() {
   try {
     const rows = await withRetry(function() { return apiFetch(
-      '/workspace_settings?workspace_id=eq.default&select=*&limit=1',
+      '/workspaces?slug=eq.default&select=*&limit=1',
       {},
       { allowLogout: false }
     ); });

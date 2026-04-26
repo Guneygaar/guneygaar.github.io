@@ -2,7 +2,7 @@ import React from 'react';
 
 // Linkifies: @mentions (terracotta text-only, no bg), #hashtags (dim), and URLs.
 // Mention tokens match either plain `@shortname` or `@local@domain.com`
-// so raw email mentions resolve to display names via user_roles.
+// so raw email mentions resolve to display names via profiles.
 
 const TOKEN_RE = /(@[\w.-]+(?:@[\w.-]+\.[a-z]{2,})?|#\w+|https?:\/\/\S+|(?:[\w-]+\.)+(?:com|io|in|ai|co|org|net|app|dev|xyz|me)(?:\/\S*)?)/gi;
 

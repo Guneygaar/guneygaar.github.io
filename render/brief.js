@@ -177,7 +177,7 @@ function _briefBuildDiscussionHtml(postId, comments, sectionNumber) {
     '</div>';
 }
 
-// Resolve @name mentions in a brief comment to canonical user_roles
+// Resolve @name mentions in a brief comment to canonical profiles
 // emails using the brief team-member cache. notify-comment edge silently
 // drops mentions whose role cannot be resolved, so we must send emails.
 // Falls back to window._pcsRosterData when the brief cache is not yet
@@ -875,7 +875,7 @@ window._briefAdjustTotal = function(postId, delta) {
   el.textContent = next;
 };
 
-// Fetch team members (non-client roles) from user_roles and show
+// Fetch team members (non-client roles) from profiles and show
 // assignment dropdown. Uses window._briefTeamMembersCache so the
 // result is re-used across renders and re-opens within a session.
 window._briefTeamMembersCache = null;
@@ -884,37 +884,16 @@ window._briefFetchTeamMembers = function() {
   if (Array.isArray(window._briefTeamMembersCache) && window._briefTeamMembersCache.length) {
     return Promise.resolve(window._briefTeamMembersCache);
   }
-  // SELECT name, role FROM user_roles WHERE role != 'client' ORDER BY name
-  return apiFetch('/user_roles?role=neq.Client&select=name,role,email&order=name.asc', { method: 'GET' })
+  // SELECT display_name, role, email FROM profiles WHERE role != 'client' ORDER BY display_name
+  return apiFetch('/profiles?role=neq.client&select=display_name,role,email&order=display_name.asc', { method: 'GET' })
     .then(function(rows) {
-      var members = Array.isArray(rows) ? rows.filter(function(r) { return r && r.name; }) : [];
-      // Merge profiles.display_name over user_roles.name so the dropdown
-      // shows the human-friendly display name when present. Graceful
-      // fallback: if the profiles fetch fails, we still resolve with the
-      // user_roles names — the dropdown never blocks.
-      return new Promise(function(resolve) {
-        apiFetch('/profiles?select=email,display_name', { method: 'GET' })
-          .then(function(profileRows) {
-            if (!Array.isArray(profileRows)) return;
-            var profileMap = {};
-            profileRows.forEach(function(p) {
-              if (p && p.email && p.display_name) {
-                profileMap[p.email.toLowerCase()] = p.display_name;
-              }
-            });
-            members.forEach(function(m) {
-              if (m.email) {
-                var dn = profileMap[m.email.toLowerCase()];
-                if (dn) m.name = dn;
-              }
-            });
-          })
-          .catch(function() { /* graceful fallback */ })
-          .finally(function() {
-            window._briefTeamMembersCache = members;
-            resolve(members);
-          });
-      });
+      var members = Array.isArray(rows)
+        ? rows
+            .filter(function(r) { return r && r.display_name; })
+            .map(function(r) { return { name: r.display_name, role: r.role, email: r.email }; })
+        : [];
+      window._briefTeamMembersCache = members;
+      return members;
     });
 };
 

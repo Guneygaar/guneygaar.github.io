@@ -3,7 +3,7 @@
 //
 // Single entry point for every AI feature in Sorted. Fronts the
 // Anthropic API, loads brand context from R2 + Supabase, gates on
-// workspace_settings.ai_* flags, and logs every call to ai_usage.
+// workspaces.ai_* flags, and logs every call to ai_usage.
 //
 // Routes:
 //   OPTIONS *          → CORS preflight (204)
@@ -14,7 +14,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 const SUPABASE_URL = 'https://ozptjplxbyswclolbxyn.supabase.co';
-// Service-role key — required for workspace_settings reads + ai_usage
+// Service-role key — required for workspaces reads + ai_usage
 // writes with the current (loose) table permissions. Consistent with
 // the hardcoded-Supabase-creds pattern used by sorted-preview-worker.
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cHRqcGx4Ynlzd2Nsb2xieHluIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjQ3NTQ4MCwiZXhwIjoyMDkyMDUxNDgwfQ.804mVf7ZqqgaQAn8Pe6ngOphfsP07BTKDpa2QmmdDYk';
@@ -166,11 +166,11 @@ function calcCostUsd(inputTokens, outputTokens) {
   return n / 1000000;
 }
 
-// ─── workspace-settings gate ─────────────────────────────────
+// ─── workspaces gate ─────────────────────────────────────────
 
 async function checkWorkspaceEnabled(workspaceId, feature) {
   const rows = await supabaseGet(
-    '/workspace_settings?workspace_id=eq.' + encodeURIComponent(workspaceId)
+    '/workspaces?id=eq.' + encodeURIComponent(workspaceId)
     + '&select=ai_enabled,ai_writer,ai_qc,ai_chat,ai_email_briefs&limit=1'
   );
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -408,7 +408,7 @@ async function handleUpload(request, env) {
 
     const file        = form.get('file');
     const postId      = (form.get('post_id')      || '').toString();
-    const workspaceId = (form.get('workspace_id') || '').toString();
+    const workspaceId = (form.get('workspace_id') || env.BOOTSTRAP_WORKSPACE_ID || '').toString();
     const createdBy   = (form.get('created_by')   || '').toString();
 
     if (!file || typeof file === 'string') {
@@ -545,7 +545,7 @@ async function handleComplete(request, env) {
     const rawMessages = body && body.messages;
     const rawPrompt   = body && body.prompt;
     const postId      = (body && body.post_id) || null;
-    const workspaceId = (body && body.workspace_id) || 'default';
+    const workspaceId = (body && body.workspace_id) || env.BOOTSTRAP_WORKSPACE_ID;
     const createdBy   = (body && body.created_by) || '';
     const productName = (body && body.product_name) || '';
     const fileKey     = (body && body.file_key) || null;
@@ -704,7 +704,7 @@ async function handleLog(request, env) {
     }
 
     const payload = {
-      workspace_id:  (body && body.workspace_id) || 'default',
+      workspace_id:  (body && body.workspace_id) || env.BOOTSTRAP_WORKSPACE_ID,
       post_id:       (body && body.post_id) || null,
       feature:       body && body.feature,
       tokens_input:  Number(body && body.tokens_input)  || 0,
@@ -868,13 +868,13 @@ async function handleGmailBrief(request, env) {
     // Accept thread_id going forward; fall back to message_id for
     // any stale frontend cache still POSTing the old field name.
     const threadId    = body && (body.thread_id || body.message_id);
-    const workspaceId = (body && body.workspace_id) || 'default';
+    const workspaceId = (body && body.workspace_id) || env.BOOTSTRAP_WORKSPACE_ID;
     const createdBy   = (body && body.created_by) || '';
 
     if (!threadId) return errorResponse('thread_id required', 400);
 
     // Workspace-level feature gate. Uses the 'email_brief' key in
-    // FEATURE_FLAGS → 'ai_email_briefs' in workspace_settings.
+    // FEATURE_FLAGS → 'ai_email_briefs' in workspaces.
     const gate = await checkWorkspaceEnabled(workspaceId, 'email_brief');
     if (!gate.ok) return jsonResponse({ success: false, error: gate.reason }, 403);
 
