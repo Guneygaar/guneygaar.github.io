@@ -24,7 +24,10 @@ import {
   patchPlan,
   insertPlanVersion,
   insertPlanComment,
-  insertNotification
+  insertNotification,
+  callAlignPlan,
+  callSendPlanAlignment,
+  generateShareToken
 } from '../api/planTablesApi.js';
 
 function currentMonthRange() {
@@ -620,44 +623,23 @@ export const usePlanStore = create((set, get) => ({
   async sendPlanForAlignment() {
     const plan = get().plan;
     if (!plan) return;
-    const cells = get().planCells;
     const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
-    const nextVersion = (plan.current_version || 1) + 1;
     try {
-      await insertPlanVersion({
+      const res = await callSendPlanAlignment({
         plan_id: plan.id,
-        version_number: nextVersion,
-        snapshot_jsonb: { cells },
-        trigger_event: 'sent_for_alignment',
-        triggered_by: user.id || null,
-        triggered_by_name: user.name || null,
-        triggered_by_role: user.role || null
+        user_id: user.id || null,
+        user_name: user.name || 'Servicing',
+        user_role: user.role || 'Servicing',
+        workspace_id: plan.workspace_id
       });
-      const updated = await patchPlan(plan.id, {
-        plan_status: 'awaiting_alignment',
-        current_version: nextVersion,
-        updated_at: new Date().toISOString()
-      });
+      const newVersion = (res && res.version) || ((plan.current_version || 1) + 1);
+      const refreshedPlan = await fetchPlanById(plan.id);
+      const refreshedVersions = await fetchPlanVersions(plan.id);
       set({
-        plan: { ...plan, ...updated, plan_status: 'awaiting_alignment', current_version: nextVersion },
-        planVersions: [{
-          plan_id: plan.id,
-          version_number: nextVersion,
-          trigger_event: 'sent_for_alignment',
-          triggered_by_name: user.name || null,
-          triggered_by_role: user.role || null,
-          created_at: new Date().toISOString(),
-          snapshot_jsonb: { cells }
-        }, ...get().planVersions]
+        plan: refreshedPlan || { ...plan, plan_status: 'awaiting_alignment', current_version: newVersion },
+        planVersions: refreshedVersions
       });
-      await insertNotification({
-        user_role: 'Client',
-        post_id: null,
-        type: 'plan_alignment',
-        message: `Plan "${plan.title || ''}" sent for alignment`,
-        actor: user.name || 'Servicing'
-      });
-      get().showToast({ msg: 'Sent for alignment', duration: 2500 });
+      get().showToast({ msg: 'Sent for alignment.', duration: 2500 });
       get().closePlanSheet();
     } catch (err) {
       get().showToast({ msg: 'Send failed', duration: 2500 });
@@ -667,39 +649,62 @@ export const usePlanStore = create((set, get) => ({
   async alignPlan() {
     const plan = get().plan;
     if (!plan) return;
-    const cells = get().planCells;
     const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
     try {
-      const updated = await patchPlan(plan.id, {
-        plan_status: 'aligned',
-        aligned_version: plan.current_version,
-        aligned_at: new Date().toISOString(),
-        aligned_by: user.id || null,
-        updated_at: new Date().toISOString()
+      const res = await callAlignPlan({
+        plan_id: plan.id,
+        client_user_id: user.id,
+        client_name: user.name || 'Client',
+        workspace_id: plan.workspace_id
       });
-      // Mark draft/changes_requested cells as spawned so SheetGrid can
-      // skip the inline "+ Add concept" affordance. Server-side post
-      // creation is queued for the alignment edge function (PR-3).
-      const updates = cells
-        .filter((c) => c.cell_status !== 'spawned' && c.cell_status !== 'linked')
-        .map((c) => patchPlanCell(c.id, { cell_status: 'spawned' }).catch(() => null));
-      await Promise.all(updates);
-      const refreshed = await fetchPlanCells(plan.id);
+      const spawned = (res && res.spawned_count) || 0;
+      const [refreshedPlan, refreshedCells, refreshedVersions] = await Promise.all([
+        fetchPlanById(plan.id),
+        fetchPlanCells(plan.id),
+        fetchPlanVersions(plan.id)
+      ]);
       set({
-        plan: { ...plan, ...updated, plan_status: 'aligned' },
-        planCells: refreshed
+        plan: refreshedPlan || { ...plan, plan_status: 'aligned' },
+        planCells: refreshedCells,
+        planVersions: refreshedVersions
       });
-      await insertNotification({
-        user_role: 'Servicing',
-        post_id: null,
-        type: 'plan_aligned',
-        message: `Plan "${plan.title || ''}" aligned by client`,
-        actor: user.name || 'Client'
+      get().showToast({
+        msg: `Plan aligned. ${spawned} post${spawned === 1 ? '' : 's'} created in Brief stage.`,
+        duration: 3000
       });
-      get().showToast({ msg: `Plan aligned. ${refreshed.length} posts queued.`, duration: 3000 });
       get().closePlanSheet();
     } catch (err) {
       get().showToast({ msg: 'Align failed', duration: 2500 });
+    }
+  },
+
+  async sharePlan() {
+    const plan = get().plan;
+    if (!plan) return;
+    try {
+      let token = plan.share_token || null;
+      if (!token) {
+        token = await generateShareToken(plan.id);
+        if (token) {
+          set({ plan: { ...get().plan, share_token: token } });
+        }
+      }
+      if (!token) {
+        get().showToast({ msg: 'Could not create share link', duration: 2500 });
+        return;
+      }
+      const url = `https://app.srtd.io/p/${token}`;
+      try {
+        if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+        }
+      } catch { /* clipboard write best-effort */ }
+      get().showToast({
+        msg: 'Share link copied. Anyone with link can view + comment.',
+        duration: 3000
+      });
+    } catch (err) {
+      get().showToast({ msg: 'Share failed', duration: 2500 });
     }
   },
 
