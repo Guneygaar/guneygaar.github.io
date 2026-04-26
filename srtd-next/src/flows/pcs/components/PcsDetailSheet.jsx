@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { BottomSheet, Avatar } from '../../../core/ui/index.js';
+import { PostDeleteConfirm } from './PostDeleteConfirm.jsx';
 import { deletePost } from '../../../core/api/posts.js';
 import { copyToClipboard } from '../../../core/bridges/clipboard.js';
 import { openWhatsAppShare, buildShortUrl } from '../../../core/bridges/whatsapp.js';
@@ -514,6 +515,7 @@ function UrlInput({ value, placeholder, onSave }) {
 export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClose, actor }) {
   const [expandedField, setExpandedField] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { commit } = useOptimisticPatch();
   const isClient = useIsClient();
 
@@ -597,14 +599,19 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
     setTimeout(onClose, 130);
   }
 
-  async function onDelete() {
+  function onDelete() {
     if (busy) return;
-    if (!window.confirm(`Delete this post permanently?\n\n${post.title || post.post_id}`)) return;
+    setDeleteConfirmOpen(true);
+  }
+
+  async function onDeleteConfirmed() {
+    if (busy) return;
     setBusy(true);
     try {
       await deletePost(post.post_id);
       logClick('pcs_react_panel_delete', { postId: post.post_id });
       toast('Post deleted', 'success');
+      setDeleteConfirmOpen(false);
       pcsFlow.close();
     } catch (err) {
       logError(err, { context: 'pcs_react_panel_delete' });
@@ -801,11 +808,20 @@ export function PcsDetailSheet({ post, isAdmin, canEdit, userRoles, open, onClos
           <button
             onClick={onDelete}
             disabled={busy}
+            data-testid="pcs-detail-delete-trigger"
             className="block w-[calc(100%-28px)] mx-[14px] mb-2.5 mt-1.5 p-3 border border-divider-subtle bg-transparent rounded-card text-red font-sans text-lg font-medium text-center disabled:opacity-50"
             style={{ transition: 'all 0.12s ease' }}
           >
             Delete post
           </button>
+          <PostDeleteConfirm
+            open={deleteConfirmOpen}
+            postTitle={post.title}
+            postId={post.post_id}
+            busy={busy}
+            onCancel={() => { if (!busy) setDeleteConfirmOpen(false); }}
+            onConfirm={onDeleteConfirmed}
+          />
         </>
       ) : null}
     </BottomSheet>
