@@ -4,7 +4,7 @@
 import React, { useMemo } from 'react';
 import {
   List as ListIcon, LayoutGrid, CalendarDays, BarChart3, BookOpen,
-  Check, Settings, X, Plus
+  Check, Settings, X, Plus, Trash2
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useAllPosts } from '../hooks/usePosts.js';
@@ -97,6 +97,8 @@ export function Menu() {
   const monthStart = usePlanStore((s) => s.monthStart);
   const monthEnd = usePlanStore((s) => s.monthEnd);
   const openWizard = usePlanStore((s) => s.openWizard);
+  const plan = usePlanStore((s) => s.plan);
+  const openDeletePlanSheet = usePlanStore((s) => s.openDeletePlanSheet);
   const canCreatePlan = role === 'servicing' || role === 'admin';
 
   const counts = useMemo(() => {
@@ -232,6 +234,53 @@ export function Menu() {
                     color: 'var(--c-text-mid)',
                     marginTop: '2px'
                   }}>Create a plan for any period</span>
+                </span>
+              </button>
+            </section>
+          ) : null}
+          {canCreatePlan && plan ? (
+            <section>
+              <button
+                type="button"
+                onClick={() => { closeMenu(); openDeletePlanSheet(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '14px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid var(--c-divider-subtle)',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}>
+                <span style={{
+                  width: '32px',
+                  height: '32px',
+                  background: 'transparent',
+                  border: '1px solid var(--c-red)',
+                  color: 'var(--c-red)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Trash2 size={16} />
+                </span>
+                <span style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <span style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: 'var(--c-red)'
+                  }}>Delete plan</span>
+                  <span style={{
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '12px',
+                    color: 'var(--c-text-mid)',
+                    marginTop: '2px'
+                  }}>This cannot be undone. Linked posts stay safe.</span>
                 </span>
               </button>
             </section>

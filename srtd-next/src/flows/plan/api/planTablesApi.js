@@ -105,6 +105,28 @@ export async function patchPlanCell(cellId, patch) {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
 }
 
+// Batch-3: per-cell remove. The plan_cells -> posts.plan_cell_id FK is
+// ON DELETE SET NULL, so any linked post auto-unlinks (stage unchanged,
+// post stays in pipeline).
+export async function deletePlanCell(cellId) {
+  if (!cellId) throw new Error('deletePlanCell: cellId required');
+  await apiFetch(`/plan_cells?id=eq.${enc(cellId)}`, {
+    method: 'DELETE',
+    headers: WRITE_HEADERS
+  });
+}
+
+// Batch-3: plan-level delete. Cascades plan_cells, plan_versions,
+// plan_comments via FK ON DELETE CASCADE; posts.plan_cell_id SET NULL
+// so linked posts stay in the pipeline.
+export async function deletePlan(planId) {
+  if (!planId) throw new Error('deletePlan: planId required');
+  await apiFetch(`/plans?id=eq.${enc(planId)}`, {
+    method: 'DELETE',
+    headers: WRITE_HEADERS
+  });
+}
+
 export async function patchPlan(planId, patch) {
   if (!planId) throw new Error('patchPlan: planId required');
   const rows = await apiFetch(`/plans?id=eq.${enc(planId)}`, {
@@ -247,6 +269,36 @@ export async function callCreatePlan({ workspace_id, title, period_start, period
     method: 'POST',
     headers: WRITE_HEADERS,
     body: JSON.stringify(body)
+  });
+  if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+  if (Array.isArray(data) && data.length > 0) return data[0];
+  return data;
+}
+
+// Batch-3: list every post eligible to be attached to a plan cell:
+// stage IN STAGES_FOR_PLAN AND plan_cell_id IS NULL. Returns the same
+// shape as listStuckPosts so the picker can reuse the row renderer.
+export async function listAttachablePosts() {
+  const select = 'id,post_id,title,stage,target_date,content_pillar,format';
+  const stages = enc('(' + STAGES_FOR_PLAN.join(',') + ')');
+  const path = `/posts?select=${select}&stage=in.${stages}&plan_cell_id=is.null&order=target_date.asc.nullslast`;
+  const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
+  return Array.isArray(rows) ? rows : [];
+}
+
+// Batch-3: SECURITY DEFINER RPC. Inserts a plan_cell linked to an
+// existing post in one transaction. Server-enforces auth + workspace
+// + role gating identical to create_plan_with_carryovers.
+export async function callAttachExistingPost({ p_plan_id, p_workspace_id, p_cell_date, p_channel, p_post_id }) {
+  if (!p_plan_id) throw new Error('callAttachExistingPost: p_plan_id required');
+  if (!p_workspace_id) throw new Error('callAttachExistingPost: p_workspace_id required');
+  if (!p_cell_date) throw new Error('callAttachExistingPost: p_cell_date required');
+  if (!p_channel) throw new Error('callAttachExistingPost: p_channel required');
+  if (!p_post_id) throw new Error('callAttachExistingPost: p_post_id required');
+  const data = await apiFetch('/rpc/attach_existing_post_to_plan', {
+    method: 'POST',
+    headers: WRITE_HEADERS,
+    body: JSON.stringify({ p_plan_id, p_workspace_id, p_cell_date, p_channel, p_post_id })
   });
   if (data && typeof data === 'object' && !Array.isArray(data)) return data;
   if (Array.isArray(data) && data.length > 0) return data[0];

@@ -28,7 +28,9 @@ import { FabSheet } from './sheets/FabSheet.jsx';
 import { Menu } from './sheets/Menu.jsx';
 import {
   HistoryPanel, CommentsPanel, ConfirmSendSheet,
-  ConfirmAlignSheet, ChangesSheet, PlanCellSheet
+  ConfirmAlignSheet, ChangesSheet, PlanCellSheet,
+  AddConceptOptionsSheet, AttachPostSheet,
+  RemoveCellConfirm, DeletePlanConfirm
 } from './sheets/PlanSheets.jsx';
 import './tokens.css';
 
@@ -386,6 +388,10 @@ export default function Plan() {
       {planSheet === 'align' ? <ConfirmAlignSheet /> : null}
       {planSheet === 'changes' ? <ChangesSheet /> : null}
       {planSheet === 'cell' ? <PlanCellSheet /> : null}
+      {planSheet === 'addConcept' ? <AddConceptOptionsSheet /> : null}
+      {planSheet === 'attachPicker' ? <AttachPostSheet /> : null}
+      {planSheet === 'removeCell' ? <RemoveCellConfirm /> : null}
+      {planSheet === 'deletePlan' ? <DeletePlanConfirm /> : null}
 
       <Toast />
     </div>
