@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, X } from 'lu
 import { usePlanStore } from '../store/planStore.js';
 import { openInPcs } from '../shared/openInPcs.js';
 import { CreatePlanWizard } from '../sheets/CreatePlanWizard.jsx';
+import { useCellDatePicker } from '../hooks/useCellDatePicker.js';
 
 const DEFAULT_CHANNELS = ['linkedin', 'instagram', 'twitter'];
 
@@ -245,7 +246,7 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
           color: 'var(--c-text-loud)',
           whiteSpace: 'normal',
           wordBreak: 'break-word'
-        }}>{cell.concept || 'Untitled concept'}</div>
+        }}>{cell.title || cell.concept || 'Untitled concept'}</div>
         <CellChip status={cell.cell_status} />
       </button>
       {canRemove ? (
@@ -275,7 +276,32 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
   );
 }
 
-function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, onAdd, onRemove }) {
+function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, onAdd, onRemove, onDateTap }) {
+  const dateCell = cellsByKey
+    ? channels.map((ch) => (cellsByKey[`${dateISO}|${ch}`] || []))
+        .flat()
+        .find((c) => c && c.id)
+    : null;
+  const canPickDate = role !== 'client' && !!dateCell && typeof onDateTap === 'function';
+  const dateColInner = (
+    <>
+      <div style={{
+        fontFamily: FONT_MONO,
+        fontSize: '7px',
+        letterSpacing: '.18em',
+        textTransform: 'uppercase',
+        color: 'var(--c-text-soft)'
+      }}>{dayDOW(dateISO)}</div>
+      <div style={{
+        fontFamily: FONT_MONO,
+        fontSize: '18px',
+        fontWeight: 500,
+        lineHeight: 1,
+        color: 'var(--c-text-loud)',
+        marginTop: '4px'
+      }}>{dayNumber(dateISO)}</div>
+    </>
+  );
   return (
     <div style={{
       display: 'flex',
@@ -284,23 +310,28 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
       paddingBottom: '10px',
       borderBottom: '1px solid var(--c-divider-subtle)'
     }}>
-      <div style={{ width: '54px', flexShrink: 0, paddingRight: '6px' }}>
-        <div style={{
-          fontFamily: FONT_MONO,
-          fontSize: '7px',
-          letterSpacing: '.18em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-soft)'
-        }}>{dayDOW(dateISO)}</div>
-        <div style={{
-          fontFamily: FONT_MONO,
-          fontSize: '18px',
-          fontWeight: 500,
-          lineHeight: 1,
-          color: 'var(--c-text-loud)',
-          marginTop: '4px'
-        }}>{dayNumber(dateISO)}</div>
-      </div>
+      {canPickDate ? (
+        <button
+          type="button"
+          aria-label="Change date"
+          onClick={() => onDateTap(dateCell)}
+          style={{
+            width: '54px',
+            flexShrink: 0,
+            paddingRight: '6px',
+            background: 'transparent',
+            border: 'none',
+            textAlign: 'left',
+            cursor: 'pointer',
+            color: 'inherit'
+          }}>
+          {dateColInner}
+        </button>
+      ) : (
+        <div style={{ width: '54px', flexShrink: 0, paddingRight: '6px' }}>
+          {dateColInner}
+        </div>
+      )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {channels.map((ch) => {
           const stack = cellsByKey[`${dateISO}|${ch}`] || [];
@@ -436,6 +467,8 @@ export function PlanView() {
   const openWizard = usePlanStore((s) => s.openWizard);
   const canCreatePlan = role === 'servicing' || role === 'admin';
 
+  const { triggerCellPicker } = useCellDatePicker();
+
   useEffect(() => { loadPlan(); }, [loadPlan]);
 
   const activeChannels = useMemo(() => {
@@ -521,10 +554,25 @@ export function PlanView() {
       <div style={{
         padding: '80px 24px',
         textAlign: 'center',
-        fontFamily: FONT_BODY,
-        fontSize: '13px',
-        color: 'var(--c-red)'
-      }}>{planError}</div>
+        fontFamily: FONT_BODY
+      }}>
+        <div style={{ fontSize: '13px', color: 'var(--c-red)' }}>{planError}</div>
+        <button
+          type="button"
+          onClick={() => { usePlanStore.setState({ planError: null }); loadPlan(); }}
+          style={{
+            marginTop: '14px',
+            padding: '8px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-divider-warm)',
+            color: 'var(--c-text-loud)',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}>Retry</button>
+      </div>
     );
   }
 
@@ -801,6 +849,7 @@ export function PlanView() {
               onTap={handleCellTap}
               onAdd={handleAdd}
               onRemove={handleRemove}
+              onDateTap={triggerCellPicker}
             />
           );
         })}

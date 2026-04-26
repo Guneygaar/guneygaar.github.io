@@ -28,8 +28,25 @@ export async function fetchPlanPosts(monthStart, monthEnd) {
     + `&stage=in.${PLAN_STAGE_IN_CSV}`
     + `&or=(is_draft.is.null,is_draft.eq.false)`
     + `&order=target_date.asc,status_changed_at.asc`;
-  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
-  return Array.isArray(rows) ? rows : [];
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 30000) : null;
+  try {
+    const rows = await apiFetch(
+      path,
+      { method: 'GET', headers: { 'Accept': 'application/json' }, signal: ctrl ? ctrl.signal : undefined },
+      { allowLogout: false }
+    );
+    return Array.isArray(rows) ? rows : [];
+  } catch (err) {
+    if (ctrl && ctrl.signal && ctrl.signal.aborted) {
+      const e = new Error('Request timed out after 30s');
+      e.name = 'TimeoutError';
+      throw e;
+    }
+    throw err;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 /**

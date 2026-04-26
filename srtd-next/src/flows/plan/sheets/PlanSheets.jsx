@@ -7,6 +7,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, FilePlus, Link2, Trash2 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { STAGE_LABELS, STAGE_COLOR_VAR } from '../shared/constants.js';
+import { PILLARS, FORMATS } from '../../../core/mappings.js';
+
+if (!Array.isArray(PILLARS) || PILLARS.length === 0) {
+  throw new Error('PlanSheets: PILLARS constant missing from core/mappings.js');
+}
+if (!Array.isArray(FORMATS) || FORMATS.length === 0) {
+  throw new Error('PlanSheets: FORMATS constant missing from core/mappings.js');
+}
 
 const FONT_BODY = '"DM Sans", sans-serif';
 const FONT_HEAD = 'Fraunces, serif';
@@ -384,8 +392,29 @@ export function ConfirmSendSheet() {
   const send = usePlanStore((s) => s.sendPlanForAlignment);
   const cells = usePlanStore((s) => s.planCells);
   return (
-    <SlideUp title="Send for alignment" onClose={close} fixedHeight>
+    <SlideUp title="Send for alignment" onClose={close}>
       <div style={{ padding: '16px' }}>
+        {cells.length > 0 ? (
+          <div style={{
+            marginBottom: '12px',
+            maxHeight: '180px',
+            overflowY: 'auto',
+            border: '1px solid var(--c-divider-soft)',
+            background: 'var(--c-bg-2)'
+          }}>
+            {cells.map((c) => (
+              <div key={c.id} style={{
+                padding: '8px 10px',
+                borderBottom: '1px solid var(--c-divider-subtle)',
+                fontFamily: FONT_BODY,
+                fontSize: '13px',
+                color: 'var(--c-text-loud)',
+                lineHeight: 1.35,
+                wordBreak: 'break-word'
+              }}>{c.title || c.concept || 'Untitled concept'}</div>
+            ))}
+          </div>
+        ) : null}
         <div style={{
           fontFamily: FONT_HEAD,
           fontSize: '16px',
@@ -598,6 +627,30 @@ export function ChangesSheet() {
   );
 }
 
+const CELL_INPUT_STYLE = {
+  display: 'block',
+  width: '100%',
+  padding: '10px 12px',
+  background: 'var(--c-bg-2)',
+  border: '1px solid var(--c-divider-soft)',
+  color: 'var(--c-text-loud)',
+  fontFamily: FONT_BODY,
+  fontSize: '13px',
+  outline: 'none',
+  boxSizing: 'border-box'
+};
+
+const CELL_LABEL_STYLE = {
+  display: 'block',
+  marginTop: '12px',
+  marginBottom: '4px',
+  fontFamily: FONT_MONO,
+  fontSize: '7px',
+  letterSpacing: '.18em',
+  textTransform: 'uppercase',
+  color: 'var(--c-text-soft)'
+};
+
 export function PlanCellSheet() {
   const close = usePlanStore((s) => s.closePlanSheet);
   const role = usePlanStore((s) => s.role);
@@ -605,11 +658,17 @@ export function PlanCellSheet() {
   const comments = usePlanStore((s) => s.planComments);
   const update = usePlanStore((s) => s.updatePlanCell);
   const addComment = usePlanStore((s) => s.addPlanComment);
+  const [title, setTitle] = useState(cell ? (cell.title || '') : '');
+  const [pillar, setPillar] = useState(cell ? (cell.content_pillar || '') : '');
+  const [format, setFormat] = useState(cell ? (cell.format || '') : '');
   const [concept, setConcept] = useState(cell ? (cell.concept || '') : '');
   const [draft, setDraft] = useState('');
   const debounceRef = useRef(null);
 
   useEffect(() => {
+    setTitle(cell ? (cell.title || '') : '');
+    setPillar(cell ? (cell.content_pillar || '') : '');
+    setFormat(cell ? (cell.format || '') : '');
     setConcept(cell ? (cell.concept || '') : '');
   }, [cell && cell.id]);
 
@@ -621,19 +680,53 @@ export function PlanCellSheet() {
 
   const canEdit = role !== 'client';
 
-  function onConceptChange(v) {
-    setConcept(v);
+  function debouncedPatch(patch) {
     if (!canEdit || !cell.id) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      update(cell.id, { concept: v });
+      update(cell.id, patch);
     }, 800);
   }
 
-  function commitConcept() {
+  function onTitleChange(v) {
+    setTitle(v);
+    debouncedPatch({ title: v.trim() ? v : null });
+  }
+
+  function onPillarChange(v) {
+    setPillar(v);
     if (!canEdit || !cell.id) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    update(cell.id, { concept });
+    update(cell.id, { content_pillar: v || null });
+  }
+
+  function onFormatChange(v) {
+    setFormat(v);
+    if (!canEdit || !cell.id) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    update(cell.id, { format: v || null });
+  }
+
+  function onConceptChange(v) {
+    setConcept(v);
+    debouncedPatch({ concept: v });
+  }
+
+  async function commitAndClose() {
+    if (!canEdit || !cell.id) {
+      close();
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    try {
+      await update(cell.id, {
+        title: title.trim() ? title : null,
+        content_pillar: pillar || null,
+        format: format || null,
+        concept
+      });
+    } catch (e) { /* updatePlanCell handles toast */ }
+    close();
   }
 
   function send() {
@@ -644,7 +737,7 @@ export function PlanCellSheet() {
   }
 
   return (
-    <SlideUp title="Cell" onClose={close}>
+    <SlideUp title={cell.title || 'Untitled concept'} onClose={close}>
       <div style={{ padding: '14px 16px' }}>
         <div style={{
           fontFamily: FONT_MONO,
@@ -654,27 +747,51 @@ export function PlanCellSheet() {
           color: 'var(--c-text-soft)',
           marginBottom: '8px'
         }}>{(cell.cell_date || '').slice(0, 10)} - {cell.channel}</div>
+
+        <label style={CELL_LABEL_STYLE}>Title</label>
+        <input
+          type="text"
+          value={title}
+          readOnly={!canEdit}
+          onChange={(e) => onTitleChange(e.target.value)}
+          placeholder="Title"
+          style={CELL_INPUT_STYLE} />
+
+        <label style={CELL_LABEL_STYLE}>Pillar</label>
+        <select
+          value={pillar}
+          disabled={!canEdit}
+          onChange={(e) => onPillarChange(e.target.value)}
+          style={CELL_INPUT_STYLE}>
+          <option value="">- Select pillar -</option>
+          {PILLARS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+
+        <label style={CELL_LABEL_STYLE}>Format</label>
+        <select
+          value={format}
+          disabled={!canEdit}
+          onChange={(e) => onFormatChange(e.target.value)}
+          style={CELL_INPUT_STYLE}>
+          <option value="">- Select format -</option>
+          {FORMATS.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+
+        <label style={CELL_LABEL_STYLE}>Concept</label>
         <textarea
           value={concept}
           readOnly={!canEdit}
           onChange={(e) => onConceptChange(e.target.value)}
-          onBlur={commitConcept}
           placeholder="Concept..."
           rows={4}
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: '10px 12px',
-            background: 'var(--c-bg-2)',
-            border: '1px solid var(--c-divider-soft)',
-            color: 'var(--c-text-loud)',
-            fontFamily: FONT_BODY,
-            fontSize: '13px',
-            resize: 'vertical',
-            outline: 'none'
-          }} />
+          style={{ ...CELL_INPUT_STYLE, resize: 'vertical' }} />
+
         {canEdit ? (
-          <button type="button" onClick={commitConcept} style={{
+          <button type="button" onClick={commitAndClose} style={{
             marginTop: '8px',
             padding: '6px 12px',
             background: 'transparent',
@@ -832,29 +949,114 @@ export function AddConceptOptionsSheet() {
   const addPlanCell = usePlanStore((s) => s.addPlanCell);
   const openAttachPicker = usePlanStore((s) => s.openAttachPicker);
 
+  const [title, setTitle] = useState('');
+  const [concept, setConcept] = useState('');
+  const [pillar, setPillar] = useState('');
+  const [format, setFormat] = useState('');
+  const [saving, setSaving] = useState(false);
+
   if (!pending) return null;
 
-  function chooseNew() {
+  async function handleSave() {
+    if (saving) return;
     const p = pending;
-    close();
-    addPlanCell({ cell_date: p.dateISO, channel: p.channel, concept: '', position: p.position });
+    setSaving(true);
+    try {
+      await addPlanCell({
+        cell_date: p.dateISO,
+        channel: p.channel,
+        position: p.position,
+        title: title.trim(),
+        concept,
+        contentPillar: pillar || null,
+        format: format || null
+      });
+      close();
+    } finally {
+      setSaving(false);
+    }
   }
 
+  const canSave = !saving && (title.trim().length > 0 || concept.trim().length > 0);
+
   return (
-    <SlideUp title="Add concept" onClose={close} fixedHeight>
-      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <AddOption
-          Icon={FilePlus}
-          label="New concept"
-          sub="Start a fresh draft in this slot"
-          onClick={chooseNew}
-        />
-        <AddOption
-          Icon={Link2}
-          label="Attach existing post"
-          sub="Pick a post from your pipeline"
-          onClick={openAttachPicker}
-        />
+    <SlideUp title="Add concept" onClose={close}>
+      <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column' }}>
+        <label style={CELL_LABEL_STYLE}>Title</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Title"
+          style={CELL_INPUT_STYLE} />
+
+        <label style={CELL_LABEL_STYLE}>Concept</label>
+        <textarea
+          value={concept}
+          onChange={(e) => setConcept(e.target.value)}
+          placeholder="Concept..."
+          rows={3}
+          style={{ ...CELL_INPUT_STYLE, resize: 'vertical' }} />
+
+        <label style={CELL_LABEL_STYLE}>Pillar</label>
+        <select
+          value={pillar}
+          onChange={(e) => setPillar(e.target.value)}
+          style={CELL_INPUT_STYLE}>
+          <option value="">- Select pillar -</option>
+          {PILLARS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+
+        <label style={CELL_LABEL_STYLE}>Format</label>
+        <select
+          value={format}
+          onChange={(e) => setFormat(e.target.value)}
+          style={CELL_INPUT_STYLE}>
+          <option value="">- Select format -</option>
+          {FORMATS.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave}
+          style={{
+            marginTop: '14px',
+            padding: '10px 14px',
+            background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
+            border: 'none',
+            color: '#fff',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: canSave ? 'pointer' : 'not-allowed',
+            opacity: canSave ? 1 : 0.5,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}>
+          <FilePlus size={12} />
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+
+        <div style={{
+          marginTop: '18px',
+          paddingTop: '14px',
+          borderTop: '1px solid var(--c-divider-soft)'
+        }}>
+          <AddOption
+            Icon={Link2}
+            label="Attach existing post"
+            sub="Pick a post from your pipeline"
+            onClick={openAttachPicker}
+          />
+        </div>
       </div>
     </SlideUp>
   );
