@@ -49,7 +49,7 @@ export async function fetchPlansForWorkspace(workspaceId) {
 
 export async function fetchPlanCells(planId) {
   if (!planId) return [];
-  const select = 'id,plan_id,workspace_id,cell_date,channel,concept,reference_image_url,cell_status,position,created_at,updated_at';
+  const select = 'id,plan_id,workspace_id,cell_date,channel,title,concept,content_pillar,format,reference_image_url,cell_status,position,created_at,updated_at';
   const path = `/plan_cells?select=${select}&plan_id=eq.${enc(planId)}&order=cell_date.asc,channel.asc,position.asc`;
   const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
   return Array.isArray(rows) ? rows : [];
@@ -85,22 +85,34 @@ export async function fetchWorkspaceChannels(workspaceId) {
   }
 }
 
+function _pickCellFields(input) {
+  if (!input || typeof input !== 'object') return {};
+  const out = {};
+  for (const k of Object.keys(input)) {
+    if (input[k] === undefined) continue;
+    out[k] = input[k];
+  }
+  return out;
+}
+
 export async function insertPlanCell(payload) {
   if (!payload) throw new Error('insertPlanCell: payload required');
+  const body = _pickCellFields(payload);
   const rows = await apiFetch('/plan_cells', {
     method: 'POST',
     headers: WRITE_HEADERS,
-    body: JSON.stringify(payload)
+    body: JSON.stringify(body)
   });
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
 }
 
 export async function patchPlanCell(cellId, patch) {
   if (!cellId) throw new Error('patchPlanCell: cellId required');
+  const body = _pickCellFields(patch);
   const rows = await apiFetch(`/plan_cells?id=eq.${enc(cellId)}`, {
     method: 'PATCH',
     headers: WRITE_HEADERS,
-    body: JSON.stringify(patch || {})
+    body: JSON.stringify(body)
   });
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
 }
