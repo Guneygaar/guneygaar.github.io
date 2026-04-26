@@ -77,7 +77,7 @@ Root:
 - `07-post-load.js` — `loadPosts(fromPoll)`, `loadPostsForClient(skipRenderIfUnchanged, fromPoll)`, `mergePosts`, `startRealtime` (installs agency Realtime then 10 s poll fallback), `startAgencyRealtime` / `stopAgencyRealtime`, `_agencyRealtimeRefresh` (400 ms debounce; stashes into `_postsPollStash` when modal open), `_onAgencyNotificationInsert`, `startClientRealtime` / `stopClientRealtime`, `_initSupabaseRealtimeClient`, `_clientRealtimeRefresh`, `_onClientNotificationInsert`, `_postsFingerprint`, `_clientPostsFingerprint`, `_drainPollStash`, `_renderBackgroundViews`, bottom sheets, `_cardClickDelegate`.
 - `08-post-actions.js` — quickStage, updatePost, clientApprove, _confirmPublish, _sendStageNotif, _startSaveTimeout/_clearSaveTimeout
 - `09-approval.js` — client approval flow, submitApproval
-- `09-library.js` — library view (calls `_renderPCS` directly — keep on window.*)
+- `09-library.js` — library view (PR-3.16: `libOpenPostCard` routes through `window.openPCS(postId, 'library')` with a `window.SortedReact.flows.pcs.open` fallback; vanilla `#pcs-overlay` setup stripped)
 - `10-ui.js` — toasts, notifications panel (v6 redesign — see §4 “Notification panel v6”), switchTab, Action Router, click telemetry flush
 - `ai-config.js` — defines `window.AI_CONFIG` (workerUrl, secret, model) — single source of truth for every AI feature
 - `/srtd-next/dist/sorted-react.js` — React runtime bundle (strangler-fig). IIFE, non-module, loads after `ai-config.js`. Feature flag `window.ENABLE_REACT_NEW_POST` gates consumption (off until PR B2). See §9.
@@ -142,7 +142,7 @@ window.AppState = {
 ### Render pipeline
 - `setStage(post, stage)` is a PURE logger — mutates `post.stage`, appends activity log. Does NOT touch `_isSaving`, fire notifications, or render. Safe for rollback.
 - `scheduleRender()` DEFERS when `AppState.ui.modalOpen === true` → `window._deferredRender = true`. `_drainDeferredRender()` fires the queued render on modal close + drains the poll stash.
-- `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when unchanged — always mutate via `setAll`. `_renderBackgroundViews()` re-renders dashboard/pipeline/client feed without tearing down PCS. PCS render goes through `_renderPCS()`; `09-library.js` is the one exception.
+- `_postsFingerprint()` is a cheap hash of `posts.all`. Renderers skip rebuild when unchanged — always mutate via `setAll`. `_renderBackgroundViews()` re-renders dashboard/pipeline/client feed without tearing down PCS. PCS render goes through `_renderPCS()`; as of PR-3.16 every entry path (including `09-library.js libOpenPostCard`) routes through `window.openPCS` → React `pcs.open`, so there are no remaining vanilla `_renderPCS` call sites in app code.
 
 ### Agency Realtime subscriptions (`startAgencyRealtime` in 07-post-load.js)
 - Realtime-first / polling-fallback. `startRealtime()` opens channel `'srtd-agency'` then installs the legacy 10 s `realtimeTimer` interval, which short-circuits (`if (window._agencyRealtimeChannel) return;`) when the channel is live. The interval stays wired as a safety net for SDK / WebSocket failure.
@@ -230,7 +230,7 @@ Email: Resend, FROM `hinglish@srtd.io`.
 
 ## 7 — DEPLOY RULES
 
-1. Bump ALL 28 `?v=YYYYMMDDx` strings in `index.html` together (2 stylesheets + 26 scripts). Current: `?v=20260426c`. The Supabase JS SDK `<script>` tag sits above the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
+1. Bump ALL 28 `?v=YYYYMMDDx` strings in `index.html` together (2 stylesheets + 26 scripts). Current: `?v=20260426e`. The Supabase JS SDK `<script>` tag sits above the versioned block and is pinned to an external jsDelivr URL — do NOT add a `?v=` to it.
 2. After every merge: Cloudflare dash → srtd.io → Caching → Purge Everything. Hard refresh every device.
 3. Deploy path: merge PR → GitHub Pages publishes from `main-/-root` branch.
 4. One PR at a time. TDD mandatory. Never raw `fetch()` — always `apiFetch()`.
@@ -265,7 +265,7 @@ Create Post status: Import Brief wired for Paste (all roles → admin path opens
 
 Caption Workspace lives at `srtd-next/src/shared/caption-workspace/` — `CaptionWorkspace.jsx` (full-screen overlay z-index 9600), `store.js` (Zustand), `api.js` (wraps `/ai/complete`, `calcCostINR` + `formatINR` mirror USD×100 math), `systemPrompts.js` (`buildWritePrompt` brief-first). v1 MVP supports `write` (3 numbered options via `splitOptions`) and `chat`; Polish/QC/Rewrite/ai_memory deferred. Bridge `srtd-next/src/core/bridges/captionWorkspace.js` calls `useCaptionWorkspaceStore.getState().open(...)`. App.jsx mounts `<CaptionWorkspace />` at body-level. Worker hardening: `srtd-ai-worker/src/index.js` defensively strips any message with role !== 'user'|'assistant' (prevents Anthropic 400 regressions).
 
-PCS React surface lives at `/srtd-next/src/flows/pcs/`. Always-on since #964 (2026-04-19); the vanilla `<div id="pcs-overlay">` in `index.html` is inert dead markup. React Overlay accepts an optional `id` prop (PR-3.15 fix-up) so PCS.jsx renders `<Overlay id="pcs-react-overlay" zIndex={1501}>` distinct from the dormant vanilla shell. Library tile bypass (`09-library.js libOpenPostCard`) is the ONE remaining vanilla call site — calls `_renderPCS(postId)` directly, NOT `window.openPCS` / `pcsFlow.open`; migrating to the React bridge is queued for PR-3.16.
+PCS React surface lives at `/srtd-next/src/flows/pcs/`. Always-on since #964 (2026-04-19); the vanilla `<div id="pcs-overlay">` in `index.html` is inert dead markup. React Overlay accepts an optional `id` prop (PR-3.15 fix-up) so PCS.jsx renders `<Overlay id="pcs-react-overlay" zIndex={1501}>` distinct from the dormant vanilla shell. PR-3.16 closed the last vanilla PCS call site: `09-library.js libOpenPostCard` now calls `window.openPCS(postId, 'library')` with a `window.SortedReact.flows.pcs.open(postId, { contextList: [] })` fallback, and the redundant vanilla `#pcs-overlay` setup (display/inset/z-index/body scroll lock + `classList.add('open')`) was stripped — React owns the mount, scroll lock, and z-index.
 
 **Invariants:**
 - `post_comments.attachments` can arrive JSON-encoded TWICE. `srtd-next/src/flows/pcs/utils/attachments.js normalizeAttachments()` runs `JSON.parse` in a loop up to two times — never collapse to a single parse.
