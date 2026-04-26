@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Heart, Reply, Check, CircleDot } from 'lucide-react';
+import { Heart, Reply, Check, CircleDot, Pin } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { timeAgo } from '../utils/timeAgo.js';
 import { renderRichText } from '../utils/mentions.jsx';
@@ -7,8 +7,11 @@ import { roleFromEmail, findUserRole } from '../utils/users.js';
 import { getImageAttachments, getTaskAttachments } from '../utils/attachments.js';
 import { groupReactions } from '../utils/reactions.js';
 import { addReaction, removeReaction } from '../../../core/api/reactions.js';
-import { resolveComment, unresolveComment } from '../../../core/api/comments.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import {
+  resolveComment, unresolveComment,
+  pinComment, unpinComment, pinInternalNote, unpinInternalNote,
+} from '../../../core/api/comments.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState.js';
 import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
@@ -17,7 +20,7 @@ import { CommentLightbox } from './CommentLightbox.jsx';
 
 const LIKE_EMOJI = '\u2661';
 
-export function CommentRow({ comment, userRoles, reactions, currentEmail, isInternal, onReply, onLongPress }) {
+export function CommentRow({ comment, userRoles, reactions, currentEmail, isInternal, pinnedCount = 0, onReply, onLongPress }) {
   const expanded = usePcsStore((s) => s.expandedComments.has(comment.id));
   const toggle = usePcsStore((s) => s.toggleExpanded);
   const post = usePcsStore((s) => s.post);
@@ -26,10 +29,12 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
   const requestCarouselScroll = usePcsStore((s) => s.requestCarouselScroll);
   const requestCaptionExpand = usePcsStore((s) => s.requestCaptionExpand);
   const [busy, setBusy] = useState(false);
+  const [pinBusy, setPinBusy] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [flashing, setFlashing] = useState(false);
   const currentRole = useAppState((s) => s.user?.role || '');
   const isAdmin = String(currentRole).toLowerCase() === 'admin';
+  const isClient = useIsClient();
   const lpTimer = useRef(null);
   const lpFired = useRef(false);
 
@@ -233,6 +238,39 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
     }
   }
 
+  // PR-3.14 pin-to-top. Agency-only (effectiveRole !== 'client'), depth 0
+  // only. Disabled when 3 already pinned and this row isn't one of them
+  // (server enforces the same cap via enforce_pin_limit; UI mirrors it
+  // so users never see a Postgres error toast on the happy path). Server
+  // INSERTs an audit_log row via log_pin_event AFTER trigger.
+  const isDepthZero = (comment.depth || 0) === 0;
+  const canPin = !isClient && isDepthZero;
+  const pinDisabled = canPin && !comment.pinned && pinnedCount >= 3;
+
+  async function togglePin() {
+    if (pinBusy || !canPin || pinDisabled) return;
+    setPinBusy(true);
+    const next = !comment.pinned;
+    try {
+      if (isInternal) {
+        if (next) await pinInternalNote(comment.id, currentEmail);
+        else await unpinInternalNote(comment.id);
+      } else {
+        if (next) await pinComment(comment.id, currentEmail);
+        else await unpinComment(comment.id);
+      }
+      logClick('pcs_react_comment_pin', { commentId: comment.id, on: next, isInternal: !!isInternal });
+      if (isInternal) await pcsFlow.retryInternalNotes();
+      else await pcsFlow.retryComments();
+    } catch (err) {
+      logError(err, { context: 'pcs_react_comment_pin', commentId: comment.id });
+      const msg = (err && err.message) || '';
+      toast(/Max 3 pinned/.test(msg) ? 'Max 3 pinned per post' : (next ? 'Pin failed' : 'Unpin failed'), 'error');
+    } finally {
+      setPinBusy(false);
+    }
+  }
+
   async function toggleResolve() {
     if (busy) return;
     setBusy(true);
@@ -266,10 +304,13 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
     if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
   }
 
+  const showPinned = comment.pinned === true && isDepthZero;
+
   return (
     <div
       data-comment-row-id={comment.id}
       className={`flex gap-2.5 px-3 py-3 border-b border-divider-soft last:border-b-divider-warm ${isReply ? 'ml-[70px] pl-0' : ''}${flashing ? ' anchor-row-flash' : ''}`}
+      style={showPinned ? { borderLeft: '3px solid var(--c-terracotta)' } : undefined}
       onTouchStart={startLP}
       onTouchEnd={cancelLP}
       onTouchMove={cancelLP}
@@ -284,6 +325,21 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
           <span className="text-text-dim text-2xs">{'\u00B7'}</span>
           <span className="font-mono text-sm text-text-dim">{time}</span>
           {comment.edited_at && <span className="font-mono text-2xs text-text-dim">(edited)</span>}
+          {showPinned && (
+            <span
+              className="inline-flex items-center gap-1 font-mono uppercase"
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.6px',
+                color: 'var(--c-terracotta)',
+                lineHeight: 1.2,
+              }}
+              aria-label="Pinned comment"
+            >
+              <Pin size={9} style={{ stroke: 'var(--c-terracotta)', fill: 'var(--c-terracotta)' }} />
+              <span>PINNED</span>
+            </span>
+          )}
         </div>
 
         <div
@@ -351,6 +407,22 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
           <button onClick={toggleResolve} disabled={busy} className={`inline-flex items-center gap-1 text-sm font-medium ${comment.resolved ? 'text-green' : 'text-text-soft hover:text-text-mid'} disabled:opacity-50`}>
             <Check size={12} /><span>{comment.resolved ? 'Unresolve' : 'Resolve'}</span>
           </button>
+          {canPin && (
+            <button
+              onClick={togglePin}
+              disabled={pinBusy || pinDisabled}
+              aria-disabled={pinDisabled || undefined}
+              title={pinDisabled ? 'Max 3 pinned' : (comment.pinned ? 'Unpin' : 'Pin to top')}
+              className={`inline-flex items-center gap-1 text-sm font-medium ${comment.pinned ? 'text-terracotta' : 'text-text-soft hover:text-text-mid'} disabled:opacity-50`}
+              style={pinDisabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}
+            >
+              <Pin
+                size={12}
+                style={comment.pinned ? { stroke: 'var(--c-terracotta)', fill: 'var(--c-terracotta)' } : undefined}
+              />
+              <span>{comment.pinned ? 'Unpin' : 'Pin'}</span>
+            </button>
+          )}
         </div>
       </div>
       {lightboxIndex !== null && (
