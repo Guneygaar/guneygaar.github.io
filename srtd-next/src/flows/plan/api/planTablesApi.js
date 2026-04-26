@@ -187,6 +187,68 @@ export async function callSendPlanAlignment(payload) {
   return callEdgeFunction('send-plan-alignment', payload);
 }
 
+// PR-4: list stuck posts that haven't gone out and are not yet linked
+// to a plan cell. Stage filter + plan_cell_id IS NULL. No date filter,
+// no workspace_id filter on posts (single-tenant phase — posts has no
+// workspace_id column).
+export async function listStuckPosts() {
+  const select = 'id,post_id,title,stage,target_date,content_pillar,format';
+  const stages = encodeURIComponent('(parked,awaiting_brand_input,changes_requested)');
+  const path = `/posts?select=${select}&stage=in.${stages}&plan_cell_id=is.null&order=target_date.asc.nullslast`;
+  const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
+  return Array.isArray(rows) ? rows : [];
+}
+
+// PR-4: list committed posts already in production for the wizard
+// period. Stage filter + plan_cell_id IS NULL + target_date in range.
+export async function listCommittedPostsInRange(periodStart, periodEnd) {
+  if (!periodStart || !periodEnd) return [];
+  const select = 'id,post_id,title,stage,target_date,content_pillar,format';
+  const stages = encodeURIComponent('(brief,in_production,awaiting_approval,scheduled)');
+  const path = `/posts?select=${select}&stage=in.${stages}&plan_cell_id=is.null&target_date=gte.${enc(periodStart)}&target_date=lte.${enc(periodEnd)}&order=target_date.asc`;
+  const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
+  return Array.isArray(rows) ? rows : [];
+}
+
+// PR-4: list active workspace_channels ordered by display_order. Used
+// by wizard to decide single auto-fill vs per-row dropdown.
+export async function listActiveChannels(workspaceId) {
+  if (!workspaceId) return [];
+  try {
+    const select = 'channel,display_order,is_active';
+    const path = `/workspace_channels?select=${select}&workspace_id=eq.${enc(workspaceId)}&is_active=eq.true&order=display_order.asc`;
+    const rows = await apiFetch(path, { method: 'GET', headers: READ_HEADERS }, READ_META);
+    return Array.isArray(rows) ? rows : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+// PR-4: SECURITY DEFINER RPC. Inserts plan + linked plan_cells +
+// updates posts.plan_cell_id/target_date in one transaction. Returns
+// { plan_id, cell_count, linked_post_count }. Server enforces auth.uid()
+// not null and user_roles.role IN ('servicing','admin').
+export async function callCreatePlan({ workspace_id, title, period_start, period_end, carryovers }) {
+  if (!workspace_id) throw new Error('callCreatePlan: workspace_id required');
+  if (!title) throw new Error('callCreatePlan: title required');
+  if (!period_start || !period_end) throw new Error('callCreatePlan: period_start + period_end required');
+  const body = {
+    p_workspace_id: workspace_id,
+    p_title: title,
+    p_period_start: period_start,
+    p_period_end: period_end,
+    p_carryovers: Array.isArray(carryovers) ? carryovers : []
+  };
+  const data = await apiFetch('/rpc/create_plan_with_carryovers', {
+    method: 'POST',
+    headers: WRITE_HEADERS,
+    body: JSON.stringify(body)
+  });
+  if (data && typeof data === 'object' && !Array.isArray(data)) return data;
+  if (Array.isArray(data) && data.length > 0) return data[0];
+  return data;
+}
+
 // PR-3: share-token generator. Calls generate_plan_share_token RPC.
 // Returns the existing token if already set, otherwise generates +
 // stores a new 24-byte base64url token.
