@@ -16,7 +16,7 @@ export default function App() {
   const planEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false;
     try {
-      return new URLSearchParams(window.location.search).get('plan_react') === '1';
+      return new URLSearchParams(window.location.search).get('plan_react') !== '0';
     } catch (e) {
       return false;
     }
@@ -25,6 +25,14 @@ export default function App() {
   useEffect(() => {
     syncFromWindow();
   }, [syncFromWindow]);
+
+  useEffect(() => {
+    if (!planEnabled) return;
+    const panel = document.getElementById('panel-pipeline');
+    const navBtn = document.querySelector('[data-tab="pipeline"]');
+    if (panel) panel.style.display = 'none';
+    if (navBtn) navBtn.style.display = 'none';
+  }, [planEnabled]);
 
   return (
     <>

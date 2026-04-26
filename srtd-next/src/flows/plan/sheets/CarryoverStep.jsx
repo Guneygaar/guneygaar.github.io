@@ -52,12 +52,13 @@ export function CarryoverStep({ periodStart, periodEnd, workspaceChannels, selec
   }, [selectedCarryovers]);
 
   function toggle(post) {
-    if (selectedMap.has(post.post_id)) {
-      onChange(selectedCarryovers.filter(c => c.post_id !== post.post_id));
+    if (selectedMap.has(post.id)) {
+      onChange(selectedCarryovers.filter(c => c.post_id !== post.id));
     } else {
       onChange([
         ...selectedCarryovers,
-        { post_id: post.post_id, cell_date: defaultDate, channel: inferredChannel, source: 'stuck' }
+        { post_id: post.id, cell_date: defaultDate, channel: inferredChannel,
+          content_pillar: post.content_pillar || null, format: post.format || null, source: 'stuck' }
       ]);
     }
   }
@@ -102,11 +103,11 @@ export function CarryoverStep({ periodStart, periodEnd, workspaceChannels, selec
       ) : (
         <div>
           {posts.map((p) => {
-            const selected = selectedMap.get(p.post_id);
+            const selected = selectedMap.get(p.id);
             const isSelected = !!selected;
             const outOfRange = isSelected && selected.cell_date && (selected.cell_date < periodStart || selected.cell_date > periodEnd);
             return (
-              <div key={p.post_id}
+              <div key={p.id}
                 style={{ display: 'flex', padding: '10px 0', gap: '10px', alignItems: 'flex-start', borderBottom: '1px solid var(--c-divider-subtle)' }}>
                 <button
                   type="button"
@@ -153,13 +154,13 @@ export function CarryoverStep({ periodStart, periodEnd, workspaceChannels, selec
                           value={selected.cell_date || ''}
                           min={periodStart}
                           max={periodEnd}
-                          onChange={(ev) => patchOne(p.post_id, { cell_date: ev.target.value })}
+                          onChange={(ev) => patchOne(p.id, { cell_date: ev.target.value })}
                           style={inputStyle}
                         />
                         {multiChannel ? (
                           <select
                             value={selected.channel || ''}
-                            onChange={(ev) => patchOne(p.post_id, { channel: ev.target.value })}
+                            onChange={(ev) => patchOne(p.id, { channel: ev.target.value })}
                             style={inputStyle}>
                             {activeChannels.map((ch) => (
                               <option key={ch} value={ch}>{ch}</option>

@@ -265,7 +265,7 @@ export default function Plan() {
   const planEnabled = useMemo(() => {
     if (typeof window === 'undefined') return false;
     try {
-      return new URLSearchParams(window.location.search).get('plan_react') === '1';
+      return new URLSearchParams(window.location.search).get('plan_react') !== '0';
     } catch (e) {
       return false;
     }
