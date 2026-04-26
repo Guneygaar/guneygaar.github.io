@@ -244,10 +244,7 @@ test('TEST 8 — PCS handles delete flow initialization', async ({ page }) => {
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-delete.png' });
 });
 
-// TODO PR-3.16: Library tile taps call vanilla _renderPCS bypassing React PCS bridge.
-// 09-library.js libOpenPostCard must route through window.openPCS or pcsFlow.open.
-// Re-enable once library bridge migrates. Currently opens dormant vanilla overlay.
-test.skip('TEST 9 — Library bypass opens PCS', async ({ page }) => {
+test('TEST 9 — Library bypass opens PCS', async ({ page }) => {
   // Click Library tab
   const libTab = page.locator('[data-tab="library"]');
   await expect(libTab).toBeVisible({ timeout: 5000 });
