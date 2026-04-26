@@ -4,9 +4,15 @@
 // [data-plan-root] + [data-plan-theme] so Plan palette never leaks.
 
 import React, { useEffect, useMemo } from 'react';
-import { Search, Bell, MoreVertical, Plus, LayoutDashboard, CalendarDays, Inbox } from 'lucide-react';
+import {
+  Search, Bell, MoreVertical, Plus,
+  BookOpen, LayoutGrid, List as ListIcon, CalendarDays, BarChart3
+} from 'lucide-react';
 import { usePlanStore } from './store/planStore.js';
-import { startRealtimeBridge, pauseRealtime, resumeRealtime } from './store/realtimeBridge.js';
+import {
+  startRealtimeBridge, pauseRealtime, resumeRealtime,
+  startPlanCellsBridge, stopPlanCellsBridge
+} from './store/realtimeBridge.js';
 import { usePcsFlowState } from '../pcs/flowStore.js';
 import { useAppState } from '../../core/stores/appState.js';
 import { useDatePicker } from './hooks/useDatePicker.js';
@@ -14,11 +20,16 @@ import { List } from './views/List.jsx';
 import { Board } from './views/Board.jsx';
 import { Calendar } from './views/Calendar.jsx';
 import { Insights } from './views/Insights.jsx';
+import { PlanView } from './views/PlanView.jsx';
 import { FilterBanner } from './shared/FilterBanner.jsx';
 import { Toast } from './shared/Toast.jsx';
 import { DaySheet } from './sheets/DaySheet.jsx';
 import { FabSheet } from './sheets/FabSheet.jsx';
 import { Menu } from './sheets/Menu.jsx';
+import {
+  HistoryPanel, CommentsPanel, ConfirmSendSheet,
+  ConfirmAlignSheet, ChangesSheet, PlanCellSheet
+} from './sheets/PlanSheets.jsx';
 import './tokens.css';
 
 function resolveRole(user) {
@@ -46,11 +57,13 @@ function TopBar() {
   const showToast = usePlanStore((s) => s.showToast);
   const unreadCount = usePlanStore((s) => s.unreadCount);
   const VIEW_TITLES = {
+    plan:     'Plan',
     list:     'List',
     board:    'Board',
     calendar: 'Calendar',
     insights: 'Insights'
   };
+  const eyebrow = currentView === 'plan' ? '' : (VIEW_TITLES[currentView] || '');
   return (
     <header style={{
       position: 'sticky',
@@ -72,14 +85,16 @@ function TopBar() {
         color: 'var(--c-text-loud)',
         flex: 1
       }}>
-        Plan <span style={{
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: '9px',
-          letterSpacing: '.12em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-dim)',
-          marginLeft: '8px'
-        }}>{VIEW_TITLES[currentView] || ''}</span>
+        Plan{eyebrow ? (
+          <span style={{
+            fontFamily: '"IBM Plex Mono", monospace',
+            fontSize: '9px',
+            letterSpacing: '.12em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-dim)',
+            marginLeft: '8px'
+          }}>{eyebrow}</span>
+        ) : null}
       </div>
       <button
         type="button"
@@ -123,7 +138,15 @@ function TopBar() {
 }
 
 function TabBar() {
-  const showToast = usePlanStore((s) => s.showToast);
+  const currentView = usePlanStore((s) => s.currentView);
+  const setView = usePlanStore((s) => s.setView);
+  const TABS = [
+    { key: 'plan',     label: 'Plan',     Icon: BookOpen },
+    { key: 'board',    label: 'Board',    Icon: LayoutGrid },
+    { key: 'list',     label: 'List',     Icon: ListIcon },
+    { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+    { key: 'insights', label: 'Insights', Icon: BarChart3 }
+  ];
   const TAB_STYLE = {
     flex: 1,
     display: 'flex',
@@ -137,8 +160,8 @@ function TabBar() {
   };
   const LABEL_STYLE = {
     fontFamily: '"IBM Plex Mono", monospace',
-    fontSize: '8.5px',
-    letterSpacing: '.12em',
+    fontSize: '8px',
+    letterSpacing: '.14em',
     textTransform: 'uppercase'
   };
   return (
@@ -150,18 +173,22 @@ function TabBar() {
       borderTop: '1px solid var(--c-divider-soft)',
       display: 'flex'
     }}>
-      <button type="button" style={TAB_STYLE} onClick={() => showToast({ msg: 'Dashboard tab lives outside Plan', duration: 2000 })}>
-        <LayoutDashboard size={18} style={{ color: 'var(--c-text-dim)' }} />
-        <span style={{ ...LABEL_STYLE, color: 'var(--c-text-dim)' }}>Dashboard</span>
-      </button>
-      <button type="button" style={TAB_STYLE}>
-        <CalendarDays size={18} style={{ color: 'var(--c-text-loud)' }} />
-        <span style={{ ...LABEL_STYLE, color: 'var(--c-text-loud)' }}>Plan</span>
-      </button>
-      <button type="button" style={TAB_STYLE} onClick={() => showToast({ msg: 'Inbox tab lives outside Plan', duration: 2000 })}>
-        <Inbox size={18} style={{ color: 'var(--c-text-dim)' }} />
-        <span style={{ ...LABEL_STYLE, color: 'var(--c-text-dim)' }}>Inbox</span>
-      </button>
+      {TABS.map(({ key, label, Icon }) => {
+        const active = currentView === key;
+        const color = active ? 'var(--c-terracotta-1)' : 'var(--c-text-dim)';
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-label={label}
+            aria-current={active ? 'page' : undefined}
+            onClick={() => setView(key)}
+            style={TAB_STYLE}>
+            <Icon size={16} style={{ color }} />
+            <span style={{ ...LABEL_STYLE, color, fontWeight: active ? 600 : 500 }}>{label}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }
@@ -225,6 +252,7 @@ function ViewContainer() {
       }}>{loadError}</div>
     );
   }
+  if (currentView === 'plan') return <PlanView />;
   if (currentView === 'board') return <Board />;
   if (currentView === 'calendar') return <Calendar />;
   if (currentView === 'insights') return <Insights />;
@@ -250,6 +278,7 @@ export default function Plan() {
   const theme = usePlanStore((s) => s.theme);
   const role = usePlanStore((s) => s.role);
   const activeSheet = usePlanStore((s) => s.activeSheet);
+  const planSheet = usePlanStore((s) => s.planSheet);
   const pcsOpen = usePcsFlowState((s) => s.isOpen);
 
   // Mount the hidden native date input once.
@@ -289,14 +318,22 @@ export default function Plan() {
     return () => { if (typeof stop === 'function') stop(); };
   }, [planEnabled]);
 
+  // PR-2: subscribe to plan_cells changes so SheetGrid stays in sync
+  // with concurrent edits. Mirrors realtimeBridge's pause/resume gate.
+  useEffect(() => {
+    if (!planEnabled) return undefined;
+    startPlanCellsBridge(usePlanStore);
+    return () => { stopPlanCellsBridge(); };
+  }, [planEnabled]);
+
   // Pause snapshot application while a Plan sheet is open. useEffect
   // cleanup fires even if a render inside the sheet throws, providing
   // try/finally semantics for the resume path.
   useEffect(() => {
-    if (!planEnabled || !activeSheet) return undefined;
+    if (!planEnabled || (!activeSheet && !planSheet)) return undefined;
     pauseRealtime();
     return () => resumeRealtime();
-  }, [planEnabled, activeSheet]);
+  }, [planEnabled, activeSheet, planSheet]);
 
   // Pause snapshot application while React PCS is open over the Plan tree.
   useEffect(() => {
@@ -338,6 +375,13 @@ export default function Plan() {
       {activeSheet === 'menu' ? <Menu /> : null}
       {activeSheet === 'day' ? <DaySheet /> : null}
       {activeSheet === 'fab' ? <FabSheet /> : null}
+
+      {planSheet === 'history' ? <HistoryPanel /> : null}
+      {planSheet === 'comments' ? <CommentsPanel /> : null}
+      {planSheet === 'send' ? <ConfirmSendSheet /> : null}
+      {planSheet === 'align' ? <ConfirmAlignSheet /> : null}
+      {planSheet === 'changes' ? <ChangesSheet /> : null}
+      {planSheet === 'cell' ? <PlanCellSheet /> : null}
 
       <Toast />
     </div>

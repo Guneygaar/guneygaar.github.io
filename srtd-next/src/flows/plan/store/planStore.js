@@ -10,6 +10,22 @@ import {
   fetchPlanRequests,
   rescheduleTarget as apiReschedule
 } from '../api/planApi.js';
+import {
+  fetchPlanByWorkspace,
+  fetchAnyPlan,
+  fetchPlanById,
+  fetchPlansForWorkspace,
+  fetchPlanCells,
+  fetchPlanVersions,
+  fetchPlanComments,
+  fetchWorkspaceChannels,
+  insertPlanCell,
+  patchPlanCell,
+  patchPlan,
+  insertPlanVersion,
+  insertPlanComment,
+  insertNotification
+} from '../api/planTablesApi.js';
 
 function currentMonthRange() {
   const now = new Date();
@@ -454,6 +470,339 @@ export const usePlanStore = create((set, get) => ({
     await fn(firstMonth);
     if (lastMonth && lastMonth !== firstMonth) {
       await fn(lastMonth);
+    }
+  },
+
+  // PR-2 Plan view state slice. Holds the active plan + related rows
+  // (plan_cells, plan_versions, plan_comments) and active workspace
+  // channels. All writes are optimistic with rollback on error.
+  plan: null,
+  planCells: [],
+  planVersions: [],
+  planComments: [],
+  workspaceChannels: [],
+  showWeekends: false,
+  planLoading: false,
+  planError: null,
+  planSheet: null,           // null | 'history' | 'comments' | 'send' | 'align' | 'changes' | 'cell'
+  activeCell: null,          // { id?, cell_date, channel, position, concept?, cell_status? }
+  activeCellPostId: null,    // when cell_status spawned/linked: post.post_id
+
+  setShowWeekends(b) { set({ showWeekends: !!b }); },
+  openPlanSheet(name) { set({ planSheet: name || null }); },
+  closePlanSheet() { set({ planSheet: null, activeCell: null, activeCellPostId: null }); },
+  setActiveCell(cell, postId) { set({ activeCell: cell || null, activeCellPostId: postId || null }); },
+
+  async loadPlan() {
+    set({ planLoading: true, planError: null });
+    try {
+      const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || null;
+      const wsId = (user && (user.workspace_id || user.workspaceId)) || null;
+      const plan = wsId ? await fetchPlanByWorkspace(wsId) : await fetchAnyPlan();
+      if (!plan) {
+        set({ plan: null, planCells: [], planVersions: [], planComments: [], workspaceChannels: [], planLoading: false });
+        return;
+      }
+      const [cells, versions, comments, channels] = await Promise.all([
+        fetchPlanCells(plan.id),
+        fetchPlanVersions(plan.id),
+        fetchPlanComments(plan.id),
+        fetchWorkspaceChannels(plan.workspace_id)
+      ]);
+      set({
+        plan,
+        planCells: cells,
+        planVersions: versions,
+        planComments: comments,
+        workspaceChannels: channels,
+        planLoading: false
+      });
+    } catch (err) {
+      set({ planLoading: false, planError: (err && err.message) || 'Failed to load plan' });
+    }
+  },
+
+  async refreshPlanCells() {
+    const cur = get().plan;
+    if (!cur) return;
+    try {
+      const cells = await fetchPlanCells(cur.id);
+      set({ planCells: cells });
+    } catch (e) { /* swallow; bridge will retry */ }
+  },
+
+  async loadAdjacentPlan(direction) {
+    const cur = get().plan;
+    if (!cur) {
+      get().showToast({ msg: 'No plan loaded', duration: 2000 });
+      return;
+    }
+    try {
+      const all = await fetchPlansForWorkspace(cur.workspace_id);
+      if (!Array.isArray(all) || all.length === 0) return;
+      const idx = all.findIndex((p) => p.id === cur.id);
+      const target = direction === 'prev' ? all[idx - 1] : all[idx + 1];
+      if (!target) {
+        if (direction === 'prev') {
+          get().showToast({ msg: 'No earlier plan', duration: 2000 });
+        } else {
+          get().showToast({ msg: 'No later plan. Create plan? (PR-3)', duration: 2500 });
+        }
+        return;
+      }
+      const full = await fetchPlanById(target.id);
+      if (!full) return;
+      const [cells, versions, comments] = await Promise.all([
+        fetchPlanCells(full.id),
+        fetchPlanVersions(full.id),
+        fetchPlanComments(full.id)
+      ]);
+      set({ plan: full, planCells: cells, planVersions: versions, planComments: comments });
+    } catch (err) {
+      get().showToast({ msg: 'Could not load adjacent plan', duration: 2500 });
+    }
+  },
+
+  async addPlanCell({ cell_date, channel, concept, position }) {
+    const plan = get().plan;
+    if (!plan) return;
+    const tempId = `temp-${Date.now()}`;
+    const optimistic = {
+      id: tempId,
+      plan_id: plan.id,
+      workspace_id: plan.workspace_id,
+      cell_date,
+      channel,
+      concept: concept || '',
+      cell_status: 'draft',
+      position: typeof position === 'number' ? position : 0,
+      reference_image_url: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    set({ planCells: [...get().planCells, optimistic] });
+    try {
+      const row = await insertPlanCell({
+        plan_id: plan.id,
+        workspace_id: plan.workspace_id,
+        cell_date,
+        channel,
+        concept: concept || '',
+        cell_status: 'draft',
+        position: optimistic.position
+      });
+      set({
+        planCells: get().planCells.map((c) => c.id === tempId ? row : c)
+      });
+    } catch (err) {
+      set({ planCells: get().planCells.filter((c) => c.id !== tempId) });
+      get().showToast({ msg: 'Failed to add cell', duration: 2500 });
+    }
+  },
+
+  async updatePlanCell(cellId, patch) {
+    if (!cellId) return;
+    const prev = get().planCells.find((c) => c.id === cellId);
+    if (!prev) return;
+    const next = { ...prev, ...patch, updated_at: new Date().toISOString() };
+    set({ planCells: get().planCells.map((c) => c.id === cellId ? next : c) });
+    try {
+      const row = await patchPlanCell(cellId, patch);
+      if (row && row.id) {
+        set({ planCells: get().planCells.map((c) => c.id === cellId ? { ...c, ...row } : c) });
+      }
+    } catch (err) {
+      set({ planCells: get().planCells.map((c) => c.id === cellId ? prev : c) });
+      get().showToast({ msg: 'Failed to save cell', duration: 2500 });
+    }
+  },
+
+  async sendPlanForAlignment() {
+    const plan = get().plan;
+    if (!plan) return;
+    const cells = get().planCells;
+    const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
+    const nextVersion = (plan.current_version || 1) + 1;
+    try {
+      await insertPlanVersion({
+        plan_id: plan.id,
+        version_number: nextVersion,
+        snapshot_jsonb: { cells },
+        trigger_event: 'sent_for_alignment',
+        triggered_by: user.id || null,
+        triggered_by_name: user.name || null,
+        triggered_by_role: user.role || null
+      });
+      const updated = await patchPlan(plan.id, {
+        plan_status: 'awaiting_alignment',
+        current_version: nextVersion,
+        updated_at: new Date().toISOString()
+      });
+      set({
+        plan: { ...plan, ...updated, plan_status: 'awaiting_alignment', current_version: nextVersion },
+        planVersions: [{
+          plan_id: plan.id,
+          version_number: nextVersion,
+          trigger_event: 'sent_for_alignment',
+          triggered_by_name: user.name || null,
+          triggered_by_role: user.role || null,
+          created_at: new Date().toISOString(),
+          snapshot_jsonb: { cells }
+        }, ...get().planVersions]
+      });
+      await insertNotification({
+        user_role: 'Client',
+        post_id: null,
+        type: 'plan_alignment',
+        message: `Plan "${plan.title || ''}" sent for alignment`,
+        actor: user.name || 'Servicing'
+      });
+      get().showToast({ msg: 'Sent for alignment', duration: 2500 });
+      get().closePlanSheet();
+    } catch (err) {
+      get().showToast({ msg: 'Send failed', duration: 2500 });
+    }
+  },
+
+  async alignPlan() {
+    const plan = get().plan;
+    if (!plan) return;
+    const cells = get().planCells;
+    const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
+    try {
+      const updated = await patchPlan(plan.id, {
+        plan_status: 'aligned',
+        aligned_version: plan.current_version,
+        aligned_at: new Date().toISOString(),
+        aligned_by: user.id || null,
+        updated_at: new Date().toISOString()
+      });
+      // Mark draft/changes_requested cells as spawned so SheetGrid can
+      // skip the inline "+ Add concept" affordance. Server-side post
+      // creation is queued for the alignment edge function (PR-3).
+      const updates = cells
+        .filter((c) => c.cell_status !== 'spawned' && c.cell_status !== 'linked')
+        .map((c) => patchPlanCell(c.id, { cell_status: 'spawned' }).catch(() => null));
+      await Promise.all(updates);
+      const refreshed = await fetchPlanCells(plan.id);
+      set({
+        plan: { ...plan, ...updated, plan_status: 'aligned' },
+        planCells: refreshed
+      });
+      await insertNotification({
+        user_role: 'Servicing',
+        post_id: null,
+        type: 'plan_aligned',
+        message: `Plan "${plan.title || ''}" aligned by client`,
+        actor: user.name || 'Client'
+      });
+      get().showToast({ msg: `Plan aligned. ${refreshed.length} posts queued.`, duration: 3000 });
+      get().closePlanSheet();
+    } catch (err) {
+      get().showToast({ msg: 'Align failed', duration: 2500 });
+    }
+  },
+
+  async requestChanges(cellIds, message) {
+    const plan = get().plan;
+    if (!plan) return;
+    const ids = Array.isArray(cellIds) ? cellIds : [];
+    const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
+    const nextVersion = (plan.current_version || 1) + 1;
+    try {
+      const patches = ids.map((id) => patchPlanCell(id, { cell_status: 'changes_requested' }).catch(() => null));
+      await Promise.all(patches);
+      const updated = await patchPlan(plan.id, {
+        plan_status: 'changes_requested',
+        current_version: nextVersion,
+        updated_at: new Date().toISOString()
+      });
+      await insertPlanVersion({
+        plan_id: plan.id,
+        version_number: nextVersion,
+        snapshot_jsonb: { cell_ids: ids, message: message || '' },
+        trigger_event: 'changes_requested',
+        triggered_by: user.id || null,
+        triggered_by_name: user.name || null,
+        triggered_by_role: user.role || null,
+        notes: message || null
+      });
+      if (message) {
+        await insertPlanComment({
+          plan_id: plan.id,
+          plan_cell_id: null,
+          version_number: nextVersion,
+          author: user.name || null,
+          author_role: user.role || null,
+          author_email: user.email || null,
+          author_user_id: user.id || null,
+          is_external: true,
+          message
+        });
+      }
+      const refreshed = await fetchPlanCells(plan.id);
+      const refreshedComments = await fetchPlanComments(plan.id);
+      const refreshedVersions = await fetchPlanVersions(plan.id);
+      set({
+        plan: { ...plan, ...updated, plan_status: 'changes_requested', current_version: nextVersion },
+        planCells: refreshed,
+        planComments: refreshedComments,
+        planVersions: refreshedVersions
+      });
+      await insertNotification({
+        user_role: 'Servicing',
+        post_id: null,
+        type: 'plan_changes_requested',
+        message: `Client requested changes on ${ids.length} concept${ids.length === 1 ? '' : 's'}`,
+        actor: user.name || 'Client'
+      });
+      get().showToast({ msg: 'Changes requested', duration: 2500 });
+      get().closePlanSheet();
+    } catch (err) {
+      get().showToast({ msg: 'Could not submit changes', duration: 2500 });
+    }
+  },
+
+  async addPlanComment({ planCellId, message }) {
+    const plan = get().plan;
+    if (!plan || !message) return;
+    const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
+    const tempId = `temp-${Date.now()}`;
+    const role = (user.role || '').toLowerCase();
+    const isExternal = role === 'client';
+    const optimistic = {
+      id: tempId,
+      plan_id: plan.id,
+      plan_cell_id: planCellId || null,
+      version_number: plan.current_version || 1,
+      author: user.name || null,
+      author_role: user.role || null,
+      author_email: user.email || null,
+      author_user_id: user.id || null,
+      is_external: isExternal,
+      message,
+      resolved: false,
+      created_at: new Date().toISOString()
+    };
+    set({ planComments: [...get().planComments, optimistic] });
+    try {
+      const row = await insertPlanComment({
+        plan_id: plan.id,
+        plan_cell_id: planCellId || null,
+        version_number: plan.current_version || 1,
+        author: user.name || null,
+        author_role: user.role || null,
+        author_email: user.email || null,
+        author_user_id: user.id || null,
+        is_external: isExternal,
+        message
+      });
+      if (row && row.id) {
+        set({ planComments: get().planComments.map((c) => c.id === tempId ? row : c) });
+      }
+    } catch (err) {
+      set({ planComments: get().planComments.filter((c) => c.id !== tempId) });
+      get().showToast({ msg: 'Comment failed', duration: 2500 });
     }
   }
 }));

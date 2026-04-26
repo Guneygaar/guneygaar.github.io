@@ -128,3 +128,90 @@ export function resumeRealtime() {
 export function isPaused() {
   return _pauseCount > 0;
 }
+
+// PR-2: plan_cells live channel. Mirrors the start/stop idempotency
+// pattern but subscribes via the global Supabase Realtime client that
+// vanilla initialises in 07-post-load.js (_initSupabaseRealtimeClient).
+// Vanilla never opens a plan_cells channel itself, so this is the one
+// place Plan React reaches for the shared client. We never import
+// @supabase/supabase-js directly.
+
+let _cellsStarted = false;
+let _cellsChannel = null;
+let _cellsStore = null;
+let _cellsRefreshTimer = null;
+let _cellsVisBound = false;
+
+function _scheduleCellsRefresh() {
+  if (_pauseCount > 0) return;
+  if (_cellsRefreshTimer) return;
+  _cellsRefreshTimer = setTimeout(() => {
+    _cellsRefreshTimer = null;
+    if (!_cellsStore) return;
+    const refresh = _cellsStore.getState().refreshPlanCells;
+    if (typeof refresh === 'function') refresh();
+  }, 400);
+}
+
+function _onCellsVisibility() {
+  if (typeof document === 'undefined') return;
+  if (document.visibilityState === 'visible') _scheduleCellsRefresh();
+}
+
+export function startPlanCellsBridge(store) {
+  if (_cellsStarted) return;
+  if (!store || typeof store.getState !== 'function') return;
+  _cellsStore = store;
+  _cellsStarted = true;
+  if (typeof window === 'undefined') return;
+
+  if (!_cellsVisBound) {
+    document.addEventListener('visibilitychange', _onCellsVisibility);
+    _cellsVisBound = true;
+  }
+
+  const client = window._supabaseClient;
+  if (client && typeof client.channel === 'function') {
+    try {
+      _cellsChannel = client.channel('srtd-plan-cells');
+      _cellsChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'plan_cells' },
+        () => _scheduleCellsRefresh()
+      );
+      _cellsChannel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'plan_comments' },
+        () => _scheduleCellsRefresh()
+      );
+      _cellsChannel.subscribe();
+    } catch (e) {
+      // Falls back to visibility refresh + manual reload paths.
+    }
+  }
+}
+
+export function stopPlanCellsBridge() {
+  if (!_cellsStarted) return;
+  if (_cellsChannel) {
+    try {
+      const client = (typeof window !== 'undefined') ? window._supabaseClient : null;
+      if (client && typeof client.removeChannel === 'function') {
+        client.removeChannel(_cellsChannel);
+      } else if (_cellsChannel.unsubscribe) {
+        _cellsChannel.unsubscribe();
+      }
+    } catch (e) { /* swallow */ }
+  }
+  if (_cellsVisBound) {
+    document.removeEventListener('visibilitychange', _onCellsVisibility);
+    _cellsVisBound = false;
+  }
+  if (_cellsRefreshTimer) {
+    clearTimeout(_cellsRefreshTimer);
+    _cellsRefreshTimer = null;
+  }
+  _cellsChannel = null;
+  _cellsStore = null;
+  _cellsStarted = false;
+}
