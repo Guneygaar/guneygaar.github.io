@@ -39,7 +39,7 @@ async function openPCSCard(page) {
   await card.click();
 
   // Wait for PCS overlay to appear
-  await expect(page.locator('#pcs-overlay')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible({ timeout: 5000 });
 }
 
 // ── Setup ───────────────────────────────────────────────────
@@ -101,7 +101,7 @@ test.beforeEach(async ({ page }) => {
 test('TEST 1 — PCS opens and renders correctly', async ({ page }) => {
   await openPCSCard(page);
 
-  await expect(page.locator('#pcs-overlay')).toBeVisible();
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible();
   await expect(page.locator('#pcs-topbar-title')).toBeVisible();
   await expect(page.locator('#pcs-topbar-title')).not.toBeEmpty();
   await expect(page.locator('.pcs-tab-bar')).toBeVisible();
@@ -116,13 +116,13 @@ test('TEST 1 — PCS opens and renders correctly', async ({ page }) => {
 
 test('TEST 2 — PCS closes correctly', async ({ page }) => {
   await openPCSCard(page);
-  await expect(page.locator('#pcs-overlay')).toBeVisible();
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible();
 
-  // Click backdrop area (top-left corner of overlay)
-  await page.locator('#pcs-overlay').click({ position: { x: 10, y: 10 } });
+  // React PCS has no backdrop click region — close via the topbar Close button.
+  await page.locator('#pcs-react-overlay [aria-label="Close"]').click();
 
-  // PCS overlay should be hidden
-  await expect(page.locator('#pcs-overlay')).not.toBeVisible({ timeout: 3000 });
+  // PCS overlay should unmount
+  await expect(page.locator('#pcs-react-overlay')).toHaveCount(0, { timeout: 3000 });
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-closed.png' });
 });
@@ -241,8 +241,8 @@ test('TEST 9 — Library bypass opens PCS', async ({ page }) => {
   }
 
   // PCS should now be open
-  await expect(page.locator('#pcs-overlay')).toBeVisible({ timeout: 5000 });
-  await expect(page.locator('#pcs-topbar-title')).toBeVisible();
+  await expect(page.locator('#pcs-react-overlay')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('#pcs-react-overlay h1')).toBeVisible();
 
   await page.screenshot({ path: 'tests/e2e/screenshots/pcs-library-bypass.png' });
 });
