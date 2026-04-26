@@ -336,12 +336,42 @@ export function PhotoStrip({ post, canEdit }) {
     return photoAnchors.filter((a) => a.image_index === i);
   }
 
-  // Tap-to-anchor over the active image, used inside Lightbox via the
-  // imageOverlay render prop. The img has pointer-events:none so this
-  // overlay div captures every tap; % coords are derived from its rect
-  // so they stay correct regardless of objectFit:contain bars. Draft
-  // pin is draggable to fine-tune before sending.
-  function lightboxImageOverlay(activeIdx) {
+  function onDraftPointerDown(e) {
+    e.stopPropagation();
+    e.preventDefault();
+    const pin = e.currentTarget;
+    const overlay = pin.parentElement;
+    if (!overlay) return;
+    const rect = overlay.getBoundingClientRect();
+    try { pin.setPointerCapture(e.pointerId); } catch (_) {}
+    function clamp(v) { return Math.max(0, Math.min(100, Math.round(v * 10) / 10)); }
+    function move(ev) {
+      ev.preventDefault();
+      const x = ((ev.clientX - rect.left) / rect.width) * 100;
+      const y = ((ev.clientY - rect.top) / rect.height) * 100;
+      try {
+        usePcsStore.getState().updatePendingAnchor({ x_pct: clamp(x), y_pct: clamp(y) });
+      } catch (_) {}
+    }
+    function up(ev) {
+      try { pin.releasePointerCapture(ev.pointerId); } catch (_) {}
+      pin.removeEventListener('pointermove', move);
+      pin.removeEventListener('pointerup', up);
+      pin.removeEventListener('pointercancel', up);
+    }
+    pin.addEventListener('pointermove', move);
+    pin.addEventListener('pointerup', up);
+    pin.addEventListener('pointercancel', up);
+  }
+
+  // Tap-to-anchor over an image, used by both the carousel and the
+  // Lightbox via the imageOverlay render prop. The <img> has
+  // pointer-events:none so this overlay div captures every tap; % coords
+  // are derived from its rect so they stay correct regardless of
+  // objectFit:contain letterbox bars. Draft pin is draggable to
+  // fine-tune before sending. PR-3.13.1 v2: long-press is a no-op (no
+  // useLongPress wired) so iOS Safari native action sheet cannot fire.
+  function imageAnchorOverlay(activeIdx) {
     const dots = dotsForIndex(activeIdx);
     const draft = pendingAnchor && pendingAnchor.type === 'photo' && pendingAnchor.image_index === activeIdx
       ? pendingAnchor : null;
@@ -350,34 +380,6 @@ export function PhotoStrip({ post, canEdit }) {
       if (e.target !== e.currentTarget) return;
       const rect = e.currentTarget.getBoundingClientRect();
       captureAnchorAt(rect, e.clientX, e.clientY, activeIdx);
-    }
-
-    function onDraftPointerDown(e) {
-      e.stopPropagation();
-      e.preventDefault();
-      const pin = e.currentTarget;
-      const overlay = pin.parentElement;
-      if (!overlay) return;
-      const rect = overlay.getBoundingClientRect();
-      try { pin.setPointerCapture(e.pointerId); } catch (_) {}
-      function clamp(v) { return Math.max(0, Math.min(100, Math.round(v * 10) / 10)); }
-      function move(ev) {
-        ev.preventDefault();
-        const x = ((ev.clientX - rect.left) / rect.width) * 100;
-        const y = ((ev.clientY - rect.top) / rect.height) * 100;
-        try {
-          usePcsStore.getState().updatePendingAnchor({ x_pct: clamp(x), y_pct: clamp(y) });
-        } catch (_) {}
-      }
-      function up(ev) {
-        try { pin.releasePointerCapture(ev.pointerId); } catch (_) {}
-        pin.removeEventListener('pointermove', move);
-        pin.removeEventListener('pointerup', up);
-        pin.removeEventListener('pointercancel', up);
-      }
-      pin.addEventListener('pointermove', move);
-      pin.addEventListener('pointerup', up);
-      pin.addEventListener('pointercancel', up);
     }
 
     return (
@@ -474,52 +476,23 @@ export function PhotoStrip({ post, canEdit }) {
           WebkitOverflowScrolling: 'touch',
         }}
       >
-        {imgs.map((src, i) => {
-          const dots = dotsForIndex(i);
-          return (
-            <div
-              key={`${src}-${i}`}
-              className={`relative flex-shrink-0 bg-bg-2 ${isClient ? 'aspect-square' : ''}`}
-              style={{
-                width: '100%',
-                ...(isClient ? {} : { aspectRatio: '1 / 1' }),
-                scrollSnapAlign: 'start',
-              }}
-            >
-              <button
-                onClick={() => openLightbox(i)}
-                onContextMenu={(e) => e.preventDefault()}
-                onDragStart={(e) => e.preventDefault()}
-                className="w-full h-full block"
-                style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' }}
-                aria-label={`Photo ${i + 1} of ${count}`}
-              >
-                <ThumbImg src={src} />
-              </button>
-              {dots.length > 0 ? (
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ zIndex: 3 }}
-                  aria-hidden="true"
-                >
-                  {dots.map((d) => {
-                    const isFlash = flashCommentId === d.id;
-                    return (
-                      <button
-                        key={d.id}
-                        type="button"
-                        className={`anchor-photo-dot${isFlash ? ' is-flashing' : ''}`}
-                        style={{ left: `${d.x_pct}%`, top: `${d.y_pct}%` }}
-                        onClick={(e) => { e.stopPropagation(); focusComment(d.id); }}
-                        aria-label="Open anchored comment"
-                      />
-                    );
-                  })}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+        {imgs.map((src, i) => (
+          <div
+            key={`${src}-${i}`}
+            className={`relative flex-shrink-0 bg-bg-2 ${isClient ? 'aspect-square' : ''}`}
+            style={{
+              width: '100%',
+              ...(isClient ? {} : { aspectRatio: '1 / 1' }),
+              scrollSnapAlign: 'start',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
+              userSelect: 'none',
+            }}
+          >
+            <ThumbImg src={src} />
+            {imageAnchorOverlay(i)}
+          </div>
+        ))}
       </div>
 
       <CarouselDots count={count} current={current} active={dotsActive} />
@@ -548,7 +521,7 @@ export function PhotoStrip({ post, canEdit }) {
           startIndex={lightIdx}
           onClose={() => setLightIdx(null)}
           onIndexChange={(i) => setLightIdx(i)}
-          imageOverlay={lightboxImageOverlay}
+          imageOverlay={imageAnchorOverlay}
           topRightSlot={
             canEdit && !isClient ? (
               <PhotoKebabMenu

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Heart, Reply, Check, CircleDot, Quote, MapPin } from 'lucide-react';
+import { Heart, Reply, Check, CircleDot } from 'lucide-react';
 import { Avatar } from '../../../core/ui/index.js';
 import { timeAgo } from '../utils/timeAgo.js';
 import { renderRichText } from '../utils/mentions.jsx';
@@ -55,20 +55,22 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
   const reactionGroups = groupReactions(reactions, comment.id, currentEmail);
   const myLike = reactionGroups.find((g) => g.emoji === LIKE_EMOJI && g.mine);
 
-  const anchorBadge = (() => {
+  // PR-3.13.1 v2: anchor badge renders as a separate row after the
+  // comment body (not inline in the meta line). Photo = 60x60 thumb +
+  // pin overlay (no tap). Caption = single-line italic snippet badge
+  // with terracotta left border; tap scrolls the matching <mark> into
+  // view. Removed-text computed at render — anchor_payload.text not in
+  // current post.caption -> greyed + " (text removed)" suffix.
+  const anchorRow = (() => {
     const t = comment.anchor_type;
     const p = comment.anchor_payload || null;
     if (!t || !p) return null;
-    const isResolved = !!comment.resolved;
     if (t === 'caption') {
       const snippet = typeof p.text === 'string' ? p.text : '';
       if (!snippet) return null;
       const captionLive = post && typeof post.caption === 'string' ? post.caption : '';
-      const present = !isResolved && captionLive.indexOf(snippet) >= 0;
-      const trimmed = snippet.length > 60 ? snippet.slice(0, 60) + '…' : snippet;
-      const cls = present
-        ? 'inline-flex items-center gap-1 max-w-full px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-terracotta border-l-2 border-terracotta bg-bg-2 rounded-sm2'
-        : 'inline-flex items-center gap-1 max-w-full px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-text-dim border-l-2 border-border-neutral bg-bg-2 rounded-sm2';
+      const present = captionLive.indexOf(snippet) >= 0;
+      const trimmed = snippet.length > 80 ? snippet.slice(0, 80) + '…' : snippet;
       const onClick = present ? (e) => {
         e.stopPropagation();
         try { requestCaptionExpand(); } catch (err) {}
@@ -85,47 +87,127 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
         }, 80);
       } : undefined;
       return (
-        <span
-          className={cls}
-          style={{ cursor: present ? 'pointer' : 'default' }}
+        <div
+          className="flex items-start"
+          style={{
+            background: 'var(--c-bg-2)',
+            borderLeft: present ? '3px solid var(--c-terracotta)' : '3px solid var(--c-divider-warm)',
+            borderRadius: 6,
+            padding: '6px 10px',
+            marginTop: 6,
+            cursor: present ? 'pointer' : 'default',
+          }}
           onClick={onClick}
           role={present ? 'button' : undefined}
           aria-label={present ? 'Scroll to caption anchor' : 'Anchored text removed'}
         >
-          <Quote size={9} />
-          <span className="truncate" style={{ maxWidth: 220 }}>
-            {present
-              ? <>anchored to: <span className="italic normal-case">{trimmed}</span></>
-              : <><span className="italic normal-case">{trimmed}</span> · text removed</>}
+          <span
+            className="font-serif"
+            style={{
+              fontSize: 12,
+              lineHeight: 1.4,
+              color: present ? 'var(--c-text-loud)' : 'var(--c-text-dim)',
+              fontStyle: present ? 'italic' : 'normal',
+            }}
+          >
+            {present ? (
+              <>
+                <span style={{ color: 'var(--c-terracotta)', marginRight: 2 }}>{'“'}</span>
+                {trimmed}
+                <span style={{ color: 'var(--c-terracotta)', marginLeft: 2 }}>{'”'}</span>
+              </>
+            ) : (
+              <>
+                {trimmed}
+                <span style={{ fontSize: 10, fontStyle: 'normal', marginLeft: 6 }}>{'(text removed)'}</span>
+              </>
+            )}
           </span>
-        </span>
+        </div>
       );
     }
     if (t === 'photo') {
       const ii = typeof p.image_index === 'number' ? p.image_index : 0;
-      const present = !isResolved;
-      const cls = present
-        ? 'inline-flex items-center gap-1 px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-terracotta border-l-2 border-terracotta bg-bg-2 rounded-sm2'
-        : 'inline-flex items-center gap-1 px-1.5 py-[2px] mt-1 mr-1 font-mono text-2xs tracking-wide uppercase text-text-dim border-l-2 border-border-neutral bg-bg-2 rounded-sm2';
-      const onClick = present ? (e) => {
-        e.stopPropagation();
-        try { requestCarouselScroll(ii); } catch (err) {}
-        setTimeout(() => {
-          try { flashComment(comment.id); } catch (err) {}
-          setTimeout(() => { try { flashComment(null); } catch (err) {} }, 1600);
-        }, 250);
-      } : undefined;
+      const xp = typeof p.x_pct === 'number' ? p.x_pct : 0;
+      const yp = typeof p.y_pct === 'number' ? p.y_pct : 0;
+      const imgs = Array.isArray(post?.images) ? post.images : (post?.images?.urls || []);
+      const src = imgs[ii] || '';
       return (
-        <span
-          className={cls}
-          style={{ cursor: present ? 'pointer' : 'default' }}
-          onClick={onClick}
-          role={present ? 'button' : undefined}
-          aria-label={present ? 'Scroll to photo anchor' : 'Photo anchor cleared'}
+        <div
+          className="flex items-center"
+          style={{ gap: 8, marginTop: 6 }}
         >
-          <MapPin size={9} />
-          <span>photo {ii + 1} {'·'} pin</span>
-        </span>
+          <div
+            style={{
+              position: 'relative',
+              width: 60,
+              height: 60,
+              borderRadius: 6,
+              overflow: 'hidden',
+              background: 'var(--c-bg-3)',
+              flexShrink: 0,
+            }}
+          >
+            {src ? (
+              <img
+                src={src}
+                alt=""
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  pointerEvents: 'none',
+                  WebkitTouchCallout: 'none',
+                  WebkitUserSelect: 'none',
+                  userSelect: 'none',
+                  WebkitUserDrag: 'none',
+                  display: 'block',
+                }}
+              />
+            ) : null}
+            <span
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: `calc(${xp}% - 5px)`,
+                top: `calc(${yp}% - 5px)`,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                background: 'var(--c-anchor-dot)',
+                border: '1.5px solid var(--c-anchor-dot-ring)',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+          <div className="flex flex-col" style={{ minWidth: 0 }}>
+            <span
+              className="font-mono uppercase"
+              style={{
+                fontSize: 10,
+                letterSpacing: '0.06em',
+                color: 'var(--c-text-dim)',
+                lineHeight: 1.2,
+              }}
+            >
+              Photo {ii + 1}
+            </span>
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 11,
+                color: 'var(--c-text-dim)',
+                lineHeight: 1.3,
+                fontFeatureSettings: "'tnum' 1",
+              }}
+            >
+              pin {Math.round(xp)}%, {Math.round(yp)}%
+            </span>
+          </div>
+        </div>
       );
     }
     return null;
@@ -202,7 +284,6 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
           <span className="text-text-dim text-2xs">{'\u00B7'}</span>
           <span className="font-mono text-sm text-text-dim">{time}</span>
           {comment.edited_at && <span className="font-mono text-2xs text-text-dim">(edited)</span>}
-          {anchorBadge}
         </div>
 
         <div
@@ -215,6 +296,8 @@ export function CommentRow({ comment, userRoles, reactions, currentEmail, isInte
             Read more
           </button>
         )}
+
+        {anchorRow}
 
         {flatImageUrls.length > 0 && (
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
