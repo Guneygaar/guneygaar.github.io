@@ -1125,31 +1125,12 @@ function libOpenPostCard(postId) {
     }
   }
 
-  var overlay = document.getElementById('pcs-overlay');
-  var screen = document.getElementById('pcs-screen');
-  if (!overlay || !screen) return;
-
-  try {
-    screen.style.cssText = '';
-    screen.style.pointerEvents = '';
-    overlay.style.display = 'flex';
-    overlay.style.position = 'fixed';
-    overlay.style.inset = '0';
-    overlay.style.zIndex = '1200';
-    overlay.style.pointerEvents = 'auto';
-    document.body.style.overflow = 'hidden';
-    window.AppState.ui.modalOpen = true;
-
-    _renderPCS(postId);
-
-    overlay.offsetHeight;
-    overlay.classList.add('open');
-  } catch(e) {
-    console.error('[PCS] failed:', e);
-    overlay.style.display = 'none';
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-    window.AppState.ui.modalOpen = false;
+  if (typeof window.openPCS === 'function') {
+    window.openPCS(postId, 'library');
+  } else if (window.SortedReact && window.SortedReact.flows && window.SortedReact.flows.pcs && typeof window.SortedReact.flows.pcs.open === 'function') {
+    window.SortedReact.flows.pcs.open(postId, { contextList: [] });
+  } else {
+    console.error('PCS bridge unavailable from library');
   }
 }
 window.libOpenPostCard = libOpenPostCard;
