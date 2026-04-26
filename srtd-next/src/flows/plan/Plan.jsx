@@ -20,7 +20,7 @@ import { List } from './views/List.jsx';
 import { Board } from './views/Board.jsx';
 import { Calendar } from './views/Calendar.jsx';
 import { Insights } from './views/Insights.jsx';
-import { PlanView } from './views/PlanView.jsx';
+import { PlanView, CHANNEL_LABELS } from './views/PlanView.jsx';
 import { FilterBanner } from './shared/FilterBanner.jsx';
 import { Toast } from './shared/Toast.jsx';
 import { DaySheet } from './sheets/DaySheet.jsx';
@@ -57,6 +57,8 @@ function TopBar() {
   const openMenu = usePlanStore((s) => s.openMenu);
   const currentView = usePlanStore((s) => s.currentView);
   const unreadCount = usePlanStore((s) => s.unreadCount);
+  const planCells = usePlanStore((s) => s.planCells);
+  const workspaceChannels = usePlanStore((s) => s.workspaceChannels);
   const VIEW_TITLES = {
     plan:     'Plan',
     list:     'List',
@@ -65,6 +67,24 @@ function TopBar() {
     insights: 'Insights'
   };
   const eyebrow = currentView === 'plan' ? '' : (VIEW_TITLES[currentView] || '');
+  const channelPills = useMemo(() => {
+    if (currentView !== 'plan') return [];
+    const seen = new Set();
+    const out = [];
+    if (Array.isArray(workspaceChannels)) {
+      for (const c of workspaceChannels) {
+        const ch = c && c.channel;
+        if (ch && !seen.has(ch)) { seen.add(ch); out.push(ch); }
+      }
+    }
+    if (Array.isArray(planCells)) {
+      for (const c of planCells) {
+        const ch = c && c.channel;
+        if (ch && !seen.has(ch)) { seen.add(ch); out.push(ch); }
+      }
+    }
+    return out;
+  }, [currentView, planCells, workspaceChannels]);
   return (
     <header style={{
       position: 'sticky',
@@ -84,7 +104,7 @@ function TopBar() {
         fontWeight: 600,
         letterSpacing: '-.01em',
         color: 'var(--c-text-loud)',
-        flex: 1
+        flexShrink: 0
       }}>
         Plan{eyebrow ? (
           <span style={{
@@ -97,6 +117,30 @@ function TopBar() {
           }}>{eyebrow}</span>
         ) : null}
       </div>
+      {channelPills.length > 0 ? (
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          gap: '6px',
+          overflowX: 'auto',
+          scrollbarWidth: 'none'
+        }}>
+          {channelPills.map((ch) => (
+            <span key={ch} style={{
+              flexShrink: 0,
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '11px',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              border: '1px solid var(--c-divider-soft)',
+              background: 'var(--c-bg-2)',
+              color: 'var(--c-text-loud)'
+            }}>{CHANNEL_LABELS[ch] || ch}</span>
+          ))}
+        </div>
+      ) : (
+        <div style={{ flex: 1 }} />
+      )}
       <button
         type="button"
         aria-label="Search"
