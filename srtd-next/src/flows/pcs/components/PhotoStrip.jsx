@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ImagePlus, ImageOff, ArrowLeft, ArrowRight } from 'lucide-react';
+import { ImagePlus, ImageOff, ArrowLeft, ArrowRight, Maximize2 } from 'lucide-react';
 import { Lightbox, PhotoKebabMenu } from '../../../core/ui';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
@@ -491,6 +491,18 @@ export function PhotoStrip({ post, canEdit }) {
           >
             <ThumbImg src={src} />
             {imageAnchorOverlay(i)}
+            {!reorderOpen ? (
+              <button
+                type="button"
+                aria-label="Open photo fullscreen"
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); setLightIdx(i); }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className="absolute bottom-2 right-2 w-8 h-8 rounded-pill inline-flex items-center justify-center bg-black/70 text-white z-[4]"
+                style={{ pointerEvents: 'auto' }}
+              >
+                <Maximize2 size={14} strokeWidth={2.25} />
+              </button>
+            ) : null}
           </div>
         ))}
       </div>
