@@ -130,7 +130,7 @@ export function CreatePlanWizard() {
         maxHeight: 'calc(100dvh - 60px)',
         display: 'flex',
         flexDirection: 'column',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 64px)'
       }}>
         <header style={{
           display: 'flex',

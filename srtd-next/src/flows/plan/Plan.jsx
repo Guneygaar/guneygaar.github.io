@@ -196,7 +196,9 @@ function TabBar() {
 function Fab() {
   const openFab = usePlanStore((s) => s.openFab);
   const role = usePlanStore((s) => s.role);
+  const wizardOpen = usePlanStore((s) => s.wizardOpen);
   if (role === 'client') return null;
+  if (wizardOpen) return null;
   return (
     <button
       type="button"
