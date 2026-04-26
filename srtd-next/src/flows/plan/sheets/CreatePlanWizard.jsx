@@ -67,7 +67,6 @@ export function CreatePlanWizard() {
   const [selectedCarryovers, setSelectedCarryovers] = useState([]);
   const [submitError, setSubmitError] = useState(null);
 
-  const workspaceId = (typeof window !== 'undefined' && window.AppState?.user?.workspace_id) || 'default';
   const periodValid = validatePeriod(periodType, periodStart, periodEnd).valid;
   const titleTrim = (title || '').trim();
   const step1NextDisabled = !periodValid || titleTrim.length === 0;
@@ -93,7 +92,6 @@ export function CreatePlanWizard() {
     const carryovers = selectedCarryovers.map(({ source, ...rest }) => rest);
     try {
       await createPlan({
-        workspace_id: workspaceId,
         title: titleTrim,
         period_start: periodStart,
         period_end: periodEnd,
