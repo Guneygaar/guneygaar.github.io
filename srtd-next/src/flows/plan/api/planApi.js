@@ -3,23 +3,51 @@
 // the PR 1 build prompt. No DDL, no schema assumptions.
 
 import { apiFetch } from '../../../core/api/client.js';
+import { STAGES_FOR_PLAN } from '../../../shared/constants.js';
 
 function encodeList(arr) {
   // PostgREST in.(...) accepts a quoted, comma-separated list.
   return '(' + arr.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(',') + ')';
 }
 
+const PLAN_STAGE_IN_CSV = encodeURIComponent('(' + STAGES_FOR_PLAN.join(',') + ')');
+
 /**
  * Query 1 - fetchPlanPosts(monthStart, monthEnd)
  * Dates are ISO YYYY-MM-DD strings.
+ * Stage filter (STAGES_FOR_PLAN) hides published + rejected; cascades
+ * to every consumer of usePosts/useAllPosts/useCalendarPosts so the
+ * grid, board, list, day sheet, and calendar all stay clean. Insights'
+ * rejection metric uses fetchRejectedForInsights to keep that signal.
  */
 export async function fetchPlanPosts(monthStart, monthEnd) {
   const select = 'id,post_id,title,stage,owner,content_pillar,target_date,format,images,linkedin_link,status_changed_at,updated_at,created_at';
   const path = `/posts?select=${select}`
     + `&target_date=gte.${encodeURIComponent(monthStart)}`
     + `&target_date=lte.${encodeURIComponent(monthEnd)}`
+    + `&stage=in.${PLAN_STAGE_IN_CSV}`
     + `&or=(is_draft.is.null,is_draft.eq.false)`
     + `&order=target_date.asc,status_changed_at.asc`;
+  const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
+  return Array.isArray(rows) ? rows : [];
+}
+
+/**
+ * fetchRejectedForInsights(monthStart, monthEnd)
+ * Pulls just the rejected posts in the bounds window so Insights can
+ * keep computing rejection % after fetchPlanPosts started filtering
+ * rejected out. Same date semantics as fetchPlanPosts (target_date
+ * range). No stage chip filter beyond rejected.
+ */
+export async function fetchRejectedForInsights(monthStart, monthEnd) {
+  if (!monthStart || !monthEnd) return [];
+  const select = 'id,post_id,title,stage,owner,content_pillar,target_date,format,status_changed_at,updated_at,created_at';
+  const path = `/posts?select=${select}`
+    + `&target_date=gte.${encodeURIComponent(monthStart)}`
+    + `&target_date=lte.${encodeURIComponent(monthEnd)}`
+    + `&stage=eq.rejected`
+    + `&or=(is_draft.is.null,is_draft.eq.false)`
+    + `&order=target_date.asc`;
   const rows = await apiFetch(path, { method: 'GET', headers: { 'Accept': 'application/json' } }, { allowLogout: false });
   return Array.isArray(rows) ? rows : [];
 }
