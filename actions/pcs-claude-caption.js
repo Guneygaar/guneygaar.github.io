@@ -614,7 +614,7 @@ function _cwSaveMemory(trigger, instruction) {
 async function _cwLoadMemory() {
   try {
     var rows = await apiFetch(
-      '/ai_memory?workspace_id=eq.default&order=created_at.desc&limit=50&select=type,content'
+      `/ai_memory?workspace_id=eq.${window.AppState.workspace.id}&order=created_at.desc&limit=50&select=type,content`
     );
     if (!Array.isArray(rows) || rows.length === 0) {
       window._captionWS.memoryPrompt = '';
