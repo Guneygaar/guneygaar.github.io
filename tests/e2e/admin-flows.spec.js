@@ -119,11 +119,11 @@ test.describe('Admin Flow Tests', () => {
     await card.click();
 
     // PCS overlay opens
-    await expect(page.locator('#pcs-overlay')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('#pcs-topbar-title')).toBeVisible();
+    await expect(page.locator('#pcs-react-overlay')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#pcs-react-overlay h1')).toBeVisible();
   });
 
-  test('TEST 4 — PCS closes on backdrop click', async ({ page }) => {
+  test('TEST 4 — PCS closes via topbar Close button', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     const pipeTab = page.locator('[data-tab="pipeline"]');
@@ -136,12 +136,12 @@ test.describe('Admin Flow Tests', () => {
     await expect(card).toBeVisible({ timeout: 5000 });
     await card.click();
 
-    await expect(page.locator('#pcs-overlay')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#pcs-react-overlay')).toBeVisible({ timeout: 5000 });
 
-    // Click backdrop (top-left corner)
-    await page.locator('#pcs-overlay').click({ position: { x: 10, y: 10 } });
+    // React PCS has no backdrop click region — close via the topbar Close button.
+    await page.locator('#pcs-react-overlay [aria-label="Close"]').click();
 
-    await expect(page.locator('#pcs-overlay')).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('#pcs-react-overlay')).toHaveCount(0, { timeout: 3000 });
   });
 
   test('TEST 5 — Library tab renders', async ({ page }) => {

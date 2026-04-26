@@ -209,7 +209,7 @@ export function PCS() {
 
   return (
     <ErrorBoundary>
-      <Overlay onClose={() => pcsFlow.close()} zIndex={1501}>
+      <Overlay onClose={() => pcsFlow.close()} zIndex={1501} id="pcs-react-overlay">
         <div className="max-w-[430px] w-full mx-auto flex flex-col flex-1 min-h-full">
           {loading && !post && (
             <div className="px-3 py-16 font-mono text-sm text-text-dim tracking-widest uppercase text-center">Loading {postId}...</div>
