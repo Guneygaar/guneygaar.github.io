@@ -2,6 +2,12 @@ name = "srtd-ai"
 main = "src/index.js"
 compatibility_date = "2026-04-14"
 
+[vars]
+# Bootstrap workspace uuid — single source of truth for the worker.
+# Mirrors the workspaces.id row whose slug='default'. Keeps the bootstrap
+# uuid out of the source code (CLAUDE.md scalability rule).
+BOOTSTRAP_WORKSPACE_ID = "69065eef-f823-4338-96c6-057d493b447b"
+
 [[r2_buckets]]
 binding     = "AI_ASSETS"
 bucket_name = "sorted-ai"

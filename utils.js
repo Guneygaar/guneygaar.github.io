@@ -94,7 +94,7 @@ function formatIST(ts) {
 
 // Resolve actor identifier — returns human-readable name first
 // so notifications/updated_by columns render nicely; falls back
-// to email if the user_roles row has no name.
+// to email if the profiles row has no display_name.
 function resolveActor() {
   return window.AppState.user.name
     || window.AppState.user.email

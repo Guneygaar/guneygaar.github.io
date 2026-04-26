@@ -99,12 +99,25 @@ export async function deletePost(postId) {
 }
 
 export async function enrichPostOwner(post) {
-  if (!post || !post.owner_user_id) return null;
+  if (!post) return null;
   try {
-    const ownerId = typeof post.owner_user_id === 'string' ? post.owner_user_id : post.owner_user_id?.id;
-    if (!ownerId) return null;
-    const rows = await apiFetch(`/user_roles?id=eq.${encodeURIComponent(ownerId)}&select=id,name,email,role`);
-    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+    const profileFk = post.owner_profile_id;
+    const profileId = typeof profileFk === 'string' ? profileFk : profileFk?.id;
+    if (profileId) {
+      const rows = await apiFetch(`/profiles?id=eq.${encodeURIComponent(profileId)}&select=id,display_name,email,role`);
+      if (Array.isArray(rows) && rows[0]) {
+        return { ...rows[0], name: rows[0].display_name };
+      }
+    }
+    const legacyFk = post.owner_user_id;
+    const legacyId = typeof legacyFk === 'string' ? legacyFk : legacyFk?.id;
+    if (legacyId) {
+      const rows = await apiFetch(`/profiles?id=eq.${encodeURIComponent(legacyId)}&select=id,display_name,email,role`);
+      if (Array.isArray(rows) && rows[0]) {
+        return { ...rows[0], name: rows[0].display_name };
+      }
+    }
+    return null;
   } catch (e) {
     return null;
   }

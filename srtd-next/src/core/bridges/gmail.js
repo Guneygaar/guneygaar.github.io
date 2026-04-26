@@ -8,11 +8,20 @@
 // refresh-token env, so end-users never see a Google consent flow.
 //
 // Workspace gate: handleGmailBrief checks
-// workspace_settings.ai_email_briefs === true and returns HTTP 403
+// workspaces.ai_email_briefs === true and returns HTTP 403
 // with { success:false, error:"..." } if the flag is off. We surface
 // the error message to the caller via a thrown Error.
 
 import { getAIConfig } from './config.js';
+
+function _resolveWorkspaceId(explicit) {
+  if (explicit) return explicit;
+  if (typeof window !== 'undefined' &&
+      window.AppState && window.AppState.workspace && window.AppState.workspace.id) {
+    return window.AppState.workspace.id;
+  }
+  return null;
+}
 
 async function postJSON(path, body) {
   const cfg = getAIConfig();
@@ -47,7 +56,7 @@ async function postJSON(path, body) {
  *   subject, snippet, sender, date, message_count }, …] }
  */
 export async function listEmails(opts = {}) {
-  const workspace_id = opts.workspace_id || 'default';
+  const workspace_id = _resolveWorkspaceId(opts.workspace_id);
   const data = await postJSON('/gmail/list', { workspace_id });
   return Array.isArray(data.emails) ? data.emails : [];
 }
@@ -62,7 +71,7 @@ export async function listEmails(opts = {}) {
 export async function fetchBrief(opts = {}) {
   const thread_id = opts.thread_id;
   if (!thread_id) throw new Error('thread_id required');
-  const workspace_id = opts.workspace_id || 'default';
+  const workspace_id = _resolveWorkspaceId(opts.workspace_id);
   const created_by = opts.created_by || '';
   return postJSON('/gmail/brief', { thread_id, workspace_id, created_by });
 }

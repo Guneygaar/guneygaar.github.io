@@ -315,7 +315,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
 async function resolveRoleFromToken(accessToken, email) {
   try {
     const roleRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/user_roles?email=eq.${encodeURIComponent(email)}&select=role,name&limit=1`,
+      `${SUPABASE_URL}/rest/v1/profiles?email=eq.${encodeURIComponent(email)}&select=role,display_name&limit=1`,
       { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${accessToken}` } }
     );
     const roleData = await roleRes.json();
@@ -325,7 +325,7 @@ async function resolveRoleFromToken(accessToken, email) {
       if (el) el.textContent = `No role found for ${email}. Ask your admin.`;
       return;
     }
-    var userName = Array.isArray(roleData) && roleData[0]?.name;
+    var userName = Array.isArray(roleData) && roleData[0]?.display_name;
     if (userName) window.AppState.user.name = userName;
     if (userName) localStorage.setItem('hinglish_name', userName);
     window.AppState.user.email = email;
@@ -407,7 +407,7 @@ function activateRole(role) {
     } catch(e) { console.warn('[auth] Proactive refresh failed:', e); }
   }, 50 * 60 * 1000);
 
-  // Load workspace_settings once per session so every AI feature gate
+  // Load workspaces row once per session so every AI feature gate
   // (writer / qc / chat / email_brief) can read window.AppState.workspace
   // synchronously without a network call. Fire-and-forget: activateRole
   // continues immediately so the render path is never blocked on it.

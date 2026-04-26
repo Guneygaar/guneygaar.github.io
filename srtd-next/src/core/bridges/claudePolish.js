@@ -20,7 +20,7 @@ export async function polishText(text, postId) {
       feature: 'chat',
       messages: [{ role: 'user', content: userContent }],
       post_id: postId || null,
-      workspace_id: 'default',
+      workspace_id: (typeof window !== 'undefined' && window.AppState?.workspace?.id) || null,
       created_by: email
     })
   });

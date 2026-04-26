@@ -27,27 +27,27 @@ async function fetchProfiles() {
     }
     window._profilesCache = cache;
     try {
-      var rolesRes = await apiFetch('/user_roles?select=email,role,name', {}, { allowLogout: false });
+      var rolesRes = await apiFetch('/profiles?select=email,role,display_name', {}, { allowLogout: false });
       if (Array.isArray(rolesRes)) {
         var nrc = {};
         for (var j = 0; j < rolesRes.length; j++) {
           var u = rolesRes[j];
           var uRole = (u.role || '').toLowerCase();
-          if (u.name) nrc[u.name.toLowerCase()] = uRole;
+          if (u.display_name) nrc[u.display_name.toLowerCase()] = uRole;
           if (u.email) nrc[u.email.toLowerCase()] = uRole;
         }
         window._nameToRoleCache = nrc;
         var nec = {};
         for (var k = 0; k < rolesRes.length; k++) {
           var ur = rolesRes[k];
-          if (ur.name && ur.email) {
-            nec[ur.name.toLowerCase()] = ur.email.toLowerCase();
+          if (ur.display_name && ur.email) {
+            nec[ur.display_name.toLowerCase()] = ur.email.toLowerCase();
           }
         }
         window._nameToEmailCache = nec;
       }
     } catch (roleErr) {
-      console.warn('[profiles] user_roles fetch failed:', roleErr);
+      console.warn('[profiles] role cache fetch failed:', roleErr);
     }
     enrichAppStateUser();
     _scratchLoad();
@@ -114,7 +114,7 @@ function getDisplayName(emailOrName) {
       }
     }
   }
-  // Short name lookup via user_roles.name
+  // Short name lookup via profiles.display_name
   if (window._nameToEmailCache && window._nameToEmailCache[key]) {
     var resolvedEmail = window._nameToEmailCache[key];
     if (cache && cache[resolvedEmail] && cache[resolvedEmail].display_name) {
@@ -150,7 +150,7 @@ function getAvatarUrl(nameOrEmail) {
       }
     }
   }
-  // Short name lookup via user_roles.name
+  // Short name lookup via profiles.display_name
   if (window._nameToEmailCache && window._nameToEmailCache[key]) {
     var resolvedEmail = window._nameToEmailCache[key];
     if (cache && cache[resolvedEmail]) {
@@ -173,7 +173,7 @@ function getProfileByEmail(nameOrEmail) {
       return p;
     }
   }
-  // Short name lookup via user_roles.name
+  // Short name lookup via profiles.display_name
   if (window._nameToEmailCache && window._nameToEmailCache[key]) {
     var resolvedEmail = window._nameToEmailCache[key];
     if (cache[resolvedEmail]) return cache[resolvedEmail];

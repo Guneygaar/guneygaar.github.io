@@ -1687,7 +1687,7 @@ console.log('LOADED:', 'render/client.js');
     }
   };
 
-  /* Fetch the @mention roster from user_roles once and cache it in
+  /* Fetch the @mention roster from profiles once and cache it in
      window._clientMentionRoster. Idempotent — further calls return
      the same promise so concurrent callers share a single fetch. */
   function _fetchClientMentionRoster() {
@@ -1701,10 +1701,10 @@ console.log('LOADED:', 'render/client.js');
     // client overlay is rendering. A transient 401 must not evict the
     // user. The visibilitychange handler and the 50-min proactive refresh
     // timer are the only paths that should ever trigger logout.
-    window._clientMentionRosterPromise = window.withRetry(function() { return window.apiFetch('/user_roles?select=name,email,role', {}, { allowLogout: false }); })
+    window._clientMentionRosterPromise = window.withRetry(function() { return window.apiFetch('/profiles?select=display_name,email,role', {}, { allowLogout: false }); })
       .then(function(rows) {
         if (Array.isArray(rows)) {
-          window._clientMentionRoster = rows.filter(function(r) { return r && (r.name || r.email); });
+          window._clientMentionRoster = rows.filter(function(r) { return r && (r.display_name || r.email); });
         } else {
           window._clientMentionRoster = [];
         }
@@ -1719,6 +1719,7 @@ console.log('LOADED:', 'render/client.js');
   }
 
   function _displayNameForRow(row) {
+    if (row.display_name) return row.display_name;
     if (row.name) return row.name;
     var email = row.email || '';
     var local = email.split('@')[0] || '';

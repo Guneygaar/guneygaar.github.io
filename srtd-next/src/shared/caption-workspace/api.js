@@ -18,6 +18,15 @@
 
 import { getAIConfig } from '../../core/bridges/config.js';
 
+function _resolveWorkspaceId(explicit) {
+  if (explicit) return explicit;
+  if (typeof window !== 'undefined' &&
+      window.AppState && window.AppState.workspace && window.AppState.workspace.id) {
+    return window.AppState.workspace.id;
+  }
+  return null;
+}
+
 function _featureForAction(action) {
   if (action === 'review') return 'qc';
   if (action === 'angles') return 'angles';
@@ -40,7 +49,7 @@ export async function callSrtdAI(action, userPrompt, opts = {}) {
     feature: _featureForAction(action),
     messages: [{ role: 'user', content: String(userPrompt || '') }],
     post_id: opts.postId || null,
-    workspace_id: opts.workspaceId || 'default',
+    workspace_id: _resolveWorkspaceId(opts.workspaceId),
     created_by: opts.createdBy || ''
   };
   if (opts.memoryContext) body.memory_context = opts.memoryContext;
@@ -90,7 +99,7 @@ export async function uploadFile(file, opts = {}) {
   const form = new FormData();
   form.append('file', file);
   form.append('post_id',      opts.postId      || '');
-  form.append('workspace_id', opts.workspaceId || 'default');
+  form.append('workspace_id', _resolveWorkspaceId(opts.workspaceId) || '');
   form.append('created_by',   opts.createdBy   || '');
 
   try {
@@ -177,16 +186,18 @@ export async function fetchAnthropicMonthCost() {
 }
 
 /**
- * Load ai_memory rows for workspace 'default' and build the
+ * Load ai_memory rows for the active workspace and build the
  * memory_context block exactly as vanilla _cwLoadMemory does. Returns
  * { memoryPrompt, correctionsPrompt }.
  */
 export async function loadMemory() {
   const empty = { memoryPrompt: '', correctionsPrompt: '' };
   if (typeof window === 'undefined' || typeof window.apiFetch !== 'function') return empty;
+  const wsId = _resolveWorkspaceId();
+  if (!wsId) return empty;
   try {
     const rows = await window.apiFetch(
-      '/ai_memory?workspace_id=eq.default&order=created_at.desc&limit=50&select=type,content',
+      '/ai_memory?workspace_id=eq.' + encodeURIComponent(wsId) + '&order=created_at.desc&limit=50&select=type,content',
       {},
       { allowLogout: false }
     );
@@ -268,7 +279,7 @@ export function saveUserInstruction(instruction, opts = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify({
-      workspace_id: 'default',
+      workspace_id: _resolveWorkspaceId(opts.workspaceId),
       type: 'user_instruction',
       content: String(instruction || ''),
       post_id: opts.postId || null
@@ -286,7 +297,7 @@ export function saveCorrection(original, edited, opts = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
     body: JSON.stringify({
-      workspace_id: 'default',
+      workspace_id: _resolveWorkspaceId(opts.workspaceId),
       type: 'edit_correction',
       content: { original, edited },
       post_id: opts.postId || null

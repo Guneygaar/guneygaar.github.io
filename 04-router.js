@@ -66,7 +66,7 @@ async function _startRouter() {
     // NOTE: activateRole() already calls fetchProfiles() internally on
     // every branch (client, agency, admin, preview). The duplicate
     // fetchProfiles() calls that used to live in this function after
-    // activateRole() were firing /profiles and /user_roles TWICE on
+    // activateRole() were firing /profiles TWICE on
     // every session resume — removed now that activateRole() owns the
     // profile-cache warmup for all paths.
     if (refreshToken) {

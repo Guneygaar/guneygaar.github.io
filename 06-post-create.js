@@ -216,7 +216,7 @@ window._npsShowEmailList = async function() {
     var res = await fetch(cfg.workerUrl + '/gmail/list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-AI-Secret': cfg.secret },
-      body: JSON.stringify({ workspace_id: 'default' })
+      body: JSON.stringify({ workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null })
     });
     var data = await res.json();
 
@@ -283,7 +283,7 @@ window._npsSelectEmail = async function(messageId, subject) {
         // _npsShowEmailList. The Worker accepts thread_id and
         // still falls back to message_id for any stale cache.
         thread_id:    messageId,
-        workspace_id: 'default',
+        workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
         created_by:   (window.AppState.user && window.AppState.user.email) || ''
       })
     });
@@ -494,7 +494,7 @@ window._npsRefine = async function() {
       body: JSON.stringify({
         feature:      'writer',
         messages:     messages,
-        workspace_id: 'default',
+        workspace_id: (window.AppState && window.AppState.workspace && window.AppState.workspace.id) || null,
         created_by:   (window.AppState.user && window.AppState.user.email) || ''
       })
     });
@@ -569,7 +569,7 @@ document.body.style.overflow = 'hidden';
 
 // PR 4 — Gmail import: show for Admin + Servicing. The Worker
 // (srtd-ai-worker, checkWorkspaceEnabled) enforces the
-// workspace_settings.ai_email_briefs flag server-side with a 403,
+// workspaces.ai_email_briefs flag server-side with a 403,
 // so the frontend gate is role-only — any workspace-level check
 // here would race loadWorkspaceSettings() and flicker on cold
 // loads (see PR #864). Initial state on every open is "button
@@ -588,26 +588,26 @@ _npsCheckValid();
 startDraftAutosave();
 if (typeof _initPostAssetInput === 'function') _initPostAssetInput();
 
-// Populate owner dropdown dynamically from user_roles
+// Populate owner dropdown dynamically from profiles
 (async function() {
   try {
     var _ownerSel = document.getElementById('new-post-owner');
     if (!_ownerSel) return;
     var _members = await apiFetch(
-      '/user_roles?role=neq.client&select=name,role,email' +
-      '&order=name.asc',
+      '/profiles?role=neq.client&select=display_name,role,email' +
+      '&order=display_name.asc',
       {}, { allowLogout: false }
     );
     if (!Array.isArray(_members)) return;
     _ownerSel.innerHTML = '<option value="">Assign to...</option>';
     _members.forEach(function(m) {
-      if (!m || !m.name || !m.role) return;
+      if (!m || !m.display_name || !m.role) return;
       var _canonRole = m.role.charAt(0).toUpperCase() +
                        m.role.slice(1).toLowerCase();
       if (_canonRole === 'Client') return;
       var opt = document.createElement('option');
       opt.value = _canonRole;
-      opt.textContent = m.name;
+      opt.textContent = m.display_name;
       _ownerSel.appendChild(opt);
     });
   } catch (_e) {}

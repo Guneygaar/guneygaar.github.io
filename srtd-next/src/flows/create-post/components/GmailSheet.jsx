@@ -25,6 +25,7 @@ export function GmailSheet() {
   const setToast = useFormState(s => s.setToast);
   const form = useFormState(s => s.form);
   const user = useAppState(s => s.user);
+  const workspaceId = useAppState(s => s.workspace?.id || null);
 
   const [phase, setPhase] = useState('list');
   const [emails, setEmails] = useState([]);
@@ -45,7 +46,7 @@ export function GmailSheet() {
     setError(null);
     setEmails([]);
     setPhase('list');
-    listEmails({ workspace_id: 'default' })
+    listEmails({ workspace_id: workspaceId })
       .then(list => {
         if (cancelled) return;
         setEmails(list || []);
@@ -73,7 +74,7 @@ export function GmailSheet() {
     setError(null);
     fetchBrief({
       thread_id: threadId,
-      workspace_id: 'default',
+      workspace_id: workspaceId,
       created_by: (user && user.email) || ''
     }).then(data => {
       if (!data || !data.success) {
@@ -156,7 +157,7 @@ export function GmailSheet() {
     setError(null);
     setEmails([]);
     setPhase('list');
-    listEmails({ workspace_id: 'default' })
+    listEmails({ workspace_id: workspaceId })
       .then(list => {
         setEmails(list || []);
         logClick('gmail_sheet_list_fetch', { count: (list || []).length, retry: true });
