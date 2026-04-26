@@ -4,7 +4,7 @@
 // vars from tokens.css; never hardcoded hex.
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, X } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { openInPcs } from '../shared/openInPcs.js';
 import { CreatePlanWizard } from '../sheets/CreatePlanWizard.jsx';
@@ -190,7 +190,8 @@ function CellChip({ status }) {
   );
 }
 
-function ConceptCell({ cell, role, onTap, onAdd }) {
+function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
+  const [hover, setHover] = useState(false);
   if (!cell) {
     if (role === 'client') return <div style={{ flex: 1 }} />;
     return (
@@ -213,35 +214,68 @@ function ConceptCell({ cell, role, onTap, onAdd }) {
       </button>
     );
   }
+  const canRemove = role !== 'client' && typeof onRemove === 'function';
   return (
-    <button
-      type="button"
-      onClick={() => onTap(cell)}
+    <div
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
+        position: 'relative',
         flex: 1,
-        minHeight: '64px',
-        textAlign: 'left',
-        padding: '8px 10px',
-        background: 'var(--c-bg-2)',
-        border: '1px solid var(--c-divider-soft)',
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column'
+        display: 'flex'
       }}>
-      <div style={{
-        fontFamily: FONT_BODY,
-        fontSize: '13px',
-        lineHeight: 1.35,
-        color: 'var(--c-text-loud)',
-        whiteSpace: 'normal',
-        wordBreak: 'break-word'
-      }}>{cell.concept || 'Untitled concept'}</div>
-      <CellChip status={cell.cell_status} />
-    </button>
+      <button
+        type="button"
+        onClick={() => onTap(cell)}
+        style={{
+          flex: 1,
+          minHeight: '64px',
+          textAlign: 'left',
+          padding: '8px 24px 8px 10px',
+          background: 'var(--c-bg-2)',
+          border: '1px solid var(--c-divider-soft)',
+          cursor: 'pointer',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+        <div style={{
+          fontFamily: FONT_BODY,
+          fontSize: '13px',
+          lineHeight: 1.35,
+          color: 'var(--c-text-loud)',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word'
+        }}>{cell.concept || 'Untitled concept'}</div>
+        <CellChip status={cell.cell_status} />
+      </button>
+      {canRemove ? (
+        <button
+          type="button"
+          aria-label="Remove concept"
+          onClick={(e) => { e.stopPropagation(); onRemove(cell.id); }}
+          style={{
+            position: 'absolute',
+            top: '4px',
+            right: '4px',
+            background: 'transparent',
+            border: 'none',
+            padding: '2px',
+            cursor: 'pointer',
+            color: 'var(--c-text-mid)',
+            opacity: hover ? 1 : 0.6,
+            transition: 'opacity 120ms ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+          <X size={14} />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
-function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, onAdd }) {
+function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, onAdd, onRemove }) {
   return (
     <div style={{
       display: 'flex',
@@ -310,6 +344,7 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
                     cell={c}
                     role={role}
                     onTap={onTap}
+                    onRemove={onRemove}
                   />
                 ))}
                 {role !== 'client' ? (
@@ -393,8 +428,9 @@ export function PlanView() {
   const setShowWeekends = usePlanStore((s) => s.setShowWeekends);
   const openPlanSheet = usePlanStore((s) => s.openPlanSheet);
   const setActiveCell = usePlanStore((s) => s.setActiveCell);
-  const addPlanCell = usePlanStore((s) => s.addPlanCell);
   const loadAdjacentPlan = usePlanStore((s) => s.loadAdjacentPlan);
+  const openAddConceptSheet = usePlanStore((s) => s.openAddConceptSheet);
+  const openRemoveCellSheet = usePlanStore((s) => s.openRemoveCellSheet);
 
   const wizardOpen = usePlanStore((s) => s.wizardOpen);
   const openWizard = usePlanStore((s) => s.openWizard);
@@ -450,7 +486,12 @@ export function PlanView() {
 
   function handleAdd(dateISO, channel, position) {
     if (role === 'client') return;
-    addPlanCell({ cell_date: dateISO, channel, concept: '', position });
+    openAddConceptSheet(dateISO, channel, position);
+  }
+
+  function handleRemove(cellId) {
+    if (role === 'client') return;
+    openRemoveCellSheet(cellId);
   }
 
   const channelChannels = useMemo(() => {
@@ -759,6 +800,7 @@ export function PlanView() {
               role={role}
               onTap={handleCellTap}
               onAdd={handleAdd}
+              onRemove={handleRemove}
             />
           );
         })}

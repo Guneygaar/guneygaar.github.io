@@ -4,8 +4,9 @@
 // respected. CSS vars only.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, FilePlus, Link2, Trash2 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
+import { STAGE_LABELS, STAGE_COLOR_VAR } from '../shared/constants.js';
 
 const FONT_BODY = '"DM Sans", sans-serif';
 const FONT_HEAD = 'Fraunces, serif';
@@ -769,6 +770,308 @@ export function PlanCellSheet() {
           opacity: draft.trim() ? 1 : 0.5,
           cursor: draft.trim() ? 'pointer' : 'not-allowed'
         }}>Send</button>
+      </div>
+    </SlideUp>
+  );
+}
+// Batch-3: "+ Add concept" options sheet. Two affordances:
+//   - New concept     -> creates an empty draft cell at pendingAdd slot
+//   - Attach existing -> opens the attachable-post picker
+function AddOption({ Icon, label, sub, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        width: '100%',
+        padding: '14px 16px',
+        background: 'var(--c-bg-2)',
+        border: '1px solid var(--c-divider-soft)',
+        borderRadius: '10px',
+        cursor: 'pointer',
+        textAlign: 'left'
+      }}>
+      <span style={{
+        width: '36px', height: '36px',
+        borderRadius: '10px',
+        background: 'var(--c-bg-3)',
+        color: 'var(--c-terracotta-1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0
+      }}>
+        <Icon size={18} />
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: FONT_BODY,
+          fontWeight: 600,
+          fontSize: '14px',
+          color: 'var(--c-text-loud)'
+        }}>{label}</div>
+        <div style={{
+          fontFamily: FONT_MONO,
+          fontSize: '9px',
+          letterSpacing: '.08em',
+          color: 'var(--c-text-dim)',
+          marginTop: '2px',
+          textTransform: 'uppercase'
+        }}>{sub}</div>
+      </div>
+    </button>
+  );
+}
+
+export function AddConceptOptionsSheet() {
+  const close = usePlanStore((s) => s.closePlanSheet);
+  const pending = usePlanStore((s) => s.pendingAdd);
+  const addPlanCell = usePlanStore((s) => s.addPlanCell);
+  const openAttachPicker = usePlanStore((s) => s.openAttachPicker);
+
+  if (!pending) return null;
+
+  function chooseNew() {
+    const p = pending;
+    close();
+    addPlanCell({ cell_date: p.dateISO, channel: p.channel, concept: '', position: p.position });
+  }
+
+  return (
+    <SlideUp title="Add concept" onClose={close} fixedHeight>
+      <div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <AddOption
+          Icon={FilePlus}
+          label="New concept"
+          sub="Start a fresh draft in this slot"
+          onClick={chooseNew}
+        />
+        <AddOption
+          Icon={Link2}
+          label="Attach existing post"
+          sub="Pick a post from your pipeline"
+          onClick={openAttachPicker}
+        />
+      </div>
+    </SlideUp>
+  );
+}
+
+function StagePill({ stage }) {
+  const color = `var(${STAGE_COLOR_VAR[stage] || '--c-text-dim'})`;
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px',
+      padding: '3px 6px',
+      border: `1px solid ${color}`,
+      background: `color-mix(in srgb, ${color} 14%, transparent)`,
+      fontFamily: FONT_MONO,
+      fontSize: '8px',
+      letterSpacing: '.14em',
+      textTransform: 'uppercase',
+      color: 'var(--c-text-loud)'
+    }}>
+      <span style={{ width: '5px', height: '5px', borderRadius: '5px', background: color }} />
+      {STAGE_LABELS[stage] || stage}
+    </span>
+  );
+}
+
+export function AttachPostSheet() {
+  const close = usePlanStore((s) => s.closePlanSheet);
+  const posts = usePlanStore((s) => s.attachablePosts);
+  const loading = usePlanStore((s) => s.attachLoading);
+  const submitting = usePlanStore((s) => s.attachSubmitting);
+  const attach = usePlanStore((s) => s.attachExistingPost);
+
+  return (
+    <SlideUp title="Attach existing post" onClose={close}>
+      <div style={{ padding: '12px 16px 24px' }}>
+        {loading ? (
+          <div style={{
+            padding: '40px 0',
+            textAlign: 'center',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-dim)'
+          }}>Loading posts...</div>
+        ) : posts.length === 0 ? (
+          <div style={{
+            padding: '40px 8px',
+            textAlign: 'center',
+            fontFamily: FONT_BODY,
+            fontSize: '13px',
+            color: 'var(--c-text-dim)'
+          }}>No unlinked posts available to attach.</div>
+        ) : posts.map((p) => (
+          <button
+            key={p.id || p.post_id}
+            type="button"
+            disabled={submitting}
+            onClick={() => attach(p.post_id || p.id)}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: '6px',
+              width: '100%',
+              padding: '12px',
+              marginBottom: '8px',
+              background: 'var(--c-bg-2)',
+              border: '1px solid var(--c-divider-soft)',
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              opacity: submitting ? 0.5 : 1,
+              textAlign: 'left'
+            }}>
+            <div style={{
+              fontFamily: FONT_BODY,
+              fontSize: '13px',
+              fontWeight: 500,
+              color: 'var(--c-text-loud)',
+              lineHeight: 1.35,
+              wordBreak: 'break-word'
+            }}>{p.title || 'Untitled post'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <StagePill stage={p.stage} />
+              {p.target_date ? (
+                <span style={{
+                  fontFamily: FONT_MONO,
+                  fontSize: '8px',
+                  letterSpacing: '.14em',
+                  textTransform: 'uppercase',
+                  color: 'var(--c-text-soft)'
+                }}>{p.target_date}</span>
+              ) : null}
+            </div>
+          </button>
+        ))}
+      </div>
+    </SlideUp>
+  );
+}
+
+// Batch-3: confirm sheet for per-cell remove. Backed by removeCell()
+// in the store, which DELETEs /plan_cells?id=eq.<id> and lets the FK
+// SET NULL leave the linked post in the pipeline.
+export function RemoveCellConfirm() {
+  const close = usePlanStore((s) => s.closePlanSheet);
+  const cellId = usePlanStore((s) => s.cellToRemove);
+  const removeCell = usePlanStore((s) => s.removeCell);
+  return (
+    <SlideUp title="Remove concept" onClose={close} fixedHeight>
+      <div style={{ padding: '16px' }}>
+        <div style={{
+          fontFamily: FONT_HEAD,
+          fontSize: '16px',
+          fontWeight: 500,
+          color: 'var(--c-text-loud)'
+        }}>Remove this concept from plan?</div>
+        <div style={{
+          marginTop: '8px',
+          fontFamily: FONT_BODY,
+          fontSize: '13px',
+          color: 'var(--c-text-mid)'
+        }}>Linked post stays in pipeline.</div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          <button type="button" onClick={close} style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-divider-warm)',
+            color: 'var(--c-text-loud)',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: 'pointer'
+          }}>Cancel</button>
+          <button type="button" onClick={() => removeCell(cellId)} style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-red)',
+            color: 'var(--c-red)',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}>
+            <Trash2 size={12} />
+            Remove
+          </button>
+        </div>
+      </div>
+    </SlideUp>
+  );
+}
+
+// Batch-3: confirm sheet for plan-level delete.
+export function DeletePlanConfirm() {
+  const close = usePlanStore((s) => s.closePlanSheet);
+  const deletePlan = usePlanStore((s) => s.deletePlan);
+  const busy = usePlanStore((s) => s.deletingPlan);
+  return (
+    <SlideUp title="Delete plan" onClose={busy ? () => {} : close} fixedHeight>
+      <div style={{ padding: '16px' }}>
+        <div style={{
+          fontFamily: FONT_HEAD,
+          fontSize: '16px',
+          fontWeight: 500,
+          color: 'var(--c-text-loud)'
+        }}>Delete this plan?</div>
+        <div style={{
+          marginTop: '8px',
+          fontFamily: FONT_BODY,
+          fontSize: '13px',
+          color: 'var(--c-text-mid)'
+        }}>This cannot be undone. All concepts will be removed. Linked posts stay in your pipeline.</div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+          <button type="button" disabled={busy} onClick={close} style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-divider-warm)',
+            color: 'var(--c-text-loud)',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: busy ? 'not-allowed' : 'pointer',
+            opacity: busy ? 0.5 : 1
+          }}>Cancel</button>
+          <button type="button" disabled={busy} onClick={() => deletePlan()} style={{
+            flex: 1,
+            padding: '10px 14px',
+            background: 'transparent',
+            border: '1px solid var(--c-red)',
+            color: 'var(--c-red)',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            cursor: busy ? 'not-allowed' : 'pointer',
+            opacity: busy ? 0.5 : 1,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}>
+            <Trash2 size={12} />
+            {busy ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>
       </div>
     </SlideUp>
   );

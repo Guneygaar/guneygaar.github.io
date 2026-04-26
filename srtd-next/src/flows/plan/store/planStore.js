@@ -22,13 +22,17 @@ import {
   insertPlanCell,
   patchPlanCell,
   patchPlan,
+  deletePlanCell,
+  deletePlan as deletePlanRow,
   insertPlanVersion,
   insertPlanComment,
   insertNotification,
   callAlignPlan,
   callSendPlanAlignment,
   generateShareToken,
-  callCreatePlan
+  callCreatePlan,
+  listAttachablePosts,
+  callAttachExistingPost
 } from '../api/planTablesApi.js';
 
 function _resolveWorkspaceId() {
@@ -494,7 +498,7 @@ export const usePlanStore = create((set, get) => ({
   showWeekends: false,
   planLoading: false,
   planError: null,
-  planSheet: null,           // null | 'history' | 'comments' | 'send' | 'align' | 'changes' | 'cell'
+  planSheet: null,           // null | 'history' | 'comments' | 'send' | 'align' | 'changes' | 'cell' | 'addConcept' | 'attachPicker' | 'removeCell' | 'deletePlan'
   activeCell: null,          // { id?, cell_date, channel, position, concept?, cell_status? }
   activeCellPostId: null,    // when cell_status spawned/linked: post.post_id
 
@@ -503,9 +507,28 @@ export const usePlanStore = create((set, get) => ({
   wizardPresetMonth: null,
   creatingPlan: false,
 
+  // Batch-3 add/attach/remove/delete state.
+  pendingAdd: null,          // { dateISO, channel, position } - active "+ Add concept" target
+  cellToRemove: null,        // cellId queued for confirm-remove
+  attachablePosts: [],
+  attachLoading: false,
+  attachSubmitting: false,
+  deletingPlan: false,
+
   setShowWeekends(b) { set({ showWeekends: !!b }); },
   openPlanSheet(name) { set({ planSheet: name || null }); },
-  closePlanSheet() { set({ planSheet: null, activeCell: null, activeCellPostId: null }); },
+  closePlanSheet() {
+    set({
+      planSheet: null,
+      activeCell: null,
+      activeCellPostId: null,
+      pendingAdd: null,
+      cellToRemove: null,
+      attachablePosts: [],
+      attachLoading: false,
+      attachSubmitting: false
+    });
+  },
   setActiveCell(cell, postId) { set({ activeCell: cell || null, activeCellPostId: postId || null }); },
 
   openWizard(presetMonth = null) {
@@ -687,6 +710,116 @@ export const usePlanStore = create((set, get) => ({
     } catch (err) {
       set({ planCells: get().planCells.map((c) => c.id === cellId ? prev : c) });
       get().showToast({ msg: 'Failed to save cell', duration: 2500 });
+    }
+  },
+
+  // Batch-3: per-cell remove. Optimistic delete + rollback. The
+  // posts.plan_cell_id FK is ON DELETE SET NULL, so any linked post
+  // unlinks automatically and stays in the pipeline at its current
+  // stage.
+  openRemoveCellSheet(cellId) {
+    if (!cellId) return;
+    set({ cellToRemove: cellId, planSheet: 'removeCell' });
+  },
+  async removeCell(cellId) {
+    if (!cellId) return;
+    const prev = get().planCells;
+    const target = prev.find((c) => c.id === cellId);
+    if (!target) {
+      get().closePlanSheet();
+      return;
+    }
+    set({ planCells: prev.filter((c) => c.id !== cellId) });
+    try {
+      await deletePlanCell(cellId);
+      get().closePlanSheet();
+      get().showToast({ msg: 'Cell removed from plan.', duration: 2500 });
+      // Refetch posts so any unlinked post reappears in the pipeline
+      // selector (plan_cell_id is now null on the server).
+      try { await get().refreshPlanCells(); } catch (e) { /* swallow */ }
+    } catch (err) {
+      set({ planCells: prev });
+      get().showToast({ msg: 'Failed to remove cell', duration: 2500 });
+    }
+  },
+
+  // Batch-3: "+ Add concept" -> options sheet. Stores the cell
+  // coordinates so both branches (new concept / attach existing) can
+  // route to the same target slot.
+  openAddConceptSheet(dateISO, channel, position) {
+    if (!dateISO || !channel) return;
+    set({
+      pendingAdd: { dateISO, channel, position: typeof position === 'number' ? position : 0 },
+      planSheet: 'addConcept'
+    });
+  },
+
+  // Batch-3: open attach picker. Loads attachable posts on demand.
+  async openAttachPicker() {
+    const cur = get().pendingAdd;
+    if (!cur) return;
+    set({ planSheet: 'attachPicker', attachLoading: true, attachablePosts: [] });
+    try {
+      const rows = await listAttachablePosts();
+      set({ attachablePosts: Array.isArray(rows) ? rows : [], attachLoading: false });
+    } catch (err) {
+      set({ attachablePosts: [], attachLoading: false });
+      get().showToast({ msg: 'Could not load posts', duration: 2500 });
+    }
+  },
+
+  // Batch-3: attach an existing post to the pending cell slot via RPC.
+  // Refetches plan cells on success so the new linked cell appears.
+  async attachExistingPost(postId) {
+    const plan = get().plan;
+    const pending = get().pendingAdd;
+    if (!plan || !pending || !postId) return;
+    set({ attachSubmitting: true });
+    try {
+      await callAttachExistingPost({
+        p_plan_id: plan.id,
+        p_workspace_id: plan.workspace_id,
+        p_cell_date: pending.dateISO,
+        p_channel: pending.channel,
+        p_post_id: postId
+      });
+      const cells = await fetchPlanCells(plan.id);
+      set({ planCells: cells, attachSubmitting: false });
+      get().closePlanSheet();
+      get().showToast({ msg: 'Post attached to plan.', duration: 2500 });
+    } catch (err) {
+      set({ attachSubmitting: false });
+      const msg = (err && err.message) || 'Attach failed';
+      get().showToast({ msg, duration: 3000 });
+    }
+  },
+
+  // Batch-3: plan-level delete. Cascades plan_cells, plan_versions,
+  // plan_comments via FK; posts.plan_cell_id SET NULL keeps posts safe.
+  openDeletePlanSheet() {
+    const plan = get().plan;
+    if (!plan) return;
+    set({ planSheet: 'deletePlan' });
+  },
+  async deletePlan() {
+    const plan = get().plan;
+    if (!plan) return;
+    set({ deletingPlan: true });
+    try {
+      await deletePlanRow(plan.id);
+      set({
+        plan: null,
+        planCells: [],
+        planVersions: [],
+        planComments: [],
+        deletingPlan: false
+      });
+      get().closePlanSheet();
+      get().showToast({ msg: 'Plan deleted', duration: 2500 });
+    } catch (err) {
+      set({ deletingPlan: false });
+      const msg = (err && err.message) || 'Failed to delete plan';
+      get().showToast({ msg, duration: 3000 });
     }
   },
 
