@@ -3698,6 +3698,21 @@ body.plan-active #notif-overlay {
   z-index: 1500 !important;
 }
 
+/* Bottom-nav role gates for Plan integration.
+   - Agency users (no client-mode body class) have Plan as their always-on
+     overlay, so the Pipeline + Plan nav buttons are hidden — the React
+     Plan TopBar / TabBar handles their navigation.
+   - Client users keep their full nav (Client feed, Pipeline, Plan,
+     Library, Insights). The React Plan overlay is hidden until the
+     client taps the Plan tab, which adds .plan-tab-open. */
+body.plan-active:not(.client-mode) [data-tab="pipeline"],
+body.plan-active:not(.client-mode) [data-tab="plan"] {
+  display: none;
+}
+body.client-mode:not(.plan-tab-open) [data-plan-root] {
+  display: none !important;
+}
+
 .pipeline-search-input {
   flex: 1;
   background: transparent;

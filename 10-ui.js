@@ -496,6 +496,7 @@ function switchTab(btn) {
     btn = document.querySelector('.tab-btn[data-tab="' + btn + '"]');
     if (!btn) return;
   }
+  document.body.classList.remove('plan-tab-open');
   var role = (window.AppState.user.effectiveRole || '').toLowerCase();
   if (role === 'client') {
     var targetTab = typeof btn === 'string' ? btn :
@@ -1908,6 +1909,7 @@ function copyApprovalLink(url) {
 
 // -- Insights Tab ------------------------------
 function showInsights() {
+  document.body.classList.remove('plan-tab-open');
   var appHdr = document.querySelector('.app-header');
   if (appHdr) appHdr.style.display = 'none';
   document.getElementById('library-view')?.classList.remove('active');
@@ -1938,6 +1940,23 @@ function closeInsights() {
   var dv = document.getElementById('dashboard-view');
   if (dv) dv.classList.add('active');
   goToTab('tasks');
+}
+
+// nav-plan handler. For Client, adds plan-tab-open body class so the
+// React Plan overlay becomes visible (CSS gate in styles.css). For
+// Servicing/Admin, Plan is already always-on; this is a no-op visually
+// but keeps the nav button active state in sync.
+function showPlan() {
+  document.body.classList.add('plan-tab-open');
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  var planBtn = document.querySelector('.tab-btn[data-tab="plan"]');
+  if (planBtn) planBtn.classList.add('active');
+  var titleEl = document.getElementById('app-header-title');
+  if (titleEl) titleEl.style.display = 'none';
+  var greetHdr = document.getElementById('dash-greeting-hdr');
+  if (greetHdr) greetHdr.style.display = 'none';
+  var appHdr = document.querySelector('.app-header');
+  if (appHdr) appHdr.style.display = 'none';
 }
 
 // -- Insights Data -----------------------------
@@ -3076,6 +3095,7 @@ if (!window._routerBound) {
         case 'nav-tab':      return guardAction('nav-tab-' + tab, () => switchTab(actionEl));
         case 'nav-library':  return guardAction('nav-library', () => showLibrary());
         case 'nav-insights': return guardAction('nav-insights', () => showInsights());
+        case 'nav-plan':     return guardAction('nav-plan', () => showPlan());
         case 'pcs-tab':      return guardAction('pcs-tab-' + tab, () => window._pcsTabSwitch(tab));
         case 'pcs-vis':      return guardAction('pcs-vis-' + actionEl.dataset.vis, () => window.setPcsVisibility && window.setPcsVisibility(actionEl, actionEl.dataset.vis));
         case 'ins-metric':   return guardAction('ins-metric-' + actionEl.dataset.metric, () => insSetMetric(actionEl.dataset.metric, actionEl));
