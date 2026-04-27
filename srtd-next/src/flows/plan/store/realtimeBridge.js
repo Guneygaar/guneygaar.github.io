@@ -184,32 +184,7 @@ export function startPlanCellsBridge(store) {
         { event: '*', schema: 'public', table: 'plan_comments' },
         () => _scheduleCellsRefresh()
       );
-      _cellsChannel.subscribe(async (status, err) => {
-        // JWT-expiry self-heal: when the Phoenix socket holds a stale token
-        // refresh the session, push the new JWT onto the realtime client,
-        // tear down the cell channel, and re-arm via the same starter.
-        if (status === 'CHANNEL_ERROR' && err && /Token has expired|InvalidJWTToken/i.test((err && err.message) || '')) {
-          try {
-            if (typeof window.refreshSession === 'function') await window.refreshSession();
-            const newToken = localStorage.getItem('sb_access_token');
-            if (newToken && window._supabaseClient?.realtime?.setAuth) {
-              window._supabaseClient.realtime.setAuth(newToken);
-            }
-            try {
-              if (window._supabaseClient && typeof window._supabaseClient.removeChannel === 'function') {
-                window._supabaseClient.removeChannel(_cellsChannel);
-              }
-            } catch (e) { /* swallow */ }
-            _cellsChannel = null;
-            _cellsStarted = false;
-            startPlanCellsBridge(_cellsStore);
-          } catch (e) {
-            if (typeof window !== 'undefined' && window.logError) {
-              window.logError('realtime-recover-plan-cells', e && e.stack, 'realtime-recover-plan-cells');
-            }
-          }
-        }
-      });
+      _cellsChannel.subscribe();
     } catch (e) {
       // Falls back to visibility refresh + manual reload paths.
     }

@@ -591,26 +591,6 @@ function _initSupabaseRealtimeClient() {
       try { window._supabaseClient.realtime.setAuth(token); }
       catch(e) { console.warn('[realtime] setAuth failed', e); }
     }
-    // Defence-in-depth: subscribe to Supabase auth's TOKEN_REFRESHED event
-    // so any future flip to SDK-managed refresh keeps the Realtime socket
-    // in sync. No-op today because auth.autoRefreshToken=false above —
-    // app-managed refresh paths in 03-auth.js still own the live propagation.
-    try {
-      if (window._supabaseClient.auth &&
-          typeof window._supabaseClient.auth.onAuthStateChange === 'function') {
-        window._supabaseClient.auth.onAuthStateChange(function(evt, sess) {
-          if (evt === 'TOKEN_REFRESHED' && sess && sess.access_token) {
-            try {
-              window._supabaseClient.realtime.setAuth(sess.access_token);
-            } catch (e) {
-              window.logError && window.logError('realtime-setauth-tokenrefreshed', e && e.stack, 'realtime-setauth-tokenrefreshed');
-            }
-          }
-        });
-      }
-    } catch (e) {
-      window.logError && window.logError('onauth-listener-install', e && e.stack, 'onauth-listener-install');
-    }
     // Seed the liveness watchdog so a fresh socket is not considered stale
     // in its first 3-minute window before any postgres_changes arrives.
     window._realtimeLastEventAt = Date.now();
@@ -780,27 +760,7 @@ function startClientRealtime() {
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.Client' },
         function(payload) { window._realtimeLastEventAt = Date.now(); _onClientNotificationInsert(payload); })
-      .subscribe(async function(status, err) {
-        // JWT-expiry self-heal: when the Phoenix socket holds a stale token
-        // (e.g. tab woke after long sleep, cross-tab refresh skipped this
-        // tab's setAuth) Supabase emits CHANNEL_ERROR with "Token has
-        // expired N seconds ago". Force a fresh refresh, push the new
-        // JWT onto the socket, then tear down + restart this channel.
-        if (status === 'CHANNEL_ERROR' && err && /Token has expired|InvalidJWTToken/i.test((err && err.message) || '')) {
-          try {
-            if (typeof window.refreshSession === 'function') await window.refreshSession();
-            var _newToken = localStorage.getItem('sb_access_token');
-            if (_newToken && window._supabaseClient && window._supabaseClient.realtime &&
-                typeof window._supabaseClient.realtime.setAuth === 'function') {
-              window._supabaseClient.realtime.setAuth(_newToken);
-            }
-            stopClientRealtime();
-            startClientRealtime();
-          } catch (e) {
-            window.logError && window.logError('realtime-recover-client', e && e.stack, 'realtime-recover-client');
-          }
-          return;
-        }
+      .subscribe(function(status, err) {
         if (err) {
           console.warn('[client-realtime] subscribe error', status, err);
           window.logError && window.logError(err && err.message, err && err.stack, 'client-realtime-subscribe');
@@ -1020,25 +980,7 @@ function startAgencyRealtime() {
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: 'user_role=eq.' + _roleTc },
         function(payload) { window._realtimeLastEventAt = Date.now(); _onAgencyNotificationInsert(payload); })
-      .subscribe(async function(status, err) {
-        // JWT-expiry self-heal: same shape as the client channel above.
-        // CHANNEL_ERROR + "Token has expired" forces a refresh + setAuth
-        // + tear-down + restart of just this channel.
-        if (status === 'CHANNEL_ERROR' && err && /Token has expired|InvalidJWTToken/i.test((err && err.message) || '')) {
-          try {
-            if (typeof window.refreshSession === 'function') await window.refreshSession();
-            var _newToken = localStorage.getItem('sb_access_token');
-            if (_newToken && window._supabaseClient && window._supabaseClient.realtime &&
-                typeof window._supabaseClient.realtime.setAuth === 'function') {
-              window._supabaseClient.realtime.setAuth(_newToken);
-            }
-            stopAgencyRealtime();
-            startAgencyRealtime();
-          } catch (e) {
-            window.logError && window.logError('realtime-recover-agency', e && e.stack, 'realtime-recover-agency');
-          }
-          return;
-        }
+      .subscribe(function(status, err) {
         if (err) {
           console.warn('[agency-realtime] subscribe error', status, err);
           window.logError && window.logError(err && err.message, err && err.stack, 'agency-realtime-subscribe');
