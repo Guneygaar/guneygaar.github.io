@@ -285,21 +285,19 @@ export function Menu() {
               </button>
             </section>
           ) : null}
-          {role !== 'client' ? (
-            <section>
-              <div style={{
-                fontFamily: '"IBM Plex Mono", monospace',
-                fontSize: '9px',
-                letterSpacing: '.14em',
-                textTransform: 'uppercase',
-                color: 'var(--c-text-dim)',
-                padding: '14px 16px 6px'
-              }}>View</div>
-              {VIEWS.map((v) => (
-                <ViewRow key={v.key} view={v} current={currentView} onSelect={selectView} />
-              ))}
-            </section>
-          ) : null}
+          <section>
+            <div style={{
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '9px',
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: 'var(--c-text-dim)',
+              padding: '14px 16px 6px'
+            }}>View</div>
+            {VIEWS.map((v) => (
+              <ViewRow key={v.key} view={v} current={currentView} onSelect={selectView} />
+            ))}
+          </section>
 
           <section>
             <div style={{

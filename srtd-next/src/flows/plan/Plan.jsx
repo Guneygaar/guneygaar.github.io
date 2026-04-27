@@ -164,16 +164,13 @@ function TopBar() {
 function TabBar() {
   const currentView = usePlanStore((s) => s.currentView);
   const setView = usePlanStore((s) => s.setView);
-  const role = usePlanStore((s) => s.role);
-  const ALL_TABS = [
+  const TABS = [
     { key: 'plan',     label: 'Plan',     Icon: BookOpen },
     { key: 'board',    label: 'Board',    Icon: LayoutGrid },
     { key: 'list',     label: 'List',     Icon: ListIcon },
     { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
     { key: 'insights', label: 'Insights', Icon: BarChart3 }
   ];
-  // Client is read-only and only sees the Plan tab. Other roles see all five.
-  const TABS = role === 'client' ? ALL_TABS.filter((t) => t.key === 'plan') : ALL_TABS;
   const TAB_STYLE = {
     flex: 1,
     display: 'flex',
@@ -388,6 +385,9 @@ export default function Plan() {
   }, [planEnabled, pcsOpen]);
 
   if (!planEnabled) return null;
+
+  const effectiveRole = ((user?.effectiveRole || user?.role) || '').toString().toLowerCase();
+  if (effectiveRole === 'client') return null;
 
   return (
     <div
