@@ -153,6 +153,18 @@ function _scheduleCellsRefresh() {
   }, 400);
 }
 
+let _commentsRefreshTimer = null;
+function _scheduleCommentsRefresh() {
+  if (_pauseCount > 0) return;
+  if (_commentsRefreshTimer) return;
+  _commentsRefreshTimer = setTimeout(() => {
+    _commentsRefreshTimer = null;
+    if (!_cellsStore) return;
+    const refresh = _cellsStore.getState().refreshPlanComments;
+    if (typeof refresh === 'function') refresh();
+  }, 400);
+}
+
 function _onCellsVisibility() {
   if (typeof document === 'undefined') return;
   if (document.visibilityState === 'visible') _scheduleCellsRefresh();
@@ -182,7 +194,7 @@ export function startPlanCellsBridge(store) {
       _cellsChannel.on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'plan_comments' },
-        () => _scheduleCellsRefresh()
+        () => _scheduleCommentsRefresh()
       );
       _cellsChannel.subscribe();
     } catch (e) {
@@ -210,6 +222,10 @@ export function stopPlanCellsBridge() {
   if (_cellsRefreshTimer) {
     clearTimeout(_cellsRefreshTimer);
     _cellsRefreshTimer = null;
+  }
+  if (_commentsRefreshTimer) {
+    clearTimeout(_commentsRefreshTimer);
+    _commentsRefreshTimer = null;
   }
   _cellsChannel = null;
   _cellsStore = null;

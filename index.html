@@ -57,8 +57,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260426u">
- <link rel="stylesheet" href="/srtd-next/dist/style.css?v=20260426u">
+ <link rel="stylesheet" href="styles.css?v=20260426w">
+ <link rel="stylesheet" href="/srtd-next/dist/style.css?v=20260426w">
 
 </head>
 <body>
@@ -434,6 +434,10 @@
   <div class="nav-item tab-btn" data-tab="pipeline" data-action="nav-tab">
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
     <span class="nav-label">Pipeline</span>
+  </div>
+  <div class="nav-item tab-btn" data-tab="plan" data-action="nav-plan">
+    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    <span class="nav-label">Plan</span>
   </div>
   <div class="nav-item tab-btn" data-tab="library" data-action="nav-library">
     <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -1286,27 +1290,27 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260426u"></script>
-<script src="00-appstate-compat.js?v=20260426u"></script>
-<script src="01-config.js?v=20260426u" defer></script>
-<script src="02-session.js?v=20260426u" defer></script>
-<script src="utils.js?v=20260426u" defer></script>
-<script src="12-profiles.js?v=20260426u" defer></script>
-<script src="03-auth.js?v=20260426u" defer></script>
-<script src="05-api.js?v=20260426u" defer></script>
-<script src="10-ui.js?v=20260426u" defer></script>
+<script src="00-appstate.js?v=20260426w"></script>
+<script src="00-appstate-compat.js?v=20260426w"></script>
+<script src="01-config.js?v=20260426w" defer></script>
+<script src="02-session.js?v=20260426w" defer></script>
+<script src="utils.js?v=20260426w" defer></script>
+<script src="12-profiles.js?v=20260426w" defer></script>
+<script src="03-auth.js?v=20260426w" defer></script>
+<script src="05-api.js?v=20260426w" defer></script>
+<script src="10-ui.js?v=20260426w" defer></script>
 
-<script src="06-post-create.js?v=20260426u" defer></script>
-<script defer src="render/dashboard.js?v=20260426u"></script>
-<script defer src="render/client.js?v=20260426u"></script>
-<script defer src="render/pipeline.js?v=20260426u"></script>
-<script defer src="render/brief.js?v=20260426u"></script>
-<script defer src="actions/pcs.js?v=20260426u"></script>
-<script defer src="actions/pcs-longpress.js?v=20260426u"></script>
-<script defer src="actions/pcs-claude-caption.js?v=20260426u"></script>
-<script defer src="actions/pcs-polish.js?v=20260426u"></script>
-<script defer src="actions/pcs-select.js?v=20260426u"></script>
-<script src="ai-config.js?v=20260426u" defer></script>
+<script src="06-post-create.js?v=20260426w" defer></script>
+<script defer src="render/dashboard.js?v=20260426w"></script>
+<script defer src="render/client.js?v=20260426w"></script>
+<script defer src="render/pipeline.js?v=20260426w"></script>
+<script defer src="render/brief.js?v=20260426w"></script>
+<script defer src="actions/pcs.js?v=20260426w"></script>
+<script defer src="actions/pcs-longpress.js?v=20260426w"></script>
+<script defer src="actions/pcs-claude-caption.js?v=20260426w"></script>
+<script defer src="actions/pcs-polish.js?v=20260426w"></script>
+<script defer src="actions/pcs-select.js?v=20260426w"></script>
+<script src="ai-config.js?v=20260426w" defer></script>
 <script>
   (function() {
     try {
@@ -1318,12 +1322,12 @@ window.setPcsVisibility = function(el, vis) {
     } catch (e) {}
   })();
 </script>
-<script src="/srtd-next/dist/sorted-react.js?v=20260426u" defer></script>
-<script src="07-post-load.js?v=20260426u" defer></script>
-<script src="08-post-actions.js?v=20260426u" defer></script>
-<script src="09-library.js?v=20260426u" defer></script>
-<script src="09-approval.js?v=20260426u" defer></script>
-<script src="04-router.js?v=20260426u" defer></script>
+<script src="/srtd-next/dist/sorted-react.js?v=20260426w" defer></script>
+<script src="07-post-load.js?v=20260426w" defer></script>
+<script src="08-post-actions.js?v=20260426w" defer></script>
+<script src="09-library.js?v=20260426w" defer></script>
+<script src="09-approval.js?v=20260426w" defer></script>
+<script src="04-router.js?v=20260426w" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 

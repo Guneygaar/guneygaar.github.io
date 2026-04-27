@@ -4,7 +4,7 @@
 // respected. CSS vars only.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, FilePlus, Link2, Trash2 } from 'lucide-react';
+import { X, FilePlus, Link2, Trash2, CornerDownRight, Check, RotateCcw } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { STAGE_LABELS, STAGE_COLOR_VAR } from '../shared/constants.js';
 import { PILLARS, FORMATS } from '../../../core/mappings.js';
@@ -664,11 +664,13 @@ export function PlanCellSheet() {
   const comments = usePlanStore((s) => s.planComments);
   const update = usePlanStore((s) => s.updatePlanCell);
   const addComment = usePlanStore((s) => s.addPlanComment);
+  const resolveComment = usePlanStore((s) => s.resolvePlanComment);
   const [title, setTitle] = useState(cell ? (cell.title || '') : '');
   const [pillar, setPillar] = useState(cell ? (cell.content_pillar || '') : '');
   const [format, setFormat] = useState(cell ? (cell.format || '') : '');
   const [concept, setConcept] = useState(cell ? (cell.concept || '') : '');
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState(null);
   const debounceRef = useRef(null);
   const conceptRef = useRef(null);
 
@@ -677,6 +679,7 @@ export function PlanCellSheet() {
     setPillar(cell ? (cell.content_pillar || '') : '');
     setFormat(cell ? (cell.format || '') : '');
     setConcept(cell ? (cell.concept || '') : '');
+    setReplyTo(null);
   }, [cell && cell.id]);
 
   useEffect(() => {
@@ -688,8 +691,18 @@ export function PlanCellSheet() {
   const cellComments = comments
     .filter((c) => c.plan_cell_id === cell.id)
     .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  // Single-level threading: top-level rows + replies grouped under parent.
+  const repliesByParent = {};
+  for (const c of cellComments) {
+    if (c.reply_to) {
+      if (!repliesByParent[c.reply_to]) repliesByParent[c.reply_to] = [];
+      repliesByParent[c.reply_to].push(c);
+    }
+  }
+  const topLevelComments = cellComments.filter((c) => !c.reply_to);
 
   const canEdit = role !== 'client';
+  const canResolve = role !== 'client';
 
   function debouncedPatch(patch) {
     if (!canEdit || !cell.id) return;
@@ -743,9 +756,12 @@ export function PlanCellSheet() {
   function send() {
     const text = draft.trim();
     if (!text || !cell.id) return;
-    addComment({ planCellId: cell.id, message: text });
+    addComment({ planCellId: cell.id, message: text, replyTo: replyTo ? replyTo.id : null });
     setDraft('');
+    setReplyTo(null);
   }
+
+  const replyToAuthor = replyTo ? (replyTo.author || 'Unknown') : null;
 
   return (
     <SlideUp title={cell.title || 'Untitled concept'} onClose={close}>
@@ -840,33 +856,140 @@ export function PlanCellSheet() {
               fontSize: '13px',
               color: 'var(--c-text-dim)'
             }}>No comments yet.</div>
-          ) : cellComments.map((c) => (
-            <div key={c.id} style={{
-              padding: '8px 0',
-              borderBottom: '1px solid var(--c-divider-subtle)'
-            }}>
-              <div style={{
-                fontFamily: FONT_BODY,
-                fontSize: '13px',
-                color: 'var(--c-text-loud)',
-                fontWeight: 500
-              }}>{c.author || 'Unknown'} <span style={{
-                fontFamily: FONT_MONO,
-                fontSize: '7px',
-                letterSpacing: '.18em',
-                textTransform: 'uppercase',
-                color: 'var(--c-text-soft)',
-                marginLeft: '6px'
-              }}>{c.author_role || ''}</span></div>
-              <div style={{
-                fontFamily: FONT_HEAD,
-                fontSize: '13px',
-                fontStyle: 'italic',
-                color: 'var(--c-text-loud)',
-                marginTop: '2px'
-              }}>{c.message || ''}</div>
-            </div>
-          ))}
+          ) : topLevelComments.map((c) => {
+            const replies = repliesByParent[c.id] || [];
+            const isResolved = !!c.resolved;
+            return (
+              <div key={c.id} style={{
+                padding: '8px 0',
+                borderBottom: '1px solid var(--c-divider-subtle)',
+                opacity: isResolved ? 0.55 : 1
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    fontFamily: FONT_BODY,
+                    fontSize: '13px',
+                    color: 'var(--c-text-loud)',
+                    fontWeight: 500
+                  }}>{c.author || 'Unknown'}</div>
+                  <span style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: '7px',
+                    letterSpacing: '.18em',
+                    textTransform: 'uppercase',
+                    color: 'var(--c-text-soft)'
+                  }}>{c.author_role || ''}</span>
+                  <span style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: '7px',
+                    letterSpacing: '.18em',
+                    textTransform: 'uppercase',
+                    color: 'var(--c-text-soft)',
+                    marginLeft: 'auto'
+                  }}>{relativeTime(c.created_at)}</span>
+                </div>
+                <div style={{
+                  fontFamily: FONT_HEAD,
+                  fontSize: '13px',
+                  fontStyle: 'italic',
+                  color: 'var(--c-text-loud)',
+                  marginTop: '2px',
+                  textDecoration: isResolved ? 'line-through' : 'none'
+                }}>{c.message || ''}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(c)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      fontFamily: FONT_MONO,
+                      fontSize: '8px',
+                      letterSpacing: '.14em',
+                      textTransform: 'uppercase',
+                      color: 'var(--c-terracotta-1)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}>
+                    <CornerDownRight size={10} />
+                    Reply
+                  </button>
+                  {canResolve ? (
+                    <button
+                      type="button"
+                      onClick={() => resolveComment && resolveComment(c.id, !isResolved)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        fontFamily: FONT_MONO,
+                        fontSize: '8px',
+                        letterSpacing: '.14em',
+                        textTransform: 'uppercase',
+                        color: isResolved ? 'var(--c-text-soft)' : 'var(--c-green)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                      }}>
+                      {isResolved ? <RotateCcw size={10} /> : <Check size={10} />}
+                      {isResolved ? 'Reopen' : 'Resolve'}
+                    </button>
+                  ) : null}
+                  {isResolved ? (
+                    <span style={{
+                      fontFamily: FONT_MONO,
+                      fontSize: '7px',
+                      letterSpacing: '.18em',
+                      textTransform: 'uppercase',
+                      color: 'var(--c-green)'
+                    }}>Resolved</span>
+                  ) : null}
+                </div>
+                {replies.length > 0 ? (
+                  <div style={{ marginTop: '6px', paddingLeft: '14px', borderLeft: '2px solid var(--c-divider-soft)' }}>
+                    {replies.map((r) => (
+                      <div key={r.id} style={{ padding: '6px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            fontFamily: FONT_BODY,
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            color: 'var(--c-text-loud)'
+                          }}>{r.author || 'Unknown'}</span>
+                          <span style={{
+                            fontFamily: FONT_MONO,
+                            fontSize: '7px',
+                            letterSpacing: '.18em',
+                            textTransform: 'uppercase',
+                            color: 'var(--c-text-soft)'
+                          }}>{r.author_role || ''}</span>
+                          <span style={{
+                            fontFamily: FONT_MONO,
+                            fontSize: '7px',
+                            letterSpacing: '.18em',
+                            textTransform: 'uppercase',
+                            color: 'var(--c-text-soft)',
+                            marginLeft: 'auto'
+                          }}>{relativeTime(r.created_at)}</span>
+                        </div>
+                        <div style={{
+                          fontFamily: FONT_HEAD,
+                          fontSize: '12px',
+                          fontStyle: 'italic',
+                          color: 'var(--c-text-loud)',
+                          marginTop: '2px'
+                        }}>{r.message || ''}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
       <div style={{
@@ -874,38 +997,73 @@ export function PlanCellSheet() {
         bottom: 0,
         background: 'var(--c-bg)',
         borderTop: '1px solid var(--c-divider-soft)',
-        padding: '10px 12px',
-        display: 'flex',
-        gap: '8px'
+        padding: replyTo ? '6px 12px 10px' : '10px 12px'
       }}>
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Add a comment..."
-          rows={1}
-          style={{
-            flex: 1,
-            resize: 'none',
-            padding: '8px 10px',
+        {replyTo ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 6px',
+            marginBottom: '6px',
             background: 'var(--c-bg-2)',
-            border: '1px solid var(--c-divider-soft)',
-            color: 'var(--c-text-loud)',
-            fontFamily: FONT_BODY,
-            fontSize: '13px',
-            outline: 'none'
-          }} />
-        <button type="button" onClick={send} disabled={!draft.trim()} style={{
-          padding: '8px 14px',
-          fontFamily: FONT_MONO,
-          fontSize: '9px',
-          letterSpacing: '.14em',
-          textTransform: 'uppercase',
-          background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
-          color: '#fff',
-          border: 'none',
-          opacity: draft.trim() ? 1 : 0.5,
-          cursor: draft.trim() ? 'pointer' : 'not-allowed'
-        }}>Send</button>
+            border: '1px solid var(--c-divider-subtle)',
+            fontFamily: FONT_MONO,
+            fontSize: '8px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            color: 'var(--c-text-soft)'
+          }}>
+            <CornerDownRight size={10} />
+            Replying to {replyToAuthor}
+            <button
+              type="button"
+              aria-label="Cancel reply"
+              onClick={() => setReplyTo(null)}
+              style={{
+                marginLeft: 'auto',
+                background: 'transparent',
+                border: 'none',
+                padding: '2px',
+                cursor: 'pointer',
+                color: 'var(--c-text-soft)',
+                display: 'inline-flex',
+                alignItems: 'center'
+              }}>
+              <X size={10} />
+            </button>
+          </div>
+        ) : null}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={replyTo ? `Reply to ${replyToAuthor}...` : 'Add a comment...'}
+            rows={1}
+            style={{
+              flex: 1,
+              resize: 'none',
+              padding: '8px 10px',
+              background: 'var(--c-bg-2)',
+              border: '1px solid var(--c-divider-soft)',
+              color: 'var(--c-text-loud)',
+              fontFamily: FONT_BODY,
+              fontSize: '13px',
+              outline: 'none'
+            }} />
+          <button type="button" onClick={send} disabled={!draft.trim()} style={{
+            padding: '8px 14px',
+            fontFamily: FONT_MONO,
+            fontSize: '9px',
+            letterSpacing: '.14em',
+            textTransform: 'uppercase',
+            background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
+            color: '#fff',
+            border: 'none',
+            opacity: draft.trim() ? 1 : 0.5,
+            cursor: draft.trim() ? 'pointer' : 'not-allowed'
+          }}>Send</button>
+        </div>
       </div>
     </SlideUp>
   );

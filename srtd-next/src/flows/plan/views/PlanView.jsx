@@ -4,7 +4,7 @@
 // vars from tokens.css; never hardcoded hex.
 
 import React, { useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, X, MessageCircle } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { openInPcs } from '../shared/openInPcs.js';
 import { CreatePlanWizard } from '../sheets/CreatePlanWizard.jsx';
@@ -208,7 +208,7 @@ function MetaChip({ label }) {
   );
 }
 
-function ConceptRow({ cell, role, onTap, onRemove, borderTop }) {
+function ConceptRow({ cell, role, commentCount, onTap, onRemove, onComment, borderTop }) {
   const canRemove = role !== 'client' && typeof onRemove === 'function';
   return (
     <div style={{ position: 'relative', borderTop: borderTop ? '1px solid var(--border-1)' : 'none' }}>
@@ -226,10 +226,43 @@ function ConceptRow({ cell, role, onTap, onRemove, borderTop }) {
           flexDirection: 'column',
           gap: '6px'
         }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
           <CellChip status={cell.cell_status} />
           <MetaChip label={cell.content_pillar} />
           <MetaChip label={cell.format} />
+          {typeof onComment === 'function' && cell.id ? (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={`Comments (${commentCount || 0})`}
+              onPointerDown={(e) => { e.stopPropagation(); }}
+              onClick={(e) => { e.stopPropagation(); onComment(cell); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onComment(cell);
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                padding: '3px 6px',
+                borderRadius: '3px',
+                border: '1px solid var(--border-2)',
+                color: commentCount > 0 ? 'var(--text-1)' : 'var(--text-3)',
+                fontFamily: FONT_MONO,
+                fontSize: '9px',
+                letterSpacing: '.08em',
+                cursor: 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation'
+              }}>
+              <MessageCircle size={11} style={{ pointerEvents: 'none' }} />
+              {commentCount > 0 ? commentCount : null}
+            </span>
+          ) : null}
         </div>
         <div style={{
           fontFamily: FONT_BODY,
@@ -273,7 +306,7 @@ function ConceptRow({ cell, role, onTap, onRemove, borderTop }) {
   );
 }
 
-function DayCard({ dateISO, cells, role, defaultChannel, onTap, onAdd, onRemove, onDateChange }) {
+function DayCard({ dateISO, cells, role, defaultChannel, commentCounts, onTap, onAdd, onRemove, onComment, onDateChange }) {
   const canPickDate = role !== 'client' && cells.length > 0 && typeof onDateChange === 'function';
   const firstCell = cells.find((c) => c && c.id) || null;
   const railInner = (
@@ -350,8 +383,10 @@ function DayCard({ dateISO, cells, role, defaultChannel, onTap, onAdd, onRemove,
             key={c.id}
             cell={c}
             role={role}
+            commentCount={(commentCounts && c.id) ? (commentCounts[c.id] || 0) : 0}
             onTap={onTap}
             onRemove={onRemove}
+            onComment={onComment}
             borderTop={i > 0}
           />
         ))}
@@ -510,6 +545,21 @@ export function PlanView() {
     if (role === 'client') return;
     openRemoveCellSheet(cellId);
   }
+
+  function handleComment(cell) {
+    setActiveCell(cell, null);
+    openPlanSheet('cell');
+  }
+
+  const cellCommentCounts = useMemo(() => {
+    const out = {};
+    for (const c of comments) {
+      const id = c && c.plan_cell_id;
+      if (!id) continue;
+      out[id] = (out[id] || 0) + 1;
+    }
+    return out;
+  }, [comments]);
 
   const channelChannels = useMemo(() => {
     const merged = [...activeChannels];
@@ -764,16 +814,18 @@ export function PlanView() {
         alignItems: 'center',
         gap: '16px'
       }}>
-        <button type="button" className="plan-action-link" onClick={() => openPlanSheet('history')} style={{
-          background: 'transparent',
-          border: 'none',
-          padding: '4px 0',
-          cursor: 'pointer',
-          fontFamily: FONT_MONO,
-          fontSize: '10px',
-          letterSpacing: '.08em',
-          textTransform: 'uppercase'
-        }}>History ({versions.length})</button>
+        {role !== 'client' ? (
+          <button type="button" className="plan-action-link" onClick={() => openPlanSheet('history')} style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            cursor: 'pointer',
+            fontFamily: FONT_MONO,
+            fontSize: '10px',
+            letterSpacing: '.08em',
+            textTransform: 'uppercase'
+          }}>History ({versions.length})</button>
+        ) : null}
         <button type="button" className="plan-action-link" onClick={() => openPlanSheet('comments')} style={{
           background: 'transparent',
           border: 'none',
@@ -784,16 +836,18 @@ export function PlanView() {
           letterSpacing: '.08em',
           textTransform: 'uppercase'
         }}>Comments ({unresolvedComments})</button>
-        <button type="button" className="plan-action-link" onClick={() => usePlanStore.getState().sharePlan()} style={{
-          background: 'transparent',
-          border: 'none',
-          padding: '4px 0',
-          cursor: 'pointer',
-          fontFamily: FONT_MONO,
-          fontSize: '10px',
-          letterSpacing: '.08em',
-          textTransform: 'uppercase'
-        }}>Share</button>
+        {role !== 'client' ? (
+          <button type="button" className="plan-action-link" onClick={() => usePlanStore.getState().sharePlan()} style={{
+            background: 'transparent',
+            border: 'none',
+            padding: '4px 0',
+            cursor: 'pointer',
+            fontFamily: FONT_MONO,
+            fontSize: '10px',
+            letterSpacing: '.08em',
+            textTransform: 'uppercase'
+          }}>Share</button>
+        ) : null}
         <div style={{ flex: 1 }} />
         <button
           type="button"
@@ -830,9 +884,11 @@ export function PlanView() {
               cells={dayCells}
               role={role}
               defaultChannel={defaultChannel}
+              commentCounts={cellCommentCounts}
               onTap={handleCellTap}
               onAdd={handleAdd}
               onRemove={handleRemove}
+              onComment={handleComment}
               onDateChange={triggerCellPicker}
             />
           );

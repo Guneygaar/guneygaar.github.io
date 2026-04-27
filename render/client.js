@@ -1084,6 +1084,7 @@ console.log('LOADED:', 'render/client.js');
   var _savedNavHtml = '';
 
   var ICON_NAV_LIST = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+  var ICON_NAV_PLAN = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
   var ICON_NAV_BOOK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
   var ICON_NAV_CHART = '<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>';
 
@@ -1104,6 +1105,8 @@ console.log('LOADED:', 'render/client.js');
         ICON_FEED + 'Feed</button>' +
       '<button class="tab-btn" data-tab="pipeline" data-action="nav-pipeline" style="' + btnStyle('pipeline') + '">' +
         ICON_NAV_LIST + 'Pipeline</button>' +
+      '<button class="tab-btn" data-tab="plan" data-action="nav-plan" style="' + btnStyle('plan') + '">' +
+        ICON_NAV_PLAN + 'Plan</button>' +
       '<button class="tab-btn" data-tab="library" data-action="nav-library" style="' + btnStyle('library') + '">' +
         ICON_NAV_BOOK + 'Library</button>' +
       '<button class="tab-btn" data-tab="insights" data-action="nav-insights" style="' + btnStyle('insights') + '">' +
@@ -1143,6 +1146,7 @@ console.log('LOADED:', 'render/client.js');
       if (!btn) return;
       var action = btn.getAttribute('data-action');
       if (action === 'nav-feed') {
+        document.body.classList.remove('plan-tab-open');
         _updateNavActive('feed');
         document.getElementById('dashboard-view')?.classList.remove('active');
         document.getElementById('insights-view')?.classList.remove('active');
@@ -1155,6 +1159,11 @@ console.log('LOADED:', 'render/client.js');
         var cv2 = document.getElementById('client-view');
         if (cv2) { cv2.style.display = 'none'; cv2.classList.remove('active'); }
         if (typeof switchTab === 'function') switchTab('pipeline');
+      } else if (action === 'nav-plan') {
+        _updateNavActive('plan');
+        var cv5 = document.getElementById('client-view');
+        if (cv5) { cv5.style.display = 'none'; cv5.classList.remove('active'); }
+        document.body.classList.add('plan-tab-open');
       } else if (action === 'nav-library') {
         _updateNavActive('library');
         var cv3 = document.getElementById('client-view');

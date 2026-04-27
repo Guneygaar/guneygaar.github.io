@@ -1238,6 +1238,7 @@ function libOpenCard(postId) {
 
 // --------------- show library tab ---------------
 function showLibrary() {
+  document.body.classList.remove('plan-tab-open');
   var appHdr = document.querySelector('.app-header');
   if (appHdr) appHdr.style.display = 'none';
   var insightsView = document.getElementById('insights-view');
