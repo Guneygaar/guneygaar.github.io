@@ -54,6 +54,12 @@ function prefersReducedMotion() {
   catch (e) { return false; }
 }
 
+function autoGrow(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 function SlideUp({ title, onClose, children, fixedHeight }) {
   const panelRef = useRef(null);
 
@@ -664,6 +670,7 @@ export function PlanCellSheet() {
   const [concept, setConcept] = useState(cell ? (cell.concept || '') : '');
   const [draft, setDraft] = useState('');
   const debounceRef = useRef(null);
+  const conceptRef = useRef(null);
 
   useEffect(() => {
     setTitle(cell ? (cell.title || '') : '');
@@ -671,6 +678,10 @@ export function PlanCellSheet() {
     setFormat(cell ? (cell.format || '') : '');
     setConcept(cell ? (cell.concept || '') : '');
   }, [cell && cell.id]);
+
+  useEffect(() => {
+    if (conceptRef.current) autoGrow(conceptRef.current);
+  }, [concept, cell && cell.id]);
 
   if (!cell) return null;
 
@@ -783,12 +794,20 @@ export function PlanCellSheet() {
 
         <label style={CELL_LABEL_STYLE}>Concept</label>
         <textarea
+          ref={conceptRef}
           value={concept}
           readOnly={!canEdit}
           onChange={(e) => onConceptChange(e.target.value)}
+          onInput={(e) => autoGrow(e.target)}
           placeholder="Concept..."
-          rows={4}
-          style={{ ...CELL_INPUT_STYLE, resize: 'vertical' }} />
+          style={{
+            ...CELL_INPUT_STYLE,
+            resize: 'none',
+            minHeight: '120px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            lineHeight: 1.5
+          }} />
 
         {canEdit ? (
           <button type="button" onClick={commitAndClose} style={{
@@ -954,6 +973,11 @@ export function AddConceptOptionsSheet() {
   const [pillar, setPillar] = useState('');
   const [format, setFormat] = useState('');
   const [saving, setSaving] = useState(false);
+  const conceptRef = useRef(null);
+
+  useEffect(() => {
+    if (conceptRef.current) autoGrow(conceptRef.current);
+  }, [concept]);
 
   if (!pending) return null;
 
@@ -992,11 +1016,19 @@ export function AddConceptOptionsSheet() {
 
         <label style={CELL_LABEL_STYLE}>Concept</label>
         <textarea
+          ref={conceptRef}
           value={concept}
           onChange={(e) => setConcept(e.target.value)}
+          onInput={(e) => autoGrow(e.target)}
           placeholder="Concept..."
-          rows={3}
-          style={{ ...CELL_INPUT_STYLE, resize: 'vertical' }} />
+          style={{
+            ...CELL_INPUT_STYLE,
+            resize: 'none',
+            minHeight: '120px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            lineHeight: 1.5
+          }} />
 
         <label style={CELL_LABEL_STYLE}>Pillar</label>
         <select
