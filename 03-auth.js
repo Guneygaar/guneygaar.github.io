@@ -39,9 +39,18 @@ function _clearSessionAndLogin() {
     clearInterval(window._tokenRefreshTimer);
     window._tokenRefreshTimer = null;
   }
+  // Force _initSupabaseRealtimeClient to rebuild on next login —
+  // without nulling here the early-return guard at 07-post-load.js:563
+  // keeps the old socket bound to the pre-logout JWT.
+  try { window._supabaseClient = null; } catch (e) {}
   showLoginOverlay();
 }
 window._clearSessionAndLogin = _clearSessionAndLogin;
+
+// Exposed on window so React bridges (srtd-next/.../realtime.js,
+// srtd-next/.../realtimeBridge.js) can call it from JWT-expiry recovery
+// branches without importing the vanilla module.
+window.refreshSession = function() { return refreshSession.apply(this, arguments); };
 
 async function refreshSession() {
   if (_refreshInProgress) return _refreshInProgress;
@@ -60,6 +69,20 @@ async function refreshSession() {
         var current = localStorage.getItem('sb_access_token') || '';
         if (current && current !== oldToken) {
           clearInterval(pollId);
+          // Cross-tab waiter setAuth propagation: another tab rotated the
+          // JWT and saved the new sb_access_token to localStorage. Push
+          // it onto THIS tab's Realtime WebSocket before resolving so the
+          // Phoenix socket is not left bound to the now-expired JWT.
+          // Mirrors _doRefresh success branch.
+          if (window._supabaseClient &&
+              window._supabaseClient.realtime &&
+              typeof window._supabaseClient.realtime.setAuth === 'function') {
+            try {
+              window._supabaseClient.realtime.setAuth(current);
+            } catch(e) {
+              window.logError && window.logError('realtime-setauth-waiter', e && e.stack, 'realtime-setauth-waiter');
+            }
+          }
           resolve({ token: current });
         } else if (attempts >= 33) { // ~10 seconds at 300ms
           clearInterval(pollId);
@@ -381,6 +404,10 @@ function logout() {
     clearInterval(window._tokenRefreshTimer);
     window._tokenRefreshTimer = null;
   }
+  // Force _initSupabaseRealtimeClient to rebuild on next login —
+  // without nulling here the early-return guard at 07-post-load.js:563
+  // keeps the old socket bound to the pre-logout JWT.
+  try { window._supabaseClient = null; } catch (e) {}
   document.getElementById('dashboard-view')?.classList.remove('active');
   document.getElementById('client-view')?.classList.remove('active');
   showLoginOverlay();
@@ -406,6 +433,28 @@ function activateRole(role) {
       }
     } catch(e) { console.warn('[auth] Proactive refresh failed:', e); }
   }, 50 * 60 * 1000);
+
+  // Cross-tab Realtime setAuth propagation: any tab whose sb_access_token
+  // rotates (manual login elsewhere, or another tab winning the refresh
+  // race) pushes the new JWT onto THIS tab's shared Realtime socket.
+  // Module-scoped flag prevents stacking listeners across re-activateRole
+  // calls (admin-preview switches, role flips).
+  if (!window._srtdRealtimeStorageBound) {
+    window._srtdRealtimeStorageBound = true;
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'sb_access_token' && e.newValue) {
+        if (window._supabaseClient &&
+            window._supabaseClient.realtime &&
+            typeof window._supabaseClient.realtime.setAuth === 'function') {
+          try {
+            window._supabaseClient.realtime.setAuth(e.newValue);
+          } catch (err) {
+            window.logError && window.logError('realtime-setauth-storage', err && err.stack, 'realtime-setauth-storage');
+          }
+        }
+      }
+    });
+  }
 
   // Load workspaces row once per session so every AI feature gate
   // (writer / qc / chat / email_brief) can read window.AppState.workspace

@@ -126,7 +126,9 @@ describe('LAYER 2 — Cross-tab refresh lock', function() {
   });
 
   it('14. cross-tab lock polls for new token at 300ms intervals', function() {
-    var match = authSrc.match(/Another tab is refreshing[\s\S]{0,500}/);
+    // Window enlarged to 1500 chars to cover the cross-tab waiter
+    // setAuth propagation block (Realtime JWT-stab fix).
+    var match = authSrc.match(/Another tab is refreshing[\s\S]{0,1500}/);
     expect(match).toBeTruthy();
     expect(match[0]).toContain('300');
     expect(match[0]).toContain('setInterval');
