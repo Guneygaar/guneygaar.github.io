@@ -167,16 +167,6 @@ export async function insertPlanComment(payload) {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
 }
 
-export async function patchPlanComment(commentId, patch) {
-  if (!commentId) throw new Error('patchPlanComment: commentId required');
-  const rows = await apiFetch(`/plan_comments?id=eq.${enc(commentId)}`, {
-    method: 'PATCH',
-    headers: WRITE_HEADERS,
-    body: JSON.stringify(patch || {})
-  });
-  return Array.isArray(rows) && rows.length > 0 ? rows[0] : rows;
-}
-
 export async function insertNotification(payload) {
   // Single-row insert. RLS off on notifications table.
   try {

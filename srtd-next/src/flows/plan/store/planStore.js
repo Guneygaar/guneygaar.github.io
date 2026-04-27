@@ -26,7 +26,6 @@ import {
   deletePlan as deletePlanRow,
   insertPlanVersion,
   insertPlanComment,
-  patchPlanComment,
   insertNotification,
   callAlignPlan,
   callSendPlanAlignment,
@@ -40,18 +39,6 @@ function _resolveWorkspaceId() {
   const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || null;
   const ws = (typeof window !== 'undefined' && window.AppState && window.AppState.workspace) || null;
   return (user && (user.workspace_id || user.workspaceId)) || (ws && ws.id) || null;
-}
-
-// Defence-in-depth guard for plan write actions. Client role is read +
-// comment only (RLS already enforces this server-side via plan_cells_*
-// policies); this trips early if a write reaches the store from an
-// unexpected path (devtools, race condition, future regression).
-function _blockClientWrite(role, action) {
-  if (role === 'client') {
-    console.warn('[planStore] client_cannot_write_plan', action);
-    return true;
-  }
-  return false;
 }
 
 function currentMonthRange() {
@@ -468,7 +455,7 @@ export const usePlanStore = create((set, get) => ({
 
   initializeDefaultView(role) {
     const defaults = {
-      client: 'plan',
+      client: 'calendar',
       admin: 'board',
       agency: 'calendar',
       creative: 'calendar',
@@ -555,7 +542,6 @@ export const usePlanStore = create((set, get) => ({
   // plans + load the new plan into the active slot, fire a toast, and
   // resolve the result so the wizard can close itself.
   async createPlan({ title, period_start, period_end, carryovers }) {
-    if (_blockClientWrite(get().role, 'createPlan')) return;
     const wsId = _resolveWorkspaceId();
     if (!wsId) {
       throw new Error('No workspace assigned to profile');
@@ -683,7 +669,6 @@ export const usePlanStore = create((set, get) => ({
   },
 
   async addPlanCell({ cell_date, channel, concept, position, title, contentPillar, format }) {
-    if (_blockClientWrite(get().role, 'addPlanCell')) return;
     const plan = get().plan;
     if (!plan) return;
     const tempId = `temp-${Date.now()}`;
@@ -730,7 +715,6 @@ export const usePlanStore = create((set, get) => ({
   },
 
   async updatePlanCell(cellId, patch) {
-    if (_blockClientWrite(get().role, 'updatePlanCell')) return;
     if (!cellId) return;
     const prev = get().planCells.find((c) => c.id === cellId);
     if (!prev) return;
@@ -756,7 +740,6 @@ export const usePlanStore = create((set, get) => ({
     set({ cellToRemove: cellId, planSheet: 'removeCell' });
   },
   async removeCell(cellId) {
-    if (_blockClientWrite(get().role, 'removeCell')) return;
     if (!cellId) return;
     const prev = get().planCells;
     const target = prev.find((c) => c.id === cellId);
@@ -806,7 +789,6 @@ export const usePlanStore = create((set, get) => ({
   // Batch-3: attach an existing post to the pending cell slot via RPC.
   // Refetches plan cells on success so the new linked cell appears.
   async attachExistingPost(postId) {
-    if (_blockClientWrite(get().role, 'attachExistingPost')) return;
     const plan = get().plan;
     const pending = get().pendingAdd;
     if (!plan || !pending || !postId) return;
@@ -838,7 +820,6 @@ export const usePlanStore = create((set, get) => ({
     set({ planSheet: 'deletePlan' });
   },
   async deletePlan() {
-    if (_blockClientWrite(get().role, 'deletePlan')) return;
     const plan = get().plan;
     if (!plan) return;
     set({ deletingPlan: true });
@@ -861,7 +842,6 @@ export const usePlanStore = create((set, get) => ({
   },
 
   async sendPlanForAlignment() {
-    if (_blockClientWrite(get().role, 'sendPlanForAlignment')) return;
     const plan = get().plan;
     if (!plan) return;
     const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
@@ -1009,7 +989,7 @@ export const usePlanStore = create((set, get) => ({
     }
   },
 
-  async addPlanComment({ planCellId, message, replyTo }) {
+  async addPlanComment({ planCellId, message }) {
     const plan = get().plan;
     if (!plan || !message) return;
     const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
@@ -1027,7 +1007,6 @@ export const usePlanStore = create((set, get) => ({
       author_user_id: user.id || null,
       is_external: isExternal,
       message,
-      reply_to: replyTo || null,
       resolved: false,
       created_at: new Date().toISOString()
     };
@@ -1042,8 +1021,7 @@ export const usePlanStore = create((set, get) => ({
         author_email: user.email || null,
         author_user_id: user.id || null,
         is_external: isExternal,
-        message,
-        reply_to: replyTo || null
+        message
       });
       if (row && row.id) {
         set({ planComments: get().planComments.map((c) => c.id === tempId ? row : c) });
@@ -1051,44 +1029,6 @@ export const usePlanStore = create((set, get) => ({
     } catch (err) {
       set({ planComments: get().planComments.filter((c) => c.id !== tempId) });
       get().showToast({ msg: 'Comment failed', duration: 2500 });
-    }
-  },
-
-  async refreshPlanComments() {
-    const cur = get().plan;
-    if (!cur) return;
-    try {
-      const rows = await fetchPlanComments(cur.id);
-      set({ planComments: Array.isArray(rows) ? rows : [] });
-    } catch (e) { /* swallow; bridge will retry on next event */ }
-  },
-
-  // Agency-only resolve toggle. RLS already blocks client UPDATE on
-  // plan_comments (sql/011 / 012); the role guard here mirrors the
-  // UI gate so devtools writes get caught before the network call.
-  async resolvePlanComment(commentId, resolved) {
-    if (_blockClientWrite(get().role, 'resolvePlanComment')) return;
-    if (!commentId) return;
-    const prev = get().planComments;
-    const target = prev.find((c) => c.id === commentId);
-    if (!target) return;
-    const user = (typeof window !== 'undefined' && window.AppState && window.AppState.user) || {};
-    const next = {
-      ...target,
-      resolved: !!resolved,
-      resolved_at: resolved ? new Date().toISOString() : null,
-      resolved_by: resolved ? (user.email || user.name || null) : null
-    };
-    set({ planComments: prev.map((c) => c.id === commentId ? next : c) });
-    try {
-      await patchPlanComment(commentId, {
-        resolved: !!resolved,
-        resolved_at: resolved ? new Date().toISOString() : null,
-        resolved_by: resolved ? (user.email || user.name || null) : null
-      });
-    } catch (err) {
-      set({ planComments: prev });
-      get().showToast({ msg: 'Could not update comment', duration: 2500 });
     }
   }
 }));
