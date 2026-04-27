@@ -13,12 +13,12 @@ import { useCellDatePicker } from '../hooks/useCellDatePicker.js';
 const DEFAULT_CHANNELS = ['linkedin', 'instagram', 'twitter'];
 
 export const CHANNEL_LABELS = {
-  linkedin:  'LI',
-  instagram: 'IG',
+  linkedin:  'LinkedIn',
+  instagram: 'Instagram',
   twitter:   'X',
-  tiktok:    'TT',
-  facebook:  'FB',
-  youtube:   'YT'
+  tiktok:    'TikTok',
+  facebook:  'Facebook',
+  youtube:   'YouTube'
 };
 
 const CELL_STATUS_LABELS = {
@@ -69,6 +69,25 @@ function relativeTime(iso) {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   return `${d}d ago`;
+}
+
+const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function formatMonthDay(iso) {
+  const parts = (iso || '').split('-');
+  if (parts.length !== 3) return '';
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  if (isNaN(d.getTime())) return '';
+  return `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function formatPlanRange(startISO, endISO) {
+  const s = formatMonthDay(startISO);
+  const e = formatMonthDay(endISO);
+  if (!s && !e) return '';
+  if (!e) return s;
+  if (!s) return e;
+  return `${s} – ${e}`;
 }
 
 function dayDOW(dateISO) {
@@ -309,7 +328,8 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
         fontSize: '11px',
         letterSpacing: '.05em',
         textTransform: 'uppercase',
-        color: 'var(--c-text-soft)'
+        color: 'var(--c-text-soft)',
+        pointerEvents: 'none'
       }}>{dayDOW(dateISO)}</div>
       <div style={{
         fontFamily: FONT_MONO,
@@ -317,7 +337,8 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
         fontWeight: 500,
         lineHeight: 1,
         color: 'var(--c-text-loud)',
-        marginTop: '4px'
+        marginTop: '4px',
+        pointerEvents: 'none'
       }}>{dayNumber(dateISO)}</div>
     </>
   );
@@ -338,12 +359,19 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
           style={{
             width: '64px',
             flexShrink: 0,
-            paddingRight: '6px',
+            alignSelf: 'stretch',
+            padding: '4px 6px 4px 0',
             background: 'transparent',
             border: 'none',
             textAlign: 'left',
             cursor: 'pointer',
-            color: 'inherit'
+            color: 'inherit',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'flex-start',
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation'
           }}>
           {dateColInner}
         </button>
@@ -672,8 +700,8 @@ export function PlanView() {
       <style>{`
         .plan-x-btn { opacity: 0.6; transition: opacity .1s ease; }
         .plan-x-btn:active { opacity: 1; }
-        .plan-date-btn { transition: transform .1s ease; }
-        .plan-date-btn:active { transform: scale(0.96); }
+        .plan-date-btn { transition: opacity .1s ease; }
+        .plan-date-btn:active { opacity: 0.7; }
       `}</style>
       <section style={{ padding: '16px 12px 12px' }}>
         <div style={{
@@ -689,42 +717,55 @@ export function PlanView() {
           alignItems: 'center',
           gap: '8px'
         }}>
-          <button type="button" aria-label="Previous plan" onClick={() => loadAdjacentPlan('prev')} style={{
-            background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)'
-          }}>
-            <ChevronLeft size={16} />
-          </button>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }} />
           <div style={{
-            flex: 1,
-            fontFamily: FONT_HEAD,
-            fontSize: '16px',
-            fontWeight: 500,
-            color: 'var(--c-text-loud)'
-          }}>{plan.title || 'Untitled plan'}</div>
-          <button type="button" aria-label="Next plan" onClick={() => loadAdjacentPlan('next')} style={{
-            background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)'
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            flexShrink: 0
           }}>
-            <ChevronRight size={16} />
-          </button>
-          {canCreatePlan ? (
-            <button type="button" onClick={() => openWizard()} style={{
-              background: 'transparent',
-              border: '1px solid var(--c-divider-warm)',
-              padding: '4px 8px',
-              cursor: 'pointer',
-              fontFamily: FONT_MONO,
-              fontSize: '8px',
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-              color: 'var(--c-text-mid)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
+            <button type="button" aria-label="Previous plan" onClick={() => loadAdjacentPlan('prev')} style={{
+              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Plus size={10} />
-              Create plan
+              <ChevronLeft size={16} />
             </button>
-          ) : null}
+            <div style={{
+              fontFamily: FONT_HEAD,
+              fontSize: '16px',
+              fontWeight: 500,
+              color: 'var(--c-text-loud)',
+              whiteSpace: 'nowrap'
+            }}>{formatPlanRange(plan.period_start, plan.period_end) || (plan.title || 'Untitled plan')}</div>
+            <button type="button" aria-label="Next plan" onClick={() => loadAdjacentPlan('next')} style={{
+              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+            }}>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+            {canCreatePlan ? (
+              <button type="button" onClick={() => openWizard()} style={{
+                background: 'transparent',
+                border: '1px solid var(--c-divider-warm)',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontFamily: FONT_MONO,
+                fontSize: '8px',
+                letterSpacing: '.14em',
+                textTransform: 'uppercase',
+                color: 'var(--c-text-mid)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                whiteSpace: 'nowrap'
+              }}>
+                <Plus size={10} />
+                Create plan
+              </button>
+            ) : null}
+          </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
           <StatusPill status={plan.plan_status} />
