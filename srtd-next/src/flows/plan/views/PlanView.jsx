@@ -246,21 +246,27 @@ function ConceptRow({ cell, role, onTap, onRemove, borderTop }) {
           type="button"
           aria-label="Remove concept"
           className="plan-x-btn"
+          onPointerDown={(e) => { e.stopPropagation(); }}
           onClick={(e) => { e.stopPropagation(); onRemove(cell.id); }}
           style={{
             position: 'absolute',
-            top: '10px',
-            right: '10px',
+            top: '2px',
+            right: '2px',
+            width: '32px',
+            height: '32px',
             background: 'transparent',
             border: 'none',
-            padding: '2px',
+            padding: 0,
+            margin: 0,
             cursor: 'pointer',
-            color: 'var(--text-2)',
+            color: 'var(--text-3)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            WebkitTapHighlightColor: 'transparent',
+            touchAction: 'manipulation'
           }}>
-          <X size={14} />
+          <X size={14} style={{ pointerEvents: 'none' }} />
         </button>
       ) : null}
     </div>
@@ -558,7 +564,7 @@ export function PlanView() {
   if (!plan) {
     return (
       <>
-        <div style={{ maxWidth: '430px', margin: '0 auto', padding: '60px 32px', textAlign: 'center' }}>
+        <div style={{ padding: '60px 32px', textAlign: 'center' }}>
           <div style={{
             width: '56px', height: '56px',
             margin: '0 auto 16px',
@@ -669,8 +675,8 @@ export function PlanView() {
   return (
     <div>
       <style>{`
-        .plan-x-btn { opacity: 0.55; transition: opacity .1s ease; }
-        .plan-x-btn:active { opacity: 1; }
+        .plan-x-btn { opacity: 0.5; transition: opacity .1s ease, color .1s ease; }
+        .plan-x-btn:active { opacity: 1; color: var(--text-2); }
         [data-plan-root] .plan-action-link { color: var(--text-2); }
         [data-plan-root] .plan-action-link:hover { color: var(--text-1); }
         [data-plan-root] .plan-day-card-input::-webkit-calendar-picker-indicator {
