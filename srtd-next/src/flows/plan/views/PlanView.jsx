@@ -29,14 +29,6 @@ const CELL_STATUS_LABELS = {
   linked:              'Linked'
 };
 
-const CELL_STATUS_COLOR = {
-  draft:               '--c-text-dim',
-  aligned:             '--c-green',
-  changes_requested:   '--c-stage-input',
-  spawned:             '--c-text-soft',
-  linked:              '--c-text-soft'
-};
-
 const PLAN_STATUS_LABELS = {
   draft:                'Draft',
   awaiting_alignment:   'Awaiting alignment',
@@ -45,16 +37,7 @@ const PLAN_STATUS_LABELS = {
   archived:             'Archived'
 };
 
-const PLAN_STATUS_COLOR = {
-  draft:               '--c-text-dim',
-  awaiting_alignment:  '--c-amber',
-  aligned:             '--c-green',
-  changes_requested:   '--c-stage-input',
-  archived:            '--c-text-soft'
-};
-
 const FONT_BODY = '"DM Sans", sans-serif';
-const FONT_HEAD = 'Fraunces, serif';
 const FONT_MONO = '"IBM Plex Mono", monospace';
 
 function relativeTime(iso) {
@@ -126,22 +109,20 @@ function rangeDates(startISO, endISO) {
 }
 
 function StatusPill({ status }) {
-  const color = `var(${PLAN_STATUS_COLOR[status] || '--c-text-dim'})`;
   return (
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '5px',
-      padding: '4px 8px',
-      border: `1px solid ${color}`,
-      background: `color-mix(in srgb, ${color} 14%, transparent)`,
+      padding: '3px 7px',
+      borderRadius: '3px',
+      background: 'var(--status-bg)',
+      border: '1px solid var(--border-3)',
       fontFamily: FONT_MONO,
-      fontSize: '8px',
-      letterSpacing: '.14em',
+      fontSize: '9px',
+      letterSpacing: '.08em',
       textTransform: 'uppercase',
-      color: 'var(--c-text-loud)'
+      color: 'var(--text-1)'
     }}>
-      <span style={{ width: '5px', height: '5px', borderRadius: '5px', background: color }} />
       {PLAN_STATUS_LABELS[status] || status}
     </span>
   );
@@ -151,12 +132,13 @@ function VersionChip({ v }) {
   return (
     <span style={{
       fontFamily: FONT_MONO,
-      fontSize: '7px',
-      letterSpacing: '.14em',
+      fontSize: '9px',
+      letterSpacing: '.08em',
       textTransform: 'uppercase',
-      color: 'var(--c-text-soft)',
-      padding: '3px 6px',
-      border: '1px solid var(--c-divider-soft)'
+      color: 'var(--text-2)',
+      padding: '3px 7px',
+      borderRadius: '3px',
+      border: '1px solid var(--border-2)'
     }}>v{v || 1}</span>
   );
 }
@@ -164,17 +146,17 @@ function VersionChip({ v }) {
 function ProgressBar({ counts, total }) {
   if (!total) return null;
   const segs = [
-    { key: 'draft',             color: 'var(--c-text-dim)' },
+    { key: 'draft',             color: 'var(--text-3)' },
     { key: 'aligned',           color: 'var(--c-green)' },
-    { key: 'changes_requested', color: 'var(--c-stage-input)' },
-    { key: 'spawned',           color: 'var(--c-text-soft)' }
+    { key: 'changes_requested', color: 'var(--accent)' },
+    { key: 'spawned',           color: 'var(--text-2)' }
   ];
   return (
     <div style={{
       display: 'flex',
       width: '100%',
       height: '6px',
-      background: 'var(--c-bg-2)',
+      background: 'var(--surface-2)',
       overflow: 'hidden',
       marginTop: '10px'
     }}>
@@ -189,21 +171,19 @@ function ProgressBar({ counts, total }) {
 }
 
 function CellChip({ status }) {
-  const color = `var(${CELL_STATUS_COLOR[status] || '--c-text-dim'})`;
   return (
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
-      gap: '4px',
-      padding: '2px 6px',
-      border: `1px solid ${color}`,
+      padding: '3px 7px',
       borderRadius: '3px',
-      background: `color-mix(in srgb, ${color} 14%, transparent)`,
+      background: 'var(--status-bg)',
+      border: '1px solid var(--border-3)',
       fontFamily: FONT_MONO,
       fontSize: '9px',
-      letterSpacing: '.12em',
+      letterSpacing: '.08em',
       textTransform: 'uppercase',
-      color: 'var(--c-text-loud)'
+      color: 'var(--text-1)'
     }}>
       {CELL_STATUS_LABELS[status] || status}
     </span>
@@ -216,74 +196,47 @@ function MetaChip({ label }) {
     <span style={{
       display: 'inline-flex',
       alignItems: 'center',
-      padding: '2px 6px',
-      border: '1px solid var(--c-divider-soft)',
+      padding: '3px 7px',
       borderRadius: '3px',
+      border: '1px solid var(--border-2)',
       fontFamily: FONT_MONO,
       fontSize: '9px',
-      letterSpacing: '.12em',
+      letterSpacing: '.08em',
       textTransform: 'uppercase',
-      color: 'var(--c-text-soft)'
+      color: 'var(--text-2)'
     }}>{label}</span>
   );
 }
 
-function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
-  if (!cell) {
-    if (role === 'client') return <div style={{ flex: 1 }} />;
-    return (
-      <button
-        type="button"
-        onClick={onAdd}
-        style={{
-          flex: 1,
-          minHeight: '64px',
-          textAlign: 'left',
-          padding: '8px 10px',
-          background: 'transparent',
-          border: '1px dashed var(--c-divider-warm)',
-          color: 'var(--c-text-dim)',
-          fontFamily: FONT_BODY,
-          fontSize: '13px',
-          cursor: 'pointer'
-        }}>
-        + Add concept
-      </button>
-    );
-  }
+function ConceptRow({ cell, role, onTap, onRemove, borderTop }) {
   const canRemove = role !== 'client' && typeof onRemove === 'function';
   return (
-    <div
-      style={{
-        position: 'relative',
-        flex: 1,
-        display: 'flex'
-      }}>
+    <div style={{ position: 'relative', borderTop: borderTop ? '1px solid var(--border-1)' : 'none' }}>
       <button
         type="button"
         onClick={() => onTap(cell)}
         style={{
-          flex: 1,
-          minHeight: '64px',
+          width: '100%',
           textAlign: 'left',
-          padding: '8px 24px 8px 10px',
-          background: 'var(--c-bg-2)',
-          border: '1px solid var(--c-divider-soft)',
+          padding: '12px 36px 12px 14px',
+          background: 'transparent',
+          border: 'none',
           cursor: 'pointer',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          gap: '6px'
         }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
           <CellChip status={cell.cell_status} />
           <MetaChip label={cell.content_pillar} />
           <MetaChip label={cell.format} />
         </div>
         <div style={{
-          marginTop: '6px',
           fontFamily: FONT_BODY,
-          fontSize: '13px',
-          lineHeight: 1.35,
-          color: 'var(--c-text-loud)',
+          fontSize: '15px',
+          fontWeight: 500,
+          lineHeight: 1.3,
+          color: 'var(--text-1)',
           whiteSpace: 'normal',
           wordBreak: 'break-word'
         }}>{cell.title || cell.concept || 'Untitled concept'}</div>
@@ -296,13 +249,13 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
           onClick={(e) => { e.stopPropagation(); onRemove(cell.id); }}
           style={{
             position: 'absolute',
-            top: '4px',
-            right: '4px',
+            top: '10px',
+            right: '10px',
             background: 'transparent',
             border: 'none',
             padding: '2px',
             cursor: 'pointer',
-            color: 'var(--c-text-mid)',
+            color: 'var(--text-2)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -314,29 +267,27 @@ function ConceptCell({ cell, role, onTap, onAdd, onRemove }) {
   );
 }
 
-function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, onAdd, onRemove, onDateTap }) {
-  const dateCell = cellsByKey
-    ? channels.map((ch) => (cellsByKey[`${dateISO}|${ch}`] || []))
-        .flat()
-        .find((c) => c && c.id)
-    : null;
-  const canPickDate = role !== 'client' && !!dateCell && typeof onDateTap === 'function';
-  const dateColInner = (
+function DayCard({ dateISO, cells, role, defaultChannel, onTap, onAdd, onRemove, onDateChange }) {
+  const canPickDate = role !== 'client' && cells.length > 0 && typeof onDateChange === 'function';
+  const firstCell = cells.find((c) => c && c.id) || null;
+  const railInner = (
     <>
       <div style={{
         fontFamily: FONT_MONO,
-        fontSize: '11px',
-        letterSpacing: '.05em',
+        fontSize: '9px',
+        fontWeight: 500,
+        letterSpacing: '.12em',
         textTransform: 'uppercase',
-        color: 'var(--c-text-soft)',
+        color: 'var(--text-2)',
         pointerEvents: 'none'
       }}>{dayDOW(dateISO)}</div>
       <div style={{
-        fontFamily: FONT_MONO,
-        fontSize: '28px',
-        fontWeight: 500,
+        fontFamily: FONT_BODY,
+        fontSize: '24px',
+        fontWeight: 600,
+        letterSpacing: '-.02em',
         lineHeight: 1,
-        color: 'var(--c-text-loud)',
+        color: 'var(--text-1)',
         marginTop: '4px',
         pointerEvents: 'none'
       }}>{dayNumber(dateISO)}</div>
@@ -345,109 +296,102 @@ function SheetRow({ dateISO, channels, cellsByKey, postsByCellId, role, onTap, o
   return (
     <div style={{
       display: 'flex',
-      gap: '10px',
-      paddingTop: '10px',
-      paddingBottom: '10px',
-      borderBottom: '1px solid var(--c-divider-subtle)'
+      alignItems: 'stretch',
+      background: 'var(--surface-1)',
+      border: '1px solid var(--border-1)',
+      marginBottom: '8px'
     }}>
-      {canPickDate ? (
-        <button
-          type="button"
-          aria-label="Change date"
-          className="plan-date-btn"
-          onClick={() => onDateTap(dateCell)}
-          style={{
-            width: '64px',
-            flexShrink: 0,
-            alignSelf: 'stretch',
-            padding: '4px 6px 4px 0',
-            background: 'transparent',
-            border: 'none',
-            textAlign: 'left',
-            cursor: 'pointer',
-            color: 'inherit',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
-            WebkitTapHighlightColor: 'transparent',
-            touchAction: 'manipulation'
-          }}>
-          {dateColInner}
-        </button>
-      ) : (
-        <div style={{ width: '64px', flexShrink: 0, paddingRight: '6px' }}>
-          {dateColInner}
-        </div>
-      )}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {channels.map((ch) => {
-          const stack = cellsByKey[`${dateISO}|${ch}`] || [];
-          if (stack.length === 0) {
-            return (
-              <div key={ch} style={{ display: 'flex', alignItems: 'stretch', gap: '6px' }}>
-                <ConceptCell
-                  cell={null}
-                  role={role}
-                  onAdd={() => onAdd(dateISO, ch, 0)}
-                />
-              </div>
-            );
-          }
-          return (
-            <div key={ch} style={{ display: 'flex', alignItems: 'stretch', gap: '6px' }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {stack.map((c) => (
-                  <ConceptCell
-                    key={c.id}
-                    cell={c}
-                    role={role}
-                    onTap={onTap}
-                    onRemove={onRemove}
-                  />
-                ))}
-                {role !== 'client' ? (
-                  <button
-                    type="button"
-                    onClick={() => onAdd(dateISO, ch, stack.length)}
-                    style={{
-                      alignSelf: 'flex-start',
-                      background: 'transparent',
-                      border: 'none',
-                      padding: '2px 0',
-                      cursor: 'pointer',
-                      fontFamily: FONT_MONO,
-                      fontSize: '9px',
-                      letterSpacing: '.14em',
-                      textTransform: 'uppercase',
-                      color: 'var(--c-text-dim)'
-                    }}>+ Add concept</button>
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
+      <div style={{
+        position: 'relative',
+        width: '56px',
+        flexShrink: 0,
+        background: 'var(--surface-2)',
+        borderRight: '1px solid var(--border-1)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px 0'
+      }}>
+        {railInner}
+        {canPickDate ? (
+          <input
+            type="date"
+            aria-label="Change date"
+            value={(firstCell?.cell_date || '').slice(0, 10)}
+            onChange={(e) => onDateChange(firstCell, e.target.value)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              opacity: 0,
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              cursor: 'pointer',
+              WebkitAppearance: 'none',
+              appearance: 'none',
+              background: 'transparent',
+              color: 'transparent'
+            }}
+          />
+        ) : null}
+      </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {cells.length === 0 ? null : cells.map((c, i) => (
+          <ConceptRow
+            key={c.id}
+            cell={c}
+            role={role}
+            onTap={onTap}
+            onRemove={onRemove}
+            borderTop={i > 0}
+          />
+        ))}
+        {role !== 'client' ? (
+          <button
+            type="button"
+            onClick={() => onAdd(dateISO, defaultChannel, cells.length)}
+            style={{
+              borderTop: cells.length > 0 ? '1px solid var(--border-1)' : 'none',
+              background: 'transparent',
+              border: cells.length > 0 ? '' : 'none',
+              borderTopWidth: cells.length > 0 ? '1px' : 0,
+              borderTopStyle: cells.length > 0 ? 'solid' : undefined,
+              borderTopColor: cells.length > 0 ? 'var(--border-1)' : undefined,
+              padding: '12px 14px',
+              textAlign: 'left',
+              cursor: 'pointer',
+              fontFamily: FONT_MONO,
+              fontSize: '10px',
+              letterSpacing: '.08em',
+              textTransform: 'uppercase',
+              color: 'var(--text-2)'
+            }}>+ Add concept</button>
+        ) : null}
       </div>
     </div>
   );
 }
 
-function CtaButton({ label, onClick, variant = 'terra', disabled }) {
+function CtaButton({ label, onClick, variant = 'accent', disabled }) {
   const base = {
-    padding: '8px 14px',
+    padding: '6px 12px',
     fontFamily: FONT_MONO,
     fontSize: '9px',
-    letterSpacing: '.14em',
+    letterSpacing: '.08em',
     textTransform: 'uppercase',
     cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-    border: 'none'
+    opacity: disabled ? 0.6 : 1,
+    border: 'none',
+    borderRadius: '3px'
   };
-  if (variant === 'terra') {
+  if (variant === 'accent') {
     return (
       <button type="button" onClick={onClick} disabled={disabled} style={{
         ...base,
-        background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
+        background: 'var(--accent)',
         color: '#fff'
       }}>{label}</button>
     );
@@ -457,16 +401,29 @@ function CtaButton({ label, onClick, variant = 'terra', disabled }) {
       <button type="button" onClick={onClick} disabled={disabled} style={{
         ...base,
         background: 'transparent',
-        color: 'var(--c-text-loud)',
-        border: '1px solid var(--c-divider-warm)'
+        color: 'var(--text-1)',
+        border: '1px solid var(--border-3)'
       }}>{label}</button>
+    );
+  }
+  if (variant === 'badge') {
+    return (
+      <span style={{
+        ...base,
+        cursor: 'default',
+        background: 'var(--status-bg)',
+        border: '1px solid var(--border-3)',
+        color: 'var(--text-1)',
+        display: 'inline-flex',
+        alignItems: 'center'
+      }}>{label}</span>
     );
   }
   return (
     <button type="button" onClick={onClick} disabled={disabled} style={{
       ...base,
       background: 'transparent',
-      color: 'var(--c-text-mid)'
+      color: 'var(--text-2)'
     }}>{label}</button>
   );
 }
@@ -504,21 +461,14 @@ export function PlanView() {
     return DEFAULT_CHANNELS;
   }, [channels]);
 
-  const { cellsByKey, counts, channelSet } = useMemo(() => {
-    const by = {};
+  const { counts, channelSet } = useMemo(() => {
     const ct = { draft: 0, aligned: 0, changes_requested: 0, spawned: 0, linked: 0 };
     const set = new Set();
     for (const c of cells) {
-      const k = `${(c.cell_date || '').slice(0,10)}|${c.channel}`;
-      if (!by[k]) by[k] = [];
-      by[k].push(c);
       ct[c.cell_status] = (ct[c.cell_status] || 0) + 1;
       if (c.channel) set.add(c.channel);
     }
-    for (const k of Object.keys(by)) {
-      by[k].sort((a, b) => (a.position || 0) - (b.position || 0));
-    }
-    return { cellsByKey: by, counts: ct, channelSet: set };
+    return { counts: ct, channelSet: set };
   }, [cells]);
 
   const dates = useMemo(() => {
@@ -569,10 +519,10 @@ export function PlanView() {
         padding: '80px 24px',
         textAlign: 'center',
         fontFamily: FONT_MONO,
-        fontSize: '9px',
-        letterSpacing: '.14em',
+        fontSize: '10px',
+        letterSpacing: '.08em',
         textTransform: 'uppercase',
-        color: 'var(--c-text-dim)'
+        color: 'var(--text-3)'
       }}>Loading plan...</div>
     );
   }
@@ -592,13 +542,14 @@ export function PlanView() {
             marginTop: '14px',
             padding: '8px 14px',
             background: 'transparent',
-            border: '1px solid var(--c-divider-warm)',
-            color: 'var(--c-text-loud)',
+            border: '1px solid var(--border-3)',
+            color: 'var(--text-1)',
             fontFamily: FONT_MONO,
-            fontSize: '9px',
-            letterSpacing: '.14em',
+            fontSize: '10px',
+            letterSpacing: '.08em',
             textTransform: 'uppercase',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            borderRadius: '3px'
           }}>Retry</button>
       </div>
     );
@@ -611,45 +562,45 @@ export function PlanView() {
           <div style={{
             width: '56px', height: '56px',
             margin: '0 auto 16px',
-            background: 'var(--c-bg-2)',
+            background: 'var(--surface-1)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--c-text-mid)'
+            color: 'var(--text-2)'
           }}>
             <CalendarIcon size={24} />
           </div>
           <div style={{
-            fontFamily: FONT_HEAD,
+            fontFamily: FONT_BODY,
             fontSize: '20px',
-            fontWeight: 500,
-            color: 'var(--c-text-loud)'
+            fontWeight: 600,
+            color: 'var(--text-1)'
           }}>No plan yet</div>
           {canCreatePlan ? (
             <>
               <div style={{
                 marginTop: '8px',
                 fontFamily: FONT_BODY,
-                fontSize: '13px',
+                fontSize: '14px',
                 lineHeight: 1.5,
-                color: 'var(--c-text-mid)'
+                color: 'var(--text-2)'
               }}>Plan your content for the month: link existing posts, add new concepts, send for alignment.</div>
               <button
                 type="button"
                 onClick={() => openWizard()}
                 style={{
                   marginTop: '20px',
-                  padding: '11px 20px',
-                  background: 'linear-gradient(180deg, var(--c-terracotta-1), var(--c-terracotta-2))',
+                  padding: '10px 18px',
+                  background: 'var(--accent)',
                   color: '#fff',
                   border: 'none',
+                  borderRadius: '3px',
                   fontFamily: FONT_MONO,
-                  fontSize: '9px',
-                  letterSpacing: '.14em',
+                  fontSize: '10px',
+                  letterSpacing: '.08em',
                   textTransform: 'uppercase',
                   cursor: 'pointer',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: 'inset 0 1px 0 rgba(255,255,255,.12), 0 4px 12px -4px color-mix(in srgb, var(--c-terracotta-2) 50%, transparent)'
+                  gap: '6px'
                 }}>
                 <Plus size={13} />
                 Create plan
@@ -659,9 +610,9 @@ export function PlanView() {
             <div style={{
               marginTop: '8px',
               fontFamily: FONT_BODY,
-              fontSize: '13px',
+              fontSize: '14px',
               lineHeight: 1.5,
-              color: 'var(--c-text-mid)'
+              color: 'var(--text-2)'
             }}>Your team hasn't shared a plan with you yet. You'll see it here when they do.</div>
           )}
         </div>
@@ -673,13 +624,29 @@ export function PlanView() {
   const total = cells.length;
   const unresolvedComments = comments.filter((c) => !c.resolved).length;
   const sentVersion = versions.find((v) => v.trigger_event === 'sent_for_alignment');
+  const defaultChannel = activeChannels[0] || channelChannels[0] || 'linkedin';
+  const cellsByDate = {};
+  for (const c of cells) {
+    const k = (c.cell_date || '').slice(0, 10);
+    if (!cellsByDate[k]) cellsByDate[k] = [];
+    cellsByDate[k].push(c);
+  }
+  for (const k of Object.keys(cellsByDate)) {
+    cellsByDate[k].sort((a, b) => {
+      const ai = activeChannels.indexOf(a.channel);
+      const bi = activeChannels.indexOf(b.channel);
+      const aw = ai < 0 ? 99 : ai;
+      const bw = bi < 0 ? 99 : bi;
+      if (aw !== bw) return aw - bw;
+      return (a.position || 0) - (b.position || 0);
+    });
+  }
 
-  // Action bar CTA shape per role
-  let primary = null;
+  let statusRowEnd = null;
   if (role === 'client') {
     if (plan.plan_status === 'awaiting_alignment') {
-      primary = (
-        <div style={{ display: 'flex', gap: '8px' }}>
+      statusRowEnd = (
+        <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
           <CtaButton label="Changes" variant="border" onClick={() => openPlanSheet('changes')} />
           <CtaButton label="Align month" onClick={() => openPlanSheet('align')} />
         </div>
@@ -687,32 +654,31 @@ export function PlanView() {
     }
   } else {
     if (plan.plan_status === 'awaiting_alignment') {
-      primary = <CtaButton label="Awaiting client" disabled />;
+      statusRowEnd = <span style={{ marginLeft: 'auto' }}><CtaButton label="Awaiting client" variant="badge" /></span>;
     } else if (plan.plan_status === 'aligned') {
-      primary = <CtaButton label="Plan aligned" disabled />;
+      statusRowEnd = <span style={{ marginLeft: 'auto' }}><CtaButton label="Plan aligned" variant="badge" /></span>;
     } else {
-      primary = <CtaButton label="Send for alignment" onClick={() => openPlanSheet('send')} />;
+      statusRowEnd = (
+        <span style={{ marginLeft: 'auto' }}>
+          <CtaButton label="Send for alignment" onClick={() => openPlanSheet('send')} />
+        </span>
+      );
     }
   }
 
   return (
-    <div style={{ maxWidth: '430px', margin: '0 auto' }}>
+    <div>
       <style>{`
-        .plan-x-btn { opacity: 0.6; transition: opacity .1s ease; }
+        .plan-x-btn { opacity: 0.55; transition: opacity .1s ease; }
         .plan-x-btn:active { opacity: 1; }
-        .plan-date-btn { transition: opacity .1s ease; }
-        .plan-date-btn:active { opacity: 0.7; }
+        [data-plan-root] .plan-action-link { color: var(--text-2); }
+        [data-plan-root] .plan-action-link:hover { color: var(--text-1); }
+        [data-plan-root] .plan-day-card-input::-webkit-calendar-picker-indicator {
+          opacity: 0; cursor: pointer; width: 100%; height: 100%;
+        }
       `}</style>
-      <section style={{ padding: '16px 12px 12px' }}>
+      <section style={{ padding: '14px 16px 14px', borderBottom: '1px solid var(--border-1)' }}>
         <div style={{
-          fontFamily: FONT_MONO,
-          fontSize: '7px',
-          letterSpacing: '.18em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-soft)'
-        }}>Workspace</div>
-        <div style={{
-          marginTop: '4px',
           display: 'flex',
           alignItems: 'center',
           gap: '8px'
@@ -725,20 +691,21 @@ export function PlanView() {
             flexShrink: 0
           }}>
             <button type="button" aria-label="Previous plan" onClick={() => loadAdjacentPlan('prev')} style={{
-              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)',
+              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-2)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <ChevronLeft size={16} />
             </button>
             <div style={{
-              fontFamily: FONT_HEAD,
+              fontFamily: FONT_BODY,
               fontSize: '16px',
               fontWeight: 500,
-              color: 'var(--c-text-loud)',
+              letterSpacing: '-.01em',
+              color: 'var(--text-1)',
               whiteSpace: 'nowrap'
             }}>{formatPlanRange(plan.period_start, plan.period_end) || (plan.title || 'Untitled plan')}</div>
             <button type="button" aria-label="Next plan" onClick={() => loadAdjacentPlan('next')} style={{
-              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--c-text-mid)',
+              background: 'transparent', border: 'none', padding: '4px', cursor: 'pointer', color: 'var(--text-2)',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
             }}>
               <ChevronRight size={16} />
@@ -748,14 +715,15 @@ export function PlanView() {
             {canCreatePlan ? (
               <button type="button" onClick={() => openWizard()} style={{
                 background: 'transparent',
-                border: '1px solid var(--c-divider-warm)',
+                border: '1px solid var(--border-2)',
+                borderRadius: '3px',
                 padding: '4px 8px',
                 cursor: 'pointer',
                 fontFamily: FONT_MONO,
-                fontSize: '8px',
-                letterSpacing: '.14em',
+                fontSize: '9px',
+                letterSpacing: '.08em',
                 textTransform: 'uppercase',
-                color: 'var(--c-text-mid)',
+                color: 'var(--text-2)',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -767,124 +735,99 @@ export function PlanView() {
             ) : null}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
           <StatusPill status={plan.plan_status} />
           <VersionChip v={plan.current_version} />
+          {statusRowEnd}
         </div>
         <div style={{
-          marginTop: '8px',
+          marginTop: '10px',
           fontFamily: FONT_MONO,
-          fontSize: '7px',
-          letterSpacing: '.18em',
-          textTransform: 'uppercase',
-          color: 'var(--c-text-soft)'
-        }}>{total} concept{total === 1 ? '' : 's'} - {channelChannels.length} channel{channelChannels.length === 1 ? '' : 's'}{sentVersion ? ` - sent ${relativeTime(sentVersion.created_at)}` : ''}</div>
+          fontSize: '10px',
+          letterSpacing: '.02em',
+          color: 'var(--text-3)'
+        }}>{total} concept{total === 1 ? '' : 's'} · {channelChannels.length} channel{channelChannels.length === 1 ? '' : 's'}{sentVersion ? ` · sent ${relativeTime(sentVersion.created_at)}` : ''}</div>
         <ProgressBar counts={counts} total={total} />
       </section>
 
       <section style={{
-        background: 'var(--c-bg)',
-        borderBottom: '1px solid var(--c-divider-soft)',
-        padding: '8px 12px',
+        background: 'var(--bg)',
+        borderBottom: '1px solid var(--border-1)',
+        padding: '10px 16px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '8px'
+        gap: '16px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button type="button" onClick={() => openPlanSheet('history')} style={{
+        <button type="button" className="plan-action-link" onClick={() => openPlanSheet('history')} style={{
+          background: 'transparent',
+          border: 'none',
+          padding: '4px 0',
+          cursor: 'pointer',
+          fontFamily: FONT_MONO,
+          fontSize: '10px',
+          letterSpacing: '.08em',
+          textTransform: 'uppercase'
+        }}>History ({versions.length})</button>
+        <button type="button" className="plan-action-link" onClick={() => openPlanSheet('comments')} style={{
+          background: 'transparent',
+          border: 'none',
+          padding: '4px 0',
+          cursor: 'pointer',
+          fontFamily: FONT_MONO,
+          fontSize: '10px',
+          letterSpacing: '.08em',
+          textTransform: 'uppercase'
+        }}>Comments ({unresolvedComments})</button>
+        <button type="button" className="plan-action-link" onClick={() => usePlanStore.getState().sharePlan()} style={{
+          background: 'transparent',
+          border: 'none',
+          padding: '4px 0',
+          cursor: 'pointer',
+          fontFamily: FONT_MONO,
+          fontSize: '10px',
+          letterSpacing: '.08em',
+          textTransform: 'uppercase'
+        }}>Share</button>
+        <div style={{ flex: 1 }} />
+        <button
+          type="button"
+          onClick={() => setShowWeekends(!showWeekends)}
+          style={{
             background: 'transparent',
             border: 'none',
             padding: '4px 0',
             cursor: 'pointer',
             fontFamily: FONT_MONO,
-            fontSize: '9px',
-            letterSpacing: '.14em',
+            fontSize: '10px',
+            letterSpacing: '.08em',
             textTransform: 'uppercase',
-            color: 'var(--c-text-mid)'
-          }}>History ({versions.length})</button>
-          <button type="button" onClick={() => openPlanSheet('comments')} style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '4px 0',
-            cursor: 'pointer',
-            fontFamily: FONT_MONO,
-            fontSize: '9px',
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
-            color: 'var(--c-text-mid)'
-          }}>Comments ({unresolvedComments})</button>
-          <button type="button" onClick={() => usePlanStore.getState().sharePlan()} style={{
-            background: 'transparent',
-            border: 'none',
-            padding: '4px 0',
-            cursor: 'pointer',
-            fontFamily: FONT_MONO,
-            fontSize: '9px',
-            letterSpacing: '.14em',
-            textTransform: 'uppercase',
-            color: 'var(--c-text-mid)'
-          }}>Share</button>
-        </div>
-        <div>{primary}</div>
+            color: showWeekends ? 'var(--accent)' : 'var(--text-3)'
+          }}>{showWeekends ? 'Hide weekends' : 'Show weekends'}</button>
       </section>
 
-      <section style={{ padding: '6px 16px 96px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '10px 0 6px',
-          borderBottom: '1px solid var(--c-divider-soft)'
-        }}>
-          <div style={{
-            width: '64px',
-            fontFamily: FONT_MONO,
-            fontSize: '7px',
-            letterSpacing: '.18em',
-            textTransform: 'uppercase',
-            color: 'var(--c-text-soft)'
-          }}>Date</div>
-          <div style={{ flex: 1 }} />
-          <button
-            type="button"
-            onClick={() => setShowWeekends(!showWeekends)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: '4px 0',
-              cursor: 'pointer',
-              fontFamily: FONT_MONO,
-              fontSize: '9px',
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-              color: showWeekends ? 'var(--c-terracotta-1)' : 'var(--c-text-dim)'
-            }}>{showWeekends ? 'Hide weekends' : 'Show weekends'}</button>
-        </div>
-
+      <section style={{ padding: '14px 16px 96px' }}>
         {dates.length === 0 ? (
           <div style={{
             padding: '40px 0',
             textAlign: 'center',
             fontFamily: FONT_BODY,
             fontSize: '13px',
-            color: 'var(--c-text-dim)'
+            color: 'var(--text-3)'
           }}>No dates in this plan range.</div>
         ) : dates.map((dISO) => {
-          const dayHasContent = channelChannels.some((ch) => (cellsByKey[`${dISO}|${ch}`] || []).length > 0);
-          if (role === 'client' && !dayHasContent) return null;
+          const dayCells = cellsByDate[dISO] || [];
+          if (role === 'client' && dayCells.length === 0) return null;
           return (
-            <SheetRow
+            <DayCard
               key={dISO}
               dateISO={dISO}
-              channels={channelChannels}
-              cellsByKey={cellsByKey}
-              postsByCellId={postsByCellId}
+              cells={dayCells}
               role={role}
+              defaultChannel={defaultChannel}
               onTap={handleCellTap}
               onAdd={handleAdd}
               onRemove={handleRemove}
-              onDateTap={triggerCellPicker}
+              onDateChange={triggerCellPicker}
             />
           );
         })}

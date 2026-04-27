@@ -83,28 +83,31 @@ function TopBar() {
       position: 'sticky',
       top: 0,
       zIndex: 15,
-      background: 'var(--c-bg)',
-      borderBottom: '1px solid var(--c-divider-soft)',
+      background: 'var(--bg)',
+      borderBottom: '1px solid var(--border-1)',
       display: 'flex',
       alignItems: 'center',
-      padding: '10px 12px',
-      gap: '10px',
-      height: '44px'
+      padding: '18px 16px',
+      gap: '10px'
     }}>
       <div style={{
         flex: 1,
         minWidth: 0,
-        fontFamily: 'Fraunces, serif',
-        fontSize: '15px',
+        fontFamily: '"DM Sans", sans-serif',
+        fontSize: '20px',
         fontWeight: 600,
         letterSpacing: '-.01em',
-        color: 'var(--c-text-loud)',
+        color: 'var(--text-1)',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }}>
         Plan{planChannelSuffix ? (
-          <span style={{ color: 'var(--c-text-mid)' }}> · {planChannelSuffix}</span>
+          <span style={{
+            fontWeight: 400,
+            fontSize: '16px',
+            color: 'var(--text-2)'
+          }}> · {planChannelSuffix}</span>
         ) : null}
         {eyebrow ? (
           <span style={{
@@ -112,7 +115,7 @@ function TopBar() {
             fontSize: '9px',
             letterSpacing: '.12em',
             textTransform: 'uppercase',
-            color: 'var(--c-text-dim)',
+            color: 'var(--text-3)',
             marginLeft: '8px'
           }}>{eyebrow}</span>
         ) : null}
@@ -121,14 +124,14 @@ function TopBar() {
         type="button"
         aria-label="Search"
         onClick={() => { if (typeof window.openPipelineSearch === 'function') window.openPipelineSearch(); }}
-        style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
+        style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--text-2)' }}>
         <Search size={18} />
       </button>
       <button
         type="button"
         aria-label="Notifications"
         onClick={() => { if (typeof window.openNotifications === 'function') window.openNotifications(); }}
-        style={{ position: 'relative', background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
+        style={{ position: 'relative', background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--text-2)' }}>
         <Bell size={18} />
         {unreadCount > 0 ? (
           <span
@@ -140,8 +143,8 @@ function TopBar() {
               width: '8px',
               height: '8px',
               borderRadius: '8px',
-              background: 'var(--c-terracotta-1)',
-              border: '1.5px solid var(--c-bg)',
+              background: 'var(--accent)',
+              border: '1.5px solid var(--bg)',
               pointerEvents: 'none'
             }}
           />
@@ -151,7 +154,7 @@ function TopBar() {
         type="button"
         aria-label="Menu"
         onClick={openMenu}
-        style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--c-text-mid)' }}>
+        style={{ background: 'transparent', border: 'none', padding: '6px', cursor: 'pointer', color: 'var(--text-2)' }}>
         <MoreVertical size={18} />
       </button>
     </header>
