@@ -112,10 +112,13 @@ function Row({ post, onOpen }) {
 export function DaySheet() {
   const day = usePlanStore((s) => s.currentDay);
   const closeDay = usePlanStore((s) => s.closeDay);
+  const role = usePlanStore((s) => s.role);
   const rawAllPosts = useAllPosts();
   const allPosts = useMemo(
-    () => rawAllPosts.filter((p) => p.stage !== 'in_production'),
-    [rawAllPosts]
+    () => (role === 'client'
+      ? rawAllPosts.filter((p) => p.stage !== 'in_production')
+      : rawAllPosts),
+    [rawAllPosts, role]
   );
 
   const posts = useMemo(() => {
