@@ -888,8 +888,8 @@ window._renderPipelineInner = function() {
       var owner = (p.owner || '').toLowerCase();
       var isMine = owner === 'creative';
       if (stage === 'brief') return isMine;
-      if (stage === 'in_production') return isMine;
       if (stage === 'ready') return isMine;
+      if (stage === 'in_production') return true;
       if (stage === 'awaiting_approval') return true;
       if (stage === 'awaiting_brand_input') return true;
       return false;
@@ -901,6 +901,7 @@ window._renderPipelineInner = function() {
       'brief',
       'awaiting_approval',
       'awaiting_brand_input',
+      'in_production',
       'ready',
       'scheduled'
     ];

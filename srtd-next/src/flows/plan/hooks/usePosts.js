@@ -9,15 +9,15 @@
 //   vanilla's allowlist is the only thing keeping internal stages off
 //   the client wire.
 //
-// - 'creative': mirrors pipeline.js:885-897. brief / in_production /
-//   ready are gated to own-only (post.owner === 'Creative'); the
-//   downstream awaiting_approval + awaiting_brand_input stages stay
-//   visible regardless of owner. All other stages (scheduled,
-//   published, rejected, parked) are hidden for the creative role.
+// - 'creative': mirrors pipeline.js:885-897. brief / ready are gated
+//   to own-only (post.owner === 'Creative'); in_production +
+//   awaiting_approval + awaiting_brand_input stay visible regardless
+//   of owner. All other stages (scheduled, published, rejected,
+//   parked) are hidden for the creative role.
 //
 // - 'servicing': mirrors pipeline.js:899-915. Allowed stages are
-//   brief / awaiting_approval / awaiting_brand_input / ready /
-//   scheduled. brief is gated to own-only
+//   brief / awaiting_approval / awaiting_brand_input / in_production /
+//   ready / scheduled. brief is gated to own-only
 //   (post.owner === 'Servicing'); other allowed stages stay visible
 //   regardless of owner.
 //
@@ -31,17 +31,17 @@ const CLIENT_ALLOWED_STAGES = [
   'awaiting_brand_input',
   'published',
   'brief',
-  'scheduled',
-  'in_production'
+  'scheduled'
 ];
 
-const CREATIVE_OWN_STAGES = new Set(['brief', 'in_production', 'ready']);
-const CREATIVE_ALL_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input']);
+const CREATIVE_OWN_STAGES = new Set(['brief', 'ready']);
+const CREATIVE_ALL_STAGES = new Set(['awaiting_approval', 'awaiting_brand_input', 'in_production']);
 
 const SERVICING_ALLOWED_STAGES = new Set([
   'brief',
   'awaiting_approval',
   'awaiting_brand_input',
+  'in_production',
   'ready',
   'scheduled'
 ]);
