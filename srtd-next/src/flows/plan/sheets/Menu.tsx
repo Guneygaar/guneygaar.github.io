@@ -165,8 +165,7 @@ export function Menu() {
 
   function handleSignOut() {
     closeMenu();
-    const w = window as unknown as { logout?: () => void };
-    if (typeof w.logout === 'function') w.logout();
+    window.dispatchEvent(new CustomEvent('sorted:signout'));
   }
 
   return (

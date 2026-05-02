@@ -371,6 +371,7 @@ async function handleMagicLinkToken(accessToken, _retried) {
 function logout() {
   localStorage.removeItem('hinglish_role');
   localStorage.removeItem('hinglish_email');
+  localStorage.removeItem('hinglish_name');
   localStorage.removeItem('hinglish_token');
   localStorage.removeItem('sb_access_token');
   localStorage.removeItem('sb_refresh_token');
@@ -593,5 +594,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (typeof switchTab === 'function') switchTab('tasks');
     }
   }, 500);
+});
+
+window.addEventListener('sorted:signout', function() {
+  _clearSessionAndLogin();
 });
 
