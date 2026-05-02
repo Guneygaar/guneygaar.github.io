@@ -2,11 +2,23 @@
 // window.SortedReact.flows.pcs bridge (same bridge that the Create Post
 // and notification deep-link paths use), passing the currently-filtered
 // post list as the prev/next navigation context.
+//
+// Briefs are routed to the vanilla _openBriefSheet overlay instead.
+// Mirrors the vanilla gates at 07-post-load.js:1282 and :3277. The
+// compound (stage==='brief' || _isRequest) check protects against a
+// synthesised brief that lost its _isRequest flag in transit through
+// the React store.
 
 export function openInPcs(post, contextPosts) {
   if (!post) return;
   const postId = post.post_id;
   if (!postId) return;
+  if ((post.stage === 'brief' || post._isRequest) &&
+      typeof window !== 'undefined' &&
+      typeof window._openBriefSheet === 'function') {
+    window._openBriefSheet(postId);
+    return;
+  }
   const bridge = typeof window !== 'undefined'
     && window.SortedReact
     && window.SortedReact.flows
