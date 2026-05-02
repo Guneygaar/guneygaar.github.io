@@ -137,7 +137,15 @@ function mergePosts(fresh) {
 
   // Remove posts deleted on server
   const freshIds = new Set(fresh.map(p => getPostId(p)));
-  map.forEach((_, id) => { if (!freshIds.has(id)) map.delete(id); });
+  map.forEach(function(p, id) {
+    if (freshIds.has(id)) return;
+    // Preserve synthesized briefs across /posts-only merges.
+    // Briefs are loaded from /requests by the full loadPosts() path
+    // and are not present in /posts polls, drains, or task syncs.
+    // Without this guard they get stripped on every naked merge.
+    if (p && p._isRequest) return;
+    map.delete(id);
+  });
 
   // Mutate in-place  -  preserve the single array reference
   var next140 = Array.from(map.values());
@@ -207,7 +215,9 @@ async function loadPosts(fromPoll) {
     // Fetch pending requests and merge as brief-stage entries
     var reqData = [];
     try {
-      var rawReqs = await apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
+      var rawReqs = await withRetry(function() {
+        return apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
+      });
       if (Array.isArray(rawReqs)) {
         reqData = rawReqs.map(function(r) {
           return {
@@ -316,7 +326,9 @@ async function loadPostsForClient(skipRenderIfUnchanged, fromPoll) {
 
     // Fetch pending requests for client view (shows as brief cards)
     try {
-      var clientReqs = await apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
+      var clientReqs = await withRetry(function() {
+        return apiFetch('/requests?status=in.(pending,assigned)&order=created_at.desc', {}, _apiMeta);
+      });
       if (Array.isArray(clientReqs)) {
         clientReqs.forEach(function(r) {
           data.push({
