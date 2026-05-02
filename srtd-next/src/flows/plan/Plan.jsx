@@ -25,7 +25,7 @@ import { FilterBanner } from './shared/FilterBanner.jsx';
 import { Toast } from './shared/Toast.jsx';
 import { DaySheet } from './sheets/DaySheet.jsx';
 import { FabSheet } from './sheets/FabSheet.jsx';
-import { Menu } from './sheets/Menu.jsx';
+import { Menu } from './sheets/Menu.tsx';
 import {
   HistoryPanel, CommentsPanel, ConfirmSendSheet,
   ConfirmAlignSheet, ChangesSheet, PlanCellSheet,

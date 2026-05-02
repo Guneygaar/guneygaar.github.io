@@ -1,10 +1,12 @@
 // Settings bottom sheet - view switcher, stage filter chips, custom
-// date range (stub), admin-only workspace settings.
+// date range (stub), admin-only workspace settings, account actions.
 
 import React, { useMemo } from 'react';
+import type { ComponentType } from 'react';
 import {
   List as ListIcon, LayoutGrid, CalendarDays, BarChart3, BookOpen,
-  Check, Settings, X, Plus, Trash2
+  Check, Settings, X, Plus, Trash2,
+  LogOut, SunMoon, StickyNote, FilePlus
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useAllPosts } from '../hooks/usePosts.js';
@@ -12,7 +14,10 @@ import {
   STAGE_LABELS, STAGE_COLOR_VAR, STAGE_ORDER_BOARD
 } from '../shared/constants.js';
 
-const VIEWS = [
+type IconType = ComponentType<{ size?: number; style?: React.CSSProperties }>;
+type ViewMeta = { key: string; label: string; Icon: IconType };
+
+const VIEWS: ViewMeta[] = [
   { key: 'plan',     label: 'Plan',     Icon: BookOpen },
   { key: 'board',    label: 'Board',    Icon: LayoutGrid },
   { key: 'list',     label: 'List',     Icon: ListIcon },
@@ -20,7 +25,9 @@ const VIEWS = [
   { key: 'insights', label: 'Insights', Icon: BarChart3 }
 ];
 
-function ViewRow({ view, current, onSelect }) {
+type ViewRowProps = { view: ViewMeta; current: string; onSelect: (key: string) => void };
+
+function ViewRow({ view, current, onSelect }: ViewRowProps) {
   const active = view.key === current;
   const Icon = view.Icon;
   return (
@@ -52,11 +59,15 @@ function ViewRow({ view, current, onSelect }) {
   );
 }
 
-function StageChip({ stage, count, active, onClick }) {
+type StageChipProps = { stage: string; count: number; active: boolean; onClick: () => void };
+
+function StageChip({ stage, count, active, onClick }: StageChipProps) {
+  const colorVarMap = STAGE_COLOR_VAR as Record<string, string>;
+  const labelMap = STAGE_LABELS as Record<string, string>;
   const color = stage === 'all'
     ? 'var(--c-text-dim)'
-    : (STAGE_COLOR_VAR[stage] ? `var(${STAGE_COLOR_VAR[stage]})` : 'var(--c-text-dim)');
-  const label = stage === 'all' ? 'All' : (STAGE_LABELS[stage] || stage);
+    : (colorVarMap[stage] ? `var(${colorVarMap[stage]})` : 'var(--c-text-dim)');
+  const label = stage === 'all' ? 'All' : (labelMap[stage] || stage);
   return (
     <button
       type="button"
@@ -86,24 +97,26 @@ function StageChip({ stage, count, active, onClick }) {
 }
 
 export function Menu() {
-  const role = usePlanStore((s) => s.role);
-  const currentView = usePlanStore((s) => s.currentView);
-  const setView = usePlanStore((s) => s.setView);
-  const closeMenu = usePlanStore((s) => s.closeMenu);
-  const currentFilter = usePlanStore((s) => s.currentFilter);
-  const setFilter = usePlanStore((s) => s.setFilter);
-  const showToast = usePlanStore((s) => s.showToast);
-  const allPosts = useAllPosts();
-  const monthStart = usePlanStore((s) => s.monthStart);
-  const monthEnd = usePlanStore((s) => s.monthEnd);
-  const openWizard = usePlanStore((s) => s.openWizard);
-  const plan = usePlanStore((s) => s.plan);
-  const openDeletePlanSheet = usePlanStore((s) => s.openDeletePlanSheet);
+  const role = usePlanStore((s: any) => s.role) as string;
+  const currentView = usePlanStore((s: any) => s.currentView) as string;
+  const setView = usePlanStore((s: any) => s.setView) as (v: string) => void;
+  const closeMenu = usePlanStore((s: any) => s.closeMenu) as () => void;
+  const currentFilter = usePlanStore((s: any) => s.currentFilter) as { stage?: string } | null;
+  const setFilter = usePlanStore((s: any) => s.setFilter) as (f: { stage: string }) => void;
+  const showToast = usePlanStore((s: any) => s.showToast) as (t: { msg: string; duration: number }) => void;
+  const allPosts = useAllPosts() as Array<{ stage: string }>;
+  const monthStart = usePlanStore((s: any) => s.monthStart) as string;
+  const monthEnd = usePlanStore((s: any) => s.monthEnd) as string;
+  const openWizard = usePlanStore((s: any) => s.openWizard) as () => void;
+  const plan = usePlanStore((s: any) => s.plan) as unknown;
+  const openDeletePlanSheet = usePlanStore((s: any) => s.openDeletePlanSheet) as () => void;
+  const setTheme = usePlanStore((s: any) => s.setTheme) as (t: 'light' | 'dark') => void;
   const canCreatePlan = role === 'servicing' || role === 'admin';
 
-  const counts = useMemo(() => {
-    const map = { all: allPosts.length };
-    for (const s of STAGE_ORDER_BOARD) map[s] = 0;
+  const counts = useMemo<Record<string, number>>(() => {
+    const map: Record<string, number> = { all: allPosts.length };
+    const stages = STAGE_ORDER_BOARD as readonly string[];
+    for (const s of stages) map[s] = 0;
     for (const p of allPosts) {
       if (map[p.stage] == null) map[p.stage] = 0;
       map[p.stage]++;
@@ -111,24 +124,50 @@ export function Menu() {
     return map;
   }, [allPosts]);
 
-  function selectView(v) {
+  function selectView(v: string) {
     setView(v);
     closeMenu();
   }
 
-  function selectFilter(stage) {
+  function selectFilter(stage: string) {
     setFilter({ stage });
     closeMenu();
   }
 
   // Role-aware stage set. Client sees fewer stages since they do not
   // touch production/brief flows. Everyone sees All.
-  const visibleStages = useMemo(() => {
+  const visibleStages = useMemo<string[]>(() => {
     if (role === 'client') {
       return ['awaiting_approval', 'scheduled', 'published'];
     }
-    return STAGE_ORDER_BOARD;
+    return STAGE_ORDER_BOARD as readonly string[] as string[];
   }, [role]);
+
+  function handleToggleTheme() {
+    const w = window as unknown as { toggleTheme?: () => void };
+    if (typeof w.toggleTheme === 'function') w.toggleTheme();
+    const next = (document.documentElement.dataset.theme === 'dark') ? 'dark' : 'light';
+    setTheme(next);
+    closeMenu();
+  }
+
+  function handleScratchpad() {
+    closeMenu();
+    const w = window as unknown as { openScratchpadPanel?: () => void };
+    if (typeof w.openScratchpadPanel === 'function') w.openScratchpadPanel();
+  }
+
+  function handleNewBrief() {
+    closeMenu();
+    const w = window as unknown as { openClientRequestForm?: () => void };
+    if (typeof w.openClientRequestForm === 'function') w.openClientRequestForm();
+  }
+
+  function handleSignOut() {
+    closeMenu();
+    const w = window as unknown as { logout?: () => void };
+    if (typeof w.logout === 'function') w.logout();
+  }
 
   return (
     <>
@@ -322,7 +361,7 @@ export function Menu() {
                   key={s}
                   stage={s}
                   count={counts[s] || 0}
-                  active={currentFilter && currentFilter.stage === s}
+                  active={!!(currentFilter && currentFilter.stage === s)}
                   onClick={() => selectFilter(s)}
                 />
               ))}
@@ -408,6 +447,122 @@ export function Menu() {
               </button>
             </section>
           ) : null}
+
+          {/* Account section. Plan overlay (z-index 1400) covers the
+              global app-header, leaving the global #prof-trigger and
+              #user-menu unreachable; surface those actions here. My
+              Profile is intentionally omitted - #prof-overlay is
+              z-index 1300 and would render BEHIND Plan; needs a
+              separate z-index bump. */}
+          <section>
+            <div style={{
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: '9px',
+              letterSpacing: '.14em',
+              textTransform: 'uppercase',
+              color: 'var(--c-text-dim)',
+              padding: '14px 16px 6px',
+              borderTop: '1px solid var(--c-divider-soft)'
+            }}>Account</div>
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%',
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid var(--c-divider-subtle)',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}>
+              <SunMoon size={18} style={{ color: 'var(--c-text-mid)' }} />
+              <span style={{
+                flex: 1,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: 'var(--c-text-loud)'
+              }}>Toggle theme</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleScratchpad}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%',
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid var(--c-divider-subtle)',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}>
+              <StickyNote size={18} style={{ color: 'var(--c-text-mid)' }} />
+              <span style={{
+                flex: 1,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: 'var(--c-text-loud)'
+              }}>Scratchpad</span>
+            </button>
+            {role === 'client' ? (
+              <button
+                type="button"
+                onClick={handleNewBrief}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderTop: '1px solid var(--c-divider-subtle)',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}>
+                <FilePlus size={18} style={{ color: 'var(--c-amber)' }} />
+                <span style={{
+                  flex: 1,
+                  fontFamily: '"DM Sans", sans-serif',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  color: 'var(--c-amber)'
+                }}>New brief</span>
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleSignOut}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%',
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid var(--c-divider-subtle)',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}>
+              <LogOut size={18} style={{ color: 'var(--c-red)' }} />
+              <span style={{
+                flex: 1,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '14px',
+                fontWeight: 600,
+                color: 'var(--c-red)'
+              }}>Sign out</span>
+            </button>
+          </section>
         </div>
       </div>
     </>
