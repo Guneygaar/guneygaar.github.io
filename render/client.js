@@ -1070,7 +1070,7 @@ console.log('LOADED:', 'render/client.js');
         '<div style="position:relative;">' +
           '<button data-action="top-menu-toggle" style="background:none;border:none;color:#707078;cursor:pointer;padding:2px 4px;font-size:14px;line-height:1;display:inline-flex;align-items:center;">' + ICON_DOTS + '</button>' +
           '<div data-top-menu style="display:none;position:fixed;background:#0d0d0d;border:1px solid #2A2A34;border-radius:0;min-width:160px;z-index:999999;box-shadow:0 8px 24px #00000099;">' +
-            '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Request</button>' +
+            '<button data-action="new-request" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#ccc;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;">New Brief</button>' +
             '<button data-action="light-mode" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#555;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #2A2A34;">Light Mode</button>' +
             '<button data-action="sign-out" style="display:block;width:100%;text-align:left;padding:10px 14px;background:none;border:none;color:#888;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer;border-top:1px solid #2A2A34;">Sign Out</button>' +
           '</div>' +
@@ -2268,7 +2268,7 @@ console.log('LOADED:', 'render/client.js');
     overlay.innerHTML =
       /* HEADER */
       '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #1c1c1c;">' +
-        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;">NEW REQUEST</span>' +
+        '<div><span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#C8A84B;">NEW BRIEF</span>' +
         '<span style="font-family:' + mono + ';font-size:10px;letter-spacing:0.08em;color:#555;"> -- WE\'LL HANDLE EVERYTHING</span></div>' +
         '<button data-action="reqClose" style="background:none;border:none;color:#AEAEB2;font-size:16px;cursor:pointer;padding:4px;">&#x2715;</button>' +
       '</div>' +
@@ -2277,7 +2277,7 @@ console.log('LOADED:', 'render/client.js');
         /* FIELD 01 */
         '<div style="' + fieldBorder + '">' +
           '<div style="' + numStyle + '">01</div>' +
-          '<div style="' + labelStyle + '">Name this request <span style="color:#FF4B4B;">*</span></div>' +
+          '<div style="' + labelStyle + '">Name the brief</div>' +
           '<input id="req-name" type="text" maxlength="30" placeholder="e.g. Somaiya Diaries, Women\'s Day" style="' + inputStyle + '">' +
           '<div style="font-family:' + mono + ';font-size:9px;letter-spacing:0.08em;color:#8E8E93;margin-top:3px;text-transform:uppercase;">MAX 30 CHARACTERS -- BECOMES THE POST TITLE</div>' +
         '</div>' +
@@ -2340,7 +2340,7 @@ console.log('LOADED:', 'render/client.js');
       /* STICKY FOOTER */
       '<div style="position:sticky;bottom:0;padding:8px 16px 20px;border-top:1px solid #1c1c1c;background:#080808;display:grid;grid-template-columns:1fr 2.2fr;gap:8px;">' +
         '<button data-action="reqClose" style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8E8E93;background:none;border:1px dotted #444;padding:11px;cursor:pointer;">CANCEL</button>' +
-        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;color:#333;background:none;border:1px dotted #2a2a2a;padding:11px;cursor:not-allowed;">-- SEND REQUEST</button>' +
+        '<button id="req-submit-btn" disabled data-action="reqSubmit" style="font-family:' + mono + ';font-size:10px;letter-spacing:0.1em;font-weight:700;text-transform:uppercase;color:#333;background:none;border:1px dotted #2a2a2a;padding:11px;cursor:not-allowed;">-- SEND BRIEF</button>' +
       '</div>';
     document.body.appendChild(overlay);
     // Wire delegated events on request overlay
@@ -2483,7 +2483,7 @@ console.log('LOADED:', 'render/client.js');
       html += '<div style="padding:48px 16px;text-align:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;letter-spacing:0.06em;color:#FFFFFF59;">All caught up. Nothing pending.</div>';
     } else {
       if (buckets.requests && buckets.requests.length) {
-        html += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#505058;font-weight:600;padding:18px 16px 8px;">YOUR REQUESTS <span style="color:#C8A84B;font-weight:700;">' + buckets.requests.length + '</span></div>';
+        html += '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#505058;font-weight:600;padding:18px 16px 8px;">YOUR BRIEFS <span style="color:#C8A84B;font-weight:700;">' + buckets.requests.length + '</span></div>';
         for (var r = 0; r < buckets.requests.length; r++) {
           html += _briefCardHtml(buckets.requests[r]);
         }
@@ -2856,7 +2856,7 @@ window._closeReqForm = function() {
     btn.style.background = 'none';
     btn.style.border = '1px dotted #2a2a2a';
     btn.style.cursor = 'not-allowed';
-    btn.textContent = '-- SEND REQUEST';
+    btn.textContent = '-- SEND BRIEF';
   }
 }
 
@@ -3036,18 +3036,17 @@ window._reqUpdatePhotoCount = function() {
 }
 
 window._reqValidate = function() {
-  var name = (document.getElementById('req-name') || {}).value || '';
   var brief = (document.getElementById('req-topic') || {}).value || '';
   var btn = document.getElementById('req-submit-btn');
   if (!btn) return;
-  var valid = name.trim().length > 0 && brief.trim().length > 0;
+  var valid = brief.trim().length > 0;
   if (valid) {
     btn.disabled = false;
     btn.style.color = '#C8A84B';
     btn.style.background = 'none';
     btn.style.border = '1px dotted #C8A84B';
     btn.style.cursor = 'pointer';
-    btn.textContent = '-- SEND REQUEST';
+    btn.textContent = '-- SEND BRIEF';
   } else {
     btn.disabled = true;
     btn.style.color = '#333';

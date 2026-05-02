@@ -540,7 +540,7 @@ function _buildUserMenu() {
 
   // Client gets a dedicated slim menu
   if (_roleLower === 'client') {
-    html += '<button class="user-menu-item" onclick="openClientRequestForm(); closeUserMenu()" style="color:#C8A84B;">+ New Request</button>';
+    html += '<button class="user-menu-item" onclick="openClientRequestForm(); closeUserMenu()" style="color:#C8A84B;">+ New Brief</button>';
     html += '<div class="um-divider"></div>';
     html += '<button class="user-menu-item" onclick="toggleTheme(); closeUserMenu()"><span id="theme-icon">\u2600</span> Dark / Light</button>';
     html += '<div class="um-divider"></div>';
