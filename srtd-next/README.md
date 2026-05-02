@@ -1,5 +1,22 @@
 # srtd-next
 
+## TypeScript
+
+Strict mode, allowJs:true. NEW files MUST be `.ts` or `.tsx`,
+NEVER `.js` or `.jsx`. Existing `.js` files convert to `.ts`
+when touched - the migration is incremental, not a big-bang
+rewrite. Type checking runs in CI via `npx tsc --noEmit`.
+
+Vanilla repo root stays `.js` (retiring under strangler-fig).
+Tooling configs (vite.config, tailwind.config, postcss.config)
+stay `.js` per ecosystem convention.
+
+Shared types live next to their canonical data (e.g. Stage
+union in `src/shared/constants.ts`). Avoid premature global
+type files; types accrete naturally as files convert.
+
+---
+
 Sorted's React runtime. Strangler-fig migration target.
 
 All legacy vanilla JS at the repo root stays untouched until the
