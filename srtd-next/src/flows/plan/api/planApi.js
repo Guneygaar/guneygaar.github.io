@@ -50,6 +50,62 @@ export async function fetchPlanPosts(monthStart, monthEnd) {
 }
 
 /**
+ * fetchPlanBriefs()
+ * Synthesises brief-stage rows from /requests so the React data path
+ * owns briefs (vanilla bridge no longer writes planStore.posts —
+ * Phase 0). Shape mirrors vanilla 07-post-load.js:215-233 so
+ * downstream consumers (BriefSheet, openInPcs router, card renderers)
+ * see identical objects regardless of source.
+ */
+export async function fetchPlanBriefs() {
+  const path = '/requests?status=in.(pending,assigned)&order=created_at.desc';
+  const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 30000) : null;
+  try {
+    const rows = await apiFetch(
+      path,
+      { method: 'GET', headers: { 'Accept': 'application/json' }, signal: ctrl ? ctrl.signal : undefined },
+      { allowLogout: false }
+    );
+    if (!Array.isArray(rows)) return [];
+    return rows.map((r) => ({
+      id: r.id,
+      post_id: r.id,
+      title: r.title || ('Brief - ' + (r.created_at || '').slice(0, 10)),
+      stage: 'brief',
+      owner: r.assigned_to ? 'Creative' : 'Servicing',
+      owner_profile_id: r.assigned_to || null,
+      content_pillar: r.content_type || null,
+      target_date: r.target_date || null,
+      format: null,
+      images: r.images || [],
+      linkedin_link: null,
+      status_changed_at: r.created_at || null,
+      updated_at: r.created_at || null,
+      created_at: r.created_at || null,
+      description: r.description || '',
+      drive_link: r.drive_link || null,
+      created_by: r.created_by || null,
+      assigned_to: r.assigned_to || null,
+      total_posts: r.total_posts || 1,
+      completed_posts: r.completed_posts || 0,
+      _isRequest: true,
+      _requestStatus: r.status || 'pending'
+    }));
+  } catch (err) {
+    if (ctrl && ctrl.signal && ctrl.signal.aborted) {
+      const e = new Error('Brief request timed out after 30s');
+      e.name = 'TimeoutError';
+      throw e;
+    }
+    console.warn('[planApi] fetchPlanBriefs failed:', err && err.message);
+    return [];
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/**
  * fetchRejectedForInsights(monthStart, monthEnd)
  * Pulls just the rejected posts in the bounds window so Insights can
  * keep computing rejection % after fetchPlanPosts started filtering
