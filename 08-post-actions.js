@@ -332,7 +332,7 @@ async function submitClientRequest() {
   var reqDate = document.getElementById('req-date')?.value || null;
   var reqName = (document.getElementById('req-name') || {}).value || '';
   var now = new Date();
-  var fallbackTitle = 'Request - ' +
+  var fallbackTitle = 'Brief - ' +
     now.toLocaleDateString('en-IN', { day:'numeric', month:'short', timeZone:'Asia/Kolkata' }) +
     ' - ' +
     now.toLocaleTimeString('en-IN', { hour:'numeric', minute:'2-digit', timeZone:'Asia/Kolkata' });
@@ -340,7 +340,7 @@ async function submitClientRequest() {
     '#req-overlay button[data-action="reqChip"][style*="rgb(200, 168, 75)"]'
   );
   var contentType = selectedChip ? selectedChip.textContent.trim() : null;
-  var _reqTitle = reqName || 'New request';
+  var _reqTitle = reqName || fallbackTitle;
 
   // Optimistic: show success screen immediately
   var overlay = document.getElementById('req-overlay');
@@ -351,7 +351,7 @@ async function submitClientRequest() {
       'justify-content:center;gap:14px;">' +
       '<div style="font-size:32px;color:#C8A84B;line-height:1;">&#x2713;</div>' +
       '<div style="font-family:\'DM Sans\',sans-serif;font-size:22px;' +
-      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Request sent.</div>' +
+      'font-weight:600;color:#e8e2d9;letter-spacing:-0.01em;">Brief sent.</div>' +
       '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:8px;' +
       'letter-spacing:0.18em;text-transform:uppercase;color:#555;">' +
       'We\'ll get started shortly.</div>' +
@@ -386,7 +386,7 @@ async function submitClientRequest() {
       body: JSON.stringify(payload),
     });
     console.log('[REQUEST] API SUCCESS');
-    await logActivity({ post_id: reqId, actor: email, actor_role: 'Client', action: 'New request: ' + brief.substring(0, 60) });
+    await logActivity({ post_id: reqId, actor: email, actor_role: 'Client', action: 'New brief: ' + brief.substring(0, 60) });
     var _reqActor = (typeof getCanonicalActor === 'function')
       ? getCanonicalActor(email || (window.AppState.user && window.AppState.user.email))
       : '';
@@ -396,7 +396,7 @@ async function submitClientRequest() {
         user_role: 'Servicing',
         post_id: reqId,
         type: 'new_request',
-        message: _reqActor + ' submitted a new request: ' + _reqTitle,
+        message: _reqActor + ' submitted a new brief: ' + _reqTitle,
         actor: _reqActor,
         read: false
       })
@@ -407,7 +407,7 @@ async function submitClientRequest() {
         user_role: 'Admin',
         post_id: reqId,
         type: 'new_request',
-        message: _reqActor + ' submitted a new request: ' + _reqTitle,
+        message: _reqActor + ' submitted a new brief: ' + _reqTitle,
         actor: _reqActor,
         read: false
       })
@@ -425,7 +425,7 @@ async function submitClientRequest() {
     // Roll back: hide success screen, show error toast, re-enable form
     if (overlay) overlay.style.display = 'none';
     showToast('Failed - try again', 'error');
-    // _closeReqForm resets button to -- SEND REQUEST and clears fields
+    // _closeReqForm resets button to -- SEND BRIEF and clears fields
     if (typeof _closeReqForm === 'function') _closeReqForm();
     if (typeof openClientRequestForm === 'function') openClientRequestForm();
   }

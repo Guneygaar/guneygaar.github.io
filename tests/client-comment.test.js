@@ -510,7 +510,7 @@ describe('error handling pass 2', function() {
     expect(match).toBeTruthy();
     var catchBlock = match[0].match(/catch\s*\(err\)[\s\S]*?\}/);
     expect(catchBlock).toBeTruthy();
-    expect(catchBlock[0]).toMatch(/SEND REQUEST/);
+    expect(catchBlock[0]).toMatch(/SEND BRIEF/);
   });
 
   it('55. renderClientView() wrapped in try/catch', function() {
