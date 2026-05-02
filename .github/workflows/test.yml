@@ -16,6 +16,10 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Install srtd-next deps
+        run: cd srtd-next && npm ci
+      - name: Type check srtd-next
+        run: cd srtd-next && npx tsc --noEmit
       - name: Run tests
         env:
           TZ: Asia/Kolkata

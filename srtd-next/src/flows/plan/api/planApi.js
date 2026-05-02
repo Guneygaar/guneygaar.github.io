@@ -3,7 +3,7 @@
 // the PR 1 build prompt. No DDL, no schema assumptions.
 
 import { apiFetch } from '../../../core/api/client.js';
-import { STAGES_FOR_PLAN } from '../../../shared/constants.js';
+import { STAGES_FOR_PLAN } from '../../../shared/constants';
 
 function encodeList(arr) {
   // PostgREST in.(...) accepts a quoted, comma-separated list.

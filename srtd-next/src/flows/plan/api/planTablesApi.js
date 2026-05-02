@@ -5,7 +5,7 @@
 // via Prefer: return=representation.
 
 import { apiFetch } from '../../../core/api/client.js';
-import { STAGES_FOR_PLAN } from '../../../shared/constants.js';
+import { STAGES_FOR_PLAN } from '../../../shared/constants';
 
 const READ_META = { allowLogout: false };
 const READ_HEADERS = { 'Accept': 'application/json' };
