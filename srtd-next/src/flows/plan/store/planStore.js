@@ -5,11 +5,16 @@
 import { create } from 'zustand';
 import {
   fetchPlanPosts,
+  fetchPlanBriefs,
   fetchPostMetrics,
   fetchReasonComments,
   fetchPlanRequests,
   rescheduleTarget as apiReschedule
 } from '../api/planApi.js';
+
+// Phase 0: throttle realtime-driven monthly reloads triggered by the
+// vanilla bridge (~10s tick) so a quiet UI does not hammer Supabase.
+let _lastReloadTs = 0;
 import {
   fetchPlanByWorkspace,
   fetchAnyPlan,
@@ -178,23 +183,53 @@ export const usePlanStore = create((set, get) => ({
     if (!normStart) return;
     const { loadedMonths } = get();
     if (loadedMonths.some((m) => m.start === normStart)) return;
+    await get()._fetchAndApplyMonth(normStart, loadedMonths.length === 0);
+  },
+
+  // Phase 0: forced re-fetch of an already-loaded month. Bypasses the
+  // early-return so realtime-driven refreshes can pick up brief / post
+  // changes without the dual-writer race.
+  async reloadMonth(monthStartISO) {
+    const normStart = normalizeMonthStartISO(monthStartISO);
+    if (!normStart) return;
+    await get()._fetchAndApplyMonth(normStart, false);
+  },
+
+  async _fetchAndApplyMonth(normStart, loadingFlagNeeded) {
     const normEnd = monthEndISOFromStartISO(normStart);
-
-    // Mark loading (optional: we only toggle `loading` if nothing is loaded yet,
-    // so the initial mount shows the skeleton but sentinel-triggered fetches stay silent).
-    const loadingFlagNeeded = loadedMonths.length === 0;
     if (loadingFlagNeeded) set({ loading: true, loadError: null });
-
     try {
-      const postsRows = await fetchPlanPosts(normStart, normEnd);
-      const newMonth = { start: normStart, end: normEnd, posts: Array.isArray(postsRows) ? postsRows : [] };
+      // Phase 0: parallel fetch. Briefs are workspace-wide (not month-
+      // bounded) so they get added to every loaded month's `posts` array;
+      // the post_id-keyed dedup below collapses duplicates across months.
+      const [postsRows, briefRows] = await Promise.all([
+        fetchPlanPosts(normStart, normEnd),
+        fetchPlanBriefs()
+      ]);
+      const newMonth = {
+        start: normStart,
+        end: normEnd,
+        posts: [
+          ...(Array.isArray(postsRows) ? postsRows : []),
+          ...(Array.isArray(briefRows) ? briefRows : [])
+        ]
+      };
 
       // Merge + sort by start ascending.
       const merged = [...get().loadedMonths.filter((m) => m.start !== normStart), newMonth]
         .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));
 
-      // Flat posts view for legacy selectors (useCalendarPosts, usePosts, etc.).
-      const flatPosts = merged.flatMap((m) => m.posts);
+      // Flat posts view for legacy selectors. Dedup by post_id so briefs
+      // (which are appended to every loaded month) don't appear N times.
+      const seen = new Map();
+      for (const mo of merged) {
+        for (const p of mo.posts || []) {
+          const key = p && (p.post_id || p.id);
+          if (!key || seen.has(key)) continue;
+          seen.set(key, p);
+        }
+      }
+      const flatPosts = Array.from(seen.values());
 
       // Widen monthStart/monthEnd to the overall loaded range.
       const overallStart = merged[0] ? merged[0].start : get().monthStart;
@@ -433,17 +468,26 @@ export const usePlanStore = create((set, get) => ({
   // receive is already deduplicated.
   applyPostsSnapshot(detail) {
     if (!detail) return;
-    const incoming = Array.isArray(detail.posts) ? detail.posts : [];
-    const role = get().role;
-    const isClient = role === 'client';
-    const nextPosts = isClient
-      ? incoming.filter((p) => !p._isRequest)
-      : incoming;
-    const next = { posts: nextPosts };
+    // Phase 0: planStore.posts is now owned solely by loadMonthIfMissing
+    // (and its sibling reloadMonth). The vanilla bridge no longer writes
+    // posts here to avoid the dual-writer race that caused briefs/published
+    // flicker. We still propagate `requests` for the BriefsAssignedSection
+    // / BriefsCompletedSection consumers and trigger a throttled monthly
+    // reload so brief/post changes surface live without the race.
+    const next = {};
     if (Array.isArray(detail.requests) && detail.requests.length > 0) {
       next.requests = detail.requests;
     }
-    set(next);
+    if (Object.keys(next).length > 0) set(next);
+
+    const cur = get().monthStart;
+    if (cur && typeof get().reloadMonth === 'function') {
+      const now = Date.now();
+      if (now - _lastReloadTs > 5000) {
+        _lastReloadTs = now;
+        get().reloadMonth(cur);
+      }
+    }
   },
 
   applyNotificationsSnapshot(detail) {

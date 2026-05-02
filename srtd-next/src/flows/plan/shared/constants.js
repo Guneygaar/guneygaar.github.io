@@ -29,14 +29,14 @@ export const STAGE_COLOR_VAR = {
 // (brief, awaiting_approval, awaiting_brand_input, scheduled, ready,
 // in_production) plus published / rejected / parked which Plan surfaces
 // as Board rows but vanilla pipeline.js does not.
+// Published lives in Library (09-library.js); intentionally absent from the board.
 export const STAGE_ORDER_BOARD_AGENCY = [
   'brief',
   'awaiting_brand_input',
   'in_production',
   'ready',
   'awaiting_approval',
-  'scheduled',
-  'published'
+  'scheduled'
 ];
 
 // Client stage order is the safe subset of usePosts' CLIENT_ALLOWED_STAGES
@@ -44,11 +44,11 @@ export const STAGE_ORDER_BOARD_AGENCY = [
 // 'in_production' (vanilla 07-post-load.js:380-385 only surfaces
 // in_production rows to clients when comments exist on them - Plan does
 // not surface in_production as a Board row for clients).
+// Published lives in Library (09-library.js); intentionally absent from the board.
 export const STAGE_ORDER_BOARD_CLIENT = [
   'awaiting_brand_input',
   'awaiting_approval',
-  'scheduled',
-  'published'
+  'scheduled'
 ];
 
 // Back-compat: existing imports of STAGE_ORDER_BOARD continue to work
