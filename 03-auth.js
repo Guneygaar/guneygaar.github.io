@@ -371,6 +371,7 @@ async function handleMagicLinkToken(accessToken, _retried) {
 function logout() {
   localStorage.removeItem('hinglish_role');
   localStorage.removeItem('hinglish_email');
+  localStorage.removeItem('hinglish_name');
   localStorage.removeItem('hinglish_token');
   localStorage.removeItem('sb_access_token');
   localStorage.removeItem('sb_refresh_token');

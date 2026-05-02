@@ -165,8 +165,14 @@ export function Menu() {
 
   function handleSignOut() {
     closeMenu();
-    const w = window as unknown as { logout?: () => void };
-    if (typeof w.logout === 'function') w.logout();
+    const w = window as unknown as {
+      _clearSessionAndLogin?: () => void;
+    };
+    if (typeof w._clearSessionAndLogin === 'function') {
+      w._clearSessionAndLogin();
+    } else {
+      window.location.reload();
+    }
   }
 
   return (
