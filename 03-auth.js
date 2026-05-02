@@ -596,3 +596,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 500);
 });
 
+window.addEventListener('sorted:signout', function() {
+  _clearSessionAndLogin();
+});
+
