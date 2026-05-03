@@ -139,19 +139,31 @@ describe('App.jsx', () => {
     );
   });
 
-  it('keeps useState(isAuthed()) gate (E2E timing parity with PR #1101)', () => {
-    // App.jsx's authed gate snapshots the token at mount. The spine fix
-    // lives in appState.ts (sorted:role-ready / sorted:signout listeners
-    // → syncFromWindow) so component-level useUser / useIsAdmin / useIsClient
-    // see fresh values without the App-level gate having to flip on every
-    // role transition. Keeping the snapshot avoids re-mounting Plan post-
-    // activateRole, which would race with E2E pointer-intercept checks.
-    expect(appJsxSrc).toMatch(/useState\s*\(\s*isAuthed\s*\(\s*\)\s*\)/);
+  it('imports isAuthed', () => {
+    expect(appJsxSrc).toMatch(
+      /import\s+\{\s*isAuthed\s*\}\s+from\s+['"][./]+lib\/auth['"]/
+    );
   });
 
-  it('keeps sorted:signin / sorted:signout listeners on App.jsx', () => {
-    expect(appJsxSrc).toContain("addEventListener('sorted:signin'");
-    expect(appJsxSrc).toContain("addEventListener('sorted:signout'");
+  it('drops the legacy useState(isAuthed()) snapshot pattern', () => {
+    // Dual-path gate (user?.role || isAuthed()) re-evaluates each render,
+    // driven by useUser subscription — no manual setAuthed setter needed.
+    expect(appJsxSrc).not.toMatch(/useState\s*\(\s*isAuthed\s*\(\s*\)\s*\)/);
+  });
+
+  it('drops the manual sorted:signin / sorted:signout setAuthed listener', () => {
+    // sorted:signin / sorted:signout listeners now live in appState.ts and
+    // refresh the Zustand store. App.jsx no longer mirrors them.
+    expect(appJsxSrc).not.toContain("addEventListener('sorted:signin'");
+    expect(appJsxSrc).not.toContain('setAuthed');
+  });
+
+  it('contains dual-path authed = user?.role || isAuthed() gate', () => {
+    expect(appJsxSrc).toMatch(/const\s+user\s*=\s*useUser\s*\(\s*\)/);
+    // Either order accepted: user?.role || isAuthed() OR isAuthed() || user?.role.
+    const hasUserFirst  = /authed\s*=\s*!!\s*user\?\.role\s*\|\|\s*isAuthed\s*\(\s*\)/.test(appJsxSrc);
+    const hasTokenFirst = /authed\s*=\s*isAuthed\s*\(\s*\)\s*\|\|\s*!!\s*user\?\.role/.test(appJsxSrc);
+    expect(hasUserFirst || hasTokenFirst).toBe(true);
   });
 
   it('still renders createPostOpen && authed (auth gate intact)', () => {
