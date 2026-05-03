@@ -457,7 +457,6 @@ function activateRole(role) {
     if (typeof updateLastActive === 'function') {
       try { updateLastActive(); } catch(e) { console.warn('[auth] updateLastActive error:', e); }
     }
-    if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
     _dispatchRoleReady();
     return;
@@ -517,9 +516,6 @@ function activateRole(role) {
     loadPostsForClient();
     if (typeof startClientRealtime === 'function') startClientRealtime();
   } else {
-    document.getElementById('dashboard-view')?.classList.add('active');
-    const lbl = document.getElementById('topbar-role-label');
-    if (lbl) lbl.textContent = window.AppState.user.effectiveRole;
     loadPosts();
     loadTasks();
     startRealtime();
