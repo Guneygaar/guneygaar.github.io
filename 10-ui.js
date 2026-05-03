@@ -515,7 +515,10 @@ function switchTab(btn) {
     }
   }
   const dv = document.getElementById('dashboard-view');
-  if (dv && !dv.classList.contains('active')) {
+  // Plan is the permanent home — never re-activate dashboard-view while
+  // Plan owns the surface (closeInsights / closeLibrary etc. would
+  // otherwise paint dashboard-view under Plan's z-index 1400 overlay).
+  if (dv && !dv.classList.contains('active') && !document.body.classList.contains('plan-active')) {
     dv.classList.add('active');
     document.getElementById('client-view')?.classList.remove('active');
     document.getElementById('insights-view')?.classList.remove('active');

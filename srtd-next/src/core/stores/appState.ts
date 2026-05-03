@@ -28,9 +28,14 @@ export const useAppState = create<AppStateStore>((set) => ({
     if (typeof window === 'undefined') return;
     const src = (window as unknown as { AppState?: { user?: AppUser; workspace?: AppWorkspace } }).AppState;
     if (!src) return;
+    // Spread to force new object identity. Vanilla activateRole() mutates
+    // window.AppState.user in place (e.g. user.role = role), so the same
+    // reference reaches Zustand's set() — Object.is equality short-circuits
+    // the update and useUser subscribers (App.jsx) never re-render after
+    // sorted:role-ready, leaving Plan unmounted on fresh OTP sign-in.
     set({
-      user: src.user || null,
-      workspace: src.workspace || null,
+      user: src.user ? { ...src.user } : null,
+      workspace: src.workspace ? { ...src.workspace } : null,
       hydrated: true
     });
   }
