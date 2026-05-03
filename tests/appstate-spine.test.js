@@ -139,17 +139,19 @@ describe('App.jsx', () => {
     );
   });
 
-  it('does NOT contain useState(isAuthed (old pattern removed)', () => {
-    expect(appJsxSrc).not.toMatch(/useState\s*\(\s*isAuthed\s*\(/);
+  it('keeps useState(isAuthed()) gate (E2E timing parity with PR #1101)', () => {
+    // App.jsx's authed gate snapshots the token at mount. The spine fix
+    // lives in appState.ts (sorted:role-ready / sorted:signout listeners
+    // → syncFromWindow) so component-level useUser / useIsAdmin / useIsClient
+    // see fresh values without the App-level gate having to flip on every
+    // role transition. Keeping the snapshot avoids re-mounting Plan post-
+    // activateRole, which would race with E2E pointer-intercept checks.
+    expect(appJsxSrc).toMatch(/useState\s*\(\s*isAuthed\s*\(\s*\)\s*\)/);
   });
 
-  it('does NOT contain sorted:signin listener (replaced by useUser)', () => {
-    expect(appJsxSrc).not.toContain("addEventListener('sorted:signin'");
-  });
-
-  it('contains authed = !!user?.role (new pattern)', () => {
-    expect(appJsxSrc).toMatch(/const\s+user\s*=\s*useUser\s*\(\s*\)/);
-    expect(appJsxSrc).toMatch(/authed\s*=\s*!!\s*user\?\.role/);
+  it('keeps sorted:signin / sorted:signout listeners on App.jsx', () => {
+    expect(appJsxSrc).toContain("addEventListener('sorted:signin'");
+    expect(appJsxSrc).toContain("addEventListener('sorted:signout'");
   });
 
   it('still renders createPostOpen && authed (auth gate intact)', () => {
