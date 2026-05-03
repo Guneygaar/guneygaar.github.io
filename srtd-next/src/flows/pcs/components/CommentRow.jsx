@@ -11,7 +11,7 @@ import {
   resolveComment, unresolveComment,
   pinComment, unpinComment, pinInternalNote, unpinInternalNote,
 } from '../../../core/api/comments.js';
-import { useAppState, useIsClient } from '../../../core/stores/appState.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState';
 import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';

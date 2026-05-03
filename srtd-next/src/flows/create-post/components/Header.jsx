@@ -3,7 +3,7 @@ import { Mail, ClipboardPaste, Upload } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
-import { useIsAdmin } from '../../../core/stores/appState.js';
+import { useIsAdmin } from '../../../core/stores/appState';
 import { logClick } from '../../../core/bridges/logging.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 import { uploadFile } from '../../../shared/caption-workspace/api.js';

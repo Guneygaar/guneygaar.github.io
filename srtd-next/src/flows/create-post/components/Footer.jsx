@@ -3,7 +3,7 @@ import { Trash2 } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState, clearDraft } from '../formStore.js';
 import { useFlowState } from '../flowStore.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import { useAppState } from '../../../core/stores/appState';
 import { buildPostPayload, createPost } from '../../../core/api/posts.js';
 import { createInternalNote } from '../../../core/api/comments.js';
 import { stampPostId } from '../../../core/api/aiUsage.js';

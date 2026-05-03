@@ -3,7 +3,7 @@
 
 import { useFlowState } from './flowStore.js';
 import { useFormState, loadDraft } from './formStore.js';
-import { useAppState } from '../../core/stores/appState.js';
+import { useAppState } from '../../core/stores/appState';
 import { logClick } from '../../core/bridges/logging.js';
 
 function _hasMeaningfulDraft(d) {

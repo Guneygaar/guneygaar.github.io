@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useAppState } from './core/stores/appState.js';
+import React, { useEffect, useMemo } from 'react';
+import { useAppState, useUser } from './core/stores/appState';
 import { useFlowState } from './flows/create-post/flowStore.js';
 import { usePcsFlowState } from './flows/pcs/flowStore.js';
 import { CreatePost } from './flows/create-post/CreatePost.jsx';
@@ -23,17 +23,17 @@ export default function App() {
     }
   }, []);
 
-  const [authed, setAuthed] = useState(isAuthed());
-
-  useEffect(() => {
-    const refresh = () => setAuthed(isAuthed());
-    window.addEventListener('sorted:signin', refresh);
-    window.addEventListener('sorted:signout', refresh);
-    return () => {
-      window.removeEventListener('sorted:signin', refresh);
-      window.removeEventListener('sorted:signout', refresh);
-    };
-  }, []);
+  // Dual-path auth gate. isAuthed() snapshots tokens at first render so the
+  // app boots immediately when localStorage carries valid creds (covers E2E
+  // mocks + session resume). useUser() subscribes to the Zustand store —
+  // when sorted:role-ready fires post-activateRole, the listener in
+  // appState.ts pulls fresh user into the store, forcing this re-render so
+  // role-aware components see truthy user?.role without any App-level
+  // event listener of its own. signout clears localStorage AND the store
+  // user (via sorted:signout listener), so both terms collapse to false
+  // simultaneously.
+  const user = useUser();
+  const authed = !!user?.role || isAuthed();
 
   useEffect(() => {
     syncFromWindow();

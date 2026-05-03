@@ -3,7 +3,7 @@ import { ImagePlus, ImageOff, ArrowLeft, ArrowRight, Scan } from 'lucide-react';
 import { Lightbox, PhotoKebabMenu } from '../../../core/ui';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
-import { useAppState, useIsClient } from '../../../core/stores/appState.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState';
 import { usePcsStore } from '../pcsStore.js';
 import { uploadToR2 } from '../../../core/bridges/r2.js';
 import { compressImage, generateFilename } from '../../../core/utils/imageCompress.js';

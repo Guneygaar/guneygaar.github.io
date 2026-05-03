@@ -5,17 +5,28 @@
 //
 // Vanilla code that mutates window.AppState can call
 // window.__syncAppStateToReact() to notify subscribers.
+// Auth-state events (sorted:role-ready dispatched by activateRole
+// in 03-auth.js, sorted:signout dispatched by logout) auto-resync
+// without component intervention.
 
 import { create } from 'zustand';
+import type { AppUser, AppWorkspace } from '../../lib/types';
 
-export const useAppState = create((set) => ({
+interface AppStateStore {
+  user: AppUser | null;
+  workspace: AppWorkspace | null;
+  hydrated: boolean;
+  syncFromWindow: () => void;
+}
+
+export const useAppState = create<AppStateStore>((set) => ({
   user: null,
   workspace: null,
   hydrated: false,
 
   syncFromWindow: () => {
     if (typeof window === 'undefined') return;
-    const src = window.AppState;
+    const src = (window as unknown as { AppState?: { user?: AppUser; workspace?: AppWorkspace } }).AppState;
     if (!src) return;
     set({
       user: src.user || null,
@@ -25,24 +36,34 @@ export const useAppState = create((set) => ({
   }
 }));
 
+export function useUser(): AppUser | null {
+  return useAppState(s => s.user);
+}
+
 // Admin predicate hook. AI affordances (Caption Workspace ⤢,
 // cost chip, Import brief) are Admin-only; manual fields work
 // for every role. Returns true when effectiveRole (or role, if
 // effectiveRole is not yet hydrated) is 'admin' (case-insensitive).
-export function useIsAdmin() {
+export function useIsAdmin(): boolean {
   return useAppState(s =>
     (s.user?.effectiveRole || s.user?.role || '').toLowerCase() === 'admin'
   );
 }
 
-export const useIsClient = () =>
+export const useIsClient = (): boolean =>
   useAppState((s) =>
     ((s.user?.effectiveRole || s.user?.role || '') + '')
       .toLowerCase() === 'client');
 
 // Install window bridge so vanilla code can notify React.
 if (typeof window !== 'undefined') {
-  window.__syncAppStateToReact = () => {
+  (window as unknown as { __syncAppStateToReact: () => void }).__syncAppStateToReact = () => {
     useAppState.getState().syncFromWindow();
   };
+  window.addEventListener('sorted:role-ready', () => {
+    useAppState.getState().syncFromWindow();
+  });
+  window.addEventListener('sorted:signout', () => {
+    useAppState.getState().syncFromWindow();
+  });
 }

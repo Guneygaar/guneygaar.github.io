@@ -389,6 +389,23 @@ function logout() {
   showLoginOverlay();
 }
 
+// Fires after AppState.user.role / effectiveRole / email / workspace are
+// settled inside activateRole(). Zustand bridge in srtd-next/src/core/stores/appState
+// listens for this so React components see the post-login user without
+// having to call syncFromWindow themselves. One call before each return
+// path of activateRole — preview, client-DB, and main agency tail.
+function _dispatchRoleReady() {
+  window.dispatchEvent(new CustomEvent('sorted:role-ready', {
+    detail: {
+      role: window.AppState.user.role,
+      effectiveRole: window.AppState.user.effectiveRole,
+      email: window.AppState.user.email,
+      name: window.AppState.user.name,
+      workspace: window.AppState.workspace || null
+    }
+  }));
+}
+
 function activateRole(role) {
   role = normalizeRole(role) || role;
 
@@ -442,6 +459,7 @@ function activateRole(role) {
     }
     if (typeof switchTab === 'function') switchTab('tasks');
     if (typeof loadPosts === 'function') loadPosts();
+    _dispatchRoleReady();
     return;
   }
 
@@ -474,6 +492,7 @@ function activateRole(role) {
     // activateRole() via window._tokenRefreshTimer — no client-specific
     // timer needed here. The legacy window._clientTokenTimer duplicate
     // was removed so every role goes through one refresh code path.
+    _dispatchRoleReady();
     return;
   }
 
@@ -515,6 +534,8 @@ function activateRole(role) {
   _buildUserMenu();
   // Update FAB visibility after role change
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
+
+  _dispatchRoleReady();
 
   if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
     if (typeof switchTab === 'function') switchTab('tasks');

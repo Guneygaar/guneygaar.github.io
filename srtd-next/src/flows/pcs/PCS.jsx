@@ -3,7 +3,7 @@ import { Check, ExternalLink, MessageSquare } from 'lucide-react';
 import { ErrorBoundary, Overlay } from '../../core/ui/index.js';
 import { usePcsFlowState } from './flowStore.js';
 import { usePcsStore } from './pcsStore.js';
-import { useAppState, useIsAdmin, useIsClient } from '../../core/stores/appState.js';
+import { useAppState, useIsAdmin, useIsClient } from '../../core/stores/appState';
 import { pcsFlow } from './index.js';
 import { KickerRow } from './components/KickerRow.jsx';
 import { PcsDetailSheet } from './components/PcsDetailSheet.jsx';

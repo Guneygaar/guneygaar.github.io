@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Sparkles, X, AtSign, ImagePlus, Paperclip, CircleDot, FileText, ArrowUp } from 'lucide-react';
 import { createComment, createInternalNote } from '../../../core/api/comments.js';
-import { useAppState, useIsClient } from '../../../core/stores/appState.js';
+import { useAppState, useIsClient } from '../../../core/stores/appState';
 import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { polishText } from '../../../core/bridges/claudePolish.js';

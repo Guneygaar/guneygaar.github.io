@@ -1,6 +1,6 @@
 import { usePcsFlowState } from './flowStore.js';
 import { usePcsStore } from './pcsStore.js';
-import { useAppState } from '../../core/stores/appState.js';
+import { useAppState } from '../../core/stores/appState';
 import { getPostByPostId, enrichPostOwner } from '../../core/api/posts.js';
 import { listComments, listInternalNotes } from '../../core/api/comments.js';
 import { listReactionsForComments } from '../../core/api/reactions.js';

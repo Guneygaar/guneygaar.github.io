@@ -15,7 +15,7 @@ import {
   startPlanCellsBridge, stopPlanCellsBridge
 } from './store/realtimeBridge.js';
 import { usePcsFlowState } from '../pcs/flowStore.js';
-import { useAppState } from '../../core/stores/appState.js';
+import { useAppState } from '../../core/stores/appState';
 import { useDatePicker } from './hooks/useDatePicker.js';
 import { List } from './views/List.jsx';
 import { Board } from './views/Board.jsx';
