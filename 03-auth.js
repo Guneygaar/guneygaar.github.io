@@ -532,12 +532,6 @@ function activateRole(role) {
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 
   _dispatchRoleReady();
-
-  if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
-    if (typeof switchTab === 'function') switchTab('tasks');
-    return;
-  }
-  if (typeof switchTab === 'function') switchTab('tasks');
 }
 
 // Escape failsafe  -  callable from console if UI is ever unreachable
