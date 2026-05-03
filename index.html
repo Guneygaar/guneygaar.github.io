@@ -57,8 +57,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
- <link rel="stylesheet" href="styles.css?v=20260502i">
- <link rel="stylesheet" href="/srtd-next/dist/style.css?v=20260502i">
+ <link rel="stylesheet" href="styles.css?v=20260502j">
+ <link rel="stylesheet" href="/srtd-next/dist/style.css?v=20260502j">
 
 </head>
 <body>
@@ -1290,27 +1290,27 @@ window.setPcsVisibility = function(el, vis) {
 <!-- Required for the client-side Realtime subscriptions in 07-post-load.js. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- JS versions: bump ALL v= strings together on every deploy -->
-<script src="00-appstate.js?v=20260502i"></script>
-<script src="00-appstate-compat.js?v=20260502i"></script>
-<script src="01-config.js?v=20260502i" defer></script>
-<script src="02-session.js?v=20260502i" defer></script>
-<script src="utils.js?v=20260502i" defer></script>
-<script src="12-profiles.js?v=20260502i" defer></script>
-<script src="03-auth.js?v=20260502i" defer></script>
-<script src="05-api.js?v=20260502i" defer></script>
-<script src="10-ui.js?v=20260502i" defer></script>
+<script src="00-appstate.js?v=20260502j"></script>
+<script src="00-appstate-compat.js?v=20260502j"></script>
+<script src="01-config.js?v=20260502j" defer></script>
+<script src="02-session.js?v=20260502j" defer></script>
+<script src="utils.js?v=20260502j" defer></script>
+<script src="12-profiles.js?v=20260502j" defer></script>
+<script src="03-auth.js?v=20260502j" defer></script>
+<script src="05-api.js?v=20260502j" defer></script>
+<script src="10-ui.js?v=20260502j" defer></script>
 
-<script src="06-post-create.js?v=20260502i" defer></script>
-<script defer src="render/dashboard.js?v=20260502i"></script>
-<script defer src="render/client.js?v=20260502i"></script>
-<script defer src="render/pipeline.js?v=20260502i"></script>
-<script defer src="render/brief.js?v=20260502i"></script>
-<script defer src="actions/pcs.js?v=20260502i"></script>
-<script defer src="actions/pcs-longpress.js?v=20260502i"></script>
-<script defer src="actions/pcs-claude-caption.js?v=20260502i"></script>
-<script defer src="actions/pcs-polish.js?v=20260502i"></script>
-<script defer src="actions/pcs-select.js?v=20260502i"></script>
-<script src="ai-config.js?v=20260502i" defer></script>
+<script src="06-post-create.js?v=20260502j" defer></script>
+<script defer src="render/dashboard.js?v=20260502j"></script>
+<script defer src="render/client.js?v=20260502j"></script>
+<script defer src="render/pipeline.js?v=20260502j"></script>
+<script defer src="render/brief.js?v=20260502j"></script>
+<script defer src="actions/pcs.js?v=20260502j"></script>
+<script defer src="actions/pcs-longpress.js?v=20260502j"></script>
+<script defer src="actions/pcs-claude-caption.js?v=20260502j"></script>
+<script defer src="actions/pcs-polish.js?v=20260502j"></script>
+<script defer src="actions/pcs-select.js?v=20260502j"></script>
+<script src="ai-config.js?v=20260502j" defer></script>
 <script>
   (function() {
     try {
@@ -1322,12 +1322,12 @@ window.setPcsVisibility = function(el, vis) {
     } catch (e) {}
   })();
 </script>
-<script src="/srtd-next/dist/sorted-react.js?v=20260502i" defer></script>
-<script src="07-post-load.js?v=20260502i" defer></script>
-<script src="08-post-actions.js?v=20260502i" defer></script>
-<script src="09-library.js?v=20260502i" defer></script>
-<script src="09-approval.js?v=20260502i" defer></script>
-<script src="04-router.js?v=20260502i" defer></script>
+<script src="/srtd-next/dist/sorted-react.js?v=20260502j" defer></script>
+<script src="07-post-load.js?v=20260502j" defer></script>
+<script src="08-post-actions.js?v=20260502j" defer></script>
+<script src="09-library.js?v=20260502j" defer></script>
+<script src="09-approval.js?v=20260502j" defer></script>
+<script src="04-router.js?v=20260502j" defer></script>
 
 <div class="chase-toast" id="chase-toast"></div>
 
@@ -1918,12 +1918,12 @@ window.setPcsVisibility = function(el, vis) {
 <div class="user-menu" id="user-menu" style="position:fixed;top:56px;right:12px;z-index:3000;display:none;"></div>
 
 <!-- PROFILE PANEL OVERLAY -->
-<div id="prof-overlay" style="display:none;position:fixed;inset:0;z-index:1300;background:#0a0a0f;align-items:stretch;justify-content:center;">
+<div id="prof-overlay" style="display:none;position:fixed;inset:0;z-index:1500;background:#0a0a0f;align-items:stretch;justify-content:center;">
   <div id="prof-panel" style="width:100%;max-width:480px;height:100%;overflow-y:auto;background:#0e0e16;-ms-overflow-style:none;scrollbar-width:none;"></div>
 </div>
 
 <!-- AVATAR CROP MODAL OVERLAY -->
-<div id="prof-crop-overlay" style="display:none;position:fixed;inset:0;z-index:1400;background:#0a0a0fF2;align-items:center;justify-content:center;padding:16px;"></div>
+<div id="prof-crop-overlay" style="display:none;position:fixed;inset:0;z-index:1600;background:#0a0a0fF2;align-items:center;justify-content:center;padding:16px;"></div>
 
 <!-- SCRATCHPAD PANEL OVERLAY -->
 <div id="scratchpad-panel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100dvh;background:var(--bg,#0a0a0f);z-index:3100;flex-direction:column;overflow-y:auto;">
