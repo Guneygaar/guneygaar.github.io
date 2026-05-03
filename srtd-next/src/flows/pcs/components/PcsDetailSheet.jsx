@@ -8,7 +8,7 @@ import { openWhatsAppShare, buildShortUrl } from '../../../core/bridges/whatsapp
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
-import { useIsClient } from '../../../core/stores/appState.js';
+import { useIsClient } from '../../../core/stores/appState';
 import { pcsFlow } from '../index.js';
 import { STAGE_LABELS, ownerToRole, titleCase } from '../utils/stage.js';
 import { FORMATS, PILLARS, LOCATIONS } from '../../../core/mappings.js';

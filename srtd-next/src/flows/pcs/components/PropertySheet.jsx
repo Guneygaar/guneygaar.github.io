@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { patchPost } from '../../../core/api/posts.js';
 import { writeAudit } from '../../../core/api/audit.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import { useAppState } from '../../../core/stores/appState';
 import { usePcsStore } from '../pcsStore.js';
 import { toast } from '../../../core/bridges/toast.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';

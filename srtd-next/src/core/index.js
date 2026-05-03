@@ -9,7 +9,7 @@
 import { tokens } from './tokens.js';
 import * as mappings from './mappings.js';
 
-import { useAppState, useIsAdmin } from './stores/appState.js';
+import { useAppState, useIsAdmin } from './stores/appState';
 
 import { toast } from './bridges/toast.js';
 import { getAIConfig } from './bridges/config.js';

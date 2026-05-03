@@ -5,7 +5,7 @@ import { wordCount, renderRichText } from '../utils/mentions.jsx';
 import { usePcsStore } from '../pcsStore.js';
 import { logClick } from '../../../core/bridges/logging.js';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
-import { useIsClient, useAppState } from '../../../core/stores/appState.js';
+import { useIsClient, useAppState } from '../../../core/stores/appState';
 import { useOptimisticPatch } from '../../../core/hooks/useOptimisticPatch.js';
 import { reseedOgPreview } from '../../../core/bridges/ogPreview.js';
 import { useLongPress } from '../../plan/hooks/useLongPress.js';

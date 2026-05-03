@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, PanelRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { STAGE_LABELS, STAGE_TOKEN } from '../utils/stage.js';
 import { pcsFlow } from '../index.js';
-import { useIsClient } from '../../../core/stores/appState.js';
+import { useIsClient } from '../../../core/stores/appState';
 import { daysSince } from '../../plan/shared/dateUtils.js';
 import { usePcsFlowState } from '../flowStore.js';
 import { usePcsStore } from '../pcsStore.js';

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useAppState } from './core/stores/appState.js';
+import React, { useEffect, useMemo } from 'react';
+import { useAppState, useUser } from './core/stores/appState';
 import { useFlowState } from './flows/create-post/flowStore.js';
 import { usePcsFlowState } from './flows/pcs/flowStore.js';
 import { CreatePost } from './flows/create-post/CreatePost.jsx';
@@ -7,7 +7,6 @@ import { PCS } from './flows/pcs/PCS.jsx';
 import { CaptionWorkspace } from './shared/caption-workspace/CaptionWorkspace.jsx';
 import { Toast } from './core/ui/Toast.jsx';
 import Plan from './flows/plan/Plan.jsx';
-import { isAuthed } from './lib/auth';
 
 export default function App() {
   const syncFromWindow = useAppState(s => s.syncFromWindow);
@@ -23,17 +22,8 @@ export default function App() {
     }
   }, []);
 
-  const [authed, setAuthed] = useState(isAuthed());
-
-  useEffect(() => {
-    const refresh = () => setAuthed(isAuthed());
-    window.addEventListener('sorted:signin', refresh);
-    window.addEventListener('sorted:signout', refresh);
-    return () => {
-      window.removeEventListener('sorted:signin', refresh);
-      window.removeEventListener('sorted:signout', refresh);
-    };
-  }, []);
+  const user = useUser();
+  const authed = !!user?.role;
 
   useEffect(() => {
     syncFromWindow();

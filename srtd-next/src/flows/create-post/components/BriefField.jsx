@@ -2,7 +2,7 @@ import React from 'react';
 import { Field } from '../../../core/ui/index.js';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
-import { useIsAdmin } from '../../../core/stores/appState.js';
+import { useIsAdmin } from '../../../core/stores/appState';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 import { logClick } from '../../../core/bridges/logging.js';
 

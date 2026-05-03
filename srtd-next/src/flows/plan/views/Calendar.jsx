@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { useCalendarPosts } from '../hooks/useCalendarPosts.js';
 import { usePlanStore } from '../store/planStore.js';
-import { useIsClient } from '../../../core/stores/appState.js';
+import { useIsClient } from '../../../core/stores/appState';
 import {
   parseISODate, buildMonthGrid, buildWeekGrid, sameDay, formatYYYYMMDD,
   dowShortMonFirst, monthAbbr

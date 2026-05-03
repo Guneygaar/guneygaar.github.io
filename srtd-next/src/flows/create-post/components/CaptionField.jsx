@@ -2,7 +2,7 @@ import React, { useMemo, useEffect } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
-import { useIsAdmin } from '../../../core/stores/appState.js';
+import { useIsAdmin } from '../../../core/stores/appState';
 import { openCaptionWorkspace } from '../../../core/bridges/captionWorkspace.js';
 import { logClick } from '../../../core/bridges/logging.js';
 

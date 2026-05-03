@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Mail } from 'lucide-react';
 import { tokens } from '../../../core/tokens.js';
 import { useFormState } from '../formStore.js';
-import { useAppState } from '../../../core/stores/appState.js';
+import { useAppState } from '../../../core/stores/appState';
 import { listEmails, fetchBrief } from '../../../core/bridges/gmail.js';
 import { logClick, logError } from '../../../core/bridges/logging.js';
 
