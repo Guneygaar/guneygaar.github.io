@@ -6,7 +6,7 @@ import type { ComponentType } from 'react';
 import {
   List as ListIcon, LayoutGrid, CalendarDays, BarChart3, BookOpen,
   Check, Settings, X, Plus, Trash2,
-  LogOut, SunMoon, StickyNote, FilePlus
+  LogOut, SunMoon, StickyNote, FilePlus, User
 } from 'lucide-react';
 import { usePlanStore } from '../store/planStore.js';
 import { useAllPosts } from '../hooks/usePosts.js';
@@ -166,6 +166,16 @@ export function Menu() {
   function handleSignOut() {
     closeMenu();
     window.dispatchEvent(new CustomEvent('sorted:signout'));
+  }
+
+  function handleMyProfile() {
+    closeMenu();
+    const w = window as unknown as {
+      openProfilePanel?: () => void;
+    };
+    if (typeof w.openProfilePanel === 'function') {
+      w.openProfilePanel();
+    }
   }
 
   return (
@@ -447,12 +457,6 @@ export function Menu() {
             </section>
           ) : null}
 
-          {/* Account section. Plan overlay (z-index 1400) covers the
-              global app-header, leaving the global #prof-trigger and
-              #user-menu unreachable; surface those actions here. My
-              Profile is intentionally omitted - #prof-overlay is
-              z-index 1300 and would render BEHIND Plan; needs a
-              separate z-index bump. */}
           <section>
             <div style={{
               fontFamily: '"IBM Plex Mono", monospace',
@@ -463,6 +467,30 @@ export function Menu() {
               padding: '14px 16px 6px',
               borderTop: '1px solid var(--c-divider-soft)'
             }}>Account</div>
+            <button
+              type="button"
+              onClick={handleMyProfile}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%',
+                padding: '12px 16px',
+                background: 'transparent',
+                border: 'none',
+                borderTop: '1px solid var(--c-divider-subtle)',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}>
+              <User size={18} style={{ color: 'var(--c-text-mid)' }} />
+              <span style={{
+                flex: 1,
+                fontFamily: '"DM Sans", sans-serif',
+                fontSize: '14px',
+                fontWeight: 500,
+                color: 'var(--c-text-loud)'
+              }}>My Profile</span>
+            </button>
             <button
               type="button"
               onClick={handleToggleTheme}
