@@ -302,6 +302,7 @@ window.verifyOTPCode = async function verifyOTPCode() {
     localStorage.removeItem('sb_access_token');
     localStorage.setItem('sb_access_token', accessToken);
     if (refreshToken) localStorage.setItem('sb_refresh_token', refreshToken);
+    window.dispatchEvent(new CustomEvent('sorted:signin'));
     localStorage.removeItem('hinglish_pending_email');
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
@@ -360,6 +361,7 @@ async function handleMagicLinkToken(accessToken, _retried) {
     const user  = await userRes.json();
     const email = (user.email || '').toLowerCase().trim();
     localStorage.setItem('sb_access_token', accessToken);
+    window.dispatchEvent(new CustomEvent('sorted:signin'));
     await resolveRoleFromToken(accessToken, email);
   } catch (err) {
     console.error('[auth] handleMagicLinkToken failed', err);
