@@ -387,6 +387,15 @@ export default function Plan() {
     return () => resumeRealtime();
   }, [planEnabled, pcsOpen]);
 
+  // Hard unmount on signout. _clearSessionAndLogin has already wiped storage
+  // by the time this fires, so a reload boots straight into the login overlay
+  // and nukes any lingering React state from the Plan tree.
+  useEffect(() => {
+    const handler = () => window.location.reload();
+    window.addEventListener('sorted:signout', handler);
+    return () => window.removeEventListener('sorted:signout', handler);
+  }, []);
+
   if (!planEnabled) return null;
 
   return (
