@@ -3,7 +3,7 @@
    =============================================== */
 console.log("LOADED:", "02-session.js");
 
-window.AppState.user.role     = 'Admin';
+window.AppState.user.role     = null;
 // Admin-only role preview  -  overrides UI visibility without touching auth
 window.AppState.user.effectiveRole   = localStorage.getItem('pcs_role_preview') || '';
 window.AppState.timers.renderTimer    = null;

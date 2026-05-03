@@ -9,6 +9,7 @@ import {
   BookOpen, LayoutGrid, List as ListIcon, CalendarDays, BarChart3
 } from 'lucide-react';
 import { usePlanStore } from './store/planStore.js';
+import { isAuthed } from '../../lib/auth';
 import {
   startRealtimeBridge, pauseRealtime, resumeRealtime,
   startPlanCellsBridge, stopPlanCellsBridge
@@ -396,7 +397,7 @@ export default function Plan() {
     return () => window.removeEventListener('sorted:signout', handler);
   }, []);
 
-  if (!planEnabled) return null;
+  if (!planEnabled || !isAuthed()) return null;
 
   return (
     <div
