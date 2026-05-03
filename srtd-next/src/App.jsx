@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAppState } from './core/stores/appState.js';
 import { useFlowState } from './flows/create-post/flowStore.js';
 import { usePcsFlowState } from './flows/pcs/flowStore.js';
@@ -23,6 +23,18 @@ export default function App() {
     }
   }, []);
 
+  const [authed, setAuthed] = useState(isAuthed());
+
+  useEffect(() => {
+    const refresh = () => setAuthed(isAuthed());
+    window.addEventListener('sorted:signin', refresh);
+    window.addEventListener('sorted:signout', refresh);
+    return () => {
+      window.removeEventListener('sorted:signin', refresh);
+      window.removeEventListener('sorted:signout', refresh);
+    };
+  }, []);
+
   useEffect(() => {
     syncFromWindow();
   }, [syncFromWindow]);
@@ -35,8 +47,6 @@ export default function App() {
       document.body.classList.add('plan-active');
     }
   }, [planEnabled]);
-
-  const authed = isAuthed();
 
   return (
     <>

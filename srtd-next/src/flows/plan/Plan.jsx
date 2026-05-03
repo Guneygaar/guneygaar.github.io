@@ -3,7 +3,7 @@
 // renders a full-screen overlay. Wraps tokens scope with
 // [data-plan-root] + [data-plan-theme] so Plan palette never leaks.
 
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search, Bell, MoreVertical, Plus,
   BookOpen, LayoutGrid, List as ListIcon, CalendarDays, BarChart3
@@ -315,6 +315,18 @@ export default function Plan() {
     }
   }, []);
 
+  const [authed, setAuthed] = useState(isAuthed());
+
+  useEffect(() => {
+    const refresh = () => setAuthed(isAuthed());
+    window.addEventListener('sorted:signin', refresh);
+    window.addEventListener('sorted:signout', refresh);
+    return () => {
+      window.removeEventListener('sorted:signin', refresh);
+      window.removeEventListener('sorted:signout', refresh);
+    };
+  }, []);
+
   const user = useAppState((s) => s.user);
   const loadData = usePlanStore((s) => s.loadData);
   const loadRequests = usePlanStore((s) => s.loadRequests);
@@ -397,7 +409,7 @@ export default function Plan() {
     return () => window.removeEventListener('sorted:signout', handler);
   }, []);
 
-  if (!planEnabled || !isAuthed()) return null;
+  if (!planEnabled || !authed) return null;
 
   return (
     <div
