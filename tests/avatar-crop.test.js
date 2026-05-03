@@ -21,9 +21,9 @@ var indexHtml = fs.readFileSync(
 describe('Avatar crop modal — index.html overlay', function() {
   it('exposes #prof-crop-overlay element with z-index above prof-overlay', function() {
     expect(indexHtml).toContain('id="prof-crop-overlay"');
-    // prof-overlay sits at z-index 1300 — crop must sit above it
+    // prof-overlay sits at z-index 1500 — crop must sit above it
     expect(indexHtml).toMatch(
-      /id="prof-crop-overlay"[^>]*z-index:\s*1400/
+      /id="prof-crop-overlay"[^>]*z-index:\s*1600/
     );
   });
 
