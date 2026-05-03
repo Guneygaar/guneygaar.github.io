@@ -7,6 +7,7 @@ import { PCS } from './flows/pcs/PCS.jsx';
 import { CaptionWorkspace } from './shared/caption-workspace/CaptionWorkspace.jsx';
 import { Toast } from './core/ui/Toast.jsx';
 import Plan from './flows/plan/Plan.jsx';
+import { isAuthed } from './lib/auth';
 
 export default function App() {
   const syncFromWindow = useAppState(s => s.syncFromWindow);
@@ -35,13 +36,15 @@ export default function App() {
     }
   }, [planEnabled]);
 
+  const authed = isAuthed();
+
   return (
     <>
-      {createPostOpen && <CreatePost />}
-      {pcsOpen && <PCS />}
+      {createPostOpen && authed && <CreatePost />}
+      {pcsOpen && authed && <PCS />}
       <CaptionWorkspace />
       <Toast />
-      {planEnabled && <Plan />}
+      {planEnabled && authed && <Plan />}
     </>
   );
 }
