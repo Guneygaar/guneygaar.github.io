@@ -40,6 +40,12 @@ function setupAdminRoutes(page) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     } else if (url.includes('/rest/v1/tasks')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    } else if (url.includes('/rest/v1/plans')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    } else if (url.includes('/rest/v1/plan_cells')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+    } else if (url.includes('/rest/v1/workspaces')) {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'test-ws', slug: 'default' }]) });
     } else if (url.includes('/rest/v1/')) {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
     } else if (url.includes('/auth/v1/')) {
@@ -62,6 +68,36 @@ function injectAdminAuth(page) {
   });
 }
 
+function injectServicingAuth(page) {
+  return page.addInitScript(() => {
+    window.localStorage.setItem('hinglish_role', 'Servicing');
+    window.localStorage.setItem('sb_access_token', 'fake-token');
+    window.localStorage.setItem('hinglish_email', 'servicing@sorted.io');
+    window.localStorage.setItem('hinglish_name', 'Test Servicing');
+    window.localStorage.removeItem('pcs_role_preview');
+  });
+}
+
+function injectCreativeAuth(page) {
+  return page.addInitScript(() => {
+    window.localStorage.setItem('hinglish_role', 'Creative');
+    window.localStorage.setItem('sb_access_token', 'fake-token');
+    window.localStorage.setItem('hinglish_email', 'creative@sorted.io');
+    window.localStorage.setItem('hinglish_name', 'Test Creative');
+    window.localStorage.removeItem('pcs_role_preview');
+  });
+}
+
+// Asserts Plan-as-home: body.plan-active OR #panel-pipeline visible.
+async function expectPlanLanding(page) {
+  await page.waitForFunction(() => {
+    const planActive = document.body.classList.contains('plan-active');
+    const panel = document.getElementById('panel-pipeline');
+    const panelVisible = !!panel && getComputedStyle(panel).display !== 'none';
+    return planActive || panelVisible;
+  }, null, { timeout: 8000 });
+}
+
 // ── Tests ───────────────────────────────────────────────────
 
 test.describe('Admin Flow Tests', () => {
@@ -71,11 +107,10 @@ test.describe('Admin Flow Tests', () => {
     await injectAdminAuth(page);
   });
 
-  test('TEST 1 — Dashboard renders for Admin', async ({ page }) => {
-    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
+  test('TEST 1 — Admin lands on Plan', async ({ page }) => {
+    await page.goto('/?plan_react=1', { waitUntil: 'domcontentloaded' });
 
-    const dashView = page.locator('#dashboard-view');
-    await expect(dashView).toBeVisible({ timeout: 8000 });
+    await expectPlanLanding(page);
 
     // No error toast
     const errorToast = page.locator('#sorted-error-toast');
@@ -160,40 +195,26 @@ test.describe('Admin Flow Tests', () => {
     }
   });
 
-  test('TEST 6 — Dashboard scoreboard renders', async ({ page }) => {
-    // Capture console errors
-    const consoleErrors = [];
-    page.on('console', msg => {
-      if (msg.type() === 'error') consoleErrors.push(msg.text());
-    });
+  test('TEST 6 — Servicing role lands on Plan', async ({ page, context }) => {
+    // Override admin auth with servicing creds before navigation.
+    await context.clearCookies();
+    await injectServicingAuth(page);
 
-    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=1', { waitUntil: 'domcontentloaded' });
 
-    const dashView = page.locator('#dashboard-view');
-    await expect(dashView).toBeVisible({ timeout: 8000 });
+    await expectPlanLanding(page);
 
-    // Scoreboard section exists
-    const scoreboard = page.locator('#pcs-dashboard');
-    await expect(scoreboard).toBeVisible({ timeout: 5000 });
-
-    // No JS errors that include 'renderScoreboard' or 'renderDashboard'
-    const renderErrors = consoleErrors.filter(e =>
-      e.includes('renderScoreboard') || e.includes('renderDashboard')
+    const effectiveRole = await page.evaluate(() =>
+      window.AppState && window.AppState.user && window.AppState.user.effectiveRole
     );
-    expect(renderErrors).toHaveLength(0);
+    expect(effectiveRole).toBe('Servicing');
   });
 
   test('TEST 7 — New post form opens', async ({ page }) => {
     await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
-    // Wait for dashboard to load first
-    await expect(page.locator('#dashboard-view')).toBeVisible({ timeout: 8000 });
-
-    // Switch to pipeline where FAB is visible
-    const pipeTab = page.locator('[data-tab="pipeline"]');
-    await expect(pipeTab).toBeVisible({ timeout: 5000 });
-    await pipeTab.click();
-    await expect(page.locator('#pipeline-container')).toBeVisible({ timeout: 5000 });
+    // Wait for openNewPostModal to be defined (vanilla bundle ready).
+    await page.waitForFunction(() => typeof window.openNewPostModal === 'function', null, { timeout: 8000 });
 
     // Call openNewPostModal() directly — FAB opens a menu first, not the overlay
     await page.evaluate(() => {
@@ -209,22 +230,34 @@ test.describe('Admin Flow Tests', () => {
     await expect(titleInput).toBeVisible();
   });
 
-  test('TEST 8 — Role preview bar shows for non-Admin preview', async ({ page }) => {
+  test('TEST 8 — Admin role preview lands on Plan', async ({ page }) => {
     // Override auth to include role preview
     await page.addInitScript(() => {
       window.localStorage.setItem('pcs_role_preview', 'Servicing');
     });
 
-    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=1', { waitUntil: 'domcontentloaded' });
 
-    // Dashboard should load (Servicing still sees dashboard)
-    const dashView = page.locator('#dashboard-view');
-    await expect(dashView).toBeVisible({ timeout: 8000 });
+    await expectPlanLanding(page);
 
-    // Check effective role is Servicing
+    // Check effective role is Servicing (preview)
     const effectiveRole = await page.evaluate(() =>
-      window.AppState.user.effectiveRole
+      window.AppState && window.AppState.user && window.AppState.user.effectiveRole
     );
     expect(effectiveRole).toBe('Servicing');
+  });
+
+  test('TEST 9 — Creative role lands on Plan', async ({ page, context }) => {
+    await context.clearCookies();
+    await injectCreativeAuth(page);
+
+    await page.goto('/?plan_react=1', { waitUntil: 'domcontentloaded' });
+
+    await expectPlanLanding(page);
+
+    const effectiveRole = await page.evaluate(() =>
+      window.AppState && window.AppState.user && window.AppState.user.effectiveRole
+    );
+    expect(effectiveRole).toBe('Creative');
   });
 });
