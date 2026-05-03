@@ -72,7 +72,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 1 — Dashboard renders for Admin', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     const dashView = page.locator('#dashboard-view');
     await expect(dashView).toBeVisible({ timeout: 8000 });
@@ -85,7 +85,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 2 — Pipeline renders post cards', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     // Switch to pipeline tab
     const pipeTab = page.locator('[data-tab="pipeline"]');
@@ -107,7 +107,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 3 — PCS opens from pipeline', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     const pipeTab = page.locator('[data-tab="pipeline"]');
     await expect(pipeTab).toBeVisible({ timeout: 5000 });
@@ -124,7 +124,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 4 — PCS closes via topbar Close button', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     const pipeTab = page.locator('[data-tab="pipeline"]');
     await expect(pipeTab).toBeVisible({ timeout: 5000 });
@@ -145,7 +145,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 5 — Library tab renders', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     const libTab = page.locator('[data-tab="library"]');
     await expect(libTab).toBeVisible({ timeout: 5000 });
@@ -167,7 +167,7 @@ test.describe('Admin Flow Tests', () => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     const dashView = page.locator('#dashboard-view');
     await expect(dashView).toBeVisible({ timeout: 8000 });
@@ -184,7 +184,7 @@ test.describe('Admin Flow Tests', () => {
   });
 
   test('TEST 7 — New post form opens', async ({ page }) => {
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     // Wait for dashboard to load first
     await expect(page.locator('#dashboard-view')).toBeVisible({ timeout: 8000 });
@@ -215,7 +215,7 @@ test.describe('Admin Flow Tests', () => {
       window.localStorage.setItem('pcs_role_preview', 'Servicing');
     });
 
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 
     // Dashboard should load (Servicing still sees dashboard)
     const dashView = page.locator('#dashboard-view');

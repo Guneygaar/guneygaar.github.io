@@ -93,7 +93,7 @@ test.beforeEach(async ({ page }) => {
   });
 
   // Load the app
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
 });
 
 // ── Tests ───────────────────────────────────────────────────

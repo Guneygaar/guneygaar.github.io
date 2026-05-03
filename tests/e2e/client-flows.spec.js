@@ -104,7 +104,7 @@ test.describe('Client View Loads', () => {
   test.beforeEach(async ({ page }) => {
     await setupClientRoutes(page, mockPosts);
     await injectClientAuth(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
   });
 
   test('TEST 1 -- Client feed renders', async ({ page }) => {
@@ -167,7 +167,7 @@ test.describe('Client Comment Flow', () => {
   test.beforeEach(async ({ page }) => {
     await setupClientRoutes(page, mockPosts);
     await injectClientAuth(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
   });
 
@@ -272,7 +272,7 @@ test.describe('Client Approve Flow', () => {
   test.beforeEach(async ({ page }) => {
     await setupClientRoutes(page, mockPosts);
     await injectClientAuth(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
   });
 
@@ -331,7 +331,7 @@ test.describe('Client New Request Flow', () => {
   test.beforeEach(async ({ page }) => {
     await setupClientRoutes(page, mockPosts);
     await injectClientAuth(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
   });
 
@@ -410,7 +410,7 @@ test.describe('Client Published Post Read Only', () => {
   test.beforeEach(async ({ page }) => {
     await setupClientRoutes(page, mockPosts);
     await injectClientAuth(page);
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/?plan_react=0', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#client-view')).toBeVisible({ timeout: 5000 });
   });
 
