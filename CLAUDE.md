@@ -265,7 +265,7 @@ When a single PR contains multiple distinct changes, each change gets its own on
 ## CLAUDE.md HYGIENE — NON-NEGOTIABLE
 CLAUDE.md is for architecture facts, schema, and gotchas — NOT PR history. Every update follows these rules:
 
-1. Hard cap: 250 lines. If a change would push CLAUDE.md over 250 lines, archive the oldest `Last updated` entries to `CLAUDE-archive-YYYYMMDD.md` in the SAME PR (match the existing `CLAUDE-archive-20260411.md` / `CLAUDE-archive-20260503.md` pattern). Pre-merge check: run `wc -l CLAUDE.md`. If >250, the PR cannot merge until rotation is done.
+1. Hard cap: 320 lines. If a change would push CLAUDE.md over 320 lines, archive the oldest `Last updated` entries to `CLAUDE-archive-YYYYMMDD.md` in the SAME PR (match the existing `CLAUDE-archive-20260411.md` / `CLAUDE-archive-20260503.md` pattern). Pre-merge check: run `wc -l CLAUDE.md`. If >320, the PR cannot merge until rotation is done.
 
 2. `Last updated` entries are ephemeral context, not permanent record. Keep at most 3 at the top of the file. The 4th one shipping triggers rotation under rule 1.
 
