@@ -532,6 +532,23 @@ function activateRole(role) {
   setTimeout(function() { if (typeof updateFabVisibility === 'function') updateFabVisibility(); }, 0);
 
   _dispatchRoleReady();
+
+  // When Plan React is disabled (?plan_react=0), nothing else activates a default
+  // surface — restore the legacy switchTab('tasks') so dashboard-view becomes
+  // visible. When Plan is enabled, Plan owns the home surface at z-index 1400 and
+  // this call would be dead weight (plus Fix C in 10-ui.js no-ops dashboard-view
+  // activation while plan-active is on body, so it would have been a no-op anyway).
+  var _planReactOff = false;
+  try {
+    _planReactOff = new URLSearchParams(window.location.search).get('plan_react') === '0';
+  } catch (e) {}
+  if (_planReactOff) {
+    if ((window.AppState.user.effectiveRole || '').toLowerCase() === 'client') {
+      if (typeof switchTab === 'function') switchTab('tasks');
+      return;
+    }
+    if (typeof switchTab === 'function') switchTab('tasks');
+  }
 }
 
 // Escape failsafe  -  callable from console if UI is ever unreachable
