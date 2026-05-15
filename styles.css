@@ -2897,7 +2897,9 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 200;
+  /* Above Plan home overlay (z-index 1400); below CreatePost/PCS
+     modals (1500/1501) and Plan sheets (2200+) so they still cover it. */
+  z-index: 1450;
   transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1), background 0.2s;
 }
 .action-bar { display: none; }
@@ -2912,10 +2914,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .fab-icon { color: #080808; font-size: 22px; font-weight: 300; line-height: 1; user-select: none; }
 
 /* FAB menu */
-.fab-backdrop { position: fixed; inset: 0; background: #00000000; z-index: 198; pointer-events: none; transition: background 0.2s; }
+.fab-backdrop { position: fixed; inset: 0; background: #00000000; z-index: 1448; pointer-events: none; transition: background 0.2s; }
 .fab-backdrop.open { background: #0000008C; pointer-events: all; }
 
-.fab-menu { position: fixed; bottom: 134px; right: max(20px, calc(50% - 175px)); display: flex; flex-direction: column; gap: 10px; align-items: flex-end; z-index: 199; pointer-events: none; opacity: 0; transform: translateY(10px); transition: opacity 0.18s, transform 0.18s; }
+.fab-menu { position: fixed; bottom: 134px; right: max(20px, calc(50% - 175px)); display: flex; flex-direction: column; gap: 10px; align-items: flex-end; z-index: 1449; pointer-events: none; opacity: 0; transform: translateY(10px); transition: opacity 0.18s, transform 0.18s; }
 .fab-menu.open { pointer-events: all; opacity: 1; transform: translateY(0); }
 .fab-option { display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .fab-option-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text2); background: #0d0d12; border: 1px dotted var(--dotline); padding: 7px 14px; white-space: nowrap; backdrop-filter: blur(8px); transition: color 0.15s, border-color 0.15s; }
